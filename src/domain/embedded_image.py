@@ -3,11 +3,12 @@
 Two policies decide what may be embedded, and both used to spell the URI themselves: the PlantUML
 body policy, for which an embedded image is the only image a body may show, and the uploaded-SVG
 sanitiser, for which it is the only `<image>` that survives. Each still decides which subtypes it
-accepts; what counts as an embedded image is read here.
+accepts; what counts as an embedded image is read here, and a PNG is written as one here too.
 """
 
 from __future__ import annotations
 
+import base64
 import re
 from dataclasses import dataclass
 
@@ -26,3 +27,8 @@ def embedded_image(value: str) -> EmbeddedImage | None:
     """The image a `data:image/…;base64,…` URI carries, or None for any other value."""
     match = _DATA_IMAGE_RE.match(value.strip())
     return None if match is None else EmbeddedImage(match.group(1).lower(), "".join(match.group(2).split()))
+
+
+def embedded_png_url(png: bytes) -> str:
+    """*png* as a `data:image/png;base64,…` URI, the form `embedded_image` reads back."""
+    return f"data:image/png;base64,{base64.b64encode(png).decode('ascii')}"

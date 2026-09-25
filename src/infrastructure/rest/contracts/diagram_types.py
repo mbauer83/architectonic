@@ -154,6 +154,8 @@ class DiagramTypeUiConfigResponse(Closed):
     diagram_only_types: list[DiagramOwnEntityTypeResponse]
     type_ui_slots: dict[str, str]
     primitive_types: list[str]
+    #: The icon presentations the type's renderer draws (`badge`, `figure`); empty when it draws none.
+    icon_styles: list[Literal["badge", "figure"]]
 
 
 class DiagramTypeListResponse(RootModel[list[DiagramTypeSummary]]):

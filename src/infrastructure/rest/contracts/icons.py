@@ -37,3 +37,24 @@ class IconListResponse(Closed):
 
     total: int
     items: list[IconSummary]
+
+
+class ShownIcon(Closed):
+    """The icon one instance shows, and which statement decided it."""
+
+    #: The icon as the deciding statement names it: `ICO@…` for the library's, `local:<key>` for the diagram's.
+    icon: str
+    style: Literal["badge", "figure"]
+    #: `instance` — its own; `type` — its type's or a specialization's on this diagram; `specialization-default`.
+    level: Literal["instance", "type", "specialization-default"]
+    #: Its render digest, the key of its picture in `pictures`.
+    picture: str
+
+
+class ShownIconsResponse(Closed):
+    """Which icon each instance shows; an instance that shows its type glyph is absent."""
+
+    icons: dict[str, ShownIcon]
+    #: render digest → the picture, as a `data:image/png;base64,…` URL, once however many show it.
+    pictures: dict[str, str]
+

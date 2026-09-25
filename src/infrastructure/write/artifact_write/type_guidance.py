@@ -26,7 +26,7 @@ from src.application.modeling.diagram_kind_palette import (
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.allowed_bindings import serialize_allowed_bindings
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
-from src.domain.ontology_representation.ontology_protocol import DiagramTypeWriteGuidance, IconPresentingRenderer
+from src.domain.ontology_representation.ontology_protocol import DiagramTypeWriteGuidance, icon_styles_drawn_by
 from src.domain.ontology_representation.specializations import SpecializationCatalog
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.write.artifact_write._connection_metadata_guidance import (
@@ -176,8 +176,8 @@ def get_type_guidance(
                 "known_diagram_types": known,
             }
         type_guidance = _serialize_diagram_type_guidance(diagram_type, diagram_type_mod.write_guidance(), cats)
-        if isinstance(diagram_type_mod.renderer, IconPresentingRenderer):
-            type_guidance["icons"] = icon_authoring_guidance(diagram_type_mod.renderer.icon_styles)
+        if styles := icon_styles_drawn_by(diagram_type_mod.renderer):
+            type_guidance["icons"] = icon_authoring_guidance(styles)
         result["diagram_type_guidance"] = type_guidance
 
     if filter is not None or diagram_type is None:

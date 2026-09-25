@@ -170,3 +170,54 @@ def test_a_replacement_the_library_does_not_hold_is_404(client: TestClient) -> N
 
 def test_an_icon_replacing_itself_is_400(client: TestClient) -> None:
     assert client.post(f"/api/icons/{NODE_ICON}/replace", json={"replacement_id": NODE_ICON}).status_code == 400
+
+
+# ── which icon each instance shows, for an editor ───────────────────────────────────────────────
+
+
+def _preview(client: TestClient, diagram_entities: dict, instances: list[dict]) -> dict:
+    response = client.post("/api/icons/preview", json={"diagram_entities": diagram_entities, "instances": instances})
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def test_a_hosted_node_shows_its_type_icon_and_its_picture_comes_along(client: TestClient) -> None:
+    entities = {"technology-node": [{"id": "n1"}], "type_icons": {"technology-node": NODE_ICON}}
+
+    shown = _preview(client, entities, [{"instance_id": "n1"}, {"instance_id": "unknown"}])
+
+    assert set(shown["icons"]) == {"n1"}
+    row = shown["icons"]["n1"]
+    assert (row["icon"], row["level"], row["style"]) == ("ICO@1790000000.aks001", "type", "badge")
+    assert shown["pictures"][row["picture"]].startswith("data:image/png;base64,")
+
+
+def test_an_instance_statement_wins_over_its_type(client: TestClient) -> None:
+    entities = {
+        "technology-node": [{"id": "n1"}],
+        "type_icons": {"technology-node": NODE_ICON},
+        "display_icons": {"n1": {"icon": "ICO@1790000001.any001.generic", "style": "figure"}},
+    }
+
+    row = _preview(client, entities, [{"instance_id": "n1"}])["icons"]["n1"]
+
+    assert (row["icon"], row["level"], row["style"]) == ("ICO@1790000001.any001", "instance", "figure")
+
+
+def test_an_unsaved_upload_is_shown_normalised(client: TestClient) -> None:
+    picture = base64.b64encode(png_of((9, 9, 9, 255))).decode()
+    upload = {"name": "Logo", "content_base64": picture, "source_format": "png"}
+    entities = {"technology-node": [{"id": "n1"}], "display_icons": {"n1": "local:logo"}, "icons": {"logo": upload}}
+
+    row = _preview(client, entities, [{"instance_id": "n1"}])["icons"]["n1"]
+
+    assert row["icon"] == "local:logo" and row["level"] == "instance"
+
+
+def test_an_upload_the_normaliser_refuses_is_422_with_its_reason(client: TestClient) -> None:
+    upload = {"name": "Logo", "content_base64": base64.b64encode(b"not a png").decode(), "source_format": "png"}
+    entities = {"display_icons": {"n1": "local:logo"}, "icons": {"logo": upload}}
+
+    response = client.post("/api/icons/preview", json={"diagram_entities": entities, "instances": []})
+
+    assert response.status_code == 422

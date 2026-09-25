@@ -80,10 +80,16 @@ def instance_names(
     """
     if (entity := entity_of(instance_id)) is not None:
         return entity.type_and_specializations
-    for type_name, nodes in diagram_entities.items():
-        if isinstance(nodes, list) and any(isinstance(n, Mapping) and n.get("id") == instance_id for n in nodes):
-            return frozenset({str(type_name)})
-    return None
+    hosted = hosted_type_of(instance_id, diagram_entities)
+    return frozenset({hosted}) if hosted is not None else None
+
+
+def hosted_type_of(instance_id: str, diagram_entities: Mapping[str, object]) -> str | None:
+    """The type of a node the diagram hosts itself: the `diagram-entities` list it is in."""
+    return next((
+        str(type_name) for type_name, nodes in diagram_entities.items()
+        if isinstance(nodes, list) and any(isinstance(n, Mapping) and n.get("id") == instance_id for n in nodes)
+    ), None)
 
 
 def _diagram_uses_outside(

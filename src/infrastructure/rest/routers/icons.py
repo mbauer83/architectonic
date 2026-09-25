@@ -10,13 +10,15 @@ from pydantic import BaseModel, Field
 
 from src.application.icons.icon_rows import icon_fields
 from src.application.icons.library_query import offered_icons
+from src.application.icons.shown_icons import EditedInstance, shown_icons
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING, BaselineStanding
+from src.domain.embedded_image import embedded_png_url
 from src.domain.icons.icon_file import IconFile, read_icon_file
 from src.domain.icons.icon_record import IconRecord
 from src.domain.icons.normalised_icon import IconRefused
-from src.infrastructure.rest.contracts.icons import IconListResponse, IconSummary
+from src.infrastructure.rest.contracts.icons import IconListResponse, IconSummary, ShownIconsResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import (
@@ -58,6 +60,47 @@ def list_icons(
     )
     standing_of = s.baseline_standing_reader()
     return {"total": len(offered), "items": [_summary(icon, standing_of) for icon in offered]}
+
+
+class EditedInstanceBody(BaseModel):
+    instance_id: str
+    #: The entity it draws, where that is not the instance id itself (an occurrence).
+    entity_id: str | None = None
+
+
+class PreviewShownIconsRequest(BaseModel):
+    #: The diagram's `diagram-entities` as the editor holds it, uploads not yet saved included.
+    diagram_entities: dict[str, Any] = Field(default_factory=dict)
+    instances: list[EditedInstanceBody]
+
+
+@router.post("/api/icons/preview", tags=[TAG_ICONS], summary="Which icon each instance of a diagram shows",
+    response_model=ShownIconsResponse, responses=READ_RESPONSES)
+def preview_shown_icons(
+    req: PreviewShownIconsRequest, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)
+) -> dict[str, Any]:
+    from src.infrastructure.icons.diagram_icons import DiagramIconSource, prepared_local_icons  # noqa: PLC0415
+    from src.infrastructure.icons.library_source import LibraryIconSource  # noqa: PLC0415
+
+    match prepared_local_icons(req.diagram_entities):
+        case IconRefused(reason=reason):
+            raise HTTPException(422, reason)
+        case dict() as entities:
+            pass
+    repo = s.get_repo()
+    instances = [EditedInstance(i.instance_id, i.entity_id) for i in req.instances]
+    source = DiagramIconSource(entities, LibraryIconSource(repo))
+    shown = shown_icons(entities, instances, repo.get_entity, source, catalogs.specializations)
+    return {
+        "icons": {
+            instance_id: {
+                "icon": icon.target.spelled(), "style": icon.style, "level": icon.level,
+                "picture": icon.icon.render_digest,
+            }
+            for instance_id, icon in shown.items()
+        },
+        "pictures": {icon.icon.render_digest: embedded_png_url(icon.icon.png) for icon in shown.values()},
+    }
 
 
 @router.get("/api/icons/{artifact_id}", tags=[TAG_ICONS], summary="Read an icon by id",

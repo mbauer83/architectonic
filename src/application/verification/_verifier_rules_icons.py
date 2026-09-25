@@ -30,7 +30,7 @@ from src.application.verification.artifact_verifier_types import Issue, Severity
 from src.application.verification.verifier_ports import IconLibrary
 from src.domain.icons.applicability import Applicability
 from src.domain.icons.icon_ref import IconRef, LocalIcon, SharedIcon
-from src.domain.ontology_representation.ontology_protocol import IconPresentingRenderer
+from src.domain.ontology_representation.ontology_protocol import icon_styles_drawn_by
 
 
 def check_icon_assignments(
@@ -66,9 +66,7 @@ def check_icon_assignments(
 
 def _styles_drawn(diagram_type: str, catalogs: RuntimeCatalogs) -> tuple[str, ...]:
     module = catalogs.diagram_types.find_diagram_type(diagram_type)
-    if module is None or not isinstance(module.renderer, IconPresentingRenderer):
-        return ()
-    return module.renderer.icon_styles
+    return icon_styles_drawn_by(module.renderer) if module is not None else ()
 
 
 def _local_keys(diagram_entities: Mapping[str, object]) -> frozenset[str]:

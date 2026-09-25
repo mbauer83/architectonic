@@ -8,12 +8,12 @@ icon is drawn at the height of the type glyph it stands in for, whatever size it
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
 from src.application.artifacts.parsing import normalize_puml_alias
-from src.application.icons.effective_icons import names_most_specific_first
+from src.application.icons.effective_icons import names_most_specific_first, specialization_defaults
 from src.application.puml_alias_declarations import (
     alias_declared_on,
     declares_an_icon_figure,
@@ -22,7 +22,7 @@ from src.application.puml_alias_declarations import (
 )
 from src.application.puml_icon_header import is_icon_reference, referenced_icon_keys, with_icon_block
 from src.domain.diagrams.instance_statements import DiagramInstances
-from src.domain.icons.icon_ref import IconRef, IconStyle, library_icon_named
+from src.domain.icons.icon_ref import IconStyle
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.ontology_representation.specializations import SpecializationCatalog
@@ -69,7 +69,7 @@ def instance_icons(
             instance_id_of(entity),
             names_most_specific_first(entity.artifact_type, entity.specializations),
             alias,
-            _default_for(entity, specializations),
+            specialization_defaults(entity.artifact_type, specializations),
         )
         for entity in [*entities, *occurrences]
         if (alias := normalize_puml_alias(entity.display_alias))
@@ -82,15 +82,6 @@ def instance_icons(
         },
         shown.pictures,
     )
-
-
-def _default_for(entity: EntityRecord, specializations: SpecializationCatalog) -> Callable[[str], IconRef | None]:
-    def default(name: str) -> IconRef | None:
-        info = specializations.get("entity", entity.artifact_type, name)
-        target = library_icon_named(info.notation.icon) if info is not None else None
-        return IconRef(target) if target is not None else None
-
-    return default
 
 
 class KeptBodyDeclarations(Protocol):

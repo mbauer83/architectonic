@@ -21,8 +21,8 @@ from src.domain.diagrams.diagram_type_config import (
 )
 
 
-def ui_config_payload(config: DiagramTypeUiConfig) -> dict[str, Any]:
-    """The config as the route serves it."""
+def ui_config_payload(config: DiagramTypeUiConfig, *, icon_styles: tuple[str, ...]) -> dict[str, Any]:
+    """The config as the route serves it, with the icon styles the type's renderer draws."""
     return {
         "label": config.label,
         "description": config.description,
@@ -30,6 +30,8 @@ def ui_config_payload(config: DiagramTypeUiConfig) -> dict[str, Any]:
         "diagram_only_types": [_own_type(entry) for entry in config.diagram_only_types],
         "type_ui_slots": dict(config.type_ui_slots),
         "primitive_types": list(config.primitive_types),
+        # Empty for a type that draws no icons, so an editor offers no icon controls for it.
+        "icon_styles": list(icon_styles),
     }
 
 

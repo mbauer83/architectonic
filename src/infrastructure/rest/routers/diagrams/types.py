@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from src.application.assurance.diagrams import assurance_surface_diagram_types
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.domain.ontology_representation.ontology_protocol import icon_styles_drawn_by
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
 from src.infrastructure.rest.contracts.diagram_types import (
     DiagramTypeListResponse,
@@ -50,7 +51,7 @@ def read_diagram_kind_ui_config(
     kind = catalogs.diagram_types.find_diagram_type(diagram_type)
     if kind is None:
         raise HTTPException(404, f"Diagram type not found: {diagram_type!r}")
-    return ui_config_payload(kind.ui_config)
+    return ui_config_payload(kind.ui_config, icon_styles=icon_styles_drawn_by(kind.renderer))
 
 
 @router.get("/api/diagram-types/datatype/types", tags=[TAG_DIAGRAMS], summary="Datatype classifier types",

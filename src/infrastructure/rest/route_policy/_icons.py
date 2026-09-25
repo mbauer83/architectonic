@@ -16,6 +16,10 @@ ICON_ROWS: tuple[RouteRow, ...] = (
     RouteRow("GET", "/api/icons", "collection", "icons_list_icons", TYPED, cache_directive="no-cache"),
     RouteRow("POST", "/api/icons", "collection", "icons_create_icon", TYPED, mutation_domain="repository"),
     RouteRow(
+        # Writes nothing: which icon each instance of a diagram being edited shows, saved or not.
+        "POST", "/api/icons/preview", "operation", "icons_preview_shown_icons", TYPED,
+    ),
+    RouteRow(
         "GET", "/api/icons/{artifact_id}", "detail", "icons_read_icon", TYPED,
         identity_parameters=_ID, cache_directive="no-cache",
     ),

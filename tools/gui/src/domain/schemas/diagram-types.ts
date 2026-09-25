@@ -127,6 +127,8 @@ export const DiagramTypeUiConfigSchema = Schema.Struct({
   diagram_only_types: Schema.Array(DiagramOwnEntityTypeUiConfigSchema),
   type_ui_slots: Schema.Record({ key: Schema.String, value: Schema.String }),
   primitive_types: Schema.Array(Schema.String),
+  /** The icon presentations this type draws; empty when it draws none, so the editor offers no icon controls. */
+  icon_styles: Schema.Array(Schema.Literal('badge', 'figure')),
 })
 export type DiagramTypeUiConfig = typeof DiagramTypeUiConfigSchema.Type
 

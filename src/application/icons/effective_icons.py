@@ -21,8 +21,16 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
-from src.domain.icons.icon_ref import IconRef, IconStyle, IconTarget, InvalidIconRefError, icon_ref_from
+from src.domain.icons.icon_ref import (
+    IconRef,
+    IconStyle,
+    IconTarget,
+    InvalidIconRefError,
+    icon_ref_from,
+    library_icon_named,
+)
 from src.domain.icons.resolved_icon import IconSource, ResolvedIcon
+from src.domain.ontology_representation.specializations import SpecializationCatalog
 
 DISPLAY_ICONS_KEY = "display_icons"
 TYPE_ICONS_KEY = "type_icons"
@@ -41,6 +49,8 @@ class EffectiveIcon:
     icon: ResolvedIcon
     style: IconStyle
     level: AssignmentLevel
+    #: The icon the deciding statement names.
+    target: IconTarget
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,8 +96,20 @@ def effective_icon(
     for ref, level in candidates:
         if ref is None or (icon := resolve(ref.target)) is None or not icon.applies_to.admits(element):
             continue
-        return EffectiveIcon(icon, ref.style or icon.default_style, level)
+        return EffectiveIcon(icon, ref.style or icon.default_style, level, ref.target)
     return None
+
+
+def specialization_defaults(
+    entity_type: str, specializations: SpecializationCatalog
+) -> Callable[[str], IconRef | None]:
+    """The default a repository sets for each specialization of *entity_type*, when it names a library icon."""
+    def default(name: str) -> IconRef | None:
+        info = specializations.get("entity", entity_type, name)
+        target = library_icon_named(info.notation.icon) if info is not None else None
+        return IconRef(target) if target is not None else None
+
+    return default
 
 
 def malformed_icon_entries(diagram_entities: Mapping[str, object] | None) -> list[tuple[str, str, str]]:

@@ -2315,6 +2315,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/icons/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Which icon each instance of a diagram shows */
+        post: operations["icons_preview_shown_icons"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/identifiers/allocate": {
         parameters: {
             query?: never;
@@ -7057,6 +7074,8 @@ export interface components {
             diagram_only_types: components["schemas"]["DiagramOwnEntityTypeResponse"][];
             /** Entity Search Filter */
             entity_search_filter: boolean;
+            /** Icon Styles */
+            icon_styles: ("badge" | "figure")[];
             /** Label */
             label: string;
             /** Primitive Types */
@@ -7558,6 +7577,13 @@ export interface components {
             title?: string | null;
             /** Version */
             version?: string | null;
+        };
+        /** EditedInstanceBody */
+        EditedInstanceBody: {
+            /** Entity Id */
+            entity_id?: string | null;
+            /** Instance Id */
+            instance_id: string;
         };
         /** EditEntityBody */
         EditEntityBody: {
@@ -10209,6 +10235,15 @@ export interface components {
             /** Target Types */
             target_types?: string[];
         };
+        /** PreviewShownIconsRequest */
+        PreviewShownIconsRequest: {
+            /** Diagram Entities */
+            diagram_entities?: {
+                [key: string]: unknown;
+            };
+            /** Instances */
+            instances: components["schemas"]["EditedInstanceBody"][];
+        };
         /**
          * ProjectedOccurrenceResponse
          * @description One entity or connection, and what the viewpoint does with it.
@@ -11450,6 +11485,40 @@ export interface components {
             requirement_id: string;
             /** Root Id */
             root_id: string;
+        };
+        /**
+         * ShownIcon
+         * @description The icon one instance shows, and which statement decided it.
+         */
+        ShownIcon: {
+            /** Icon */
+            icon: string;
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "instance" | "type" | "specialization-default";
+            /** Picture */
+            picture: string;
+            /**
+             * Style
+             * @enum {string}
+             */
+            style: "badge" | "figure";
+        };
+        /**
+         * ShownIconsResponse
+         * @description Which icon each instance shows; an instance that shows its type glyph is absent.
+         */
+        ShownIconsResponse: {
+            /** Icons */
+            icons: {
+                [key: string]: components["schemas"]["ShownIcon"];
+            };
+            /** Pictures */
+            pictures: {
+                [key: string]: string;
+            };
         };
         /**
          * SignalAnchorTypeListResponse
@@ -20598,6 +20667,57 @@ export interface operations {
             };
             /** @description Write temporarily rejected by the workspace gate (retryable) */
             423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    icons_preview_shown_icons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewShownIconsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShownIconsResponse"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

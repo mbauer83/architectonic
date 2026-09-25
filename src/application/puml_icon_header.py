@@ -13,11 +13,10 @@ write, never merged — so a hand edit to it lasts until the next write.
 
 from __future__ import annotations
 
-import base64
 import re
 from collections.abc import Mapping
 
-from src.domain.embedded_image import EmbeddedImage, embedded_image
+from src.domain.embedded_image import EmbeddedImage, embedded_image, embedded_png_url
 
 BLOCK_BEGIN = "' arch-icons:begin"
 BLOCK_END = "' arch-icons:end"
@@ -92,7 +91,7 @@ def with_icon_block(body: str, pictures: Mapping[str, bytes]) -> str:
         return without
     block = "\n".join([
         BLOCK_BEGIN,
-        *(f'!${key} = "data:image/png;base64,{base64.b64encode(pictures[key]).decode("ascii")}"' for key in keys),
+        *(f'!${key} = "{embedded_png_url(pictures[key])}"' for key in keys),
         BLOCK_END,
     ])
     lines = without.split("\n")

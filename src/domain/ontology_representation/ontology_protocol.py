@@ -205,6 +205,11 @@ class IconPresentingRenderer(Protocol):
     def icon_styles(self) -> tuple[IconStyle, ...]: ...
 
 
+def icon_styles_drawn_by(renderer: object) -> tuple[IconStyle, ...]:
+    """The icon presentations *renderer* draws; none for a renderer without the capability."""
+    return renderer.icon_styles if isinstance(renderer, IconPresentingRenderer) else ()
+
+
 @runtime_checkable
 class InstancePresentationRestatingRenderer(Protocol):
     """Optional capability for a renderer whose diagrams say how individual instances are shown.
