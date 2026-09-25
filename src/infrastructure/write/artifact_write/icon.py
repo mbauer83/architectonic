@@ -15,6 +15,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.application.icons.icon_usage import icon_users
 from src.application.icons.icon_vocabulary import icon_applicability_names, unknown_applicability_names
 from src.application.identifier_allocator import get_default_allocator
 from src.application.verification.artifact_verifier import ArtifactVerifier
@@ -137,3 +138,33 @@ def _metadata(artifact_id: str, upload: IconUpload, normalised: NormalisedIcon) 
 def _refused(path: Path, artifact_id: str, reason: str) -> WriteResult:
     issue = {"severity": "error", "code": "icon_refused", "message": reason, "location": None}
     return WriteResult(False, path, artifact_id, None, [], {"valid": False, "issues": [issue]})
+
+
+class IconInUseError(ValueError):
+    """A library icon something still shows, named with its users so they can be re-pointed first."""
+
+
+def delete_icon(
+    *,
+    repo_root: Path,
+    verifier: ArtifactVerifier,
+    clear_repo_caches: Callable[[Path], None],
+    artifact_id: str,
+    dry_run: bool,
+) -> WriteResult:
+    """Delete an engagement library icon nothing uses; refuse, naming the users, while anything does.
+
+    Retiring (`status: retired`) is the way to stop offering an icon that is still shown.
+    """
+    assert_engagement_write_root(repo_root)
+    repo = get_repository(repo_root)
+    icon = repo.get_icon(artifact_id)
+    if icon is None or not icon.path.is_relative_to(repo_root):
+        raise FileNotFoundError(f"Icon '{artifact_id}' is not in this repository's library")
+    users = icon_users(icon.artifact_id, repo.list_diagrams(), verifier.runtime_catalogs.specializations)
+    if not users.is_empty:
+        raise IconInUseError(f"{icon.artifact_id} is still used by {users.described()}; re-point or clear them first")
+    if not dry_run:
+        icon.path.unlink()
+        clear_repo_caches(icon.path)
+    return WriteResult(not dry_run, icon.path, icon.artifact_id, None, [], {"valid": True, "issues": []})

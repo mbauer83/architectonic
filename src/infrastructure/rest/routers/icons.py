@@ -109,6 +109,37 @@ def create_icon(
     return s.write_result_to_dict(result)
 
 
+_DELETE_RESPONSES: dict[int | str, Any] = {
+    **WRITE_RESPONSES,
+    200: {"model": WriteResultResponse, "description": "Dry-run plan; nothing was deleted"},
+}
+
+
+@router.delete("/api/icons/{artifact_id}", tags=[TAG_ICONS], summary="Delete an icon nothing uses",
+    response_model=None, responses=_DELETE_RESPONSES, status_code=status.HTTP_204_NO_CONTENT)
+def delete_icon(
+    artifact_id: str, response: Response, dry_run: bool = True,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any] | None:
+    from src.infrastructure.write.artifact_write.icon import IconInUseError  # noqa: PLC0415
+    from src.infrastructure.write.artifact_write.icon import delete_icon as _delete  # noqa: PLC0415
+
+    repo_root, _registry, verifier = s.get_write_deps(catalogs)
+    try:
+        result = s.authorized_write(
+            "icons_delete_icon", _delete, repo_root=repo_root, verifier=verifier,
+            clear_repo_caches=s.clear_caches, artifact_id=artifact_id, dry_run=dry_run,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except IconInUseError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    if dry_run:
+        response.status_code = status.HTTP_200_OK
+        return s.write_result_to_dict(result)
+    return None
+
+
 def _icon(artifact_id: str) -> IconRecord:
     icon = s.get_repo().get_icon(artifact_id)
     if icon is None:

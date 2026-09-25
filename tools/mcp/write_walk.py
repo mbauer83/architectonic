@@ -324,6 +324,11 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         "artifact_delete_diagram",
         lambda c: {"artifact_id": c.created["diagram"], "dry_run": False},
     ),
+    # The diagram that showed the icon is gone, so nothing uses it and it may be deleted.
+    WriteCall(
+        "artifact_delete_icon",
+        lambda c: {"artifact_id": c.created["icon"], "dry_run": False},
+    ),
     WriteCall(
         "artifact_create_matrix",
         lambda c: {

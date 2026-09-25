@@ -14,7 +14,7 @@ from src.infrastructure.mcp.artifact_mcp.write._common import (
     roots_key,
     verifier_for,
 )
-from src.infrastructure.mcp.tool_annotations import LOCAL_WRITE
+from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE
 
 
 def artifact_create_icon(
@@ -49,6 +49,21 @@ def artifact_create_icon(
     return _out(result, dry_run=dry_run)
 
 
+def artifact_delete_icon(*, artifact_id: str, dry_run: bool = True, repo_root: str | None = None) -> dict[str, object]:
+    roots = resolve_repo_roots(repo_scope="engagement", repo_root=repo_root, repo_preset=None, enterprise_root=None)
+    mutation_context, clear_repo_caches = authoritative_callbacks_for(roots)
+    try:
+        result = artifact_write_ops.delete_icon(
+            repo_root=roots[0], verifier=verifier_for(roots_key(roots), include_registry=False),
+            clear_repo_caches=clear_repo_caches, artifact_id=artifact_id, dry_run=dry_run,
+        )
+    except (FileNotFoundError, artifact_write_ops.IconInUseError) as exc:
+        return {"ok": False, "error": str(exc)}
+    if result.wrote and not dry_run:
+        mutation_context.finalize()
+    return _out(result, dry_run=dry_run)
+
+
 def register(mcp: MCPServer) -> None:
     from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool  # noqa: PLC0415
 
@@ -72,5 +87,19 @@ def register(mcp: MCPServer) -> None:
             "name). Set dry_run=false to write the file."
         ),
         annotations=LOCAL_WRITE,
+        structured_output=True,
+    )
+    register_mutation_tool(
+        mcp,
+        artifact_delete_icon,
+        name="artifact_delete_icon",
+        title="Artifact Write: Delete Icon",
+        description=(
+            "Delete an icon from this repository's library. Refused while any diagram shows it or any "
+            "specialization defaults to it; the refusal names them, so they can be re-pointed or cleared "
+            "first. An icon still shown that should no longer be offered is retired instead. Set "
+            "dry_run=false to delete the file."
+        ),
+        annotations=DESTRUCTIVE_LOCAL_WRITE,
         structured_output=True,
     )

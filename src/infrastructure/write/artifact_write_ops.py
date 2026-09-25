@@ -9,6 +9,7 @@ from typing import Literal
 from src.application.modeling.artifact_write import DiagramConnectionInferenceMode
 from src.domain.icons.normalised_icon import IconRefused
 from src.infrastructure.write.artifact_write import (
+    IconInUseError,
     IconUpload,
     SyncDiagramToModelResult,
     WriteResult,
@@ -21,6 +22,7 @@ from src.infrastructure.write.artifact_write import (
     delete_diagram,
     delete_document,
     delete_entity,
+    delete_icon,
     edit_connection,
     edit_diagram,
     edit_document,
@@ -65,6 +67,8 @@ __all__ = [
     "delete_document",
     "IconUpload",
     "create_icon",
+    "delete_icon",
+    "IconInUseError",
     "upload_from_base64",
     "IconRefused",
 ]

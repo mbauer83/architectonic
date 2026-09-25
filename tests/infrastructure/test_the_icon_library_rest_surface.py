@@ -97,3 +97,37 @@ def test_a_refused_upload_answers_200_with_its_reason(client: TestClient) -> Non
 
     assert response.status_code == 200
     assert "attribution" in response.json()["verification"]["issues"][0]["message"]
+
+
+def test_a_dry_run_delete_reports_and_a_real_one_answers_204(client: TestClient) -> None:
+    generic = "ICO@1790000001.any001.generic"
+
+    planned = client.delete(f"/api/icons/{generic}")
+    deleted = client.delete(f"/api/icons/{generic}", params={"dry_run": "false"})
+
+    assert planned.status_code == 200 and planned.json()["wrote"] is False
+    assert deleted.status_code == 204 and client.get(f"/api/icons/{generic}").status_code == 404
+
+
+def test_deleting_an_icon_in_use_is_409_naming_the_diagram(client: TestClient, repo_root: Path) -> None:
+    diagram = repo_root / "diagram-catalog" / "diagrams" / "ARC@1790000005.dia001.view.puml"
+    diagram.write_text(f"""---
+artifact-id: ARC@1790000005.dia001.view
+artifact-type: diagram
+diagram-type: archimate-technology
+name: View
+version: 0.1.0
+status: draft
+diagram-entities:
+  type_icons:
+    technology-node: {NODE_ICON}
+---
+@startuml
+title View
+@enduml
+""", encoding="utf-8")
+    s.get_repo().refresh()
+
+    response = client.delete(f"/api/icons/{NODE_ICON}", params={"dry_run": "false"})
+
+    assert response.status_code == 409 and "ARC@1790000005.dia001.view" in response.text
