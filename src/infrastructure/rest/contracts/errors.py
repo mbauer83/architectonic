@@ -80,6 +80,9 @@ ErrorCode: TypeAlias = Literal[
     "not_configured",
     # viewpoint authoring
     "viewpoint_referenced",
+    # A request body larger than its operation accepts, refused before it is read. It carries the
+    # limit, because the caller's remedy is to send less and it has to know how much less.
+    "request_too_large",
 ]
 
 
@@ -99,6 +102,12 @@ class ValidationErrorDetails(_Details):
     """``validation_error`` and ``invalid_vex_assessment``: which fields were rejected and why."""
 
     field_errors: list[FieldError]
+
+
+class RequestTooLargeDetails(_Details):
+    """``request_too_large``: the most the operation accepts, in bytes of request body."""
+
+    max_body_bytes: int
 
 
 class DiagramRenderLimitDetails(_Details):
@@ -327,6 +336,7 @@ ERROR_DETAIL_TYPES: dict[str, type[_Details] | None] = {
     "classification_not_publishable": ClassificationNotPublishableDetails,
     "not_configured": NotConfiguredDetails,
     "viewpoint_referenced": ViewpointReferencedDetails,
+    "request_too_large": RequestTooLargeDetails,
 }
 
 #: The union a code's ``details`` can be. Named and exported, because ``ApiError`` and the
@@ -350,6 +360,7 @@ ErrorDetails: TypeAlias = (
     | InvalidParticipationDetails
     | LegacyInvalidDetails
     | ViewpointReferencedDetails
+    | RequestTooLargeDetails
 )
 
 

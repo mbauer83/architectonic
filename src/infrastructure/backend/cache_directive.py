@@ -17,41 +17,22 @@ chosen for a specific response outranks the operation's default.
 
 from __future__ import annotations
 
-import re
 from collections.abc import Awaitable, Callable
 
 from starlette.requests import Request
 from starlette.responses import Response
 
-from src.infrastructure.rest.route_policy import ROUTE_POLICY, served_templates_for
+from src.infrastructure.rest.route_policy import row_for_request
 
 
-def _pattern(template: str) -> re.Pattern[str]:
-    return re.compile(
-        "^"
-        + "/".join(
-            r"[^/]+" if segment.startswith("{") and segment.endswith("}") else re.escape(segment)
-            for segment in template.split("/")
-        )
-        + "$"
-    )
+def directive_for(method: str, path: str) -> str | None:
+    """The declared directive for a request, or None where no operation claims it.
 
-
-#: ``(path matcher, directive)`` for every operation the manifest gives a directive, at whichever
-#: address it is served from today — legacy where a rename is still pending, canonical otherwise.
-_DIRECTIVES: tuple[tuple[re.Pattern[str], str], ...] = tuple(
-    (_pattern(template), row.cache_directive)
-    for row in ROUTE_POLICY
-    for template in served_templates_for(row.operation_id)
-)
-
-
-def directive_for_path(path: str) -> str | None:
-    """The declared directive for a request path, or None where no operation claims it."""
-    for pattern, directive in _DIRECTIVES:
-        if pattern.match(path):
-            return directive
-    return None
+    By method as well as path: a `PATCH` shares its path with a `GET` and answers with a body no one
+    should keep, so it must not borrow the read's `no-cache`.
+    """
+    row = row_for_request(method, path)
+    return row.cache_directive if row is not None else None
 
 
 async def apply_cache_directive(
@@ -60,7 +41,7 @@ async def apply_cache_directive(
     response = await call_next(request)
     if "cache-control" in response.headers:
         return response
-    directive = directive_for_path(request.url.path)
+    directive = directive_for(request.method, request.url.path)
     if directive is not None:
         response.headers["Cache-Control"] = directive
     return response

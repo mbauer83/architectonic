@@ -17,6 +17,7 @@ from src.infrastructure.artifact_index.coordination import get_write_queue_state
 from src.infrastructure.backend._teardown import teardown_steps
 from src.infrastructure.backend.cache_directive import apply_cache_directive
 from src.infrastructure.backend.read_model_caching import conditional_read_middleware
+from src.infrastructure.backend.request_body_limit import RequestBodyLimit
 from src.infrastructure.backend.shutdown import run_teardown
 from src.infrastructure.mcp.artifact_mcp import auto_start_default_watcher
 from src.infrastructure.mcp.mcp_artifact_server import mcp_read, mcp_write
@@ -337,6 +338,8 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
     # generated types are an oracle the frontend's decoders can be held against. Installed here and
     # not after the routers because generation is lazy — nothing has asked for the document yet.
     install_wire_null_policy(app)
+    # Outside the application's own middleware, so an oversized body is refused before anything reads it.
+    app.add_middleware(RequestBodyLimit)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://localhost:4173"],

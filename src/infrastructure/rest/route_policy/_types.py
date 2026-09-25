@@ -55,6 +55,11 @@ ConditionalRead = Literal["none", "etag"]
 #: viewpoint execution and diagram rendering; ``streaming`` never times out.
 TimeoutClass = Literal["default", "derived-graph", "streaming"]
 
+#: The largest request body an operation reads when its row names no lower bound. Generous, because a
+#: diagram write may carry icons of its own, each up to 1 MB and base64-encoded; its purpose is to stop
+#: a body no operation could want from being read into memory at all.
+DEFAULT_MAX_BODY_BYTES = 16 * 1024 * 1024
+
 #: What kind of success body an operation has — and deliberately *not* which DTO carries it.
 #:
 #: The column used to name the DTO. That conflated two different jobs: policy the manifest is the
@@ -99,6 +104,9 @@ class RouteRow:
     cache_directive: CacheDirective = "no-store"
     conditional_read: ConditionalRead = "none"
     timeout_class: TimeoutClass = "default"
+    #: The largest request body this operation reads, in bytes; None takes `DEFAULT_MAX_BODY_BYTES`.
+    #: Set lower where the body is bounded by what the operation does with it, as an upload is.
+    max_body_bytes: int | None = None
 
     def __post_init__(self) -> None:
         if self.method not in _METHODS:

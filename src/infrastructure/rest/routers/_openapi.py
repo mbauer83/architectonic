@@ -157,6 +157,7 @@ WRITE_RESPONSES: dict[int | str, dict[str, Any]] = {
     400: _err("Validation error (bad or ambiguous write)"),
     403: _err("Write forbidden (e.g. admin mode not enabled, or mutation denied)"),
     409: _err("Write conflict"),
+    413: _err("Request body larger than the operation accepts; the details carry the limit"),
     423: _err("Write temporarily rejected by the workspace gate (retryable)"),
 }
 

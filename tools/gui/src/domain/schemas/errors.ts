@@ -53,6 +53,8 @@ export const ERROR_CODES = [
   // The deployment lacks a capability: nothing the caller sends will fix it.
   'not_configured',
   'viewpoint_referenced',
+  // A request body larger than its operation accepts; it carries the limit so the caller can send less.
+  'request_too_large',
 ] as const
 
 export const ErrorCodeSchema = Schema.Literal(...ERROR_CODES)
@@ -170,6 +172,11 @@ export const BindingCardinalityDetailsSchema = Schema.Struct({
   found: Schema.Number,
 })
 
+/** `request_too_large`: the most the operation accepts, in bytes of request body. */
+export const RequestTooLargeDetailsSchema = Schema.Struct({
+  max_body_bytes: Schema.Number,
+})
+
 export const ErrorDetailsSchema = Schema.Union(
   ValidationErrorDetailsSchema,
   DiagramRenderLimitDetailsSchema,
@@ -189,6 +196,7 @@ export const ErrorDetailsSchema = Schema.Union(
   ClassificationNotPublishableDetailsSchema,
   NotConfiguredDetailsSchema,
   ViewpointReferencedDetailsSchema,
+  RequestTooLargeDetailsSchema,
 )
 
 export const ErrorBodySchema = Schema.Struct({

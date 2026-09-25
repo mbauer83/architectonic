@@ -34,7 +34,7 @@ from typing import Any
 from starlette.requests import Request
 from starlette.responses import Response
 
-from src.infrastructure.rest.route_policy import SERVED_CONDITIONAL_READ_TEMPLATES
+from src.infrastructure.rest.route_policy import SERVED_CONDITIONAL_READ_TEMPLATES, template_matcher
 
 #: Route templates whose body is a pure function of the indexed model and the URL, compiled once.
 #:
@@ -50,15 +50,7 @@ from src.infrastructure.rest.route_policy import SERVED_CONDITIONAL_READ_TEMPLAT
 #: request; schemata are repo data outside the indexed artifact set; anything under `/api/sync/` or
 #: `/api/assurance/` moves with git state or the confidential store, independently of the model.
 _CACHEABLE_TEMPLATES: tuple[re.Pattern[str], ...] = tuple(
-    re.compile(
-        "^"
-        + "/".join(
-            r"[^/]+" if segment.startswith("{") and segment.endswith("}") else re.escape(segment)
-            for segment in template.split("/")
-        )
-        + "$"
-    )
-    for template in sorted(SERVED_CONDITIONAL_READ_TEMPLATES)
+    template_matcher(template) for template in sorted(SERVED_CONDITIONAL_READ_TEMPLATES)
 )
 
 

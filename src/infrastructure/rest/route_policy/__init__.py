@@ -42,12 +42,14 @@ from src.infrastructure.rest.route_policy._entities import (
     TAXONOMY_ROWS,
 )
 from src.infrastructure.rest.route_policy._icons import ICON_ROWS
+from src.infrastructure.rest.route_policy._matching import body_limit_for, row_for_request, template_matcher
 from src.infrastructure.rest.route_policy._platform import ADMIN_ROWS, PROMOTION_ROWS, SYNC_ROWS
 from src.infrastructure.rest.route_policy._response_contracts import UNTYPED_RESPONSE_OPERATIONS
 from src.infrastructure.rest.route_policy._retired import RETIRED_ROUTES
 from src.infrastructure.rest.route_policy._scratchpads import SCRATCHPAD_ROWS
 from src.infrastructure.rest.route_policy._types import (
     BODYLESS,
+    DEFAULT_MAX_BODY_BYTES,
     MEDIA,
     MUTATION_METHODS,
     RESPONSE_KINDS,
@@ -230,6 +232,7 @@ __all__ = [
     "BY_KEY",
     "BY_OPERATION",
     "CONDITIONAL_READ_TEMPLATES",
+    "DEFAULT_MAX_BODY_BYTES",
     "MEDIA",
     "RESPONSE_KINDS",
     "MUTATION_METHODS",
@@ -247,11 +250,14 @@ __all__ = [
     "RoutePolicyError",
     "RouteRow",
     "TimeoutClass",
+    "body_limit_for",
     "path_parameters",
     "reserved_segments_under",
     "route_key",
     "row_for",
+    "row_for_request",
     "served_templates_for",
+    "template_matcher",
     "templates_for",
     "timeout_class_templates",
 ]

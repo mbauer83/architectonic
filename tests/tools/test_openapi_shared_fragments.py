@@ -18,7 +18,7 @@ def test_read_responses_documents_404_as_the_error_envelope() -> None:
 
 
 def test_write_responses_covers_the_gate_and_authorization_statuses() -> None:
-    assert set(WRITE_RESPONSES) == {400, 403, 409, 423}
+    assert set(WRITE_RESPONSES) == {400, 403, 409, 413, 423}
     for body in WRITE_RESPONSES.values():
         assert body["description"]
         assert body["model"] is ErrorEnvelope

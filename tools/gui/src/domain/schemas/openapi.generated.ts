@@ -8340,9 +8340,9 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "bad_request" | "forbidden" | "not_found" | "conflict" | "validation_error" | "write_rejected" | "internal_error" | "assurance_store_locked" | "signal_mutation_denied" | "invalid_vex_assessment" | "analysis_method_mismatch" | "analysis_not_empty" | "entity_in_use" | "provenance_immutable" | "provenance_required" | "invalid_participation" | "node_legacy_invalid" | "classification_ceiling_exceeded" | "duplicate_edge" | "illegal_connection_type" | "not_a_failure_mode" | "traversal_time_budget_exceeded" | "diagram_render_limit" | "binding_cardinality_violation" | "unknown_diagram_type" | "unknown_guidance_topic" | "classification_not_publishable" | "not_configured" | "viewpoint_referenced";
+            code: "bad_request" | "forbidden" | "not_found" | "conflict" | "validation_error" | "write_rejected" | "internal_error" | "assurance_store_locked" | "signal_mutation_denied" | "invalid_vex_assessment" | "analysis_method_mismatch" | "analysis_not_empty" | "entity_in_use" | "provenance_immutable" | "provenance_required" | "invalid_participation" | "node_legacy_invalid" | "classification_ceiling_exceeded" | "duplicate_edge" | "illegal_connection_type" | "not_a_failure_mode" | "traversal_time_budget_exceeded" | "diagram_render_limit" | "binding_cardinality_violation" | "unknown_diagram_type" | "unknown_guidance_topic" | "classification_not_publishable" | "not_configured" | "viewpoint_referenced" | "request_too_large";
             /** Details */
-            details?: components["schemas"]["ValidationErrorDetails"] | components["schemas"]["DiagramRenderLimitDetails"] | components["schemas"]["BindingCardinalityDetails"] | components["schemas"]["DenialDetails"] | components["schemas"]["MethodMismatchDetails"] | components["schemas"]["AnalysisNotEmptyDetails"] | components["schemas"]["EntityInUseDetails"] | components["schemas"]["DuplicateEdgeDetails"] | components["schemas"]["IllegalConnectionTypeDetails"] | components["schemas"]["NotAFailureModeDetails"] | components["schemas"]["UnknownDiagramTypeDetails"] | components["schemas"]["UnknownGuidanceTopicDetails"] | components["schemas"]["ClassificationNotPublishableDetails"] | components["schemas"]["NotConfiguredDetails"] | components["schemas"]["ProvenanceImmutableDetails"] | components["schemas"]["InvalidParticipationDetails"] | components["schemas"]["LegacyInvalidDetails"] | components["schemas"]["ViewpointReferencedDetails"] | null;
+            details?: components["schemas"]["ValidationErrorDetails"] | components["schemas"]["DiagramRenderLimitDetails"] | components["schemas"]["BindingCardinalityDetails"] | components["schemas"]["DenialDetails"] | components["schemas"]["MethodMismatchDetails"] | components["schemas"]["AnalysisNotEmptyDetails"] | components["schemas"]["EntityInUseDetails"] | components["schemas"]["DuplicateEdgeDetails"] | components["schemas"]["IllegalConnectionTypeDetails"] | components["schemas"]["NotAFailureModeDetails"] | components["schemas"]["UnknownDiagramTypeDetails"] | components["schemas"]["UnknownGuidanceTopicDetails"] | components["schemas"]["ClassificationNotPublishableDetails"] | components["schemas"]["NotConfiguredDetails"] | components["schemas"]["ProvenanceImmutableDetails"] | components["schemas"]["InvalidParticipationDetails"] | components["schemas"]["LegacyInvalidDetails"] | components["schemas"]["ViewpointReferencedDetails"] | components["schemas"]["RequestTooLargeDetails"] | null;
             /** Message */
             message: string;
             /** Request Id */
@@ -10976,6 +10976,14 @@ export interface components {
             };
         };
         /**
+         * RequestTooLargeDetails
+         * @description ``request_too_large``: the most the operation accepts, in bytes of request body.
+         */
+        RequestTooLargeDetails: {
+            /** Max Body Bytes */
+            max_body_bytes: number;
+        };
+        /**
          * RequiredConnectionResponse
          * @description A connection a construct must have, with how many. ``cardinality_max`` null means unbounded.
          */
@@ -13014,6 +13022,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -13092,6 +13109,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13186,6 +13212,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -13264,6 +13299,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13358,6 +13402,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -13443,6 +13496,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -13516,6 +13578,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16329,6 +16400,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -16398,6 +16478,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16476,6 +16565,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16612,6 +16710,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -16699,6 +16806,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16795,6 +16911,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -16877,6 +17002,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16995,6 +17129,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17541,6 +17684,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -17679,6 +17831,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -17766,6 +17927,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18067,6 +18237,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -18198,6 +18377,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -18272,6 +18460,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18404,6 +18601,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18555,6 +18761,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -18675,6 +18890,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18890,6 +19114,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -19024,6 +19257,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -19097,6 +19339,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -19240,6 +19491,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -19374,6 +19634,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -19447,6 +19716,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -19892,6 +20170,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -19964,6 +20251,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20052,6 +20348,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -20126,6 +20431,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20214,6 +20528,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -20284,6 +20607,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20416,6 +20748,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20557,6 +20898,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -20630,6 +20980,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20759,6 +21118,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20946,6 +21314,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -21028,6 +21405,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21155,6 +21541,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21648,6 +22043,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -21786,6 +22190,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -21864,6 +22277,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -21960,6 +22382,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -22042,6 +22473,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22495,6 +22935,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -22568,6 +23017,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22653,6 +23111,15 @@ export interface operations {
             };
             /** @description Diagrams still pin this viewpoint */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23066,6 +23533,15 @@ export interface operations {
             };
             /** @description Write conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
                 headers: {
                     [name: string]: unknown;
                 };

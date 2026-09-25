@@ -92,18 +92,16 @@ def _envelope(
     )
 
 
+def api_error_response(exc: ApiError, *, request_id: str) -> JSONResponse:
+    """*exc* as the envelope — for a refusal made before the application runs, where no handler can."""
+    body = ErrorBody(code=exc.code, message=exc.message, details=exc.details, request_id=request_id)
+    return _envelope(exc.status_code, body, request_id=request_id, extra=exc.headers)
+
+
 async def api_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """A raise that had something specific to say. Its details are already validated."""
     assert isinstance(exc, ApiError)
-    request_id = request_id_of(request)
-    return _envelope(
-        exc.status_code,
-        ErrorBody(
-            code=exc.code, message=exc.message, details=exc.details, request_id=request_id
-        ),
-        request_id=request_id,
-        extra=exc.headers,
-    )
+    return api_error_response(exc, request_id=request_id_of(request))
 
 
 async def validation_error_handler(request: Request, exc: Exception) -> JSONResponse:

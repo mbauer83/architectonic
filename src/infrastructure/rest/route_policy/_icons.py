@@ -14,7 +14,11 @@ _ID = ("artifact_id",)
 
 ICON_ROWS: tuple[RouteRow, ...] = (
     RouteRow("GET", "/api/icons", "collection", "icons_list_icons", TYPED, cache_directive="no-cache"),
-    RouteRow("POST", "/api/icons", "collection", "icons_create_icon", TYPED, mutation_domain="repository"),
+    RouteRow(
+        # A 1 MB picture, base64-encoded, and its metadata: the normaliser refuses anything larger anyway.
+        "POST", "/api/icons", "collection", "icons_create_icon", TYPED, mutation_domain="repository",
+        max_body_bytes=2 * 1024 * 1024,
+    ),
     RouteRow(
         # Writes nothing: which icon each instance of a diagram being edited shows, saved or not.
         "POST", "/api/icons/preview", "operation", "icons_preview_shown_icons", TYPED,
