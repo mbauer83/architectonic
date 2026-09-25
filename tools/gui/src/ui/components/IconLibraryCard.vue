@@ -10,7 +10,7 @@
 import { computed, inject, ref } from 'vue'
 import { Effect, Exit } from 'effect'
 import { modelServiceKey } from '../keys'
-import type { IconStyle, IconSummary } from '../../domain/schemas/icons'
+import type { IconSummary } from '../../domain/schemas/icons'
 import type { WriteResult } from '../../domain/schemas/write-results'
 import type { RepoError } from '../../ports/repositoryErrors'
 import { useMutation } from '../composables/useMutation'
@@ -28,7 +28,7 @@ const message = computed(() => write.errorMessage.value ?? refusal.value)
 
 const form = ref({
   name: props.icon.name, attribution: props.icon.attribution, appliesTo: props.icon.applies_to.join(', '),
-  tags: props.icon.tags.join(', '), defaultStyle: props.icon.default_style as IconStyle,
+  tags: props.icon.tags.join(', '), defaultStyle: props.icon.default_style,
 })
 
 /** Run one write; a refusal it answers with — rather than fails with — is said on the card too. */

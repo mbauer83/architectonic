@@ -43,6 +43,7 @@ def _decoded(png: bytes) -> Image.Image:
     return image
 
 
+@pytest.mark.verifies("REQ@1790305394.1bkWD0Y")
 def test_an_svg_with_a_gradient_is_drawn_at_the_stored_size_keeping_its_shape() -> None:
     icon = normalise_upload(GRADIENT_LOGO, "svg")
     image = _decoded(icon.png)

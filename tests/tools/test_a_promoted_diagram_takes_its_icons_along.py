@@ -90,6 +90,7 @@ def _promoted_display_icons(ent: Path, diagram_id: str) -> dict:
     return parse_frontmatter(path.read_text(encoding="utf-8"))["diagram-entities"]["display_icons"]  # type: ignore[index]
 
 
+@pytest.mark.verifies("REQ@1790305394.1bkWD0Y")
 def test_a_picture_the_enterprise_holds_under_another_id_is_named_there_and_not_copied(roots, monkeypatch) -> None:
     eng, ent = roots
     monkeypatch.setattr(ctx, "_workspace_repo_roots", lambda: (eng, ent))

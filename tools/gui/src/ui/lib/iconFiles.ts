@@ -28,8 +28,9 @@ export const iconNameFromFile = (fileName: string): string =>
 
 const base64Of = (file: File): Promise<string> => new Promise((resolve, reject) => {
   const reader = new FileReader()
-  reader.onload = () => resolve(String(reader.result).split(',', 2)[1] ?? '')
-  reader.onerror = () => reject(reader.error)
+  // `readAsDataURL` answers a string; the type also admits the ArrayBuffer other reads give.
+  reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result.split(',', 2)[1] ?? '' : '')
+  reader.onerror = () => reject(reader.error ?? new Error(`${file.name} could not be read`))
   reader.readAsDataURL(file)
 })
 
