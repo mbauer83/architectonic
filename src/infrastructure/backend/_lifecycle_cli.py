@@ -152,9 +152,15 @@ def _port_from_plan(plan: EndpointPlan) -> int | None:
             raise SystemExit(reason)
 
 
+#: What a stop can answer when this workspace has no backend to stop, so a restart simply starts one. A
+#: backend serving another workspace is among them: it is not this workspace's to stop, and the start's
+#: own endpoint plan decides where this one serves.
+_NOTHING_OF_OURS_TO_STOP = frozenset({"not_running", "stale_pid", "invalid_state", "foreign_workspace"})
+
+
 def _stop_for_restart(explicit_port: int | None = None) -> None:
     result = backend_control.stop_backend(port=explicit_port)
     if result.get("stopped"):
         _print_stopped(result)
-    elif result.get("reason") not in {"not_running", "stale_pid", "invalid_state"}:
+    elif result.get("reason") not in _NOTHING_OF_OURS_TO_STOP:
         raise SystemExit(f"failed to restart backend pid {result.get('pid')}")
