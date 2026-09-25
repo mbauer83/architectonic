@@ -7,12 +7,12 @@ import { homeForCreate } from '../components/ArtifactHomeSelect.helpers'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
 import type {
-  EntityDisplayInfo, EntityContextConnection, DiagramPreviewResult, WriteResult,
-  DiagramTypeUiConfig, ViewpointSummary,
+  EntityDisplayInfo, EntityContextConnection, DiagramPreviewResult, WriteResult, ViewpointSummary,
 } from '../../domain'
 import EntitySelectionList from '../components/EntitySelectionList.vue'
 import { withDisplayLabel } from '../lib/archimateDisplayLabels'
 import { useDiagramIcons } from '../composables/useDiagramIcons'
+import { useDiagramTypeUiConfig } from '../composables/useDiagramTypeUiConfig'
 import EntityPickerInput from '../components/EntityPickerInput.vue'
 import DiagramTypeSelect from '../components/DiagramTypeSelect.vue'
 import DiagramTypeConfigPanel from '../components/DiagramTypeConfigPanel.vue'
@@ -32,7 +32,7 @@ const home = ref('')
 
 const name = ref('')
 const diagramType = ref((route.query.type as string | undefined) ?? 'archimate-business')
-const uiConfig = ref<DiagramTypeUiConfig | null>(null)
+const uiConfig = useDiagramTypeUiConfig(svc, diagramType)
 const diagramEntities = ref<Record<string, unknown>>({})
 const viewpoints = ref<ViewpointSummary[]>([])
 const viewpointSlug = ref<string | null>(null)
@@ -63,13 +63,6 @@ const setDiagramEntities = (next: Record<string, unknown>) => {
   previewClean.value = false
 }
 
-const loadUiConfig = async () => {
-  uiConfig.value = await Effect.runPromise(svc.getDiagramTypeUiConfig(diagramType.value)).catch(() => null)
-}
-
-const selectDiagramType = () => {
-  void loadUiConfig()
-}
 
 const includedEntities = ref<EntityDisplayInfo[]>([])
 const highlightedEntityIds = ref<Set<string>>(new Set())
@@ -362,7 +355,6 @@ watch(diagramType, () => {
   diagramEntities.value = {}
   preview.value = null
   previewClean.value = false
-  void loadUiConfig()
   void refreshDiscovery()
 })
 </script>
@@ -398,7 +390,6 @@ watch(diagramType, () => {
           <label class="lbl">Diagram Type</label>
           <DiagramTypeSelect
             v-model="diagramType"
-            @select="selectDiagramType"
           />
         </div>
 

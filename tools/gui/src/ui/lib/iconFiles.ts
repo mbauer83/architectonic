@@ -11,6 +11,17 @@ const FORMATS: Readonly<Record<string, IconUploadForDiagram['source_format']>> =
 
 export const ICON_FILE_TYPES = Object.keys(FORMATS).join(',')
 
+const ATTRIBUTION_KEY = 'arch.icons.lastAttribution'
+
+/** The attribution last given in this session, so adding a vendor's set asks for it once. */
+export const rememberedAttribution = (): string => {
+  try { return sessionStorage.getItem(ATTRIBUTION_KEY) ?? '' } catch { return '' }
+}
+
+export const rememberAttribution = (attribution: string): void => {
+  try { sessionStorage.setItem(ATTRIBUTION_KEY, attribution) } catch { /* a private window keeps none */ }
+}
+
 /** `azure_kubernetes-service.png` → `azure kubernetes service`. */
 export const iconNameFromFile = (fileName: string): string =>
   fileName.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'Icon'

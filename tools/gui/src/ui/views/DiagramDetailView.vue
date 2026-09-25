@@ -3,10 +3,11 @@ import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Effect, Exit } from 'effect'
 import { modelServiceKey } from '../keys'
-import type { DiagramContext, DiagramTypeUiConfig, EditableMetadataSpec } from '../../domain'
+import type { DiagramContext, EditableMetadataSpec } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import type { NotFoundError } from '../../domain'
 import { useQuery } from '../composables/useQuery'
+import { useDiagramTypeUiConfig } from '../composables/useDiagramTypeUiConfig'
 import { renderMatrixMarkdown } from '../lib/matrixMarkdown'
 import type { C4Navigation } from '../../domain'
 import {
@@ -27,6 +28,7 @@ import DiagramEntitySidebar from '../components/DiagramEntitySidebar.vue'
 import FullscreenDock from '../components/FullscreenDock.vue'
 import DiagramSyncPanel from '../components/DiagramSyncPanel.vue'
 import DiagramDeletePanel from '../components/DiagramDeletePanel.vue'
+import DiagramOwnIcons from '../components/DiagramOwnIcons.vue'
 import DiagramMatrixView from '../components/DiagramMatrixView.vue'
 import { diagramEditRoute, matrixEditRoute } from '../router/artifactRoutes'
 
@@ -110,13 +112,7 @@ watch(diagramId, load)
 // The diagram type's editable-metadata config — the single source the sidebar's detail panels
 // derive their editable fields from. Fetched once per diagram type; keyed by entity type so a
 // panel resolves its own without the generic view knowing any type names.
-const uiConfig = ref<DiagramTypeUiConfig | null>(null)
-watch(detail, (next) => {
-  if (!next) { uiConfig.value = null; return }
-  void Effect.runPromise(svc.getDiagramTypeUiConfig(next.diagram_type))
-    .then((config) => { uiConfig.value = config })
-    .catch(() => { uiConfig.value = null })
-})
+const uiConfig = useDiagramTypeUiConfig(svc, computed(() => detail.value?.diagram_type))
 const editableMetadataByType = computed<Record<string, EditableMetadataSpec>>(() =>
   editableMetadataByEntityType(uiConfig.value))
 
@@ -281,6 +277,12 @@ const executeDelete = () => {
         </template>
       </DiagramSplitLayout>
 
+      <DiagramOwnIcons
+        v-if="!isGlobalDiagram && detail"
+        :diagram-id="diagramId"
+        :diagram-entities="detail.diagram_entities ?? {}"
+        @shared="load"
+      />
       <DiagramSyncPanel
         v-if="!isGlobalDiagram"
         ref="syncPanel"

@@ -14,6 +14,10 @@ export const iconMethods = (): IconRepository => ({
   createIcon: (upload) => postJson(buildUrl('/icons'), upload, WriteResultSchema),
   editIcon: (iconId, edit) => patchJson(iconUrl(iconId), edit, WriteResultSchema),
   replaceIcon: (iconId, body) => postJson(`${iconUrl(iconId)}/replace`, body, WriteResultSchema),
+  shareIcon: (diagramId, iconKey, body) => postJson(
+    buildUrl(`/diagrams/${encodeIdentitySegment(diagramId)}/icons/${encodeIdentitySegment(iconKey)}/share`),
+    body, WriteResultSchema,
+  ),
   // `dry_run=false` because a bare delete answers its plan with 200, which reads as success and removes nothing.
   deleteIcon: (iconId) => deleteNoContent(`${iconUrl(iconId)}?dry_run=false`),
 })

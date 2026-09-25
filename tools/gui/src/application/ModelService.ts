@@ -170,4 +170,6 @@ export const makeModelService = (repo: ModelRepository) =>
     editIcon: (iconId: string, edit: Parameters<ModelRepository['editIcon']>[1]) => repo.editIcon(iconId, edit),
     replaceIcon: (iconId: string, body: Parameters<ModelRepository['replaceIcon']>[1]) => repo.replaceIcon(iconId, body),
     deleteIcon: (iconId: string) => repo.deleteIcon(iconId),
+    shareIcon: (diagramId: string, iconKey: string, body: Parameters<ModelRepository['shareIcon']>[2]) =>
+      repo.shareIcon(diagramId, iconKey, body),
   }) as const

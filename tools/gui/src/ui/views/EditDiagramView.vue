@@ -7,7 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Effect, Exit } from 'effect'
 import { modelServiceKey, toastKey } from '../keys'
 import type {
-  DiagramContext, DiagramPreviewResult, WriteResult, EntityDisplayInfo, DiagramTypeUiConfig,
+  DiagramContext, DiagramPreviewResult, WriteResult, EntityDisplayInfo,
 } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import type { NotFoundError } from '../../domain'
@@ -27,6 +27,7 @@ import { useDiagramEditSvgOverlay } from '../composables/useDiagramEditSvgOverla
 import { sanitizeDiagramSvg } from '../lib/svgSanitize'
 import { useDiagramGroupings } from '../composables/useDiagramGroupings'
 import { useDiagramIcons } from '../composables/useDiagramIcons'
+import { useDiagramTypeUiConfig } from '../composables/useDiagramTypeUiConfig'
 
 const svc = inject(modelServiceKey)!
 const addToast = inject(toastKey)!
@@ -42,7 +43,7 @@ const saveMutation = useMutation<WriteResult, RepoError>()
 
 const diagramDetail = computed(() => contextQuery.data.value?.diagram ?? null)
 const diagramType = computed(() => diagramDetail.value?.diagram_type)
-const uiConfig = ref<DiagramTypeUiConfig | null>(null)
+const uiConfig = useDiagramTypeUiConfig(svc, diagramType)
 
 // ── Viewpoint, and the diagram's own data ───────────────────────────────────
 
@@ -116,9 +117,6 @@ const load = async () => {
       seedFromContext(context)
       viewpointSlug.value = context.diagram.viewpoint?.slug ?? null
       viewpointPinnedVersion.value = context.diagram.viewpoint?.version ?? null
-      void Effect.runPromise(svc.getDiagramTypeUiConfig(context.diagram.diagram_type))
-        .then((config) => { uiConfig.value = config })
-        .catch(() => { uiConfig.value = null })
       void selection.refreshDiscovery()
       void loadProjection()
     },

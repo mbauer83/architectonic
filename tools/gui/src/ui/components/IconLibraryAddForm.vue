@@ -11,7 +11,7 @@ import { Exit } from 'effect'
 import { modelServiceKey } from '../keys'
 import type { IconStyle } from '../../domain/schemas/icons'
 import type { IconUploadForDiagram } from '../lib/diagramIcons'
-import { ICON_FILE_TYPES, iconUploadFromFile } from '../lib/iconFiles'
+import { ICON_FILE_TYPES, iconUploadFromFile, rememberAttribution, rememberedAttribution } from '../lib/iconFiles'
 import type { WriteResult } from '../../domain/schemas/write-results'
 import type { RepoError } from '../../ports/repositoryErrors'
 import { useMutation } from '../composables/useMutation'
@@ -19,15 +19,10 @@ import { csvToList } from '../lib/commaList'
 
 const emit = defineEmits<{ added: [iconId: string]; cancel: [] }>()
 
-const ATTRIBUTION_KEY = 'arch.icons.lastAttribution'
-const remembered = (): string => {
-  try { return sessionStorage.getItem(ATTRIBUTION_KEY) ?? '' } catch { return '' }
-}
-
 const svc = inject(modelServiceKey)!
 const file = ref<IconUploadForDiagram | null>(null)
 const name = ref('')
-const attribution = ref(remembered())
+const attribution = ref(rememberedAttribution())
 const appliesTo = ref('')
 const tags = ref('')
 const defaultStyle = ref<IconStyle>('badge')
@@ -69,7 +64,7 @@ const submit = async (dryRun: boolean): Promise<void> => {
   refused.value = result.verification?.valid === false ? reasons : null
   checked.value = refused.value === null
   if (!dryRun && result.wrote) {
-    try { sessionStorage.setItem(ATTRIBUTION_KEY, attribution.value) } catch { /* a private window keeps none */ }
+    rememberAttribution(attribution.value)
     emit('added', result.artifact_id)
   }
 }

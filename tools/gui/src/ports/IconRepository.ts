@@ -55,6 +55,10 @@ export interface IconRepository {
   readonly replaceIcon: (
     iconId: string, body: { replacement_id: string; dry_run: boolean },
   ) => Effect.Effect<WriteResult, RepoError>
+  /** Move an icon a diagram holds for itself into the library; the diagram then names it there. */
+  readonly shareIcon: (
+    diagramId: string, iconKey: string, body: { attribution: string; tags?: readonly string[]; dry_run: boolean },
+  ) => Effect.Effect<WriteResult, RepoError>
   /** Refused while anything shows it; the refusal names what does. */
   readonly deleteIcon: (iconId: string) => Effect.Effect<void, RepoError>
 }
