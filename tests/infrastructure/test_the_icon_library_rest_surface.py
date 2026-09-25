@@ -214,10 +214,10 @@ def test_an_unsaved_upload_is_shown_normalised(client: TestClient) -> None:
     assert row["icon"] == "local:logo" and row["level"] == "instance"
 
 
-def test_an_upload_the_normaliser_refuses_is_422_with_its_reason(client: TestClient) -> None:
+def test_an_upload_the_normaliser_refuses_is_a_rejected_input(client: TestClient) -> None:
     upload = {"name": "Logo", "content_base64": base64.b64encode(b"not a png").decode(), "source_format": "png"}
     entities = {"display_icons": {"n1": "local:logo"}, "icons": {"logo": upload}}
 
     response = client.post("/api/icons/preview", json={"diagram_entities": entities, "instances": []})
 
-    assert response.status_code == 422
+    assert response.status_code == 400 and response.json()["detail"]["code"] == "validation_error"

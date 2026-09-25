@@ -17,7 +17,7 @@
  * stricter behaviour: two arrows into the same box really is the same fact twice.
  */
 
-import { withoutDisplayLabels } from './archimateDisplayLabels'
+import { withoutInstanceStatements } from './diagramStatements'
 
 export type Endpoint = 'source' | 'target'
 
@@ -208,8 +208,8 @@ export const forgetEntity = (
       .map((item) => item.id),
   )
   const orphaned = new Set(connectionsTouchingEntity)
-  // Its labels go too: a statement about an instance that is gone would only resurface on a later copy.
-  return withoutDisplayLabels({
+  // Its labels and icons go too: a statement about an instance that is gone would only resurface on a later copy.
+  return withoutInstanceStatements({
     ...diagramEntities,
     occurrence: occurrences.filter((item) =>
       !(!!item && typeof item === 'object' && dropped.has((item as { id?: string }).id ?? '')),

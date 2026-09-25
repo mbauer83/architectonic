@@ -26,6 +26,7 @@ import { useDiagramTypeEntityData } from '../composables/useDiagramTypeEntityDat
 import { useDiagramEditSvgOverlay } from '../composables/useDiagramEditSvgOverlay'
 import { sanitizeDiagramSvg } from '../lib/svgSanitize'
 import { useDiagramGroupings } from '../composables/useDiagramGroupings'
+import { useDiagramIcons } from '../composables/useDiagramIcons'
 
 const svc = inject(modelServiceKey)!
 const addToast = inject(toastKey)!
@@ -134,6 +135,8 @@ const {
   groupings: authoredGroupings, candidates: groupingCandidates, forWrite: groupingsForWrite,
   addMember, labelOfDrawing, membersOf, placeBeside, seedOnce,
 } = useDiagramGroupings(selection.effectiveEntitiesList, typeEntityData)
+useDiagramIcons({ svc, diagramEntities: typeEntityData, write: mergeTypeEntityData, rows: selection.selectionRows,
+  styles: computed(() => uiConfig.value?.icon_styles ?? []) })
 selection.useBoxPlacement(placeBeside)
 seedOnce(diagramDetail)
 

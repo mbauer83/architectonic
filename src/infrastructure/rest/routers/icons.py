@@ -21,6 +21,7 @@ from src.domain.icons.normalised_icon import IconRefused
 from src.infrastructure.rest.contracts.icons import IconListResponse, IconSummary, ShownIconsResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
+from src.infrastructure.rest.routers._failures import rejected_input
 from src.infrastructure.rest.routers._openapi import (
     READ_RESPONSES,
     TAG_ICONS,
@@ -84,7 +85,7 @@ def preview_shown_icons(
 
     match prepared_local_icons(req.diagram_entities):
         case IconRefused(reason=reason):
-            raise HTTPException(422, reason)
+            raise rejected_input(reason, field="diagram_entities")
         case dict() as entities:
             pass
     repo = s.get_repo()
@@ -139,7 +140,7 @@ def create_icon(
         applies_to=req.applies_to, default_style=req.default_style, tags=req.tags,
     )
     if isinstance(upload, IconRefused):
-        raise HTTPException(422, upload.reason)
+        raise rejected_input(upload.reason, field="content_base64")
     repo_root, _registry, verifier = s.get_write_deps(catalogs)
     result = s.authorized_write(
         "icons_create_icon", _create, repo_root=repo_root, verifier=verifier,

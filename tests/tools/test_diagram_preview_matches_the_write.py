@@ -229,3 +229,42 @@ class TestAnOccurrenceCarriesItsOwnEdges:
         assert created.status_code in (200, 201), created.text
         assert "__2" in previewed.json()["puml"]
         assert "__2" in (created.json().get("content") or ""), "the write dropped the routing"
+
+
+class TestADiagramsOwnIconIsDrawnBeforeItIsSaved:
+    """An upload held in the diagram's own icons shows in the preview and reaches the write normalised.
+
+    The composition resolved icons through the library alone, so an icon the diagram holds for itself
+    was never drawn by the preview, and the body a write composed lacked it.
+    """
+
+    def _body(self) -> dict[str, object]:
+        import base64  # noqa: PLC0415
+
+        from tests.support.icon_files import png_of  # noqa: PLC0415
+
+        upload = {"name": "Logo", "content_base64": base64.b64encode(png_of()).decode(), "source_format": "png"}
+        return _composition(diagram_entities={"display_icons": {FIRST: "local:logo"}, "icons": {"logo": upload}})
+
+    def test_the_preview_draws_an_unsaved_upload(self, client) -> None:
+        response = client.post("/api/diagrams/preview", json=self._body())
+
+        assert response.status_code == 200, response.text
+        assert "<img:$ARCH_ICON_" in response.json()["puml"]
+
+    def test_the_write_stores_the_upload_normalised_and_draws_it(self, client) -> None:
+        created = client.post("/api/diagrams", json={**self._body(), "dry_run": True})
+
+        assert created.status_code in (200, 201), created.text
+        written = created.json().get("content") or ""
+        assert "<img:$ARCH_ICON_" in written and "png-base64" in written and "content_base64" not in written
+
+    def test_an_upload_the_normaliser_refuses_is_a_rejected_input(self, client) -> None:
+        body = _composition(diagram_entities={
+            "display_icons": {FIRST: "local:logo"},
+            "icons": {"logo": {"name": "Logo", "content_base64": "bm90IGEgcG5n", "source_format": "png"}},
+        })
+
+        response = client.post("/api/diagrams/preview", json=body)
+
+        assert response.status_code == 400 and response.json()["detail"]["code"] == "validation_error"

@@ -65,7 +65,7 @@ LINE_LENGTH_BASELINE: dict[str, int] = {
     "tools/gui/src/ui/components/EntityPickerFixedRows.vue": 3,
     "tools/gui/src/ui/components/EntityPickerInput.vue": 6,
     "tools/gui/src/ui/components/EntityRefValueInput.vue": 1,
-    "tools/gui/src/ui/components/EntitySelectionList.vue": 5,
+    "tools/gui/src/ui/components/EntitySelectionList.vue": 2,
     "tools/gui/src/ui/components/ExecutionLinkActions.vue": 1,
     "tools/gui/src/ui/components/GraphCanvas.helpers.ts": 1,
     "tools/gui/src/ui/components/GraphNodeDetails.vue": 4,

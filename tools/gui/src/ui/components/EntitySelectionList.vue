@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import type { EntityDisplayInfo, EntityContextConnection } from '../../domain'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import InstanceLabelEditor from './InstanceLabelEditor.vue'
+import RowIconChip from './RowIconChip.vue'
+import RowIconPicker from './RowIconPicker.vue'
+import { diagramIconsKey } from '../composables/useDiagramIcons'
 import RelatedEntityPanel from './RelatedEntityPanel.vue'
 import RowConnectionsPanel from './RowConnectionsPanel.vue'
 import { toGlyphKey } from '../lib/glyphKey'
@@ -113,6 +116,14 @@ const applyLabel = (row: EntityRow, label: string | null): void => {
   emit('setDisplayLabel', instanceIdOf(row), label)
   editingLabelKey.value = null
 }
+
+// ── The icon an instance shows here — only where the editing view provides icon editing ────────
+const icons = inject(diagramIconsKey, undefined)
+const iconsOffered = computed(() => (icons?.styles.value.length ?? 0) > 0)
+const editingIconKey = ref<string | null>(null)
+const toggleIconPicker = (row: EntityRow): void => {
+  editingIconKey.value = editingIconKey.value === rowKey(row) ? null : rowKey(row)
+}
 </script>
 
 <template>
@@ -138,6 +149,13 @@ const applyLabel = (row: EntityRow, label: string | null): void => {
         >
           ▶
         </button>
+        <RowIconChip
+          v-if="iconsOffered"
+          :instance-id="instanceIdOf(row)"
+          :element-name="row.entity.name"
+          :open="editingIconKey === rowKey(row)"
+          @toggle="toggleIconPicker(row)"
+        />
         <button
           class="row-main"
           :title="expandedConnectionIdSet.has(rowKey(row)) ? 'Hide connections' : 'Show connections'"
@@ -235,6 +253,15 @@ const applyLabel = (row: EntityRow, label: string | null): void => {
         :stated="labelIsStated(row)"
         @apply="applyLabel(row, $event)"
         @cancel="editingLabelKey = null"
+      />
+
+      <RowIconPicker
+        v-if="iconsOffered && editingIconKey === rowKey(row)"
+        :instance-id="instanceIdOf(row)"
+        :entity-id="row.entity.artifact_id"
+        :element-name="row.entity.name"
+        :type-name="row.entity.artifact_type"
+        @done="editingIconKey = null"
       />
 
       <RowConnectionsPanel

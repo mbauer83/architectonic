@@ -1,5 +1,5 @@
 import type { EntityDisplayInfo, DiagramContextEntity } from '../../domain'
-import { withoutDisplayLabels } from './archimateDisplayLabels'
+import { withoutInstanceStatements } from './diagramStatements'
 
 export interface ArchimateOccurrence {
   id: string
@@ -94,11 +94,14 @@ export const addOccurrence = (
   entity: OccurrenceEntity,
 ): Record<string, unknown> => addOccurrenceFor(diagramEntities, entity).diagramEntities
 
-/** Its label goes with it: a statement about an instance that is gone would only resurface on a later copy. */
+/**
+ * Its label and its icon go with it: a statement about an instance that is gone would only resurface on
+ * a later copy.
+ */
 export const removeOccurrence = (
   diagramEntities: Record<string, unknown>,
   occurrenceId: string,
-): Record<string, unknown> => withoutDisplayLabels({
+): Record<string, unknown> => withoutInstanceStatements({
   ...diagramEntities,
   occurrence: occurrenceItems(diagramEntities).filter((item) => item.id !== occurrenceId),
 }, [occurrenceId])

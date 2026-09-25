@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { withoutInstanceStatements } from './diagramStatements'
 import {
   displayLabelOf,
   displayLabelOverrides,
   drawnLabelFor,
   seededDisplayLabels,
   withDisplayLabel,
-  withoutDisplayLabels,
 } from './archimateDisplayLabels'
 
 const GOAL = 'GOL@1.aa.provide-governed-read-access'
@@ -59,13 +59,13 @@ describe('stating and withdrawing a label', () => {
   it('forgets the statements about instances that are gone and nothing else', () => {
     const de = withDisplayLabel(withDisplayLabel({}, GOAL, 'First'), 'occ-2', 'Second')
 
-    expect(withoutDisplayLabels(de, ['occ-2', 'never-there'])).toEqual({ display_labels: { [GOAL]: 'First' } })
+    expect(withoutInstanceStatements(de, ['occ-2', 'never-there'])).toEqual({ display_labels: { [GOAL]: 'First' } })
   })
 
   it('returns the same object when nothing it is asked to forget was stated', () => {
     const de = withDisplayLabel({}, GOAL, 'First')
 
-    expect(withoutDisplayLabels(de, ['occ-2'])).toBe(de)
+    expect(withoutInstanceStatements(de, ['occ-2'])).toBe(de)
   })
 })
 

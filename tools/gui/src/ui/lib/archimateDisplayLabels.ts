@@ -1,4 +1,5 @@
 import type { EntityDisplayInfo } from '../../domain'
+import { statementsIn, withStatements } from './diagramStatements'
 
 /**
  * What an instance is called on this diagram, as the diagram itself states it.
@@ -10,29 +11,15 @@ import type { EntityDisplayInfo } from '../../domain'
  */
 export const DISPLAY_LABELS_KEY = 'display_labels'
 
-export const displayLabelOverrides = (diagramEntities: Record<string, unknown>): Record<string, string> => {
-  const raw = diagramEntities[DISPLAY_LABELS_KEY]
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
-  return Object.fromEntries(
-    Object.entries(raw as Record<string, unknown>)
+export const displayLabelOverrides = (diagramEntities: Record<string, unknown>): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(statementsIn(diagramEntities, DISPLAY_LABELS_KEY))
       .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim() !== ''),
   )
-}
 
 /** The label this diagram states for one instance, or undefined where it states none. */
 export const displayLabelOf = (diagramEntities: Record<string, unknown>, instanceId: string): string | undefined =>
   displayLabelOverrides(diagramEntities)[instanceId]
-
-/**
- * The key stays once the data has had it, even emptied. The edit view merges patches over the saved
- * base, and a patch that merely lacks the key cannot withdraw what the base still states.
- */
-const withOverrides = (
-  diagramEntities: Record<string, unknown>, overrides: Record<string, string>,
-): Record<string, unknown> => {
-  const { [DISPLAY_LABELS_KEY]: had, ...rest } = diagramEntities
-  return Object.keys(overrides).length || had !== undefined ? { ...rest, [DISPLAY_LABELS_KEY]: overrides } : rest
-}
 
 /**
  * State a label for one instance, or withdraw the statement with `null` so the element speaks for
@@ -46,17 +33,7 @@ export const withDisplayLabel = (
   const trimmed = label?.trim() ?? ''
   if (trimmed) overrides[instanceId] = trimmed
   else delete overrides[instanceId]
-  return withOverrides(diagramEntities, overrides)
-}
-
-/** Forget the statements about instances that are gone, so a removed instance leaves nothing behind. */
-export const withoutDisplayLabels = (
-  diagramEntities: Record<string, unknown>, instanceIds: readonly string[],
-): Record<string, unknown> => {
-  const overrides = displayLabelOverrides(diagramEntities)
-  if (!instanceIds.some((id) => id in overrides)) return diagramEntities
-  for (const id of instanceIds) delete overrides[id]
-  return withOverrides(diagramEntities, overrides)
+  return withStatements(diagramEntities, DISPLAY_LABELS_KEY, overrides)
 }
 
 /**

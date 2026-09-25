@@ -163,4 +163,8 @@ export const makeModelService = (repo: ModelRepository) =>
     deleteScratchpad: (id: string) => repo.deleteScratchpad(id),
     liftScratchpad: (id: string, body: Parameters<ModelRepository['liftScratchpad']>[1]) =>
       repo.liftScratchpad(id, body),
+    listIcons: (params?: Parameters<ModelRepository['listIcons']>[0]) => repo.listIcons(params),
+    iconImageUrl: (iconId: string) => repo.iconImageUrl(iconId),
+    previewShownIcons: (body: Parameters<ModelRepository['previewShownIcons']>[0]) => repo.previewShownIcons(body),
+    createIcon: (upload: Parameters<ModelRepository['createIcon']>[0]) => repo.createIcon(upload),
   }) as const

@@ -12,6 +12,7 @@ import type {
 } from '../../domain'
 import EntitySelectionList from '../components/EntitySelectionList.vue'
 import { withDisplayLabel } from '../lib/archimateDisplayLabels'
+import { useDiagramIcons } from '../composables/useDiagramIcons'
 import EntityPickerInput from '../components/EntityPickerInput.vue'
 import DiagramTypeSelect from '../components/DiagramTypeSelect.vue'
 import DiagramTypeConfigPanel from '../components/DiagramTypeConfigPanel.vue'
@@ -102,6 +103,8 @@ const baseRows = computed(() =>
   })),
 )
 const selectionRows = drawings.rowsFor(baseRows)
+useDiagramIcons({ svc, diagramEntities, write: setDiagramEntities, rows: selectionRows,
+  styles: computed(() => uiConfig.value?.icon_styles ?? []) })
 
 const relatedEntitiesById = computed<Record<string, EntityDisplayInfo[]>>(() => {
   const related: Record<string, EntityDisplayInfo[]> = {}

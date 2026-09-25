@@ -55,6 +55,7 @@ import { documentAndChangeMethods } from './HttpDocumentRepository'
 import { enterpriseAdminMethods } from './HttpEnterpriseAdminRepository'
 import { viewpointMethods } from './HttpViewpointRepository'
 import { scratchpadMethods } from './HttpScratchpadRepository'
+import { iconMethods } from './HttpIconRepository'
 import { workspaceMethods } from './HttpWorkspaceRepository'
 
 // Timeout budgets are no longer set here. Viewpoint execution and the other derived-graph
@@ -385,5 +386,6 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     postJson(buildUrl('/promote/execute'), body, PromotionResultSchema),
 
   ...scratchpadMethods(),
+  ...iconMethods(),
   ...workspaceMethods(),
 })

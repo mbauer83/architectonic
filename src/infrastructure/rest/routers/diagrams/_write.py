@@ -102,13 +102,19 @@ def _render_composition(body: DiagramComposition, *, repo: Any, repo_root: Path)
     connection *bindings* still attached while the writes stripped them first, so the two were not
     rendering the same input either. A preview is only worth having if it is the write's own picture.
     """
+    from src.infrastructure.icons.diagram_icons import DiagramIconSource  # noqa: PLC0415
     from src.infrastructure.icons.library_source import LibraryIconSource  # noqa: PLC0415
     from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
+    from src.infrastructure.write.artifact_write.diagram_body_preparation import with_icons_prepared  # noqa: PLC0415
 
     entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
         repo, body.entity_ids, body.connection_ids
     )
     de, dc = _split_diagram_entities(body.diagram_entities)
+    try:
+        de = with_icons_prepared(de) if de is not None else None
+    except ValueError as exc:  # an upload the normaliser refuses is the caller's to correct
+        raise rejected_input(str(exc), field="diagram_entities") from exc
     dc, conn_bindings = _extract_conn_bindings(dc)
     puml = generate_archimate_puml_body(
         body.name,
@@ -119,7 +125,8 @@ def _render_composition(body: DiagramComposition, *, repo: Any, repo_root: Path)
         diagram_entities=de,
         diagram_connections=dc,
         authored_groupings=body.authored_groupings,
-        icon_source=LibraryIconSource(repo),
+        # The diagram's own icons first, uploads not yet saved included, so a preview draws what the save will.
+        icon_source=DiagramIconSource(de, LibraryIconSource(repo)),
     )
     return _RenderedComposition(
         entities=entities, connections=connections,
