@@ -16,7 +16,7 @@ from src.application.artifacts.parsing import normalize_puml_alias
 from src.application.icons.effective_icons import names_most_specific_first
 from src.application.puml_alias_declarations import (
     alias_declared_on,
-    declaration_keyword,
+    declares_an_icon_figure,
     picture_declared_on,
     with_label_picture,
 )
@@ -133,9 +133,10 @@ def _repictured(
     if declaration is None or entity is None:
         return line
     icon = icons.by_alias.get(declaration.alias)
-    opens_block = line.rstrip().endswith("{")
-    wants_figure = icon is not None and icon.style == "figure" and not opens_block
-    if wants_figure != (declaration_keyword(line) == "label"):
+    wants_figure = icon is not None and icon.style == "figure" and not line.rstrip().endswith("{")
+    if wants_figure or declares_an_icon_figure(line):
+        # A figure's line is wholly the renderer's statement — picture, line break, name — so it is
+        # stated afresh whenever it is, or was, a figure, rather than re-pictured in place.
         indent = line[: len(line) - len(line.lstrip())]
         return indent + declarations.declaration(entity, declaration.alias, icon)
     if icon is not None:

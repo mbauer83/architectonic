@@ -71,14 +71,14 @@ class IconRef:
         return spelled if self.style is None else {"icon": spelled, "style": self.style}
 
 
-def _is_local_key(key: str) -> bool:
+def is_local_key(key: str) -> bool:
     return bool(_LOCAL_KEY_RE.match(key))
 
 
 def icon_target_from(spelled: str) -> IconTarget:
     if spelled.startswith(LOCAL_PREFIX):
         key = spelled.removeprefix(LOCAL_PREFIX)
-        if not _is_local_key(key):
+        if not is_local_key(key):
             raise InvalidIconRefError(
                 f"'{spelled}': a local icon key is a lowercase slug of at most 48 characters"
             )

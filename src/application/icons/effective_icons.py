@@ -26,6 +26,8 @@ from src.domain.icons.resolved_icon import IconSource, ResolvedIcon
 
 DISPLAY_ICONS_KEY = "display_icons"
 TYPE_ICONS_KEY = "type_icons"
+#: The icons a diagram holds for itself, `local:<key>` naming one (D11).
+LOCAL_ICONS_KEY = "icons"
 
 AssignmentLevel = Literal["instance", "type", "specialization-default"]
 

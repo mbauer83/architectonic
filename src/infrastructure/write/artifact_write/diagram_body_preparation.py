@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from src.domain.diagrams.instance_statements import DiagramInstances
+from src.domain.icons.normalised_icon import IconRefused
 from src.domain.icons.resolved_icon import IconSource
 from src.infrastructure.diagram_type_registry import find_renderer, suppressed_stereotype_tokens
 from src.infrastructure.rendering.archimate_relation_rendering import strip_suppressed_relation_labels
@@ -50,11 +51,28 @@ def _restate_generated_declarations(puml_body: str, repo_root: Path, diagram_typ
     return renderer.refresh_generated_header(puml_body, repo_root)
 
 
-def library_icons(verifier: ArtifactVerifier) -> IconSource | None:
-    """How an icon reference resolves on this write: through the repository's index, where there is one."""
+def icons_for(verifier: ArtifactVerifier, diagram_entities: object) -> IconSource:
+    """How an icon reference resolves on this write: the diagram's own icons, then the library's."""
+    from src.infrastructure.icons.diagram_icons import DiagramIconSource  # noqa: PLC0415
     from src.infrastructure.icons.library_source import LibraryIconSource  # noqa: PLC0415
 
-    return LibraryIconSource(verifier.registry) if verifier.registry is not None else None
+    library = LibraryIconSource(verifier.registry) if verifier.registry is not None else None
+    return DiagramIconSource(diagram_entities if isinstance(diagram_entities, dict) else None, library)
+
+
+def with_icons_prepared(diagram_entities: dict[str, object]) -> dict[str, object]:
+    """The supplied `diagram-entities` with its ad-hoc icons stored normalised and unused ones dropped.
+
+    Raises ValueError naming what cannot be stored — an upload the normaliser refuses, a bad key, too
+    many icons — which is the edit path's refusal, and the create path's for the same reason.
+    """
+    from src.infrastructure.icons.diagram_icons import prepared_local_icons  # noqa: PLC0415
+
+    match prepared_local_icons(diagram_entities):
+        case IconRefused(reason=reason):
+            raise ValueError(reason)
+        case dict() as prepared:
+            return prepared
 
 
 def _with_instances_restated(
@@ -82,7 +100,7 @@ def _with_instances_restated(
     if registry is None or not isinstance(diagram_entities, dict):
         return puml_body
     ids = tuple(entity_ids or ())
-    instances = DiagramInstances(diagram_entities, ids, registry.get_entity, library_icons(verifier))
+    instances = DiagramInstances(diagram_entities, ids, registry.get_entity, icons_for(verifier, diagram_entities))
     return renderer.restate_instance_presentation(puml_body, instances)
 
 

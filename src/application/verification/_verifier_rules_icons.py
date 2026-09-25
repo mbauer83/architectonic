@@ -1,7 +1,7 @@
 """Verify what a diagram says about its elements' icons.
 
 - **E364** an icon reference is malformed, or names no icon of the library (`ICO@…`) or of the diagram
-  itself (`local:…`, its `diagram-icons`);
+  itself (`local:…`, its `diagram-entities.icons`);
 - **E365** the diagram's type draws no icons, or not in the style asked for;
 - **W361** an assignment's icon does not apply to the element or type it is assigned to — the render
   passes it over for the next level, which is why a type changed elsewhere makes this a warning;
@@ -18,6 +18,7 @@ from collections.abc import Mapping
 
 from src.application.icons.effective_icons import (
     DISPLAY_ICONS_KEY,
+    LOCAL_ICONS_KEY,
     TYPE_ICONS_KEY,
     icon_assignments,
     malformed_icon_entries,
@@ -29,8 +30,6 @@ from src.application.verification.artifact_verifier_types import Issue, Severity
 from src.domain.icons.applicability import Applicability
 from src.domain.icons.icon_ref import IconRef, LocalIcon, SharedIcon
 from src.domain.ontology_representation.ontology_protocol import IconPresentingRenderer
-
-DIAGRAM_ICONS_KEY = "diagram-icons"
 
 
 def check_icon_assignments(
@@ -48,7 +47,7 @@ def check_icon_assignments(
         return
     issues = [_error("E364", f"{statement} {key!r}: {reason}", loc) for statement, key, reason in malformed]
     styles = _styles_drawn(str(fm.get("diagram-type", "")), catalogs)
-    local_keys = _local_keys(fm)
+    local_keys = _local_keys(diagram_entities)
     known = icon_applicability_names(catalogs)
     for key, ref in assignments.by_instance.items():
         issues += _reference_issues(DISPLAY_ICONS_KEY, key, ref, styles, local_keys, registry, loc)
@@ -70,8 +69,8 @@ def _styles_drawn(diagram_type: str, catalogs: RuntimeCatalogs) -> tuple[str, ..
     return module.renderer.icon_styles
 
 
-def _local_keys(fm: Mapping[str, object]) -> frozenset[str]:
-    raw = fm.get(DIAGRAM_ICONS_KEY)
+def _local_keys(diagram_entities: Mapping[str, object]) -> frozenset[str]:
+    raw = diagram_entities.get(LOCAL_ICONS_KEY)
     return frozenset(str(key) for key in raw) if isinstance(raw, Mapping) else frozenset()
 
 
@@ -93,7 +92,7 @@ def _reference_issues(
         case SharedIcon(icon_id=icon_id) if registry.get_icon(icon_id) is None:
             return [_error("E364", f"{where} names {icon_id}, which the library does not hold", loc)]
         case LocalIcon(key=local) if local not in local_keys:
-            missing = f"{where} names local:{local}, which this diagram's {DIAGRAM_ICONS_KEY} does not hold"
+            missing = f"{where} names local:{local}, which this diagram's own icons do not include"
             return [_error("E364", missing, loc)]
         case _:
             return []

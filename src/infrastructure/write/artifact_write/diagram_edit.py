@@ -17,7 +17,8 @@ from .diagram_body_preparation import (
     _prepare_diagram_puml_body,
     _restate_generated_declarations,
     _with_instances_restated,
-    library_icons,
+    icons_for,
+    with_icons_prepared,
 )
 from .diagram_references import (
     _collect_diagram_renderer_references,
@@ -143,7 +144,9 @@ def edit_diagram(
     _fm_tlp = fm.get("tlp")
     eff_tlp = tlp if tlp is not None else (str(_fm_tlp) if isinstance(_fm_tlp, str) else None)
     eff_keywords = keywords if keywords is not KEYWORDS_UNSET else as_optional_str_list(fm.get("keywords"))
-    eff_diagram_entities = diagram_entities if diagram_entities is not None else fm.get("diagram-entities")
+    eff_diagram_entities = (
+        with_icons_prepared(diagram_entities) if diagram_entities is not None else fm.get("diagram-entities")
+    )
     eff_diagram_connections = diagram_connections if diagram_connections is not None else fm.get("connections")
     diagram_type = str(fm.get("diagram-type", "archimate"))
 
@@ -306,7 +309,7 @@ def edit_diagram(
         eff_diagram_conns = eff_diagram_connections if isinstance(eff_diagram_connections, list) else None
         puml_body = _render_diagram_entities_puml(
             diagram_type, eff_name, render_entities, eff_diagram_conns, repo_root,
-            edge_labels=eff_edge_labels, icon_source=library_icons(verifier),
+            edge_labels=eff_edge_labels, icon_source=icons_for(verifier, render_entities),
         )
         collected_entity_ids, collected_connection_ids = _collect_diagram_renderer_references(
             diagram_type,

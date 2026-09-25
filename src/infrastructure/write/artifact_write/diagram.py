@@ -22,7 +22,9 @@ from ._artifact_deduplication import extract_friendly_slug, get_repository, vali
 from .boundary import assert_engagement_write_root
 from .diagram_body_preparation import (
     _prepare_diagram_puml_body,
-    library_icons,
+    _with_instances_restated,
+    icons_for,
+    with_icons_prepared,
 )
 from .diagram_confidentiality import ensure_confidential_gitignore, is_confidential_diagram_source
 from .diagram_references import (
@@ -199,6 +201,8 @@ def create_diagram(
             module_catalog=verifier.runtime_catalogs.diagram_types,
             allocator=get_default_allocator(),
         )
+    if diagram_entities is not None:
+        diagram_entities = with_icons_prepared(diagram_entities)
     norm_bindings = normalize_bindings(diagram_entities, bindings)
     clean_entities = strip_diagram_shorthand(diagram_entities)
     norm_bindings_raw = bindings_to_raw(norm_bindings)
@@ -240,7 +244,7 @@ def create_diagram(
             diagram_connections=diagram_connections, norm_bindings=norm_bindings,
             norm_bindings_raw=norm_bindings_raw, effective_id=artifact_id,
             entity_ids_used=entity_ids_used, connection_ids_used=connection_ids_used,
-            view_derivations=view_derivations, icon_source=library_icons(verifier),
+            view_derivations=view_derivations, icon_source=icons_for(verifier, diagram_entities),
         )
     else:
         build = _build_from_puml(
@@ -249,6 +253,12 @@ def create_diagram(
             entity_ids_used=entity_ids_used, connection_ids_used=connection_ids_used,
         )
     effective_id = build.effective_id
+    # What the diagram states about its instances — labels, icons — reaches a body the surfaces
+    # generated before this write through the same step an edit uses; on a body rendered here it is a
+    # no-op, and a notation without the capability is left alone.
+    puml_body = _with_instances_restated(
+        build.puml_body, clean_entities, diagram_type, verifier, build.entity_ids_used
+    )
 
     from src.domain.viewpoints.viewpoint_application_parsing import normalize_viewpoint_frontmatter
 
@@ -270,7 +280,7 @@ def create_diagram(
         view_derivations=view_derivations,
         bindings=bindings_to_raw(norm_bindings) if norm_bindings else None,
         authored_groupings=authored_groupings,
-        puml_body=build.puml_body,
+        puml_body=puml_body,
         tlp=tlp,
         viewpoint=viewpoint_fm,
         diagram_format_version=2 if diagram_type == "datatype" else None,
