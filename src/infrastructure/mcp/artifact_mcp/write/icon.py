@@ -79,8 +79,9 @@ def artifact_edit_icon(
     roots = resolve_repo_roots(repo_scope="engagement", repo_root=repo_root, repo_preset=None, enterprise_root=None)
     mutation_context, clear_repo_caches = authoritative_callbacks_for(roots)
     try:
+        # A changed applies-to is checked against every element showing the icon, through the registry.
         result = artifact_write_ops.edit_icon(
-            repo_root=roots[0], verifier=verifier_for(roots_key(roots), include_registry=False),
+            repo_root=roots[0], verifier=verifier_for(roots_key(roots), include_registry=True),
             clear_repo_caches=clear_repo_caches, artifact_id=artifact_id, name=name, attribution=attribution,
             applies_to=applies_to, default_style=default_style, tags=tags, status=status, dry_run=dry_run,
         )

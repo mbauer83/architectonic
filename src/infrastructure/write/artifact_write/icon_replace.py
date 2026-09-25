@@ -8,7 +8,9 @@ adopted, and nothing reads that state as wrong.
 Each diagram is rewritten by the diagram edit path, as a dry run, so its body is prepared, restated and
 verified exactly as an author's edit would be; its embedded picture is keyed by digest and so moves with
 it. The replacement is refused whole if any diagram would not verify, and while a specialization names
-the icon as its default: specializations ship with the ontology, so this operation cannot re-point one.
+the icon as its default: a specialization is declared by the ontology or in the repository's
+`.arch-repo/specializations.yaml`, which the product reads and does not write, so its default is changed
+there.
 """
 
 from __future__ import annotations
@@ -56,8 +58,8 @@ def replace_icon(
     users = icon_users(old.artifact_id, repo.list_diagrams(), verifier.runtime_catalogs.specializations)
     if users.specializations:
         raise IconInUseError(
-            f"{old.artifact_id} is the default of specializations {', '.join(users.specializations)}, "
-            "which ship with the ontology and cannot be re-pointed here"
+            f"{old.artifact_id} is the default of specializations {', '.join(users.specializations)}; "
+            "change their notation.icon where they are declared first"
         )
     rewritten = [
         _rewritten_diagram(diagram_id, old.artifact_id, new.artifact_id, repo_root, verifier, clear_repo_caches)

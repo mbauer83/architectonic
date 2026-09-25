@@ -166,3 +166,28 @@ def test_re_pointing_moves_a_local_icon_to_a_library_one() -> None:
     repointed = with_icon_repointed({"type_icons": {"node": "local:logo"}}, LocalIcon("logo"), SharedIcon(_NEW))
 
     assert repointed == {"type_icons": {"node": _NEW}}
+
+
+# ── what an icon applies to, while it is shown ──────────────────────────────────────────────────
+
+
+def test_narrowing_what_an_icon_applies_to_is_refused_while_an_element_it_leaves_shows_it(repo: Path) -> None:
+    icon = _icon(repo, "Mark", (0, 120, 212, 255))
+    node_id, diagram_path = _diagram_showing(repo, icon)
+
+    refused = artifact_edit_icon(
+        artifact_id=icon, applies_to=["application-component"], dry_run=False, repo_root=str(repo)
+    )
+
+    assert refused["wrote"] is False and node_id in str(refused)
+    assert _icon_file(repo, icon).metadata.applies_to.as_list() == []
+
+
+def test_narrowing_to_what_every_use_still_is_goes_through(repo: Path) -> None:
+    icon = _icon(repo, "Mark", (0, 120, 212, 255))
+    _diagram_showing(repo, icon)
+
+    narrowed = artifact_edit_icon(artifact_id=icon, applies_to=["technology-node"], dry_run=False, repo_root=str(repo))
+
+    assert narrowed["wrote"] is True
+    assert _icon_file(repo, icon).metadata.applies_to.as_list() == ["technology-node"]

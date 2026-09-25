@@ -16,7 +16,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from src.application.icons.icon_usage import icon_users
+from src.application.icons.icon_usage import icon_users, uses_outside
 from src.application.icons.icon_vocabulary import icon_applicability_names, unknown_applicability_names
 from src.application.identifier_allocator import get_default_allocator
 from src.application.verification.artifact_verifier import ArtifactVerifier
@@ -110,6 +110,7 @@ def edit_icon(
     """Change what an engagement library icon says about itself; an argument left None keeps its value.
 
     Retiring (`status="retired"`) stops the icon being offered while every diagram showing it still does.
+    A new `applies-to` is refused while it would take the icon from an element that shows it (D12).
     """
     assert_engagement_write_root(repo_root)
     record = library_icon_here(repo_root, artifact_id)
@@ -122,6 +123,9 @@ def edit_icon(
     eff_applies_to = applies_to if applies_to is not None else meta.applies_to.as_list()
     if (refused := _metadata_refusal(eff_name, eff_attribution, eff_applies_to, verifier)) is not None:
         return refused_icon_write(record.path, record.artifact_id, refused.reason)
+    if lost := _uses_lost(repo_root, record.artifact_id, applies_to, verifier):
+        reason = f"the icon would no longer apply where it is shown: {'; '.join(lost)}; re-point or clear those first"
+        return refused_icon_write(record.path, record.artifact_id, reason)
     edited = replace(
         meta,
         name=eff_name,
@@ -135,6 +139,22 @@ def edit_icon(
     return _verified_write(
         record.path, record.artifact_id, format_icon_file(replace(icon, metadata=edited)), [],
         repo_root=repo_root, verifier=verifier, clear_repo_caches=clear_repo_caches, dry_run=dry_run,
+    )
+
+
+def _uses_lost(
+    repo_root: Path, icon_id: str, applies_to: Sequence[str] | None, verifier: ArtifactVerifier
+) -> list[str]:
+    """The uses a new `applies-to` would take the icon from; none when it is left as it is."""
+    if applies_to is None:
+        return []
+    if verifier.registry is None:
+        # Without one an instance cannot be classified, and a use it would lose would go unseen.
+        raise TypeError("an applies-to edit asks each use of the icon, so it needs a verifier with a registry")
+    diagrams = get_repository(repo_root).list_diagrams()
+    specializations = verifier.runtime_catalogs.specializations
+    return uses_outside(
+        icon_id, applicability_from(applies_to), diagrams, specializations, verifier.registry.get_entity
     )
 
 

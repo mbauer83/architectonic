@@ -7,9 +7,8 @@
   passes it over for the next level, which is why a type changed elsewhere makes this a warning;
 - **W362** a `type_icons` key names no type or specialization the product knows.
 
-An instance is classified the two ways that are not a notation's own: a model entity through the
-registry, and a node the diagram hosts through the `diagram-entities` list its type keys. An instance
-addressed any other way (an occurrence) is not classified here, and no applicability is claimed for it.
+An instance is classified by `icon_usage.instance_names`; one it cannot classify (an occurrence) has no
+applicability claimed for it.
 """
 
 from __future__ import annotations
@@ -23,6 +22,7 @@ from src.application.icons.effective_icons import (
     icon_assignments,
     malformed_icon_entries,
 )
+from src.application.icons.icon_usage import instance_names
 from src.application.icons.icon_vocabulary import icon_applicability_names
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
@@ -53,7 +53,7 @@ def check_icon_assignments(
     known = icon_applicability_names(catalogs)
     for key, ref in assignments.by_instance.items():
         issues += _reference_issues(DISPLAY_ICONS_KEY, key, ref, styles, local_keys, library, loc)
-        names = _instance_names(key, diagram_entities, registry)
+        names = instance_names(key, diagram_entities, registry.get_entity)
         issues += _applicability_issues(DISPLAY_ICONS_KEY, key, ref, names, library, loc)
     for name, ref in assignments.by_name.items():
         issues += _reference_issues(TYPE_ICONS_KEY, name, ref, styles, local_keys, library, loc)
@@ -117,18 +117,6 @@ def _applies_to(ref: IconRef, library: IconLibrary) -> Applicability | None:
             return record.metadata.applies_to if record is not None else None
         case _:
             return None
-
-
-def _instance_names(
-    instance_id: str, diagram_entities: Mapping[str, object], registry: ArtifactRegistry
-) -> frozenset[str] | None:
-    """The element's type and specialization names, where the instance can be classified generically."""
-    if (entity := registry.get_entity(instance_id)) is not None:
-        return entity.type_and_specializations
-    for type_name, nodes in diagram_entities.items():
-        if isinstance(nodes, list) and any(isinstance(n, Mapping) and n.get("id") == instance_id for n in nodes):
-            return frozenset({str(type_name)})
-    return None
 
 
 def _error(code: str, message: str, loc: str) -> Issue:
