@@ -21,6 +21,7 @@ GUI, the REST API, the CLI, and the MCP tools.
 | [Proposing changes](proposing-changes.md) | Editing content the engagement does not own — what a recorded change is, submitting a set for review, and bringing one onto a moved artifact |
 | [Views & exploration](views-and-exploration.md) | List view, treemap, grid, full-text search, and graph navigation |
 | [Diagramming](diagramming.md) | ArchiMate, matrix, activity, sequence, C4, and datatype (UML class) diagram families |
+| [Icons on diagram elements](icons.md) | Product logos and pictures of your own on ArchiMate and C4 elements — the library, a diagram's own icons, and which one an element shows |
 | [Viewpoints](viewpoints.md) | Saved, criteria-based ways of looking at a slice of the model — definitions, applications to existing diagrams, and ad-hoc execution |
 | [Motivation coverage](coverage-semantics.md) | What "covered" means when a goal fans out — branch-complete realization, obligations for absent nodes, and why a diagnostic observation is never a gap |
 | [Impact analysis](impact-analysis.md) | Deriving indirect relationships from real connections — certain vs. potential, impact workflows, materializing a derived relationship |

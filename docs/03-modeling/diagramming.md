@@ -385,4 +385,4 @@ See [Interfaces & MCP](interfaces-and-mcp.md) for the full tool surface.
 
 ---
 
-*Next: [Viewpoints →](viewpoints.md)*
+*Next: [Icons on diagram elements →](icons.md)*

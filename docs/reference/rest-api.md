@@ -18,14 +18,27 @@ cannot silently regress:
 - every operation documents its **200 response body** with a schema derived from a typed
   response model — never a bare untyped `200`;
 - **write** operations declare the error contract they can return: `400` (validation),
-  `403` (forbidden), `409` (conflict), `423` (write-gate retryable), plus FastAPI's
-  automatic `422` for request-body validation;
+  `403` (forbidden), `409` (conflict), `413` (request body larger than the operation reads),
+  `423` (write-gate retryable), plus FastAPI's automatic `422` for request-body validation;
 - **id-lookup reads** declare `404`.
 
 Response schemas come from the handlers' **typed response models**, not hand-written JSON —
 the type is the contract, and FastAPI generates the schema from it. Models declare the
 fields worth documenting and allow additional properties, so a response is documented
 without its payload ever being filtered.
+
+## Request size
+
+Every operation reads a bounded request body: 2 MB for an icon upload, 16 MB for any other. A larger
+body is refused before it is read, with `413 request_too_large`, whose details carry
+`max_body_bytes`. A body sent in chunks, without a declared length, is counted as it arrives.
+
+## Icons
+
+The icon library's routes, and the preview an editor asks which icon each instance shows, are listed
+in [Icons on diagram elements](../03-modeling/icons.md#through-mcp-rest-and-the-command-line). An
+icon's picture, `GET /api/icons/{id}/image`, never changes under its id, so it is served with
+`Cache-Control: private, max-age=31536000`.
 
 ## Scratchpads
 
