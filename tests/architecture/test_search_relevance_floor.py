@@ -5,11 +5,11 @@ over one corpus — once with keyword retrieval alone, once with the vector bran
 compares the two. Nothing here compares a rate against a remembered number: the corpus changes with
 every authored artifact, so a fixed threshold would fail on authoring rather than on regression.
 
-**Two windows, because they answer different questions.** The `realises` stratum asks which
-component realises a requirement, and its answer is always an entity; scoring it in the default
-window measures the cross-kind round-robin rather than retrieval, since an entity gets under three of
-those ten rows. So it is scored over entities. `name` and `summary` are general queries and are
-scored as a reader would issue them, across every kind.
+**Two windows, because they answer different questions.** The `paraphrase` and `described` strata
+ask for an element by what it is, and their answer is always an entity; scoring them in the default
+window would measure the cross-kind round-robin rather than retrieval, since an entity gets under
+three of those ten rows. So they are scored over entities. `name` and `summary` are general queries
+and are scored as a reader would issue them, across every kind.
 
 Both figures are reported on failure. Choosing only the flattering one would be the same defect this
 module exists to catch.
@@ -29,6 +29,7 @@ from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.bootstrap.embedding_model_asset import integrity_failures, model_directory
 from src.infrastructure.search.text_encoder import StaticEmbeddingEncoder
 from src.infrastructure.search.vector_retriever import VectorRetriever
+from tools.quality.paraphrase_queries import PARAPHRASES
 from tools.quality.relevance_suite import RECALL_AT, LabelledQuery, StratumResult, draw_strata, score
 
 _asset_failures = integrity_failures()
@@ -59,8 +60,8 @@ def measured() -> dict[str, tuple[StratumResult, StratumResult]]:
     results = {
         "name": _pair(keyword, fused, strata["name"], _every_kind),
         "summary": _pair(keyword, fused, strata["summary"], _every_kind),
-        "realises": _pair(keyword, fused, strata["realises"], _entities_only),
-        "realises (every kind)": _pair(keyword, fused, strata["realises"], _every_kind),
+        "paraphrase": _pair(keyword, fused, strata["paraphrase"], _entities_only),
+        "described": _pair(keyword, fused, strata["described"], _entities_only),
     }
     store.close()
     return results
@@ -108,6 +109,10 @@ def test_the_suite_asks_enough_to_measure_anything(
     """A stratum that drew nothing would make every comparison below vacuously true."""
     for name, (keyword, _) in measured.items():
         assert keyword.asked > 0, f"{name} drew no queries\n{_report(measured)}"
+    live, _ = measured["paraphrase"]
+    assert live.asked * 2 > len(PARAPHRASES), (
+        f"only {live.asked} of {len(PARAPHRASES)} paraphrases still name an element; the set has gone stale"
+    )
 
 
 def test_the_easy_strata_are_easy(
@@ -127,19 +132,19 @@ def test_nothing_regresses_where_keyword_search_already_answers(
     measured: dict[str, tuple[StratumResult, StratumResult]],
 ) -> None:
     """The floor. Fusing a second retriever in may not cost a query the first one answered."""
-    for name in ("name", "summary"):
+    for name in ("name", "summary", "described"):
         keyword, fused = measured[name]
         assert fused.answered >= keyword.answered, (
             f"fusing the vector branch lost queries on the {name} stratum\n{_report(measured)}"
         )
 
 
-def test_the_vector_branch_earns_its_place_on_the_stratum_with_headroom(
+def test_the_vector_branch_earns_its_place_where_the_name_is_not_known(
     measured: dict[str, tuple[StratumResult, StratumResult]],
 ) -> None:
-    """A retriever that costs 31 MB and changes no answer is one that should not ship."""
-    keyword, fused = measured["realises"]
+    """A retriever that costs 31 MB and finds nothing more by meaning is one that should not ship."""
+    keyword, fused = measured["paraphrase"]
     assert fused.answered > keyword.answered, (
-        "the vector branch answered no more requirement-to-component queries than keyword search "
+        "the vector branch found no more elements described without their names than keyword search "
         f"alone\n{_report(measured)}"
     )

@@ -6,17 +6,17 @@ fine here: the fixture is the test's own, so a count is a fact about the code ra
 whatever happens to be authored.
 
 The properties that matter are the ones a wrong derivation would break quietly. A stratum drawn from
-the head of a sorted corpus instead of across it would still produce a rate; a `realises` query that
-kept the realising component's own name in it would make the hard stratum look easy; a summary query
-that kept the record's heading would be the name stratum wearing a disguise. None of those fails —
-they just report a number that means something else.
+the head of a sorted corpus instead of across it would still produce a rate; a `described` query that
+kept the link to its own answer would name what it asks for; a summary query that kept the record's
+heading would be the name stratum wearing a disguise. None of those fails — they just report a number
+that means something else.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
+from src.domain.ontology_representation.artifact_types import DocumentRecord, EntityRecord
 from tools.quality.relevance_suite import (
     RECALL_AT,
     STRATUM_SIZE,
@@ -26,7 +26,7 @@ from tools.quality.relevance_suite import (
 )
 
 
-def _entity(artifact_id: str, name: str, content: str = "") -> EntityRecord:
+def _entity(artifact_id: str, name: str, content: str = "", path: Path = Path("/nowhere.md")) -> EntityRecord:
     return EntityRecord(
         artifact_id=artifact_id,
         artifact_type="requirement",
@@ -35,7 +35,7 @@ def _entity(artifact_id: str, name: str, content: str = "") -> EntityRecord:
         status="draft",
         domain="motivation",
         subdomain="",
-        path=Path("/nowhere.md"),
+        path=path,
         keywords=(),
         extra={},
         content_text=content,
@@ -46,11 +46,11 @@ def _entity(artifact_id: str, name: str, content: str = "") -> EntityRecord:
 
 
 class _Store:
-    """Just the two questions the suite asks of a store."""
+    """Just the questions the suite asks of a store."""
 
-    def __init__(self, entities: list[EntityRecord], connections: list[ConnectionRecord]) -> None:
+    def __init__(self, entities: list[EntityRecord], documents: list[DocumentRecord] | None = None) -> None:
         self._entities = {entity.artifact_id: entity for entity in entities}
-        self._connections = connections
+        self._documents = documents or []
 
     def entity_ids(self) -> set[str]:
         return set(self._entities)
@@ -58,21 +58,14 @@ class _Store:
     def get_entity(self, artifact_id: str) -> EntityRecord | None:
         return self._entities.get(artifact_id)
 
-    def list_connections_by_types(self, types: frozenset[str]) -> list[ConnectionRecord]:
-        return [c for c in self._connections if c.conn_type in types]
+    def list_documents(self) -> list[DocumentRecord]:
+        return self._documents
 
 
-def _realisation(source: str, target: str) -> ConnectionRecord:
-    return ConnectionRecord(
-        artifact_id=f"{source}---{target}@@archimate-realization",
-        source=source,
-        target=target,
-        conn_type="archimate-realization",
-        version="0.1.0",
-        status="draft",
-        path=Path("/nowhere.outgoing.md"),
-        extra={},
-        content_text="",
+def _document(content: str, path: Path) -> DocumentRecord:
+    return DocumentRecord(
+        artifact_id="ADR@1.d.decision", doc_type="adr", title="Decision", status="accepted", path=path,
+        keywords=(), sections=(), content_text=content, extra={},
     )
 
 
@@ -81,7 +74,7 @@ def _store_of(count: int) -> _Store:
         _entity(f"REQ@1000000{index:03d}.aaaaaa.thing-{index}", f"Thing {index}", f"## Thing {index}\n\nProse {index}.")
         for index in range(count)
     ]
-    return _Store(entities, [])
+    return _Store(entities)
 
 
 # ── drawing ──────────────────────────────────────────────────────────────────
@@ -89,7 +82,7 @@ def _store_of(count: int) -> _Store:
 
 def test_all_three_strata_are_drawn() -> None:
     strata = draw_strata(_store_of(10))
-    assert set(strata) == {"name", "summary", "realises"}
+    assert set(strata) == {"name", "summary", "paraphrase", "described"}
 
 
 def test_a_small_corpus_yields_every_candidate() -> None:
@@ -123,63 +116,65 @@ def test_the_name_stratum_asks_an_artifacts_own_name() -> None:
 
 def test_the_summary_stratum_drops_the_heading() -> None:
     """The heading repeats the name, which would make this the name stratum in disguise."""
-    store = _Store([_entity("REQ@1.a.x", "Peculiar Name", "## Peculiar Name\n\nThe prose body.")], [])
+    store = _Store([_entity("REQ@1.a.x", "Peculiar Name", "## Peculiar Name\n\nThe prose body.")])
     query = draw_strata(store)["summary"][0].query
     assert query == "The prose body."
     assert "Peculiar" not in query
 
 
 def test_an_entity_with_no_prose_contributes_no_summary_query() -> None:
-    store = _Store([_entity("REQ@1.a.x", "Nameless Prose", "## Nameless Prose")], [])
+    store = _Store([_entity("REQ@1.a.x", "Nameless Prose", "## Nameless Prose")])
     assert draw_strata(store)["summary"] == []
 
 
-# ── the hard stratum ─────────────────────────────────────────────────────────
+# ── the paraphrases ──────────────────────────────────────────────────────────
 
 
-def test_the_realises_stratum_asks_for_the_component_that_realises_a_requirement() -> None:
-    store = _Store(
-        [
-            _entity("SRV@1.a.indexer", "SQLite Indexer"),
-            _entity("REQ@1.b.search", "Fast Lookup", "## Fast Lookup\n\nResults shall return quickly."),
-        ],
-        [_realisation("SRV@1.a.indexer", "REQ@1.b.search")],
+def test_a_paraphrase_is_answered_by_its_element_under_whatever_name_it_has_now() -> None:
+    """Keyed by the rename-stable part of the id, so a rename changes nothing but the answer's slug."""
+    store = _Store([_entity("APP@1.a.renamed-since", "Renamed Since")])
+    drawn = draw_strata(store, paraphrases=[("APP@1.a", "what it does, in other words")])["paraphrase"]
+    assert drawn == [LabelledQuery("what it does, in other words", "APP@1.a.renamed-since")]
+
+
+def test_a_paraphrase_of_an_element_that_is_gone_drops_out() -> None:
+    drawn = draw_strata(_Store([]), paraphrases=[("APP@1.gone", "nothing answers this")])["paraphrase"]
+    assert drawn == []
+
+
+# ── sentences in documents ───────────────────────────────────────────────────
+
+
+def _linked(tmp_path: Path, content: str) -> list[LabelledQuery]:
+    target = tmp_path / "model" / "APP@1.a.indexer.md"
+    other = tmp_path / "model" / "APP@1.b.parser.md"
+    entities = [_entity("APP@1.a.indexer", "Indexer", path=target), _entity("APP@1.b.parser", "Parser", path=other)]
+    document = _document(content, tmp_path / "docs" / "ADR@1.d.decision.md")
+    return draw_strata(_Store(entities, [document]))["described"]
+
+
+def test_a_sentence_linking_one_element_asks_for_it_without_its_link(tmp_path: Path) -> None:
+    content = "The [Indexer](../model/APP@1.a.indexer.md) rebuilds the searchable copy of every file."
+    drawn = _linked(tmp_path, content)
+    assert drawn == [LabelledQuery("The rebuilds the searchable copy of every file.", "APP@1.a.indexer")]
+
+
+def test_a_sentence_linking_two_elements_asks_for_neither(tmp_path: Path) -> None:
+    content = (
+        "The [Indexer](../model/APP@1.a.indexer.md) reads what the [Parser](../model/APP@1.b.parser.md) wrote."
     )
-    drawn = draw_strata(store)["realises"]
-    assert [q.gold_artifact_id for q in drawn] == ["SRV@1.a.indexer"]
-    assert "Fast Lookup" in drawn[0].query
+    assert _linked(tmp_path, content) == []
 
 
-def test_the_realising_components_own_name_is_removed_from_the_query() -> None:
-    """Leaving it in would let term matching find the answer by name and hide the headroom."""
-    store = _Store(
-        [
-            _entity("SRV@1.a.indexer", "SQLite Indexer"),
-            _entity("REQ@1.b.search", "SQLite Indexer Behaviour", "## x\n\nThe SQLite Indexer shall index."),
-        ],
-        [_realisation("SRV@1.a.indexer", "REQ@1.b.search")],
+def test_a_link_to_something_other_than_an_element_keeps_its_words(tmp_path: Path) -> None:
+    content = (
+        "The [Indexer](../model/APP@1.a.indexer.md) follows the [guide](../docs/guide.md) for every file it reads."
     )
-    query = draw_strata(store)["realises"][0].query
-    assert "SQLite" not in query
-    assert "Indexer" not in query
-    assert "shall index" in query
+    assert [q.query for q in _linked(tmp_path, content)] == ["The follows the guide for every file it reads."]
 
 
-def test_a_realisation_naming_an_unknown_endpoint_is_skipped() -> None:
-    store = _Store(
-        [_entity("REQ@1.b.search", "Fast Lookup", "## x\n\nProse.")],
-        [_realisation("SRV@gone", "REQ@1.b.search")],
-    )
-    assert draw_strata(store)["realises"] == []
-
-
-def test_a_realisation_whose_query_is_left_empty_is_skipped() -> None:
-    """A requirement worded entirely in its realiser's own words leaves nothing to ask."""
-    store = _Store(
-        [_entity("SRV@1.a.x", "Fast Lookup"), _entity("REQ@1.b.y", "Fast Lookup", "")],
-        [_realisation("SRV@1.a.x", "REQ@1.b.y")],
-    )
-    assert draw_strata(store)["realises"] == []
+def test_a_sentence_too_short_to_be_a_question_is_skipped(tmp_path: Path) -> None:
+    assert _linked(tmp_path, "See [Indexer](../model/APP@1.a.indexer.md).") == []
 
 
 # ── scoring ──────────────────────────────────────────────────────────────────

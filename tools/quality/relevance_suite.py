@@ -1,24 +1,27 @@
-"""A labelled query suite derived from the model, so a claim about search quality can be false.
+"""A labelled query suite over the model, so a claim about search quality can be false.
 
 Search quality was previously asserted by reading result lists and finding them reasonable. That
 cannot distinguish a change that helps from one that does nothing, and it certainly cannot catch one
-that helps a hard query while quietly costing an easy one. This derives ground truth the repository
-already contains and scores recall against it.
+that helps a hard query while quietly costing an easy one. This scores recall against queries whose
+answers are known.
 
-**Three strata, each labelled by something the model states rather than by an opinion.**
+**Four strata, each with one intended answer per query.**
 
-- `name` — an artifact's own name as the query, itself as the answer. The easiest question there is,
+- `name` — an element's own name as the query, itself as the answer. The easiest question there is,
   and the one a reader asks most. Its purpose is the floor: nothing may regress here.
-- `summary` — an artifact's own opening prose as the query, itself as the answer. Still lexical
+- `summary` — an element's own opening prose as the query, itself as the answer. Still lexical
   overlap, still nearly always answerable by matching terms.
-- `realises` — a requirement's own wording as the query, the component that realises it as the
-  answer, with the component's name removed from the query so the two share no name. This is the
-  stratum with headroom: the words a requirement uses are not the words its realising component is
-  called, which is exactly the question term matching cannot answer.
+- `paraphrase` — a description of an element written without its name or its own wording
+  (`paraphrase_queries.py`), the element as the answer. This is the question retrieval by meaning
+  exists for: someone knows what a thing does or is for, not what it is called.
+- `described` — a sentence in one of the repository's documents that links to exactly one element,
+  with that link taken out, the element as the answer. A person wrote it about the element in words
+  of their own; it sometimes cites the element rather than describing it, so it is reported beside
+  the paraphrases rather than instead of them.
 
-**Derived at read time, never committed as a snapshot.** A file of query/answer pairs goes stale the
-moment an artifact is renamed, and then fails for a reason that has nothing to do with search. What
-is committed is the derivation, so the suite is always about the repository as it currently stands.
+**Derived at read time where the repository states the answer.** `name`, `summary` and `described`
+come from whatever the repository holds, so a rename changes the query with the artifact. The
+paraphrases are written, and so committed, but keyed by rename-stable ids.
 
 **It reports rates; it does not decide what rate is acceptable.** A caller compares two
 configurations over one sample. Comparing a rate against a remembered number would be comparing
@@ -27,14 +30,19 @@ today's corpus against yesterday's, which is not a fact about search.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 
-from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
+from src.application.document_links import is_external_or_anchor_href, iter_markdown_links, strip_anchor
+from src.domain.artifact_id import stable_id
+from src.domain.ontology_representation.artifact_types import DocumentRecord, EntityRecord
+from tools.quality.paraphrase_queries import PARAPHRASES
 
-#: How many of each stratum to draw. Enough that a few queries either way do not move the rate,
-#: small enough that three strata against two configurations stay a few seconds.
+#: How many of each derived stratum to draw. Enough that a few queries either way do not move the
+#: rate, small enough that four strata against two configurations stay a few seconds.
 STRATUM_SIZE = 120
 
 #: The window recall is measured at — what a reader actually sees before scrolling.
@@ -44,13 +52,19 @@ RECALL_AT = 10
 #: enough to be a question, short enough that it is a summary rather than the whole record.
 _SUMMARY_CHARACTERS = 110
 
-#: The relation that labels the `realises` stratum. The model carries several hundred, each one a
-#: statement that this component is what answers this requirement.
-_REALISATION = "archimate-realization"
+#: A `described` query shorter than this, once its link is out, says too little to be a question.
+_MIN_DESCRIBED_WORDS = 8
+
+#: Where one sentence of document prose ends: a full stop before a capital or a link, a blank line,
+#: or the start of a list item, table row or heading.
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z*`\[])|\n\s*\n|\n(?=\s*[-|#])")
+
+#: Markdown emphasis, code, table and heading marks, which say nothing a query would.
+_MARKUP = re.compile(r"[*`#|>]")
 
 
 class LabelledCorpus(Protocol):
-    """The three questions drawing a suite asks of a repository, and no more.
+    """The questions drawing a suite asks of a repository, and no more.
 
     Narrower than `ReadableArtifactStore` deliberately, the way `ports.py` invites: a suite that
     demanded the whole store could only ever be exercised against a real index, and the point of
@@ -59,12 +73,12 @@ class LabelledCorpus(Protocol):
 
     def entity_ids(self) -> set[str]: ...
     def get_entity(self, artifact_id: str) -> EntityRecord | None: ...
-    def list_connections_by_types(self, types: frozenset[str]) -> list[ConnectionRecord]: ...
+    def list_documents(self) -> list[DocumentRecord]: ...
 
 
 @dataclass(frozen=True, slots=True)
 class LabelledQuery:
-    """A query and the one artifact the model says answers it."""
+    """A query and the one artifact it is meant to find."""
 
     query: str
     gold_artifact_id: str
@@ -88,8 +102,10 @@ class StratumResult:
 RankedSearch = Callable[[str], Sequence[str]]
 
 
-def draw_strata(store: LabelledCorpus) -> dict[str, list[LabelledQuery]]:
-    """The three strata, each drawn deterministically so two runs over one corpus agree."""
+def draw_strata(
+    store: LabelledCorpus, paraphrases: Sequence[tuple[str, str]] = PARAPHRASES
+) -> dict[str, list[LabelledQuery]]:
+    """The four strata, each drawn deterministically so two runs over one corpus agree."""
     entities = _entities(store)
     return {
         "name": _stride([LabelledQuery(e.name, e.artifact_id) for e in entities if e.name]),
@@ -100,7 +116,8 @@ def draw_strata(store: LabelledCorpus) -> dict[str, list[LabelledQuery]]:
                 if (summary := _opening_prose(e.content_text))
             ]
         ),
-        "realises": _stride(_realisation_queries(store, entities)),
+        "paraphrase": _paraphrase_queries(entities, paraphrases),
+        "described": _stride(_described_queries(store, entities)),
     }
 
 
@@ -142,39 +159,56 @@ def _opening_prose(content: str) -> str:
     return collapsed[:_SUMMARY_CHARACTERS].strip()
 
 
-def _realisation_queries(
-    store: LabelledCorpus, entities: Sequence[EntityRecord]
+def _paraphrase_queries(
+    entities: Sequence[EntityRecord], paraphrases: Sequence[tuple[str, str]]
 ) -> list[LabelledQuery]:
-    """A requirement's wording asking for the component that realises it.
+    """Each written paraphrase whose element still exists, answered by that element's current id."""
+    by_stable = {stable_id(entity.artifact_id): entity for entity in entities}
+    return [
+        LabelledQuery(query, by_stable[key].artifact_id)
+        for key, query in paraphrases
+        if key in by_stable
+    ]
 
-    The component's own name is removed from the query, so what is left shares no name with the
-    answer and matching terms cannot find it by accident. That removal is the whole reason this
-    stratum measures anything the other two do not.
-    """
-    by_id = {entity.artifact_id: entity for entity in entities}
+
+def _described_queries(store: LabelledCorpus, entities: Sequence[EntityRecord]) -> list[LabelledQuery]:
+    """Document sentences that link to exactly one entity, the link taken out, that entity the answer."""
+    by_path = {entity.path.resolve(): entity for entity in entities}
     drawn: list[LabelledQuery] = []
-    for connection in store.list_connections_by_types(frozenset({_REALISATION})):
-        realiser = _single(connection.source_ids, by_id)
-        realised = _single(connection.target_ids, by_id)
-        if realiser is None or realised is None:
-            continue
-        wording = _without_words_of(
-            f"{realised.name}. {_opening_prose(realised.content_text)}",
-            realiser.name,
-        )
-        if wording:
-            drawn.append(LabelledQuery(wording, realiser.artifact_id))
-    return sorted(drawn, key=lambda labelled: labelled.gold_artifact_id)
+    for document in sorted(store.list_documents(), key=lambda d: d.artifact_id):
+        for sentence in _sentences(document.content_text):
+            labelled = _described(sentence, document.path.parent, by_path)
+            if labelled is not None:
+                drawn.append(labelled)
+    return drawn
 
 
-def _single(ids: Iterable[str], by_id: dict[str, EntityRecord]) -> EntityRecord | None:
-    """The one entity an endpoint names, or None where it names none or more than one."""
-    found = [by_id[artifact_id] for artifact_id in ids if artifact_id in by_id]
-    return found[0] if len(found) == 1 else None
+def _sentences(text: str) -> Iterable[str]:
+    start = 0
+    for boundary in _SENTENCE_END.finditer(text):
+        yield text[start : boundary.start()]
+        start = boundary.end()
+    yield text[start:]
 
 
-def _without_words_of(text: str, removed: str) -> str:
-    """`text` with every word of `removed` taken out, case-insensitively."""
-    excluded = {word.lower().strip(".,:;()") for word in removed.split() if word}
-    kept = [word for word in text.split() if word.lower().strip(".,:;()") not in excluded]
-    return " ".join(kept).strip()
+def _described(sentence: str, directory: Path, by_path: dict[Path, EntityRecord]) -> LabelledQuery | None:
+    """The sentence as a query for the one entity it links to, or None where it links to none or several.
+
+    The answer's link is removed, label and all, so the query does not name what it asks for; any
+    other link keeps its label, which is part of what the sentence says.
+    """
+    links = iter_markdown_links(sentence)
+    linked = [
+        (link, entity)
+        for link in links
+        if not is_external_or_anchor_href(link.href)
+        and (entity := by_path.get((directory / strip_anchor(link.href)).resolve())) is not None
+    ]
+    if len(linked) != 1:
+        return None
+    answer_link, entity = linked[0]
+    text = sentence
+    for link in links:
+        text = text.replace(f"[{link.label}]({link.href})", "" if link is answer_link else link.label)
+    query = " ".join(_MARKUP.sub(" ", text).split())
+    return LabelledQuery(query, entity.artifact_id) if len(query.split()) >= _MIN_DESCRIBED_WORDS else None
