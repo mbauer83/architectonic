@@ -7,48 +7,47 @@
  * picture is not — a new version is another icon, and *Replace…* moves every diagram to it, after
  * listing them. *Delete* is refused while anything shows the icon, and the refusal says what does.
  */
-import { inject, ref } from 'vue'
-import { Cause, Effect, Exit } from 'effect'
+import { computed, inject, ref } from 'vue'
+import { Effect, Exit } from 'effect'
 import { modelServiceKey } from '../keys'
 import type { IconStyle, IconSummary } from '../../domain/schemas/icons'
 import type { WriteResult } from '../../domain/schemas/write-results'
-import { formatEffectError } from '../lib/errors'
+import type { RepoError } from '../../ports/repositoryErrors'
+import { useMutation } from '../composables/useMutation'
+import { csvToList } from '../lib/commaList'
 
 const props = defineProps<{ icon: IconSummary; others: readonly IconSummary[] }>()
 const emit = defineEmits<{ changed: [] }>()
 
 const svc = inject(modelServiceKey)!
 const mode = ref<'view' | 'edit' | 'replace'>('view')
-const message = ref<string | null>(null)
-const busy = ref(false)
+const write = useMutation<WriteResult | void, RepoError>()
+const busy = write.running
+const refusal = ref<string | null>(null)
+const message = computed(() => write.errorMessage.value ?? refusal.value)
 
 const form = ref({
   name: props.icon.name, attribution: props.icon.attribution, appliesTo: props.icon.applies_to.join(', '),
   tags: props.icon.tags.join(', '), defaultStyle: props.icon.default_style as IconStyle,
 })
-const listOf = (text: string): string[] => text.split(',').map((item) => item.trim()).filter(Boolean)
 
-const run = async (write: Effect.Effect<WriteResult | void, unknown>, done: () => void): Promise<void> => {
-  busy.value = true
-  const exit = await Effect.runPromiseExit(write)
-  busy.value = false
-  if (Exit.isFailure(exit)) {
-    message.value = formatEffectError(Cause.squash(exit.cause))
-    return
-  }
+/** Run one write; a refusal it answers with — rather than fails with — is said on the card too. */
+const run = async (effect: Effect.Effect<WriteResult | void, RepoError>, done: () => void): Promise<void> => {
+  refusal.value = null
+  const exit = await write.run(effect)
+  if (Exit.isFailure(exit)) return
   const result = exit.value
   const refused = result ? (result.verification?.issues ?? []).filter((issue) => issue.severity === 'error') : []
   if (result && !result.wrote && refused.length) {
-    message.value = refused.map((issue) => issue.message).join('; ')
+    refusal.value = refused.map((issue) => issue.message).join('; ')
     return
   }
-  message.value = null
   done()
 }
 
 const saveEdit = (): Promise<void> => run(svc.editIcon(props.icon.artifact_id, {
-  name: form.value.name, attribution: form.value.attribution, applies_to: listOf(form.value.appliesTo),
-  tags: listOf(form.value.tags), default_style: form.value.defaultStyle, dry_run: false,
+  name: form.value.name, attribution: form.value.attribution, applies_to: csvToList(form.value.appliesTo),
+  tags: csvToList(form.value.tags), default_style: form.value.defaultStyle, dry_run: false,
 }), () => { mode.value = 'view'; emit('changed') })
 
 const setStatus = (status: 'active' | 'retired'): Promise<void> =>

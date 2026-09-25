@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch, nextTick } from 'vue'
+import { csvToList } from '../lib/commaList'
 import { documentTypeFor, titleErrorFor } from '../lib/documentForms'
 import {
   filledExtraFrontmatter,
@@ -133,7 +134,7 @@ watch(selectedType, (type) => {
 })
 
 const onArrayFieldInput = (fieldName: string, raw: string) => {
-  extraFrontmatter.value[fieldName] = raw.split(',').map(v => v.trim()).filter(Boolean)
+  extraFrontmatter.value[fieldName] = csvToList(raw)
   headerWasManuallyEdited.value = true
 }
 
@@ -176,7 +177,7 @@ const submit = () => {
     title: title.value,
     group: homeForCreate(home.value),
     body: body.value,
-    keywords: keywords.value.split(',').map((value) => value.trim()).filter(Boolean),
+    keywords: csvToList(keywords.value),
     status: status.value,
     extra_frontmatter: buildExtraFrontmatter(),
     dry_run: false,

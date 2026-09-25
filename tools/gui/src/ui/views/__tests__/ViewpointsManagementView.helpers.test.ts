@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  csvToList, executionRouteFor, firstErrorNodeId, formatPreviewCounts, formatScopeSummary, isSemanticEdit, listToCsv,
+  executionRouteFor, firstErrorNodeId, formatPreviewCounts, formatScopeSummary, isSemanticEdit,
   suggestForkSlug,
 } from '../ViewpointsManagementView.helpers'
+import { csvToList, listToCsv } from '../../lib/commaList'
 import { mkDefinitionDraft, mkScope } from '../../../domain/viewpointDefinitionDraft'
 import { mkPresentation } from '../../../domain/viewpointPresentation'
 import { presentationToMapping } from '../../../domain/viewpointPresentationSerialization'

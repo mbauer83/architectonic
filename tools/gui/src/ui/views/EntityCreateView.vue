@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { inject, onMounted, ref, watch, computed } from 'vue'
+import { csvToList } from '../lib/commaList'
 import { useRouter } from 'vue-router'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
@@ -154,7 +155,7 @@ const removePropRow = (i: number) => properties.value.splice(i, 1)
 
 const buildBody = (dryRun: boolean) => {
   const { props, adhocTypes } = propertyRowsForWrite(properties.value, schemaDescriptors.value)
-  const kws = keywords.value.split(',').map(k => k.trim()).filter(Boolean)
+  const kws = csvToList(keywords.value)
   return {
     artifact_type: artifactType.value,
     name: name.value,

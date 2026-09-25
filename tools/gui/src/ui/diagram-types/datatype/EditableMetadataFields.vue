@@ -7,6 +7,7 @@
  * to wire shape). Structural fields live in the host panel, never here.
  */
 import { computed, ref } from 'vue'
+import { csvToList } from '../../lib/commaList'
 import type { EditableMetadataField } from '../../../domain'
 
 const props = defineProps<{
@@ -50,7 +51,7 @@ const save = () => {
   for (const f of props.fields) {
     const raw = draft.value[f.field]
     patch[f.field] = f.control === 'tags'
-      ? String(raw).split(',').map((t) => t.trim()).filter(Boolean)
+      ? csvToList(String(raw))
       : raw
   }
   emit('save', patch)

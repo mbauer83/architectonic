@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue'
+import { csvToList } from '../lib/commaList'
 import { documentTypeFor, titleErrorFor } from '../lib/documentForms'
 import DocumentHomeSelect from '../components/DocumentHomeSelect.vue'
 import { homeForMove, homeFromArtifact } from '../components/ArtifactHomeSelect.helpers'
@@ -129,8 +130,7 @@ const save = async () => {
     const result = await Effect.runPromise(svc.editDocument(documentId.value, {
       title: title.value,
       group: homeForMove(home.value),
-      status: status.value,
-      keywords: keywords.value.split(',').map((value) => value.trim()).filter(Boolean),
+      status: status.value, keywords: csvToList(keywords.value),
       body: body.value,
       dry_run: false,
     }))

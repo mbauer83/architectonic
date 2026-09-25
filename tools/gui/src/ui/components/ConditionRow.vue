@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
+import { csvToList } from '../lib/commaList'
 import type { CriteriaCatalog } from '../../domain'
 import type { Comparator, ConditionNode, GroupKind, ValueRef } from '../../domain/viewpointCriteria'
 import { bindingValue, literalValue } from '../../domain/viewpointCriteria'
@@ -72,7 +73,7 @@ const onComparatorChange = (event: Event) => {
 
 const onValueChange = (value: ValueRef) => update({ value })
 const onListValueChange = (raw: string) =>
-  update({ value: literalValue(raw.split(',').map((v) => v.trim()).filter((v) => v.length > 0)) })
+  update({ value: literalValue(csvToList(raw)) })
 const onListValuesChange = (values: string[]) => update({ value: literalValue(values) })
 const onListSourceChange = (source: 'literal' | 'binding') =>
   update({ value: source === 'binding' ? bindingValue(props.bindingNames[0] ?? '') : literalValue([]) })

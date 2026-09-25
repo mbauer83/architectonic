@@ -4,31 +4,23 @@
  * deleting what this repository owns. Icons are given to elements in the diagram editor, not here.
  */
 import { computed, inject, onMounted, ref, watch } from 'vue'
-import { Cause, Effect, Exit } from 'effect'
 import { modelServiceKey } from '../keys'
-import type { IconSummary } from '../../domain/schemas/icons'
-import { formatEffectError } from '../lib/errors'
+import type { IconList, IconSummary } from '../../domain/schemas/icons'
+import type { RepoError } from '../../ports/repositoryErrors'
+import { useQuery } from '../composables/useQuery'
 import IconLibraryAddForm from '../components/IconLibraryAddForm.vue'
 import IconLibraryCard from '../components/IconLibraryCard.vue'
 
 const svc = inject(modelServiceKey)!
-const icons = ref<readonly IconSummary[]>([])
+const library = useQuery<IconList, RepoError>()
+const icons = computed(() => library.data.value?.items ?? [])
+const error = library.errorMessage
 const query = ref('')
 const includeRetired = ref(false)
 const adding = ref(false)
-const error = ref<string | null>(null)
 
-const load = async (): Promise<void> => {
-  const exit = await Effect.runPromiseExit(
-    svc.listIcons({ q: query.value || undefined, include_retired: includeRetired.value }),
-  )
-  if (Exit.isSuccess(exit)) {
-    icons.value = exit.value.items
-    error.value = null
-  } else {
-    error.value = formatEffectError(Cause.squash(exit.cause))
-  }
-}
+const load = (): void =>
+  library.run(svc.listIcons({ q: query.value || undefined, include_retired: includeRetired.value }))
 onMounted(load)
 watch([query, includeRetired], load)
 
@@ -37,7 +29,7 @@ const othersThan = (icon: IconSummary): readonly IconSummary[] =>
   active.value.filter((other) => other.artifact_id !== icon.artifact_id)
 const added = (): void => {
   adding.value = false
-  void load()
+  load()
 }
 </script>
 

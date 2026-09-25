@@ -8,9 +8,10 @@
  * the server's to say; the picker only states the choice.
  */
 import { computed, inject, onMounted, ref, watch } from 'vue'
-import { Effect, Exit } from 'effect'
 import { modelServiceKey } from '../keys'
-import type { IconStyle, IconSummary } from '../../domain/schemas/icons'
+import type { IconList, IconStyle } from '../../domain/schemas/icons'
+import type { RepoError } from '../../ports/repositoryErrors'
+import { useQuery } from '../composables/useQuery'
 import type { IconScope, IconStatement, IconUploadForDiagram } from '../lib/diagramIcons'
 import { ICON_FILE_TYPES, iconUploadFromFile } from '../lib/iconFiles'
 
@@ -37,19 +38,10 @@ const svc = inject(modelServiceKey)!
 const scope = ref<IconScope>(props.current.instance || !props.current.type ? 'instance' : 'type')
 const style = ref<IconStyle | undefined>(props.current[scope.value]?.style)
 const query = ref('')
-const icons = ref<readonly IconSummary[]>([])
-const loadError = ref<string | null>(null)
-
-const load = async (): Promise<void> => {
-  const asked = { applicable_to: props.applicableTo, q: query.value || undefined }
-  const exit = await Effect.runPromiseExit(svc.listIcons(asked))
-  if (Exit.isSuccess(exit)) {
-    icons.value = exit.value.items
-    loadError.value = null
-  } else {
-    loadError.value = 'The library could not be read'
-  }
-}
+const library = useQuery<IconList, RepoError>()
+const icons = computed(() => library.data.value?.items ?? [])
+const loadError = library.errorMessage
+const load = (): void => library.run(svc.listIcons({ applicable_to: props.applicableTo, q: query.value || undefined }))
 onMounted(load)
 watch(query, load)
 

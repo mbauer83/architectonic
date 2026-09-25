@@ -1,4 +1,5 @@
 import { computed, reactive, ref, watch, type InjectionKey, type Ref } from 'vue'
+import { csvToList } from '../lib/commaList'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type { AuthoringGuidance, EntityAttributeDescriptor, EntityDetail } from '../../domain'
@@ -183,7 +184,7 @@ export function useEntityEditForm(options: {
         adhocTypes[k] = row.adHocType
       }
     }
-    const kws = editKeywords.value.split(',').map((k: string) => k.trim()).filter(Boolean)
+    const kws = csvToList(editKeywords.value)
     // No `artifact_id`: identity is in the path, and a body that repeated it would give the caller
     // two places to say which entity they meant.
     return {

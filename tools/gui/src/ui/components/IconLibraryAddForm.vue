@@ -6,13 +6,16 @@
  * would store — or why it will not — first: a removed script element is a note, an oversized picture a
  * refusal. The attribution is kept for the session, so adding a vendor's set asks for it once.
  */
-import { inject, ref } from 'vue'
-import { Cause, Effect, Exit } from 'effect'
+import { computed, inject, ref } from 'vue'
+import { Exit } from 'effect'
 import { modelServiceKey } from '../keys'
 import type { IconStyle } from '../../domain/schemas/icons'
 import type { IconUploadForDiagram } from '../lib/diagramIcons'
 import { ICON_FILE_TYPES, iconUploadFromFile } from '../lib/iconFiles'
-import { formatEffectError } from '../lib/errors'
+import type { WriteResult } from '../../domain/schemas/write-results'
+import type { RepoError } from '../../ports/repositoryErrors'
+import { useMutation } from '../composables/useMutation'
+import { csvToList } from '../lib/commaList'
 
 const emit = defineEmits<{ added: [iconId: string]; cancel: [] }>()
 
@@ -29,11 +32,12 @@ const appliesTo = ref('')
 const tags = ref('')
 const defaultStyle = ref<IconStyle>('badge')
 const notes = ref<readonly string[]>([])
-const refusal = ref<string | null>(null)
+const create = useMutation<WriteResult, RepoError>()
+const busy = create.running
+const refused = ref<string | null>(null)
+const refusal = computed(() => create.errorMessage.value ?? refused.value)
 const checked = ref(false)
-const busy = ref(false)
 
-const listOf = (text: string): string[] => text.split(',').map((item) => item.trim()).filter(Boolean)
 
 const onFile = async (event: Event): Promise<void> => {
   const chosen = (event.target as HTMLInputElement).files?.[0]
@@ -41,33 +45,29 @@ const onFile = async (event: Event): Promise<void> => {
   if (!chosen) return
   const upload = await iconUploadFromFile(chosen)
   if ('refused' in upload) {
-    refusal.value = upload.refused
+    refused.value = upload.refused
     file.value = null
     return
   }
   file.value = upload
   name.value = name.value || upload.name
-  refusal.value = null
+  refused.value = null
 }
 
 const submit = async (dryRun: boolean): Promise<void> => {
   if (!file.value) return
-  busy.value = true
-  const exit = await Effect.runPromiseExit(svc.createIcon({
-    ...file.value, name: name.value, attribution: attribution.value, applies_to: listOf(appliesTo.value),
-    tags: listOf(tags.value), default_style: defaultStyle.value, dry_run: dryRun,
+  refused.value = null
+  const exit = await create.run(svc.createIcon({
+    ...file.value, name: name.value, attribution: attribution.value, applies_to: csvToList(appliesTo.value),
+    tags: csvToList(tags.value), default_style: defaultStyle.value, dry_run: dryRun,
   }))
-  busy.value = false
-  if (Exit.isFailure(exit)) {
-    refusal.value = formatEffectError(Cause.squash(exit.cause))
-    return
-  }
+  if (Exit.isFailure(exit)) return
   const result = exit.value
   const errors = (result.verification?.issues ?? []).filter((issue) => issue.severity === 'error')
   notes.value = result.warnings
-  const refused = errors.map((issue) => issue.message).join('; ') || 'Refused'
-  refusal.value = result.verification?.valid === false ? refused : null
-  checked.value = refusal.value === null
+  const reasons = errors.map((issue) => issue.message).join('; ') || 'Refused'
+  refused.value = result.verification?.valid === false ? reasons : null
+  checked.value = refused.value === null
   if (!dryRun && result.wrote) {
     try { sessionStorage.setItem(ATTRIBUTION_KEY, attribution.value) } catch { /* a private window keeps none */ }
     emit('added', result.artifact_id)

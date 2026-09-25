@@ -6,7 +6,7 @@
  */
 import { VALID_CONTENTS, VALID_PURPOSES } from '../../domain/viewpointDefinitionDraft'
 import type { ViewpointDefinitionDraft } from '../../domain/viewpointDefinitionDraft'
-import { csvToList, listToCsv } from '../views/ViewpointsManagementView.helpers'
+import { csvToList, listToCsv } from '../lib/commaList'
 
 const props = defineProps<{
   draft: ViewpointDefinitionDraft

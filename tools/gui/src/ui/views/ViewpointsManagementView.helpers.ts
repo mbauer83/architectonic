@@ -59,8 +59,6 @@ export const isSemanticEdit = (current: ViewpointDefinitionDraft, original: View
   return SEMANTIC_KEYS.some((key) => JSON.stringify(currentMapping[key]) !== JSON.stringify(originalMapping[key]))
 }
 
-export const csvToList = (text: string): string[] => text.split(',').map((v) => v.trim()).filter((v) => v.length > 0)
-export const listToCsv = (list: readonly string[]): string => list.join(', ')
 
 export const formatScopeSummary = (summary: ScopeSummary): string => {
   if (summary.unrestricted) return 'unrestricted'
