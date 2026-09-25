@@ -9,6 +9,17 @@ export interface EditedInstance {
   readonly entity_id?: string
 }
 
+/** What an icon says about itself; a field left out keeps its value. The picture is not editable. */
+export interface IconEdit {
+  readonly name?: string
+  readonly attribution?: string
+  readonly applies_to?: readonly string[]
+  readonly default_style?: IconStyle
+  readonly tags?: readonly string[]
+  readonly status?: 'active' | 'retired'
+  readonly dry_run: boolean
+}
+
 export interface IconUpload {
   readonly name: string
   readonly attribution: string
@@ -39,4 +50,11 @@ export interface IconRepository {
     instances: readonly EditedInstance[]
   }) => Effect.Effect<ShownIcons, RepoError>
   readonly createIcon: (upload: IconUpload) => Effect.Effect<WriteResult, RepoError>
+  readonly editIcon: (iconId: string, edit: IconEdit) => Effect.Effect<WriteResult, RepoError>
+  /** Re-point every diagram showing the icon at another the library holds, then delete it. */
+  readonly replaceIcon: (
+    iconId: string, body: { replacement_id: string; dry_run: boolean },
+  ) => Effect.Effect<WriteResult, RepoError>
+  /** Refused while anything shows it; the refusal names what does. */
+  readonly deleteIcon: (iconId: string) => Effect.Effect<void, RepoError>
 }

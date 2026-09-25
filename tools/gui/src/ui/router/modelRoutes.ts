@@ -38,6 +38,7 @@ export const modelRoutes: RouteRecordRaw[] = [
   // neighbourhood. No identity, so nothing to put in the path.
   { path: ROUTE_TEMPLATES.graphExplore, component: GraphExploreView },
   { path: ROUTE_TEMPLATES.scratchpadList, component: () => import('../views/ScratchpadsView.vue') },
+  { path: ROUTE_TEMPLATES.iconLibrary, component: () => import('../views/IconLibraryView.vue') },
   { path: ROUTE_TEMPLATES.scratchpadDetail, component: () => import('../views/ScratchpadDetailView.vue') },
   { path: ROUTE_TEMPLATES.changeList, component: () => import('../views/ChangesView.vue') },
   { path: ROUTE_TEMPLATES.documentList, component: () => import('../views/DocumentsView.vue') },

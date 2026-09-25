@@ -167,4 +167,7 @@ export const makeModelService = (repo: ModelRepository) =>
     iconImageUrl: (iconId: string) => repo.iconImageUrl(iconId),
     previewShownIcons: (body: Parameters<ModelRepository['previewShownIcons']>[0]) => repo.previewShownIcons(body),
     createIcon: (upload: Parameters<ModelRepository['createIcon']>[0]) => repo.createIcon(upload),
+    editIcon: (iconId: string, edit: Parameters<ModelRepository['editIcon']>[1]) => repo.editIcon(iconId, edit),
+    replaceIcon: (iconId: string, body: Parameters<ModelRepository['replaceIcon']>[1]) => repo.replaceIcon(iconId, body),
+    deleteIcon: (iconId: string) => repo.deleteIcon(iconId),
   }) as const

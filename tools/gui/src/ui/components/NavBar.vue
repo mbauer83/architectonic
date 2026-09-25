@@ -144,6 +144,9 @@ onMounted(async () => {
       <RouterLink to="/diagrams">
         Diagrams
       </RouterLink>
+      <RouterLink to="/icons">
+        Icons
+      </RouterLink>
       <RouterLink
         to="/viewpoints"
         :class="{ 'nav__link--forced-active': viewpointDriven }"

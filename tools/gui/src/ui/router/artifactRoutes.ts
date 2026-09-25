@@ -75,6 +75,8 @@ export const ROUTE_TEMPLATES = {
   documentDetail: '/documents/:artifactId',
   scratchpadList: '/scratchpads',
   scratchpadDetail: '/scratchpads/:artifactId',
+  /** The icon library, for curation; icons are given to elements in the diagram editor. */
+  iconLibrary: '/icons',
   diagramList: '/diagrams',
   diagramCreate: '/diagrams/new',
   diagramGroups: '/diagrams/groups',

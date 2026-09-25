@@ -12,6 +12,7 @@ import { Effect, Exit } from 'effect'
 import { modelServiceKey } from '../keys'
 import type { IconStyle, IconSummary } from '../../domain/schemas/icons'
 import type { IconScope, IconStatement, IconUploadForDiagram } from '../lib/diagramIcons'
+import { ICON_FILE_TYPES, iconUploadFromFile } from '../lib/iconFiles'
 
 const props = defineProps<{
   /** What the picker is for, in the reader's words: the element's name. */
@@ -56,29 +57,17 @@ const stated = computed(() => props.current[scope.value])
 const choose = (icon: string): void =>
   emit('choose', scope.value, { icon, ...(style.value ? { style: style.value } : {}) })
 
-const FORMATS: Record<string, IconUploadForDiagram['source_format']> = {
-  'image/svg+xml': 'svg', 'image/png': 'png', 'image/jpeg': 'jpeg', 'image/webp': 'webp',
-}
 const uploadError = ref<string | null>(null)
-
-const base64Of = (file: File): Promise<string> => new Promise((resolve, reject) => {
-  const reader = new FileReader()
-  reader.onload = () => resolve(String(reader.result).split(',', 2)[1] ?? '')
-  reader.onerror = () => reject(reader.error)
-  reader.readAsDataURL(file)
-})
 
 const onFile = async (event: Event): Promise<void> => {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
-  const format = FORMATS[file.type]
-  if (!format) {
-    uploadError.value = 'Choose an SVG, PNG, JPEG or WebP file'
+  const upload = await iconUploadFromFile(file)
+  if ('refused' in upload) {
+    uploadError.value = upload.refused
     return
   }
-  const name = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'Icon'
-  const content = await base64Of(file)
-  emit('upload', scope.value, { name, content_base64: content, source_format: format }, style.value)
+  emit('upload', scope.value, upload, style.value)
 }
 </script>
 
@@ -182,7 +171,7 @@ const onFile = async (event: Event): Promise<void> => {
         Upload for this diagram…
         <input
           type="file"
-          accept="image/svg+xml,image/png,image/jpeg,image/webp"
+          :accept="ICON_FILE_TYPES"
           @change="onFile"
         >
       </label>
