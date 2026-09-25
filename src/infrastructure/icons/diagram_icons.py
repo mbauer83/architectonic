@@ -93,9 +93,8 @@ class DiagramIconSource:
 
 
 def _referenced_local_keys(diagram_entities: Mapping[str, object]) -> frozenset[str]:
-    assignments = icon_assignments(diagram_entities)
-    refs = [*assignments.by_instance.values(), *assignments.by_name.values()]
-    return frozenset(ref.target.key for ref in refs if isinstance(ref.target, LocalIcon))
+    targets = icon_assignments(diagram_entities).targets
+    return frozenset(target.key for target in targets if isinstance(target, LocalIcon))
 
 
 def _stored_entry(key: str, entry: object) -> dict[str, object] | IconRefused:

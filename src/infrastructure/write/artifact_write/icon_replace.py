@@ -63,7 +63,7 @@ def replace_icon(
         _rewritten_diagram(diagram_id, old.artifact_id, new.artifact_id, repo_root, verifier, clear_repo_caches)
         for diagram_id in users.diagrams
     ]
-    refusals = [(result.artifact_id, _errors(result)) for result in rewritten if _errors(result)]
+    refusals = [(result.artifact_id, result.error_messages) for result in rewritten if result.error_messages]
     if refusals:
         detail = "; ".join(f"{diagram}: {', '.join(errors)}" for diagram, errors in refusals)
         return refused_icon_write(old.path, old.artifact_id, f"re-pointing would leave diagrams invalid — {detail}")
@@ -102,8 +102,3 @@ def _rewritten_diagram(
         assert_write_root=assert_engagement_write_root, repo_root=repo_root, verifier=verifier,
         clear_repo_caches=clear_repo_caches, artifact_id=diagram_id, diagram_entities=entities, dry_run=True,
     )
-
-
-def _errors(result: WriteResult) -> list[str]:
-    issues = (result.verification or {}).get("issues", [])
-    return [str(issue.get("message")) for issue in issues if issue.get("severity") == "error"]

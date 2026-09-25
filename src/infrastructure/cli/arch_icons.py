@@ -25,6 +25,7 @@ from src.infrastructure.artifact_index.bootstrap import notify_paths_changed
 from src.infrastructure.mcp.artifact_mcp.context import default_engagement_repo_root
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 from src.infrastructure.write.artifact_write.icon import IconUpload, create_icon
+from src.infrastructure.write.artifact_write.types import WriteResult
 
 _FORMATS: dict[str, SourceFormat] = {".svg": "svg", ".png": "png", ".jpg": "jpeg", ".jpeg": "jpeg", ".webp": "webp"}
 
@@ -59,7 +60,7 @@ def run_import(
             repo_root=repo_root, verifier=verifier, clear_repo_caches=lambda p: notify_paths_changed([p]),
             upload=upload, dry_run=not commit,
         )
-        results.append(_outcome(path, result.wrote, result.artifact_id, result.verification or {}, commit))
+        results.append(_outcome(path, result, commit))
     return results
 
 
@@ -67,10 +68,10 @@ def _name_of(path: Path) -> str:
     return " ".join(path.stem.replace("_", " ").replace("-", " ").split())
 
 
-def _outcome(path: Path, wrote: bool, artifact_id: str, verification: dict, commit: bool) -> ImportedFile:
-    issues = [str(issue.get("message")) for issue in verification.get("issues", []) if issue.get("severity") == "error"]
-    if wrote or (not commit and not issues):
-        return ImportedFile(path, "accepted", artifact_id)
+def _outcome(path: Path, result: WriteResult, commit: bool) -> ImportedFile:
+    issues = result.error_messages
+    if result.wrote or (not commit and not issues):
+        return ImportedFile(path, "accepted", result.artifact_id)
     reason = "; ".join(issues) or "not written"
     return ImportedFile(path, "present" if "already holds this picture" in reason else "refused", reason)
 

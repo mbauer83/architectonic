@@ -34,7 +34,7 @@ class IconUsers:
 
 def icon_users(icon_id: str, diagrams: Iterable[DiagramRecord], specializations: SpecializationCatalog) -> IconUsers:
     wanted = stable_id(icon_id)
-    using_diagrams = sorted(d.artifact_id for d in diagrams if wanted in _library_icons_named(d))
+    using_diagrams = sorted(d.artifact_id for d in diagrams if wanted in library_icons_named(d))
     defaulting = sorted(
         spec.slug for spec in specializations.entries
         if (named := library_icon_named(spec.notation.icon)) is not None and named.icon_id == wanted
@@ -42,8 +42,8 @@ def icon_users(icon_id: str, diagrams: Iterable[DiagramRecord], specializations:
     return IconUsers(tuple(using_diagrams), tuple(defaulting))
 
 
-def _library_icons_named(diagram: DiagramRecord) -> frozenset[str]:
+def library_icons_named(diagram: DiagramRecord) -> frozenset[str]:
+    """The rename-stable ids of the library icons *diagram* names, at either level."""
     raw = diagram.extra.get("diagram-entities")
-    assignments = icon_assignments(raw if isinstance(raw, dict) else None)
-    refs = [*assignments.by_instance.values(), *assignments.by_name.values()]
-    return frozenset(ref.target.icon_id for ref in refs if isinstance(ref.target, SharedIcon))
+    targets = icon_assignments(raw if isinstance(raw, dict) else None).targets
+    return frozenset(target.icon_id for target in targets if isinstance(target, SharedIcon))

@@ -12,6 +12,12 @@ class WriteResult:
     warnings: list[str]
     verification: dict[str, Any] | None
 
+    @property
+    def error_messages(self) -> list[str]:
+        """What the verification refused, one message per error; empty when it refused nothing."""
+        issues = (self.verification or {}).get("issues", [])
+        return [str(issue.get("message")) for issue in issues if issue.get("severity") == "error"]
+
 
 @dataclass(frozen=True)
 class SyncDiagramToModelResult(WriteResult):

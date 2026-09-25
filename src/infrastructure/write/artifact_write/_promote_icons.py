@@ -17,8 +17,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from src.application.icons.effective_icons import icon_assignments, with_icon_repointed
-from src.domain.icons.icon_ref import SharedIcon, icon_target_from
+from src.application.icons.effective_icons import with_icon_repointed
+from src.application.icons.icon_usage import library_icons_named
+from src.domain.icons.icon_ref import icon_target_from
 
 from ._promote_file_ops import rewrite_promoted_frontmatter
 
@@ -44,7 +45,8 @@ def icons_a_promotion_carries(
     }
     carried: set[str] = set()
     held: dict[str, str] = {}
-    for icon_id in _library_icons_shown(diagram_ids, repo):
+    diagrams = [d for d in map(repo.get_diagram, diagram_ids) if d is not None]
+    for icon_id in sorted({icon_id for diagram in diagrams for icon_id in library_icons_named(diagram)}):
         icon = repo.get_icon(icon_id)
         if icon is None or registry.scope_for_path(icon.path) != "engagement":
             continue
@@ -68,14 +70,3 @@ def name_the_enterprise_icons(promoted_diagram: Path, held_by_picture: Mapping[s
 
     if held_by_picture:
         rewrite_promoted_frontmatter(promoted_diagram, repointed)
-
-
-def _library_icons_shown(diagram_ids: Iterable[str], repo: ArtifactRepository) -> list[str]:
-    shown: list[str] = []
-    for diagram_id in diagram_ids:
-        diagram = repo.get_diagram(diagram_id)
-        raw = diagram.extra.get("diagram-entities") if diagram is not None else None
-        assignments = icon_assignments(raw if isinstance(raw, dict) else None)
-        refs = [*assignments.by_instance.values(), *assignments.by_name.values()]
-        shown += [ref.target.icon_id for ref in refs if isinstance(ref.target, SharedIcon)]
-    return shown

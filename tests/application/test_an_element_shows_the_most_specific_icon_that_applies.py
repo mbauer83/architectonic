@@ -11,7 +11,7 @@ from src.application.icons.effective_icons import (
     names_most_specific_first,
 )
 from src.domain.icons.applicability import applicability_from
-from src.domain.icons.icon_ref import IconRef, IconTarget, SharedIcon, icon_ref_from
+from src.domain.icons.icon_ref import IconRef, IconTarget, LocalIcon, SharedIcon, icon_ref_from
 from src.domain.icons.resolved_icon import ResolvedIcon
 
 INSTANCE, TYPE, SPEC, DEFAULT, NARROW = (f"ICO@1.{k}" for k in ("inst1", "type1", "spec1", "dflt1", "narr1"))
@@ -108,3 +108,12 @@ def test_a_malformed_entry_is_left_out_rather_than_failing_the_diagram() -> None
     assignments = icon_assignments({"display_icons": {"A": "not-an-icon", "B": INSTANCE}, "type_icons": [1, 2]})
 
     assert list(assignments.by_instance) == ["B"] and not assignments.by_name
+
+
+def test_the_targets_are_every_icon_named_at_either_level_and_nothing_malformed() -> None:
+    assignments = icon_assignments({
+        "display_icons": {"a": INSTANCE, "b": {"icon": "local:logo", "style": "figure"}, "c": 7},
+        "type_icons": {"node": INSTANCE},
+    })
+
+    assert assignments.targets == (SharedIcon(INSTANCE), LocalIcon("logo"), SharedIcon(INSTANCE))

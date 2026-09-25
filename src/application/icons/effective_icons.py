@@ -50,6 +50,11 @@ class IconAssignments:
     by_instance: Mapping[str, IconRef]
     by_name: Mapping[str, IconRef]
 
+    @property
+    def targets(self) -> tuple[IconTarget, ...]:
+        """Every icon the diagram names, at either level, as often as it names it."""
+        return tuple(ref.target for ref in (*self.by_instance.values(), *self.by_name.values()))
+
 
 def icon_assignments(diagram_entities: Mapping[str, object] | None) -> IconAssignments:
     source = diagram_entities or {}
