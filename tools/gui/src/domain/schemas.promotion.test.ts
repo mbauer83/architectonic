@@ -12,6 +12,7 @@ const basePlan = {
   documents_to_add: [],
   diagrams_to_add: [],
   icons_to_add: [],
+  icons_held_by_picture: {},
   doc_conflicts: [],
   diagram_conflicts: [],
   schema_errors: [],

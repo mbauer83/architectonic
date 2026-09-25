@@ -129,6 +129,8 @@ class PromotionPlan:
     diagrams_to_add: list[str] = field(default_factory=list)
     #: Library icons the promoted diagrams show that only the engagement holds; carried along (D6).
     icons_to_add: list[str] = field(default_factory=list)
+    #: Engagement icon → the enterprise icon with the same picture, which the promoted diagrams name instead.
+    icons_held_by_picture: dict[str, str] = field(default_factory=dict)
     doc_conflicts: list[DocPromotionConflict] = field(default_factory=list)
     diagram_conflicts: list[DiagramPromotionConflict] = field(default_factory=list)
     schema_errors: list[str] = field(default_factory=list)
@@ -321,9 +323,11 @@ def plan_promotion(
             all_entity_ids, registry, engagement_root, enterprise_root
         )
 
+    # A conflict may be resolved to the engagement's version, so its dependencies are planned for too.
+    promoted_diagram_ids = diags_to_add + [c.engagement_id for c in diagram_conflicts]
+    promoted_icons = icons_a_promotion_carries(promoted_diagram_ids, repo, registry)
     viewpoint_dependencies: list[ViewpointDependency] = []
     if engagement_root is not None and enterprise_root is not None:
-        promoted_diagram_ids = diags_to_add + [c.engagement_id for c in diagram_conflicts]
         viewpoint_dependencies = collect_viewpoint_dependencies(
             promoted_diagram_ids, repo=repo, ent_root=enterprise_root
         )
@@ -346,7 +350,8 @@ def plan_promotion(
         warnings=warnings,
         documents_to_add=docs_to_add,
         diagrams_to_add=diags_to_add,
-        icons_to_add=icons_a_promotion_carries(diags_to_add, repo, registry),
+        icons_to_add=promoted_icons.to_add,
+        icons_held_by_picture=promoted_icons.held_by_picture,
         doc_conflicts=doc_conflicts,
         diagram_conflicts=diagram_conflicts,
         schema_errors=schema_errors,

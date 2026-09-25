@@ -10494,6 +10494,10 @@ export interface components {
             entity_id: string;
             /** Group Mapping */
             group_mapping: components["schemas"]["PromotionGroupMappingEntry"][];
+            /** Icons Held By Picture */
+            icons_held_by_picture: {
+                [key: string]: string;
+            };
             /** Icons To Add */
             icons_to_add: string[];
             /** Missing Dependencies */

@@ -102,6 +102,8 @@ export const PromotionPlanSchema = Schema.Struct({
   documents_to_add: Schema.Array(Schema.String),
   diagrams_to_add: Schema.Array(Schema.String),
   icons_to_add: Schema.Array(Schema.String),
+  // Engagement icon → the enterprise icon with the same picture, which the promoted diagrams name instead.
+  icons_held_by_picture: Schema.Record({ key: Schema.String, value: Schema.String }),
   doc_conflicts: Schema.Array(PromotionDocumentConflictSchema),
   diagram_conflicts: Schema.Array(PromotionDiagramConflictSchema),
   schema_errors: Schema.Array(Schema.String),

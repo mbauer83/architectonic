@@ -101,6 +101,7 @@ def promotion_plan(
         "documents_to_add": plan.documents_to_add,
         "diagrams_to_add": plan.diagrams_to_add,
         "icons_to_add": plan.icons_to_add,
+        "icons_held_by_picture": plan.icons_held_by_picture,
         "doc_conflicts": [
             {
                 "engagement_id": c.engagement_id,

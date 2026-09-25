@@ -139,6 +139,7 @@ class PromotionPlanResponse(Closed):
     documents_to_add: list[str]
     diagrams_to_add: list[str]
     icons_to_add: list[str]
+    icons_held_by_picture: dict[str, str]
     doc_conflicts: list[PromotionDocumentConflict]
     diagram_conflicts: list[PromotionDiagramConflict]
     warnings: list[str]

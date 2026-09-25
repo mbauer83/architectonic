@@ -9,6 +9,7 @@ from typing import Any
 
 from src.application.artifacts.query import ArtifactRepository
 from src.application.verification.artifact_verifier import ArtifactRegistry
+from src.domain.repository.artifact_location import artifact_kind_at
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
@@ -21,6 +22,7 @@ from src.infrastructure.write.artifact_write._promote_file_ops import (
     update_body_references,
     update_outgoing_references,
 )
+from src.infrastructure.write.artifact_write._promote_icons import name_the_enterprise_icons
 from src.infrastructure.write.artifact_write._promote_viewpoints import ViewpointResolution, apply_viewpoint_resolutions
 from src.infrastructure.write.artifact_write.parse_existing import parse_entity_file
 from src.infrastructure.write.artifact_write.promote_to_enterprise import (
@@ -97,12 +99,26 @@ def _copy_simple_artifacts(ctx: _ExecCtx) -> None:
         _copy(did)
     for dc in ctx.plan.doc_conflicts:
         _resolve(dc, "document")
+    copied_before = len(ctx.ent_copied)
     for did in ctx.plan.diagrams_to_add:
         _copy(did)
     for iid in ctx.plan.icons_to_add:
         _copy(iid)  # the engagement keeps its copy: other diagrams there may show it
     for diag_dc in ctx.plan.diagram_conflicts:
         _resolve(diag_dc, "diagram")
+    for path in _promoted_diagrams(ctx, ctx.ent_copied[copied_before:]):
+        name_the_enterprise_icons(path, ctx.plan.icons_held_by_picture)
+
+
+def _promoted_diagrams(ctx: _ExecCtx, copied: list[Path]) -> list[Path]:
+    """The enterprise files the promoted diagrams now occupy: new copies, and accepted engagement versions."""
+    added = [p for p in copied if artifact_kind_at(p.relative_to(ctx.enterprise_root)) == "diagram"]
+    accepted = [
+        path for dc in ctx.plan.diagram_conflicts
+        if (r := ctx.resolutions.get(dc.engagement_id)) is not None and r.strategy == "accept_engagement"
+        and (path := ctx.registry.find_file_by_id(dc.enterprise_id)) is not None
+    ]
+    return [*added, *accepted]
 
 
 def _accepted_engagement_ids(confs: list[Any], resolutions: dict[str, ConflictResolution]) -> list[str]:

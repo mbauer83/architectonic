@@ -150,6 +150,11 @@ const matchStatusLabel = (entry: PromotionGroupMappingEntry): string => {
           { title: 'New entities to promote', items: props.plan.entities_to_add },
           { title: 'New documents to promote', items: props.plan.documents_to_add },
           { title: 'New diagrams to promote', items: props.plan.diagrams_to_add },
+          { title: 'Icons to take along', items: props.plan.icons_to_add },
+          {
+            title: 'Icons the enterprise already has, by picture',
+            items: Object.entries(props.plan.icons_held_by_picture).map(([own, held]) => `${own} → ${held}`),
+          },
           { title: 'Selected connections', items: props.plan.connection_ids },
         ]"
         v-show="entry.items.length"

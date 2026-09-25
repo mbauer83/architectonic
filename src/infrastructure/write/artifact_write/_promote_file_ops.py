@@ -215,17 +215,28 @@ def rewrite_outgoing(
 
 def rewrite_viewpoint_pin(path: Path, new_version: int) -> None:
     """Patch a promoted diagram/matrix file's ``viewpoint.version`` frontmatter field to
-    *new_version* in place (an explicit promotion-time re-pin, D14) — every other
-    frontmatter field and the body are preserved verbatim."""
+    *new_version* in place (an explicit promotion-time re-pin, D14)."""
+    def repinned(frontmatter: dict[str, Any]) -> dict[str, Any] | None:
+        viewpoint = frontmatter.get("viewpoint")
+        if not isinstance(viewpoint, dict):
+            return None
+        return {**frontmatter, "viewpoint": {**viewpoint, "version": new_version}}
+
+    rewrite_promoted_frontmatter(path, repinned)
+
+
+def rewrite_promoted_frontmatter(path: Path, change: Callable[[dict[str, Any]], dict[str, Any] | None]) -> None:
+    """Rewrite a promoted file's frontmatter in place with *change*, which answers None to leave it be.
+
+    Every field *change* keeps and the body are preserved verbatim.
+    """
     text = path.read_text(encoding="utf-8")
     reading = read_frontmatter(text)
     if not isinstance(reading, Frontmatter):
         return
-    frontmatter: dict[str, Any] = parse_yaml(reading.text) or {}
-    viewpoint = frontmatter.get("viewpoint")
-    if not isinstance(viewpoint, dict):
+    frontmatter = change(parse_yaml(reading.text) or {})
+    if frontmatter is None:
         return
-    frontmatter["viewpoint"] = {**viewpoint, "version": new_version}
     dumped = yaml.safe_dump(frontmatter, sort_keys=False)
     if not isinstance(dumped, str):
         raise TypeError("yaml.safe_dump returned non-string output")
