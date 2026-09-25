@@ -11,6 +11,7 @@ const basePlan = {
   warnings: [],
   documents_to_add: [],
   diagrams_to_add: [],
+  icons_to_add: [],
   doc_conflicts: [],
   diagram_conflicts: [],
   schema_errors: [],

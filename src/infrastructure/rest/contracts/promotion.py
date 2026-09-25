@@ -138,6 +138,7 @@ class PromotionPlanResponse(Closed):
     already_in_enterprise: list[str]
     documents_to_add: list[str]
     diagrams_to_add: list[str]
+    icons_to_add: list[str]
     doc_conflicts: list[PromotionDocumentConflict]
     diagram_conflicts: list[PromotionDiagramConflict]
     warnings: list[str]

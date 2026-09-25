@@ -101,6 +101,7 @@ export const PromotionPlanSchema = Schema.Struct({
   warnings: Schema.Array(Schema.String),
   documents_to_add: Schema.Array(Schema.String),
   diagrams_to_add: Schema.Array(Schema.String),
+  icons_to_add: Schema.Array(Schema.String),
   doc_conflicts: Schema.Array(PromotionDocumentConflictSchema),
   diagram_conflicts: Schema.Array(PromotionDiagramConflictSchema),
   schema_errors: Schema.Array(Schema.String),

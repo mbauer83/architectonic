@@ -99,6 +99,8 @@ def _copy_simple_artifacts(ctx: _ExecCtx) -> None:
         _resolve(dc, "document")
     for did in ctx.plan.diagrams_to_add:
         _copy(did)
+    for iid in ctx.plan.icons_to_add:
+        _copy(iid)  # the engagement keeps its copy: other diagrams there may show it
     for diag_dc in ctx.plan.diagram_conflicts:
         _resolve(diag_dc, "diagram")
 

@@ -10475,6 +10475,8 @@ export interface components {
             entity_id: string;
             /** Group Mapping */
             group_mapping: components["schemas"]["PromotionGroupMappingEntry"][];
+            /** Icons To Add */
+            icons_to_add: string[];
             /** Missing Dependencies */
             missing_dependencies: components["schemas"]["PromotionMissingDependency"][];
             /** Schema Errors */

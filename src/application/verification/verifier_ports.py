@@ -19,6 +19,7 @@ from src.application.verification.artifact_verifier_types import (
     Issue,
     VerificationResult,
 )
+from src.domain.icons.icon_record import IconRecord
 
 
 class PumlSyntaxPort(Protocol):
@@ -67,6 +68,16 @@ class StoredPictureInspector(Protocol):
     """Decode a stored icon picture: its size when it is a PNG within the stored limits."""
 
     def inspect(self, png: bytes) -> tuple[int, int] | PictureProblem: ...
+
+
+class IconLibrary(Protocol):
+    """The icons a repository may show: its own library, and the enterprise's when it has one.
+
+    Icons are the one artifact resolved across tiers by id with no proxy standing in the engagement
+    (D6), so the library a write is verified against can be wider than the registry it verifies with.
+    """
+
+    def get_icon(self, artifact_id: str) -> IconRecord | None: ...
 
 
 class IncrementalStatePort(Protocol):

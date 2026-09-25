@@ -26,6 +26,7 @@ from src.application.artifacts.query import ArtifactRepository
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.infrastructure.write.artifact_write._promote_groups import GroupMappingEntry
+from src.infrastructure.write.artifact_write._promote_icons import icons_a_promotion_carries
 from src.infrastructure.write.artifact_write._promote_planning import (
     _build_enterprise_id_suffix_index,
     _build_enterprise_name_index,
@@ -126,6 +127,8 @@ class PromotionPlan:
     warnings: list[str]
     documents_to_add: list[str] = field(default_factory=list)
     diagrams_to_add: list[str] = field(default_factory=list)
+    #: Library icons the promoted diagrams show that only the engagement holds; carried along (D6).
+    icons_to_add: list[str] = field(default_factory=list)
     doc_conflicts: list[DocPromotionConflict] = field(default_factory=list)
     diagram_conflicts: list[DiagramPromotionConflict] = field(default_factory=list)
     schema_errors: list[str] = field(default_factory=list)
@@ -343,6 +346,7 @@ def plan_promotion(
         warnings=warnings,
         documents_to_add=docs_to_add,
         diagrams_to_add=diags_to_add,
+        icons_to_add=icons_a_promotion_carries(diags_to_add, repo, registry),
         doc_conflicts=doc_conflicts,
         diagram_conflicts=diagram_conflicts,
         schema_errors=schema_errors,

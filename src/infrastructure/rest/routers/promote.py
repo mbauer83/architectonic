@@ -100,6 +100,7 @@ def promotion_plan(
         "already_in_enterprise": plan.already_in_enterprise,
         "documents_to_add": plan.documents_to_add,
         "diagrams_to_add": plan.diagrams_to_add,
+        "icons_to_add": plan.icons_to_add,
         "doc_conflicts": [
             {
                 "engagement_id": c.engagement_id,

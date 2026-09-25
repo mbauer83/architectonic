@@ -223,7 +223,26 @@ def verifier_for(roots_key_str: str, *, include_registry: bool) -> ArtifactVerif
     # projection from the diagram under verification (compile_projection's same-write step).
     committed_repo = committed_repository(repo_cached(roots_key_str))
     registry = registry_cached(roots_key_str) if include_registry else None
-    return build_artifact_verifier(registry, catalogs=catalogs, committed_repo=committed_repo)
+    return build_artifact_verifier(
+        registry, catalogs=catalogs, committed_repo=committed_repo, icon_library=_icon_library_for(roots_key_str)
+    )
+
+
+def _icon_library_for(roots_key_str: str) -> ArtifactRepository | None:
+    """The icon library an engagement-scoped write sees: the engagement's, then its enterprise's.
+
+    Icons are the one kind an engagement references across tiers without a proxy (D6), so a write
+    verified against the engagement alone would refuse an enterprise icon it may use. The enterprise
+    joined is the one of the workspace this engagement belongs to — never another checkout's.
+    """
+    roots = [Path(p) for p in roots_key_str.split("|") if p]
+    workspace = _workspace_repo_roots()
+    if len(roots) != 1 or workspace is None or not workspace[1].exists():
+        return None
+    engagement, enterprise = workspace
+    if roots[0].resolve() != engagement.resolve():
+        return None
+    return repo_cached(roots_key([engagement, enterprise]))
 
 
 def _refresh_repo_now(roots: list[Path]) -> ReadModelVersion:

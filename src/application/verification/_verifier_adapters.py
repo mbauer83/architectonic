@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import functools
 
+from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.verifier_ports import (
     FileInventoryPort,
+    IconLibrary,
     IncrementalStatePort,
     PumlSyntaxPort,
     StoredPictureInspector,
@@ -25,6 +27,13 @@ class _VerifierAdapters:
     _inventory_port: FileInventoryPort | None
     _incremental_port: IncrementalStatePort | None
     _picture_inspector: StoredPictureInspector | None
+    _icon_library: IconLibrary | None
+    registry: ArtifactRegistry | None
+
+    @property
+    def icon_library(self) -> IconLibrary | None:
+        """Where icon references resolve: the library given, else this verifier's own registry."""
+        return self._icon_library if self._icon_library is not None else self.registry
 
     @functools.cached_property
     def _puml_syntax(self) -> PumlSyntaxPort:

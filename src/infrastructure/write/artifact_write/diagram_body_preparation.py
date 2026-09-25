@@ -56,7 +56,8 @@ def icons_for(verifier: ArtifactVerifier, diagram_entities: object) -> IconSourc
     from src.infrastructure.icons.diagram_icons import DiagramIconSource  # noqa: PLC0415
     from src.infrastructure.icons.library_source import LibraryIconSource  # noqa: PLC0415
 
-    library = LibraryIconSource(verifier.registry) if verifier.registry is not None else None
+    lookup = verifier.icon_library
+    library = LibraryIconSource(lookup) if lookup is not None else None
     return DiagramIconSource(diagram_entities if isinstance(diagram_entities, dict) else None, library)
 
 

@@ -60,6 +60,7 @@ from src.application.verification.evaluation import (
 )
 from src.application.verification.verifier_ports import (
     FileInventoryPort,
+    IconLibrary,
     IncrementalStatePort,
     PumlSyntaxPort,
     StoredPictureInspector,
@@ -82,6 +83,7 @@ class ArtifactVerifier(_VerifierAdapters):
         file_inventory: FileInventoryPort | None = None,
         incremental_state: IncrementalStatePort | None = None,
         picture_inspector: StoredPictureInspector | None = None,
+        icon_library: IconLibrary | None = None,
     ) -> None:
         self.registry = registry
         self.check_puml_syntax = check_puml_syntax
@@ -92,6 +94,7 @@ class ArtifactVerifier(_VerifierAdapters):
         self._inventory_port = file_inventory
         self._incremental_port = incremental_state
         self._picture_inspector = picture_inspector
+        self._icon_library = icon_library
 
     @property
     def runtime_catalogs(self) -> RuntimeCatalogs:
@@ -118,6 +121,7 @@ class ArtifactVerifier(_VerifierAdapters):
             puml_syntax=self._puml_syntax,
             scope_for_path=self._scope_for_path,
             repo_root_for_path=self._repo_root_for_path,
+            icon_library=self.icon_library,
         )
 
     def _repo_root_for_path(self, path: Path) -> Path | None:

@@ -46,7 +46,7 @@ from src.application.verification.artifact_verifier_types import (
     Severity,
     VerificationResult,
 )
-from src.application.verification.verifier_ports import PumlSyntaxPort
+from src.application.verification.verifier_ports import IconLibrary, PumlSyntaxPort
 from src.application.viewpoints.registry_snapshot import RegistrySnapshot
 
 if TYPE_CHECKING:
@@ -65,6 +65,7 @@ class DiagramRuleContext:
     puml_syntax: PumlSyntaxPort
     scope_for_path: Callable[[Path], RepoScope]
     repo_root_for_path: Callable[[Path], Path | None]
+    icon_library: IconLibrary | None = None
 
 
 def _check_common_header(fm: dict[str, Any], result: VerificationResult, loc: str) -> None:
@@ -127,7 +128,7 @@ def verify_diagram(
             result=result,
             loc=loc,
         )
-        check_icon_assignments(fm, ctx.registry, ctx.catalogs, result, loc)
+        check_icon_assignments(fm, ctx.registry, ctx.icon_library or ctx.registry, ctx.catalogs, result, loc)
         if ctx.candidate_repo is not None and module is not None:
             run_diagram_contributions(
                 module=module,

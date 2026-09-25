@@ -24,7 +24,7 @@ from __future__ import annotations
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
-from src.application.verification.verifier_ports import FileInventoryPort
+from src.application.verification.verifier_ports import FileInventoryPort, IconLibrary
 from src.infrastructure.icons.raster_codec import StoredPngInspector
 from src.infrastructure.verification.adapters import DefaultPumlSyntaxAdapter
 
@@ -36,6 +36,7 @@ def build_artifact_verifier(
     committed_repo: object | None = None,
     file_inventory: FileInventoryPort | None = None,
     check_puml_syntax: bool = True,
+    icon_library: IconLibrary | None = None,
 ) -> ArtifactVerifier:
     """An ArtifactVerifier whose PlantUML syntax port actually runs PlantUML.
 
@@ -51,4 +52,5 @@ def build_artifact_verifier(
         check_puml_syntax=check_puml_syntax,
         puml_syntax=DefaultPumlSyntaxAdapter() if check_puml_syntax else None,
         picture_inspector=StoredPngInspector(),
+        icon_library=icon_library,
     )
