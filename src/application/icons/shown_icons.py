@@ -15,10 +15,10 @@ from src.application.icons.effective_icons import (
     EffectiveIcon,
     effective_icon,
     icon_assignments,
-    names_most_specific_first,
     specialization_defaults,
 )
 from src.application.icons.icon_usage import hosted_type_of
+from src.domain.icons.element_names import names_most_specific_first
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.ontology_representation.specializations import SpecializationCatalog
@@ -29,6 +29,8 @@ class EditedInstance:
     instance_id: str
     #: The entity it draws, where that is not the instance id itself (an occurrence).
     entity_id: str | None = None
+    #: The type the diagram draws it as, where the notation has types of its own (a C4 container).
+    drawn_as: str | None = None
 
 
 def shown_icons(
@@ -44,7 +46,7 @@ def shown_icons(
     for instance in instances:
         entity = entity_of(instance.entity_id or instance.instance_id)
         if entity is not None:
-            names = names_most_specific_first(entity.artifact_type, entity.specializations)
+            names = names_most_specific_first(entity.artifact_type, entity.specializations, instance.drawn_as)
             default = specialization_defaults(entity.artifact_type, specializations)
             icon = effective_icon(instance.instance_id, names, assignments, source, default)
         elif (hosted := hosted_type_of(instance.instance_id, diagram_entities)) is not None:

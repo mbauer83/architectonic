@@ -152,6 +152,7 @@ const toggleIconPicker = (row: EntityRow): void => {
         <RowIconChip
           v-if="iconsOffered"
           :instance-id="instanceIdOf(row)"
+          :entity-id="row.entity.artifact_id"
           :element-name="row.entity.name"
           :open="editingIconKey === rowKey(row)"
           @toggle="toggleIconPicker(row)"
@@ -258,7 +259,7 @@ const toggleIconPicker = (row: EntityRow): void => {
       <RowIconPicker
         v-if="iconsOffered && editingIconKey === rowKey(row)"
         :instance-id="instanceIdOf(row)"
-        :entity-id="row.entity.artifact_id"
+        :applicable-to="row.entity.artifact_id"
         :element-name="row.entity.name"
         :type-name="row.entity.artifact_type"
         @done="editingIconKey = null"

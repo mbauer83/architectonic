@@ -67,6 +67,8 @@ class EditedInstanceBody(BaseModel):
     instance_id: str
     #: The entity it draws, where that is not the instance id itself (an occurrence).
     entity_id: str | None = None
+    #: The type the diagram draws it as, where the notation has types of its own (a C4 container).
+    drawn_as: str | None = None
 
 
 class PreviewShownIconsRequest(BaseModel):
@@ -89,7 +91,7 @@ def preview_shown_icons(
         case dict() as entities:
             pass
     repo = s.get_repo()
-    instances = [EditedInstance(i.instance_id, i.entity_id) for i in req.instances]
+    instances = [EditedInstance(i.instance_id, i.entity_id, i.drawn_as) for i in req.instances]
     source = DiagramIconSource(entities, LibraryIconSource(repo))
     shown = shown_icons(entities, instances, repo.get_entity, source, catalogs.specializations)
     return {

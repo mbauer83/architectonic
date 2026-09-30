@@ -6,7 +6,13 @@ import { diagramIconsKey } from '../composables/useDiagramIcons'
 import type { IconScope, IconStatement, IconUploadForDiagram } from '../lib/diagramIcons'
 import type { IconStyle } from '../../domain/schemas/icons'
 
-const props = defineProps<{ instanceId: string; entityId: string; elementName: string; typeName: string }>()
+const props = defineProps<{
+  instanceId: string
+  /** Asked of the library, so it offers only what applies: an entity id, or a type name. */
+  applicableTo: string
+  elementName: string
+  typeName: string
+}>()
 const emit = defineEmits<{ done: [] }>()
 
 const icons = inject(diagramIconsKey)!
@@ -24,7 +30,7 @@ const upload = (scope: IconScope, file: IconUploadForDiagram, style: IconStyle |
   <IconPicker
     :element-name="elementName"
     :type-name="typeName"
-    :applicable-to="entityId"
+    :applicable-to="applicableTo"
     :styles="icons.styles.value"
     :current="icons.statedAt(instanceId, typeName)"
     @choose="choose"

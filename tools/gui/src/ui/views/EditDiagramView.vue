@@ -133,8 +133,9 @@ const {
   groupings: authoredGroupings, candidates: groupingCandidates, forWrite: groupingsForWrite,
   addMember, labelOfDrawing, membersOf, placeBeside, seedOnce,
 } = useDiagramGroupings(selection.effectiveEntitiesList, typeEntityData)
-useDiagramIcons({ svc, diagramEntities: typeEntityData, write: mergeTypeEntityData, rows: selection.selectionRows,
-  styles: computed(() => uiConfig.value?.icon_styles ?? []) })
+useDiagramIcons({
+  svc, diagramEntities: typeEntityData, write: mergeTypeEntityData, styles: computed(() => uiConfig.value?.icon_styles ?? []),
+})
 selection.useBoxPlacement(placeBeside)
 seedOnce(diagramDetail)
 

@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject, ref } from 'vue'
 import type { DiagramOwnEntityTypeUiConfig, EntityDisplayInfo } from '../../domain'
 import EntityPickerInput from './EntityPickerInput.vue'
+import RowIconChip from './RowIconChip.vue'
+import RowIconPicker from './RowIconPicker.vue'
+import { diagramIconsKey } from '../composables/useDiagramIcons'
 
 type DiagramOnlyEntity = Record<string, unknown> & {
   id: string
@@ -19,6 +22,11 @@ const props = defineProps<{
 const emit = defineEmits<{ diagramEntitiesChange: [patch: Record<string, unknown>] }>()
 
 const collectionKey = computed(() => props.config.entity_type)
+
+// The icon each item shows — only where the editing view provides icon editing and the type draws icons.
+const icons = inject(diagramIconsKey, undefined)
+const iconsOffered = computed(() => (icons?.styles.value.length ?? 0) > 0)
+const editingIconOf = ref<string | null>(null)
 
 const allItems = computed<DiagramOnlyEntity[]>(() => {
   const raw = props.diagramEntities[collectionKey.value]
@@ -94,6 +102,13 @@ const propEnumValues = (schema: unknown): string[] => {
       class="type-card"
     >
       <div class="card-top">
+        <RowIconChip
+          v-if="iconsOffered"
+          :instance-id="item.id"
+          :element-name="item.label"
+          :open="editingIconOf === item.id"
+          @toggle="editingIconOf = editingIconOf === item.id ? null : item.id"
+        />
         <EntityPickerInput
           v-if="permittedTypes.length"
           class="card-picker"
@@ -112,6 +127,14 @@ const propEnumValues = (schema: unknown): string[] => {
           ×
         </button>
       </div>
+      <RowIconPicker
+        v-if="iconsOffered && editingIconOf === item.id"
+        :instance-id="item.id"
+        :applicable-to="config.entity_type"
+        :element-name="item.label"
+        :type-name="config.entity_type"
+        @done="editingIconOf = null"
+      />
       <input
         class="inp card-label"
         :value="item.label"

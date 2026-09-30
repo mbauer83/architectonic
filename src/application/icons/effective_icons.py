@@ -71,11 +71,6 @@ def icon_assignments(diagram_entities: Mapping[str, object] | None) -> IconAssig
     return IconAssignments(_refs(source.get(DISPLAY_ICONS_KEY)), _refs(source.get(TYPE_ICONS_KEY)))
 
 
-def names_most_specific_first(element_type: str, specializations: Sequence[str]) -> tuple[str, ...]:
-    """An element's names in the order `effective_icon` consults them: its specializations, then its type."""
-    return (*[name for name in specializations if name], element_type)
-
-
 def effective_icon(
     instance_id: str,
     names: Sequence[str],

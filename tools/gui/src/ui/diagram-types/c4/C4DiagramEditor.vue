@@ -202,6 +202,7 @@ const handleConnectionsChange = (updated: DiagramConnection[]) => {
     :scope-entity-id="scopeEntityId"
     :diagram-only-types="uiConfig.diagram_only_types"
     :diagram-entities="diagramEntities"
+    :scope-type="scopeEntityType"
     @excluded-ids-change="handleExcludedChange"
   />
 

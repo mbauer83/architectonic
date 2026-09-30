@@ -8,9 +8,9 @@ from src.application.icons.effective_icons import (
     EffectiveIcon,
     effective_icon,
     icon_assignments,
-    names_most_specific_first,
 )
 from src.domain.icons.applicability import applicability_from
+from src.domain.icons.element_names import names_most_specific_first
 from src.domain.icons.icon_ref import IconRef, IconTarget, LocalIcon, SharedIcon, icon_ref_from
 from src.domain.icons.resolved_icon import ResolvedIcon
 

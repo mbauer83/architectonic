@@ -41,6 +41,9 @@ class _ResolvedItem:
     #: answers for a database and not for a file store — C4 counts a file system as a data store, and
     #: "Git VCS, File System Service" matches no keyword. The declaration outranks the guess.
     is_store: bool = False
+    #: What icon statements know this item by, most specific first: for an item drawn from a model
+    #: entity, the entity's specializations and type, then the C4 type. Empty means the C4 type alone.
+    names: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

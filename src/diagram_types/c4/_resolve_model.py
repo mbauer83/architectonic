@@ -19,6 +19,7 @@ from src.diagram_types.c4._projection_vocabulary import NODE_TYPE, is_externally
 from src.diagram_types.c4._resolve_nesting import _boundary_aliases, _flatten, _nest
 from src.domain.diagrams.bindings import EXCLUDED_IDS_KEY, INCLUDED_IDS_KEY
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
+from src.domain.icons.element_names import names_most_specific_first
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.relationships.derivation_types import ModelQuery
 
@@ -71,6 +72,8 @@ def _item_from_entity(
         external=external,
         shape=None,  # model-backed items use technology inference
         is_store=_is_store(entity),
+        names=names_most_specific_first(entity.artifact_type, entity.specializations, drawn_as=item_type)
+        if entity is not None else (),
     )
 
 

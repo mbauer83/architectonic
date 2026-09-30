@@ -7,6 +7,8 @@ import type { RepoError } from './repositoryErrors'
 export interface EditedInstance {
   readonly instance_id: string
   readonly entity_id?: string
+  /** The type the diagram draws it as, where the notation has types of its own (a C4 container). */
+  readonly drawn_as?: string
 }
 
 /** What an icon says about itself; a field left out keeps its value. The picture is not editable. */

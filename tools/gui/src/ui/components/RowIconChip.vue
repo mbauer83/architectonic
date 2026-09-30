@@ -5,13 +5,29 @@
  * findable without crowding a list nobody is giving icons; with one, the picture, and in its title
  * where it comes from.
  */
-import { computed, inject } from 'vue'
+import { computed, inject, watchEffect } from 'vue'
 import { diagramIconsKey } from '../composables/useDiagramIcons'
 
-const props = defineProps<{ instanceId: string; elementName: string; open: boolean }>()
+const props = defineProps<{
+  instanceId: string
+  elementName: string
+  open: boolean
+  /** The model entity it draws, where it draws one. */
+  entityId?: string
+  /** The type the diagram draws it as, where the notation has types of its own. */
+  drawnAs?: string
+}>()
 const emit = defineEmits<{ toggle: [] }>()
 
 const icons = inject(diagramIconsKey)!
+// Asked about while shown: the preview answers for the instances rows show, and only those.
+watchEffect((onCleanup) => {
+  onCleanup(icons.register({
+    instance_id: props.instanceId,
+    ...(props.entityId ? { entity_id: props.entityId } : {}),
+    ...(props.drawnAs ? { drawn_as: props.drawnAs } : {}),
+  }))
+})
 const LEVEL_CAPTION = {
   instance: 'this element', type: 'all of its type here', 'specialization-default': 'its specialization',
 } as const

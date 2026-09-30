@@ -58,3 +58,12 @@ def test_with_no_statement_the_specialization_default_is_shown() -> None:
 
 def test_an_instance_nothing_classifies_shows_its_glyph() -> None:
     assert shown_icons({"type_icons": {"node": MARK}}, [EditedInstance("x")], _entity, _source, SPECS) == {}
+
+
+def test_an_instance_drawn_as_a_type_of_the_diagrams_own_is_reached_by_that_type() -> None:
+    """A C4 container drawn for a model entity: a statement keyed `container` reaches it, as the renderer's does."""
+    shown = shown_icons(
+        {"type_icons": {"container": MARK}}, [EditedInstance(CLUSTER, drawn_as="container")], _entity, _source, SPECS,
+    )
+
+    assert shown[CLUSTER].target == SharedIcon(MARK) and shown[CLUSTER].level == "type"

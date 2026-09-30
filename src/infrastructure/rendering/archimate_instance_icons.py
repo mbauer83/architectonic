@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from src.application.artifacts.parsing import normalize_puml_alias
-from src.application.icons.effective_icons import names_most_specific_first, specialization_defaults
+from src.application.icons.effective_icons import specialization_defaults
 from src.application.puml_alias_declarations import (
     alias_declared_on,
     declares_an_icon_figure,
@@ -22,6 +22,7 @@ from src.application.puml_alias_declarations import (
 )
 from src.application.puml_icon_header import is_icon_reference, referenced_icon_keys, with_icon_block
 from src.domain.diagrams.instance_statements import DiagramInstances
+from src.domain.icons.element_names import names_most_specific_first
 from src.domain.icons.icon_ref import IconStyle
 from src.domain.icons.render_form import IconBox
 from src.domain.icons.resolved_icon import IconSource

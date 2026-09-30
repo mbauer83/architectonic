@@ -4,10 +4,13 @@
  * Lists derived entities grouped by C4 role; per-entity exclude toggle
  * via _excluded_entity_ids. Connections are shown read-only.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { EntityDisplayInfo, DiagramConnection, DiagramOwnEntityTypeUiConfig } from '../../../domain'
 import ArchimateTypeGlyph from '../../components/ArchimateTypeGlyph.vue'
+import RowIconChip from '../../components/RowIconChip.vue'
+import RowIconPicker from '../../components/RowIconPicker.vue'
+import { diagramIconsKey } from '../../composables/useDiagramIcons'
 import { groupEntitiesByRole, parseExcludedIds } from './C4DiagramEditor.helpers'
 import { toGlyphKey } from '../../lib/glyphKey'
 import { entityDetailRoute } from '../../router/artifactRoutes'
@@ -18,6 +21,8 @@ const props = defineProps<{
   scopeEntityId: string
   diagramOnlyTypes: readonly DiagramOwnEntityTypeUiConfig[]
   diagramEntities: Record<string, unknown>
+  /** The C4 type the scope is drawn as. */
+  scopeType?: string
 }>()
 
 const emit = defineEmits<{
@@ -51,6 +56,13 @@ const roleGroups = computed(() =>
   groupEntitiesByRole(props.entities, props.scopeEntityId, props.diagramOnlyTypes),
 )
 
+// The icon each derived entity shows, stated under the C4 type it is drawn as as well as its own.
+const icons = inject(diagramIconsKey, undefined)
+const iconsOffered = computed(() => (icons?.styles.value.length ?? 0) > 0)
+const editingIconOf = ref<string | null>(null)
+const c4TypeOf = (entityType: string): string | undefined => entityType === '__other__' ? undefined : entityType
+const toggleIcon = (id: string) => { editingIconOf.value = editingIconOf.value === id ? null : id }
+
 const navToEntity = (id: string) =>
   router.push(entityDetailRoute(id))
 </script>
@@ -70,6 +82,15 @@ const navToEntity = (id: string) =>
           Scope
         </div>
         <div class="mbp-entity-row mbp-entity-row--scope">
+          <RowIconChip
+            v-if="iconsOffered"
+            :instance-id="scopeEntity.artifact_id"
+            :entity-id="scopeEntity.artifact_id"
+            :drawn-as="scopeType"
+            :element-name="scopeEntity.name"
+            :open="editingIconOf === scopeEntity.artifact_id"
+            @toggle="toggleIcon(scopeEntity.artifact_id)"
+          />
           <span class="mbp-glyph">
             <ArchimateTypeGlyph
               :type="toGlyphKey(scopeEntity.artifact_type)"
@@ -85,6 +106,14 @@ const navToEntity = (id: string) =>
             ↗
           </button>
         </div>
+        <RowIconPicker
+          v-if="iconsOffered && editingIconOf === scopeEntity.artifact_id"
+          :instance-id="scopeEntity.artifact_id"
+          :applicable-to="scopeEntity.artifact_id"
+          :element-name="scopeEntity.name"
+          :type-name="scopeType ?? scopeEntity.artifact_type"
+          @done="editingIconOf = null"
+        />
       </template>
 
       <template
@@ -94,40 +123,60 @@ const navToEntity = (id: string) =>
         <div class="mbp-group-lbl">
           {{ group.label }}
         </div>
-        <div
+        <template
           v-for="entity in group.entities"
           :key="entity.artifact_id"
-          class="mbp-entity-row"
-          :class="{ 'mbp-entity-row--excl': isExcluded(entity.artifact_id) }"
         >
-          <span class="mbp-glyph">
-            <ArchimateTypeGlyph
-              :type="toGlyphKey(entity.artifact_type)"
-              :size="13"
+          <div
+            class="mbp-entity-row"
+            :class="{ 'mbp-entity-row--excl': isExcluded(entity.artifact_id) }"
+          >
+            <RowIconChip
+              v-if="iconsOffered"
+              :instance-id="entity.artifact_id"
+              :entity-id="entity.artifact_id"
+              :drawn-as="c4TypeOf(group.entityType)"
+              :element-name="entity.name"
+              :open="editingIconOf === entity.artifact_id"
+              @toggle="toggleIcon(entity.artifact_id)"
             />
-          </span>
-          <span class="mbp-name">{{ entity.name }}</span>
-          <span
-            v-if="isExcluded(entity.artifact_id)"
-            class="mbp-excl-badge"
-          >
-            excluded
-          </span>
-          <button
-            class="mbp-link-btn"
-            title="Open entity"
-            @click="navToEntity(entity.artifact_id)"
-          >
-            ↗
-          </button>
-          <button
-            class="mbp-excl-btn"
-            :title="isExcluded(entity.artifact_id) ? 'Restore entity' : 'Exclude from diagram'"
-            @click="toggleExclude(entity.artifact_id)"
-          >
-            {{ isExcluded(entity.artifact_id) ? '↩' : '−' }}
-          </button>
-        </div>
+            <span class="mbp-glyph">
+              <ArchimateTypeGlyph
+                :type="toGlyphKey(entity.artifact_type)"
+                :size="13"
+              />
+            </span>
+            <span class="mbp-name">{{ entity.name }}</span>
+            <span
+              v-if="isExcluded(entity.artifact_id)"
+              class="mbp-excl-badge"
+            >
+              excluded
+            </span>
+            <button
+              class="mbp-link-btn"
+              title="Open entity"
+              @click="navToEntity(entity.artifact_id)"
+            >
+              ↗
+            </button>
+            <button
+              class="mbp-excl-btn"
+              :title="isExcluded(entity.artifact_id) ? 'Restore entity' : 'Exclude from diagram'"
+              @click="toggleExclude(entity.artifact_id)"
+            >
+              {{ isExcluded(entity.artifact_id) ? '↩' : '−' }}
+            </button>
+          </div>
+          <RowIconPicker
+            v-if="iconsOffered && editingIconOf === entity.artifact_id"
+            :instance-id="entity.artifact_id"
+            :applicable-to="entity.artifact_id"
+            :element-name="entity.name"
+            :type-name="c4TypeOf(group.entityType) ?? entity.artifact_type"
+            @done="editingIconOf = null"
+          />
+        </template>
       </template>
 
       <div

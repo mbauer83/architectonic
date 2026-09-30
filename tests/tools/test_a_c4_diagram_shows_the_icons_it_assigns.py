@@ -89,3 +89,22 @@ def test_a_deployment_node_draws_its_icon_as_a_sprite_and_a_group_in_its_title()
 
     assert node.startswith("Deployment_Node(") and f'$sprite="img:${KEY}' in node
     assert group.startswith(f'Boundary(N_n1_0, "<img:${KEY}') and "$sprite" not in group
+
+
+def test_an_item_drawn_from_a_model_entity_is_known_by_the_entitys_names_and_its_c4_type() -> None:
+    """So a statement keyed by the entity's type, its specialization or the C4 type reaches it alike."""
+    from src.diagram_types.c4._resolve_model import _item_from_entity
+    from src.diagram_types.c4.renderer import _drawn
+    from src.domain.ontology_representation.artifact_types import EntityRecord
+
+    entity = EntityRecord(
+        artifact_id="APP@1.a.orders", artifact_type="application-component", name="Orders", version="0.1.0",
+        status="draft", domain="application", subdomain="", path=Path("x.md"), keywords=(), extra={},
+        content_text="", display_blocks={}, display_label="Orders", display_alias="APP_a",
+        specializations=("service",),
+    )
+
+    item = _item_from_entity(entity, entity.artifact_id, "container", external=False)
+
+    assert _drawn(item).names == ("service", "application-component", "container")
+    assert _drawn(_boundary_item("container")).names == ("container",)

@@ -409,4 +409,4 @@ def _every_item(state: _ResolvedState) -> list[_ResolvedItem]:
 
 
 def _drawn(item: _ResolvedItem) -> DrawnElement:
-    return DrawnElement(item.local_id, (item.item_type,), item.alias)
+    return DrawnElement(item.local_id, item.names or (item.item_type,), item.alias)

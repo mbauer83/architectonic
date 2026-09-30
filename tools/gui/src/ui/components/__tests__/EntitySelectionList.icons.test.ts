@@ -26,6 +26,7 @@ let app: App | null = null
 let host: HTMLDivElement
 
 const editing = (shown: boolean) => ({
+  register: vi.fn<DiagramIconEditing['register']>(() => () => undefined),
   styles: ref(['badge', 'figure'] as const),
   shownFor: () => shown ? { icon: { icon: MARK.artifact_id, style: 'badge', level: 'type', picture: 'sha256:a' }, picture: PICTURE } : undefined,
   statedAt: () => ({}),
@@ -59,6 +60,13 @@ describe('the icon a row shows', () => {
     const { host } = mounted()
 
     expect(host.querySelector('.icon-chip')).toBeNull()
+  })
+
+  it('asks about the instance its row shows, with the entity it draws', () => {
+    const icons = editing(false)
+    mounted(icons)
+
+    expect(icons.register).toHaveBeenCalledWith({ instance_id: NODE.artifact_id, entity_id: NODE.artifact_id })
   })
 
   it('shows a placeholder where the instance has no icon, so the way to give it one can be found', () => {
