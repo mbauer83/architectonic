@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from PIL import Image, UnidentifiedImageError
 
 from src.application.verification.verifier_ports import PictureProblem
-from src.domain.icons.render_form import MAX_SOURCE_EDGE_PX, MAX_STORED_BYTES, STORED_EDGE_PX
+from src.domain.icons.render_form import MAX_SOURCE_EDGE_PX, MAX_STORED_BYTES, STORED_BOX
 
 _OPENABLE = ("PNG", "JPEG", "WEBP")
 
@@ -73,7 +73,7 @@ def _opened(source: bytes) -> Image.Image:
 
 
 def _fitted(image: Image.Image) -> Image.Image:
-    scale = min(1.0, STORED_EDGE_PX / max(image.width, image.height))
+    scale = min(1.0, STORED_BOX.scale_for(image.width, image.height))
     size = (max(1, round(image.width * scale)), max(1, round(image.height * scale)))
     fitted = image.resize(size, Image.Resampling.LANCZOS) if size != image.size else image.copy()
     fitted.info.clear()
@@ -89,7 +89,7 @@ def _encoded(image: Image.Image) -> bytes:
     if len(reduced) <= MAX_STORED_BYTES:
         return reduced
     raise RasterRefusedError(
-        f"the image does not compress below {MAX_STORED_BYTES // 1024} KB at {STORED_EDGE_PX} px; "
+        f"the image does not compress below {MAX_STORED_BYTES // 1024} KB at its stored size; "
         "an icon with fewer colours or less detail will"
     )
 
@@ -111,6 +111,7 @@ class StoredPngInspector:
             image.load()
         except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
             return PictureProblem("the bytes do not decode as a PNG")
-        if max(image.size) > STORED_EDGE_PX:
-            return PictureProblem(f"{image.width}×{image.height} exceeds the {STORED_EDGE_PX} px stored edge")
+        if not STORED_BOX.holds(*image.size):
+            box = f"{STORED_BOX.max_width_px}×{STORED_BOX.height_px}"
+            return PictureProblem(f"{image.width}×{image.height} does not fit the {box} px stored size")
         return image.size

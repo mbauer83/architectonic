@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from src.application.icons.effective_icons import effective_icon, icon_assignments
 from src.application.puml_icon_header import icon_key, icon_reference, sprite_reference, with_icon_block
 from src.domain.icons.icon_ref import IconRef, IconStyle
+from src.domain.icons.render_form import IconBox
 from src.domain.icons.resolved_icon import IconSource
 
 
@@ -32,19 +33,20 @@ class DrawnElement:
 @dataclass(frozen=True, slots=True)
 class ShownIcon:
     key: str
-    stored_edge_px: int
+    width_px: int
+    height_px: int
     style: IconStyle
 
-    def reference(self, drawn_px: int) -> str:
-        """The icon inside a label, `<img:$ARCH_ICON_…{scale=…}>`, drawn *drawn_px* high."""
-        return icon_reference(self.key, self._scale(drawn_px))
+    def reference(self, box: IconBox) -> str:
+        """The icon inside a label, `<img:$ARCH_ICON_…{scale=…}>`, fitted into *box*."""
+        return icon_reference(self.key, self._scale(box))
 
-    def sprite(self, drawn_px: int) -> str:
-        """The icon as a macro's image parameter, `img:$ARCH_ICON_…{scale=…}`, drawn *drawn_px* high."""
-        return sprite_reference(self.key, self._scale(drawn_px))
+    def sprite(self, box: IconBox) -> str:
+        """The icon as a macro's image parameter, `img:$ARCH_ICON_…{scale=…}`, fitted into *box*."""
+        return sprite_reference(self.key, self._scale(box))
 
-    def _scale(self, drawn_px: int) -> str:
-        return f"{drawn_px / self.stored_edge_px:.3g}"
+    def _scale(self, box: IconBox) -> str:
+        return f"{box.scale_for(self.width_px, self.height_px):.3g}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +79,6 @@ def element_icons(
         if shown is None:
             continue
         key = icon_key(shown.icon.render_digest)
-        by_alias[element.alias] = ShownIcon(key, max(shown.icon.width, shown.icon.height), shown.style)
+        by_alias[element.alias] = ShownIcon(key, shown.icon.width, shown.icon.height, shown.style)
         pictures[key] = shown.icon.png
     return ElementIcons(by_alias, pictures)

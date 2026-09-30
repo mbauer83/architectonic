@@ -92,7 +92,7 @@ is pointed at the existing icon.
 |---|---|
 | Formats | SVG, PNG, JPEG, WebP |
 | Largest file | 1 MB, at most 4096 px on either edge |
-| Stored as | a PNG at most 128 px on its longer edge and 32 KB |
+| Stored as | a PNG at most 128 px high, 384 px wide and 32 KB |
 | Library upload request | 2 MB |
 
 An SVG is rebuilt from an allow-list of elements and attributes before it is drawn, so scripts, event

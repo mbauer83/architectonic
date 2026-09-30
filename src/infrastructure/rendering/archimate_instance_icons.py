@@ -23,16 +23,18 @@ from src.application.puml_alias_declarations import (
 from src.application.puml_icon_header import is_icon_reference, referenced_icon_keys, with_icon_block
 from src.domain.diagrams.instance_statements import DiagramInstances
 from src.domain.icons.icon_ref import IconStyle
+from src.domain.icons.render_form import IconBox
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.domain.ontology_representation.specializations import SpecializationCatalog
 from src.infrastructure.rendering.archimate_occurrences import instance_id_of, occurrence_entities
 from src.infrastructure.rendering.drawn_element_icons import DrawnElement, element_icons
 
-#: The drawn height of a badge: the type glyph is a 16 px sprite at scale 1.2.
-BADGE_EDGE_PX = 20
-#: The drawn height of a figure: the icon is the element, its name beneath.
-FIGURE_EDGE_PX = 64
+#: A badge stands where the type glyph stands, a 16 px sprite at scale 1.2, so it takes the glyph's
+#: height; a wordmark may run to three times that beside the name.
+BADGE_BOX = IconBox(height_px=20, max_width_px=60)
+#: A figure is the element, its name beneath: the height of a small element, and room for a wordmark.
+FIGURE_BOX = IconBox(height_px=64, max_width_px=160)
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,7 +79,7 @@ def instance_icons(
     shown = element_icons(diagram_entities, elements, source)
     return InstanceIcons(
         {
-            alias: DrawnIcon(icon.style, icon.reference(BADGE_EDGE_PX), icon.reference(FIGURE_EDGE_PX))
+            alias: DrawnIcon(icon.style, icon.reference(BADGE_BOX), icon.reference(FIGURE_BOX))
             for alias, icon in shown.by_alias.items()
         },
         shown.pictures,

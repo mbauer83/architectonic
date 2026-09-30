@@ -19,10 +19,10 @@ import subprocess
 import sys
 import tempfile
 
-from src.domain.icons.render_form import STORED_EDGE_PX
+from src.domain.icons.render_form import STORED_BOX, IconBox
 
-#: Twice the stored edge, so the raster codec's resampling has detail to work from.
-RASTER_EDGE_PX = 2 * STORED_EDGE_PX
+#: Twice the stored size, so the raster codec's resampling has detail to work from.
+RASTER_BOX = IconBox(height_px=2 * STORED_BOX.height_px, max_width_px=2 * STORED_BOX.max_width_px)
 
 TIMEOUT_SECONDS = 20.0
 
@@ -67,6 +67,6 @@ def rasterise_svg(markup: str, aspect_ratio: float) -> bytes:
 
 
 def _edges(aspect_ratio: float) -> tuple[int, int]:
-    if aspect_ratio >= 1:
-        return RASTER_EDGE_PX, max(1, round(RASTER_EDGE_PX / aspect_ratio))
-    return max(1, round(RASTER_EDGE_PX * aspect_ratio)), RASTER_EDGE_PX
+    """Width and height for a picture of *aspect_ratio* (width over height), fitted into `RASTER_BOX`."""
+    scale = RASTER_BOX.scale_for(aspect_ratio, 1)
+    return max(1, round(aspect_ratio * scale)), max(1, round(scale))

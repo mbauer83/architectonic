@@ -11,7 +11,7 @@ import pytest
 from PIL import Image, PngImagePlugin
 
 from src.domain.icons.normalised_icon import IconRefused, NormalisedIcon
-from src.domain.icons.render_form import MAX_SOURCE_BYTES, MAX_STORED_BYTES, STORED_EDGE_PX
+from src.domain.icons.render_form import MAX_SOURCE_BYTES, MAX_STORED_BYTES, STORED_BOX
 from src.infrastructure.icons.normaliser import normalise_upload as _normalise
 from src.infrastructure.icons.svg_rasteriser import rasterise_svg
 
@@ -48,8 +48,8 @@ def test_an_svg_with_a_gradient_is_drawn_at_the_stored_size_keeping_its_shape() 
     icon = normalise_upload(GRADIENT_LOGO, "svg")
     image = _decoded(icon.png)
 
-    assert (icon.width, icon.height) == image.size == (STORED_EDGE_PX, STORED_EDGE_PX // 2)
-    left, right = image.getpixel((4, 32)), image.getpixel((124, 32))
+    assert (icon.width, icon.height) == image.size == (2 * STORED_BOX.height_px, STORED_BOX.height_px)
+    left, right = image.getpixel((4, 64)), image.getpixel((icon.width - 4, 64))
     assert left != right and left[3] == right[3] == 255  # the gradient survived, opaque
     assert icon.svg_source is not None and "linearGradient" in icon.svg_source
     assert icon.digest.startswith("sha256:")
@@ -59,8 +59,21 @@ def test_an_svg_with_a_gradient_is_drawn_at_the_stored_size_keeping_its_shape() 
 def test_each_raster_format_is_fitted_into_the_stored_form(fmt: str) -> None:
     icon = normalise_upload(_raster((1000, 500), fmt), fmt.lower())
 
-    assert (icon.width, icon.height) == (STORED_EDGE_PX, STORED_EDGE_PX // 2)
+    assert (icon.width, icon.height) == (2 * STORED_BOX.height_px, STORED_BOX.height_px)
     assert len(icon.png) <= MAX_STORED_BYTES and _decoded(icon.png).mode == "RGBA"
+
+
+@pytest.mark.parametrize(
+    ("source", "stored"),
+    [((2000, 250), (STORED_BOX.max_width_px, 48)), ((300, 900), (43, STORED_BOX.height_px))],
+    ids=["a wordmark keeps its width", "a tall picture keeps its height"],
+)
+def test_a_picture_is_fitted_into_the_stored_box_keeping_its_shape(
+    source: tuple[int, int], stored: tuple[int, int]
+) -> None:
+    icon = normalise_upload(_raster(source, "PNG"), "png")
+
+    assert (icon.width, icon.height) == stored
 
 
 def test_a_small_raster_is_not_enlarged() -> None:

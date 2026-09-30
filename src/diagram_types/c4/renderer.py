@@ -17,6 +17,7 @@ from src.diagram_types.c4._c4_types import _ResolvedState
 from src.diagram_types.c4._projection_vocabulary import GROUP_TYPE, NODE_TYPE
 from src.diagram_types.c4._resolve import _ResolvedItem, resolve_c4_state
 from src.domain.icons.icon_ref import IconStyle
+from src.domain.icons.render_form import IconBox
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramRendererReferences
@@ -109,8 +110,8 @@ class _Drawing:
     badges: Mapping[str, str] = field(default_factory=dict)
 
 
-#: The drawn height of an icon on a C4 element.
-C4_ICON_PX = 48
+#: The room an icon has on a C4 element: the height of the macro's sprite, and room for a wordmark.
+C4_ICON_BOX = IconBox(height_px=48, max_width_px=120)
 
 
 class C4PumlRenderer:
@@ -163,8 +164,8 @@ class C4PumlRenderer:
         icons = element_icons(diagram_entities, [_drawn(i) for i in _every_item(state)], icon_source)
         drawing = _Drawing(
             bool(c4_config.get("show_node_descriptions", False)),
-            {alias: icon.sprite(C4_ICON_PX) for alias, icon in icons.by_alias.items()},
-            {alias: icon.reference(C4_ICON_PX) for alias, icon in icons.by_alias.items()},
+            {alias: icon.sprite(C4_ICON_BOX) for alias, icon in icons.by_alias.items()},
+            {alias: icon.reference(C4_ICON_BOX) for alias, icon in icons.by_alias.items()},
         )
 
         # Hidden chains that order top-level elements are collected here and emitted *after* the

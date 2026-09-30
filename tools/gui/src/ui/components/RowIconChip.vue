@@ -42,7 +42,10 @@ const title = computed(() =>
       height="14"
       aria-hidden="true"
     >
-      <path d="M3 3h7M1.5 4.5v6A1.5 1.5 0 0 0 3 12h7a1.5 1.5 0 0 0 1.5-1.5V8M3.5 10.5 6 7.5l2 2 1.2-1.3 1.8 2.3M13 1.5v4M11 3.5h4" />
+      <path
+        d="M3 3h7M1.5 4.5v6A1.5 1.5 0 0 0 3 12h7a1.5 1.5 0 0 0 1.5-1.5V8
+           M3.5 10.5 6 7.5l2 2 1.2-1.3 1.8 2.3M13 1.5v4M11 3.5h4"
+      />
     </svg>
   </button>
 </template>
