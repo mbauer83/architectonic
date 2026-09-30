@@ -7597,8 +7597,6 @@ export interface components {
         };
         /** EditedInstanceBody */
         EditedInstanceBody: {
-            /** Drawn As */
-            drawn_as?: string | null;
             /** Entity Id */
             entity_id?: string | null;
             /** Instance Id */
@@ -10308,6 +10306,8 @@ export interface components {
             diagram_entities?: {
                 [key: string]: unknown;
             };
+            /** Diagram Type */
+            diagram_type?: string | null;
             /** Instances */
             instances: components["schemas"]["EditedInstanceBody"][];
         };
@@ -11598,6 +11598,10 @@ export interface components {
          * @description Which icon each instance shows; an instance that shows its type glyph is absent.
          */
         ShownIconsResponse: {
+            /** Drawn As */
+            drawn_as: {
+                [key: string]: string;
+            };
             /** Icons */
             icons: {
                 [key: string]: components["schemas"]["ShownIcon"];

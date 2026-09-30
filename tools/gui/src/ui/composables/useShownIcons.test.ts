@@ -6,6 +6,7 @@ import { useShownIcons } from './useShownIcons'
 const ANSWER = {
   icons: { n1: { icon: 'ICO@1.mark01', style: 'badge' as const, level: 'type' as const, picture: 'sha256:a' } },
   pictures: { 'sha256:a': 'data:image/png;base64,AAAA' },
+  drawn_as: {},
 }
 
 const setup = (enabled = true) => {
@@ -13,7 +14,7 @@ const setup = (enabled = true) => {
   const entities = ref<Record<string, unknown>>({ type_icons: { node: 'ICO@1.mark01' } })
   const instances = ref([{ instance_id: 'n1' }])
   const scope = effectScope()
-  const result = scope.run(() => useShownIcons({ previewShownIcons }, entities, instances, ref(enabled), 10))!
+  const result = scope.run(() => useShownIcons({ previewShownIcons }, ref('c4-container'), entities, instances, ref(enabled), 10))!
   return { previewShownIcons, entities, result, scope }
 }
 
@@ -28,6 +29,7 @@ describe('which icon each instance shows', () => {
     await vi.advanceTimersByTimeAsync(20)
 
     expect(previewShownIcons).toHaveBeenCalledTimes(1)
+    expect(previewShownIcons).toHaveBeenCalledWith(expect.objectContaining({ diagram_type: 'c4-container' }))
     expect(result.shown.value).toEqual(ANSWER)
     scope.stop()
     vi.useRealTimers()

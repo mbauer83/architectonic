@@ -7,7 +7,7 @@ import { useQuery } from './useQuery'
 
 export const SHOWN_ICONS_DEBOUNCE_MS = 250
 
-const NOTHING_SHOWN: ShownIcons = { icons: {}, pictures: {} }
+const NOTHING_SHOWN: ShownIcons = { icons: {}, pictures: {}, drawn_as: {} }
 
 /**
  * Which icon each instance of the diagram being edited shows, as the server works it out.
@@ -19,6 +19,7 @@ const NOTHING_SHOWN: ShownIcons = { icons: {}, pictures: {} }
  */
 export function useShownIcons(
   svc: Pick<ModelService, 'previewShownIcons'>,
+  diagramType: Ref<string | undefined>,
   diagramEntities: Ref<Record<string, unknown>>,
   instances: Ref<readonly EditedInstance[]>,
   enabled: Ref<boolean>,
@@ -35,11 +36,14 @@ export function useShownIcons(
     }
     timer = setTimeout(() => {
       timer = null
-      query.run(svc.previewShownIcons({ diagram_entities: diagramEntities.value, instances: instances.value }))
+      query.run(svc.previewShownIcons({
+        ...(diagramType.value ? { diagram_type: diagramType.value } : {}),
+        diagram_entities: diagramEntities.value, instances: instances.value,
+      }))
     }, delayMs)
   }
 
-  watch([diagramEntities, instances, enabled], schedule, { immediate: true, deep: true })
+  watch([diagramType, diagramEntities, instances, enabled], schedule, { immediate: true, deep: true })
   onScopeDispose(() => { if (timer !== null) clearTimeout(timer) })
 
   return { shown: computed(() => query.data.value ?? NOTHING_SHOWN), error: query.errorMessage }

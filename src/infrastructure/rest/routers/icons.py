@@ -8,6 +8,7 @@ from typing import Any, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 
+from src.application.derivation.preview import project_view_for_preview
 from src.application.icons.icon_rows import icon_fields, usage_fields
 from src.application.icons.icon_usage import LibraryUsage, library_usage
 from src.application.icons.library_query import offered_icons
@@ -20,6 +21,7 @@ from src.domain.embedded_image import embedded_png_url
 from src.domain.icons.icon_file import IconFile, read_icon_file
 from src.domain.icons.icon_record import IconRecord
 from src.domain.icons.normalised_icon import IconRefused
+from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.contracts.icons import IconListResponse, IconSummary, ShownIconsResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
@@ -76,11 +78,11 @@ class EditedInstanceBody(BaseModel):
     instance_id: str
     #: The entity it draws, where that is not the instance id itself (an occurrence).
     entity_id: str | None = None
-    #: The type the diagram draws it as, where the notation has types of its own (a C4 container).
-    drawn_as: str | None = None
 
 
 class PreviewShownIconsRequest(BaseModel):
+    #: The diagram type, whose projection says what a model-backed view draws each entity as.
+    diagram_type: str | None = None
     #: The diagram's `diagram-entities` as the editor holds it, uploads not yet saved included.
     diagram_entities: dict[str, Any] = Field(default_factory=dict)
     instances: list[EditedInstanceBody]
@@ -100,9 +102,10 @@ def preview_shown_icons(
         case dict() as entities:
             pass
     repo = s.get_repo()
-    instances = [EditedInstance(i.instance_id, i.entity_id, i.drawn_as) for i in req.instances]
+    instances = [EditedInstance(i.instance_id, i.entity_id) for i in req.instances]
     source = DiagramIconSource(entities, LibraryIconSource(repo))
-    shown = shown_icons(entities, instances, repo.get_entity, source, catalogs.specializations)
+    drawn_as = _drawn_as(req.diagram_type, entities, catalogs)
+    shown = shown_icons(entities, instances, repo.get_entity, source, catalogs.specializations, drawn_as)
     return {
         "icons": {
             instance_id: {
@@ -112,7 +115,20 @@ def preview_shown_icons(
             for instance_id, icon in shown.items()
         },
         "pictures": {icon.icon.render_digest: embedded_png_url(icon.icon.png) for icon in shown.values()},
+        "drawn_as": {
+            i.instance_id: drawn for i in instances if (drawn := drawn_as.get(i.entity_id or i.instance_id))
+        },
     }
+
+
+def _drawn_as(diagram_type: str | None, entities: dict[str, Any], catalogs: RuntimeCatalogs) -> dict[str, str]:
+    """entity id → the type a model-backed view draws it as, from the diagram type's own projection."""
+    root = s.maybe_engagement_root()
+    if not diagram_type or root is None:
+        return {}
+    module = catalogs.diagram_types.get_diagram_type(diagram_type)
+    items = project_view_for_preview(module, diagram_type, entities, shared_artifact_index([root]))
+    return {item.entity_id: item.display_class for item in items or ()}
 
 
 @router.get("/api/icons/{artifact_id}", tags=[TAG_ICONS], summary="Read an icon by id",

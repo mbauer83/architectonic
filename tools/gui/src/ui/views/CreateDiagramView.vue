@@ -97,7 +97,7 @@ const baseRows = computed(() =>
 )
 const selectionRows = drawings.rowsFor(baseRows)
 const iconStyles = computed(() => uiConfig.value?.icon_styles ?? [])
-useDiagramIcons({ svc, diagramEntities, write: setDiagramEntities, styles: iconStyles })
+useDiagramIcons({ svc, diagramType, diagramEntities, write: setDiagramEntities, styles: iconStyles })
 
 const relatedEntitiesById = computed<Record<string, EntityDisplayInfo[]>>(() => {
   const related: Record<string, EntityDisplayInfo[]> = {}

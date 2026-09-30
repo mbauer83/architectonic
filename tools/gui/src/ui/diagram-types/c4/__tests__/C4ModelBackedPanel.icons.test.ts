@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
-// A derived entity shows the icon it shows on the diagram, and the server is told the C4 type it is
-// drawn as, so an icon stated for that type is the one the row shows.
+// A derived entity shows the icon it shows on the diagram. Which C4 type it is drawn as is the server's
+// answer, from the diagram type's projection, and a type-wide choice is stated under that type.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp, h, ref, type App } from 'vue'
@@ -32,10 +32,11 @@ const ODD = entity('DOB@3.odd', 'data-object', 'Ledger')
 let app: App | null = null
 let host: HTMLDivElement
 
-const editing = (): DiagramIconEditing => ({
+const editing = (drawn: Record<string, string> = {}): DiagramIconEditing => ({
   register: vi.fn<DiagramIconEditing['register']>(() => () => undefined),
   styles: ref(['badge', 'figure'] as const),
   shownFor: () => undefined,
+  drawnAs: (id) => drawn[id],
   statedAt: () => ({}),
   choose: vi.fn<DiagramIconEditing['choose']>(),
   upload: vi.fn<DiagramIconEditing['upload']>(),
@@ -51,7 +52,7 @@ const mounted = (icons?: DiagramIconEditing) => {
   app = createApp({
     render: () => h(C4ModelBackedPanel, {
       entities: [SCOPE, API, ODD], diagramConnections: [], scopeEntityId: SCOPE.artifact_id,
-      diagramOnlyTypes: [container()], diagramEntities: {}, scopeType: 'software-system',
+      diagramOnlyTypes: [container()], diagramEntities: {},
     }),
   })
   app.provide(modelServiceKey, svc)
@@ -67,23 +68,24 @@ describe('the icon a derived entity shows', () => {
     expect(mounted().querySelector('.icon-chip')).toBeNull()
   })
 
-  it('tells the server the C4 type each entity is drawn as', () => {
+  it('asks about each derived entity and the scope, naming no C4 type of its own', () => {
     const icons = editing()
     mounted(icons)
 
-    expect(icons.register).toHaveBeenCalledWith(
-      { instance_id: SCOPE.artifact_id, entity_id: SCOPE.artifact_id, drawn_as: 'software-system' },
-    )
-    expect(icons.register).toHaveBeenCalledWith(
-      { instance_id: API.artifact_id, entity_id: API.artifact_id, drawn_as: 'container' },
-    )
+    for (const entity of [SCOPE, API, ODD]) {
+      expect(icons.register).toHaveBeenCalledWith({ instance_id: entity.artifact_id, entity_id: entity.artifact_id })
+    }
   })
 
-  it('names no C4 type for an entity no role takes', () => {
-    const icons = editing()
-    mounted(icons)
+  it('states a type-wide choice under the C4 type the server says the entity is drawn as', async () => {
+    const icons = editing({ [API.artifact_id]: 'component' })
+    const host = mounted(icons)
+    const apiRow = [...host.querySelectorAll('.mbp-entity-row')].find((row) => row.textContent?.includes('Orders API'))!
 
-    expect(icons.register).toHaveBeenCalledWith({ instance_id: ODD.artifact_id, entity_id: ODD.artifact_id })
+    apiRow.querySelector<HTMLButtonElement>('.icon-chip')!.click()
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(host.querySelector('.icon-picker')!.textContent).toContain('All component here')
   })
 
   it('opens the picker under the row whose chip was pressed', async () => {

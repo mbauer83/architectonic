@@ -20,6 +20,8 @@ export interface DiagramIconEditing {
   /** The styles this diagram type draws; empty when it draws no icons, and then no row offers any. */
   readonly styles: Ref<readonly IconStyle[]>
   readonly shownFor: (instanceId: string) => { readonly icon: ShownIcon; readonly picture: string } | undefined
+  /** The type the diagram draws the instance as, where the server's projection says (a C4 container). */
+  readonly drawnAs: (instanceId: string) => string | undefined
   readonly statedAt: (instanceId: string, typeName: string) => Partial<Record<IconScope, IconStatement>>
   readonly choose: (instanceId: string, typeName: string, scope: IconScope, statement: IconStatement | null) => void
   readonly upload: (
@@ -35,6 +37,7 @@ export const diagramIconsKey: InjectionKey<DiagramIconEditing> = Symbol('diagram
  */
 export function useDiagramIcons(options: {
   svc: Pick<ModelService, 'previewShownIcons'>
+  diagramType: Ref<string | undefined>
   diagramEntities: Ref<Record<string, unknown>>
   write: (next: Record<string, unknown>) => void
   styles: Ref<readonly IconStyle[]>
@@ -54,7 +57,7 @@ export function useDiagramIcons(options: {
     }
   }
   const enabled = computed(() => styles.value.length > 0)
-  const { shown } = useShownIcons(options.svc, diagramEntities, instances, enabled)
+  const { shown } = useShownIcons(options.svc, options.diagramType, diagramEntities, instances, enabled)
 
   const stated = (data: Record<string, unknown>, instanceId: string, typeName: string, scope: IconScope,
     statement: IconStatement | null): Record<string, unknown> =>
@@ -68,6 +71,7 @@ export function useDiagramIcons(options: {
       const picture = icon ? shown.value.pictures[icon.picture] : undefined
       return icon && picture ? { icon, picture } : undefined
     },
+    drawnAs: (instanceId) => shown.value.drawn_as[instanceId],
     statedAt: (instanceId, typeName) => {
       const data = diagramEntities.value
       const instance = instanceIconOf(data, instanceId)

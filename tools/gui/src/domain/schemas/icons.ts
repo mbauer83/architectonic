@@ -63,5 +63,10 @@ export const ShownIconsSchema = Schema.Struct({
   icons: Schema.Record({ key: Schema.String, value: ShownIconSchema }),
   /** Render digest → the picture as a `data:image/png;base64,…` URL. */
   pictures: Schema.Record({ key: Schema.String, value: Schema.String }),
+  /**
+   * Instance id → the type the diagram draws it as, where its projection draws a model entity as a type
+   * of its own (a C4 container): the name an "every element of this type" statement is made under.
+   */
+  drawn_as: Schema.Record({ key: Schema.String, value: Schema.String }),
 })
 export type ShownIcons = typeof ShownIconsSchema.Type

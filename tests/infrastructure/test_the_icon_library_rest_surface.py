@@ -290,3 +290,34 @@ def test_sharing_an_icon_the_diagram_does_not_hold_is_404(client: TestClient, re
     response = client.post(f"/api/diagrams/{diagram}/icons/other/share", json={"attribution": "Drawn here"})
 
     assert response.status_code == 404
+
+
+def test_a_model_backed_c4_entity_is_reached_by_the_c4_type_its_projection_draws_it_as(
+    client: TestClient, repo_root: Path
+) -> None:
+    """The editor names no C4 type: the diagram type's projection says what each entity is drawn as."""
+    from src.infrastructure.mcp import mcp_artifact_server as mcp  # noqa: PLC0415
+
+    def component(name: str) -> str:
+        return str(mcp.artifact_create_entity(
+            artifact_type="application-component", name=name, dry_run=False, repo_root=str(repo_root),
+        )["artifact_id"])
+
+    system, part = component("Shop"), component("Orders")
+    mcp.artifact_add_connection(
+        source_entity=system, connection_type="archimate-composition", target_entity=part,
+        dry_run=False, repo_root=str(repo_root),
+    )
+    s.get_repo().refresh()
+    generic = "ICO@1790000001.any001.generic"
+
+    response = client.post("/api/icons/preview", json={
+        "diagram_type": "c4-container",
+        "diagram_entities": {"_scope_entity_id": system, "type_icons": {"container": generic}},
+        "instances": [{"instance_id": system}, {"instance_id": part}],
+    })
+
+    assert response.status_code == 200, response.text
+    shown = response.json()
+    assert shown["drawn_as"][part] == "container"
+    assert shown["icons"][part]["icon"] == "ICO@1790000001.any001" and system not in shown["icons"]

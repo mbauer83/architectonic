@@ -134,7 +134,8 @@ const {
   addMember, labelOfDrawing, membersOf, placeBeside, seedOnce,
 } = useDiagramGroupings(selection.effectiveEntitiesList, typeEntityData)
 useDiagramIcons({
-  svc, diagramEntities: typeEntityData, write: mergeTypeEntityData, styles: computed(() => uiConfig.value?.icon_styles ?? []),
+  svc, diagramType, diagramEntities: typeEntityData, write: mergeTypeEntityData,
+  styles: computed(() => uiConfig.value?.icon_styles ?? []),
 })
 selection.useBoxPlacement(placeBeside)
 seedOnce(diagramDetail)

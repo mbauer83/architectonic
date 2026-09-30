@@ -71,4 +71,7 @@ class ShownIconsResponse(Closed):
     icons: dict[str, ShownIcon]
     #: render digest → the picture, as a `data:image/png;base64,…` URL, once however many show it.
     pictures: dict[str, str]
+    #: instance id → the type the diagram draws it as, where its type's projection draws a model entity as
+    #: a type of its own (a C4 container): the name an "every element of this type" statement is made under.
+    drawn_as: dict[str, str]
 

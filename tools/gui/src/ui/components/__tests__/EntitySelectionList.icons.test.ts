@@ -29,6 +29,7 @@ const editing = (shown: boolean) => ({
   register: vi.fn<DiagramIconEditing['register']>(() => () => undefined),
   styles: ref(['badge', 'figure'] as const),
   shownFor: () => shown ? { icon: { icon: MARK.artifact_id, style: 'badge', level: 'type', picture: 'sha256:a' }, picture: PICTURE } : undefined,
+  drawnAs: () => undefined,
   statedAt: () => ({}),
   choose: vi.fn<DiagramIconEditing['choose']>(),
   upload: vi.fn<DiagramIconEditing['upload']>(),

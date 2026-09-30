@@ -63,7 +63,8 @@ def test_an_instance_nothing_classifies_shows_its_glyph() -> None:
 def test_an_instance_drawn_as_a_type_of_the_diagrams_own_is_reached_by_that_type() -> None:
     """A C4 container drawn for a model entity: a statement keyed `container` reaches it, as the renderer's does."""
     shown = shown_icons(
-        {"type_icons": {"container": MARK}}, [EditedInstance(CLUSTER, drawn_as="container")], _entity, _source, SPECS,
+        {"type_icons": {"container": MARK}}, [EditedInstance(CLUSTER)], _entity, _source, SPECS,
+        drawn_as={CLUSTER: "container"},
     )
 
     assert shown[CLUSTER].target == SharedIcon(MARK) and shown[CLUSTER].level == "type"

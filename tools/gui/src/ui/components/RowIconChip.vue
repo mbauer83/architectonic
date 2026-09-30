@@ -15,7 +15,6 @@ const props = defineProps<{
   /** The model entity it draws, where it draws one. */
   entityId?: string
   /** The type the diagram draws it as, where the notation has types of its own. */
-  drawnAs?: string
 }>()
 const emit = defineEmits<{ toggle: [] }>()
 
@@ -25,7 +24,6 @@ watchEffect((onCleanup) => {
   onCleanup(icons.register({
     instance_id: props.instanceId,
     ...(props.entityId ? { entity_id: props.entityId } : {}),
-    ...(props.drawnAs ? { drawn_as: props.drawnAs } : {}),
   }))
 })
 const LEVEL_CAPTION = {

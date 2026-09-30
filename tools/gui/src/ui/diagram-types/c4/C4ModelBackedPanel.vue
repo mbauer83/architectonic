@@ -21,8 +21,6 @@ const props = defineProps<{
   scopeEntityId: string
   diagramOnlyTypes: readonly DiagramOwnEntityTypeUiConfig[]
   diagramEntities: Record<string, unknown>
-  /** The C4 type the scope is drawn as. */
-  scopeType?: string
 }>()
 
 const emit = defineEmits<{
@@ -56,11 +54,12 @@ const roleGroups = computed(() =>
   groupEntitiesByRole(props.entities, props.scopeEntityId, props.diagramOnlyTypes),
 )
 
-// The icon each derived entity shows, stated under the C4 type it is drawn as as well as its own.
+// The icon each derived entity shows. A type-wide statement is made under the C4 type the server's
+// projection draws the entity as; until it has said, under the entity's own type.
 const icons = inject(diagramIconsKey, undefined)
 const iconsOffered = computed(() => (icons?.styles.value.length ?? 0) > 0)
 const editingIconOf = ref<string | null>(null)
-const c4TypeOf = (entityType: string): string | undefined => entityType === '__other__' ? undefined : entityType
+const typeNameOf = (entity: EntityDisplayInfo): string => icons?.drawnAs(entity.artifact_id) ?? entity.artifact_type
 const toggleIcon = (id: string) => { editingIconOf.value = editingIconOf.value === id ? null : id }
 
 const navToEntity = (id: string) =>
@@ -86,7 +85,6 @@ const navToEntity = (id: string) =>
             v-if="iconsOffered"
             :instance-id="scopeEntity.artifact_id"
             :entity-id="scopeEntity.artifact_id"
-            :drawn-as="scopeType"
             :element-name="scopeEntity.name"
             :open="editingIconOf === scopeEntity.artifact_id"
             @toggle="toggleIcon(scopeEntity.artifact_id)"
@@ -111,7 +109,7 @@ const navToEntity = (id: string) =>
           :instance-id="scopeEntity.artifact_id"
           :applicable-to="scopeEntity.artifact_id"
           :element-name="scopeEntity.name"
-          :type-name="scopeType ?? scopeEntity.artifact_type"
+          :type-name="typeNameOf(scopeEntity)"
           @done="editingIconOf = null"
         />
       </template>
@@ -135,7 +133,6 @@ const navToEntity = (id: string) =>
               v-if="iconsOffered"
               :instance-id="entity.artifact_id"
               :entity-id="entity.artifact_id"
-              :drawn-as="c4TypeOf(group.entityType)"
               :element-name="entity.name"
               :open="editingIconOf === entity.artifact_id"
               @toggle="toggleIcon(entity.artifact_id)"
@@ -173,7 +170,7 @@ const navToEntity = (id: string) =>
             :instance-id="entity.artifact_id"
             :applicable-to="entity.artifact_id"
             :element-name="entity.name"
-            :type-name="c4TypeOf(group.entityType) ?? entity.artifact_type"
+            :type-name="typeNameOf(entity)"
             @done="editingIconOf = null"
           />
         </template>
