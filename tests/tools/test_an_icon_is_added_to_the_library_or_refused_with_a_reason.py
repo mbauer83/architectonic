@@ -114,3 +114,4 @@ def test_the_library_is_listed_for_what_an_agent_is_choosing(repo: Path) -> None
     row = artifact_query_icons(q="kubernetes", repo_root=str(repo))[0]
     assert row["scope"] == "engagement" and row["baseline_standing"]["kind"] == "enterprise-baseline"
     assert "png" not in row and "content" not in row
+    assert row["used_on"] == [] and row["default_for"] == [] and row["shown_for_element"] is False

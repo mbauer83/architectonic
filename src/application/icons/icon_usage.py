@@ -13,10 +13,15 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 
-from src.application.icons.effective_icons import DISPLAY_ICONS_KEY, TYPE_ICONS_KEY, icon_assignments
+from src.application.icons.effective_icons import (
+    DISPLAY_ICONS_KEY,
+    TYPE_ICONS_KEY,
+    IconAssignments,
+    icon_assignments,
+)
 from src.domain.artifact_id import stable_id
 from src.domain.icons.applicability import Applicability
-from src.domain.icons.icon_ref import IconRef, SharedIcon, library_icon_named
+from src.domain.icons.icon_ref import IconRef, IconTarget, SharedIcon, library_icon_named
 from src.domain.ontology_representation.artifact_types import DiagramRecord, EntityRecord
 from src.domain.ontology_representation.specializations import SpecializationCatalog
 
@@ -25,6 +30,8 @@ from src.domain.ontology_representation.specializations import SpecializationCat
 class IconUsers:
     diagrams: tuple[str, ...]
     specializations: tuple[str, ...]
+    #: The same diagrams as `diagrams`, with the names a reader knows them by.
+    named_diagrams: tuple[UsingDiagram, ...] = ()
 
     @property
     def is_empty(self) -> bool:
@@ -36,20 +43,72 @@ class IconUsers:
         return "; ".join(parts)
 
 
-def icon_users(icon_id: str, diagrams: Iterable[DiagramRecord], specializations: SpecializationCatalog) -> IconUsers:
-    wanted = stable_id(icon_id)
-    using_diagrams = sorted(d.artifact_id for d in diagrams if wanted in library_icons_named(d))
-    defaulting = sorted(
-        spec.slug for spec in specializations.entries
-        if (named := library_icon_named(spec.notation.icon)) is not None and named.icon_id == wanted
+@dataclass(frozen=True, slots=True)
+class UsingDiagram:
+    artifact_id: str
+    name: str
+
+
+@dataclass(frozen=True, slots=True)
+class LibraryUsage:
+    """Every use of the library in a repository, read in one pass over its diagrams.
+
+    `users_of` is who a deletion is refused by and a replacement re-points; `shown_for` is what other
+    diagrams already show an element with, so a logo chosen for it once is offered first after. An
+    element is keyed by its rename-stable id, as a diagram names a model entity; an occurrence names
+    its own id and is not an element here.
+    """
+
+    _diagrams: Mapping[str, tuple[UsingDiagram, ...]]
+    _defaults: Mapping[str, tuple[str, ...]]
+    _by_element: Mapping[str, frozenset[str]]
+
+    def users_of(self, icon_id: str) -> IconUsers:
+        wanted = stable_id(icon_id)
+        using = self._diagrams.get(wanted, ())
+        return IconUsers(tuple(d.artifact_id for d in using), self._defaults.get(wanted, ()), using)
+
+    def shown_for(self, element_id: str) -> frozenset[str]:
+        """The rename-stable ids of the library icons diagrams state for *element_id* itself."""
+        return self._by_element.get(stable_id(element_id), frozenset())
+
+
+def library_usage(diagrams: Iterable[DiagramRecord], specializations: SpecializationCatalog) -> LibraryUsage:
+    using: dict[str, list[UsingDiagram]] = {}
+    by_element: dict[str, set[str]] = {}
+    for diagram in sorted(diagrams, key=lambda d: d.artifact_id):
+        assignments = _assignments(diagram)
+        for icon_id in sorted(_shared_ids(assignments.targets)):
+            using.setdefault(icon_id, []).append(UsingDiagram(diagram.artifact_id, diagram.name))
+        for key, ref in assignments.by_instance.items():
+            if isinstance(ref.target, SharedIcon):
+                by_element.setdefault(stable_id(key), set()).add(ref.target.icon_id)
+    defaults: dict[str, list[str]] = {}
+    for spec in sorted(specializations.entries, key=lambda s: s.slug):
+        if (named := library_icon_named(spec.notation.icon)) is not None:
+            defaults.setdefault(named.icon_id, []).append(spec.slug)
+    return LibraryUsage(
+        {icon: tuple(ds) for icon, ds in using.items()},
+        {icon: tuple(slugs) for icon, slugs in defaults.items()},
+        {element: frozenset(icons) for element, icons in by_element.items()},
     )
-    return IconUsers(tuple(using_diagrams), tuple(defaulting))
+
+
+def icon_users(icon_id: str, diagrams: Iterable[DiagramRecord], specializations: SpecializationCatalog) -> IconUsers:
+    return library_usage(diagrams, specializations).users_of(icon_id)
 
 
 def library_icons_named(diagram: DiagramRecord) -> frozenset[str]:
     """The rename-stable ids of the library icons *diagram* names, at either level."""
+    return _shared_ids(_assignments(diagram).targets)
+
+
+def _assignments(diagram: DiagramRecord) -> IconAssignments:
     raw = diagram.extra.get("diagram-entities")
-    targets = icon_assignments(raw if isinstance(raw, dict) else None).targets
+    return icon_assignments(raw if isinstance(raw, dict) else None)
+
+
+def _shared_ids(targets: Iterable[IconTarget]) -> frozenset[str]:
     return frozenset(target.icon_id for target in targets if isinstance(target, SharedIcon))
 
 

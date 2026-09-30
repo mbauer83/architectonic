@@ -5,11 +5,14 @@
  * An enterprise icon is shown and not edited: this repository reads it and does not own it. Of this
  * repository's own, the name, attribution, what it is for, tags and default style are editable and the
  * picture is not — a new version is another icon, and *Replace…* moves every diagram to it, after
- * listing them. *Delete* is refused while anything shows the icon, and the refusal says what does.
+ * listing them. The card says which diagrams show the icon, and *Delete* is offered only when none
+ * does; the server still refuses one that a diagram has come to show since, and says which.
  */
 import { computed, inject, ref } from 'vue'
 import { Effect, Exit } from 'effect'
+import { RouterLink } from 'vue-router'
 import { modelServiceKey } from '../keys'
+import { diagramDetailRoute } from '../router/artifactRoutes'
 import type { IconSummary } from '../../domain/schemas/icons'
 import type { WriteResult } from '../../domain/schemas/write-results'
 import type { RepoError } from '../../ports/repositoryErrors'
@@ -25,6 +28,7 @@ const write = useMutation<WriteResult | void, RepoError>()
 const busy = write.running
 const refusal = ref<string | null>(null)
 const message = computed(() => write.errorMessage.value ?? refusal.value)
+const inUse = computed(() => props.icon.used_on.length > 0 || props.icon.default_for.length > 0)
 
 const form = ref({
   name: props.icon.name, attribution: props.icon.attribution, appliesTo: props.icon.applies_to.join(', '),
@@ -89,6 +93,22 @@ const remove = (): Promise<void> => run(svc.deleteIcon(props.icon.artifact_id), 
           For {{ icon.applies_to.length ? icon.applies_to.join(', ') : 'any element' }} · {{ icon.default_style }}
           <span v-if="icon.tags.length"> · {{ icon.tags.join(', ') }}</span>
         </p>
+        <p class="usage">
+          <template v-if="icon.used_on.length">
+            Shown on
+            <RouterLink
+              v-for="diagram in icon.used_on"
+              :key="diagram.artifact_id"
+              :to="diagramDetailRoute(diagram.artifact_id)"
+            >
+              {{ diagram.name }}
+            </RouterLink>
+          </template>
+          <template v-else>
+            Not shown on any diagram
+          </template>
+          <span v-if="icon.default_for.length"> · default for {{ icon.default_for.join(', ') }}</span>
+        </p>
       </div>
       <span
         v-if="icon.is_global"
@@ -118,7 +138,8 @@ const remove = (): Promise<void> => run(svc.deleteIcon(props.icon.artifact_id), 
       </button>
       <button
         class="danger"
-        :disabled="busy"
+        :disabled="busy || inUse"
+        :title="inUse ? 'Shown where the card says; replace it, or clear it there, first' : ''"
         @click="remove"
       >
         Delete
@@ -237,7 +258,9 @@ const remove = (): Promise<void> => run(svc.deleteIcon(props.icon.artifact_id), 
 .head img { object-fit: contain; flex-shrink: 0; }
 .text { flex: 1; min-width: 0; }
 .text h3 { margin: 0; font-size: 14px; color: #1f2937; }
-.attribution, .meta { margin: 2px 0 0; font-size: 11px; color: #6b7280; overflow-wrap: anywhere; }
+.attribution, .meta, .usage { margin: 2px 0 0; font-size: 11px; color: #6b7280; overflow-wrap: anywhere; }
+.usage a { color: #4f46e5; }
+.usage a + a::before { content: ', '; color: #6b7280; }
 .badge {
   font-size: 10px; font-weight: 700; color: #1d4ed8;
   background: #dbeafe; border-radius: 999px; padding: 2px 7px;

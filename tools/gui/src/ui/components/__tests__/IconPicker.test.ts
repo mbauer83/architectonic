@@ -12,7 +12,8 @@ import type { ModelService } from '../../../application/ModelService'
 
 const MARK = { artifact_id: 'ICO@1.mark01', name: 'Mark', attribution: 'Here', applies_to: [], default_style: 'badge',
   tags: [], status: 'active', source_format: 'png', width: 32, height: 32, render_digest: 'sha256:a', is_global: false,
-  baseline_standing: { kind: 'enterprise-baseline' } } as const
+  baseline_standing: { kind: 'enterprise-baseline' }, used_on: [], default_for: [], shown_for_element: false } as const
+const LOGO = { ...MARK, artifact_id: 'ICO@2.logo01', name: 'Logo', shown_for_element: true } as const
 
 let app: App | null = null
 let host: HTMLDivElement
@@ -23,10 +24,10 @@ const settle = async (): Promise<void> => {
   await nextTick()
 }
 
-const mounted = async (current: Record<string, unknown> = {}) => {
+const mounted = async (current: Record<string, unknown> = {}, items: readonly unknown[] = [MARK]) => {
   const chosen: unknown[][] = []
   const uploaded: unknown[][] = []
-  const listIcons = vi.fn(() => Effect.succeed({ total: 1, items: [MARK] }))
+  const listIcons = vi.fn(() => Effect.succeed({ total: items.length, items }))
   host = document.createElement('div')
   document.body.appendChild(host)
   app = createApp({
@@ -86,5 +87,18 @@ describe('choosing an icon', () => {
     expect(uploaded).toEqual([[
       'instance', { name: 'azure kubernetes service', content_base64: 'iVBORw==', source_format: 'png' }, undefined,
     ]])
+  })
+
+  it('offers first what a diagram already shows for the element', async () => {
+    await mounted({}, [MARK, LOGO])
+
+    const lines = [...host.querySelectorAll('.ip-list li')].map((li) => li.textContent?.trim())
+    expect(lines).toEqual(['Already shown for this element', 'Logo', 'Library', 'Mark'])
+  })
+
+  it('names no sections when nothing is shown for the element yet', async () => {
+    await mounted()
+
+    expect(host.querySelector('.ip-section')).toBeNull()
   })
 })

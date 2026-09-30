@@ -44,13 +44,17 @@ and matrix diagrams draw no icons, and the editor offers no icon controls for th
 
 ## In the diagram editor
 
-Each row of the included-entities list has an icon chip at its left edge. It is empty until you hover
-over the row; once an icon is set it shows the picture, and its tooltip says where the icon comes from.
-Clicking the chip opens the picker:
+Each row of the included-entities list has an icon chip at its left edge, and so does each row of a C4
+diagram's elements and of the model entities a model-backed C4 diagram derives. With no icon set the
+chip shows a faint placeholder; once an icon is set it shows the picture, and its tooltip says where
+the icon comes from. On a C4 diagram an element answers to the C4 type it is drawn as, so an icon
+stated for *All Container here* shows on a model entity drawn as a container. Clicking the chip opens
+the picker:
 
 - **This element / All ‹type› here** — the level the choice is stated at.
 - **Icon's own / Badge / Figure** — the style, limited to the ones the diagram type draws.
-- **The library**, searchable, listing only icons that apply to the element.
+- **The library**, searchable, listing only icons that apply to the element. Icons another diagram
+  already shows for the same element are listed first, under *Already shown for this element*.
 - **Upload for this diagram…** — add a picture as one of the diagram's own icons.
 - **Clear** — withdraw the statement at that level, so the next level decides.
 
@@ -62,7 +66,8 @@ saved, so an abandoned edit leaves nothing behind; an uploaded icon no statement
 ## The icon library
 
 **Icons** in the header opens the library. Icons are given to elements in the diagram editor; the
-library page is for curating what there is to give.
+library page is for curating what there is to give. Each icon's card names the diagrams that show it,
+each a link, and the specializations whose default it is.
 
 - **Add to the library…** checks the file before anything is written, and shows what would be stored,
   or why the file is refused. The attribution you enter is kept for the session, so adding a set of
@@ -73,8 +78,8 @@ library page is for curating what there is to give.
   it. **Reinstate** offers it again.
 - **Replace…** moves every diagram showing the icon to another icon in the library, lists those
   diagrams before it does so, and deletes the first icon.
-- **Delete** removes an icon nothing uses. While a diagram or a specialization default uses it, the
-  deletion is refused and the refusal names them.
+- **Delete** removes an icon nothing uses, and is offered only then. A deletion that arrives after a
+  diagram or a specialization default has come to use the icon is refused, and the refusal names them.
 
 An icon's `applies-to` can be narrowed only while every element showing the icon still falls within
 it. An icon for a type covers that type's specializations.

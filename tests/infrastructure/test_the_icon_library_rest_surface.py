@@ -137,6 +137,36 @@ def test_deleting_an_icon_in_use_is_409_naming_the_diagram(client: TestClient, r
     assert response.status_code == 409 and "ARC@1790000005.dia001.view" in response.text
 
 
+def test_a_row_says_which_diagrams_use_it(client: TestClient, repo_root: Path) -> None:
+    _diagram_showing_the_node_icon(repo_root)
+
+    used = client.get(f"/api/icons/{NODE_ICON}").json()
+    unused = client.get("/api/icons/ICO@1790000001.any001.generic").json()
+
+    assert used["used_on"] == [{"artifact_id": "ARC@1790000005.dia001.view", "name": "View"}]
+    assert unused["used_on"] == [] and unused["default_for"] == []
+
+
+def test_an_icon_another_diagram_shows_for_the_element_is_marked(client: TestClient, repo_root: Path) -> None:
+    from src.infrastructure.mcp import mcp_artifact_server as mcp  # noqa: PLC0415
+
+    node, other = (str(mcp.artifact_create_entity(
+        artifact_type="technology-node", name=name, dry_run=False, repo_root=str(repo_root),
+    )["artifact_id"]) for name in ("Cluster", "Other"))
+    mcp.artifact_create_diagram(
+        diagram_type="archimate-technology", name="Elsewhere", entity_ids=[node, other],
+        diagram_entities={"display_icons": {node: NODE_ICON}}, dry_run=False, repo_root=str(repo_root),
+    )
+    s.get_repo().refresh()
+
+    def marked(target: str) -> list[str]:
+        items = client.get("/api/icons", params={"applicable_to": target}).json()["items"]
+        return [item["artifact_id"] for item in items if item["shown_for_element"]]
+
+    assert marked(node) == [NODE_ICON]
+    assert marked(other) == [] and marked("technology-node") == []
+
+
 def test_a_retired_icon_is_no_longer_offered(client: TestClient) -> None:
     generic = "ICO@1790000001.any001.generic"
 

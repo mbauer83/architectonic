@@ -5,6 +5,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp, h, nextTick, type App } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import { Effect } from 'effect'
 import IconLibraryCard from '../IconLibraryCard.vue'
 import { modelServiceKey } from '../../keys'
@@ -14,7 +15,7 @@ import type { IconSummary } from '../../../domain/schemas/icons'
 const ICON: IconSummary = {
   artifact_id: 'ICO@1.mark01', name: 'Mark', attribution: 'Here', applies_to: [], default_style: 'badge', tags: [],
   status: 'active', source_format: 'png', width: 32, height: 32, render_digest: 'sha256:a', is_global: false,
-  baseline_standing: { kind: 'enterprise-baseline' },
+  baseline_standing: { kind: 'enterprise-baseline' }, used_on: [], default_for: [],
 }
 const WROTE = { wrote: true, path: 'x', artifact_id: ICON.artifact_id, content: null, warnings: [], verification: null }
 const IN_USE = JSON.stringify({ detail: { code: 'conflict', message: 'ICO@1.mark01 is still used by diagrams ARC@1.view01' } })
@@ -34,6 +35,7 @@ const mounted = (icon: IconSummary, svc: Partial<ModelService>) => {
   document.body.appendChild(host)
   app = createApp({ render: () => h(IconLibraryCard, { icon, others: [], onChanged: changed }) })
   app.provide(modelServiceKey, { iconImageUrl: () => '/img', ...svc } as ModelService)
+  app.use(createRouter({ history: createMemoryHistory(), routes: [{ path: '/:any(.*)*', component: { render: () => null } }] }))
   app.mount(host)
   return { changed }
 }
@@ -71,5 +73,21 @@ describe('a library icon', () => {
 
     expect(host.querySelector('[role=alert]')!.textContent).toContain('still used by diagrams ARC@1.view01')
     expect(changed).not.toHaveBeenCalled()
+  })
+
+  it('names the diagrams that show it, and offers no delete while any does', () => {
+    mounted({ ...ICON, used_on: [{ artifact_id: 'ARC@1.view01', name: 'Landscape' }] }, {})
+
+    const link = host.querySelector<HTMLAnchorElement>('.usage a')!
+    expect(link.textContent?.trim()).toBe('Landscape')
+    expect(link.getAttribute('href')).toBe('/diagrams/ARC%401.view01')
+    expect(button('Delete').disabled).toBe(true)
+  })
+
+  it('says it is shown nowhere, and may be deleted', () => {
+    mounted(ICON, {})
+
+    expect(host.querySelector('.usage')!.textContent).toContain('Not shown on any diagram')
+    expect(button('Delete').disabled).toBe(false)
   })
 })

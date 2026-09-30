@@ -4,8 +4,9 @@
  *
  * Opened from a row, so it knows the element and its type and offers the two scopes the diagram can
  * state — this element, or every element of its type here. The library is asked for what applies to
- * the element, so an icon restricted to another type is never offered. What the choice then shows is
- * the server's to say; the picker only states the choice.
+ * the element, so an icon restricted to another type is never offered, and an icon another diagram
+ * already shows for this element is offered first. What the choice then shows is the server's to say;
+ * the picker only states the choice.
  */
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { modelServiceKey } from '../keys'
@@ -39,7 +40,13 @@ const scope = ref<IconScope>(props.current.instance || !props.current.type ? 'in
 const style = ref<IconStyle | undefined>(props.current[scope.value]?.style)
 const query = ref('')
 const library = useQuery<IconList, RepoError>()
-const icons = computed(() => library.data.value?.items ?? [])
+const offered = computed(() => library.data.value?.items ?? [])
+const shownElsewhere = computed(() => offered.value.filter((icon) => icon.shown_for_element))
+const sections = computed(() => [
+  { key: 'elsewhere', title: 'Already shown for this element', icons: shownElsewhere.value },
+  { key: 'library', title: shownElsewhere.value.length ? 'Library' : '',
+    icons: offered.value.filter((icon) => !icon.shown_for_element) },
+].filter((section) => section.icons.length))
 const loadError = library.errorMessage
 const load = (): void => library.run(svc.listIcons({ applicable_to: props.applicableTo, q: query.value || undefined }))
 onMounted(load)
@@ -131,27 +138,38 @@ const onFile = async (event: Event): Promise<void> => {
       {{ loadError }}
     </div>
     <ul class="ip-list">
-      <li
-        v-for="icon in icons"
-        :key="icon.artifact_id"
+      <template
+        v-for="section in sections"
+        :key="section.key"
       >
-        <button
-          class="ip-entry"
-          :class="{ 'ip-entry--stated': stated?.icon === icon.artifact_id }"
-          :title="icon.attribution"
-          @click="choose(icon.artifact_id)"
+        <li
+          v-if="section.title"
+          class="ip-section"
         >
-          <img
-            :src="svc.iconImageUrl(icon.artifact_id)"
-            alt=""
-            width="24"
-            height="24"
+          {{ section.title }}
+        </li>
+        <li
+          v-for="icon in section.icons"
+          :key="icon.artifact_id"
+        >
+          <button
+            class="ip-entry"
+            :class="{ 'ip-entry--stated': stated?.icon === icon.artifact_id }"
+            :title="icon.attribution"
+            @click="choose(icon.artifact_id)"
           >
-          <span class="ip-name">{{ icon.name }}</span>
-        </button>
-      </li>
+            <img
+              :src="svc.iconImageUrl(icon.artifact_id)"
+              alt=""
+              width="24"
+              height="24"
+            >
+            <span class="ip-name">{{ icon.name }}</span>
+          </button>
+        </li>
+      </template>
       <li
-        v-if="!icons.length && !loadError"
+        v-if="!offered.length && !loadError"
         class="ip-empty"
       >
         No icon in the library applies to this element
@@ -197,6 +215,7 @@ const onFile = async (event: Event): Promise<void> => {
   list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px;
   max-height: 180px; overflow-y: auto;
 }
+.ip-section { padding: 4px 2px 2px; font-size: 11px; font-weight: 600; color: #6b7280; }
 .ip-entry {
   display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 6px; border: 1px solid transparent;
   border-radius: 6px; background: #fff; cursor: pointer; text-align: left;

@@ -7597,6 +7597,8 @@ export interface components {
         };
         /** EditedInstanceBody */
         EditedInstanceBody: {
+            /** Drawn As */
+            drawn_as?: string | null;
             /** Entity Id */
             entity_id?: string | null;
             /** Instance Id */
@@ -9035,7 +9037,7 @@ export interface components {
          */
         IconListResponse: {
             /** Items */
-            items: components["schemas"]["IconSummary"][];
+            items: components["schemas"]["OfferedIcon"][];
             /** Total */
             total: number;
         };
@@ -9049,6 +9051,8 @@ export interface components {
             attribution: string;
             /** Baseline Standing */
             baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
+            /** Default For */
+            default_for: string[];
             /**
              * Default Style
              * @enum {string}
@@ -9074,6 +9078,8 @@ export interface components {
             status: "active" | "retired";
             /** Tags */
             tags: string[];
+            /** Used On */
+            used_on: components["schemas"]["UsingDiagram"][];
             /** Width */
             width: number;
         };
@@ -9980,6 +9986,50 @@ export interface components {
             specialization?: string;
             /** Title */
             title: string;
+        };
+        /** OfferedIcon */
+        OfferedIcon: {
+            /** Applies To */
+            applies_to: string[];
+            /** Artifact Id */
+            artifact_id: string;
+            /** Attribution */
+            attribution: string;
+            /** Baseline Standing */
+            baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
+            /** Default For */
+            default_for: string[];
+            /**
+             * Default Style
+             * @enum {string}
+             */
+            default_style: "badge" | "figure";
+            /** Height */
+            height: number;
+            /** Is Global */
+            is_global: boolean;
+            /** Name */
+            name: string;
+            /** Render Digest */
+            render_digest: string;
+            /** Shown For Element */
+            shown_for_element: boolean;
+            /**
+             * Source Format
+             * @enum {string}
+             */
+            source_format: "svg" | "png" | "jpeg" | "webp";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "retired";
+            /** Tags */
+            tags: string[];
+            /** Used On */
+            used_on: components["schemas"]["UsingDiagram"][];
+            /** Width */
+            width: number;
         };
         /**
          * OntologyClassificationResponse
@@ -12258,6 +12308,13 @@ export interface components {
             links?: components["schemas"]["LinkPatchWire"][];
             /** Notes */
             notes?: components["schemas"]["NotePatchWire"][];
+        };
+        /** UsingDiagram */
+        UsingDiagram: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Name */
+            name: string;
         };
         /**
          * ValidationErrorDetails

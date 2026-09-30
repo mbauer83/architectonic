@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
-from src.application.icons.icon_rows import icon_fields
+from src.application.icons.icon_rows import icon_fields, usage_fields
+from src.application.icons.icon_usage import library_usage
 from src.application.icons.library_query import offered_icons
 from src.application.modeling.proposal_standing import standing_reader, standing_subject
+from src.domain.artifact_id import stable_id
 from src.domain.baseline_standing import BASELINE_STANDING
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope, repo_cached, resolve_repo_roots, roots_key
 from src.infrastructure.mcp.tool_annotations import READ_ONLY
 
@@ -28,9 +31,13 @@ def artifact_query_icons(
         include_retired=include_retired, entity_of=repo.get_entity,
     )
     standing_of = standing_reader(repo)
+    usage = library_usage(repo.list_diagrams(), process_runtime_catalogs().specializations)
+    shown_for = usage.shown_for(applicable_to) if applicable_to else frozenset()
     return [
         {
             **icon_fields(icon),
+            **usage_fields(usage.users_of(icon.artifact_id)),
+            "shown_for_element": stable_id(icon.artifact_id) in shown_for,
             "scope": repo.scope_for_path(icon.path),
             BASELINE_STANDING: standing_of(standing_subject(icon)).to_mapping(),
         }
@@ -47,7 +54,10 @@ def register_query_icon_tools(mcp: MCPServer) -> None:
             "for — an entity id, or an entity type or specialization name — and keeps only icons that "
             "may be shown there; tag keeps icons carrying that tag; q matches name and attribution. "
             "Retired icons are left out unless include_retired. Each row gives what to choose by "
-            "(name, attribution, applies_to, default_style, tags, size) and never the picture. Assign "
+            "(name, attribution, applies_to, default_style, tags, size) and never the picture, where it "
+            "is used (used_on: the diagrams naming it; default_for: the specializations defaulting to "
+            "it), and shown_for_element: whether a diagram already shows it for the entity applicable_to "
+            "names, so a logo chosen for an element once can be chosen again. Assign "
             "one with artifact_create_diagram / artifact_edit_diagram through "
             "diagram_entities.display_icons (per instance) or type_icons (per type or specialization "
             "name); add one with artifact_create_icon. repo_scope defaults to both tiers; where both "

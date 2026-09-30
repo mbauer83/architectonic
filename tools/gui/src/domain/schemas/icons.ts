@@ -27,12 +27,23 @@ export const IconSummarySchema = Schema.Struct({
   render_digest: Schema.String,
   is_global: Schema.Boolean,
   baseline_standing: BaselineStandingSchema,
+  /** The diagrams naming it, for an instance or for a type. */
+  used_on: Schema.Array(Schema.Struct({ artifact_id: Schema.String, name: Schema.String })),
+  /** The specializations whose default it is. */
+  default_for: Schema.Array(Schema.String),
 })
 export type IconSummary = typeof IconSummarySchema.Type
 
+/** An icon a picker offers, and whether a diagram already shows it for the element being chosen for. */
+export const OfferedIconSchema = Schema.Struct({
+  ...IconSummarySchema.fields,
+  shown_for_element: Schema.Boolean,
+})
+export type OfferedIcon = typeof OfferedIconSchema.Type
+
 export const IconListSchema = Schema.Struct({
   total: Schema.Number,
-  items: Schema.Array(IconSummarySchema),
+  items: Schema.Array(OfferedIconSchema),
 })
 export type IconList = typeof IconListSchema.Type
 

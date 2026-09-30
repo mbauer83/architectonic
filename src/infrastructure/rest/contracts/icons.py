@@ -12,6 +12,11 @@ from src.infrastructure.rest.contracts.baseline_standing import BaselineStanding
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
+class UsingDiagram(Closed):
+    artifact_id: str
+    name: str
+
+
 class IconSummary(Closed):
     artifact_id: str
     name: str
@@ -30,13 +35,22 @@ class IconSummary(Closed):
     #: How it stands against the enterprise baseline. Nothing is proposed against an icon — its picture
     #: never changes under its id — so this is the baseline, stated rather than left for a reader to infer.
     baseline_standing: BaselineStandingContract
+    #: The diagrams naming it, for an instance or for a type, whether or not that element is still drawn.
+    used_on: list[UsingDiagram]
+    #: The specializations whose default it is.
+    default_for: list[str]
+
+
+class OfferedIcon(IconSummary):
+    #: A diagram already shows it for the entity `applicable_to` names, so it is offered first.
+    shown_for_element: bool
 
 
 class IconListResponse(Closed):
     """The icons a picker offers for the question asked, and how many there are."""
 
     total: int
-    items: list[IconSummary]
+    items: list[OfferedIcon]
 
 
 class ShownIcon(Closed):

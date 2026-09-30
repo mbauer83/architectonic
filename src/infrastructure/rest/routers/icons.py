@@ -8,11 +8,13 @@ from typing import Any, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 
-from src.application.icons.icon_rows import icon_fields
+from src.application.icons.icon_rows import icon_fields, usage_fields
+from src.application.icons.icon_usage import LibraryUsage, library_usage
 from src.application.icons.library_query import offered_icons
 from src.application.icons.shown_icons import EditedInstance, shown_icons
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.domain.artifact_id import stable_id
 from src.domain.baseline_standing import BASELINE_STANDING, BaselineStanding
 from src.domain.embedded_image import embedded_png_url
 from src.domain.icons.icon_file import IconFile, read_icon_file
@@ -53,6 +55,7 @@ def list_icons(
     tag: str | None = None,
     q: str | None = Query(default=None, description="Matched against name and attribution"),
     include_retired: bool = False,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     repo = s.get_repo()
     offered = offered_icons(
@@ -60,7 +63,13 @@ def list_icons(
         include_retired=include_retired, entity_of=repo.get_entity,
     )
     standing_of = s.baseline_standing_reader()
-    return {"total": len(offered), "items": [_summary(icon, standing_of) for icon in offered]}
+    usage = _usage(catalogs)
+    shown_for = usage.shown_for(applicable_to) if applicable_to else frozenset()
+    items = [
+        {**_summary(icon, standing_of, usage), "shown_for_element": stable_id(icon.artifact_id) in shown_for}
+        for icon in offered
+    ]
+    return {"total": len(items), "items": items}
 
 
 class EditedInstanceBody(BaseModel):
@@ -108,8 +117,10 @@ def preview_shown_icons(
 
 @router.get("/api/icons/{artifact_id}", tags=[TAG_ICONS], summary="Read an icon by id",
     response_model=IconSummary, responses=READ_RESPONSES)
-def read_icon(artifact_id: str) -> dict[str, Any]:
-    return _summary(_icon(artifact_id), s.baseline_standing_reader())
+def read_icon(
+    artifact_id: str, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)
+) -> dict[str, Any]:
+    return _summary(_icon(artifact_id), s.baseline_standing_reader(), _usage(catalogs))
 
 
 @router.get("/api/icons/{artifact_id}/image", tags=[TAG_ICONS], summary="Serve an icon's picture",
@@ -284,9 +295,14 @@ def _icon(artifact_id: str) -> IconRecord:
     return icon
 
 
-def _summary(icon: IconRecord, standing_of: Callable[[str], BaselineStanding]) -> dict[str, Any]:
+def _usage(catalogs: RuntimeCatalogs) -> LibraryUsage:
+    return library_usage(s.get_repo().list_diagrams(), catalogs.specializations)
+
+
+def _summary(icon: IconRecord, standing_of: Callable[[str], BaselineStanding], usage: LibraryUsage) -> dict[str, Any]:
     return {
         **icon_fields(icon),
+        **usage_fields(usage.users_of(icon.artifact_id)),
         "is_global": s.is_global(icon.path),
         BASELINE_STANDING: standing_of(standing_subject(icon)).to_mapping(),
     }
