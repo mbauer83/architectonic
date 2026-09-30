@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
  * The icon a row's instance shows on this diagram, at the row's left edge, and the way to change it.
- * Empty until hovered or focused, so an untouched diagram's list looks as it always did; with an icon
- * set, the picture, and in its title where it comes from.
+ * Without an icon it shows a faint placeholder, strengthened when the row is hovered, so the way in is
+ * findable without crowding a list nobody is giving icons; with one, the picture, and in its title
+ * where it comes from.
  */
 import { computed, inject } from 'vue'
 import { diagramIconsKey } from '../composables/useDiagramIcons'
@@ -33,15 +34,31 @@ const title = computed(() =>
       :src="shown.picture"
       alt=""
     >
+    <svg
+      v-else
+      class="icon-chip__placeholder"
+      viewBox="0 0 16 16"
+      width="14"
+      height="14"
+      aria-hidden="true"
+    >
+      <path d="M3 3h7M1.5 4.5v6A1.5 1.5 0 0 0 3 12h7a1.5 1.5 0 0 0 1.5-1.5V8M3.5 10.5 6 7.5l2 2 1.2-1.3 1.8 2.3M13 1.5v4M11 3.5h4" />
+    </svg>
   </button>
 </template>
 
 <style scoped>
 .icon-chip {
   width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0; padding: 1px; cursor: pointer;
-  border: 1px dashed transparent; background: none; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px dashed #e5e7eb; background: none; color: #9ca3af;
+  display: inline-flex; align-items: center; justify-content: center;
 }
-:global(.entity-row:hover) .icon-chip, .icon-chip:focus-visible, .icon-chip.expanded { border-color: #c4b5fd; }
+.icon-chip__placeholder {
+  opacity: .55; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round;
+}
+.icon-chip:hover, .icon-chip:focus-visible, .icon-chip.expanded { border-color: #a78bfa; color: #6d28d9; }
+.icon-chip:hover .icon-chip__placeholder, .icon-chip:focus-visible .icon-chip__placeholder,
+.icon-chip.expanded .icon-chip__placeholder { opacity: 1; }
 .icon-chip--set { border-style: solid; border-color: #ede9fe; }
 .icon-chip img { width: 18px; height: 18px; object-fit: contain; }
 </style>

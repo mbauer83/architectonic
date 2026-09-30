@@ -316,6 +316,9 @@ const toggleIconPicker = (row: EntityRow): void => {
 }
 .label-btn:hover, .label-btn.expanded { color: #6d28d9; background: #f5f3ff; }
 .label-btn--stated { color: #6d28d9; }
+/* The icon chip is quiet until its row is the one being looked at. */
+.entity-row:hover :deep(.icon-chip) { border-color: #c4b5fd; }
+.entity-row:hover :deep(.icon-chip__placeholder) { opacity: .9; }
 .entity-row--occurrence { margin-left: 18px; border-left: 2px solid #ddd6fe; }
 .occ-btn {
   padding: 2px 8px; font-size: 11px; color: #6d28d9; background: #f5f3ff;

@@ -61,6 +61,15 @@ describe('the icon a row shows', () => {
     expect(host.querySelector('.icon-chip')).toBeNull()
   })
 
+  it('shows a placeholder where the instance has no icon, so the way to give it one can be found', () => {
+    const { host } = mounted(editing(false))
+    const chip = host.querySelector<HTMLButtonElement>('.icon-chip')!
+
+    expect(chip.querySelector('.icon-chip__placeholder')).not.toBeNull()
+    expect(chip.querySelector('img')).toBeNull()
+    expect(chip.title).toBe('Give this element an icon')
+  })
+
   it('shows the picture its instance shows, and says where it comes from', () => {
     const { host } = mounted(editing(true))
     const chip = host.querySelector<HTMLButtonElement>('.icon-chip')!
