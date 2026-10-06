@@ -60,11 +60,13 @@ class LocalCheckoutActions:
             raise UpdateActionError(f"the backend on port {port} could not be stopped: {result}")
 
     def start_backend(self, previous: BackendObservation) -> None:
-        from src.infrastructure.backend.backend_launch import start_detached  # noqa: PLC0415
+        from src.infrastructure.backend.backend_launch import START_LOCK_WAIT_SECONDS, start_detached  # noqa: PLC0415
+        from src.infrastructure.backend.backend_start_lock import backend_start_lock  # noqa: PLC0415
 
         if previous.port is None:
             raise UpdateActionError("the previous backend's port is not recorded")
-        start_detached(previous.port, workspace=self.root, project_dir=self.root, flags=previous.flags)
+        with backend_start_lock(self.root, timeout_s=START_LOCK_WAIT_SECONDS):
+            start_detached(previous.port, workspace=self.root, project_dir=self.root, flags=previous.flags)
 
     # ── Software ──────────────────────────────────────────────────────────────
 

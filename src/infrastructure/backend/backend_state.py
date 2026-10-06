@@ -48,6 +48,11 @@ def backend_state_path(start: Path | None = None) -> Path:
     return _state_dir(start) / BACKEND_STATE_FILENAME
 
 
+def backend_start_lock_path(start: Path | None = None) -> Path:
+    """The lock a process holds while it starts this workspace's backend (`backend_start_lock`)."""
+    return _state_dir(start) / "backend-start.lock"
+
+
 def backend_log_path(start: Path | None = None) -> Path:
     configured = Path(configured_backend_log_path()).expanduser()
     if configured.is_absolute():

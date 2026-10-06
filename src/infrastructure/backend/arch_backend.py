@@ -30,6 +30,7 @@ from src.infrastructure.backend.backend_probe import (
     probe_backend,
     resolve_backend_port,
 )
+from src.infrastructure.backend.backend_start_lock import backend_start_lock
 from src.infrastructure.backend.backend_state import (
     backend_log_path,
     process_exists,
@@ -77,6 +78,21 @@ def main(argv: list[str] | None = None) -> None:
     if args.stop:
         _run_stop(args, args.port)
         return
+    if args.daemon:
+        # A starter, so under the start lock: a bridge starting this workspace's backend at the same
+        # moment would otherwise be judged a wedged backend by the guard below.
+        from src.infrastructure.backend.backend_launch import START_LOCK_WAIT_SECONDS  # noqa: PLC0415
+
+        with backend_start_lock(Path.cwd(), timeout_s=START_LOCK_WAIT_SECONDS):
+            _start(args, parser, argv, resolved_port)
+        return
+    # The foreground server takes no lock: a lock holder may be the process that spawned it.
+    _start(args, parser, argv, resolved_port)
+
+
+def _start(
+    args: argparse.Namespace, parser: argparse.ArgumentParser, argv: list[str] | None, resolved_port: int
+) -> None:
     if args.restart:
         _stop_for_restart(args.port)
     # Two questions, in this order: is this workspace's *own* backend in a state that must be

@@ -15,6 +15,7 @@ from pathlib import Path
 
 from src.domain.deployment.backend_endpoint import (
     AttachToBackend,
+    EndpointPlan,
     EndpointState,
     RefuseEndpoint,
     StartBackendOn,
@@ -33,6 +34,7 @@ from src.infrastructure.backend.backend_probe import (
     probe_backend_url,
     resolve_backend_port,
 )
+from src.infrastructure.backend.backend_start_lock import backend_start_lock
 from src.infrastructure.backend.backend_state import backend_log_path, read_backend_state
 from src.infrastructure.git.git_auth import (
     GitCredentials,
@@ -45,6 +47,8 @@ logger = logging.getLogger(__name__)
 
 #: How long a freshly spawned backend has to answer before the caller is told it did not.
 STARTUP_DEADLINE_SECONDS = 15.0
+#: How long a starter waits for another one to finish: its whole start, and the planning around it.
+START_LOCK_WAIT_SECONDS = 2 * STARTUP_DEADLINE_SECONDS
 _STARTUP_POLL_SECONDS = 0.25
 
 
@@ -66,7 +70,17 @@ def ensure_backend_running(
     if external_url:
         return _attach_external(external_url, workspace=workspace, explicit_port=port)
 
-    plan = plan_workspace_endpoint(cwd=workspace, explicit_port=port, may_start=start_if_missing)
+    # Planned under the start lock: a sibling starting this workspace's backend right now is
+    # indistinguishable from a hung one until it serves, so wait for it and plan from what it left.
+    with backend_start_lock(workspace, timeout_s=START_LOCK_WAIT_SECONDS):
+        return _execute(
+            plan_workspace_endpoint(cwd=workspace, explicit_port=port, may_start=start_if_missing),
+            workspace=workspace,
+            project_dir=project_dir,
+        )
+
+
+def _execute(plan: EndpointPlan, *, workspace: Path, project_dir: Path | None) -> int:
     match plan:
         case AttachToBackend(port=live):
             logger.info("Reusing the backend serving this workspace on port %s", live)

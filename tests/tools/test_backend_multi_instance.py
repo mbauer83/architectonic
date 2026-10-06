@@ -151,6 +151,42 @@ def test_a_workspace_reuses_its_own_backend(monkeypatch, tmp_path: Path) -> None
     assert started == []
 
 
+def test_two_bridges_starting_one_workspace_cold_start_one_backend_and_both_use_it(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Two bridges on one workspace, nothing running: the second waits for the first's backend.
+
+    The backend binds only after it has built its index, so while the first start is in flight the
+    second bridge sees nothing serving. It used to spawn a backend of its own, whose pre-start guard
+    then found the first one's process holding the port without answering and refused it as unhealthy.
+    """
+    ours = _workspace(tmp_path, name="ours")
+    backends: dict[int, Path] = {}
+    _install_machine(monkeypatch, backends)
+    started: list[int] = []
+
+    def slow_start(port: int, *, workspace: Path, project_dir: Path | None) -> int:
+        started.append(port)
+        threading.Event().wait(0.3)  # building the index, not yet listening
+        backends[port] = workspace
+        return port
+
+    monkeypatch.setattr(backend_launch, "_start_backend", slow_start)
+    monkeypatch.setattr(backend_launch, "configured_backend_url", lambda: None)
+    ports: list[int] = []
+    bridges = [
+        threading.Thread(target=lambda: ports.append(backend_launch.ensure_backend_running(cwd=ours)))
+        for _ in range(2)
+    ]
+    for bridge in bridges:
+        bridge.start()
+    for bridge in bridges:
+        bridge.join(timeout=10)
+
+    assert started == [DEFAULT_PREFERENCE.port]
+    assert ports == [DEFAULT_PREFERENCE.port, DEFAULT_PREFERENCE.port]
+
+
 def test_a_workspace_never_attaches_to_a_neighbours_backend(monkeypatch, tmp_path: Path) -> None:
     ours = _workspace(tmp_path, name="ours")
     theirs = _workspace(tmp_path, name="theirs")

@@ -21,7 +21,8 @@ Each server is a thin stdio bridge to the backend **serving its own workspace**.
 the directory the client starts the bridge in — which `.mcp.json` makes the project directory — or,
 for clients that cannot set one, `--workspace DIR` / `ARCH_MCP_WORKSPACE`. The bridge starts that
 workspace's backend if none is running and attaches to it only if it reports serving that
-workspace's engagement repository; otherwise it exits with the reason. This matters when more than
+workspace's engagement repository; otherwise it exits with the reason. When several bridges start at
+once, one starts the backend and the others wait for it and use it. This matters when more than
 one workspace runs on the machine: without the check, a bridge finding the default port occupied
 attaches to whichever backend answers, and every tool call lands in a *different* model while
 looking entirely normal. See
