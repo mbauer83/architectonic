@@ -1,0 +1,149 @@
+---
+artifact-id: ARC@1788293831.bMVmTxN.amp-developer-workstation-infrastructure
+artifact-type: diagram
+name: "AMP \u2014 Developer-Workstation Infrastructure"
+version: 0.1.0
+status: draft
+keywords:
+- technology
+- deployment
+- workstation
+- local
+diagram-type: archimate-technology
+entity-ids-used:
+- NOD@1712870400.4EFX7z.developer-workstation
+- ART@1787483097.xKVU0M3.architectonic-source-distribution
+- ART@1712870400.FtioFJ.sqlite-database
+- ART@1712870400.YsLpM8.git-repository
+- ART@1792660787.2um_Tr3.embedding-model-files
+- ART@1780656477.tkNvK_.encrypted-assurance-database
+- SSW@1712870400.o7a0ad.python-runtime
+- SSW@1712870400.xVrBYD.plantuml-engine
+- SSW@1712870400.T-zzVd.git-vcs
+- SSW@1780656477.nhzGvk.sqlcipher
+- SSW@1780656477.OCX11y.os-keychain
+connection-ids-used:
+- NOD@1712870400.4EFX7z---ART@1712870400.FtioFJ@@archimate-aggregation
+- NOD@1712870400.4EFX7z---ART@1712870400.YsLpM8@@archimate-aggregation
+- NOD@1712870400.4EFX7z---ART@1787483097.xKVU0M3@@archimate-assignment
+- NOD@1712870400.4EFX7z---SSW@1712870400.T-zzVd@@archimate-aggregation
+- NOD@1712870400.4EFX7z---SSW@1712870400.o7a0ad@@archimate-aggregation
+- NOD@1712870400.4EFX7z---SSW@1712870400.xVrBYD@@archimate-aggregation
+- NOD@1712870400.4EFX7z---SSW@1780656477.OCX11y@@archimate-aggregation
+- NOD@1712870400.4EFX7z---SSW@1780656477.nhzGvk@@archimate-aggregation
+- NOD@1712870400.4EFX7z---ART@1792660787.2um_Tr3@@archimate-aggregation
+- NOD@1712870400.4EFX7z---ART@1780656477.tkNvK_@@archimate-aggregation
+last-updated: '2026-10-22T09:35:08Z'
+---
+@startuml amp---developer-workstation-infrastructure
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+skinparam defaultTextAlignment center
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Access(from, to, label) from -[dotted]-> to
+!define Rel_Access_Up(from, to, label) from -[dotted]up-> to
+!define Rel_Access_Down(from, to, label) from -[dotted]down-> to
+!define Rel_Access_Left(from, to, label) from -[dotted]left-> to
+!define Rel_Access_Right(from, to, label) from -[dotted]right-> to
+!define Rel_Aggregation(from, to, label) from o-- to
+!define Rel_Aggregation_Up(from, to, label) from o-up- to
+!define Rel_Aggregation_Down(from, to, label) from o-down- to
+!define Rel_Aggregation_Left(from, to, label) from o-left- to
+!define Rel_Aggregation_Right(from, to, label) from o-right- to
+!define Rel_Assignment(from, to, label) from --> to
+!define Rel_Assignment_Up(from, to, label) from -up-> to
+!define Rel_Assignment_Down(from, to, label) from -down-> to
+!define Rel_Assignment_Left(from, to, label) from -left-> to
+!define Rel_Assignment_Right(from, to, label) from -right-> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Up(from, to, label) from -up- to
+!define Rel_Association_Down(from, to, label) from -down- to
+!define Rel_Association_Left(from, to, label) from -left- to
+!define Rel_Association_Right(from, to, label) from -right- to
+!define Rel_Composition(from, to, label) from *-- to
+!define Rel_Composition_Up(from, to, label) from *-up- to
+!define Rel_Composition_Down(from, to, label) from *-down- to
+!define Rel_Composition_Left(from, to, label) from *-left- to
+!define Rel_Composition_Right(from, to, label) from *-right- to
+!define Rel_Flow(from, to, label) from ..> to
+!define Rel_Flow_Up(from, to, label) from .up.> to
+!define Rel_Flow_Down(from, to, label) from .down.> to
+!define Rel_Flow_Left(from, to, label) from .left.> to
+!define Rel_Flow_Right(from, to, label) from .right.> to
+!define Rel_Influence(from, to, label) from ..> to
+!define Rel_Influence_Up(from, to, label) from .up.> to
+!define Rel_Influence_Down(from, to, label) from .down.> to
+!define Rel_Influence_Left(from, to, label) from .left.> to
+!define Rel_Influence_Right(from, to, label) from .right.> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from .up.|> to
+!define Rel_Realization_Down(from, to, label) from .down.|> to
+!define Rel_Realization_Left(from, to, label) from .left.|> to
+!define Rel_Realization_Right(from, to, label) from .right.|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Serving_Up(from, to, label) from -up-> to
+!define Rel_Serving_Down(from, to, label) from -down-> to
+!define Rel_Serving_Left(from, to, label) from -left-> to
+!define Rel_Serving_Right(from, to, label) from -right-> to
+!define Rel_Specialization(from, to, label) from --|> to
+!define Rel_Specialization_Up(from, to, label) from -up-|> to
+!define Rel_Specialization_Down(from, to, label) from -down-|> to
+!define Rel_Specialization_Left(from, to, label) from -left-|> to
+!define Rel_Specialization_Right(from, to, label) from -right-|> to
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Triggering_Up(from, to, label) from -up-> to
+!define Rel_Triggering_Down(from, to, label) from -down-> to
+!define Rel_Triggering_Left(from, to, label) from -left-> to
+!define Rel_Triggering_Right(from, to, label) from -right-> to
+skinparam rectangle<<artifact>> {
+  BackgroundColor #BCD9AE
+  BorderColor #384134
+}
+skinparam rectangle<<system_software>> {
+  BackgroundColor #BCD9AE
+  BorderColor #384134
+}
+skinparam rectangle<<technology_node>> {
+  BackgroundColor #BCD9AE
+  BorderColor #384134
+}
+sprite $archimate_artifact <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 3.5h5.8l2.2 2.2v6.8H4z"  fill="#252327" stroke="none"/><path d="M9.15 3.50v2.20h1.30V3.50z" fill="#252327"/><path d="M9.80 5.05h2.20v1.30H9.80z" fill="#252327"/></svg>
+sprite $archimate_system_software <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="7.2" cy="8" r="3.3"  fill="none" stroke="#252327" stroke-width="1.3"/><circle cx="9.8" cy="8.8" r="3.3"  fill="none" stroke="#252327" stroke-width="1.3"/></svg>
+sprite $archimate_technology_node <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.6h6.8v6.6H4z"  fill="#252327" stroke="none"/><path d="M10.37 5.08L11.23 4.12L13.23 5.92L12.37 6.88z" fill="#252327"/><path d="M12.15 6.40v6.60h1.30V6.40z" fill="#252327"/><path d="M12.37 12.52L13.23 13.48L11.23 15.28L10.37 14.32z" fill="#252327"/><path d="M3.57 11.68L4.43 10.72L6.43 12.52L5.57 13.48z" fill="#252327"/><path d="M6.00 12.35h6.80v1.30H6.00z" fill="#252327"/><path d="M10.15 4.60v6.60h1.30V4.60z" fill="#252327"/></svg>
+skinparam wrapWidth 240
+top to bottom direction
+
+skinparam maxMessageSize 240
+
+title AMP — Developer-Workstation Infrastructure
+rectangle "<$archimate_artifact{scale=1.2}> Architectonic Source Distribution" <<artifact>> as ART_xKVU0M3
+rectangle "<$archimate_technology_node{scale=1.2}> Developer Workstation" <<technology_node>> as NOD_4EFX7z {
+  rectangle "<$archimate_artifact{scale=1.2}> Git Repository" <<artifact>> as ART_YsLpM8
+  rectangle "<$archimate_artifact{scale=1.2}> SQLite Database" <<artifact>> as ART_FtioFJ
+  rectangle "<$archimate_artifact{scale=1.2}> Embedding Model Files" <<artifact>> as ART_2um_Tr3
+  rectangle "<$archimate_artifact{scale=1.2}> Encrypted Assurance Database" <<artifact>> as ART_tkNvK_
+  rectangle "<$archimate_system_software{scale=1.2}> Python Runtime" <<system_software>> as SSW_o7a0ad
+  rectangle "<$archimate_system_software{scale=1.2}> PlantUML Engine" <<system_software>> as SSW_xVrBYD
+  rectangle "<$archimate_system_software{scale=1.2}> Git VCS" <<system_software>> as SSW_TzzVd
+  rectangle "<$archimate_system_software{scale=1.2}> SQLCipher" <<system_software>> as SSW_nhzGvk
+  rectangle "<$archimate_system_software{scale=1.2}> OS Keychain" <<system_software>> as SSW_OCX11y
+  ART_YsLpM8 -[hidden]down- ART_FtioFJ
+  ART_FtioFJ -[hidden]down- ART_2um_Tr3
+  ART_2um_Tr3 -[hidden]down- ART_tkNvK_
+  SSW_o7a0ad -[hidden]down- SSW_xVrBYD
+  SSW_xVrBYD -[hidden]down- SSW_TzzVd
+  SSW_TzzVd -[hidden]down- SSW_nhzGvk
+  SSW_nhzGvk -[hidden]down- SSW_OCX11y
+  ART_YsLpM8 -[hidden]right- SSW_o7a0ad
+}
+' Connections
+NOD_4EFX7z -up-> ART_xKVU0M3
+@enduml

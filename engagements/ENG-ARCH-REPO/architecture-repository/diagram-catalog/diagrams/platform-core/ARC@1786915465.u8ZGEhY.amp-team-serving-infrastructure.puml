@@ -16,13 +16,17 @@ entity-ids-used:
 - ART@1786912186.j7ySGgZ.architectonic-container-image
 - TIF@1786915451.cpBZx0u.platform-http-endpoint
 - NOD@1786915451.THkLB12.repository-data-volume
+- ART@1712870400.YsLpM8.git-repository
 - NOD@1786915451.pVqArvF.assurance-store-volume
+- ART@1780656477.tkNvK_.encrypted-assurance-database
 - NOD@1786915451.l1ntGpZ.backend-state-volume
+- ART@1712870400.FtioFJ.sqlite-database
 - NOD@1786915451.IwBEhEm.credential-vault-volume
+- ART@1792660787.zOM8gAP.assurance-credential-vault
+- NOD@1792660787.9Xx6q1f.embedding-model-volume
+- ART@1792660787.2um_Tr3.embedding-model-files
 - NOD@1786915451.yVcsZO4.tls-reverse-proxy
 - SSW@1780656477.kIOyT2.pocketbase
-- ART@1712870400.YsLpM8.git-repository
-- ART@1780656477.tkNvK_.encrypted-assurance-database
 connection-ids-used:
 - NOD@1786915451.THkLB12---ART@1712870400.YsLpM8@@archimate-aggregation
 - NOD@1786915451.pVqArvF---ART@1780656477.tkNvK_@@archimate-aggregation
@@ -36,7 +40,11 @@ connection-ids-used:
 - NOD@1782080479.7xNYBF---SSW@1780656477.kIOyT2@@archimate-aggregation
 - NOD@1786915205.Yx71j_C---TIF@1786915451.cpBZx0u@@archimate-composition
 - NOD@1786915451.yVcsZO4---TIF@1786915451.cpBZx0u@@archimate-association
-last-updated: '2026-08-16T21:24:25Z'
+- NOD@1786915451.l1ntGpZ---ART@1712870400.FtioFJ@@archimate-assignment
+- NOD@1782080479.7xNYBF---NOD@1792660787.9Xx6q1f@@archimate-composition
+- NOD@1792660787.9Xx6q1f---ART@1792660787.2um_Tr3@@archimate-assignment
+- NOD@1786915451.IwBEhEm---ART@1792660787.zOM8gAP@@archimate-assignment
+last-updated: '2026-10-22T09:35:05Z'
 ---
 @startuml amp---team-serving-infrastructure
 hide stereotype
@@ -132,7 +140,6 @@ top to bottom direction
 skinparam maxMessageSize 240
 
 title AMP — Team-Serving Infrastructure
-
 rectangle "<$archimate_technology_node{scale=1.2}> Team-Serving Deployment" <<technology_node>> as NOD_7xNYBF {
   rectangle "<$archimate_technology_node{scale=1.2}> App Container" <<technology_node>> as NOD_Yx71j_C {
     rectangle "<$archimate_artifact{scale=1.2}> Architectonic Container Image" <<artifact>> as ART_j7ySGgZ
@@ -142,22 +149,28 @@ rectangle "<$archimate_technology_node{scale=1.2}> Team-Serving Deployment" <<te
   rectangle "<$archimate_technology_node{scale=1.2}> Repository Data Volume" <<technology_node>> as NOD_THkLB12 {
     rectangle "<$archimate_artifact{scale=1.2}> Git Repository" <<artifact>> as ART_YsLpM8
   }
+  rectangle "<$archimate_technology_node{scale=1.2}> Backend State Volume" <<technology_node>> as NOD_l1ntGpZ {
+    rectangle "<$archimate_artifact{scale=1.2}> SQLite Database" <<artifact>> as ART_FtioFJ
+  }
+  rectangle "<$archimate_technology_node{scale=1.2}> Embedding Model Volume" <<technology_node>> as NOD_9Xx6q1f {
+    rectangle "<$archimate_artifact{scale=1.2}> Embedding Model Files" <<artifact>> as ART_2um_Tr3
+  }
   rectangle "<$archimate_technology_node{scale=1.2}> Assurance Store Volume" <<technology_node>> as NOD_pVqArvF {
     rectangle "<$archimate_artifact{scale=1.2}> Encrypted Assurance Database" <<artifact>> as ART_tkNvK_
   }
-  rectangle "<$archimate_technology_node{scale=1.2}> Backend State Volume" <<technology_node>> as NOD_l1ntGpZ
-  rectangle "<$archimate_technology_node{scale=1.2}> Credential Vault Volume" <<technology_node>> as NOD_IwBEhEm
+  rectangle "<$archimate_technology_node{scale=1.2}> Credential Vault Volume" <<technology_node>> as NOD_IwBEhEm {
+    rectangle "<$archimate_artifact{scale=1.2}> Assurance Credential Vault" <<artifact>> as ART_zOM8gAP
+  }
   rectangle "<$archimate_technology_node{scale=1.2}> TLS Reverse Proxy" <<technology_node>> as NOD_yVcsZO4
   rectangle "<$archimate_system_software{scale=1.2}> PocketBase" <<system_software>> as SSW_kIOyT2
   NOD_Yx71j_C -[hidden]right- NOD_THkLB12
-  NOD_THkLB12 -[hidden]right- NOD_pVqArvF
-  NOD_pVqArvF -[hidden]right- NOD_l1ntGpZ
+  NOD_THkLB12 -[hidden]right- NOD_l1ntGpZ
+  NOD_l1ntGpZ -[hidden]right- NOD_9Xx6q1f
+  NOD_pVqArvF -[hidden]right- NOD_IwBEhEm
   NOD_IwBEhEm -[hidden]right- NOD_yVcsZO4
   NOD_yVcsZO4 -[hidden]right- SSW_kIOyT2
-  NOD_Yx71j_C -[hidden]down- NOD_IwBEhEm
+  NOD_Yx71j_C -[hidden]down- NOD_pVqArvF
 }
-
 ' Connections
 NOD_yVcsZO4 -- TIF_cpBZx0u
-
 @enduml

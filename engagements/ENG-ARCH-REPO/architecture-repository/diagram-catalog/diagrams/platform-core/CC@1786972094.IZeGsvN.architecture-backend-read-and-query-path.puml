@@ -21,20 +21,20 @@ entity-ids-used:
 - APP@1786967678.fvvCoDp.artifact-file-store
 - FNC@1783266393.4zLFys.compose-combined-scope-read
 - GRP@1786958823.ZYckdqy.read-query-engine
+- APP@1788599665.tPG3ZDy.query-and-corpus-embedder
+- FNC@1788599685.KQCmD1g.fuse-ranked-retrieval-results
 connection-ids-used:
 - APP@1712870400.JOmFWy---APP@1712870400.yNhgdh@@archimate-serving
 - APP@1712870400.JOmFWy---APP@1777293133.OYEmP1@@archimate-serving
 - APP@1712870400.JOmFWy---APP@1786793392.Ir9SkCr@@archimate-serving
 - APP@1712870400.YOOEbL---APP@1777293133.OYEmP1@@archimate-serving
 - APP@1712870400.YOOEbL---APP@1786793392.Ir9SkCr@@archimate-serving
-- APP@1712870400.ca3vm7---APP@1712870400.YOOEbL@@archimate-serving
 - APP@1712870400.ca3vm7---APP@1712870400.yNhgdh@@archimate-serving
 - APP@1712870400.ca3vm7---APP@1777293133.OYEmP1@@archimate-serving
 - APP@1712870400.v9LvfK---APP@1776149382.lmO0mp@@archimate-serving
 - APP@1712870400.v9LvfK---APP@1777293133.OYEmP1@@archimate-serving
 - APP@1712870400.v9LvfK---APP@1786793392.Ir9SkCr@@archimate-serving
 - APP@1712870400.yNhgdh---APP@1777293133.OYEmP1@@archimate-serving
-- APP@1712870400.yNhgdh---APP@1786225304.SpexYvB@@archimate-serving
 - APP@1712870400.yNhgdh---APP@1786225304.q6wT1kq@@archimate-serving
 - APP@1712870400.yNhgdh---APP@1786793392.Ir9SkCr@@archimate-serving
 - APP@1777293133.OYEmP1---APP@1776149382.lmO0mp@@archimate-serving
@@ -44,11 +44,15 @@ connection-ids-used:
 - APP@1777293133.OYEmP1---APP@1780783711.js9xHR@@archimate-serving
 - APP@1780783992.Je9pmw---APP@1777293133.OYEmP1@@archimate-serving
 - APP@1780783993.JqIBPJ---APP@1777293133.OYEmP1@@archimate-serving
-- APP@1786967678.R_K3YAQ---APP@1712870400.JOmFWy@@archimate-serving
 - APP@1786967678.R_K3YAQ---APP@1712870400.v9LvfK@@archimate-serving
 - APP@1786967678.fvvCoDp---APP@1712870400.JOmFWy@@archimate-serving
 - APP@1786967678.fvvCoDp---APP@1777293134.tY3JIK@@archimate-serving
 - APP@1786967678.fvvCoDp---APP@1777399925.HOOYAQ@@archimate-serving
+- APP@1712870400.ca3vm7---APP@1712870400.YOOEbL@@archimate-serving
+- APP@1712870400.yNhgdh---APP@1786225304.SpexYvB@@archimate-serving
+- APP@1786967678.R_K3YAQ---APP@1712870400.JOmFWy@@archimate-serving
+- APP@1789640743.3hRHTJT---APP@1777293133.OYEmP1@@archimate-association
+- FNC@1788600509.scmGYcC---FNC@1788599685.KQCmD1g@@archimate-flow
 diagram-entities: {}
 connections: []
 view_derivations:
@@ -94,14 +98,16 @@ view_derivations:
             value: archimate-serving
   selection:
     included_entity_ids:
-    - GRP@1786958823.ZYckdqy.read-query-engine
     - APP@1712870400.JOmFWy.sqlite-indexer
-    - APP@1712870400.v9LvfK.query-engine
     - APP@1712870400.YOOEbL.frontmatter-parser
+    - APP@1712870400.v9LvfK.query-engine
     - APP@1712870400.yNhgdh.module-catalog
-    - FNC@1783266393.4zLFys.compose-combined-scope-read
     - APP@1786967678.R_K3YAQ.artifact-index-store
     - APP@1786967678.fvvCoDp.artifact-file-store
+    - APP@1788599665.tPG3ZDy.query-and-corpus-embedder
+    - FNC@1783266393.4zLFys.compose-combined-scope-read
+    - FNC@1788599685.KQCmD1g.fuse-ranked-retrieval-results
+    - GRP@1786958823.ZYckdqy.read-query-engine
 bindings:
 - id: bind-scope
   subject:
@@ -109,7 +115,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: APP@1777293133.OYEmP1.architecture-backend
-last-updated: '2026-08-17T13:08:14Z'
+last-updated: '2026-10-22T09:23:09Z'
 ---
 @startuml architecture-backend---read-and-query-path
 !include <C4/C4_Component>
@@ -128,13 +134,17 @@ System_Boundary(APP_OYEmP1, "Architecture Backend") {
     Component(APP_YOOEbL, "Frontmatter Parser", "")
     Component(APP_v9LvfK, "Query Engine", "")
     Component(APP_yNhgdh, "Module Catalog", "")
+    Component(APP_tPG3ZDy, "Query and Corpus Embedder", "")
     Component(FNC_4zLFys, "Compose Combined-Scope Read", "")
     APP_JOmFWy -[hidden]right- APP_YOOEbL
     APP_YOOEbL -[hidden]right- APP_v9LvfK
     APP_v9LvfK -[hidden]right- APP_yNhgdh
-    APP_yNhgdh -[hidden]right- FNC_4zLFys
+    APP_yNhgdh -[hidden]right- APP_tPG3ZDy
+    APP_tPG3ZDy -[hidden]right- FNC_4zLFys
 
   }
+  Component(FNC_KQCmD1g, "Fuse Ranked Retrieval Results", "")
+  GRP_ZYckdqy -[hidden]right- FNC_KQCmD1g
 
 }
 
@@ -145,6 +155,7 @@ APP_yNhgdh --> APP_JOmFWy
 APP_JOmFWy --> APP_R_K3YAQ
 APP_v9LvfK --> APP_R_K3YAQ
 APP_JOmFWy --> APP_fvvCoDp
+APP_tPG3ZDy --> FNC_KQCmD1g : flows to
 
 APP_R_K3YAQ -[hidden]right- APP_fvvCoDp
 
