@@ -3,8 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import secrets
 import shutil
-import tempfile
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -223,8 +223,11 @@ def _apply_entry(repo_root: Path, transaction_dir: Path, entry: ManifestEntry) -
 
 
 def _atomic_install(payload: Path, dest: Path) -> None:
-    descriptor, temp_name = tempfile.mkstemp(prefix=f".{dest.name}.", dir=dest.parent)
-    temp_path = Path(temp_name)
+    # Created 0666 less the umask, as any file this process writes. `mkstemp` would make it 0600
+    # whatever the umask, and `os.replace` keeps the temp file's mode: every file a transaction
+    # installed became owner-only, unreadable to another uid that mounts the repository.
+    temp_path = dest.parent / f".{dest.name}.{secrets.token_hex(6)}"
+    descriptor = os.open(temp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
     try:
         with os.fdopen(descriptor, "wb") as handle:
             with payload.open("rb") as source:

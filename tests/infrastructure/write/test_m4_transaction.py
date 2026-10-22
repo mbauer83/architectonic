@@ -355,3 +355,29 @@ def _kill_on(boundary: str) -> Callable[[str], None]:
             raise SimulatedKill
 
     return callback
+
+
+def test_a_committed_file_is_as_readable_as_any_file_this_process_writes(tmp_path: Path) -> None:
+    """A transaction installs a file with the process umask, not as a private temp file.
+
+    It used `mkstemp`, which creates 0600 whatever the umask, and `os.replace` kept that mode: every
+    file a transactional write created or replaced became owner-only. A repository mounted read-only
+    into a container under another uid then could not be read at all — the demo image's first start
+    failed on 159 of the self-model's files.
+    """
+    previous = os.umask(0o022)
+    try:
+        repo = _fixture_repo(tmp_path)
+        (repo / "model" / "a.md").chmod(0o644)
+        _staging, staged_root = _stage_post_state(repo)
+        commit_staged_repo(
+            live_root=repo,
+            staged_root=staged_root,
+            touched_paths=_touched_post_state(staged_root),
+            rebuild_index=lambda _result: None,
+        )
+    finally:
+        os.umask(previous)
+
+    for name in ("a.md", "create.md"):
+        assert (repo / "model" / name).stat().st_mode & 0o777 == 0o644, name
