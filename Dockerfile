@@ -119,10 +119,11 @@ COPY --from=frontend /build/dist/ /app/tools/gui/dist/
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Writable locations for state, cloned repos, the assurance store, and the vault.
+# Writable locations for state, cloned repos, the assurance store, the embedding model
+# (fetched on first start when semantic search is on), and the vault.
 # These are pre-created (and owned by the runtime user) so named volumes mounted
 # over them inherit the correct ownership instead of defaulting to root.
-RUN mkdir -p /app/.arch /app/.arch-assurance /data \
+RUN mkdir -p /app/.arch /app/.arch-assurance /app/models /data \
     && chown -R arch:arch /app /home/arch /data
 
 USER arch

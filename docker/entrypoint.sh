@@ -35,8 +35,9 @@ if is_enabled "${ARCH_DEMO:-false}"; then
     ARCH_ENABLE_ASSURANCE="${ARCH_ENABLE_ASSURANCE:-true}"
     ARCH_IMPORT_GUIDANCE="${ARCH_IMPORT_GUIDANCE:-true}"
     ARCH_SEED_ASSURANCE="${ARCH_SEED_ASSURANCE:-true}"
-    export ARCH_ENABLE_ASSURANCE ARCH_IMPORT_GUIDANCE ARCH_SEED_ASSURANCE
-    log "Demo mode: assurance=$ARCH_ENABLE_ASSURANCE guidance-import=$ARCH_IMPORT_GUIDANCE seed=$ARCH_SEED_ASSURANCE"
+    ARCH_SEMANTIC_SEARCH="${ARCH_SEMANTIC_SEARCH:-true}"
+    export ARCH_ENABLE_ASSURANCE ARCH_IMPORT_GUIDANCE ARCH_SEED_ASSURANCE ARCH_SEMANTIC_SEARCH
+    log "Demo mode: assurance=$ARCH_ENABLE_ASSURANCE guidance-import=$ARCH_IMPORT_GUIDANCE seed=$ARCH_SEED_ASSURANCE semantic-search=$ARCH_SEMANTIC_SEARCH"
 
     # Populate the demo engagement from the read-only model mount, once per volume.
     # A copy rather than the mount itself, for two reasons that both have to hold: the
@@ -119,6 +120,7 @@ ASSURANCE_ON="${ARCH_ENABLE_ASSURANCE:-false}"
 if [ -f "$SETTINGS_PATH" ]; then
     ARCH_ASSURANCE_ON="$ASSURANCE_ON" \
     ARCH_MAX_CLASSIFICATION="${ARCH_MAX_CLASSIFICATION:-}" \
+    ARCH_SEMANTIC_SEARCH="${ARCH_SEMANTIC_SEARCH:-}" \
     python - "$SETTINGS_PATH" <<'PY'
 import os, sys, yaml
 path = sys.argv[1]
@@ -129,6 +131,13 @@ data.setdefault("modules", {}).setdefault("assurance", {})["enabled"] = (
 tlp = os.environ.get("ARCH_MAX_CLASSIFICATION", "")
 if tlp:
     data.setdefault("storage", {}).setdefault("assurance", {})["max_classification"] = tlp
+# Only when stated: unset leaves whatever a mounted settings document says.
+semantic = os.environ.get("ARCH_SEMANTIC_SEARCH", "").strip().lower()
+if semantic:
+    storage = data.setdefault("storage", {})
+    read_model = storage.get("read_model") or {}
+    read_model["semantic_search"] = semantic not in {"0", "false", "no", "off"}
+    storage["read_model"] = read_model
 with open(path, "w", encoding="utf-8") as fh:
     yaml.safe_dump(data, fh, default_flow_style=False, allow_unicode=True)
 PY
@@ -207,6 +216,21 @@ if is_enabled "${ARCH_IMPORT_GUIDANCE:-false}"; then
         log "Authoring guidance imported"
     else
         log "WARNING: guidance import failed — the authoring surfaces will report guidance as not loaded"
+    fi
+fi
+
+# ── 5c. Embedding model (before the backend: it encodes the corpus on start) ──
+# Fetched once into the arch-models volume (/app/models, where the backend looks)
+# and never again: get-embedding-model skips the files already there and checks
+# every digest, so later starts read 31 MB from the volume and download nothing.
+# Asked of the settings module rather than parsed here, so the entrypoint and the
+# backend cannot disagree about whether semantic search is on. Never fatal: without
+# the model, search answers by keyword, and the backend log says why.
+if python -c 'import sys; from src.config.storage_settings import storage_read_model_semantic_search as on; sys.exit(0 if on() else 1)'; then
+    if get-embedding-model >/dev/null; then
+        log "Embedding model present in /app/models — semantic search on"
+    else
+        log "WARNING: embedding model could not be installed — search answers by keyword alone"
     fi
 fi
 

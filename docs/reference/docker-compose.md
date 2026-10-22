@@ -258,6 +258,20 @@ Full backend semantics: [Assurance storage & confidentiality](../04-assurance/st
 
 &nbsp;
 
+## Semantic search
+
+Set `ARCH_SEMANTIC_SEARCH=true` in `.env` to have search also retrieve by meaning, fused with
+keyword search. The embedding model it needs (about 31 MB) is not part of the image. The first start
+with the switch on downloads it into the `arch-models` volume; every later start, and every rebuilt
+image, reads it from there and downloads nothing. If the download fails, the container still starts
+and search answers by keyword alone; the backend log says why.
+
+Leaving the variable unset keeps whatever `storage.read_model.semantic_search` says in the settings
+document, which is off unless you mounted one that turns it on. The demo turns it on. What the setting
+does is described in [Configuration](configuration.md#configsettingsyaml--backend).
+
+&nbsp;
+
 ## VPN access & the reverse proxy
 
 The backend has no built-in TLS or authentication — the VPN is the access
@@ -317,6 +331,7 @@ docker compose down                   # stop (named volumes persist)
 | `arch-data` | cloned engagement/enterprise repos (`/data`) |
 | `arch-assurance` | encrypted SQLCipher store (`/app/.arch-assurance`) |
 | `arch-home` | credential vault (`$HOME/.config/...`) |
+| `arch-models` | embedding model for semantic search (`/app/models`), downloaded on the first start with it on |
 
 Health is exposed at `/health` and wired into the container `HEALTHCHECK`.
 

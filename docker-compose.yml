@@ -56,6 +56,7 @@ services:
       - arch-data:/data                    # cloned engagement/enterprise repos
       - arch-assurance:/app/.arch-assurance # encrypted assurance store (sqlcipher)
       - arch-home:/home/arch               # credential vault ($HOME/.config/...)
+      - arch-models:/app/models            # embedding model, fetched once (ARCH_SEMANTIC_SEARCH)
     healthcheck:
       # Container-internal probe: :8000 here is intentionally NOT ARCH_APP_PORT.
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
@@ -107,6 +108,7 @@ volumes:
   arch-data:
   arch-assurance:
   arch-home:
+  arch-models:
   caddy-data:
   caddy-config:
   pocketbase-data:

@@ -172,7 +172,8 @@ reference](viewpoints-schema.md#execution-result--bounds); `guidance.default_sou
 `storage.read_model.semantic_search` adds a second retriever to search, fusing its ranking with
 the term-based one rather than appending to it — see [Search](../03-modeling/views-and-exploration.md#search).
 The asset it needs is acquired once per machine and is not shipped in the image; a deployment
-without it behaves as though the setting were off.
+without it behaves as though the setting were off. A container acquires it into a volume on its first
+start — see [Docker Compose: semantic search](docker-compose.md#semantic-search).
 
 The `storage.assurance` keys are written automatically by
 `arch-assurance init` and `arch-assurance use-backend` — see
