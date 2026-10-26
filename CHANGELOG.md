@@ -3,6 +3,104 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.11.0] — 2026-11-09
+
+**[Full detail → `changelog-assets/0.11.0-detail.md`](changelog-assets/0.11.0-detail.md)**
+
+**Icons on diagram elements.** An ArchiMate or C4 element can show a product logo or a picture of your
+own beside its name, and an ArchiMate element can be drawn as the picture itself. See
+[Icons on diagram elements](docs/03-modeling/icons.md).
+
+### Added
+
+- **An icon library per repository.** An icon has a name, an attribution, the types or
+  specializations it may be shown on, a default style and tags. **Icons** in the header lists the
+  library, and each icon's card names the diagrams that show it. An icon can be added, edited, retired
+  or reinstated, replaced by another across every diagram that shows it, and deleted once nothing uses
+  it.
+- **Icons in the diagram editor.** Each row of the entity list has an icon chip, as do the rows of the
+  C4 editors. The picker states an icon for the element or for every element of its type on the
+  diagram, in either style, from the library or uploaded for that diagram alone, and lists first the
+  icons other diagrams already show for the element. The row shows the result at once and the preview
+  draws it; nothing is written until the diagram is saved.
+- **Which icon shows is decided in one place.** An element's own statement wins over a
+  specialization's, a specialization's over its type's, and a type's over a specialization default
+  named in `.arch-repo/specializations.yaml`. An icon that does not apply to the element is passed
+  over.
+- **Uploads are checked and stored in one form.** SVG, PNG, JPEG and WebP files up to 1 MB and
+  4096 px are accepted. An SVG is rebuilt from an allow-list of elements and attributes and drawn in
+  an isolated process; every icon is stored as a PNG at most 128 px high, 384 px wide and 32 KB.
+- **An icon keeps its shape.** It is fitted into the room each style gives it, so a wide wordmark
+  is drawn at the height of a square logo, and a tall picture is never taller than its element.
+- **A diagram body carries the pictures it draws**, so it renders without the library, in an export
+  or in any PlantUML.
+- **A diagram's own icons** can be moved into the library from the diagram's page; the diagram then
+  names the library icon.
+- **Promotion takes a diagram's library icons along.** An icon whose picture the enterprise already
+  holds is not copied; the promoted diagram names the enterprise's icon.
+- **MCP tools** `artifact_create_icon`, `artifact_edit_icon`, `artifact_replace_icon`,
+  `artifact_share_icon`, `artifact_delete_icon` and `artifact_query_icons`; `display_icons`,
+  `type_icons` and `icons` in the diagram tools' `diagram_entities`; icon guidance in
+  `artifact_authoring_guidance`.
+- **REST routes** under `/api/icons`, and `POST /api/icons/preview`, which answers which icon each
+  instance of a diagram shows, saved or not. The diagram-type ui-config gains `icon_styles`.
+- **`arch-icons import <dir>`** adds a folder of icons to the library through the same checks, as a
+  dry run unless `--commit` is given.
+- **Semantic search in a container deployment.** `ARCH_SEMANTIC_SEARCH=true` in `.env` turns it on.
+  The embedding model is downloaded once, on the first start, into a new `arch-models` volume, and
+  read from there by every later start and rebuilt image. The demo turns it on.
+- **Verifier codes** `E360`–`E365` and `W360`–`W362` for icon files and the icon statements of
+  diagrams.
+
+### Changed
+
+- **The graph explorer draws the explored entity's relations.** Relations between two of its
+  neighbours are drawn when **Relations between neighbours** is checked in the toolbar. Expanding a
+  node adds that node's relations to what is drawn. A viewpoint's graph is drawn whole, as before.
+
+### Security
+
+- **Every request body is bounded by the operation it addresses.** An upload may be 2 MB and any
+  other request 16 MB; a larger body is refused with `413 request_too_large` before it is read,
+  whether or not it declares its length.
+- **Dependencies with published advisories are updated.** Pillow, which decodes every uploaded icon,
+  to 13.0.0; PyJWT to 2.15.1; urllib3 to 2.8.0; `mcp` to 2.3.0; filelock to 4.2.4; certifi to
+  2026.10.23; and opentelemetry-api to 1.45.1. In the GUI, DOMPurify, which sanitises each diagram
+  SVG before it is shown, to 3.4.17, and nanoid to 3.3.20. The build and test toolchain (Vite,
+  Vitest, undici and others) is updated for the same reason, as are glob and minimatch under the
+  lint and coverage tools, and msgpack among the development dependencies.
+
+### Fixed
+
+- **A backend started with a relative `--repo-root` or `--enterprise-root` promotes.** The roots were
+  used as given; a promotion then failed and rolled back, and every enterprise artifact was listed as
+  not global. They are now resolved against the directory the backend was started in.
+- **`arch-backend --restart` starts this workspace's backend while another workspace's is running.**
+  It reported "failed to restart backend pid None" and started nothing.
+- **A write answers with `Cache-Control: no-store`.** A `PATCH` or `PUT` could take the directive of
+  the read served at the same path.
+- **Files written by a multi-file write keep normal permissions.** Each file was created readable by
+  its owner only, so a repository mounted into a container under another user could not be read.
+  Files already affected keep that mode until they are written again or changed with `chmod`.
+- **Two MCP bridges starting one workspace's backend at once share it.** On a cold start the second
+  bridge started a backend of its own, which refused to run beside the first one while that was still
+  building its index, so the second bridge failed. Whatever starts a workspace's backend — a bridge,
+  `arch-backend --daemon`, `arch-update` — now does so under a lock in the workspace's `.arch`
+  directory; a second starter waits for the first and then uses its backend.
+- **Deleting an attribute on an entity's page removes it.** The save reported success and the
+  attribute stayed. Renaming an attribute left the old name in place, and changing an ad-hoc
+  attribute's type back to text kept the old type. `PATCH /api/entities/{id}` now accepts `null` in
+  `attribute_types` to remove a type, as it already did in `properties`.
+- **An entity edited in a diagram's sidebar shows its saved values.** The sidebar went on showing
+  the values from before the save until another element was selected. In a viewpoint diagram the
+  sidebar did not refresh at all.
+
+### Upgrading
+
+- No data migration. Both new `diagram-entities` keys, `display_icons` and `type_icons`, are
+  optional, and a repository without icons is unchanged.
+- The installed environment gains Pillow 13 and resvg-py.
+
 ## [0.10.1] — 2026-09-24
 
 **[Full detail → `changelog-assets/0.10.1-detail.md`](changelog-assets/0.10.1-detail.md)**
@@ -1129,6 +1227,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.11.0]: https://github.com/mbauer83/architectonic/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/mbauer83/architectonic/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/mbauer83/architectonic/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/mbauer83/architectonic/compare/v0.9.0...v0.9.1
