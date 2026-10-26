@@ -64,7 +64,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | azure-storage-blob | 12.30.1 | MIT License |
 | boto3 | 1.43.83 | Apache-2.0 |
 | botocore | 1.43.83 | Apache-2.0 |
-| certifi | 2026.7.22 | Mozilla Public License 2.0 (MPL 2.0) |
+| certifi | 2026.10.23 | Mozilla Public License 2.0 (MPL 2.0) |
 | cffi | 2.1.1 | MIT-0 |
 | charset-normalizer | 3.5.1 | MIT |
 | click | 8.5.0 | BSD-3-Clause |
@@ -74,7 +74,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | cvss | 3.6 | GNU Lesser General Public License v3 or later (LGPLv3+) |
 | defusedxml | 0.7.1 | Python Software Foundation License |
 | fastapi | 0.141.1 | MIT |
-| filelock | 3.32.4 | MIT |
+| filelock | 4.2.4 | MIT |
 | fsspec | 2026.7.0 | BSD-3-Clause |
 | greenlet | 3.5.5 | MIT AND PSF-2.0 |
 | h11 | 0.16.0 | MIT License |
@@ -102,21 +102,21 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | lxml | 6.1.2 | BSD-3-Clause |
 | mako | 1.4.1 | MIT |
 | markupsafe | 3.0.3 | BSD-3-Clause |
-| mcp | 2.1.1 | MIT License |
-| mcp-types | 2.1.1 | MIT License |
+| mcp | 2.3.0 | MIT License |
+| mcp-types | 2.3.0 | MIT License |
 | model2vec | 0.9.0 | MIT License |
 | more-itertools | 11.1.0 | MIT |
 | msal | 1.38.0 | MIT License |
 | msal-extensions | 1.3.1 | MIT License |
 | numpy | 2.5.2 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 |
-| opentelemetry-api | 1.44.0 | Apache-2.0 |
+| opentelemetry-api | 1.45.1 | Apache-2.0 |
 | packageurl-python | 0.17.6 | MIT License |
 | packaging | 26.3 | Apache-2.0 OR BSD-2-Clause |
-| pillow | 12.3.0 | MIT-CMU |
+| pillow | 13.0.0 | MIT-CMU |
 | pycparser | 3.0 | BSD-3-Clause |
 | pydantic | 2.13.5 | MIT |
 | pydantic-core | 2.46.5 | MIT |
-| pyjwt | 2.13.0 | MIT |
+| pyjwt | 2.15.1 | MIT |
 | python-dateutil | 2.9.0.post0 | Apache Software License; BSD License |
 | python-dotenv | 1.2.3 | BSD-3-Clause |
 | python-frontmatter | 1.3.0 | MIT |
@@ -141,7 +141,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | truststore | 0.10.4 | MIT |
 | typing-extensions | 4.16.0 | PSF-2.0 |
 | typing-inspection | 0.4.4 | MIT |
-| urllib3 | 2.7.0 | MIT |
+| urllib3 | 2.8.0 | MIT |
 | uvicorn | 0.52.4 | BSD-3-Clause |
 | uvloop | 0.22.1 | Apache Software License; MIT License |
 | watchfiles | 1.2.0 | MIT License |
@@ -191,18 +191,18 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | crelt | 1.0.7 | MIT |
 | csstype | 3.2.3 | MIT |
 | d3-hierarchy | 3.1.2 | ISC |
-| dompurify | 3.4.14 | (MPL-2.0 OR Apache-2.0) |
+| dompurify | 3.4.17 | (MPL-2.0 OR Apache-2.0) |
 | effect | 3.22.1 | MIT |
 | entities | 7.0.1 | BSD-2-Clause |
 | estree-walker | 2.0.2 | MIT |
 | fast-check | 3.23.2 | MIT |
 | magic-string | 0.30.21 | MIT |
 | marked | 18.0.11 | MIT |
-| nanoid | 3.3.18 | MIT |
+| nanoid | 3.3.20 | MIT |
 | picocolors | 1.1.1 | ISC |
-| postcss | 8.5.26 | MIT |
+| postcss | 8.5.31 | MIT |
 | pure-rand | 6.1.0 | MIT |
-| source-map-js | 1.2.1 | BSD-3-Clause |
+| source-map-js | 1.2.2 | BSD-3-Clause |
 | style-mod | 4.1.3 | MIT |
 | typescript | 5.9.3 | Apache-2.0 |
 | vue | 3.5.42 | MIT |

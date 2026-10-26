@@ -70,7 +70,7 @@
     },
     {
       "name": "certifi",
-      "version": "2026.7.22",
+      "version": "2026.10.23",
       "license": "Mozilla Public License 2.0 (MPL 2.0)",
       "bucket": "allow"
     },
@@ -130,7 +130,7 @@
     },
     {
       "name": "filelock",
-      "version": "3.32.4",
+      "version": "4.2.4",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -298,13 +298,13 @@
     },
     {
       "name": "mcp",
-      "version": "2.1.1",
+      "version": "2.3.0",
       "license": "MIT License",
       "bucket": "allow"
     },
     {
       "name": "mcp-types",
-      "version": "2.1.1",
+      "version": "2.3.0",
       "license": "MIT License",
       "bucket": "allow"
     },
@@ -340,7 +340,7 @@
     },
     {
       "name": "opentelemetry-api",
-      "version": "1.44.0",
+      "version": "1.45.1",
       "license": "Apache-2.0",
       "bucket": "allow"
     },
@@ -358,7 +358,7 @@
     },
     {
       "name": "pillow",
-      "version": "12.3.0",
+      "version": "13.0.0",
       "license": "MIT-CMU",
       "bucket": "allow"
     },
@@ -382,7 +382,7 @@
     },
     {
       "name": "pyjwt",
-      "version": "2.13.0",
+      "version": "2.15.1",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -532,7 +532,7 @@
     },
     {
       "name": "urllib3",
-      "version": "2.7.0",
+      "version": "2.8.0",
       "license": "MIT",
       "bucket": "allow"
     },
