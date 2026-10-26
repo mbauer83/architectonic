@@ -43,8 +43,11 @@ test('an upload for one element shows on its row, and in the preview', async ({ 
   await expect(service.locator('.icon-chip img')).toBeVisible({ timeout: 10_000 })
   await expect(service.locator('.icon-chip')).toHaveAttribute('title', /this element/)
 
+  // The preview is a raster, so what it draws is read from the source it was rendered from.
   await page.locator('.sb-actions .btn-preview').click()
-  await expect(page.locator('.svg-wrap svg image').first()).toBeAttached({ timeout: 20_000 })
+  await expect(page.locator('.preview-img')).toBeVisible({ timeout: 20_000 })
+  await page.locator('.toggle-src').click()
+  await expect(page.locator('.puml-src')).toContainText(/<img:\$ARCH_ICON_\w+\{[^}]*\}> GUI Authoring Tool/)
 })
 
 test('an element’s own icon overrides the one its type is given here', async ({ page }) => {
