@@ -57,6 +57,27 @@ paid for:
 cannot be a surprise about *which* commands exist. It went unchecked once and CI caught two real
 defects — a coverage floor and an IPv4/IPv6 bind — after a release was tagged.
 
+**The toolchain is CI's too.** The same commands on a different Node, npm or Python are different
+gates. Each toolchain is declared once and everything reads that declaration rather than restating it:
+Node and npm in `engines` of `tools/gui/package.json` (one major each; `engine-strict` in
+`tools/gui/.npmrc` makes npm refuse to install, and so to write the lock, on anything else), Python in
+`.python-version` (uv builds the venv from it). CI reads both through `node-version-file` and
+`python-version-file`; the `Dockerfile`, which can read neither, is held to them by
+`tests/architecture/test_toolchain_is_declared_once.py`, as is `@types/node` and the installation
+guide's requirements table. So:
+
+- **never write a version into a workflow or the Dockerfile by hand** — change the declaration, then the
+  image tags the test names;
+- **if npm refuses with `EBADENGINE`, change your toolchain, not the declaration.** The refusal is the
+  point: on 2026-11-09 a lock written by npm 12, with range-keyed `overrides` that npm 10 resolves
+  differently, passed every local gate and failed every CI job that installs the frontend — after the
+  release commit had been pushed;
+- **run every tool through `uv run` or `npm run`.** A bare `ruff` is whichever one the machine has on
+  `PATH` — on one box a miniconda ruff 0.8.6 against the locked 0.16.5 that CI runs — so the gate it
+  reports is not CI's;
+- **moving a toolchain is a stage of its own** — a different runtime invalidates every verdict, so it
+  takes Tier 3 in full and the browser suite, not the focused tier of whatever prompted it.
+
 **The list is complete; the tier is when you run it.** Every gate before every commit costs more than
 the work it guards — on a developer box the backend suite is ~3.5 minutes, and `npm run lint` was 10 to
 20 until it was split into two processes (~40 seconds since) — and a cadence nobody can afford is one
@@ -64,7 +85,7 @@ that gets skipped without saying so. Run one at a time, never concurrently.
 
 | Tier | When | What |
 | --- | --- | --- |
-| **1** | every commit | `ruff check src/ tests/`, and the focused test file(s) for what changed. For a commit touching the GUI, `npm run typecheck` and the focused `vitest` file. Seconds. |
+| **1** | every commit | `uv run ruff check src/ tests/`, and the focused test file(s) for what changed. For a commit touching the GUI, `npm run typecheck` and the focused `vitest` file. Seconds. |
 | **2** | a commit that can invalidate a generated artefact | that generator's `--check`, and only that one. What invalidates what is below. |
 | **3** | the end of a stage of related work | `uv run zuban check` and the full `uv run pytest`, always. The frontend gates — `npm run test:coverage` and `npm run lint:fast` — only when the stage touched the GUI, its API payloads, or model content the GUI renders. |
 | **4** | release closure | the whole list, including the full `npm run lint`, `npm run test:e2e`, every `--check` generator, both licence ecosystems with the notices, and the media re-shoot. |
@@ -76,7 +97,12 @@ that gets skipped without saying so. Run one at a time, never concurrently.
 - a route, its response contract or its parameter descriptions → 13; and 4 when the route-policy
   manifest moved with it
 - an MCP tool's registration, name, arguments or description → 5
-- a dependency added, removed or re-locked → 9 and 10
+- a dependency added, removed or re-locked → 9 and 10, after `uv sync --all-groups --all-extras` (the
+  licence gate reads installed metadata, and an extra CI installs — `cloud-archive` — reads as
+  `UNKNOWN` when it is missing); and for npm, `npm ci` in `tools/gui/`, which installs from the lock
+  exactly as CI does. An override or a lock that only `npm install` accepts is the incident above
+- the toolchain declaration (`engines`, `.python-version`) → Tier 3 and the browser suite; see
+  "The toolchain is CI's too"
 - a documentation link, anchor or media reference → 6; **and a group rename**, which moves every
   file of that group and so silently invalidates any hand-written link in `docs/` that named the old
   directory. The write path heals links *inside* the repository it is writing, which is the right
@@ -109,7 +135,7 @@ that gets skipped without saying so. Run one at a time, never concurrently.
    passed the full suite here and produced 88 errors in CI, from a file that reproduced them
    immediately when run **alone**. Running a suspect file on its own is the cheap check;
    `tests/architecture/test_stored_diagram_types_may_be_unregistered.py` is the standing one.
-2. `ruff check src/ tests/` — must be 0 errors (including E501)
+2. `uv run ruff check src/ tests/` — must be 0 errors (including E501)
 3. `uv run zuban check` — must pass
 4. `uv run tools/openapi/generate_timeout_policy.py --check` — the frontend's committed timeout
    policy still matches the manifest
@@ -128,7 +154,11 @@ that gets skipped without saying so. Run one at a time, never concurrently.
    for Python no locked pin younger than 24 hours. npm's floor is enforced at resolution by
    `min-release-age` in `tools/gui/.npmrc`, so there is nothing to re-check over its lock; uv has no
    setting that is safe to leave on, so the Python floor lives here. It fails closed: a lock source
-   the reader does not recognise is refused rather than skipped.
+   the reader does not recognise is refused rather than skipped. When re-locking, pass
+   `--exclude-newer "24 hours"` to the `uv lock` that changes pins and then run a plain `uv lock`: the
+   first writes an `[options] exclude-newer` block into `uv.lock`, which would make every later bare
+   `uv sync` re-resolve; the second removes it and leaves the pins as they are. Run the BDD file
+   (`tests/tools/test_model_write_tools.py`) after any pytest move — pytest-bdd reads pytest internals.
 
 CI enforces the backend coverage ratchet over the *combined* shards (`coverage report`), which a
 single local run already satisfies because it covers everything at once.

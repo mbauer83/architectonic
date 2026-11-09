@@ -39,10 +39,10 @@ jobs:
           test -f "changelog-assets/${project_version}-detail.md" || { echo "no changelog-assets/${project_version}-detail.md" >&2; exit 1; }
           echo "version=$project_version" >> "$GITHUB_OUTPUT"
 
-      - name: Set up Python 3.13
+      - name: Set up Python (.python-version)
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version-file: .python-version
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
@@ -55,10 +55,10 @@ jobs:
         # does, so the build runs in the environment the gates ran in.
         run: uv sync --locked --all-groups
 
-      - name: Set up Node 20
+      - name: Set up Node (package.json engines)
         uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: tools/gui/package.json
           cache: npm
           cache-dependency-path: tools/gui/package-lock.json
 

@@ -11,7 +11,7 @@ edit in a browser, while AI agents edit through MCP tools — with safety, secur
 [![codecov](https://codecov.io/gh/mbauer83/architectonic/branch/main/graph/badge.svg)](https://codecov.io/gh/mbauer83/architectonic)
 [![M8ven Score](https://m8ven.ai/badge/mcp/mbauer83-architectonic-ylj5mt)](https://m8ven.ai/mcp/mbauer83-architectonic-ylj5mt)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python 3.13+](https://img.shields.io/badge/python-3.13+-3776AB?logo=python&logoColor=white)](pyproject.toml)
+[![Python 3.14+](https://img.shields.io/badge/python-3.14+-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![Vue 3](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)](tools/gui)
 
 [![Lint: Ruff](https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white)](pyproject.toml)

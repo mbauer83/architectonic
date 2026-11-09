@@ -27,12 +27,12 @@ For backend ports, log paths, schemata, and storage backends, see
 
 | Dependency | Minimum | Purpose |
 |---|---|---|
-| Python | 3.13 | All server and CLI components |
+| Python | 3.14 | All server and CLI components |
 | `uv` | any recent | Python environment and script runner |
 | Java | 11 | PlantUML diagram rendering and verification |
 | Graphviz | 2.49.0 | Diagram layout engine |
-| Node.js | 20 | Frontend development only (not needed to run) |
-| npm | 9 | Frontend development only |
+| Node.js | 24 | Frontend development only (not needed to run) |
+| npm | 11 | Frontend development only; npm refuses to install the frontend under another major |
 | SQLCipher (system lib) | 4 | Assurance store (optional) |
 
 ---
@@ -45,11 +45,11 @@ For backend ports, log paths, schemata, and storage backends, see
 
 ```bash
 # Core
-brew install python@3.13 openjdk graphviz
+brew install python@3.14 openjdk graphviz
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Frontend development (optional)
-brew install node
+# Frontend development (optional) — the version package.json declares; npm refuses others
+brew install node@24
 
 # Assurance store (optional)
 brew install sqlcipher
@@ -68,13 +68,14 @@ Assurance-store credentials live in **macOS Keychain** automatically — no extr
 ```bash
 # Core
 sudo apt-get update
-sudo apt-get install -y python3.13 python3.13-dev default-jre graphviz curl
+sudo apt-get install -y default-jre graphviz curl
 
-# uv
+# uv, and Python 3.14 through it (Debian and Ubuntu do not package 3.14)
 curl -LsSf https://astral.sh/uv/install.sh | sh
+uv python install 3.14
 
 # Frontend development (optional) — use nvm or NodeSource
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # Assurance store (optional)

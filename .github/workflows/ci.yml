@@ -23,10 +23,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsqlcipher-dev
 
-      - name: Set up Python 3.13
+      - name: Set up Python (.python-version)
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version-file: .python-version
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
@@ -51,13 +51,13 @@ jobs:
         # client was still waiting on — invisible until it happens in a browser.
         run: uv run tools/openapi/generate_timeout_policy.py --check
 
-      - name: Set up Node 20 (for the OpenAPI contract check)
+      - name: Set up Node from package.json engines, for the OpenAPI contract check
         # The contract check belongs in this job rather than the frontend one: it obtains the
         # OpenAPI document in-process from the backend application, so it needs uv and the
         # system dependencies installed above, and adding Node here is the smaller half.
         uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: tools/gui/package.json
           cache: npm
           cache-dependency-path: tools/gui/package-lock.json
 
@@ -110,10 +110,10 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Set up Python 3.13
+      - name: Set up Python (.python-version)
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version-file: .python-version
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
@@ -151,10 +151,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Python 3.13
+      - name: Set up Python (.python-version)
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version-file: .python-version
 
       - name: Install coverage.py
         run: pip install coverage
@@ -186,20 +186,20 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Python 3.13
+      - name: Set up Python (.python-version)
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version-file: .python-version
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
-      - name: Set up Node 20
+      - name: Set up Node (package.json engines)
         uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: tools/gui/package.json
           cache: npm
           cache-dependency-path: tools/gui/package-lock.json
 
@@ -234,10 +234,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Node 20
+      - name: Set up Node (package.json engines)
         uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: tools/gui/package.json
           cache: npm
           cache-dependency-path: tools/gui/package-lock.json
 
@@ -301,20 +301,20 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Set up Python 3.13
+      - name: Set up Python (.python-version)
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version-file: .python-version
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
-      - name: Set up Node 20
+      - name: Set up Node (package.json engines)
         uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version-file: tools/gui/package.json
           cache: npm
           cache-dependency-path: tools/gui/package-lock.json
 

@@ -100,6 +100,10 @@ own beside its name, and an ArchiMate element can be drawn as the picture itself
 - No data migration. Both new `diagram-entities` keys, `display_icons` and `type_icons`, are
   optional, and a repository without icons is unchanged.
 - The installed environment gains Pillow 13 and resvg-py.
+- Frontend development needs Node.js 24 and npm 11. `npm` now refuses to install the frontend under
+  any other version; see [Installation](docs/02-installation.md#system-requirements).
+- **Python 3.14 is required.** An installation from source needs Python 3.14 or later, and the
+  container image is built and runs on 3.14. `uv` can install it: `uv python install 3.14`.
 
 ## [0.10.1] — 2026-09-24
 

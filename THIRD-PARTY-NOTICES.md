@@ -224,7 +224,7 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | fonts-dejavu-core | Debian trixie | Bitstream-Vera + DejaVu (permissive, notice-required) |
 | libfontconfig1 | Debian trixie | MIT (fontconfig) |
 | libharfbuzz0b | Debian trixie | MIT (Old MIT / HarfBuzz) |
-| python:3.13-slim-trixie (runtime base image) | 3.13-slim-trixie | PSF-2.0 (Python) + Debian trixie main (DFSG-free) |
+| python:3.14-slim-trixie (runtime base image) | 3.14-slim-trixie | PSF-2.0 (Python) + Debian trixie main (DFSG-free) |
 | potion-base-8M (embedding model weights) | revision bf8b056651a2c21b8d2565580b8569da283cab23 | MIT |
 
 ## Shipped content (1)
