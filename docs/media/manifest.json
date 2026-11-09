@@ -318,9 +318,9 @@
       "height": 900,
       "device_scale_factor": 2
     },
-    "capture_tool_version": "Playwright 1.62.1",
+    "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/graph-explore.gif",
-    "sha256": "5475a5b867f24c1ad023074390ae1d65753f64a4b709eba497f97e6bc7b237b3"
+    "sha256": "c31d06df58de12593fc7c5bcea383447157604087310d79200ab9b2f62a556ad"
   },
   {
     "test_name": "re-shoot group management",
