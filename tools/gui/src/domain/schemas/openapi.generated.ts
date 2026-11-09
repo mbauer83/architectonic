@@ -3317,7 +3317,7 @@ export interface components {
         AdminEditEntityBody: {
             /** Attribute Types */
             attribute_types?: {
-                [key: string]: string;
+                [key: string]: string | null;
             } | null;
             /**
              * Dry Run
@@ -7606,7 +7606,7 @@ export interface components {
         EditEntityBody: {
             /** Attribute Types */
             attribute_types?: {
-                [key: string]: string;
+                [key: string]: string | null;
             } | null;
             /**
              * Dry Run

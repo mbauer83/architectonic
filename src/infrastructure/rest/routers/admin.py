@@ -110,7 +110,7 @@ class AdminEditEntityBody(BaseModel):
     #: The declared type of each attribute, patched the same way. Absent from this body until the
     #: field vocabularies were reconciled — an enterprise entity's attribute types could be written
     #: by promotion and never afterwards changed.
-    attribute_types: dict[str, str] | None = None
+    attribute_types: dict[str, str | None] | None = None
     notes: str | None = None
     keywords: list[str] | None = None
     #: Replaces the applied set; `[]` clears it. Absent here for the same reason as above.

@@ -39,8 +39,10 @@ class CreateEntityBody(_Body, FiledOnCreate):
 class EditEntityBody(_Body, Rehomeable):
     name: str | None = None
     summary: str | None = None
+    #: Patches, key by key: an omitted key keeps its value, and a key mapped to null is removed.
+    #: A form that states an entity's attributes whole sends null for each one it took away.
     properties: dict[str, Any] | None = None
-    attribute_types: dict[str, str] | None = None
+    attribute_types: dict[str, str | None] | None = None
     notes: str | None = None
     keywords: list[str] | None = None
     specializations: list[str] | None = None

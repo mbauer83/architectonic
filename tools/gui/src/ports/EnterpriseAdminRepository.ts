@@ -18,7 +18,8 @@ export interface EnterpriseAdminRepository {
   }) => Effect.Effect<WriteResult, RepoError>
   readonly adminEditEntity: (id: string, body: {
     name?: string; summary?: string;
-    properties?: Record<string, string>; attribute_types?: Record<string, string>;
+    /** Patches, key by key: an omitted key keeps its value, a key mapped to null is removed. */
+    properties?: Record<string, string | null>; attribute_types?: Record<string, string | null>;
     notes?: string; keywords?: string[]; specialization?: string; version?: string; status?: string;
     dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>

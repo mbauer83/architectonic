@@ -185,7 +185,8 @@ export interface ModelRepository
     name?: string; summary?: string;
     /** Move it to this collection. Omitted leaves it where it is. */
     group?: string;
-    properties?: Record<string, string>; attribute_types?: Record<string, string>;
+    /** Patches, key by key: an omitted key keeps its value, a key mapped to null is removed. */
+    properties?: Record<string, string | null>; attribute_types?: Record<string, string | null>;
     notes?: string; keywords?: string[]; specializations?: string[];
     version?: string; status?: string;
     dry_run?: boolean;

@@ -8,6 +8,7 @@ import { specializationOptionsForEntityType } from '../lib/specializationOptions
 import { NO_QUARANTINE, quarantineFromSchemaInfo } from '../lib/schemaQuarantine'
 import { reconcileRowsWithSchema } from '../lib/schemaPropertyRows'
 import { NO_COLLECTION, homeForMove } from '../components/ArtifactHomeSelect.helpers'
+import { NO_ATTRIBUTES, attributesPatch, type AttributeBaseline } from '../lib/entityPropertiesPatch'
 
 type AdHocType = 'string' | 'integer' | 'number' | 'boolean' | 'array'
 const ADHOC_VALID = new Set<string>(['string', 'integer', 'number', 'boolean', 'array'])
@@ -48,6 +49,8 @@ export function useEntityEditForm(options: {
   const editKeywords = ref('')
   const editStatus = ref('')
   const editProperties = ref<{ key: string; value: string; adHocType: AdHocType }[]>([])
+  // What the entity stored when the edit began, so a save can name the attributes it removed.
+  let attributeBaseline: AttributeBaseline = NO_ATTRIBUTES
   const editNotes = ref('')
   // A concept may carry several specializations (§15.2); the schema merges all of them.
   const editSpecializations = ref<string[]>([])
@@ -148,6 +151,12 @@ export function useEntityEditForm(options: {
               .map(([k, v]) => [k, String(v) as AdHocType]),
           )
         : {}
+    attributeBaseline = {
+      propertyKeys: Object.keys(d.properties ?? {}),
+      attributeTypeKeys: rawAttrTypes && typeof rawAttrTypes === 'object' && !Array.isArray(rawAttrTypes)
+        ? Object.keys(rawAttrTypes)
+        : [],
+    }
     editProperties.value = Object.entries(d.properties ?? {}).map(([key, value]) => ({
       key,
       value: toLexical(value),
@@ -174,16 +183,9 @@ export function useEntityEditForm(options: {
   }
 
   const buildEditBody = (dryRun: boolean): Record<string, unknown> => {
-    const props: Record<string, string> = {}
-    const adhocTypes: Record<string, string> = {}
-    for (const row of editProperties.value) {
-      const k = row.key.trim()
-      if (!k) continue
-      props[k] = row.value
-      if (!editSchemaDescriptors.value[k] && row.adHocType !== 'string') {
-        adhocTypes[k] = row.adHocType
-      }
-    }
+    const attributes = attributesPatch(
+      attributeBaseline, editProperties.value, (key) => Object.hasOwn(editSchemaDescriptors.value, key),
+    )
     const kws = csvToList(editKeywords.value)
     // No `artifact_id`: identity is in the path, and a body that repeated it would give the caller
     // two places to say which entity they meant.
@@ -195,8 +197,8 @@ export function useEntityEditForm(options: {
       summary: editSummary.value || undefined,
       keywords: kws.length ? kws : undefined,
       status: editStatus.value || undefined,
-      properties: props,
-      attribute_types: Object.keys(adhocTypes).length ? adhocTypes : undefined,
+      properties: attributes.properties,
+      attribute_types: attributes.attribute_types,
       notes: editNotes.value || undefined,
       specializations: editSpecializations.value.length ? editSpecializations.value : undefined,
       dry_run: dryRun,
