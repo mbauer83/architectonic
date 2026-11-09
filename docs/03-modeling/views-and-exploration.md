@@ -100,13 +100,15 @@ implicit.
 
 ![Graph exploration](../media/graph-explore.gif)
 
-The graph draws **every relationship among the entities it is showing**, not only the ones incident
-to what you expanded. Two people looking at the same set of nodes therefore see the same graph,
-whatever order they clicked in.
+The graph draws the relationships of the entity you started from and of every node you have
+expanded. Check **Relations between neighbours** in the toolbar to draw **every relationship among
+the entities it is showing** as well, including those between two neighbours. Either way, two people
+looking at the same set of nodes see the same graph, whatever order they clicked in. A graph opened
+from a viewpoint draws every relationship the viewpoint returns, and the checkbox is not offered.
 
 ### Filtering
 
-Completeness is the default and the filter is how it stays readable. **Filter** sits above the
+The filter keeps a dense graph readable. **Filter** sits above the
 canvas and offers only the values actually present in the graph you have loaded, so the choices
 follow your exploration: expand a node that brings in a new domain and that domain joins the list.
 
