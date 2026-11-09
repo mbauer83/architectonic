@@ -54,39 +54,39 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | Component | Version | License |
 |---|---|---|
 | aiosqlite | 0.22.1 | MIT License |
-| alembic | 1.19.1 | MIT |
+| alembic | 1.20.1 | MIT |
 | annotated-doc | 0.0.5 | MIT |
 | annotated-types | 0.8.0 | MIT |
-| anyio | 4.14.2 | MIT |
+| anyio | 4.16.0 | MIT |
 | attrs | 26.1.0 | MIT |
 | azure-core | 1.41.0 | MIT |
-| azure-identity | 1.25.3 | MIT |
-| azure-storage-blob | 12.30.1 | MIT License |
-| boto3 | 1.43.83 | Apache-2.0 |
-| botocore | 1.43.83 | Apache-2.0 |
+| azure-identity | 1.27.0 | MIT |
+| azure-storage-blob | 12.31.1 | MIT License |
+| boto3 | 1.43.126 | Apache-2.0 |
+| botocore | 1.43.126 | Apache-2.0 |
 | certifi | 2026.10.23 | Mozilla Public License 2.0 (MPL 2.0) |
 | cffi | 2.1.1 | MIT-0 |
-| charset-normalizer | 3.5.1 | MIT |
-| click | 8.5.0 | BSD-3-Clause |
+| charset-normalizer | 3.5.2 | MIT |
+| click | 8.5.1 | BSD-3-Clause |
 | cloudpickle | 3.1.2 | BSD License |
 | colorama | 0.4.6 | BSD-3-Clause |
-| cryptography | 50.0.1 | Apache-2.0 OR BSD-3-Clause |
+| cryptography | 50.0.2 | Apache-2.0 OR BSD-3-Clause |
 | cvss | 3.6 | GNU Lesser General Public License v3 or later (LGPLv3+) |
 | defusedxml | 0.7.1 | Python Software Foundation License |
 | fastapi | 0.141.1 | MIT |
-| filelock | 4.2.4 | MIT |
-| fsspec | 2026.7.0 | BSD-3-Clause |
+| filelock | 4.2.9 | MIT |
+| fsspec | 2026.9.0 | BSD-3-Clause |
 | greenlet | 3.5.5 | MIT AND PSF-2.0 |
 | h11 | 0.16.0 | MIT License |
-| hf-xet | 1.6.0 | Apache-2.0 |
+| hf-xet | 1.8.0 | Apache-2.0 |
 | httpcore | 1.0.9 | BSD-3-Clause |
-| httpcore2 | 2.12.0 | BSD-3-Clause |
+| httpcore2 | 2.16.0 | BSD-3-Clause |
 | httptools | 0.8.0 | MIT |
 | httpx | 0.28.1 | BSD License |
-| httpx2 | 2.12.0 | BSD-3-Clause |
+| httpx2 | 2.16.0 | BSD-3-Clause |
 | httpx2-jsfetch | 1.0 | BSD-3-Clause |
 | huggingface-hub | 1.30.0 | Apache Software License |
-| idna | 3.19 | BSD-3-Clause |
+| idna | 3.20 | BSD-3-Clause |
 | isodate | 0.7.2 | BSD License |
 | jaraco-classes | 3.4.0 | MIT License |
 | jaraco-context | 6.1.2 | MIT |
@@ -99,113 +99,114 @@ What follows is a disclosure inventory, for two purposes: to say what a build as
 | jsonschema-specifications | 2025.9.1 | MIT |
 | keyring | 25.7.0 | MIT |
 | keyrings-alt | 5.0.2 | MIT License |
-| lxml | 6.1.2 | BSD-3-Clause |
-| mako | 1.4.1 | MIT |
-| markupsafe | 3.0.3 | BSD-3-Clause |
+| lxml | 6.1.3 | BSD-3-Clause |
+| mako | 1.4.3 | MIT |
+| markupsafe | 3.0.4 | BSD-3-Clause |
 | mcp | 2.3.0 | MIT License |
 | mcp-types | 2.3.0 | MIT License |
 | model2vec | 0.9.0 | MIT License |
-| more-itertools | 11.1.0 | MIT |
-| msal | 1.38.0 | MIT License |
+| more-itertools | 11.2.1 | MIT |
+| msal | 1.39.0 | MIT License |
 | msal-extensions | 1.3.1 | MIT License |
-| numpy | 2.5.2 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 |
-| opentelemetry-api | 1.45.1 | Apache-2.0 |
+| numpy | 2.5.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 |
+| opentelemetry-api | 1.45.2 | Apache-2.0 |
 | packageurl-python | 0.17.6 | MIT License |
 | packaging | 26.3 | Apache-2.0 OR BSD-2-Clause |
 | pillow | 13.0.0 | MIT-CMU |
-| pycparser | 3.0 | BSD-3-Clause |
-| pydantic | 2.13.5 | MIT |
-| pydantic-core | 2.46.5 | MIT |
+| pycparser | 3.12 | BSD-3-Clause |
+| pydantic | 2.14.3 | MIT |
+| pydantic-core | 2.50.4 | MIT |
 | pyjwt | 2.15.1 | MIT |
 | python-dateutil | 2.9.0.post0 | Apache Software License; BSD License |
-| python-dotenv | 1.2.3 | BSD-3-Clause |
+| python-dotenv | 1.2.4 | BSD-3-Clause |
 | python-frontmatter | 1.3.0 | MIT |
-| python-multipart | 0.0.32 | Apache-2.0 |
+| python-multipart | 0.0.33 | Apache-2.0 |
 | pywin32 | 312 | PSF-2.0 |
 | pywin32-ctypes | 0.2.3 | BSD-3-Clause |
 | pyyaml | 6.0.3 | MIT License |
 | referencing | 0.37.0 | MIT |
 | requests | 2.34.2 | Apache Software License |
 | resvg-py | 0.5.0 | MIT |
-| rpds-py | 2026.6.3 | MIT |
-| s3transfer | 0.19.2 | Apache Software License |
+| rpds-py | 2026.9.1 | MIT |
+| s3transfer | 0.19.3 | Apache Software License |
 | safetensors | 0.8.0 | Apache Software License |
 | secretstorage | 3.5.0 | BSD-3-Clause |
 | six | 1.17.0 | MIT License |
 | sqlalchemy | 2.0.52 | MIT |
-| sqlcipher3 | 0.6.2 | MIT |
-| sse-starlette | 3.4.8 | BSD-3-Clause |
-| starlette | 1.6.0 | BSD-3-Clause |
-| tokenizers | 0.23.2 | Apache Software License |
-| tqdm | 4.70.0 | MPL-2.0 AND MIT |
-| truststore | 0.10.4 | MIT |
+| sqlcipher3 | 0.6.5 | Zlib |
+| sse-starlette | 3.7.0 | BSD-3-Clause |
+| starlette | 1.10.0 | BSD-3-Clause |
+| tokenizers | 0.23.3 | Apache Software License |
+| tqdm | 4.70.1 | MPL-2.0 AND MIT |
+| truststore | 0.10.5 | MIT |
 | typing-extensions | 4.16.0 | PSF-2.0 |
-| typing-inspection | 0.4.4 | MIT |
+| typing-inspection | 0.4.5 | MIT |
 | urllib3 | 2.8.0 | MIT |
 | uvicorn | 0.52.4 | BSD-3-Clause |
 | uvloop | 0.22.1 | Apache Software License; MIT License |
-| watchfiles | 1.2.0 | MIT License |
-| websockets | 17.1 | BSD-3-Clause |
+| watchfiles | 1.3.0 | MIT License |
+| websockets | 17.4 | BSD-3-Clause |
 
-## Frontend (npm) dependencies (57)
+## Frontend (npm) dependencies (58)
 
 | Component | Version | License |
 |---|---|---|
-| @babel/helper-string-parser | 7.29.7 | MIT |
+| @babel/helper-string-parser | 7.29.13 | MIT |
 | @babel/helper-validator-identifier | 7.29.7 | MIT |
-| @babel/parser | 7.29.8 | MIT |
-| @babel/types | 7.29.8 | MIT |
-| @codemirror/autocomplete | 6.20.3 | MIT |
-| @codemirror/commands | 6.11.0 | MIT |
+| @babel/parser | 7.29.13 | MIT |
+| @babel/types | 7.29.11 | MIT |
+| @codemirror/autocomplete | 6.20.4 | MIT |
+| @codemirror/commands | 6.11.1 | MIT |
 | @codemirror/lang-css | 6.3.1 | MIT |
-| @codemirror/lang-html | 6.4.11 | MIT |
+| @codemirror/lang-html | 6.4.12 | MIT |
 | @codemirror/lang-javascript | 6.2.5 | MIT |
 | @codemirror/lang-markdown | 6.5.2 | MIT |
-| @codemirror/language | 6.12.4 | MIT |
+| @codemirror/language | 6.13.1 | MIT |
 | @codemirror/lint | 6.9.7 | MIT |
-| @codemirror/search | 6.7.1 | MIT |
-| @codemirror/state | 6.7.1 | MIT |
-| @codemirror/view | 6.43.9 | MIT |
-| @jridgewell/sourcemap-codec | 1.5.5 | MIT |
-| @lezer/common | 1.5.2 | MIT |
-| @lezer/css | 1.3.4 | MIT |
-| @lezer/highlight | 1.2.3 | MIT |
+| @codemirror/search | 6.7.2 | MIT |
+| @codemirror/state | 6.7.6 | MIT |
+| @codemirror/streamparser | 6.0.0 | MIT |
+| @codemirror/view | 6.43.15 | MIT |
+| @jridgewell/sourcemap-codec | 1.6.0 | MIT |
+| @lezer/common | 1.5.5 | MIT |
+| @lezer/css | 1.3.9 | MIT |
+| @lezer/highlight | 1.2.5 | MIT |
 | @lezer/html | 1.3.13 | MIT |
-| @lezer/javascript | 1.5.4 | MIT |
-| @lezer/lr | 1.4.10 | MIT |
-| @lezer/markdown | 1.7.2 | MIT |
-| @marijn/find-cluster-break | 1.0.3 | MIT |
+| @lezer/javascript | 1.5.6 | MIT |
+| @lezer/lr | 1.4.12 | MIT |
+| @lezer/markdown | 1.8.1 | MIT |
+| @marijn/find-cluster-break | 1.0.4 | MIT |
 | @standard-schema/spec | 1.1.0 | MIT |
 | @types/trusted-types | 2.0.7 | MIT |
-| @vue/compiler-core | 3.5.42 | MIT |
-| @vue/compiler-dom | 3.5.42 | MIT |
-| @vue/compiler-sfc | 3.5.42 | MIT |
-| @vue/compiler-ssr | 3.5.42 | MIT |
+| @vue/compiler-core | 3.5.45 | MIT |
+| @vue/compiler-dom | 3.5.45 | MIT |
+| @vue/compiler-sfc | 3.5.45 | MIT |
+| @vue/compiler-ssr | 3.5.45 | MIT |
 | @vue/devtools-api | 6.6.4 | MIT |
-| @vue/reactivity | 3.5.42 | MIT |
-| @vue/runtime-core | 3.5.42 | MIT |
-| @vue/runtime-dom | 3.5.42 | MIT |
-| @vue/server-renderer | 3.5.42 | MIT |
-| @vue/shared | 3.5.42 | MIT |
+| @vue/reactivity | 3.5.45 | MIT |
+| @vue/runtime-core | 3.5.45 | MIT |
+| @vue/runtime-dom | 3.5.45 | MIT |
+| @vue/server-renderer | 3.5.45 | MIT |
+| @vue/shared | 3.5.45 | MIT |
 | codemirror | 6.0.2 | MIT |
 | crelt | 1.0.7 | MIT |
 | csstype | 3.2.3 | MIT |
-| d3-hierarchy | 3.1.2 | ISC |
+| d3-hierarchy | 3.1.3 | ISC |
 | dompurify | 3.4.17 | (MPL-2.0 OR Apache-2.0) |
-| effect | 3.22.1 | MIT |
+| effect | 3.22.4 | MIT |
 | entities | 7.0.1 | BSD-2-Clause |
 | estree-walker | 2.0.2 | MIT |
 | fast-check | 3.23.2 | MIT |
 | magic-string | 0.30.21 | MIT |
-| marked | 18.0.11 | MIT |
+| marked | 18.1.3 | MIT |
 | nanoid | 3.3.20 | MIT |
 | picocolors | 1.1.1 | ISC |
-| postcss | 8.5.31 | MIT |
+| postcss | 8.5.32 | MIT |
 | pure-rand | 6.1.0 | MIT |
 | source-map-js | 1.2.2 | BSD-3-Clause |
-| style-mod | 4.1.3 | MIT |
+| style-mod | 4.1.4 | MIT |
 | typescript | 5.9.3 | Apache-2.0 |
-| vue | 3.5.42 | MIT |
+| vue | 3.5.45 | MIT |
 | vue-router | 4.6.4 | MIT |
 | w3c-keyname | 2.2.8 | MIT |
 

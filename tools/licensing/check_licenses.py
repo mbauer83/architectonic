@@ -84,6 +84,9 @@ _UNDECLARED_IN_METADATA: dict[str, str] = {
     # statically links resvg 0.48 (Apache-2.0 OR MIT) and its crates; it is installed from PyPI,
     # not conveyed by this project.
     "resvg-py": "MIT",
+    # sqlcipher3-0.6.5.dist-info/licenses/LICENSE (the zlib licence, Gerhard Häring's pysqlite
+    # terms), read 2026-11-09. 0.6.5 stopped declaring a license in its metadata; 0.6.2 declared MIT.
+    "sqlcipher3": "Zlib",
 }
 
 

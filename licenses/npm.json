@@ -1,10 +1,10 @@
 {
   "ecosystem": "npm",
-  "count": 57,
+  "count": 58,
   "components": [
     {
       "name": "@babel/helper-string-parser",
-      "version": "7.29.7",
+      "version": "7.29.13",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -16,25 +16,25 @@
     },
     {
       "name": "@babel/parser",
-      "version": "7.29.8",
+      "version": "7.29.13",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@babel/types",
-      "version": "7.29.8",
+      "version": "7.29.11",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@codemirror/autocomplete",
-      "version": "6.20.3",
+      "version": "6.20.4",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@codemirror/commands",
-      "version": "6.11.0",
+      "version": "6.11.1",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -46,7 +46,7 @@
     },
     {
       "name": "@codemirror/lang-html",
-      "version": "6.4.11",
+      "version": "6.4.12",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -64,7 +64,7 @@
     },
     {
       "name": "@codemirror/language",
-      "version": "6.12.4",
+      "version": "6.13.1",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -76,43 +76,49 @@
     },
     {
       "name": "@codemirror/search",
-      "version": "6.7.1",
+      "version": "6.7.2",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@codemirror/state",
-      "version": "6.7.1",
+      "version": "6.7.6",
+      "license": "MIT",
+      "bucket": "allow"
+    },
+    {
+      "name": "@codemirror/streamparser",
+      "version": "6.0.0",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@codemirror/view",
-      "version": "6.43.9",
+      "version": "6.43.15",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@jridgewell/sourcemap-codec",
-      "version": "1.5.5",
+      "version": "1.6.0",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@lezer/common",
-      "version": "1.5.2",
+      "version": "1.5.5",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@lezer/css",
-      "version": "1.3.4",
+      "version": "1.3.9",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@lezer/highlight",
-      "version": "1.2.3",
+      "version": "1.2.5",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -124,25 +130,25 @@
     },
     {
       "name": "@lezer/javascript",
-      "version": "1.5.4",
+      "version": "1.5.6",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@lezer/lr",
-      "version": "1.4.10",
+      "version": "1.4.12",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@lezer/markdown",
-      "version": "1.7.2",
+      "version": "1.8.1",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@marijn/find-cluster-break",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -160,25 +166,25 @@
     },
     {
       "name": "@vue/compiler-core",
-      "version": "3.5.42",
+      "version": "3.5.45",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/compiler-dom",
-      "version": "3.5.42",
+      "version": "3.5.45",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/compiler-sfc",
-      "version": "3.5.42",
+      "version": "3.5.45",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/compiler-ssr",
-      "version": "3.5.42",
+      "version": "3.5.45",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -190,31 +196,31 @@
     },
     {
       "name": "@vue/reactivity",
-      "version": "3.5.42",
+      "version": "3.5.45",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/runtime-core",
-      "version": "3.5.42",
+      "version": "3.5.45",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/runtime-dom",
-      "version": "3.5.42",
+      "version": "3.5.45",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/server-renderer",
-      "version": "3.5.42",
+      "version": "3.5.45",
       "license": "MIT",
       "bucket": "allow"
     },
     {
       "name": "@vue/shared",
-      "version": "3.5.42",
+      "version": "3.5.45",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -238,7 +244,7 @@
     },
     {
       "name": "d3-hierarchy",
-      "version": "3.1.2",
+      "version": "3.1.3",
       "license": "ISC",
       "bucket": "allow"
     },
@@ -250,7 +256,7 @@
     },
     {
       "name": "effect",
-      "version": "3.22.1",
+      "version": "3.22.4",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -280,7 +286,7 @@
     },
     {
       "name": "marked",
-      "version": "18.0.11",
+      "version": "18.1.3",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -298,7 +304,7 @@
     },
     {
       "name": "postcss",
-      "version": "8.5.31",
+      "version": "8.5.32",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -316,7 +322,7 @@
     },
     {
       "name": "style-mod",
-      "version": "4.1.3",
+      "version": "4.1.4",
       "license": "MIT",
       "bucket": "allow"
     },
@@ -328,7 +334,7 @@
     },
     {
       "name": "vue",
-      "version": "3.5.42",
+      "version": "3.5.45",
       "license": "MIT",
       "bucket": "allow"
     },
