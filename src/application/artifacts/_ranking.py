@@ -159,7 +159,13 @@ def rank_balanced(hits: Sequence[SearchHit], limit: int, prefer_rt: str | None) 
     other kind, and would still put a scratchpad above the second entity.
     """
     grouped = by_kind(hits)
-    scored_order = sorted(grouped, key=lambda rt: grouped[rt][0].score, reverse=True)
+    # Kinds whose strongest hits tie are met in the declared order, not in the order `search`
+    # collected them: that walks a set of kind names, whose iteration follows string hashing, so the
+    # same query could rank two kinds either way round depending on the process (an empty query,
+    # which scores everything equally, did under 2 of 151 hash seeds).
+    scored_order = sorted(
+        grouped, key=lambda rt: (-grouped[rt][0].score, RECORD_TYPE_ORDER.index(rt)),
+    )
     order = preferred_first(scored_order, prefer_rt)
     subordinate = [h for rt in SUBORDINATE_RECORD_ORDER for h in grouped.get(rt, [])]
     reserved = subordinate_floor(limit, len(subordinate))
