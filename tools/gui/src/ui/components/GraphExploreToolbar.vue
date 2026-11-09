@@ -34,6 +34,10 @@ defineProps<{
   selectedViewpointSlug: string | null
   viewpoints: readonly ViewpointSummary[]
   filter: InstanceType<typeof GraphFilterPanel>['$props']
+  /** Offered in a free exploration only: a viewpoint's population is drawn as the viewpoint says. */
+  neighbourRelationsOffered: boolean
+  /** Whether the relations between two neighbours of the explored entities are drawn too. */
+  neighbourRelations: boolean
   layout: InstanceType<typeof GraphLayoutToolbar>['$props']
 }>()
 
@@ -41,6 +45,7 @@ defineEmits<{
   'select-viewpoint': [viewpoint: ViewpointSummary | null]
   'toggle-facet': [level: string, value: string]
   'reset-facets': []
+  'show-neighbour-relations': [shown: boolean]
   snapshot: [format: 'png' | 'svg']
   'switch-layout': [mode: LayoutMode]
   'set-exploration-layout': [value: ExplorationLayoutOverride]
@@ -93,6 +98,19 @@ const open = ref(false)
           @toggle="(level, value) => $emit('toggle-facet', level, value)"
           @reset="$emit('reset-facets')"
         />
+        <label
+          v-if="neighbourRelationsOffered"
+          class="neighbour-toggle"
+          title="Also draw the relations between neighbours, not only those of the explored entities"
+        >
+          <input
+            type="checkbox"
+            :checked="neighbourRelations"
+            data-testid="neighbour-relations-toggle"
+            @change="$emit('show-neighbour-relations', ($event.target as HTMLInputElement).checked)"
+          >
+          Relations between neighbours
+        </label>
         <!-- The same affordance a diagram offers, answered differently: there is no
              persisted artifact here, so the bytes are the current view serialised. -->
         <DownloadMenu @select="$emit('snapshot', $event)" />
@@ -123,4 +141,8 @@ const open = ref(false)
 
 .spacing-controls { display: flex; align-items: center; gap: 4px; }
 .spacing-label { font-size: 11px; color: #6b7280; margin-right: 4px; }
+.neighbour-toggle {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #374151;
+  cursor: pointer; white-space: nowrap;
+}
 </style>

@@ -30,6 +30,7 @@ import { SPACING_PRESETS, type SpacingPreset } from '../composables/graphSpacing
 import { useFreeExplorationLayout, FREE_LAYOUT_MODES } from '../composables/useFreeExplorationLayout'
 import { useAggregatedExploration } from '../composables/useAggregatedExploration'
 import type { AdHocExecution } from '../lib/adHocExecution'
+import { explorationFocus, relationsOfFocus } from '../lib/focusRelations'
 import type { EntityDetail, NotFoundError } from '../../domain'
 import type { MarkdownError } from '../../application/MarkdownService'
 import type { RepoError } from '../../ports/ModelRepository'
@@ -60,8 +61,18 @@ const {
 // `facets.visible` is what the canvas draws: a filter hides from the picture, never from the model.
 const keepWhateverIsFiltered = computed(() => (rootId.value ? [rootId.value] : []))
 
+// A free exploration draws the focus's relations; those between neighbours are the reader's to ask
+// for. A viewpoint's population is its own answer and is drawn whole. See `lib/focusRelations`.
+const showNeighbourRelations = ref(false)
+const isFreeExploration = computed(() => selectedViewpointSlug.value === null && !props.adHoc)
+const drawnEdges = computed(() =>
+  isFreeExploration.value && !showNeighbourRelations.value
+    ? relationsOfFocus(edges.value, explorationFocus(rootId.value, nodes.value))
+    : edges.value,
+)
+
 const facets = useGraphFacets<GraphNode, GraphEdge>({
-  svc, nodes, edges, alwaysKeep: keepWhateverIsFiltered,
+  svc, nodes, edges: drawnEdges, alwaysKeep: keepWhateverIsFiltered,
 })
 
 /** Bring the force layout to rest and frame it — the pair every structural change needs. */
@@ -361,6 +372,8 @@ const showExpandBadge = (n: GraphNode) =>
           :selected-viewpoint-slug="selectedViewpointSlug"
           :viewpoints="viewpoints"
           :filter="facets.panelProps.value"
+          :neighbour-relations-offered="isFreeExploration"
+          :neighbour-relations="showNeighbourRelations"
           :layout="{
             viewpointActive: selectedViewpointSlug !== null,
             layoutMode,
@@ -370,6 +383,7 @@ const showExpandBadge = (n: GraphNode) =>
             radialAvailable: anchorIds.length > 0,
           }"
           @select-viewpoint="onSelectViewpoint"
+          @show-neighbour-relations="showNeighbourRelations = $event"
           @toggle-facet="facets.toggle"
           @reset-facets="facets.reset"
           @snapshot="takeSnapshot"

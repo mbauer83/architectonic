@@ -15,9 +15,11 @@ import { friendlyEntityName } from '../views/GraphExploreView.helpers'
  * live apart for that reason rather than as branches inside one loader.
  *
  * What they do **not** differ about is which relations exist between the elements on screen.
- * The drawn edges are the model's edges among the drawn nodes — the same invariant the
- * viewpoint path states — so two people looking at the same nodes see the same graph however
- * they got there. Legibility is a filter over a complete set, never a fetch strategy.
+ * The loaded edges are the model's edges among the loaded nodes — the same invariant the
+ * viewpoint path states — so two people looking at the same nodes hold the same graph however
+ * they got there. Legibility is a filter over a complete set, never a fetch strategy: by default
+ * the view draws only the relations of what was explored, and those between neighbours on request
+ * (`lib/focusRelations`).
  */
 //: How many times to sweep for nodes still missing a domain. Two would cover one concurrent
 //: expansion; three leaves room for a second without ever looping unboundedly.

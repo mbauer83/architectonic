@@ -3,9 +3,10 @@ import { test, expect } from './coverage-fixture'
 /**
  * The legibility control over the complete edge set, against the real application.
  *
- * Free exploration draws every model relation among the nodes it shows — correct, and 1.4x to 3.5x
- * more edges than the star it replaced. The filter is what keeps that readable. Three things have
- * to hold in a browser and cannot be shown by a unit test:
+ * Free exploration loads every model relation among the nodes it shows — 1.4x to 3.5x more edges
+ * than the star around the explored entities, which is what it draws until the reader asks for the
+ * rest (`graph-neighbour-relations.spec.ts`). The filter is what keeps either readable. Three things
+ * have to hold in a browser and cannot be shown by a unit test:
  *
  * - the facet values come from the *loaded* graph and from the meta-ontology's own declaration,
  *   fetched over the wire, so a wrong URL or a schema that does not decode leaves no control at all

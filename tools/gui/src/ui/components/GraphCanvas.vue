@@ -221,6 +221,8 @@ const edgeCardPos = (e: GraphEdge, frac: number) => edgeCardPosFor(props.nodes, 
         v-for="(e, i) in edges"
         :key="'e'+i"
         class="graph-edge"
+        :data-source="e.source"
+        :data-target="e.target"
         @click.stop="emit('edgeClick', e)"
       >
         <path
