@@ -34,10 +34,9 @@ defineProps<{
   selectedViewpointSlug: string | null
   viewpoints: readonly ViewpointSummary[]
   filter: InstanceType<typeof GraphFilterPanel>['$props']
-  /** Offered in a free exploration only: a viewpoint's population is drawn as the viewpoint says. */
-  neighbourRelationsOffered: boolean
-  /** Whether the relations between two neighbours of the explored entities are drawn too. */
-  neighbourRelations: boolean
+  /** Whether relations between neighbours are drawn too. Offered in a free exploration only: a
+   *  viewpoint's population is drawn as the viewpoint says. See `useNeighbourRelations`. */
+  neighbourRelations: { offered: boolean; shown: boolean }
   layout: InstanceType<typeof GraphLayoutToolbar>['$props']
 }>()
 
@@ -99,13 +98,13 @@ const open = ref(false)
           @reset="$emit('reset-facets')"
         />
         <label
-          v-if="neighbourRelationsOffered"
+          v-if="neighbourRelations.offered"
           class="neighbour-toggle"
           title="Also draw the relations between neighbours, not only those of the explored entities"
         >
           <input
             type="checkbox"
-            :checked="neighbourRelations"
+            :checked="neighbourRelations.shown"
             data-testid="neighbour-relations-toggle"
             @change="$emit('show-neighbour-relations', ($event.target as HTMLInputElement).checked)"
           >

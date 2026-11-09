@@ -63,6 +63,8 @@ _FRONTEND_GENERATED_SUFFIX = ".generated.ts"
 # which took the dock and the disclosure state with it. The view kept the graph: what a population
 # does to the picture is its business, so clearing and populating are passed to the composable as
 # actions. Two rules for buttons that had already moved into `GraphLayoutToolbar` went with them.
+# 425 → 421 when the neighbour-relations toggle arrived: its state became `useNeighbourRelations`,
+# and the edge styling went to `useGraphEdgeVisual` rather than the view growing by both.
 #
 # One entry is **gone**. `artifact_verifier.py` (403) was a facade that had kept two rule bodies for
 # itself while five others had modules of their own; entities and diagrams moved to `_verifier_entity.py`
@@ -87,7 +89,7 @@ SOURCE_FILE_BASELINE_LIMITS: dict[str, int] = {
     "tools/gui/src/ui/views/DocumentDetailView.vue": 432,
     "tools/gui/src/ui/views/EntitiesView.vue": 502,
     "tools/gui/src/ui/views/EntityCreateView.vue": 490,
-    "tools/gui/src/ui/views/GraphExploreView.vue": 425,
+    "tools/gui/src/ui/views/GraphExploreView.vue": 421,
     "tools/gui/src/ui/views/GroupManagementView.vue": 618,
 }
 

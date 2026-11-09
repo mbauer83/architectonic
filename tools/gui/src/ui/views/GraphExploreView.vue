@@ -19,8 +19,7 @@ import ViewpointExecutionDiagnostics from '../components/ViewpointExecutionDiagn
 import ViewpointExecutionError from '../components/ViewpointExecutionError.vue'
 import ViewpointParameterPrompt from '../components/ViewpointParameterPrompt.vue'
 import {
-  nodeVisualFor, edgeVisualFor, edgeStyleKey,
-  distanceColor, effectiveExplorationFill, fetchRelationNotations, DOMAIN_COLORS,
+  nodeVisualFor, edgeStyleKey, distanceColor, effectiveExplorationFill, DOMAIN_COLORS,
 } from './GraphExploreView.helpers'
 import { useExplorationLayout } from '../composables/useExplorationLayout'
 import { useFreeExploration } from '../composables/useFreeExploration'
@@ -30,7 +29,8 @@ import { SPACING_PRESETS, type SpacingPreset } from '../composables/graphSpacing
 import { useFreeExplorationLayout, FREE_LAYOUT_MODES } from '../composables/useFreeExplorationLayout'
 import { useAggregatedExploration } from '../composables/useAggregatedExploration'
 import type { AdHocExecution } from '../lib/adHocExecution'
-import { explorationFocus, relationsOfFocus } from '../lib/focusRelations'
+import { useNeighbourRelations } from '../composables/useNeighbourRelations'
+import { useGraphEdgeVisual } from '../composables/useGraphEdgeVisual'
 import type { EntityDetail, NotFoundError } from '../../domain'
 import type { MarkdownError } from '../../application/MarkdownService'
 import type { RepoError } from '../../ports/ModelRepository'
@@ -61,18 +61,12 @@ const {
 // `facets.visible` is what the canvas draws: a filter hides from the picture, never from the model.
 const keepWhateverIsFiltered = computed(() => (rootId.value ? [rootId.value] : []))
 
-// A free exploration draws the focus's relations; those between neighbours are the reader's to ask
-// for. A viewpoint's population is its own answer and is drawn whole. See `lib/focusRelations`.
-const showNeighbourRelations = ref(false)
+// Free exploration: no viewpoint population on screen, so the reader's walk decides what is drawn.
 const isFreeExploration = computed(() => selectedViewpointSlug.value === null && !props.adHoc)
-const drawnEdges = computed(() =>
-  isFreeExploration.value && !showNeighbourRelations.value
-    ? relationsOfFocus(edges.value, explorationFocus(rootId.value, nodes.value))
-    : edges.value,
-)
+const neighbourRelations = useNeighbourRelations({ nodes, edges, rootId, offered: isFreeExploration })
 
 const facets = useGraphFacets<GraphNode, GraphEdge>({
-  svc, nodes, edges: drawnEdges, alwaysKeep: keepWhateverIsFiltered,
+  svc, nodes, edges: neighbourRelations.drawn, alwaysKeep: keepWhateverIsFiltered,
 })
 
 /** Bring the force layout to rest and frame it — the pair every structural change needs. */
@@ -192,20 +186,7 @@ const nodeFallbackFill = (n: GraphNode) => {
 }
 const nodeVisual = (n: GraphNode) =>
   nodeVisualFor(entityStyleById.value.get(n.id)?.style, nodeFallbackFill(n), n.artifactType)
-//: Relationship notation from the ontology — line style and the marker at each end. Fetched
-//: once for the surface rather than per edge, and empty until it arrives, which renders the
-//: previous plain arrow for a frame rather than nothing.
-const relationNotations = ref<ReadonlyMap<string, import('./GraphExploreView.helpers').RelationNotation>>(new Map())
-void fetchRelationNotations().then((n) => { relationNotations.value = n })
-
-const edgeVisual = (e: GraphEdge) => {
-  const key = edgeStyleKey(e.source, e.target, e.connType)
-  return edgeVisualFor(
-    connectionStyleIndex.value.get(key),
-    connectionSummaryIndex.value.get(key)?.certainty ?? null,
-    relationNotations.value.get(e.connType),
-  )
-}
+const edgeVisual = useGraphEdgeVisual(connectionStyleIndex, connectionSummaryIndex)
 
 /** The spacing rung in force, so every layout can read its own units from one choice. */
 const spacing = ref<SpacingPreset>(SPACING_PRESETS[1])
@@ -331,7 +312,7 @@ const sd = computed(() => selectedDetail.data.value)
  * same one anchored viewpoint presentations use, deliberately: one meaning, one marking.
  */
 const isAnchorNode = (id: string) =>
-  isAnchor(id) || (selectedViewpointSlug.value === null && !props.adHoc && id === rootId.value)
+  isAnchor(id) || (isFreeExploration.value && id === rootId.value)
 
 const shownEdgeCount = (nodeId: string) =>
   edges.value.filter((e) => e.source === nodeId || e.target === nodeId).length
@@ -372,8 +353,7 @@ const showExpandBadge = (n: GraphNode) =>
           :selected-viewpoint-slug="selectedViewpointSlug"
           :viewpoints="viewpoints"
           :filter="facets.panelProps.value"
-          :neighbour-relations-offered="isFreeExploration"
-          :neighbour-relations="showNeighbourRelations"
+          :neighbour-relations="neighbourRelations.toggle.value"
           :layout="{
             viewpointActive: selectedViewpointSlug !== null,
             layoutMode,
@@ -383,7 +363,7 @@ const showExpandBadge = (n: GraphNode) =>
             radialAvailable: anchorIds.length > 0,
           }"
           @select-viewpoint="onSelectViewpoint"
-          @show-neighbour-relations="showNeighbourRelations = $event"
+          @show-neighbour-relations="neighbourRelations.show"
           @toggle-facet="facets.toggle"
           @reset-facets="facets.reset"
           @snapshot="takeSnapshot"

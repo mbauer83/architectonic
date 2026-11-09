@@ -16,7 +16,7 @@ import { useMutation } from '../composables/useMutation'
 import { useQuery } from '../composables/useQuery'
 import { useDebouncedScratchpadSave } from '../composables/useDebouncedScratchpadSave'
 import { useScratchpadLift } from '../composables/useScratchpadLift'
-import { fetchRelationNotations, type RelationNotation } from '../lib/relationNotations'
+import { useRelationNotations } from '../composables/useRelationNotations'
 import ScratchpadCanvasMenu from '../components/ScratchpadCanvasMenu.vue'
 import ScratchpadHeader from '../components/ScratchpadHeader.vue'
 import ScratchpadLiftDialog from '../components/ScratchpadLiftDialog.vue'
@@ -66,8 +66,7 @@ const selectedLinkId = ref<string | null>(null)
 const focusedAreaId = ref<string | null>(null)
 
 /** One request per canvas, not one per link: how the ontology says each relation is drawn. */
-const notations = ref<ReadonlyMap<string, RelationNotation>>(new Map())
-void fetchRelationNotations().then((found) => { notations.value = found })
+const notations = useRelationNotations()
 
 /** Ids are minted client-side and are scratchpad-local, which is exactly why they can be: a note id
  * means nothing outside its scratchpad, so no global namespace has to accept it and no round trip
