@@ -172,6 +172,16 @@ export function useDiagramSvgSelection(options: {
     }
   }
 
+  /**
+   * An edit saved from the sidebar changed what the selected entity says. The diagram is reloaded
+   * for its labels, and the entity is read again, because the panel shows the entity read rather than
+   * the diagram: reloading only the diagram left the panel showing the values from before the save.
+   */
+  const entityEdited = () => {
+    reload()
+    if (selectedId.value) entityQuery.run(svc.getEntity(selectedId.value))
+  }
+
   // Metadata edits from the sidebar (a classifier's descriptive fields, or one attribute's
   // multiplicity/optional/default/role/provenance) go through the id-addressed server-merge patch:
   // only the target ids + delta leave the browser, and a successful write reloads the diagram.
@@ -393,6 +403,7 @@ export function useDiagramSvgSelection(options: {
     clearConnection,
     clearSubPart,
     clearSelection,
+    entityEdited,
     saveEdgeLabel,
     metadataMutation,
     patchEntityMetadata,

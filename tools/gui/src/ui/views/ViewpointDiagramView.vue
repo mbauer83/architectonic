@@ -307,6 +307,7 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
             @clear-sub-part="selection.clearSubPart()"
             @update:edge-label-input="selection.edgeLabelInput.value = $event"
             @save-edge-label="selection.saveEdgeLabel()"
+            @entity-edited="selection.entityEdited()"
           />
         </FullscreenDock>
       </template>

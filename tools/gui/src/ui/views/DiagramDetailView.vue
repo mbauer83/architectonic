@@ -271,7 +271,7 @@ const executeDelete = () => {
               @save-edge-label="selection.saveEdgeLabel()"
               @sub-part-save="selection.patchEntityMetadata($event)"
               @entity-meta-save="selection.patchEntityMetadata($event)"
-              @entity-edited="load"
+              @entity-edited="selection.entityEdited()"
             />
           </FullscreenDock>
         </template>
