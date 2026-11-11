@@ -13,11 +13,13 @@ half-updated, each with the operation that does work.
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import yaml
 
 from src.application.modeling.artifact_write import generate_diagram_id
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 from src.infrastructure.write.artifact_write.diagram_membership import membership_refusal
 from src.infrastructure.write.artifact_write.parse_existing import ParsedDiagram
@@ -199,25 +201,47 @@ class TestWhichDiagramsOwnTheirMembershipElsewhere:
             bindings=bindings or [], view_derivations=[],
         )
 
+    #: Who owns a diagram's membership is the diagram type's answer, so the rule needs the catalog.
+    _VERIFIER = SimpleNamespace(runtime_catalogs=process_runtime_catalogs())
+
+    def _refusal(self, frontmatter: dict) -> str | None:
+        return membership_refusal(self._parsed(frontmatter), self._VERIFIER)  # type: ignore[arg-type]
+
     def test_a_generated_archimate_view_is_allowed(self) -> None:
-        assert membership_refusal(self._parsed({"entity-ids-used": []})) is None
+        assert self._refusal({"diagram-type": "archimate-motivation", "entity-ids-used": []}) is None
+
+    @pytest.mark.parametrize(
+        "statements",
+        [
+            {"display_labels": {"GOL@1.aa.x": "Short"}},
+            {"occurrence": []},
+            {"display_icons": {}},
+            {"type_icons": {}},
+            {},
+        ],
+    )
+    def test_an_archimate_view_that_states_something_about_an_instance_is_still_allowed(
+        self, statements: dict
+    ) -> None:
+        """B96: for ArchiMate, `diagram-entities` holds statements about instances, not the membership."""
+        assert self._refusal({"diagram-type": "archimate-motivation", "diagram-entities": statements}) is None
 
     def test_a_standalone_diagram_is_pointed_at_diagram_entities(self) -> None:
-        refusal = membership_refusal(self._parsed({"diagram-entities": {"step": []}}))
+        refusal = self._refusal({"diagram-type": "activity", "diagram-entities": {"step": []}})
 
         assert refusal is not None
         assert "diagram_entities" in refusal
 
     def test_a_model_backed_diagram_is_pointed_at_its_binding(self) -> None:
-        refusal = membership_refusal(
-            self._parsed({"diagram-entities": {"_scope_entity_id": "APP@1.AbcDef.thing"}})
+        refusal = self._refusal(
+            {"diagram-type": "c4-container", "diagram-entities": {"_scope_entity_id": "APP@1.AbcDef.thing"}}
         )
 
         assert refusal is not None
         assert "scoped-by" in refusal
 
     def test_a_manual_layout_diagram_is_pointed_at_puml(self) -> None:
-        refusal = membership_refusal(self._parsed({"manual-layout": True}))
+        refusal = self._refusal({"diagram-type": "archimate-motivation", "manual-layout": True})
 
         assert refusal is not None
         assert "puml" in refusal

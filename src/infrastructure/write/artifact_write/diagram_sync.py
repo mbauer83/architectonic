@@ -108,7 +108,7 @@ def refresh_diagram(
 
     if entity_ids is not None or connection_ids is not None:
         _refuse_stated_references_unless_body_is_kept(parsed)
-    if is_scope_bound(parsed) or is_standalone(parsed):
+    if is_scope_bound(parsed) or is_standalone(parsed, verifier):
         # Both scope-bound and standalone diagrams are re-rendered from stored state.
         # Neither is ever deleted by a refresh — deletion requires an explicit call.
         #

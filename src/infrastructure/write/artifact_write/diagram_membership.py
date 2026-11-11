@@ -30,6 +30,7 @@ from src.domain.diagrams.bindings import SCOPE_KEYS, scope_entity_ids
 from src.infrastructure.rendering.diagram_selection import connections_among, resolve_diagram_selection
 
 from .coerce import as_optional_str_list
+from .diagram_references import diagram_entities_are_authoritative
 from .parse_existing import ParsedDiagram
 
 
@@ -43,18 +44,29 @@ def is_scope_bound(parsed: ParsedDiagram) -> bool:
     )
 
 
-def is_standalone(parsed: ParsedDiagram) -> bool:
-    """True when the diagram has explicit diagram-entities but is not scope-bound.
+def is_standalone(parsed: ParsedDiagram, verifier: ArtifactVerifier) -> bool:
+    """True when the diagram's body is rendered from its own ``diagram-entities`` and it is not scope-bound.
 
-    Standalone diagrams store their full entity/connection set in frontmatter
-    (without a projector binding).  They must be re-rendered, not reconciled via
-    entity-ids-used, so deletion on empty inference is never correct for them.
+    Standalone diagrams store their full entity/connection set in frontmatter (without a projector
+    binding). They must be re-rendered, not reconciled via entity-ids-used, so deletion on empty
+    inference is never correct for them.
+
+    **Asked of the diagram type**, through `diagram_entities_are_authoritative`, never read off the
+    shape of the key. The same key means two things: for a C4, activity, sequence, datatype or GSN
+    diagram it is the membership; for an ArchiMate diagram it holds only statements about instances the
+    model supplies — ``display_labels``, ``occurrence``, ``display_icons``, ``type_icons``. Reading "any
+    dict" as standalone made the first label or icon on an ArchiMate diagram change who owned it: a
+    membership edit was refused, and a sync kept references the model had dropped (B96).
     """
     de = parsed.frontmatter.get("diagram-entities")
-    return isinstance(de, dict) and not is_scope_bound(parsed)
+    return (
+        isinstance(de, dict)
+        and not is_scope_bound(parsed)
+        and diagram_entities_are_authoritative(verifier, str(parsed.frontmatter.get("diagram-type") or ""))
+    )
 
 
-def membership_refusal(parsed: ParsedDiagram) -> str | None:
+def membership_refusal(parsed: ParsedDiagram, verifier: ArtifactVerifier) -> str | None:
     """Why this diagram's membership cannot be set through ``entity_ids``, or None if it can.
 
     Each message names the operation that *does* change what the diagram draws, because a refusal
@@ -67,7 +79,7 @@ def membership_refusal(parsed: ParsedDiagram) -> str | None:
             "membership follows the model rather than a list. Change the binding's target, or the "
             "model beneath it, and refresh with puml='auto-sync'."
         )
-    if is_standalone(parsed):
+    if is_standalone(parsed, verifier):
         return (
             "This diagram's membership is its diagram-entities, which the body is rendered from — "
             "entity-ids-used only records what those entities reference. Pass diagram_entities to "
@@ -128,7 +140,7 @@ def rendered_membership(
         raise ValueError(f"Diagram '{artifact_id}' not found under {diagram_source_root(repo_root)}")
 
     parsed = parse_diagram_file(diagram_path)
-    refusal = membership_refusal(parsed)
+    refusal = membership_refusal(parsed, verifier)
     if refusal is not None:
         raise ValueError(refusal)
 
