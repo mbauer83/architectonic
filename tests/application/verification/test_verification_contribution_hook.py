@@ -76,6 +76,14 @@ class _FakeModule:
         return None
 
     @property
+    def body_is_rendered_from_diagram_entities(self) -> bool:
+        return False
+
+    @property
+    def held_record_keys(self) -> frozenset[str]:
+        return frozenset()
+
+    @property
     def element_classes(self) -> dict:
         return {}
 

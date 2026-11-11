@@ -300,9 +300,15 @@ class TestScope:
         fm = _fm(connection_ids=[INFLUENCE], **{"diagram-type": "sequence"})
         assert _issues(repo, _declaring("REQ_AaaAaa", "REQ_BbbBbb"), fm) == []
 
-    def test_a_standalone_diagram_is_out_of_scope(self, repo: Path) -> None:
+    def test_an_archimate_instance_statement_keeps_the_diagram_in_scope(self, repo: Path) -> None:
+        """An ArchiMate diagram's `diagram-entities` are statements about its instances; one used to make
+        the whole diagram 'standalone' and exempt (B112, the verifier's half of B96)."""
+        fm = _fm(connection_ids=[INFLUENCE], **{"diagram-entities": {"display_labels": {ALPHA: "Alpha"}}})
+        assert _codes(_issues(repo, _declaring("REQ_AaaAaa", "REQ_BbbBbb"), fm)) == ["W307"]
+
+    def test_a_type_rendered_from_its_records_is_out_of_scope(self, repo: Path) -> None:
         fm = _fm(
             connection_ids=[INFLUENCE],
-            **{"diagram-entities": {"box": [{"id": "b1"}]}},
+            **{"diagram-type": "activity", "diagram-entities": {"action": [{"id": "a1"}]}},
         )
         assert _issues(repo, _declaring("REQ_AaaAaa", "REQ_BbbBbb"), fm) == []

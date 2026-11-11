@@ -68,6 +68,7 @@ from src.application.verification.artifact_verifier_types import Issue, Severity
 from src.domain.artifact_id import stable_conn_id, stable_id
 from src.domain.diagrams.recorded_references import body_contradicts_reference
 from src.domain.modules.catalogs import DiagramTypeCatalog
+from src.domain.ontology_representation.ontology_protocol import StoreGraphProjectingDiagramType
 
 if TYPE_CHECKING:
     from src.application.runtime_catalogs import RuntimeCatalogs
@@ -97,17 +98,26 @@ def check_puml_relation_rules(
 def diagram_body_is_reconcile_owned(fm: dict, diagram_type_catalog: DiagramTypeCatalog) -> bool:
     """True when the ArchiMate reconcile is what refreshes this diagram's body.
 
-    The single decision the refresh dispatch matrix makes, asked from frontmatter alone:
-    a type that owns its entities renders from ``diagram-entities``; a standalone diagram
-    (non-empty ``diagram-entities``) or a projector-owned one (``scoped-by`` binding) is
-    re-rendered from stored state. Everything else is reconciled from its bindings — and
-    only there are body-expressed-but-unbound relations at risk of deletion.
+    The single decision the refresh dispatch matrix makes, asked from frontmatter alone: a type whose
+    body is rendered from ``diagram-entities`` (``body_is_rendered_from_diagram_entities``, the rule's
+    owner — the write path asks it too), a type drawn from the assurance store
+    (``StoreGraphProjectingDiagramType``) or a projector-owned diagram (``scoped-by`` binding) is
+    re-rendered from stored state. Everything else is reconciled from its bindings — and only there are
+    body-expressed-but-unbound relations at risk of deletion.
+
+    An ArchiMate diagram's ``diagram-entities`` holds statements about its instances (labels,
+    occurrences, icons), not its body's source; reading "non-empty" as "standalone" switched these
+    checks off for every ArchiMate diagram carrying one statement (B112, the verifier's half of B96).
+    Only for a type the catalog does not know is the stored state all there is to go on.
     """
     module = diagram_type_catalog.find_diagram_type(str(fm.get("diagram-type", "archimate")))
-    if module is not None and module.ui_config.diagram_only_types:
-        return False
     diagram_entities = fm.get("diagram-entities")
-    if isinstance(diagram_entities, dict) and diagram_entities:
+    drawn_from_elsewhere = (
+        module.body_is_rendered_from_diagram_entities or isinstance(module, StoreGraphProjectingDiagramType)
+        if module is not None
+        else isinstance(diagram_entities, dict) and bool(diagram_entities)
+    )
+    if drawn_from_elsewhere:
         return False
     return not any(
         isinstance(b, dict)
@@ -247,8 +257,8 @@ def check_diagram_relation_completeness(
 
     alias_to_entity_id = _build_alias_lookup(content, fm, registry, stereotype_map)
     raw_used = fm.get("entity-ids-used")
-    # entity-ids-used is the whole binding surface here: a diagram hosting entities in a
-    # non-empty ``diagram-entities`` is standalone and already outside this rule's scope.
+    # entity-ids-used is the whole binding surface here: a type whose body renders from
+    # ``diagram-entities`` is outside this rule's scope (``diagram_body_is_reconcile_owned``).
     bound_short = {stable_id(str(eid)) for eid in raw_used if eid is not None} if isinstance(raw_used, list) else set()
     listed_stable = _listed_connection_stable_ids(fm)
 

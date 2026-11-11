@@ -24,13 +24,16 @@ from pathlib import Path
 
 import pytest
 
+from src.application.modeling.binding_normalize import normalize_bindings, strip_diagram_shorthand
 from src.application.verification._verifier_rules_puml_completeness import (
     check_diagram_relation_completeness,
+    diagram_body_is_reconcile_owned,
 )
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import VerificationResult
 from src.domain.artifact_id import stable_conn_id as _stable
+from src.domain.diagrams.bindings import bindings_to_raw
 from src.infrastructure.artifact_index import shared_artifact_index
 
 ALPHA = "REQ@1000000000.AaaAaa.alpha"
@@ -234,8 +237,47 @@ class TestNestingIsReadButVisualNestingIsNotPunished:
 class TestTheRuleGuardsExactlyTheReconcileOwnedDiagrams:
     UNBOUND_ARROW = "REQ_AaaAaa ..> REQ_BbbBbb\n"
 
-    def test_a_standalone_diagram_is_not_checked(self, repo: Path) -> None:
-        fm = _fm(connection_ids=[]) | {"diagram-entities": {"requirement": [{"id": GAMMA}]}}
+    def test_an_archimate_instance_statement_does_not_switch_the_rule_off(self, repo: Path) -> None:
+        """An ArchiMate diagram's `diagram-entities` are statements about its instances, not the body's
+        source: one label once made the whole diagram 'standalone' and exempt (B112, as B96 on writes)."""
+        fm = _fm(connection_ids=[]) | {"diagram-entities": {"display_labels": {ALPHA: "Alpha again"}}}
+        assert _codes(_issues(repo, self.UNBOUND_ARROW, fm)) == ["E316"]
+
+    @pytest.mark.parametrize("stored", [False, True], ids=["inline", "as-stored"])
+    def test_an_occurrence_alias_stands_for_the_member_it_draws(self, repo: Path, stored: bool) -> None:
+        """A second drawing of a member is `{alias}__2`; the rule reads occurrences through their owner,
+        from the form the write path stores (the `bindings:` block holds the link) as well as inline."""
+        inline = {"occurrence": [{"id": "occ-alpha-again", "backing_entity_id": ALPHA}]}
+        statements, bindings = inline, None
+        if stored:
+            bindings = bindings_to_raw(normalize_bindings(inline, None))
+            statements = strip_diagram_shorthand(inline) or {}
+        fm = _fm(connection_ids=[INFLUENCE]) | {"diagram-entities": statements}
+        if bindings:
+            fm["bindings"] = bindings
+        assert _issues(repo, "REQ_AaaAaa__2 ..> REQ_BbbBbb\n", fm) == []
+
+    def test_a_diagram_drawn_from_the_assurance_store_is_not_reconcile_owned(self) -> None:
+        """A bow-tie or control structure answers *not rendered from diagram-entities* (its nodes live in
+        the store), yet the model reconcile never refreshes it either. Asked against a catalog that knows
+        the type: the assurance modules are registered only with a confidential store, so the shared
+        test catalogs would leave it unknown and exempt it for the wrong reason."""
+
+        class _DrawnFromTheStore:
+            body_is_rendered_from_diagram_entities = False
+
+            def project_store_graph(self, *args: object, **kwargs: object) -> None:
+                return None
+
+        class _Catalog:
+            def find_diagram_type(self, name: str) -> _DrawnFromTheStore:
+                return _DrawnFromTheStore()
+
+        fm = _fm(connection_ids=[], diagram_type="bowtie") | {"diagram-entities": {"nodes": [{"node_id": "t1"}]}}
+        assert diagram_body_is_reconcile_owned(fm, _Catalog()) is False  # type: ignore[arg-type]
+
+    def test_a_type_rendered_from_its_records_is_not_checked(self, repo: Path) -> None:
+        fm = _fm(connection_ids=[], diagram_type="activity") | {"diagram-entities": {"action": [{"id": "a1"}]}}
         assert _issues(repo, self.UNBOUND_ARROW, fm) == []
 
     def test_a_diagram_owned_type_speaks_its_own_vocabulary(self, repo: Path) -> None:

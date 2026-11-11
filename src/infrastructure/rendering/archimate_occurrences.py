@@ -10,9 +10,10 @@ grouping's members use, so every per-instance statement is keyed the one way.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import replace
 
 from src.application.artifacts.parsing import normalize_puml_alias
+from src.application.diagram_occurrences import backing_entity_ids
+from src.application.diagram_occurrences import occurrence_entities as occurrence_entities
 from src.application.puml_alias_declarations import (
     alias_declared_on,
     label_declared_on,
@@ -36,43 +37,6 @@ def occurrence_id_of(entity: EntityRecord) -> str | None:
 def instance_id_of(entity: EntityRecord) -> str:
     """The id a per-instance statement names this record by: its occurrence id, else its entity's id."""
     return occurrence_id_of(entity) or entity.artifact_id
-
-
-def occurrence_entities(
-    diagram_entities: Mapping[str, object] | None,
-    entity_by_id: Mapping[str, EntityRecord],
-) -> list[EntityRecord]:
-    """Return additional rendered occurrences declared in diagram-entities."""
-    if not diagram_entities:
-        return []
-
-    counts: dict[str, int] = {}
-    result: list[EntityRecord] = []
-    for items in diagram_entities.values():
-        if not isinstance(items, list):
-            continue
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            backing_id = str(item.get("backing_entity_id") or "").strip()
-            occurrence_id = str(item.get("id") or "").strip()
-            if not backing_id or not occurrence_id:
-                continue
-            backing = entity_by_id.get(backing_id)
-            if backing is None or not backing.display_alias:
-                continue
-            base_alias = normalize_puml_alias(backing.display_alias)
-            if not base_alias:
-                continue
-            counts[backing_id] = counts.get(backing_id, 1) + 1
-            result.append(
-                replace(
-                    backing,
-                    display_alias=f"{base_alias}__{counts[backing_id]}",
-                    host_diagram_id=occurrence_id,
-                )
-            )
-    return result
 
 
 def display_label_overrides(diagram_entities: Mapping[str, object] | None) -> dict[str, str]:
@@ -197,13 +161,7 @@ def restate_instance_labels(
     """
     if not display_label_overrides(diagram_entities):
         return body
-    occurrences = diagram_entities.get("occurrence")
-    backing_ids = [
-        str(item.get("backing_entity_id") or "")
-        for item in (occurrences if isinstance(occurrences, list) else [])
-        if isinstance(item, dict)
-    ]
-    wanted = [*display_label_overrides(diagram_entities), *backing_ids]
+    wanted = [*display_label_overrides(diagram_entities), *backing_entity_ids(diagram_entities)]
     entity_by_id = {
         record.artifact_id: record for record in (entity_of(artifact_id) for artifact_id in wanted if artifact_id)
         if record is not None

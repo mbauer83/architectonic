@@ -12,10 +12,13 @@ import re
 from collections.abc import Mapping
 from typing import Literal
 
+from src.application.diagram_occurrences import occurrence_entities
+from src.application.modeling.binding_normalize import restore_diagram_shorthand
 from src.application.puml_relation_parsing import declared_relations
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
 from src.domain.artifact_id import stable_conn_id as _stable_conn_id
+from src.domain.ontology_representation.artifact_types import EntityRecord
 
 _STD_ALIAS_RE = re.compile(r"^(?P<prefix>[A-Z]{2,6})_(?P<random>[A-Za-z0-9_-]{4,})$")
 
@@ -71,6 +74,21 @@ def _iter_typed_relations(
     ]
 
 
+def _occurrences_of_members(fm: dict, registry: ArtifactRegistry) -> list[EntityRecord]:
+    """The further drawings this diagram's occurrence statements add, read by their owner."""
+    used = fm.get("entity-ids-used")
+    members = {
+        str(eid): record for eid in (used if isinstance(used, list) else [])
+        if (record := registry.get_entity(str(eid))) is not None
+    }
+    statements = fm.get("diagram-entities")
+    if not isinstance(statements, dict):
+        return []
+    # Stored without the shorthand the `bindings:` block makes canonical; read as every reader reads it.
+    restored = restore_diagram_shorthand(statements, fm.get("bindings")) or statements
+    return occurrence_entities(restored, members)
+
+
 def _build_alias_lookup(
     content: str, fm: dict, registry: ArtifactRegistry, stereotype_map: Mapping[str, str]
 ) -> dict[str, str]:
@@ -108,6 +126,11 @@ def _build_alias_lookup(
             display_alias = _extract_entity_display_alias(entity_text) if entity_text else ""
         if display_alias:
             alias_map[display_alias] = eid_str
+
+    # A further drawing of a member — an occurrence — is drawn under the alias its owner assigns,
+    # and stands for the member it draws.
+    for occurrence in _occurrences_of_members(fm, registry):
+        alias_map[_normalize_puml_alias(occurrence.display_alias)] = occurrence.artifact_id
 
     from src.application.artifacts.parsing import (  # noqa: PLC0415
         extract_declared_puml_aliases as _extract_declared_puml_aliases,

@@ -43,9 +43,13 @@ from src.domain.modules.catalogs import DiagramTypeCatalog
 
 
 def _body_declares_elements(fm: dict, diagram_type_catalog: DiagramTypeCatalog) -> bool:
-    """True when the body is a set of element declarations rather than a type's own vocabulary."""
+    """True when the body is a set of element declarations rather than rendered from the type's records.
+
+    Asked of the type's owner of that fact (``body_is_rendered_from_diagram_entities``), as the
+    completeness rules ask it: a type may keep its nodes without declaring them as types (GSN).
+    """
     module = diagram_type_catalog.find_diagram_type(str(fm.get("diagram-type", "archimate")))
-    return module is None or not module.ui_config.diagram_only_types
+    return module is None or not module.body_is_rendered_from_diagram_entities
 
 
 def check_puml_alias_declarations(
