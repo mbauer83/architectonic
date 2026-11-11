@@ -52,6 +52,15 @@ OUTLINE_STYLES: Final[tuple[OutlineStyle, ...]] = ("solid", "dashed")
 #: A filled box with a solid line: what an element that contains nothing looks like.
 DEFAULT_OUTLINE: Final[OutlineStyle] = "solid"
 
+#: How an element drawn as a **point** rather than a box is marked. A closed set, like the others.
+#:
+#: ArchiMate's junctions are the case: the and-junction is a filled dot and the or-junction a hollow
+#: one, and nothing else on the picture tells a reader which a diagram means. Structural, not
+#: pictorial — `filled` and `hollow`, never `and` and `or` — so a renderer draws the difference
+#: without knowing the vocabulary that needed it.
+MarkStyle = Literal["filled", "hollow"]
+MARK_STYLES: Final[tuple[MarkStyle, ...]] = ("filled", "hollow")
+
 
 @dataclass(frozen=True)
 class ColorMix:
@@ -84,12 +93,13 @@ class ElementAppearance:
     domain_colors: Mapping[str, str] = field(default_factory=dict)
     corner_classes: Mapping[str, frozenset[str]] = field(default_factory=dict)
     outline_classes: Mapping[str, frozenset[str]] = field(default_factory=dict)
+    mark_classes: Mapping[str, frozenset[str]] = field(default_factory=dict)
     de_emphasis: ColorMix = ColorMix()
     border: ColorMix = ColorMix()
 
     @property
     def is_empty(self) -> bool:
-        return not (self.domain_colors or self.corner_classes or self.outline_classes)
+        return not (self.domain_colors or self.corner_classes or self.outline_classes or self.mark_classes)
 
     def color_for(self, domain: str) -> str | None:
         """The colour this ontology gives that domain, or None where it declares none."""
@@ -107,6 +117,15 @@ class ElementAppearance:
             if style != DEFAULT_OUTLINE and carried & self.outline_classes.get(style, frozenset()):
                 return style
         return DEFAULT_OUTLINE
+
+    def mark_for(self, classes: Sequence[str]) -> MarkStyle | None:
+        """How an element drawn as a point is marked, or None where its classes declare no mark.
+
+        None rather than a default: a point with no declared mark is drawn as it always was, and a
+        guessed fill would claim a meaning the ontology never stated.
+        """
+        carried = frozenset(str(name) for name in classes)
+        return next((style for style in MARK_STYLES if carried & self.mark_classes.get(style, frozenset())), None)
 
     def corner_for(self, classes: Sequence[str]) -> CornerStyle:
         """The corner style for an element carrying these classes.
@@ -146,6 +165,7 @@ class ElementAppearance:
         colors = raw.get("domain_colors")
         corners = raw.get("corner_classes")
         outlines = raw.get("outline_classes")
+        marks = raw.get("mark_classes")
         muted = raw.get("de_emphasis")
         return cls(
             domain_colors={
@@ -153,13 +173,14 @@ class ElementAppearance:
             } if isinstance(colors, Mapping) else {},
             corner_classes=_class_lists(corners, CORNER_STYLES),
             outline_classes=_class_lists(outlines, OUTLINE_STYLES),
+            mark_classes=_class_lists(marks, MARK_STYLES),
             de_emphasis=_mix_rule(muted, default_toward="#FFFFFF"),
             border=_mix_rule(raw.get("border"), default_toward="#000000"),
         )
 
 
 def _class_lists(raw: object, styles: Sequence[str]) -> dict[str, frozenset[str]]:
-    """One style-keyed block of class names, for the two declarations that share the shape.
+    """One style-keyed block of class names, for the declarations that share the shape.
 
     A style the closed set does not name is dropped rather than carried: a renderer must be able to
     exhaust these, so an unrecognised key is a typo in the ontology and not a third style.

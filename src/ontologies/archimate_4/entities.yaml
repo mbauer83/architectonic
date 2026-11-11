@@ -75,6 +75,12 @@ element_classes:
     description: Behavioral element representing internal behavior
   junction:
     description: Junction element for combining or splitting relationships
+  conjunctive-junction:
+    description: >-
+      A junction at which every joined relationship holds together (ArchiMate's and-junction).
+  disjunctive-junction:
+    description: >-
+      A junction at which any of the joined relationships may hold (ArchiMate's or-junction).
   internal:
     description: Internal system element not directly modelable by users
 
@@ -126,6 +132,15 @@ element_appearance:
   outline_classes:
     dashed:
       - grouping-element
+
+  # A junction is drawn as a point, not a box. ArchiMate draws the and-junction as a filled dot and
+  # the or-junction as a hollow one; both share the `junction` class, so the difference is declared
+  # here on classes of their own, or a reader cannot tell which a diagram means.
+  mark_classes:
+    filled:
+      - conjunctive-junction
+    hollow:
+      - disjunctive-junction
 
   # One rule for muting a colour, so a surface that needs a de-emphasized variant derives it rather
   # than carrying a second palette — which is how the three disagreeing ones came about.
@@ -315,14 +330,14 @@ entity_types:
   and-junction:
     prefix: JNA
     hierarchy: [common]
-    classes: [junction]
+    classes: [junction, conjunctive-junction]
     create_when: ""
     never_create_when: ""
 
   or-junction:
     prefix: JNO
     hierarchy: [common]
-    classes: [junction]
+    classes: [junction, disjunctive-junction]
     create_when: ""
     never_create_when: ""
 

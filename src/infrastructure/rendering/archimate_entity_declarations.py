@@ -61,6 +61,26 @@ def grouping_stereotype(config: Mapping[str, Any], grouping_key_value: str) -> s
     )
 
 
+#: The PlantUML fill each declared point mark becomes. A hollow point keeps the page showing through its
+#: centre; a filled one is drawn in the same near-black the ontology gives an open container's line.
+_MARK_FILL: Mapping[str, str] = {"filled": "#1F1F1F", "hollow": "#FFFFFF"}
+
+
+def _point_mark(artifact_type: str, registry: Any) -> str:
+    """The colour suffix for a point element, from the mark its own ontology declares for its classes.
+
+    Asked of the ontology rather than read off the type name, the way corners and outlines are: the
+    renderer draws `filled` and `hollow` without knowing which vocabulary needed them (B91).
+    """
+    name = EntityTypeName(artifact_type)
+    info = registry.find_entity_type(name)
+    ontology = registry.ontology_for_entity_type(name)
+    if info is None or ontology is None:
+        return ""
+    mark = ontology.element_appearance.mark_for(info.classes)
+    return f" {_MARK_FILL[mark]}" if mark is not None else ""
+
+
 def entity_declaration(
     entity: EntityRecord,
     alias: str,
@@ -75,7 +95,7 @@ def entity_declaration(
     """One element's declaration. *instance_icon* is the embedded icon it shows: in place of the glyph as
     a badge, or as the element itself, name beneath, as a figure."""
     if entity.artifact_type in junction_types:
-        return f'circle " " as {alias}'
+        return f'circle " " as {alias}{_point_mark(entity.artifact_type, registry)}'
     label, stereotype, spec = entity_label_and_stereotype(
         entity, registry, specialization_catalog, label_attribute=label_attribute, instance_label=instance_label
     )
