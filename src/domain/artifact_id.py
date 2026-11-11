@@ -78,7 +78,15 @@ def stable_id(s: str) -> str:
 
     A short ID (exactly one dot between epoch and random) is returned unchanged.
     A full ID (two dots — epoch, random, slug) has the trailing slug stripped.
+
+    A record a diagram holds is addressed ``DIAGRAM_ID#type/local``; its stable form is its host's
+    stable form with the local part kept (``DIAG@e.r#type/local``). Cutting at the last dot instead
+    landed inside the host's slug, so every held record shared its diagram's stem: a lookup by stem
+    for the diagram — a read, an expansion, a short id — answered one of its records instead (B110).
     """
+    host, hosted, local = s.partition("#")
+    if hosted:
+        return stable_id(host) + hosted + local
     if s.count(".") == 1:
         return s
     return s.rsplit(".", 1)[0]
