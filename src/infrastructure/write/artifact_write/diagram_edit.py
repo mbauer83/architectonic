@@ -191,10 +191,9 @@ def edit_diagram(
     eff_authored_groupings = authored_groupings if authored_groupings is not None else _existing_ag
     # A caller may name an entity by its short id; recorded beside the full id the body's inference
     # finds, it was listed twice (B83). Normalised here, where the caller's statement enters.
-    eff_entity_ids_used = (
-        full_entity_spellings(entity_ids_used, verifier.registry)
-        if entity_ids_used is not None else as_optional_str_list(fm.get("entity-ids-used"))
-    )
+    eff_entity_ids_used = full_entity_spellings(entity_ids_used, verifier.registry)
+    if eff_entity_ids_used is None:
+        eff_entity_ids_used = as_optional_str_list(fm.get("entity-ids-used"))
     # Kept apart on purpose. Merging a caller's own argument with what a new body draws is right;
     # carrying the *stored* value across a body replacement is the defect — a connection the new body
     # stopped drawing kept its reference. The two were conflated here, one line above the merge that
