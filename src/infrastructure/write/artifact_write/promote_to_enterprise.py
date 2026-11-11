@@ -43,6 +43,7 @@ from src.infrastructure.write.artifact_write._promote_viewpoints import (
     collect_viewpoint_dependencies,
     viewpoint_dependency_errors,
 )
+from src.infrastructure.write.artifact_write.boundary import refuse_diagram_hosted
 from src.infrastructure.write.artifact_write.promote_reference_closure import (
     MissingDependency,
     compute_reference_closure,
@@ -228,6 +229,8 @@ def plan_promotion(
     missing = [eid for eid in selected_ids if eid not in all_entities]
     if missing:
         raise ValueError(f"Entity '{missing[0]}' not found in model")
+    for eid in selected_ids:
+        refuse_diagram_hosted(registry, eid)   # promoted with its diagram, never on its own
 
     ent_name_index = _build_enterprise_name_index(repo, registry)
     ent_id_suffix_index = _build_enterprise_id_suffix_index(repo, registry)

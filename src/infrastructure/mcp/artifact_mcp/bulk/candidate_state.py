@@ -193,7 +193,9 @@ class CandidateStore(CandidateListMixin):
 
     def find_file_by_id(self, artifact_id: str) -> Path | None:
         if artifact_id in self._entities:
-            return self._entities[artifact_id].path
+            staged = self._entities[artifact_id]
+            # a record a diagram holds has no file of its own (the index's rule, B109)
+            return None if staged.host_diagram_id else staged.path
         if artifact_id in self._connections:
             return self._connections[artifact_id].path
         if artifact_id in self._diagrams:

@@ -15,7 +15,12 @@ from src.domain.repository.connection_declaration import (
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.atomic_file import write_atomic
 
-from .boundary import assert_engagement_write_root, modification_stamp, normalize_specializations
+from .boundary import (
+    assert_engagement_write_root,
+    modification_stamp,
+    normalize_specializations,
+    refuse_diagram_hosted,
+)
 from .entity_frontmatter import entity_artifact_type
 from .exclusive_claim_guard import refuse_second_whole
 from .mediated_leg_guard import refuse_inadmissible_leg
@@ -61,6 +66,8 @@ def _validate_inputs(
         raise ValueError(f"Source entity '{source_entity}' not found in model")
     if stable_id(target_entity) not in known_short_ids:
         raise ValueError(f"Target entity '{target_entity}' not found in model")
+    for endpoint in (source_entity, target_entity):
+        refuse_diagram_hosted(registry, endpoint)   # a model relation never names a record a diagram holds
 
     source_endpoint = effective_endpoint(registry, source_entity)
     target_endpoint = effective_endpoint(registry, target_entity)

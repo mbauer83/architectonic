@@ -8,7 +8,7 @@ from pathlib import Path
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.domain.artifact_id import stable_id
 
-from .boundary import assert_engagement_write_root, assert_owned_by
+from .boundary import assert_engagement_write_root, assert_owned_by, refuse_diagram_hosted
 from .types import WriteResult
 
 
@@ -123,6 +123,7 @@ def _delete_entity_core(
     ignore_diagram_refs: bool = False,
     dry_run: bool,
 ) -> WriteResult:
+    refuse_diagram_hosted(registry, artifact_id)
     entity_file = registry.find_file_by_id(artifact_id)
     if entity_file is None:
         raise ValueError(f"Entity '{artifact_id}' not found in model")

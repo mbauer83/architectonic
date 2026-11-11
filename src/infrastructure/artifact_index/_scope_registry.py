@@ -3,12 +3,23 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Literal
+from typing import Callable, Literal, Protocol
 
 from src.domain.artifact_id import stable_id
+from src.domain.ontology_representation.artifact_types import EntityRecord
 
 from ._mem_store import _MemStore
 from ._rwlock import _RWLock
+
+
+class _Located(Protocol):
+    @property
+    def path(self) -> Path: ...
+
+
+def _own_file(record: _Located) -> Path | None:
+    """The file an indexed record is the content of — none for a record a diagram holds."""
+    return None if isinstance(record, EntityRecord) and record.host_diagram_id else record.path
 
 
 class _ScopeRegistry:
@@ -98,7 +109,9 @@ class _ScopeRegistry:
 
         Honours the port contract for every standalone artifact kind — entities, diagrams,
         and documents — rather than entities alone, so callers resolve a diagram or document
-        in a group collection (or other subdirectory) instead of assuming a flat layout.
+        in a group collection (or other subdirectory) instead of assuming a flat layout. A record a
+        diagram holds is not a standalone artifact: it has no file of its own, and answering its host
+        diagram's file let an entity delete unlink the whole diagram.
 
         Also accepts the short (rename-stable) id form — no trailing ``.slug`` — via
         ``_mem.canonical_id``, the same canonicalization ``ArtifactIndex.read_artifact``/
@@ -115,12 +128,12 @@ class _ScopeRegistry:
             for table in (self._mem.entities, self._mem.diagrams, self._mem.documents, self._mem.icons):
                 r = table.get(artifact_id)
                 if r is not None:
-                    return r.path
+                    return _own_file(r)
             if stable_id(artifact_id) == artifact_id:
                 resolved_id = self._mem.canonical_id(artifact_id)
                 if resolved_id != artifact_id:
                     for table in (self._mem.entities, self._mem.diagrams, self._mem.documents, self._mem.icons):
                         r = table.get(resolved_id)
                         if r is not None:
-                            return r.path
+                            return _own_file(r)
             return None

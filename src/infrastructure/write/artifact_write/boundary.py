@@ -1,8 +1,14 @@
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Protocol
 
 from src.config.workspace_paths import infer_repo_scope
 from src.domain.clock import utc_now_iso
+from src.domain.ontology_representation.artifact_types import EntityRecord
+
+
+class HostedRecordLookup(Protocol):
+    def get_entity(self, artifact_id: str) -> EntityRecord | None: ...
 
 
 def modification_stamp() -> str:
@@ -61,6 +67,31 @@ def owned_by(path: Path, repo_root: Path) -> bool:
     except ValueError:
         return False
     return True
+
+
+def refuse_diagram_hosted(registry: HostedRecordLookup, artifact_id: str) -> None:
+    """Refuse an entity write addressed to a record a diagram holds.
+
+    A diagram-only record — a swimlane, a lifeline, a classifier, a node of an argument — lives inside
+    its diagram's ``diagram-entities`` and has no file of its own. Every entity write resolves the
+    entity's file first, and that resolution used to answer the *host diagram's* file: a delete
+    unlinked the whole diagram, an edit parsed it as an entity, a connection wrote an outgoing file
+    beside it, a promotion copied it upstream. Such a record is changed through its diagram, which is
+    what the refusal says.
+    """
+    refusal = hosted_refusal(registry, artifact_id)
+    if refusal is not None:
+        raise ValueError(refusal)
+
+
+def hosted_refusal(registry: HostedRecordLookup, artifact_id: str) -> str | None:
+    """Why an entity write may not address *artifact_id* — None unless a diagram holds it."""
+    record = registry.get_entity(artifact_id)
+    host = record.host_diagram_id if record is not None else None
+    return (
+        f"'{artifact_id}' is held by diagram '{host}' and has no file of its own; "
+        f"change it with artifact_edit_diagram on that diagram."
+    ) if host else None
 
 
 def assert_owned_by(path: Path, repo_root: Path, *, artifact_id: str) -> None:

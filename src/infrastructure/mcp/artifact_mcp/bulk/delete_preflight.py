@@ -8,7 +8,7 @@ from typing import Any
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import expand_artifact_id
 from src.infrastructure.mcp.artifact_mcp.edit_tools import _require_registry, _resolve
-from src.infrastructure.write.artifact_write.boundary import owned_by
+from src.infrastructure.write.artifact_write.boundary import hosted_refusal, owned_by
 
 from .common import KNOWN_DELETE_OPS
 from .delete_plan import (
@@ -175,9 +175,10 @@ def _entity_delete_blockers(
     implicit_connection_deletes: set[BatchKey],
     auto_sync_diagram_ids: set[str],
 ) -> list[str]:
-    entity_file = registry.find_file_by_id(artifact_id)
+    refusal = hosted_refusal(registry, artifact_id)
+    entity_file = None if refusal else registry.find_file_by_id(artifact_id)
     if entity_file is None:
-        results[index] = validation_error("delete_entity", f"Entity '{artifact_id}' not found in model")
+        results[index] = validation_error("delete_entity", refusal or f"Entity '{artifact_id}' not found in model")
         return []
     if not owned_by(entity_file, root):
         results[index] = validation_error(

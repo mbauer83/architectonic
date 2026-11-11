@@ -28,7 +28,7 @@ from ._entity_rename import (
     rename_entity_via_m4,
     rewrite_document_links_for_moved_artifact,
 )
-from .boundary import assert_engagement_write_root
+from .boundary import assert_engagement_write_root, refuse_diagram_hosted
 from .enterprise_edit_arguments import Interception, entity_change
 from .entity import entity_path, verification_to_entity_dict
 from .parse_existing import parse_entity_file
@@ -138,6 +138,7 @@ def edit_entity(
     if recorded is not None:
         return recorded
 
+    refuse_diagram_hosted(registry, artifact_id)
     entity_file = registry.find_file_by_id(artifact_id)
     if entity_file is None:
         raise ValueError(f"Entity '{artifact_id}' not found in model")
@@ -321,6 +322,7 @@ def promote_entity(
     """
     assert_engagement_write_root(repo_root)
 
+    refuse_diagram_hosted(registry, artifact_id)
     entity_file = registry.find_file_by_id(artifact_id)
     if entity_file is None:
         raise ValueError(f"Entity '{artifact_id}' not found in model")

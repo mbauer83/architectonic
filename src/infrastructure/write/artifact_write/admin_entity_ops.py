@@ -12,7 +12,7 @@ from src.domain.modules.module_types import EntityTypeName
 
 from ._admin_commit import commit_with_verification, dry_result
 from ._entity_edit_support import _UNSET, merge_fields, render_entity, subject_of
-from .boundary import assert_enterprise_write_root, modification_stamp
+from .boundary import assert_enterprise_write_root, modification_stamp, refuse_diagram_hosted
 from .entity import verification_to_entity_dict
 from .entity_delete import _delete_entity_core
 from .parse_existing import parse_entity_file
@@ -102,6 +102,7 @@ def admin_edit_entity(
     """
     assert_enterprise_write_root(repo_root)
 
+    refuse_diagram_hosted(registry, artifact_id)
     entity_file = registry.find_file_by_id(artifact_id)
     if entity_file is None:
         raise ValueError(f"Entity '{artifact_id}' not found in model")
