@@ -5,6 +5,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from defusedxml.ElementTree import fromstring
+
 from src.application.puml_directive_policy import find_unsafe_puml_directives
 from src.application.repo_path_helpers import rendered_dir_for_diagram, repo_root_for_diagram_path
 from src.application.verification.artifact_verifier_syntax import (
@@ -17,6 +19,8 @@ from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.ontology_protocol import IconPresentingRenderer
 from src.infrastructure.rendering.native_svg import render_native_svg
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter, strip_startuml_name
+from src.infrastructure.rendering.svg_extent import declared_extent
+from src.infrastructure.rendering.svg_to_png import RasteriseFailedError, draw_svg_to_png
 
 from .diagram_body_preparation import _prepare_diagram_puml_body
 from .diagram_confidentiality import is_confidential_diagram_source
@@ -198,11 +202,8 @@ def _render_diagram_png(
     # When @startuml carries a name PlantUML uses that name instead, which breaks the
     # temp→final rename below.
     puml_body_for_render = strip_startuml_name(puml_body)
-    if render_native_svg(puml_body_for_render, diagram_type) is not None:
-        warnings.append(
-            f"PNG render skipped: '{diagram_type}' owns scalable SVG notation; use the SVG rendering"
-        )
-        return None
+    if (native_svg := render_native_svg(puml_body_for_render, diagram_type)) is not None:
+        return _rasterise_native_svg(native_svg, rendered_dir / f"{puml_path.stem}.png", warnings, failures)
 
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".puml", dir=puml_path.parent, delete=False, encoding="utf-8"
@@ -265,6 +266,36 @@ def _render_diagram_png(
             tmp_path.unlink()
         except OSError:
             pass
+
+
+#: An opaque page, as every PlantUML PNG has: a transparent diagram PNG shows its black text on black in
+#: any dark viewer, and the GSN legend disappeared that way.
+_PNG_BACKGROUND = "#FFFFFF"
+
+
+def _rasterise_native_svg(
+    native_svg: str, final: Path, warnings: list[str], failures: list[str] | None
+) -> Path | None:
+    """The PNG of a diagram type that draws its own SVG, at the size PlantUML's PNG would have.
+
+    The menu and the download route offer PNG for every diagram, and a type that owns its SVG notation
+    used to answer that with nothing but advice to save first — which could never produce one (B88).
+    PlantUML renders at `render_dpi()` over its 96-dpi base (measured: PNG / SVG = 1.56 at 150 dpi), so
+    the same scale gives the same picture density; the canvas is capped at PlantUML's own size limit.
+    """
+    extent = declared_extent(dict(fromstring(native_svg).attrib))
+    if extent is None or extent[0] <= 0 or extent[1] <= 0:
+        _fail(warnings, failures, "PNG render skipped: the diagram's SVG declares no canvas size")
+        return None
+    scale = render_dpi() / 96
+    limit = plantuml_limit_size()
+    width, height = (min(limit, max(1, round(edge * scale))) for edge in extent)
+    try:
+        final.write_bytes(draw_svg_to_png(native_svg, width=width, height=height, background=_PNG_BACKGROUND))
+    except RasteriseFailedError as exc:
+        _fail(warnings, failures, f"PNG render failed: {exc}")
+        return None
+    return final
 
 
 def _render_diagram_svg(

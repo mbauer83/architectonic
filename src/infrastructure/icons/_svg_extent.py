@@ -8,12 +8,11 @@ direction is refused here; no icon that shape can be read at 64 px.
 
 from __future__ import annotations
 
-import re
 from collections.abc import Mapping
 
-MAX_ASPECT = 16.0
+from src.infrastructure.rendering.svg_extent import declared_extent
 
-_LENGTH_RE = re.compile(r"^\s*([0-9]*\.?[0-9]+)\s*(px)?\s*$")
+MAX_ASPECT = 16.0
 
 
 class UnreadableExtentError(ValueError):
@@ -22,7 +21,7 @@ class UnreadableExtentError(ValueError):
 
 def aspect_ratio(root_attributes: Mapping[str, str]) -> float:
     """Width over height; 1.0 when the document declares neither a `viewBox` nor a numeric size."""
-    extent = _from_view_box(root_attributes.get("viewBox")) or _from_size(root_attributes)
+    extent = declared_extent(root_attributes)
     if extent is None:
         return 1.0
     width, height = extent
@@ -33,17 +32,3 @@ def aspect_ratio(root_attributes: Mapping[str, str]) -> float:
         raise UnreadableExtentError(f"the SVG is more than {MAX_ASPECT:g} times wider than tall, or taller than wide")
     return ratio
 
-
-def _from_view_box(view_box: str | None) -> tuple[float, float] | None:
-    parts = (view_box or "").replace(",", " ").split()
-    if len(parts) != 4:
-        return None
-    try:
-        return float(parts[2]), float(parts[3])
-    except ValueError:
-        return None
-
-
-def _from_size(attributes: Mapping[str, str]) -> tuple[float, float] | None:
-    width, height = (_LENGTH_RE.match(attributes.get(edge, "")) for edge in ("width", "height"))
-    return (float(width.group(1)), float(height.group(1))) if width and height else None
