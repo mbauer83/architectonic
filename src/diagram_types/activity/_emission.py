@@ -219,17 +219,28 @@ def _emit_loop(
     # Marked drawn *by* this line: the condition is the diamond at the foot of the loop, so nothing
     # else may draw it — and `emit_orphans` would otherwise find it unemitted and draw it again.
     drawn.add(loop.condition)
-    condition = puml_text(str(condition_step.get("condition") or "?"))
+    question = _asked(condition_step)
     then_label = puml_text(str(condition_step.get("then_label") or "yes"))
     else_label = puml_text(str(condition_step.get("else_label") or "no"))
     going_round, leaving = (
         (then_label, else_label) if loop.looping_arm == "then" else (else_label, then_label)
     )
     lines.append(
-        f"repeat while ({sentinel_wrapped(condition_step, f'{condition}?')}"
+        f"repeat while ({sentinel_wrapped(condition_step, question)}"
         f"{user_link_suffix(condition_step)}) is ({going_round}) not ({leaving})"
     )
     return loop.exit_target
+
+
+def _asked(step: Mapping[str, Any]) -> str:
+    """A decision's condition as the question its diamond asks — with exactly one question mark.
+
+    The mark was appended unconditionally, so a condition authored as a question ("does the model
+    already hold this?") rendered "…this??", and a decision with no condition at all rendered "??"
+    (B87). A condition is often written either way, so the diamond asks it once whichever way it came.
+    """
+    text = str(step.get("condition") or "").strip()
+    return puml_text(text if text.endswith("?") else f"{text}?")
 
 
 def emit_orphans(
@@ -270,7 +281,7 @@ def _emit_step(
 
     elif stype == "decision":
         _maybe_switch_lane(step_id, ctx, lines)
-        condition = puml_text(str(step.get("condition") or "?"))
+        question = _asked(step)
         then_label = puml_text(str(step.get("then_label") or "yes"))
         else_label = puml_text(str(step.get("else_label") or "no"))
         # Before the `if`, never inside the then-branch. A note emitted after `then (...)` sits in a
@@ -279,7 +290,7 @@ def _emit_step(
         # two-lane diagram: inside-branch 2, floating-inside-branch 2, before-the-if 1.
         _emit_step_note(step_id, ctx, lines)
         lines.append(
-            f"if ({sentinel_wrapped(step, f'{condition}?')}{user_link_suffix(step)}) then ({then_label})"
+            f"if ({sentinel_wrapped(step, question)}{user_link_suffix(step)}) then ({then_label})"
         )
         then_first = ctx.graph.then_target.get(step_id)
         from_then = emit_until_join(then_first, ctx, lines, drawn, stops, path) if then_first else None
