@@ -3,6 +3,57 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.11.1] — 2026-11-11
+
+**[Full detail → `changelog-assets/0.11.1-detail.md`](changelog-assets/0.11.1-detail.md)**
+
+### Fixed
+
+- **A label or an icon on an ArchiMate diagram no longer changes who owns it.** A diagram whose
+  `diagram-entities` held only display labels, occurrences or icons was treated as hand-authored: a
+  membership change through `entity_ids` was refused, and a sync kept a connection the model no
+  longer had. The diagram type now decides, and an ArchiMate diagram stays model-owned.
+- **`arch-repair upgrade --commit` upgrades only the tiers the deployment owns.** In a container it
+  rewrote the cloned enterprise mirror and left it dirty, so the next start refused it. The
+  enterprise tier is now reported and left alone unless `--admin-mode` is given, and what the upgrade
+  writes is committed as one commit when the repository was clean beforehand. `--enterprise-root`
+  names an enterprise tier explicitly.
+- **A GSN argument opens fitted to the viewer**, and **can be downloaded as PNG**. The PNG is drawn
+  from its SVG at the resolution of other diagrams' PNGs, on a white background.
+- **A matrix's sidebar lists its row and column entities.** It read "Entities 0" beside a full grid.
+- **An and-junction is drawn filled and an or-junction hollow**, as ArchiMate draws them. Both were
+  drawn as the same empty circle.
+- **An activity decision asks its question with one question mark.** A condition written as a
+  question was drawn with two, and an empty condition as "??".
+- **The browser loads the new GUI after a rebuild or an update.** The page shell is served with
+  `Cache-Control: no-cache`; the versioned assets are cached as before.
+- **The graph explorer and toasts honour reduced motion.** With the system setting on, graph layouts
+  land at once and toasts no longer slide in.
+- **Layered exploration is linked from the Viewpoints page**, beside **Query model**.
+- **A created ArchiMate diagram no longer changes on its first edit**, and an explicit body completed
+  by the write path now passes the include check. Both now state the full generated header.
+- **A diagram edit given short entity ids records each entity once, by its full id.**
+- **MCP callers see why a write was refused.** A refusal from the write path or the authorization
+  policy reached an MCP client as "Error executing tool"; it now carries the refusal's message.
+- **A part that one whole already composes cannot be composed by a second.** The connection write
+  and the bulk write refuse it with the rule the verifier reports as `E340`, instead of committing a
+  model that fails a later full verification.
+- **Asking for an image of a matrix answers 404 naming the kind.** `GET /api/diagrams/{id}/svg` and
+  a lensed download answered 500.
+- **The C4 editor groups a model-backed diagram's entities as the diagram draws them.** Components
+  were listed under "Software Systems". The diagram context read now carries `derived_entities`, the
+  rows the preview returns.
+
+### Documentation
+
+- The diagram viewer, the GSN preview in the assurance wizard and the withheld-content notice are
+  described as they behave.
+
+### Upgrading
+
+- No data changes. A model in which one part is composed by two wholes already fails verification
+  (`E340`); adding such a composition is now refused when it is written.
+
 ## [0.11.0] — 2026-11-09
 
 **[Full detail → `changelog-assets/0.11.0-detail.md`](changelog-assets/0.11.0-detail.md)**
@@ -1231,6 +1282,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.11.1]: https://github.com/mbauer83/architectonic/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/mbauer83/architectonic/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/mbauer83/architectonic/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/mbauer83/architectonic/compare/v0.9.1...v0.10.0
