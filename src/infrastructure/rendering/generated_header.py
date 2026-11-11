@@ -28,6 +28,17 @@ from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinpara
 _TEXT_ALIGNMENT = "skinparam defaultTextAlignment center"
 
 
+def stated_skinparams(config: Mapping[str, Any]) -> list[str]:
+    """The skinparam lines the generated header states, in the order a new body carries them.
+
+    One list for every path that writes a header — a body the renderer generates, an explicit body
+    the write path completes, and a refresh. Two of them used to compose it themselves: a new body
+    lacked the alignment the refresh states, so it changed on its first edit (B72), and an explicit
+    body lacked the width bound, so the gate refused what the write path had just produced (B85).
+    """
+    return [*label_wrap_skinparams(config), _TEXT_ALIGNMENT]
+
+
 def refreshed_header(body: str, repo_root: Path, config: Mapping[str, Any]) -> str:
     """*body* with everything the renderer states in it brought up to date, and nothing else.
 
@@ -37,9 +48,16 @@ def refreshed_header(body: str, repo_root: Path, config: Mapping[str, Any]) -> s
     without disturbing the picture its author ruled.
     """
     body = ArchimateDeclarations.from_repo(repo_root).restated_in(body)
-    stated = {line.split()[1]: line for line in label_wrap_skinparams(config)}
-    stated[_TEXT_ALIGNMENT.split()[1]] = _TEXT_ALIGNMENT
-    return with_stated_skinparams(body, stated)
+    return with_stated_skinparams(body, _by_name(stated_skinparams(config)))
+
+
+def completed_header(body: str, config: Mapping[str, Any]) -> str:
+    """*body* stating every generated skinparam, each where it stands, without touching anything else."""
+    return with_stated_skinparams(body, _by_name(stated_skinparams(config)))
+
+
+def _by_name(lines: list[str]) -> dict[str, str]:
+    return {line.split()[1]: line for line in lines}
 
 
 def with_stated_skinparams(body: str, wanted: Mapping[str, str]) -> str:

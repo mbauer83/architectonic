@@ -44,9 +44,8 @@ from src.infrastructure.rendering.diagram_connection_overlay import (
     endpoint_router,
     occurrence_alias_by_id,
 )
-from src.infrastructure.rendering.generated_header import refreshed_header
+from src.infrastructure.rendering.generated_header import completed_header, refreshed_header, stated_skinparams
 from src.infrastructure.rendering.generic_puml_layout import build_generic_visual_nesting
-from src.infrastructure.rendering.puml_label_wrapping import label_wrap_skinparams
 from src.infrastructure.rendering.puml_safety import (
     configured_puml_size_warning_threshold,
     warn_when_puml_exceeds_threshold,
@@ -89,7 +88,7 @@ class GenericPumlRenderer:
         # every other diagram-owned type had, in the type that draws most of the repository.
         # Measured on `why-a-scratchpad`: 2545x798 unbounded against 1671x952 here, 34% narrower.
         # `layout.wrap_width: 0` opts a type out, as everywhere else.
-        lines.extend(label_wrap_skinparams(self._config))
+        lines.extend(stated_skinparams(self._config))
         lines.extend(["", f"title {name}", ""])
 
         entity_by_id = {entity.artifact_id: entity for entity in entities}
@@ -325,7 +324,7 @@ class GenericPumlRenderer:
         return ("badge", "figure")
 
     def inject_includes(self, body: str, repo_root: Path) -> str:
-        return inject_archimate_includes(body, repo_root)
+        return completed_header(inject_archimate_includes(body, repo_root), self._config)
 
     def refresh_generated_header(self, body: str, repo_root: Path) -> str:
         return refreshed_header(body, repo_root, self._config)
