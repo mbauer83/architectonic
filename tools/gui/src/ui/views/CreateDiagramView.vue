@@ -405,7 +405,7 @@ watch(diagramType, () => {
           :ui-config="uiConfig"
           :diagram-entities="diagramEntities"
           :entities="includedEntities"
-          diagram-id=""
+          :derived-entities="preview?.derived_entities"
           @diagram-entities-change="mergeDiagramEntities"
         />
 

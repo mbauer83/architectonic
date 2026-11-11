@@ -25,6 +25,7 @@ from src.domain.ontology_representation.artifact_types import DiagramRecord, Ent
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.rendering.archimate_occurrences import drawn_labels_by_instance
 from src.infrastructure.rest.routers import state as s
+from src.infrastructure.rest.routers.diagrams._derived_entities import derived_entity_rows
 from src.infrastructure.rest.routers.viewpoints._scope import resolve_viewpoint_scope
 
 
@@ -233,6 +234,13 @@ def diagram_context_payload(repo: Any, diag_rec: DiagramRecord, catalogs: Runtim
     diagram_entities: dict[str, Any] = raw_de if isinstance(raw_de, dict) else {}
     dt = catalogs.diagram_types.find_diagram_type(diag_rec.diagram_type)
     type_extras = dt.build_context_extras(repo, diag_rec.artifact_id, diagram_entities) if dt else {}
+    # What the type's projection draws and as what, from the diagram-entities the read serves: the
+    # same rows the preview answers, so an editor is right before its first preview.
+    root = s.maybe_engagement_root()
+    derived = (
+        derived_entity_rows(dt, diag_rec.diagram_type, diagram.get("diagram_entities") or {}, root)
+        if dt is not None and root is not None else None
+    )
     return {
         "diagram": diagram,
         "entities": entities,
@@ -249,6 +257,7 @@ def diagram_context_payload(repo: Any, diag_rec: DiagramRecord, catalogs: Runtim
         # Namespaced, not merged: the envelope declares its own fields, and a hook free to add a key
         # beside them would make the whole response a contract promising nothing.
         "type_extras": type_extras or None,
+        "derived_entities": derived,
     }
 
 

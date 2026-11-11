@@ -7,7 +7,7 @@
  * already-existing child components; owns no state of its own beyond what's passed in.
  */
 import type {
-  DiagramConnection, DiagramTypeUiConfig, EntityContextConnection, EntityDisplayInfo, ViewpointSummary,
+  DerivedEntity, DiagramConnection, DiagramTypeUiConfig, EntityContextConnection, EntityDisplayInfo, ViewpointSummary,
 } from '../../domain'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import EntityPickerInput from './EntityPickerInput.vue'
@@ -26,6 +26,8 @@ defineProps<{
   typeEntityData: Record<string, unknown>
   effectiveEntitiesList: EntityDisplayInfo[]
   diagramConnections: DiagramConnection[]
+  /** What the diagram's projection derives and draws each as — the latest preview's, else the context's. */
+  derivedEntities?: readonly DerivedEntity[] | null
   diagramId: string
   selectionRows: EntityRow[]
   candidateConnections: EntityContextConnection[]
@@ -94,6 +96,7 @@ const emit = defineEmits<{
         :diagram-entities="typeEntityData"
         :entities="effectiveEntitiesList"
         :diagram-connections="diagramConnections"
+        :derived-entities="derivedEntities"
         :diagram-id="diagramId"
         @diagram-entities-change="emit('diagram-entities-change', $event)"
         @diagram-connections-change="emit('diagram-connections-change', $event)"

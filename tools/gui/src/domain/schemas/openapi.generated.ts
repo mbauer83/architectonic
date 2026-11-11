@@ -6664,6 +6664,8 @@ export interface components {
             candidate_connections: components["schemas"]["ContextConnection"][];
             /** Connections */
             connections: components["schemas"]["DiagramContextConnection"][];
+            /** Derived Entities */
+            derived_entities?: components["schemas"]["DerivedViewEntityResponse"][];
             diagram: components["schemas"]["DiagramDetailResponse"];
             /** Drawn Labels */
             drawn_labels: {

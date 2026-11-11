@@ -462,3 +462,7 @@ class DiagramContextResponse(NullsOmitted):
     #: This diagram kind's own additions — a C4 diagram's navigation, and whatever a future kind
     #: contributes. Absent for a kind that adds nothing.
     type_extras: dict[str, Any] | None = None
+    #: What a model-backed diagram's projection derives, and the type it draws each as — the rows the
+    #: preview answers, so an editor groups them as the picture does before it has previewed. Absent
+    #: for a kind that derives nothing.
+    derived_entities: list[DerivedViewEntityResponse] | None = None

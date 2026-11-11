@@ -1,5 +1,5 @@
 import type { Component } from 'vue'
-import type { DiagramTypeUiConfig, EntityDisplayInfo } from '../../domain'
+import type { DerivedEntity, DiagramTypeUiConfig, EntityDisplayInfo } from '../../domain'
 
 /**
  * Props contract that every kind UI slot component must satisfy.
@@ -10,6 +10,9 @@ export interface DiagramTypeUiSlotProps {
   uiConfig: DiagramTypeUiConfig
   diagramEntities: Record<string, unknown>
   entities: EntityDisplayInfo[]
+  /** What a model-backed diagram's projection derives and the type it draws each as; null until the
+   * server has said, and for a kind that derives nothing. A slot that does not group by it ignores it. */
+  derivedEntities?: readonly DerivedEntity[] | null
 }
 
 type DiagramAuthoringExtension = {

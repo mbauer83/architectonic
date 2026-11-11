@@ -2,7 +2,7 @@ import { computed, ref, type Ref } from 'vue'
 import { Effect, Exit } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type {
-  DiagramConnection, DiagramContext, EntityContextConnection, EntityDisplayInfo, DiagramContextEntity,
+  DiagramConnection, DiagramContext, EntityContextConnection, EntityDisplayInfo, DiagramContextEntity, DerivedEntity,
 } from '../../domain'
 import { stableConnectionId } from '../../domain/artifactId'
 import { useDiagramDrawings } from './useDiagramDrawings'
@@ -34,6 +34,8 @@ export function useDiagramEditSelection(options: {
   const includedEntities = ref<EntityDisplayInfo[]>([])
   /** What the saved body calls each instance, by instance id — read, never written, from here. */
   const drawnLabels = ref<Record<string, string>>({})
+  /** What a model-backed diagram derives and draws each as, as the context read classified it. */
+  const derivedEntities = ref<readonly DerivedEntity[] | null>(null)
   const allModelConns = ref<Map<string, EntityContextConnection>>(new Map())
   const includedConnIds = ref<Set<string>>(new Set())
 
@@ -278,7 +280,7 @@ export function useDiagramEditSelection(options: {
     entitiesToAdd.value = []; selectedNewConnIds.value = new Set()
     expandedConnectionEntityIds.value = new Set(); expandedRelatedEntityIds.value = new Set()
     includedEntities.value = []; allModelConns.value = new Map(); includedConnIds.value = new Set()
-    drawnLabels.value = {}
+    drawnLabels.value = {}; derivedEntities.value = null
   }
 
   const populateFromContext = (context: DiagramContext): void => {
@@ -291,6 +293,7 @@ export function useDiagramEditSelection(options: {
       diagram_internal: false,
     }))
     drawnLabels.value = { ...context.drawn_labels }
+    derivedEntities.value = context.derived_entities ?? null
     allModelConns.value = new Map(context.candidate_connections.map((conn) => [conn.artifact_id, conn]))
     const inc = new Set<string>()
     // The diagram declares its connections with full endpoint ids, as authored; the records
@@ -310,7 +313,7 @@ export function useDiagramEditSelection(options: {
   }
 
   return {
-    diagramEntities, diagramConnections, includedEntities, drawnLabels, allModelConns, includedConnIds,
+    diagramEntities, diagramConnections, includedEntities, drawnLabels, derivedEntities, allModelConns, includedConnIds,
     toRemoveEntityIds, toRemoveConnIds, entitiesToAdd, selectedNewConnIds,
     expandedConnectionEntityIds, expandedRelatedEntityIds,
     includedEntityIds, toAddEntityIds, effectiveEntityIds, effectiveEntitiesList,

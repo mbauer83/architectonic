@@ -1,9 +1,4 @@
-import type { DiagramOwnEntityTypeUiConfig, EntityDisplayInfo } from '../../../domain'
-
-export interface C4RoleInfo {
-  label: string
-  entityType: string
-}
+import type { DerivedEntity, DiagramOwnEntityTypeUiConfig, EntityDisplayInfo } from '../../../domain'
 
 export interface C4EntityGroup {
   label: string
@@ -11,52 +6,38 @@ export interface C4EntityGroup {
   entities: EntityDisplayInfo[]
 }
 
-/**
- * Builds a map from ArchiMate artifact_type → C4 role info,
- * derived from the diagram type's diagram_only_types config.
- */
-export function buildC4RoleMap(
-  diagramOnlyTypes: ReadonlyArray<DiagramOwnEntityTypeUiConfig>,
-): Map<string, C4RoleInfo> {
-  const map = new Map<string, C4RoleInfo>()
-  for (const dot of diagramOnlyTypes) {
-    const info: C4RoleInfo = { label: dot.label, entityType: dot.entity_type }
-    if (!map.has(dot.entity_type)) map.set(dot.entity_type, info)
-    for (const archType of dot.permitted_mappings.entity_types) {
-      if (!map.has(archType)) map.set(archType, info)
-    }
-  }
-  return map
-}
+/** The group an entity stands in before the server has classified it, as on a diagram not yet previewed. */
+export const UNCLASSIFIED = '__unclassified__'
 
 /**
- * Group derived entities by C4 role (preserving diagram_only_types order).
- * The scope entity is excluded from groups — it is rendered separately.
+ * Group derived entities under the C4 type the server's projection draws each as, in the order the
+ * diagram type declares its own types. The scope entity is rendered separately and left out.
+ *
+ * The projection classifies by structure — the children of the scope container are its components, a
+ * store is a database — so the answer is the server's. Reading it off the type table instead put every
+ * application component under the first C4 type permitting one, and a component diagram listed its
+ * components as software systems while the picture drew them as components.
  */
-export function groupEntitiesByRole(
+export function groupEntitiesByDrawnType(
   entities: ReadonlyArray<EntityDisplayInfo>,
   scopeEntityId: string,
   diagramOnlyTypes: ReadonlyArray<DiagramOwnEntityTypeUiConfig>,
+  derived: ReadonlyArray<DerivedEntity> | null | undefined,
 ): C4EntityGroup[] {
-  const roleMap = buildC4RoleMap(diagramOnlyTypes)
-  const groupMap = new Map<string, C4EntityGroup>()
-  for (const dot of diagramOnlyTypes) {
-    groupMap.set(dot.entity_type, {
-      label: dot.plural ?? dot.label + 's',
-      entityType: dot.entity_type,
-      entities: [],
-    })
-  }
+  const drawnAs = new Map((derived ?? []).map(row => [row.id, row.item_type]))
+  const groups = new Map<string, C4EntityGroup>(diagramOnlyTypes.map(dot => [
+    dot.entity_type, { label: dot.plural ?? dot.label + 's', entityType: dot.entity_type, entities: [] },
+  ]))
   for (const entity of entities) {
     if (entity.artifact_id === scopeEntityId) continue
-    const role = roleMap.get(entity.artifact_type)
-    const key = role?.entityType ?? '__other__'
-    if (!groupMap.has(key)) {
-      groupMap.set(key, { label: 'Other', entityType: key, entities: [] })
+    const drawn = drawnAs.get(entity.artifact_id)
+    const key = derived == null ? UNCLASSIFIED : drawn !== undefined && groups.has(drawn) ? drawn : '__other__'
+    if (!groups.has(key)) {
+      groups.set(key, { label: key === UNCLASSIFIED ? 'Entities' : 'Other', entityType: key, entities: [] })
     }
-    groupMap.get(key)!.entities.push(entity)
+    groups.get(key)!.entities.push(entity)
   }
-  return [...groupMap.values()].filter(g => g.entities.length > 0)
+  return [...groups.values()].filter(g => g.entities.length > 0)
 }
 
 /**

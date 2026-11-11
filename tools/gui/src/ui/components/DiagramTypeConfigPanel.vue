@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { DiagramTypeUiConfig, EntityDisplayInfo, DiagramConnection } from '../../domain'
+import type { DerivedEntity, DiagramTypeUiConfig, EntityDisplayInfo, DiagramConnection } from '../../domain'
 import { lookupExtension, lookupExtensionConfig, lookupExtensionManagedOwnTypes } from '../lib/diagramAuthoringExtensions'
 import DiagramOwnEntityTypeSection from './DiagramOwnEntityTypeSection.vue'
 
@@ -9,6 +9,7 @@ const props = defineProps<{
   diagramEntities: Record<string, unknown>
   entities?: EntityDisplayInfo[]
   diagramConnections?: DiagramConnection[]
+  derivedEntities?: readonly DerivedEntity[] | null
   diagramId?: string
 }>()
 const emit = defineEmits<{
@@ -54,6 +55,7 @@ const ownTypes = computed(() => {
       :diagram-entities="diagramEntities"
       :entities="entities ?? []"
       :diagram-connections="diagramConnections ?? []"
+      :derived-entities="derivedEntities ?? null"
       :diagram-id="diagramId"
       v-bind="slot.config"
       @diagram-entities-change="emit('diagramEntitiesChange', $event)"

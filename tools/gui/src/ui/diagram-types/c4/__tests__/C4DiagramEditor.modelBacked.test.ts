@@ -1,18 +1,18 @@
 /**
  * Tests for WU-E4: C4 model-backed edit sidebar — entity curation.
  *
- * Pure reactive-logic tests: buildC4RoleMap, parseExcludedIds, groupEntitiesByRole,
+ * Pure reactive-logic tests: parseExcludedIds, groupEntitiesByDrawnType,
  * and the exclude-toggle logic.
  */
 import { describe, it, expect } from 'vitest'
 import { ref } from 'vue'
 import {
-  buildC4RoleMap,
   parseExcludedIds,
-  groupEntitiesByRole,
+  groupEntitiesByDrawnType,
   resolveScopeEntityId,
+  UNCLASSIFIED,
 } from '../C4DiagramEditor.helpers'
-import type { DiagramOwnEntityTypeUiConfig, EntityDisplayInfo } from '../../../../domain'
+import type { DerivedEntity, DiagramOwnEntityTypeUiConfig, EntityDisplayInfo } from '../../../../domain'
 import type { EntityTypeName } from '../../../../domain/types.generated'
 
 const makeDot = (
@@ -60,34 +60,6 @@ const SYSTEM_CONTEXT_DOTS: DiagramOwnEntityTypeUiConfig[] = [
   makeDot('software-system', 'Software System', ['application-component', 'application-service']),
 ]
 
-describe('buildC4RoleMap', () => {
-  it('maps ArchiMate types to C4 role info', () => {
-    const map = buildC4RoleMap(SYSTEM_CONTEXT_DOTS)
-    expect(map.get('business-actor')).toEqual({ label: 'Person', entityType: 'person' })
-    expect(map.get('business-role')).toEqual({ label: 'Person', entityType: 'person' })
-    expect(map.get('application-component')).toEqual({ label: 'Software System', entityType: 'software-system' })
-  })
-
-  it('maps own entity_type to itself', () => {
-    const map = buildC4RoleMap(SYSTEM_CONTEXT_DOTS)
-    expect(map.get('person')).toEqual({ label: 'Person', entityType: 'person' })
-    expect(map.get('software-system')).toEqual({ label: 'Software System', entityType: 'software-system' })
-  })
-
-  it('returns empty map for empty config', () => {
-    expect(buildC4RoleMap([])).toEqual(new Map())
-  })
-
-  it('does not overwrite earlier mappings with later ones', () => {
-    const dots: DiagramOwnEntityTypeUiConfig[] = [
-      makeDot('person', 'Person', ['shared-type']),
-      makeDot('system', 'System', ['shared-type']),
-    ]
-    const map = buildC4RoleMap(dots)
-    expect(map.get('shared-type')?.entityType).toBe('person')
-  })
-})
-
 describe('parseExcludedIds', () => {
   it('returns empty set when field is absent', () => {
     expect(parseExcludedIds({})).toEqual(new Set())
@@ -108,35 +80,49 @@ describe('parseExcludedIds', () => {
   })
 })
 
-describe('groupEntitiesByRole', () => {
+describe('groupEntitiesByDrawnType', () => {
   const scope = makeEntity('SCOPE', 'application-component', 'My System')
   const person = makeEntity('P1', 'business-actor', 'Alice')
   const system = makeEntity('S1', 'application-component', 'External Billing')
+  const part = makeEntity('C1', 'application-component', 'Write Path')
+  const COMPONENT_DOTS = [...SYSTEM_CONTEXT_DOTS, makeDot('component', 'Component', ['application-component'])]
+  const row = (id: string, itemType: string): DerivedEntity =>
+    ({ id, name: id, item_type: itemType, role: 'internal', excluded: false })
 
   it('excludes the scope entity from groups', () => {
-    const groups = groupEntitiesByRole([scope, person, system], 'SCOPE', SYSTEM_CONTEXT_DOTS)
+    const groups = groupEntitiesByDrawnType([scope, person, system], 'SCOPE', SYSTEM_CONTEXT_DOTS, [])
     const allEntityIds = groups.flatMap(g => g.entities.map(e => e.artifact_id))
     expect(allEntityIds).not.toContain('SCOPE')
   })
 
-  it('groups entities by their C4 role', () => {
-    const groups = groupEntitiesByRole([scope, person, system], 'SCOPE', SYSTEM_CONTEXT_DOTS)
-    const personGroup = groups.find(g => g.entityType === 'person')
-    const systemGroup = groups.find(g => g.entityType === 'software-system')
-    expect(personGroup?.entities.map(e => e.artifact_id)).toEqual(['P1'])
-    expect(systemGroup?.entities.map(e => e.artifact_id)).toEqual(['S1'])
+  it('groups each entity under the type the server draws it as', () => {
+    const derived = [row('P1', 'person'), row('S1', 'software-system')]
+    const groups = groupEntitiesByDrawnType([scope, person, system], 'SCOPE', SYSTEM_CONTEXT_DOTS, derived)
+    expect(groups.find(g => g.entityType === 'person')?.entities.map(e => e.artifact_id)).toEqual(['P1'])
+    expect(groups.find(g => g.entityType === 'software-system')?.entities.map(e => e.artifact_id)).toEqual(['S1'])
+  })
+
+  it('puts an application component the projection draws as a component under Components (B80)', () => {
+    // The type table permits an application component as a software system first; reading it put every
+    // component of a component diagram under "Software Systems" while the picture drew «component».
+    const groups = groupEntitiesByDrawnType([scope, part], 'SCOPE', COMPONENT_DOTS, [row('C1', 'component')])
+    expect(groups.map(g => [g.label, g.entities.map(e => e.artifact_id)])).toEqual([['Components', ['C1']]])
   })
 
   it('omits groups with no entities', () => {
-    const groups = groupEntitiesByRole([scope, person], 'SCOPE', SYSTEM_CONTEXT_DOTS)
+    const groups = groupEntitiesByDrawnType([scope, person], 'SCOPE', SYSTEM_CONTEXT_DOTS, [row('P1', 'person')])
     expect(groups.some(g => g.entityType === 'software-system')).toBe(false)
   })
 
-  it('places unknown ArchiMate types in an "Other" group', () => {
+  it('places an entity the server drew as no declared type, or did not classify, under "Other"', () => {
     const unknown = makeEntity('U1', 'assessment', 'Unknown')
-    const groups = groupEntitiesByRole([scope, unknown], 'SCOPE', SYSTEM_CONTEXT_DOTS)
-    const otherGroup = groups.find(g => g.entityType === '__other__')
-    expect(otherGroup?.entities.map(e => e.artifact_id)).toEqual(['U1'])
+    const groups = groupEntitiesByDrawnType([scope, unknown, person], 'SCOPE', SYSTEM_CONTEXT_DOTS, [row('U1', 'gizmo')])
+    expect(groups.find(g => g.entityType === '__other__')?.entities.map(e => e.artifact_id)).toEqual(['U1', 'P1'])
+  })
+
+  it('lists everything as unclassified until the server has said', () => {
+    const groups = groupEntitiesByDrawnType([scope, person, system], 'SCOPE', SYSTEM_CONTEXT_DOTS, null)
+    expect(groups.map(g => [g.entityType, g.label])).toEqual([[UNCLASSIFIED, 'Entities']])
   })
 })
 

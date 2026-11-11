@@ -9,7 +9,7 @@
  * - Standalone: no _scope_entity_id → shows entity sections + C4ConnectionSection
  */
 import { computed, ref } from 'vue'
-import type { DiagramTypeUiConfig, EntityDisplayInfo, DiagramConnection } from '../../../domain'
+import type { DerivedEntity, DiagramTypeUiConfig, EntityDisplayInfo, DiagramConnection } from '../../../domain'
 import EntityPickerInput from '../../components/EntityPickerInput.vue'
 import DiagramOwnEntityTypeSection from '../../components/DiagramOwnEntityTypeSection.vue'
 import C4ConnectionSection from './C4ConnectionSection.vue'
@@ -23,6 +23,7 @@ const props = defineProps<{
   diagramEntities: Record<string, unknown>
   entities: EntityDisplayInfo[]
   diagramConnections: DiagramConnection[]
+  derivedEntities?: readonly DerivedEntity[] | null
   scopeEntityType: string
 }>()
 const emit = defineEmits<{
@@ -202,6 +203,7 @@ const handleConnectionsChange = (updated: DiagramConnection[]) => {
     :scope-entity-id="scopeEntityId"
     :diagram-only-types="uiConfig.diagram_only_types"
     :diagram-entities="diagramEntities"
+    :derived-entities="derivedEntities"
     @excluded-ids-change="handleExcludedChange"
   />
 

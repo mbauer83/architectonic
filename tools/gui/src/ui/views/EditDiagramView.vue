@@ -291,6 +291,7 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
           :type-entity-data="typeEntityData"
           :effective-entities-list="selection.effectiveEntitiesList.value"
           :diagram-connections="selection.diagramConnections.value"
+          :derived-entities="previewMutation.result.value?.derived_entities ?? selection.derivedEntities.value"
           :diagram-id="diagramId"
           :selection-rows="selection.selectionRows.value"
           :candidate-connections="[...selection.allModelConns.value.values()]"

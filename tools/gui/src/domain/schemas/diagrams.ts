@@ -197,6 +197,21 @@ export const HopSuggestionGroupSchema = Schema.Struct({
   items: Schema.Array(EntityDisplayInfoSchema),
 })
 
+/** One entity a model-backed diagram derived rather than the author placing it.
+ *
+ * `item_type` and `role` are the diagram-type module's vocabulary and are forwarded, never
+ * interpreted. `role` is load-bearing all the same: the scope root arrives as `scope` and the
+ * engine will not exclude it, so a checklist offering to uncheck it offers nothing. Both fields
+ * were absent here and stripped on decode, which is why that has gone unnoticed. */
+export const DerivedEntitySchema = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  item_type: Schema.String,
+  role: Schema.String,
+  excluded: Schema.Boolean,
+})
+export type DerivedEntity = typeof DerivedEntitySchema.Type
+
 export const DiagramContextSchema = Schema.Struct({
   diagram: DiagramDetailSchema,
   entities: Schema.Array(DiagramContextEntitySchema),
@@ -215,6 +230,10 @@ export const DiagramContextSchema = Schema.Struct({
   /** This diagram kind's own additions — a C4 diagram's navigation, and whatever a future kind
    * contributes. Absent for a kind that adds nothing. */
   type_extras: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  /** What a model-backed diagram's projection derives and the type it draws each as — the rows the
+   * preview answers, so an editor groups them as the picture does before its first preview. Absent
+   * for a kind that derives nothing. */
+  derived_entities: Schema.optional(Schema.Array(DerivedEntitySchema)),
 })
 export type DiagramContext = typeof DiagramContextSchema.Type
 
@@ -224,21 +243,6 @@ export const DiagramEntityDiscoverySchema = Schema.Struct({
   suggested_entities: Schema.Array(HopSuggestionGroupSchema),
 })
 export type DiagramEntityDiscovery = typeof DiagramEntityDiscoverySchema.Type
-
-/** One entity a model-backed diagram derived rather than the author placing it.
- *
- * `item_type` and `role` are the diagram-type module's vocabulary and are forwarded, never
- * interpreted. `role` is load-bearing all the same: the scope root arrives as `scope` and the
- * engine will not exclude it, so a checklist offering to uncheck it offers nothing. Both fields
- * were absent here and stripped on decode, which is why that has gone unnoticed. */
-export const DerivedEntitySchema = Schema.Struct({
-  id: Schema.String,
-  name: Schema.String,
-  item_type: Schema.String,
-  role: Schema.String,
-  excluded: Schema.Boolean,
-})
-export type DerivedEntity = typeof DerivedEntitySchema.Type
 
 export const DiagramPreviewResultSchema = Schema.Struct({
   puml: Schema.String,

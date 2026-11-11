@@ -1,17 +1,17 @@
 <script setup lang="ts">
 /**
  * Entity curation panel for model-backed C4 diagrams.
- * Lists derived entities grouped by C4 role; per-entity exclude toggle
+ * Lists derived entities grouped by the C4 type the server draws each as; per-entity exclude toggle
  * via _excluded_entity_ids. Connections are shown read-only.
  */
 import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import type { EntityDisplayInfo, DiagramConnection, DiagramOwnEntityTypeUiConfig } from '../../../domain'
+import type { DerivedEntity, EntityDisplayInfo, DiagramConnection, DiagramOwnEntityTypeUiConfig } from '../../../domain'
 import ArchimateTypeGlyph from '../../components/ArchimateTypeGlyph.vue'
 import RowIconChip from '../../components/RowIconChip.vue'
 import RowIconPicker from '../../components/RowIconPicker.vue'
 import { diagramIconsKey } from '../../composables/useDiagramIcons'
-import { groupEntitiesByRole, parseExcludedIds } from './C4DiagramEditor.helpers'
+import { groupEntitiesByDrawnType, parseExcludedIds } from './C4DiagramEditor.helpers'
 import { toGlyphKey } from '../../lib/glyphKey'
 import { entityDetailRoute } from '../../router/artifactRoutes'
 
@@ -21,6 +21,8 @@ const props = defineProps<{
   scopeEntityId: string
   diagramOnlyTypes: readonly DiagramOwnEntityTypeUiConfig[]
   diagramEntities: Record<string, unknown>
+  /** The server's classification: what the projection draws each derived entity as. */
+  derivedEntities?: readonly DerivedEntity[] | null
 }>()
 
 const emit = defineEmits<{
@@ -51,7 +53,7 @@ const scopeEntity = computed(() =>
 )
 
 const roleGroups = computed(() =>
-  groupEntitiesByRole(props.entities, props.scopeEntityId, props.diagramOnlyTypes),
+  groupEntitiesByDrawnType(props.entities, props.scopeEntityId, props.diagramOnlyTypes, props.derivedEntities),
 )
 
 // The icon each derived entity shows. A type-wide statement is made under the C4 type the server's

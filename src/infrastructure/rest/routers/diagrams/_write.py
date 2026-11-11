@@ -8,11 +8,9 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-from src.application.derivation.preview import project_view_for_preview
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
 from src.domain.repository.groups import UNCATEGORIZED
-from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rendering.diagram_selection import resolve_diagram_selection
 from src.infrastructure.rest.contracts.diagrams import DiagramPreviewResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
@@ -23,6 +21,7 @@ from src.infrastructure.rest.routers._openapi import (
     WRITE_RESPONSES,
     WriteResultResponse,
 )
+from src.infrastructure.rest.routers.diagrams._derived_entities import derived_entity_rows
 from src.infrastructure.rest.routers.diagrams._write_bodies import (
     CreateDiagramGuiBody,
     DiagramComposition,
@@ -144,7 +143,6 @@ def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depend
     from src.infrastructure.rendering.diagram_builder import render_puml_preview
 
     repo = s.get_repo()
-    query = shared_artifact_index([repo_root])
 
     # A selection this diagram type cannot draw is a rejected input, not a broken server: a C4
     # scope naming an entity the repository does not hold used to reach the unhandled-exception
@@ -158,8 +156,8 @@ def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depend
     puml, de = composed.puml, composed.diagram_entities
     image, warnings = render_puml_preview(puml, repo_root, body.diagram_type)
 
-    items = project_view_for_preview(catalogs.diagram_types.get_diagram_type(body.diagram_type), body.diagram_type, de or {}, query)  # noqa: E501
-    derived_entities = None if items is None else [{"id": i.entity_id, "name": i.name, "item_type": i.display_class, "role": i.role, "excluded": i.excluded} for i in items]  # noqa: E501
+    module = catalogs.diagram_types.get_diagram_type(body.diagram_type)
+    derived_entities = derived_entity_rows(module, body.diagram_type, de or {}, repo_root)
     return {"puml": puml, "image": image, "warnings": warnings, "derived_entities": derived_entities}
 
 
