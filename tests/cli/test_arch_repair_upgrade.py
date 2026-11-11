@@ -94,13 +94,23 @@ def test_commit_applies_and_is_idempotent(tmp_path: Path) -> None:
     assert first == 0
     assert (repo / "current.txt").read_text(encoding="utf-8") == "hello"
 
-    # Re-running against the same, now-clean (user has committed the rewrite) worktree must be
-    # a no-op: idempotence is what makes it safe to re-run `upgrade` on any user repository.
-    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
-    subprocess.run(["git", "commit", "-q", "-m", "apply upgrade"], cwd=repo, check=True)
+    # The repository is its own and was clean, so the upgrade recorded its own output as one commit
+    # (B81) — the operator no longer has to, and a second start finds a clean tree.
+    status = subprocess.run(["git", "status", "--porcelain"], cwd=repo, capture_output=True, text=True, check=True)
+    assert status.stdout == ""
+    subject = subprocess.run(
+        ["git", "log", "-1", "--format=%s"], cwd=repo, capture_output=True, text=True, check=True
+    ).stdout
+    assert subject.startswith("Upgrade the persisted repository format")
 
+    # Re-running against the now-current repository must be a no-op: idempotence is what makes it
+    # safe to re-run `upgrade` on any repository, on every container start.
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True, check=True).stdout
     second = cli.main_upgrade(["--repo-root", str(repo), "--commit"], registry=_registry())
     assert second == 0
+    assert subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True, check=True
+    ).stdout == head
 
 
 def test_commit_resumes_cleanly_after_a_simulated_crash(tmp_path: Path, monkeypatch) -> None:

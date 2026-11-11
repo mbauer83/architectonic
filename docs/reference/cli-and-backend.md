@@ -98,6 +98,8 @@ stderr, and will be removed once that release ships.
 uv run arch-repair git-repair --repo-root <path> --confirm    # guarded, resumable git repair
 uv run arch-repair upgrade --repo-root <path>                  # dry-run report (default; never mutates)
 uv run arch-repair upgrade --repo-root <path> --commit         # apply (takes a checkpoint set first)
+uv run arch-repair upgrade --workspace <path> --commit         # engagement only; the enterprise tier is reported
+uv run arch-repair upgrade ... --enterprise-root <path> --admin-mode --commit   # this deployment owns it
 uv run arch-repair upgrade --list-checkpoints ...              # the checkpoint set a commit kept
 uv run arch-repair upgrade --restore <set> ...                 # return every target to it
 ```

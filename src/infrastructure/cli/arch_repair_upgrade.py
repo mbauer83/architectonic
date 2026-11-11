@@ -89,6 +89,13 @@ from src.infrastructure.cli._upgrade_repo_phases import (
     refresh_generated_includes,
     sweep_and_recover,
 )
+from src.infrastructure.cli._upgrade_tiers import (
+    classify_roots,
+    clean_before_writing,
+    record_format_upgrade,
+    report_tiers_left_alone,
+    resolve_repo_roots,
+)
 from src.infrastructure.repository_upgrade.fs_adapter import (
     FilesystemRepoUpgradeView,
     FilesystemRepoUpgradeWriter,
@@ -97,7 +104,6 @@ from src.infrastructure.repository_upgrade.guard import (
     check_backend_not_serving,
     probe_backend_identity,
 )
-from src.infrastructure.workspace.workspace_init import load_init_state
 
 
 def software_version() -> str:
@@ -139,6 +145,14 @@ def parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--repo-root", action="append", default=[], metavar="PATH")
     p.add_argument("--workspace", metavar="PATH", help="Resolve engagement + enterprise roots from arch-init state")
+    p.add_argument(
+        "--enterprise-root", action="append", default=[], metavar="PATH",
+        help="An enterprise tier: evaluated and reported, written only with --admin-mode",
+    )
+    p.add_argument(
+        "--admin-mode", action="store_true", default=False,
+        help="This deployment owns the enterprise tier (as `arch-backend --admin-mode`): upgrade it too",
+    )
     p.add_argument("--commit", action="store_true", default=False)
     p.add_argument("--json", action="store_true", default=False, dest="json_output")
     p.add_argument(
@@ -173,25 +187,6 @@ def parse_selection_resolutions(raw: list[str]) -> dict[str, Literal["scope", "q
     return resolutions
 
 
-def resolve_repo_roots(
-    *, repo_root: list[str], workspace: str | None, allow_empty: bool = False
-) -> list[Path]:
-    roots = [Path(p).resolve() for p in repo_root]
-    if workspace is not None:
-        state = load_init_state(Path(workspace).resolve())
-        if state is None:
-            raise SystemExit(f"ERROR: no arch-init state found under {workspace}")
-        roots.append(Path(state["engagement_root"]).resolve())
-        roots.append(Path(state["enterprise_root"]).resolve())
-    if not roots and not allow_empty:
-        raise SystemExit("ERROR: specify --repo-root (repeatable) and/or --workspace")
-    unique: list[Path] = []
-    for root in roots:
-        if root not in unique:
-            unique.append(root)
-    return unique
-
-
 def main_upgrade(
     argv: list[str],
     *,
@@ -208,13 +203,17 @@ def main_upgrade(
         side = build_deployment_side(args, os.environ)
     except DeploymentLayoutConflict as exc:
         raise SystemExit(f"ERROR: {exc}") from exc
-    roots = resolve_repo_roots(
-        repo_root=args.repo_root, workspace=args.workspace, allow_empty=side.active
+    repo_roots, enterprise_roots = resolve_repo_roots(
+        repo_root=args.repo_root, workspace=args.workspace, enterprise_root=args.enterprise_root,
+        allow_empty=side.active,
     )
+    tiers = classify_roots(repo_roots=repo_roots, enterprise_roots=enterprise_roots, admin_mode=args.admin_mode)
+    roots = list(tiers.written)
     if args.restore or args.list_checkpoints:
         return _restore_or_list(args, side, roots)
     version = software_version()
     targets = [RepoUpgradeTarget(FilesystemRepoUpgradeView(r), FilesystemRepoUpgradeWriter(r)) for r in roots]
+    upstream = report_tiers_left_alone(tiers, registry=registry, software_version=version)
 
     if operational_registry is None:
         # Built after the roots are known: the confidential store cannot look up how an
@@ -222,7 +221,7 @@ def main_upgrade(
         # is made here, where both sides are already open, and handed to the step.
         operational_registry = build_operational_registry(
             guidance_hierarchies=guidance_hierarchies(build_module_registry()),
-            canonical_entity_ids=canonical_index([target.view for target in targets]),
+            canonical_entity_ids=canonical_index([target.view for target in [*targets, *upstream]]),
         )
 
     if not args.commit:
@@ -294,6 +293,7 @@ def main_upgrade(
 
     # Phase 6 — ordered per-target apply: repositories first (existing semantics,
     # grandfathered per-repo isolation), then operational targets in kind order.
+    clean_before = clean_before_writing(tiers.written)
     repo_report_applied = apply_workspace(targets, registry=registry, software_version=version)
     committed = [
         f"repository:{r.repo_root}"
@@ -312,6 +312,9 @@ def main_upgrade(
             repository_step_errors=repo_report_applied.has_errors,
         )
     )
+    if outcome == "success":
+        for root in tiers.written:
+            record_format_upgrade(root, clean_before=clean_before[root], software_version=version)
     if outcome == "success" and checkpoint_set is not None:
         for pruned in prune_previous_sets(base, keep=checkpoint_set.id):
             print(f"  checkpoint set {pruned}: pruned (one is kept)", file=sys.stderr)

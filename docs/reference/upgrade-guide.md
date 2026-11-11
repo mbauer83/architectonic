@@ -114,6 +114,20 @@ uv run arch-repair upgrade ... --json                    # machine-readable repo
 uv run arch-repair upgrade ... --commit                  # apply
 ```
 
+**The enterprise tier is not upgraded by a deployment that does not own it.** A
+workspace's enterprise root (or one named with `--enterprise-root`) is evaluated and
+reported, and left as it is: its format is changed where it is maintained, by running
+the upgrade there and pushing. A backend reads an enterprise tier at an older format
+correctly in the meantime. A deployment that does own it — one whose backend runs with
+`--admin-mode` — passes `--admin-mode` here as well, and the Docker entrypoint does so
+whenever `ARCH_ADMIN_MODE` is set.
+
+**What `--commit` writes is committed as one commit** — "Upgrade the persisted
+repository format" — when the repository is its own (not a directory inside another
+checkout) and its working tree was clean before the upgrade. Otherwise the files are
+left written and the report says why, so your own uncommitted changes are never
+folded into it.
+
 Read the dry-run report, resolve anything it marks blocking or manual, back up
 (below), then re-run with `--commit`. A deployment already on the current format is a
 true no-op under `--commit`: no writes, no index rebuild, no config change — safe to

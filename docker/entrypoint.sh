@@ -184,9 +184,11 @@ if is_enabled "${ARCH_REPAIR_UPGRADE:-true}"; then
         upgrade_roots="--workspace $(dirname "$WORKSPACE_CONFIG")"
     else
         [ -n "${ARCH_REPO_ROOT:-}" ] && upgrade_roots="$upgrade_roots --repo-root $ARCH_REPO_ROOT"
-        [ -n "${ARCH_ENTERPRISE_ROOT:-}" ] && upgrade_roots="$upgrade_roots --repo-root $ARCH_ENTERPRISE_ROOT"
+        [ -n "${ARCH_ENTERPRISE_ROOT:-}" ] && upgrade_roots="$upgrade_roots --enterprise-root $ARCH_ENTERPRISE_ROOT"
     fi
-    upgrade_args="--commit --settings $SETTINGS_PATH $upgrade_roots"
+    # The enterprise tier is maintained upstream: the upgrade reports it and leaves it alone unless this
+    # deployment owns it — the same ARCH_ADMIN_MODE that lets the backend write it (B81).
+    upgrade_args="--commit --settings $SETTINGS_PATH $upgrade_roots ${ARCH_ADMIN_MODE:+--admin-mode}"
     log "Upgrading persisted formats (arch-repair upgrade $upgrade_args)"
     rc=0
     # shellcheck disable=SC2086

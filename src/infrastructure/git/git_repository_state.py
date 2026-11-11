@@ -34,6 +34,17 @@ def current_commit(repo: Path) -> str | None:
     return out if rc == 0 else None
 
 
+def is_repository_top_level(path: Path) -> bool:
+    """True when *path* is the top level of its own git repository — not a directory inside another.
+
+    The difference decides whose history a commit lands in. A deployment's engagement clone is its own
+    repository; in a development checkout the engagement directory sits inside the product's, and a
+    commit made "for" the engagement there would be a commit in somebody else's project.
+    """
+    rc, out, _ = run_repo_git(path, "rev-parse", "--show-toplevel")
+    return rc == 0 and Path(out.strip()).resolve() == path.resolve()
+
+
 def has_uncommitted_changes(repo: Path, *pathspecs: str) -> bool:
     # `.arch/` holds runtime sync state, never user work — it must not count as
     # (or ever be committed with) unsaved changes.

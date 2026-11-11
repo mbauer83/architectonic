@@ -93,6 +93,25 @@ def commit_engagement_work(
     return commit
 
 
+def commit_format_upgrade(repo_root: Path, message: str) -> str:
+    """Commit what a persisted-format upgrade wrote, as one recognisable commit. Returns its hash.
+
+    The caller has established that the tree was clean before the upgrade wrote, so everything staged
+    is the upgrade's own output — which is why, unlike `commit_engagement_work`, this does not verify the
+    whole tree first: the upgrade's steps already did, and a fixture-sized repository need not be a valid
+    architecture repository to have its format recorded.
+    """
+    rc, _, stderr = run_repo_git(repo_root, *STAGE_ALL_BUT_RUNTIME_STATE)
+    if rc != 0:
+        raise RuntimeError(f"Failed to stage the format upgrade: {stderr}")
+    rc, _, stderr = commit_with_identity(repo_root, message, author=None)
+    if rc != 0:
+        raise RuntimeError(f"Failed to commit the format upgrade: {stderr}")
+    commit = current_commit(repo_root) or ""
+    logger.info("Format upgrade committed: %.7s — %s", commit, message)
+    return commit
+
+
 def push_engagement(engagement_root: Path) -> None:
     """Push the engagement repo's current branch to origin."""
     rc, _, stderr = run_repo_git(engagement_root, "push", timeout=PUSH_TIMEOUT)
