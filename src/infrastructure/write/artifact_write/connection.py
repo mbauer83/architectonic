@@ -17,6 +17,7 @@ from src.infrastructure.atomic_file import write_atomic
 
 from .boundary import assert_engagement_write_root, modification_stamp, normalize_specializations
 from .entity_frontmatter import entity_artifact_type
+from .exclusive_claim_guard import refuse_second_whole
 from .mediated_leg_guard import refuse_inadmissible_leg
 from .types import WriteResult
 
@@ -65,6 +66,7 @@ def _validate_inputs(
     target_endpoint = effective_endpoint(registry, target_entity)
     catalogs = build_runtime_catalogs(reg)
     refuse_inadmissible_leg(registry, catalogs, connection_type, source_entity, target_entity)
+    refuse_second_whole(registry, catalogs, connection_type, source_entity, target_entity)
     if source_endpoint.is_global_reference and not catalogs.connections.is_symmetric(connection_type):
         raise ValueError(GLOBAL_REFERENCE_SOURCE_ERROR)
     src_type = source_endpoint.entity_type

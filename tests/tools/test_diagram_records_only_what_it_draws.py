@@ -150,15 +150,16 @@ class TestABodySuppliedAsPuml:
         """`_containment_relations` reads one level — the level the completeness rules compare.
 
         A body nesting the innermost element two levels down states that the outermost contains it,
-        so a stored composition between that pair is drawn and must survive. Reading one level would
-        have taken it to be undrawn and dropped it.
+        so a stored containment between that pair is drawn and must survive. Reading one level would
+        have taken it to be undrawn and dropped it. The spanning relation is an aggregation: the
+        innermost element is already composed by the middle one, and a part has one composing whole.
         """
         outer, middle, inner = (
             _entity(repo, "Platform"), _entity(repo, "Order Service"), _entity(repo, "Order Store")
         )
         _connect(repo, outer, middle, "archimate-composition")
         _connect(repo, middle, inner, "archimate-composition")
-        spanning = _connect(repo, outer, inner, "archimate-composition")
+        spanning = _connect(repo, outer, inner, "archimate-aggregation")
         created = mcp.artifact_create_diagram(
             name="Nested", diagram_type="archimate-application",
             entity_ids=[outer, middle, inner], dry_run=False, repo_root=str(repo),
