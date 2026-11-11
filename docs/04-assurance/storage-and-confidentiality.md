@@ -123,11 +123,11 @@ operator who holds the encryption key. Lower values let a team see analysis resu
 accessing the most sensitive records, for example when RED entries contain unpublished
 vulnerability details or PII.
 
-When the ceiling omits records, the GUI shows a **withheld notice** that names the count and
-the ceiling: for example *"3 items withheld above your TLP:AMBER ceiling."* This is the policy
-working as intended, not an error. The notice appears in the browse view, node detail, and
-assurance lens wherever visible counts are lower than the full store total. It does not reveal
-the IDs, names, or contents of the withheld items.
+When the ceiling is below `TLP:RED`, views that may omit records show a **withheld notice**: *"Some
+items may be hidden: content classified above your current access ceiling (TLP:AMBER) is not
+shown."* This is the policy working as intended, not an error. The notice never gives a count, or
+says whether anything was in fact withheld: either would let a reader infer that content above the
+ceiling exists. It does not reveal the IDs, names, or contents of anything withheld.
 
 &nbsp;
 

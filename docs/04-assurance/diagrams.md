@@ -220,7 +220,7 @@ GSN is the only assurance diagram type with a dual home:
 | Classification | Where it lives | How to access |
 |---|---|---|
 | `TLP:WHITE` / `TLP:GREEN` | Architecture repository as a `gsn` diagram | Generic diagram viewer — selectable nodes/edges, detail panel |
-| `TLP:AMBER` / `TLP:RED` | Assurance store only — rendered as a derived preview | Assurance viewer — same selection UX, exposure-filtered |
+| `TLP:AMBER` / `TLP:RED` | Assurance store only — rendered as a derived preview | The GSN wizard's preview — a picture without selection, exposure-filtered |
 
 Publishing a `TLP:WHITE` or `TLP:GREEN` GSN draft to the architecture repository is audited in
 the assurance store. The architecture repository never gains back-references to the confidential

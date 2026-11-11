@@ -200,9 +200,8 @@ node is still read on the first hop, so views of models authored while that was 
 path keep working. There is no relation from a host directly to an application component, so a
 container with no artifact is left out rather than given an invented host.
 
-Node descriptions are **off by default** — C4 nodes render name only. Set
-`show_node_descriptions: true` in the diagram's frontmatter to include the description line
-under the name.
+C4 nodes render their name, and their technology where the element declares one; the description
+line is not drawn. The element's description is shown in the sidebar when you select it.
 
 C4 containers and components support a **shape** property that maps to C4 PlantUML macros:
 
@@ -260,15 +259,17 @@ come from the same rendered body rather than from two paths that agree by constr
 
 ## Viewer interactivity
 
-The rendered SVG viewer is interactive for C4 diagrams and any architecture-repository GSN
-diagram:
+Every rendered diagram is interactive: ArchiMate, C4, activity, sequence, datatype and GSN.
 
-- **Click a node** — the detail sidebar opens with the entity name, type badges, description,
-  and connections. C4 nodes are identified by `data-entity-id` attributes attached when the
-  SVG is rendered.
-- **Click an edge** — the connection flow detail opens, showing the relationship kind and both
-  endpoint names.
-- Clicking a second element deselects the first; clicking the same element toggles it off.
+- **Click an element** — the detail sidebar opens with the entity's name, type, domain and status,
+  and its description; for a model element, also an editor for its summary, status and attributes.
+  Every drawing of the element is highlighted, and hovering lights a whole step or box rather than
+  the one word under the pointer.
+- **Click a connection** — the sidebar shows the relationship type and both endpoints, and an
+  editor for the label this diagram gives it.
+- Clicking another element selects it instead. Clicking the selected element again keeps it
+  selected; click an empty part of the diagram to clear the selection. A connection's click toggles
+  it.
 
 Assurance diagrams (bowtie, control structure, UCA matrix) have the same selection UX inside
 their own assurance viewer — see [Assurance diagrams](../04-assurance/diagrams.md).

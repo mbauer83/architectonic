@@ -21,7 +21,8 @@ Legend:
 
 - **App**: reusable application-layer use case exists.
 - **MCP R/W**: read/write MCP tool exists.
-- **HTTP/GUI**: current implemented surface.
+- **HTTP/GUI**: the surface when this design was accepted (2026-06-20). Much has been built since;
+  for today's HTTP and GUI see the documents linked above.
 - **Unlock**: `Y` gated, `S` gated only for confidential signal storage, `N`
   callable without the store.
 - **TLP**: `Y` filtered, `P` partial/unsafe, `N` absent or not applicable.

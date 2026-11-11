@@ -23,7 +23,7 @@ import {
 } from './AssuranceGraphExploreView.helpers'
 
 const route = useRoute()
-// Absent on the unanchored exploration route, which opens on the whole visible graph.
+// Absent on the unanchored exploration route, which asks for a starting node first.
 const rootId = computed(() => (route.params.nodeId as string | undefined) ?? '')
 
 const canvasRef = ref<InstanceType<typeof GraphCanvas> | null>(null)
