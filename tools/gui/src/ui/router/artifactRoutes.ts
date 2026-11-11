@@ -87,6 +87,7 @@ export const ROUTE_TEMPLATES = {
   viewpointList: '/viewpoints',
   viewpointCreate: '/viewpoints/new',
   viewpointQuery: '/viewpoints/query',
+  layeredExploration: '/graph/layered',
   viewpointEdit: '/viewpoints/:slug/edit',
   viewpointMatrix: '/viewpoints/:slug/matrix',
   viewpointDiagram: '/viewpoints/:slug/diagram',
@@ -129,6 +130,7 @@ export const entityCreateRoute = (): string => ROUTE_TEMPLATES.entityCreate
 export const entityDetailRoute = (artifactId: string): string => `/entities/${seg(artifactId)}`
 export const entityGraphRoute = (artifactId: string): string => `/entities/${seg(artifactId)}/graph`
 export const graphExploreRoute = (): string => ROUTE_TEMPLATES.graphExplore
+export const layeredExplorationRoute = (): string => ROUTE_TEMPLATES.layeredExploration
 
 export const documentListRoute = (): string => ROUTE_TEMPLATES.documentList
 export const documentCreateRoute = (): string => ROUTE_TEMPLATES.documentCreate

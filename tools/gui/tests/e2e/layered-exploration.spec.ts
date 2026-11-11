@@ -262,3 +262,15 @@ test.describe('motivation-support flow', () => {
     expect(decisions.filter((d) => d === 'Rejected')).toHaveLength(2)
   })
 })
+
+// B93: the view was documented and routed, and linked from nowhere — a reader could only type its
+// address. It is reached from the Viewpoints page, beside its sibling the Query model page: both run an
+// unsaved viewpoint execution.
+test('layered exploration is reachable from the viewpoints page', async ({ page }) => {
+  await page.goto('/viewpoints')
+
+  await page.getByTestId('layered-exploration-link').click()
+
+  await expect(page).toHaveURL(/\/graph\/layered$/)
+  await expect(page.getByRole('heading', { name: 'Build a layered view' })).toBeVisible()
+})

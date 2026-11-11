@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { diagramDetailRoute } from '../router/artifactRoutes'
+import { diagramDetailRoute, layeredExplorationRoute } from '../router/artifactRoutes'
 /**
  * List mode of the viewpoints management view: browse the effective merged catalog as a
  * decision surface (description, representation, needs-input marker, search/sort/tier
@@ -123,6 +123,14 @@ const deleteDefinition = (envelope: ViewpointDefinitionEnvelope) => {
           title="Compose and run a query with any presentation without saving anything — Save as… later to keep it"
         >
           ⌕ Query model
+        </RouterLink>
+        <RouterLink
+          :to="layeredExplorationRoute()"
+          class="query-model-btn"
+          data-testid="layered-exploration-link"
+          title="Pick roots, pull in what they depend on or support across layers, and review derived relationships — nothing is saved"
+        >
+          ⇅ Layered exploration
         </RouterLink>
         <span class="capability-copy">{{ CREATE_CAPABILITY_COPY }}</span>
       </div>

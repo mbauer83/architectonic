@@ -63,7 +63,7 @@ export const modelRoutes: RouteRecordRaw[] = [
   // projection of it — so they address `/matrices`, which has no detail route of its own.
   { path: ROUTE_TEMPLATES.matrixCreate, component: () => import('../views/CreateMatrixView.vue') },
   { path: ROUTE_TEMPLATES.matrixEdit, component: () => import('../views/EditMatrixView.vue') },
-  { path: '/graph/layered', component: () => import('../views/LayeredExplorationView.vue') },
+  { path: ROUTE_TEMPLATES.layeredExploration, component: () => import('../views/LayeredExplorationView.vue') },
   { path: ROUTE_TEMPLATES.viewpointList, component: () => import('../views/ViewpointsManagementView.vue') },
   { path: ROUTE_TEMPLATES.viewpointQuery, component: () => import('../views/EphemeralViewpointQueryView.vue') },
   { path: ROUTE_TEMPLATES.viewpointCreate, component: () => import('../views/ViewpointsManagementView.vue') },
