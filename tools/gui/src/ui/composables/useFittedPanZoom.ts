@@ -72,8 +72,11 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     let contentX = 0, contentY = 0
     let contentWidth: number, contentHeight: number
     try {
-      const graphRoot = svgEl.querySelector('g')
-      const bbox = (graphRoot ?? svgEl).getBBox()
+      // The whole drawing, not its first group. PlantUML wraps everything in one root `<g>`, so the
+      // two used to agree — but a type that draws its own SVG need not: GSN's first group is a single
+      // connector, whose box is a line with no height, so the fit read "nothing to fit" and the
+      // diagram opened at its natural size, clipped (B89).
+      const bbox = svgEl.getBBox()
       contentX = bbox.x; contentY = bbox.y
       contentWidth = bbox.width; contentHeight = bbox.height
     } catch {
