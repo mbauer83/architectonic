@@ -256,7 +256,7 @@ bindings:
   correspondence_kind: represents
   target:
     entity_id: FNC@1786225282.foobGD2.write-lifted-model-content
-last-updated: '2026-08-24T09:15:06Z'
+last-updated: '2026-11-11T10:15:58Z'
 ---
 @startuml working-in-a-scratchpad-area
 skinparam hyperlinkColor #252327
@@ -269,7 +269,7 @@ title Working in a Scratchpad Area
 start
 
 note right: A note is bound at creation only when the search found a fitting element and you picked it. Otherwise the binding is made by lifting.
-if ([[arch://d_exists Adding a note: does the model already hold this??]]) then (it exists)
+if ([[arch://d_exists Adding a note: does the model already hold this?]]) then (it exists)
 :[[arch://a_search Search the area's permitted types for it]];
 |[[arch://lane_sys Architectonic]]|
 :[[arch://a_bind Create the note bound to that element; its type comes from the element]];
@@ -282,9 +282,9 @@ note right: Adding, refining, connecting and lifting are not phases. They happen
 :[[arch://a_draw Drag a link between two notes]];
 |[[arch://lane_sys Architectonic]]|
 note right: Until both ends are typed there is nothing to check, so nothing is said.
-if ([[arch://d_keyed Have both ends reached the level relationships key on??]]) then (yes)
+if ([[arch://d_keyed Have both ends reached the level relationships key on?]]) then (yes)
 :[[arch://a_verify Check that pair against the meta-ontology]];
-if ([[arch://d_ok Does the meta-ontology permit this pair??]]) then (permitted)
+if ([[arch://d_ok Does the meta-ontology permit this pair?]]) then (permitted)
 |[[arch://lane_you You]]|
 :[[arch://a_select Select notes and links; name the target project]];
 else (refused)
