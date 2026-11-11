@@ -7,6 +7,7 @@ import {
   ALPHA_HOT, COOLING_TICKS, FORCE_DEFAULTS, STEPS_PER_FRAME, coolerAlpha, isCold, simulationStep,
   type ForceOptions,
 } from './forceSimulation'
+import { motionAllowed } from '../lib/motionPreference'
 
 export type { ForceOptions }
 
@@ -141,14 +142,15 @@ export function useForceGraph(
    * same contract `tweenTo` offers: the two animations on this surface are driven the same
    * way, so they cannot drift apart the way two descriptions of one geometry once did.
    *
-   * Synchronous when there is no frame clock — a test runner, a headless render, anything
-   * that is not a browser paint loop. The resting arrangement is the contract and the motion
-   * is presentation, so land on it at once rather than freezing on frame one.
+   * Synchronous when the surface may not animate (`motionAllowed`): no frame clock — a test
+   * runner, a headless render — or a reader who asked for less motion. The resting arrangement is
+   * the contract and the motion is presentation, so land on it at once rather than freezing on
+   * frame one.
    */
   const runCooling = (onFrame?: () => void): void => {
     stop()
     alpha = ALPHA_HOT
-    if (typeof requestAnimationFrame !== 'function') {
+    if (!motionAllowed()) {
       coolToRest()
       onFrame?.()
       return
@@ -212,10 +214,9 @@ export function useForceGraph(
       onFrame?.()
     }
 
-    // No frame clock — a test runner, a headless render, anything that is not a browser
-    // paint loop. The animation is presentation; the layout is the contract, so land on it
-    // at once rather than freezing on the first frame of a tween that will never advance.
-    if (typeof requestAnimationFrame !== 'function') {
+    // The surface may not animate — no frame clock, or a reader who asked for less motion. The
+    // animation is presentation; the layout is the contract, so land on it at once.
+    if (!motionAllowed()) {
       settle(1)
       onSettled?.()
       return

@@ -64,6 +64,10 @@ defineProps<{
   border-left: 3px solid #ef4444;
 }
 
+/* A reader who asked for less motion still sees the toast arrive, without the travel. */
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
 @keyframes slideIn {
   from {
     transform: translateX(400px);
