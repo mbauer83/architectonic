@@ -14,6 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
+from src.application._diagram_entity_extraction import HeldRecordScope
 from src.application.candidate_repository import (
     CandidateRepository,
     _OverlayCandidateRepository,
@@ -133,7 +134,7 @@ def test_new_entity_visible_in_candidate():
     candidate = candidate_with(
         base,
         changed_diagrams=[new_diag],
-        workspace_types={"datatype": frozenset({"classifier"})},
+        record_scopes=_WS,
     )
 
     result = candidate.get_entity("CLF@1.ab.x")
@@ -157,7 +158,7 @@ def test_deleted_entity_hidden():
 # ── candidate_with: diagram replacement child suppression ─────────────────────
 
 
-_WS = {"datatype": frozenset({"classifier"})}
+_WS = {"datatype": HeldRecordScope(keys=frozenset({"classifier"}), workspace_types=frozenset({"classifier"}))}
 
 
 def test_replaced_diagram_drops_removed_child():
@@ -178,7 +179,7 @@ def test_replaced_diagram_drops_removed_child():
         }
     })
     base = _StubBase(entities=[clf_a, clf_b], diagrams=[old_diag])
-    candidate = candidate_with(base, changed_diagrams=[new_diag], workspace_types=_WS)
+    candidate = candidate_with(base, changed_diagrams=[new_diag], record_scopes=_WS)
 
     assert candidate.get_entity("CLF@1.ab.a") is not None
     assert candidate.get_entity("CLF@1.ab.b") is None
@@ -194,7 +195,7 @@ def test_replaced_diagram_keeps_retained_child():
         "diagram-entities": {"classifier": [{"id": "CLF@1.ab.a", "label": "A renamed"}]}
     })
     base = _StubBase(entities=[clf_a], diagrams=[old_diag])
-    candidate = candidate_with(base, changed_diagrams=[new_diag], workspace_types=_WS)
+    candidate = candidate_with(base, changed_diagrams=[new_diag], record_scopes=_WS)
 
     result = candidate.get_entity("CLF@1.ab.a")
     assert result is not None
@@ -234,7 +235,7 @@ def test_replacement_with_changed_connections_keeps_classifier_ids():
         "connections": [],
     })
     base = _StubBase(entities=[clf], diagrams=[old_diag])
-    candidate = candidate_with(base, changed_diagrams=[new_diag], workspace_types=_WS)
+    candidate = candidate_with(base, changed_diagrams=[new_diag], record_scopes=_WS)
 
     assert candidate.get_entity("CLF@1.ab.p") is not None
 
@@ -262,7 +263,7 @@ def test_list_entities_includes_new_additions():
         }
     })
     base = _StubBase()
-    candidate = candidate_with(base, changed_diagrams=[new_diag], workspace_types=_WS)
+    candidate = candidate_with(base, changed_diagrams=[new_diag], record_scopes=_WS)
 
     ids = {e.artifact_id for e in candidate.list_entities()}
     assert "CLF@1.ab.new" in ids

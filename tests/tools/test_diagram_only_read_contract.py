@@ -10,6 +10,7 @@ from pathlib import Path
 
 from src.application._diagram_entity_extraction import (
     _is_connection_item,
+    held_record_scopes,
 )
 from src.application._diagram_entity_extraction import (
     diagram_local_to_full as _diagram_local_to_full,
@@ -22,7 +23,12 @@ from src.application._diagram_entity_extraction import (
 )
 from src.application.artifacts.query import ArtifactRepository
 from src.domain.ontology_representation.artifact_types import DiagramRecord
+from src.infrastructure.app_bootstrap import get_module_registry
 from src.infrastructure.artifact_index import shared_artifact_index
+
+#: What the real gsn type says its diagrams hold — the scope the index uses.
+_GSN = held_record_scopes(get_module_registry().all_diagram_types().items())["gsn"]
+
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -124,7 +130,7 @@ def test_is_connection_item_false_for_activity_action() -> None:
 
 def test_extract_gsn_nodes_via_node_id() -> None:
     diag = _make_gsn_diagram_record()
-    entities = _extract_diagram_entities(diag)
+    entities = _extract_diagram_entities(diag, _GSN)
     # 3 nodes, 0 edges (edges are connection-items, skipped)
     assert len(entities) == 3
     ids = {e.artifact_id for e in entities}
@@ -135,7 +141,7 @@ def test_extract_gsn_nodes_via_node_id() -> None:
 
 def test_extract_gsn_nodes_display_alias_matches_node_id() -> None:
     diag = _make_gsn_diagram_record()
-    entities = _extract_diagram_entities(diag)
+    entities = _extract_diagram_entities(diag, _GSN)
     alias_map = {e.artifact_id: e.display_alias for e in entities}
     assert alias_map[f"{_GSN_ID}#nodes/g1"] == "g1"
     assert alias_map[f"{_GSN_ID}#nodes/cx1"] == "cx1"
@@ -143,20 +149,20 @@ def test_extract_gsn_nodes_display_alias_matches_node_id() -> None:
 
 def test_extract_gsn_nodes_name_populated() -> None:
     diag = _make_gsn_diagram_record()
-    entities = {e.artifact_id: e for e in _extract_diagram_entities(diag)}
+    entities = {e.artifact_id: e for e in _extract_diagram_entities(diag, _GSN)}
     assert entities[f"{_GSN_ID}#nodes/g1"].name == "The system is acceptably secure"
 
 
 def test_extract_gsn_nodes_host_diagram_id_set() -> None:
     diag = _make_gsn_diagram_record()
-    entities = _extract_diagram_entities(diag)
+    entities = _extract_diagram_entities(diag, _GSN)
     for e in entities:
         assert e.host_diagram_id == _GSN_ID
 
 
 def test_extract_gsn_content_text_excludes_node_id() -> None:
     diag = _make_gsn_diagram_record()
-    entities = {e.artifact_id: e for e in _extract_diagram_entities(diag)}
+    entities = {e.artifact_id: e for e in _extract_diagram_entities(diag, _GSN)}
     ct = entities[f"{_GSN_ID}#nodes/g1"].content_text
     assert "g1" not in ct.split()  # node_id should not appear
     assert "The system is acceptably secure" in ct
@@ -168,7 +174,7 @@ def test_extract_gsn_content_text_excludes_node_id() -> None:
 
 def test_local_to_full_resolves_node_id_items() -> None:
     diag = _make_gsn_diagram_record()
-    mapping = _diagram_local_to_full(diag)
+    mapping = _diagram_local_to_full(diag, _GSN)
     assert mapping["g1"] == f"{_GSN_ID}#nodes/g1"
     assert mapping["s1"] == f"{_GSN_ID}#nodes/s1"
     assert mapping["cx1"] == f"{_GSN_ID}#nodes/cx1"
@@ -179,7 +185,7 @@ def test_local_to_full_resolves_node_id_items() -> None:
 
 def test_extract_gsn_connections_from_edges_sub_key() -> None:
     diag = _make_gsn_diagram_record()
-    conns = _extract_diagram_connections(diag)
+    conns = _extract_diagram_connections(diag, _GSN)
     assert len(conns) == 2
     conn_types = {c.conn_type for c in conns}
     assert "supported-by" in conn_types
@@ -188,7 +194,7 @@ def test_extract_gsn_connections_from_edges_sub_key() -> None:
 
 def test_extract_gsn_connections_source_target_resolved() -> None:
     diag = _make_gsn_diagram_record()
-    conns = _extract_diagram_connections(diag)
+    conns = _extract_diagram_connections(diag, _GSN)
     sb = next(c for c in conns if c.conn_type == "supported-by")
     assert sb.source == f"{_GSN_ID}#nodes/g1"
     assert sb.target == f"{_GSN_ID}#nodes/s1"
@@ -196,7 +202,7 @@ def test_extract_gsn_connections_source_target_resolved() -> None:
 
 def test_extract_gsn_connections_stable_artifact_id() -> None:
     diag = _make_gsn_diagram_record()
-    conns = _extract_diagram_connections(diag)
+    conns = _extract_diagram_connections(diag, _GSN)
     ids = {c.artifact_id for c in conns}
     # ID generated from source:conn_type:target (no explicit 'id' field)
     expected_sb = f"{_GSN_ID}#conn/g1:supported-by:s1"

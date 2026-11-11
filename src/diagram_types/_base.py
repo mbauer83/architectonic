@@ -141,6 +141,11 @@ class DiagramTypeBase:
         `diagram-entities` without declaring them as types says so by overriding this."""
         return bool(self.ui_config.diagram_only_types)
 
+    @property
+    def held_record_keys(self) -> frozenset[str]:
+        """The declared diagram-only types; a type that keeps undeclared nodes says so by overriding this."""
+        return frozenset(owned.entity_type for owned in self.ui_config.diagram_only_types)
+
     def write_guidance(self) -> DiagramTypeWriteGuidance:
         return DiagramTypeWriteGuidance(when_to_use="", when_not_to_use="")
 

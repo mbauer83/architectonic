@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
 
+from src.application._diagram_entity_extraction import (
+    NOTHING_HELD,
+    HeldRecordScope,
+)
 from src.application._diagram_entity_extraction import (
     extract_diagram_connections as _extract_diagram_connections,
 )
@@ -217,7 +222,7 @@ def apply_diagram_change(
     db: _SqliteStore,
     *,
     parsed: DiagramRecord | None,
-    workspace_types: dict[str, frozenset[str]] | None = None,
+    record_scopes: Mapping[str, HeldRecordScope] | None = None,
     attr_type_ref_fn: _AttrTypeRefFn | None = None,
 ) -> None:
     old_id = mem.diagram_by_path.get(path.resolve())
@@ -229,12 +234,12 @@ def apply_diagram_change(
         if parsed is None or old.artifact_id != parsed.artifact_id:
             db.delete_diagram(old.artifact_id)
     if parsed is not None:
-        ws = (workspace_types or {}).get(parsed.diagram_type, frozenset())
+        scope = (record_scopes or {}).get(parsed.diagram_type, NOTHING_HELD)
         # Upsert diagram-local entities first so the diagram's FTS row (built in
         # upsert_diagram) can resolve their names via entities_by_diagram.
-        for de in _extract_diagram_entities(parsed, ws):
+        for de in _extract_diagram_entities(parsed, scope):
             db.upsert_entity(de)
-        for dc in _extract_diagram_connections(parsed, ws):
+        for dc in _extract_diagram_connections(parsed, scope):
             db.upsert_connection(dc)
         db.upsert_diagram(parsed)
         refs = attr_type_ref_fn(parsed) if attr_type_ref_fn is not None else []

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from src.application._diagram_entity_extraction import HeldRecordScope, held_record_scopes
 from src.application.verification import (
     _duplicate_identity_rules,  # noqa: F401  # ensure E319 registered
     _exclusive_containment_rule,  # noqa: F401  # ensure E340 registered
@@ -37,16 +38,9 @@ class RegistryOnlyCandidateRepository:
         return self._store.scope_for_path(path)  # type: ignore[attr-defined]
 
 
-def workspace_types_from_catalogs(catalogs: Any) -> dict[str, frozenset[str]]:
-    """Return {diagram_type_name: frozenset[entity_type]} for workspace-scoped entity types."""
-    result: dict[str, frozenset[str]] = {}
-    for name, mod in catalogs.diagram_types.all_diagram_types().items():
-        ws = frozenset(
-            oe.entity_type for oe in mod.ui_config.diagram_only_types if oe.identity_scope == "workspace"
-        )
-        if ws:
-            result[str(name)] = ws
-    return result
+def held_record_scopes_from_catalogs(catalogs: Any) -> dict[str, HeldRecordScope]:
+    """Each diagram type's held-record scope, read from the runtime catalogs' diagram types."""
+    return held_record_scopes(catalogs.diagram_types.all_diagram_types().items())
 
 
 def build_candidate_repo(committed_repo_arg: object | None, registry: Any) -> object | None:

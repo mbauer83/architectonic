@@ -7,6 +7,8 @@ from difflib import SequenceMatcher
 from typing import Any
 
 from src.application._diagram_entity_extraction import (
+    NOTHING_HELD,
+    HeldRecordScope,
     axis_entity_ids,
     extract_diagram_connections,
     extract_diagram_entities,
@@ -29,19 +31,18 @@ from src.infrastructure.rest.routers.diagrams._derived_entities import derived_e
 from src.infrastructure.rest.routers.viewpoints._scope import resolve_viewpoint_scope
 
 
-def _workspace_entity_types(catalogs: RuntimeCatalogs, diagram_type: str) -> frozenset[str]:
-    """Workspace-scoped entity types for a diagram type (e.g. datatype 'classifier').
+def _held_record_scope(catalogs: RuntimeCatalogs, diagram_type: str) -> HeldRecordScope:
+    """What this diagram's type says it holds — the same reading the index and the verifier use.
 
-    Diagram-context extraction must use the same scoping the verifier and candidate
-    repository use, so a workspace-scoped diagram entity resolves to its canonical
-    artifact id (``CLF@…``) — which exists in the index and loads detail — rather than a
-    diagram-local ``{diagram}#{type}/{id}`` id that has no standalone file.
+    So a workspace-scoped record resolves to its canonical id (``CLF@…``), which exists in the index
+    and loads detail, rather than a ``{diagram}#{type}/{id}`` id with no standalone file; and a
+    statement about instances (an ArchiMate occurrence) is never taken for a record.
     """
     from src.application.verification._verifier_contribution_runner import (  # noqa: PLC0415
-        workspace_types_from_catalogs,
+        held_record_scopes_from_catalogs,
     )
 
-    return workspace_types_from_catalogs(catalogs).get(diagram_type, frozenset())
+    return held_record_scopes_from_catalogs(catalogs).get(diagram_type, NOTHING_HELD)
 
 
 def declared_aliases_in_puml(puml: str) -> set[str]:
@@ -99,9 +100,9 @@ def diagram_entities_and_puml(
     except OSError:
         return [], ""
     aliases = declared_aliases_in_puml(puml)
-    ws = _workspace_entity_types(catalogs, diag_rec.diagram_type)
+    scope = _held_record_scope(catalogs, diag_rec.diagram_type)
     records = {rec.artifact_id: rec for rec in repo.list_entities()}
-    records.update({rec.artifact_id: rec for rec in extract_diagram_entities(diag_rec, ws)})
+    records.update({rec.artifact_id: rec for rec in extract_diagram_entities(diag_rec, scope)})
     # What each element on this diagram says it corresponds to, read once through the module that
     # owns the `bindings:` block rather than walked here.
     correspondences = element_correspondences(diag_rec.extra.get("bindings"))
@@ -188,8 +189,8 @@ def diagram_context_payload(repo: Any, diag_rec: DiagramRecord, catalogs: Runtim
     diagram = _read_diagram_impl(diag_rec.artifact_id, catalogs)
     entities, puml = diagram_entities_and_puml(repo, diag_rec, catalogs)
     entity_ids = [str(entity["artifact_id"]) for entity in entities]
-    ws = _workspace_entity_types(catalogs, diag_rec.diagram_type)
-    extracted_entities = {rec.artifact_id: rec for rec in extract_diagram_entities(diag_rec, ws)}
+    scope = _held_record_scope(catalogs, diag_rec.diagram_type)
+    extracted_entities = {rec.artifact_id: rec for rec in extract_diagram_entities(diag_rec, scope)}
     in_diagram = {}
     for entity in entities:
         entity_id = str(entity["artifact_id"])
@@ -203,7 +204,7 @@ def diagram_context_payload(repo: Any, diag_rec: DiagramRecord, catalogs: Runtim
     seen: set[str] = set()
     connection_records = {conn.artifact_id: conn for conn in repo.list_connections()}
     connection_records.update({
-        conn.artifact_id: conn for conn in extract_diagram_connections(diag_rec, ws)
+        conn.artifact_id: conn for conn in extract_diagram_connections(diag_rec, scope)
     })
     for conn in connection_records.values():
         if conn.artifact_id in seen:

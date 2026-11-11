@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Mapping, Protocol, runtime_checkable
 
+from src.application._diagram_entity_extraction import HeldRecordScope
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, DiagramRecord, EntityRecord
 
 
@@ -199,7 +200,7 @@ def candidate_with(
     *,
     changed_diagrams: tuple[DiagramRecord, ...] | list[DiagramRecord] = (),
     deleted_ids: frozenset[str] = frozenset(),
-    workspace_types: dict[str, frozenset[str]] | None = None,
+    record_scopes: Mapping[str, HeldRecordScope] | None = None,
 ) -> CandidateRepository:
     """Build a CandidateRepository that applies changed_diagrams and deleted_ids over base.
 
@@ -207,15 +208,16 @@ def candidate_with(
     are suppressed; the new diagram and its re-extracted children are added.
     For each deleted_id naming a diagram: the diagram and all its children are suppressed.
 
-    *workspace_types* maps diagram-type name → frozenset of workspace-scoped entity-type names.
-    Callers in the infrastructure layer supply this; pass ``None`` to use no workspace scoping.
+    *record_scopes* maps diagram-type name → what that type's diagrams hold (`held_record_scopes`).
+    Callers in the infrastructure layer supply it; a type it does not name holds no records.
     """
     from src.application._diagram_entity_extraction import (  # noqa: PLC0415
+        NOTHING_HELD,
         extract_diagram_connections,
         extract_diagram_entities,
     )
 
-    ws_map = workspace_types or {}
+    scopes = record_scopes or {}
     additions: dict[str, EntityRecord | ConnectionRecord | DiagramRecord] = {}
     suppressions: set[str] = set(deleted_ids)
 
@@ -229,11 +231,11 @@ def candidate_with(
         suppressions.add(new_diag.artifact_id)
         if old_diag is not None:
             suppressions.update(_child_entity_ids(base, old_diag))
-        ws = ws_map.get(new_diag.diagram_type, frozenset())
+        scope = scopes.get(new_diag.diagram_type, NOTHING_HELD)
         additions[new_diag.artifact_id] = new_diag
-        for e in extract_diagram_entities(new_diag, ws):
+        for e in extract_diagram_entities(new_diag, scope):
             additions[e.artifact_id] = e
-        for c in extract_diagram_connections(new_diag, ws):
+        for c in extract_diagram_connections(new_diag, scope):
             additions[c.artifact_id] = c
 
     overlay = _Overlay(additions=additions, deletions=frozenset(suppressions))

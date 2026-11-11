@@ -26,6 +26,11 @@ class _GsnDiagramType(DiagramTypeBase):
     def __init__(self, config: dict[str, Any]) -> None:
         self._config = config
 
+
+    @property
+    def held_record_keys(self) -> frozenset[str]:
+        """This type's diagrams hold their nodes under `nodes`, without declaring them as types."""
+        return frozenset({"nodes"})
     @property
     def name(self) -> DiagramTypeName:
         return DiagramTypeName(str(self._config["name"]))

@@ -6,8 +6,42 @@ Supports both canonical 'id'-keyed formats (activity, C4) and 'node_id'-keyed fo
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Iterator, Mapping
+from dataclasses import dataclass
 
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, DiagramRecord, EntityRecord
+from src.domain.ontology_representation.ontology_protocol import DiagramTypeModule
+
+
+@dataclass(frozen=True)
+class HeldRecordScope:
+    """What a diagram type says about the records its diagrams hold.
+
+    ``keys`` are the `diagram-entities` keys whose items are records (`held_record_keys`); everything
+    else there is a statement about the diagram's instances and is never extracted as a record — an
+    ArchiMate `occurrence` was indexed as an entity of type "occurrence" until this existed (B111).
+    ``workspace_types`` are the held types whose ids are workspace-wide rather than diagram-local.
+    """
+
+    keys: frozenset[str] = frozenset()
+    workspace_types: frozenset[str] = frozenset()
+
+
+#: A diagram whose type is unknown holds no records.
+NOTHING_HELD = HeldRecordScope()
+
+
+def held_record_scopes(diagram_types: Iterable[tuple[str, DiagramTypeModule]]) -> dict[str, HeldRecordScope]:
+    """Each diagram type's held-record scope, by type name — the one reading of what types declare."""
+    return {
+        str(name): HeldRecordScope(
+            keys=module.held_record_keys,
+            workspace_types=frozenset(
+                owned.entity_type for owned in module.ui_config.diagram_only_types
+                if owned.identity_scope == "workspace"
+            ),
+        )
+        for name, module in diagram_types
+    }
 
 _ID_KEYS: frozenset[str] = frozenset({"id", "node_id", "source_id", "target_id"})
 
@@ -105,17 +139,14 @@ def diagram_member_text(
     return " ".join(ordered)
 
 
-def extract_diagram_entities(
-    diag: DiagramRecord,
-    workspace_entity_types: frozenset[str] = frozenset(),
-) -> list[EntityRecord]:
+def extract_diagram_entities(diag: DiagramRecord, scope: HeldRecordScope) -> list[EntityRecord]:
     """Extract diagram-only EntityRecords from a diagram's diagram-entities frontmatter.
 
     Recognises both canonical 'id' and diagram-specific 'node_id' (GSN format).
     Sets display_alias to the local_id so SVG alias matching works.
     Skips connection-like items (those with source/target but no id/node_id).
 
-    For entity types in *workspace_entity_types* the artifact_id is the bare local_id
+    Only the keys *scope* names hold records. For its workspace types the artifact_id is the bare local_id
     (a canonical ``CLF@epoch.random.slug``); otherwise it is the qualified
     ``{diagram_id}#{entity_type}/{local_id}`` form.  ``host_diagram_id`` is always set
     to the owning diagram for both scopes.
@@ -125,9 +156,9 @@ def extract_diagram_entities(
         return []
     result: list[EntityRecord] = []
     for entity_type, items in diagram_entities.items():
-        if not isinstance(items, list):
+        if entity_type not in scope.keys or not isinstance(items, list):
             continue
-        is_workspace = entity_type in workspace_entity_types
+        is_workspace = entity_type in scope.workspace_types
         for item in items:
             if not isinstance(item, dict):
                 continue
@@ -161,10 +192,7 @@ def extract_diagram_entities(
     return result
 
 
-def diagram_local_to_full(
-    diag: DiagramRecord,
-    workspace_entity_types: frozenset[str] = frozenset(),
-) -> dict[str, str]:
+def diagram_local_to_full(diag: DiagramRecord, scope: HeldRecordScope) -> dict[str, str]:
     """Map each diagram-entity local id to its canonical artifact_id.
 
     For workspace-scoped entity types, the local_id IS the canonical id.
@@ -175,9 +203,9 @@ def diagram_local_to_full(
         return {}
     result: dict[str, str] = {}
     for entity_type, items in diagram_entities.items():
-        if not isinstance(items, list):
+        if entity_type not in scope.keys or not isinstance(items, list):
             continue
-        is_workspace = entity_type in workspace_entity_types
+        is_workspace = entity_type in scope.workspace_types
         for item in items:
             if not isinstance(item, dict):
                 continue
@@ -217,10 +245,7 @@ def _diagram_connection_record(
     )
 
 
-def extract_diagram_connections(
-    diag: DiagramRecord,
-    workspace_entity_types: frozenset[str] = frozenset(),
-) -> list[ConnectionRecord]:
+def extract_diagram_connections(diag: DiagramRecord, scope: HeldRecordScope) -> list[ConnectionRecord]:
     """Extract ConnectionRecords from diagram frontmatter.
 
     Two sources are checked:
@@ -230,7 +255,7 @@ def extract_diagram_connections(
 
     Each source/target local ID is resolved via diagram_local_to_full.
     """
-    local_to_full = diagram_local_to_full(diag, workspace_entity_types)
+    local_to_full = diagram_local_to_full(diag, scope)
     result: list[ConnectionRecord] = []
 
     diagram_connections = diag.extra.get("connections")

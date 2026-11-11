@@ -73,6 +73,11 @@ class _BowtieDiagramType(DiagramTypeBase):
         """The sub-graph a bowtie draws: nodes with a bowtie role, and the edges between them."""
         return notation.project_store_graph(nodes, edges)
 
+
+    @property
+    def held_record_keys(self) -> frozenset[str]:
+        """This type's diagrams hold their nodes under `nodes`, without declaring them as types."""
+        return frozenset({"nodes"})
     @property
     def analysis_methods(self) -> frozenset[str]:
         return analysis_methods_from(self._config)

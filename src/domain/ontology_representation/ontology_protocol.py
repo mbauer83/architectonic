@@ -342,6 +342,15 @@ class DiagramTypeModule(Protocol):
         ...
 
     @property
+    def held_record_keys(self) -> frozenset[str]:
+        """The `diagram-entities` keys whose items are records this diagram holds, each a record of that type.
+
+        Everything else under `diagram-entities` is a statement about the diagram's instances — an
+        ArchiMate occurrence, a label, an icon — not a record, and is never indexed as one.
+        """
+        ...
+
+    @property
     def own_permitted_relationships(self) -> PermittedRelationshipSet: ...
 
     @property

@@ -6,6 +6,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Callable, Literal, TypeVar
 
+from src.application._diagram_entity_extraction import HeldRecordScope, held_record_scopes
 from src.application.artifacts._query_helpers import (
     matches_connection,
     matches_connection_sets,
@@ -67,7 +68,7 @@ _CHANGE_APPLIERS = {
     "entity": lambda service, path, data: _apply_entity_record(path, data, service._mem, service._db),
     "diagram": lambda service, path, data: apply_diagram_change(
         path, service._mem, service._db, parsed=data,
-        workspace_types=service._get_workspace_types(),
+        record_scopes=service._get_record_scopes(),
         attr_type_ref_fn=service._attr_type_ref_extractor,
     ),
     "document": lambda service, path, data: apply_document_change(path, service._mem, service._db, parsed=data),
@@ -128,16 +129,10 @@ class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries, _IconQueri
 
         return process_runtime_catalogs().ontology.known_domain_names()
 
-    def _get_workspace_types(self) -> dict[str, frozenset[str]]:
-        from src.domain.ontology_representation.ontology_protocol import DiagramTypeModule  # noqa: PLC0415
+    def _get_record_scopes(self) -> dict[str, HeldRecordScope]:
         from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415, process_runtime_catalogs
 
-        def _ws(dk: DiagramTypeModule) -> frozenset[str]:
-            return frozenset(
-                oe.entity_type for oe in dk.ui_config.diagram_only_types if oe.identity_scope == "workspace"
-            )
-
-        return {str(n): ws for n, dk in get_module_registry().all_diagram_types().items() if (ws := _ws(dk))}
+        return held_record_scopes(get_module_registry().all_diagram_types().items())
 
     def _attr_type_ref_extractor(self, diag: DiagramRecord) -> list[tuple[str, str, str]]:
         if diag.diagram_type != "datatype":
@@ -164,12 +159,12 @@ class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries, _IconQueri
     def refresh(self) -> None:
         temp = _MemStore()
         domain_names = self._get_domain_names()
-        workspace_types = self._get_workspace_types()
+        record_scopes = self._get_record_scopes()
         for mount in self.repo_mounts:
             scan_mount(
                 mount, temp,
                 domain_names=domain_names,
-                workspace_types=workspace_types,
+                record_scopes=record_scopes,
                 attr_type_ref_fn=self._attr_type_ref_extractor,
             )
         with self._lock.writing():

@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 
-from src.application._diagram_entity_extraction import extract_diagram_entities
+from src.application._diagram_entity_extraction import NOTHING_HELD, extract_diagram_entities
 from src.application.artifacts._query_helpers import read_entity as serialize_entity
 from src.application.artifacts.entity_references import references_to
 from src.application.artifacts.parsing import decode_entity_properties, parse_entity_content_sections
@@ -16,6 +16,7 @@ from src.application.modeling.proposal_composition import composed_view
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.read_models import EntityContextReadModel
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.application.verification._verifier_contribution_runner import held_record_scopes_from_catalogs
 from src.domain.baseline_standing import BASELINE_STANDING
 from src.infrastructure.rest.contracts.catalog import (
     BackendIdentityResponse,
@@ -168,7 +169,9 @@ def read_entity(
         diagram = repo.get_diagram(diagram_id)
         if diagram is not None:
             entity_rec = next(
-                (entity for entity in extract_diagram_entities(diagram) if entity.artifact_id == id),
+                (entity for entity in extract_diagram_entities(
+                    diagram, held_record_scopes_from_catalogs(catalogs).get(diagram.diagram_type, NOTHING_HELD),
+                ) if entity.artifact_id == id),
                 None,
             )
             if entity_rec is not None:

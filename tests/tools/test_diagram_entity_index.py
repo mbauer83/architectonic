@@ -8,13 +8,19 @@ import pytest
 
 from src.application._diagram_entity_extraction import (
     _diagram_entity_content_text,
+    held_record_scopes,
 )
 from src.application._diagram_entity_extraction import (
     extract_diagram_entities as _extract_diagram_entities,
 )
 from src.application.artifacts.query import ArtifactRepository
 from src.domain.ontology_representation.artifact_types import DiagramRecord
+from src.infrastructure.app_bootstrap import get_module_registry
 from src.infrastructure.artifact_index import shared_artifact_index
+
+#: What the real activity type says its diagrams hold — the scope the index uses.
+_ACTIVITY = held_record_scopes(get_module_registry().all_diagram_types().items())["activity"]
+
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -110,17 +116,17 @@ def _make_diagram_record(diagram_entities: object) -> DiagramRecord:
 
 def test_extract_returns_empty_for_no_diagram_entities() -> None:
     diag = _make_diagram_record(None)
-    assert _extract_diagram_entities(diag) == []
+    assert _extract_diagram_entities(diag, _ACTIVITY) == []
 
 
 def test_extract_returns_empty_for_empty_diagram_entities() -> None:
     diag = _make_diagram_record({})
-    assert _extract_diagram_entities(diag) == []
+    assert _extract_diagram_entities(diag, _ACTIVITY) == []
 
 
 def test_extract_ignores_items_without_id() -> None:
     diag = _make_diagram_record({"action": [{"label": "No ID"}]})
-    assert _extract_diagram_entities(diag) == []
+    assert _extract_diagram_entities(diag, _ACTIVITY) == []
 
 
 def test_extract_creates_entity_for_each_item_with_id() -> None:
@@ -130,54 +136,54 @@ def test_extract_creates_entity_for_each_item_with_id() -> None:
             "action": [{"id": "a1", "label": "Do It"}],
         }
     )
-    entities = _extract_diagram_entities(diag)
+    entities = _extract_diagram_entities(diag, _ACTIVITY)
     assert len(entities) == 3
 
 
 def test_extract_artifact_id_format() -> None:
     diag = _make_diagram_record({"swimlane": [{"id": "sw-1", "label": "Lane"}]})
-    (rec,) = _extract_diagram_entities(diag)
+    (rec,) = _extract_diagram_entities(diag, _ACTIVITY)
     assert rec.artifact_id == f"{_DIAGRAM_ID}#swimlane/sw-1"
 
 
 def test_extract_host_diagram_id_set() -> None:
     diag = _make_diagram_record({"action": [{"id": "a1", "label": "Go"}]})
-    (rec,) = _extract_diagram_entities(diag)
+    (rec,) = _extract_diagram_entities(diag, _ACTIVITY)
     assert rec.host_diagram_id == _DIAGRAM_ID
 
 
 def test_extract_name_from_label() -> None:
     diag = _make_diagram_record({"action": [{"id": "a1", "label": "Submit Form"}]})
-    (rec,) = _extract_diagram_entities(diag)
+    (rec,) = _extract_diagram_entities(diag, _ACTIVITY)
     assert rec.name == "Submit Form"
 
 
 def test_extract_name_falls_back_to_text_then_id() -> None:
     diag = _make_diagram_record({"note": [{"id": "n1", "text": "My note"}]})
-    (rec,) = _extract_diagram_entities(diag)
+    (rec,) = _extract_diagram_entities(diag, _ACTIVITY)
     assert rec.name == "My note"
 
     diag2 = _make_diagram_record({"action": [{"id": "a-unnamed"}]})
-    (rec2,) = _extract_diagram_entities(diag2)
+    (rec2,) = _extract_diagram_entities(diag2, _ACTIVITY)
     assert rec2.name == "a-unnamed"
 
 
 def test_extract_domain_and_subdomain() -> None:
     diag = _make_diagram_record({"swimlane": [{"id": "sw-1", "label": "L"}]})
-    (rec,) = _extract_diagram_entities(diag)
+    (rec,) = _extract_diagram_entities(diag, _ACTIVITY)
     assert rec.domain == "activity"
     assert rec.subdomain == "swimlane"
 
 
 def test_extract_artifact_type_is_entity_type_key() -> None:
     diag = _make_diagram_record({"swimlane": [{"id": "sw-1", "label": "L"}]})
-    (rec,) = _extract_diagram_entities(diag)
+    (rec,) = _extract_diagram_entities(diag, _ACTIVITY)
     assert rec.artifact_type == "swimlane"
 
 
 def test_extract_inherits_version_status_path() -> None:
     diag = _make_diagram_record({"action": [{"id": "a1", "label": "X"}]})
-    (rec,) = _extract_diagram_entities(diag)
+    (rec,) = _extract_diagram_entities(diag, _ACTIVITY)
     assert rec.version == "0.1.0"
     assert rec.status == "draft"
     assert rec.path == Path("/tmp/my-process.md")

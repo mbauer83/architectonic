@@ -92,12 +92,12 @@ def _delete_diagram_core(
     if committed_repo is not None and verifier is not None:
         from src.application.candidate_repository import candidate_with  # noqa: PLC0415
         from src.application.verification._verifier_contribution_runner import (  # noqa: PLC0415
+            held_record_scopes_from_catalogs,
             run_repository_contributions,
-            workspace_types_from_catalogs,
         )
         _catalogs = getattr(verifier, "_catalogs", None)
-        _ws = workspace_types_from_catalogs(_catalogs) if _catalogs is not None else {}
-        _cand = candidate_with(committed_repo, deleted_ids=frozenset([artifact_id]), workspace_types=_ws)
+        _scopes = held_record_scopes_from_catalogs(_catalogs) if _catalogs is not None else {}
+        _cand = candidate_with(committed_repo, deleted_ids=frozenset([artifact_id]), record_scopes=_scopes)
         _rr = run_repository_contributions(
             candidate=_cand, committed=committed_repo, runtime_catalogs=_catalogs, repo_path=repo_root,
         )

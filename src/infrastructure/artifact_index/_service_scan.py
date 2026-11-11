@@ -6,11 +6,15 @@ Split out of _service_incremental.py, which owns the incremental
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import replace
 from pathlib import Path
 from typing import TypeVar
 
+from src.application._diagram_entity_extraction import (
+    NOTHING_HELD,
+    HeldRecordScope,
+)
 from src.application._diagram_entity_extraction import (
     extract_diagram_connections as _extract_diagram_connections,
 )
@@ -122,7 +126,7 @@ def _scan_diagram_records(
     repo_root: Path,
     mem: _MemStore,
     *,
-    workspace_types: dict[str, frozenset[str]] | None = None,
+    record_scopes: Mapping[str, HeldRecordScope] | None = None,
     attr_type_ref_fn: _AttrTypeRefFn | None = None,
 ) -> None:
     """Index diagrams and the entities/connections they materialise."""
@@ -135,9 +139,9 @@ def _scan_diagram_records(
             continue
         diag = replace(diag, group=group_fn_diagram(path, repo_root))
         _insert_mounted(diag, "diagram", repo_root, mem.diagrams)
-        ws = (workspace_types or {}).get(diag.diagram_type, frozenset())
-        mem.entities.update({de.artifact_id: de for de in _extract_diagram_entities(diag, ws)})
-        mem.connections.update({dc.artifact_id: dc for dc in _extract_diagram_connections(diag, ws)})
+        scope = (record_scopes or {}).get(diag.diagram_type, NOTHING_HELD)
+        mem.entities.update({de.artifact_id: de for de in _extract_diagram_entities(diag, scope)})
+        mem.connections.update({dc.artifact_id: dc for dc in _extract_diagram_connections(diag, scope)})
         if attr_type_ref_fn is not None:
             mem.attribute_type_refs[diag.artifact_id] = attr_type_ref_fn(diag)
 
@@ -182,11 +186,11 @@ def scan_mount(
     mem: _MemStore,
     *,
     domain_names: frozenset[str],
-    workspace_types: dict[str, frozenset[str]] | None = None,
+    record_scopes: Mapping[str, HeldRecordScope] | None = None,
     attr_type_ref_fn: _AttrTypeRefFn | None = None,
 ) -> None:
     _scan_model_records(mount, mem, domain_names=domain_names)
-    _scan_diagram_records(mount.root, mem, workspace_types=workspace_types, attr_type_ref_fn=attr_type_ref_fn)
+    _scan_diagram_records(mount.root, mem, record_scopes=record_scopes, attr_type_ref_fn=attr_type_ref_fn)
     _scan_document_records(mount.root, mem)
     _scan_scratchpad_records(mount.root, mem)
     _scan_icon_records(mount.root, mem)
