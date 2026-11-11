@@ -46,6 +46,20 @@ def _diagram_entity_content_text(item: dict[str, object]) -> str:
     return " ".join(_leaf_strings({k: v for k, v in item.items() if k not in _ID_KEYS}))
 
 
+def axis_entity_ids(extra: Mapping[str, object]) -> list[str]:
+    """The entities a diagram lays out on its axes (``from-entity-ids`` / ``to-entity-ids``), in order.
+
+    A matrix draws these as its rows and columns. It has no PlantUML body to declare aliases in, so a
+    reader that finds a diagram's members by the aliases its body declares found none for a matrix.
+    """
+    ids: list[str] = []
+    for axis_key in ("from-entity-ids", "to-entity-ids"):
+        axis = extra.get(axis_key)
+        if isinstance(axis, list):
+            ids.extend(v for v in axis if isinstance(v, str) and v)
+    return ids
+
+
 def diagram_bound_entity_ids(extra: Mapping[str, object]) -> list[str]:
     """Workspace entity ids a diagram binds or links to via its frontmatter.
 
@@ -53,11 +67,7 @@ def diagram_bound_entity_ids(extra: Mapping[str, object]) -> list[str]:
     (``target.entity_id``). Diagram-local nodes are not included here — their names are
     resolved separately via ``host_diagram_id``.
     """
-    ids: list[str] = []
-    for axis_key in ("from-entity-ids", "to-entity-ids"):
-        axis = extra.get(axis_key)
-        if isinstance(axis, list):
-            ids.extend(v for v in axis if isinstance(v, str) and v)
+    ids = axis_entity_ids(extra)
     bindings = extra.get("bindings")
     if isinstance(bindings, list):
         for binding in bindings:

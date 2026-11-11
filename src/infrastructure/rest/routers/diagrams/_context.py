@@ -7,6 +7,7 @@ from difflib import SequenceMatcher
 from typing import Any
 
 from src.application._diagram_entity_extraction import (
+    axis_entity_ids,
     extract_diagram_connections,
     extract_diagram_entities,
 )
@@ -103,6 +104,9 @@ def diagram_entities_and_puml(
     # What each element on this diagram says it corresponds to, read once through the module that
     # owns the `bindings:` block rather than walked here.
     correspondences = element_correspondences(diag_rec.extra.get("bindings"))
+    # A diagram's members are what its body declares, and what it lays out on axes — a matrix has no
+    # body to declare them in, and listed none (B90).
+    axis_members = set(axis_entity_ids(diag_rec.extra or {}))
     entities = []
     standing_of = s.baseline_standing_reader()
     for rec in records.values():
@@ -110,7 +114,8 @@ def diagram_entities_and_puml(
         if rec.host_diagram_id is not None and rec.host_diagram_id != diag_rec.artifact_id:
             continue
         is_owned = rec.host_diagram_id == diag_rec.artifact_id
-        if is_owned or (rec.display_alias and normalize_puml_alias(rec.display_alias) in aliases):
+        on_an_axis = rec.artifact_id in axis_members
+        if is_owned or on_an_axis or (rec.display_alias and normalize_puml_alias(rec.display_alias) in aliases):
             row = s.entity_to_summary(rec, standing=standing_of(standing_subject(rec)))
             row["display_alias"] = rec.display_alias
             row["element_label"] = element_label(rec, catalogs)
