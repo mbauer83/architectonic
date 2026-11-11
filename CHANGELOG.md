@@ -3,6 +3,34 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.11.2] — 2026-11-11
+
+**[Full detail → `changelog-assets/0.11.2-detail.md`](changelog-assets/0.11.2-detail.md)**
+
+### Fixed
+
+- **Deleting a record a diagram holds no longer deletes the diagram.** A swimlane, a sequence message, a
+  datatype classifier, an argument node or an ArchiMate occurrence lives inside its diagram and has no
+  file of its own; an entity delete addressed to one with no blocking references removed the whole
+  diagram. Entity delete, edit, the enterprise edit, model connections to or from such a record, and
+  promoting one on its own are now refused with the name of the diagram that holds it; change it with
+  `artifact_edit_diagram`.
+- **Reading a diagram by its id returns the diagram.** For a diagram holding such records, MCP
+  `artifact_query_read_artifact`, `artifact_query_find_connections_for` and
+  `artifact_query_find_neighbors` could answer one of its records instead. A record's short form
+  (`DIAGRAM@epoch.random#type/local`) now also finds it.
+- **An ArchiMate occurrence is no longer indexed as an entity.** A statement that a diagram draws a model
+  element a second time appeared in listings and counts as an entity of type `occurrence`. Only what a
+  diagram type declares its diagrams hold is indexed as a record.
+- **An ArchiMate diagram carrying a label, occurrence or icon statement is checked like any other.** Such
+  a statement switched the completeness checks `E314`–`E318` and `W307` off for the whole diagram. They
+  now apply, and they resolve an occurrence's alias to the element it draws.
+
+### Upgrading
+
+- No data changes. A diagram that carried a label, occurrence or icon statement while violating
+  `E314`–`E318` or `W307` is now reported.
+
 ## [0.11.1] — 2026-11-11
 
 **[Full detail → `changelog-assets/0.11.1-detail.md`](changelog-assets/0.11.1-detail.md)**
@@ -1282,6 +1310,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.11.2]: https://github.com/mbauer83/architectonic/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/mbauer83/architectonic/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/mbauer83/architectonic/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/mbauer83/architectonic/compare/v0.10.0...v0.10.1
