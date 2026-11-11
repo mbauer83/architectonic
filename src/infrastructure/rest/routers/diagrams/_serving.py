@@ -57,6 +57,17 @@ def _is_confidential_diagram(diagram_path: Path, diagram_type: str) -> bool:
     return is_confidential_diagram_source(diagram_type, tlp if isinstance(tlp, str) else None)
 
 
+def _refuse_a_matrix(d: DiagramRecord | None) -> None:
+    """A matrix is a diagram of the matrix kind with cells and no drawing, so it has no image to serve.
+
+    Handed to PlantUML it answered "No diagram found" and the request a 500; naming the kind is the
+    answer, as `/api/matrices/{id}/config` answers 404 for a diagram that is not a matrix.
+    """
+    if d is not None and d.diagram_type == "matrix":
+        raise HTTPException(404, f"'{d.artifact_id}' is a matrix, which has no drawing; "
+                                 f"read its cells at /api/matrices/{d.artifact_id}/config")
+
+
 def _rendered_path(d: DiagramRecord, suffix: str) -> Path | None:
     """Resolve a diagram's rendered image, honouring its group-collection subdirectory.
 
@@ -250,6 +261,7 @@ def get_diagram_svg(
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
     diag_rec = s.get_repo().get_diagram(id)
+    _refuse_a_matrix(diag_rec)
     # Resolve via the index so confidential/ and group-collection subdirectories are found,
     # not just the flat root.
     diagram_path = repo_root / DIAGRAM_CATALOG / DIAGRAMS / f"{id}.puml"
@@ -327,6 +339,7 @@ def download_diagram(
     diag_rec = s.get_repo().get_diagram(id)
     if diag_rec is None:
         raise HTTPException(404, f"Diagram '{id}' not found")
+    _refuse_a_matrix(diag_rec)
     suffix = ".svg" if format == "svg" else ".png"
     media = "image/svg+xml" if format == "svg" else "image/png"
     if lens.is_empty:

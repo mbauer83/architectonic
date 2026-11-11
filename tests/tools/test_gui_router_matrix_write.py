@@ -197,3 +197,28 @@ class TestCreateAndReplace:
         assert response.json()["wrote"], response.text
         config = client.get(f"/api/matrices/{artifact_id}/config").json()
         assert config["entity_ids"] == [SRC_ID]
+
+
+class TestAMatrixHasNoDrawing:
+    """A matrix asked for an image is refused by its kind, not answered 500 (B86).
+
+    `/svg` handed the matrix to PlantUML, which found no diagram in it, and the route answered
+    `500 internal_error`. The download had the same path. Both now name the kind and the read that
+    does apply, the way `/api/matrices/{id}/config` answers 404 for a diagram that is not a matrix.
+    """
+
+    def _matrix(self, client: Any) -> str:
+        response = client.post("/api/matrices", json={"name": "No Drawing", **_axes(), "dry_run": False})
+        assert response.status_code == 201, response.text
+        return str(response.json()["artifact_id"])
+
+    @pytest.mark.parametrize("address", ["/api/diagrams/{id}/svg", "/api/diagrams/{id}/download?format=svg",
+                                         "/api/diagrams/{id}/download?format=png&legend=true"])
+    def test_an_image_of_a_matrix_is_refused_by_its_kind(self, client: Any, address: str) -> None:
+        matrix_id = self._matrix(client)
+
+        response = client.get(address.format(id=matrix_id))
+
+        assert response.status_code == 404, response.text
+        assert "is a matrix" in response.text
+        assert f"/api/matrices/{matrix_id}/config" in response.text
