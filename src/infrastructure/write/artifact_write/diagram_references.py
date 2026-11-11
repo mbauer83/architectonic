@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
 from src.domain.artifact_id import (
+    canonical_ids_by_stem,
     stable_conn_id,
     stable_id,
 )
@@ -63,6 +64,26 @@ def _collect_diagram_renderer_references(
     entity_ids = list(refs.entity_ids) or None
     connection_ids = list(refs.connection_ids) or None
     return entity_ids, connection_ids
+
+
+def full_entity_spellings(ids: list[str] | None, registry: "ArtifactRegistry | None") -> list[str] | None:
+    """*ids* as a caller gave them, each short id (``PREFIX@epoch.random``) replaced by its full id.
+
+    The boundary normalisation for references a caller states. A short id is a legitimate way to name an
+    entity, but recorded beside the full id a body's inference finds, it made every element appear twice
+    in ``entity-ids-used`` (B83). Identity is the stem (``canonical_ids_by_stem``); a stem two tiers both
+    hold is left as given rather than resolved to one of them by guess.
+    """
+    if ids is None or registry is None:
+        return ids
+    by_stem = canonical_ids_by_stem(registry.entity_ids())
+    spelled: list[str] = []
+    for artifact_id in ids:
+        candidates = by_stem.get(stable_id(artifact_id), set())
+        full = next(iter(candidates)) if len(candidates) == 1 else artifact_id
+        if full not in spelled:
+            spelled.append(full)
+    return spelled
 
 
 def _merge_reference_ids(
