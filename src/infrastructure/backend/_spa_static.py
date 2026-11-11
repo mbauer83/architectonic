@@ -46,11 +46,18 @@ class SPAStaticFiles(StaticFiles):
       before this mount, and if an unknown one reaches here it still 404s.
     - Paths naming a static asset by its suffix (a missing ``assets/old.js``) 404 normally rather
       than being masked by HTML. See ``ASSET_SUFFIXES``.
+
+    **The shell is always revalidated.** ``index.html`` names the content-hashed bundle, so it is the
+    one file whose staleness matters, and it was served with a ``Last-Modified`` and no
+    ``Cache-Control`` — which lets a browser reuse it heuristically for a tenth of its age. After a
+    rebuild or an `arch-update`, a reader kept loading the previous bundle: measured on a deep link,
+    the server answering the new shell while the browser ran the old GUI (B106). ``no-cache`` means
+    "ask first", and with the existing ETag the answer is a 304 when nothing changed.
     """
 
     async def get_response(self, path: str, scope: Any) -> Response:
         try:
-            return await super().get_response(path, scope)
+            response = await super().get_response(path, scope)
         except StarletteHTTPException as exc:
             last_segment = path.rsplit("/", 1)[-1]
             if (
@@ -58,5 +65,16 @@ class SPAStaticFiles(StaticFiles):
                 and not path.startswith(("api/", "mcp/"))
                 and not _looks_like_asset(last_segment)
             ):
-                return await super().get_response("index.html", scope)
+                return _revalidated(await super().get_response("index.html", scope))
             raise
+        return _revalidated(response) if _is_shell(path) else response
+
+
+def _is_shell(path: str) -> bool:
+    """True for the requests that answer with ``index.html`` itself: the root, and the file by name."""
+    return path.strip("/") in ("", ".", "index.html")
+
+
+def _revalidated(response: Response) -> Response:
+    response.headers["Cache-Control"] = "no-cache"
+    return response

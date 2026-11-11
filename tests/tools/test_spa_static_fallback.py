@@ -94,3 +94,14 @@ def test_unknown_api_path_is_not_rewritten(tmp_path: Path) -> None:
     client = TestClient(_app(tmp_path))
     # api/ paths must 404 rather than fall back to the SPA shell.
     assert client.get("/api/does-not-exist").status_code == 404
+
+
+def test_the_shell_is_always_revalidated_and_the_bundle_is_not_touched(tmp_path: Path) -> None:
+    """B106: a cached `index.html` kept a browser on the previous bundle after a rebuild or upgrade."""
+    client = TestClient(_app(tmp_path))
+
+    for route in ("/", "/index.html", "/entities/groups", "/diagrams/GSN@1.a.case"):
+        assert client.get(route).headers.get("cache-control") == "no-cache", route
+    etag = client.get("/").headers["etag"]
+    assert client.get("/", headers={"if-none-match": etag}).headers.get("cache-control") == "no-cache"
+    assert "cache-control" not in client.get("/assets/index-abc.js").headers
