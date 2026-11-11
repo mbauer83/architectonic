@@ -8,6 +8,8 @@ from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
 from mcp.shared.exceptions import MCPError
 from mcp.types import CallToolRequestParams, CallToolResult, TextContent
 
+from src.application.mutation_authorization import MutationRejected
+
 logger = logging.getLogger(__name__)
 
 
@@ -101,13 +103,15 @@ def install_call_tool_normalizer(mcp: MCPServer) -> None:
             return await _answer(ctx, params)
         except MCPError:
             raise
-        except ToolError as refused:
-            if isinstance(refused, UnexpectedToolError):
+        except ToolError as failed:
+            refusal = _refusal_in(failed)
+            if refusal is None:
                 logger.exception("Tool %r raised an unexpected exception", params.name)
+                refusal = str(failed)
             else:
                 # %r keeps caller-supplied text on one line.
-                logger.info("Tool %r refused the call: %r", params.name, str(refused))
-            return CallToolResult(content=[TextContent(type="text", text=str(refused))], is_error=True)
+                logger.info("Tool %r refused the call: %r", params.name, refusal)
+            return CallToolResult(content=[TextContent(type="text", text=refusal)], is_error=True)
         except Exception as unexpected:
             logger.exception("Tool %r raised an unexpected exception", params.name)
             return CallToolResult(content=[TextContent(type="text", text=str(unexpected))], is_error=True)
@@ -158,6 +162,23 @@ def install_call_tool_normalizer(mcp: MCPServer) -> None:
     mcp._lowlevel_server.add_request_handler(  # type: ignore[attr-defined]
         "tools/call", CallToolRequestParams, _call_tool_handler
     )
+
+
+def _refusal_in(failed: ToolError) -> str | None:
+    """The sentence a failed call owes its caller, or None when the failure was a crash.
+
+    The write path refuses with ``ValueError`` — a sentence naming what was wrong and the operation
+    that does what the caller wanted — and the authorization policy with ``MutationRejected``; REST
+    translates both at its routes. `mcp` 2.x wraps
+    anything that is not a ``ToolError`` as ``UnexpectedToolError``, whose message is only "Error
+    executing tool <name>", so without this translation every such refusal reached an MCP caller as
+    a crash with its reason removed. This is the one MCP boundary, so the translation is made here
+    rather than by teaching the write path the MCP vocabulary.
+    """
+    if not isinstance(failed, UnexpectedToolError):
+        return str(failed)
+    cause = failed.__cause__
+    return str(cause) if isinstance(cause, ValueError | MutationRejected) and str(cause) else None
 
 
 def _rendered_as_yaml(result: CallToolResult, data: object | None) -> CallToolResult:
