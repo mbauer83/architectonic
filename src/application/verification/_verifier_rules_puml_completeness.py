@@ -108,16 +108,16 @@ def diagram_body_is_reconcile_owned(fm: dict, diagram_type_catalog: DiagramTypeC
     An ArchiMate diagram's ``diagram-entities`` holds statements about its instances (labels,
     occurrences, icons), not its body's source; reading "non-empty" as "standalone" switched these
     checks off for every ArchiMate diagram carrying one statement (B112, the verifier's half of B96).
-    Only for a type the catalog does not know is the stored state all there is to go on.
+
+    The write path's refresh asks this same question to decide whether to reconcile, so the two cannot
+    disagree about which diagrams the model reconcile owns.
     """
     module = diagram_type_catalog.find_diagram_type(str(fm.get("diagram-type", "archimate")))
-    diagram_entities = fm.get("diagram-entities")
-    drawn_from_elsewhere = (
-        module.body_is_rendered_from_diagram_entities or isinstance(module, StoreGraphProjectingDiagramType)
-        if module is not None
-        else isinstance(diagram_entities, dict) and bool(diagram_entities)
-    )
-    if drawn_from_elsewhere:
+    if module is None:
+        # A type no module in this deployment describes — the assurance family without the confidential
+        # store, say — is neither reconciled nor checked as ArchiMate: its stored state is all there is.
+        return False
+    if module.body_is_rendered_from_diagram_entities or isinstance(module, StoreGraphProjectingDiagramType):
         return False
     return not any(
         isinstance(b, dict)

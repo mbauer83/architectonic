@@ -31,6 +31,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path
+from src.application.verification._verifier_rules_puml_completeness import diagram_body_is_reconcile_owned
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.artifact_id import stable_conn_id
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
@@ -49,7 +50,7 @@ from ._sync_helpers import (
 from .boundary import assert_engagement_write_root
 from .coerce import as_optional_str_list
 from .diagram_edit import edit_diagram
-from .diagram_membership import is_scope_bound, is_standalone
+from .diagram_membership import is_scope_bound
 from .parse_existing import ParsedDiagram, parse_diagram_file
 from .types import SyncDiagramToModelResult
 
@@ -74,6 +75,11 @@ def _refuse_stated_references_unless_body_is_kept(parsed: ParsedDiagram) -> None
         "its body, and the reference lists follow what that body draws. Omit them and the sync "
         "records what it drew, or pass entity_ids/connection_ids with a literal puml to state both."
     )
+
+
+def _reconciled_from_the_model(parsed: ParsedDiagram, verifier: ArtifactVerifier) -> bool:
+    """Whether the ArchiMate reconcile refreshes this diagram — the verifier's question, asked of the same owner."""
+    return diagram_body_is_reconcile_owned(parsed.frontmatter, verifier.runtime_catalogs.diagram_types)
 
 
 def refresh_diagram(
@@ -108,8 +114,10 @@ def refresh_diagram(
 
     if entity_ids is not None or connection_ids is not None:
         _refuse_stated_references_unless_body_is_kept(parsed)
-    if is_scope_bound(parsed) or is_standalone(parsed, verifier):
-        # Both scope-bound and standalone diagrams are re-rendered from stored state.
+    if is_scope_bound(parsed) or not _reconciled_from_the_model(parsed, verifier):
+        # A diagram the model reconcile does not own is re-rendered from stored state: scope-bound,
+        # rendered from its own records, drawn from the assurance store, or of a type no module here
+        # describes. The last was reconciled as ArchiMate and failed on its unregistered type.
         # Neither is ever deleted by a refresh — deletion requires an explicit call.
         #
         # The reference lists are passed so their *spellings* can be brought up to date. This branch
