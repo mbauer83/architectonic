@@ -149,23 +149,40 @@ def _global_in_memory_credential_store():
 # order-dependent, which is to say it was not protection.
 #
 # So the suite now also fails closed at the source: while this variable is set, no real backend
-# can be selected at all, whatever happens to the cached global. Session-scoped and never
-# unset — a test needing a working credential store installs an explicit fake.
-@pytest.fixture(autouse=True, scope="session")
-def _forbid_real_credential_backend(tmp_path_factory):
+# can be selected at all, whatever happens to the cached global. Never unset — a test needing a
+# working credential store installs an explicit fake.
+#
+# THIRD GAP (2026-11-13): both guards were *fixtures*, and fixtures start after collection. A test
+# module that builds the module registry at import time — for a parameter list — probed the
+# confidential-store capability during collection, which selected the real Windows credential
+# backend, read the developer's live store key, and cached a registry that included the assurance
+# diagram types for the rest of the worker. The fixture above then restored that real backend as
+# "previous" after every test. Reads only, but it made a developer box register what CI's store-less
+# job does not, which is how a defect CI failed 104 times passed every local run.
+#
+# So the seal is applied when this file is imported: before any test module is, in the controller
+# and in every xdist worker. The redirected credential directory is belt and braces — the forbid
+# flag protects selection inside this process, and has been bypassed by writers it cannot see
+# (subprocesses, paths around selection); an escaped writer lands in a throwaway directory, since
+# subprocesses inherit the environment. A test that replaces a child's env must set both variables.
+def _seal_the_real_credential_backend() -> None:
+    import atexit
+    import shutil
+
+    from src.infrastructure.assurance import _credential_store
     from src.infrastructure.assurance._credential_store import (
         _CREDENTIALS_DIR_ENV,
         _FORBID_REAL_BACKEND_ENV,
     )
 
     os.environ[_FORBID_REAL_BACKEND_ENV] = "1"
-    # Belt AND braces. The forbid flag protects backend selection inside THIS process;
-    # it has now been bypassed three times by writers it cannot see (subprocesses,
-    # paths around selection). Redirecting the credential DIRECTORY itself means even
-    # an escaped writer lands in a throwaway tmp dir — subprocesses inherit the env,
-    # and any test that deliberately replaces a child's env must set both variables.
-    os.environ[_CREDENTIALS_DIR_ENV] = str(tmp_path_factory.mktemp("hermetic-credentials"))
-    yield
+    credentials = tempfile.mkdtemp(prefix="hermetic-credentials-")
+    atexit.register(shutil.rmtree, credentials, ignore_errors=True)
+    os.environ[_CREDENTIALS_DIR_ENV] = credentials
+    _credential_store._backend = _InMemoryCredentialBackend()
+
+
+_seal_the_real_credential_backend()
 
 
 # ── The PlantUML toolchain is a bounded resource, and the bound is here ───────
