@@ -28,10 +28,10 @@ ELEMENT = "APP@1777293133.OYEmP1"
 @pytest.fixture()
 def store(tmp_path: Path) -> Any:
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "store.db"
-    init_store(db_path)
+    provision_store(db_path)
     built = SQLCipherAssuranceStore(db_path)
     built.unlock()
     # Every node records the analysis that produced it; one without provenance is repair-only, so a

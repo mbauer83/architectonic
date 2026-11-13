@@ -21,10 +21,10 @@ pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 @pytest.fixture()
 def store(tmp_path: Path):  # type: ignore[no-untyped-def]
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "deletion.db"
-    init_store(db_path)
+    provision_store(db_path)
     sql_store = SQLCipherAssuranceStore(db_path)
     sql_store.unlock()
     yield SQLCipherSnapshotStore(sql_store._thread_conn_or_none)  # noqa: SLF001

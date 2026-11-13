@@ -25,10 +25,10 @@ KEY = {
 @pytest.fixture()
 def store(tmp_path: Path):
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "vex.db"
-    init_store(db_path)
+    provision_store(db_path)
     sql_store = SQLCipherAssuranceStore(db_path)
     sql_store.unlock()
     yield SQLCipherVexAssessmentStore(sql_store._thread_conn_or_none)  # noqa: SLF001

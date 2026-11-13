@@ -86,10 +86,10 @@ def _run_load_profile(profile: _LoadProfile, db_path: Path) -> _LoadOutcome:
     from src.application.assurance import mutations as mutations
     from src.infrastructure.assurance._archive import SQLCipherAssuranceArchive
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
     from src.infrastructure.concurrency.serial_execution_queue import SerialExecutionQueue
+    from tests.support.assurance_store_template import provision_store
 
-    init_store(db_path)
+    provision_store(db_path)
     store = SQLCipherAssuranceStore(db_path)
     store.unlock()
     archive = SQLCipherAssuranceArchive(store._thread_conn_or_none)  # noqa: SLF001

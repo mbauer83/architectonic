@@ -55,10 +55,10 @@ class _Archive:
 @pytest.fixture()
 def store(tmp_path: Any) -> Any:
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "legacy-invalid.db"
-    init_store(db_path)
+    provision_store(db_path)
     unlocked = SQLCipherAssuranceStore(db_path)
     unlocked.unlock()
     yield unlocked

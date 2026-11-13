@@ -71,10 +71,10 @@ def seeded(tmp_path: Path):  # type: ignore[no-untyped-def]
     ceiling; the WHITE pair is what a restricted reader is allowed to see.
     """
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "grouping.db"
-    init_store(db_path)
+    provision_store(db_path)
     store = SQLCipherAssuranceStore(db_path)
     store.unlock()
     ids: dict[str, str] = {

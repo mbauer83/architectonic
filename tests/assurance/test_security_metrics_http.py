@@ -57,14 +57,14 @@ def ctx(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     from src.infrastructure.assurance._snapshot_store import SQLCipherSnapshotStore
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
     from src.infrastructure.assurance._vex_assessment_store import SQLCipherVexAssessmentStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     monkeypatch.setattr(gate, "storage_assurance_store_backend", lambda: "sqlcipher")
     monkeypatch.setattr(gate, "storage_assurance_signals_backend", lambda: "sqlcipher-colocated")
     monkeypatch.setattr(gate, "storage_assurance_archive_backend", lambda: "standard")
 
     db_path = tmp_path / "metrics.db"
-    init_store(db_path)
+    provision_store(db_path)
     store = SQLCipherAssuranceStore(db_path)
     store.unlock()
     yield _RealContext(

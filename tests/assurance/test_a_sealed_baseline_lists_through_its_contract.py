@@ -17,10 +17,10 @@ pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 def archive(tmp_path):  # type: ignore[no-untyped-def]
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
     from src.infrastructure.assurance._worm_archive import WORMSQLCipherAssuranceArchive
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "store.db"
-    init_store(db_path)
+    provision_store(db_path)
     store = SQLCipherAssuranceStore(db_path)
     store.unlock()
     yield WORMSQLCipherAssuranceArchive(store._thread_conn_or_none)  # noqa: SLF001

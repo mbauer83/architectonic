@@ -11,10 +11,10 @@ pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 def store_and_archive(tmp_path):  # type: ignore[no-untyped-def]
     from src.infrastructure.assurance._archive import SQLCipherAssuranceArchive
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "store.db"
-    init_store(db_path)
+    provision_store(db_path)
     store = SQLCipherAssuranceStore(db_path)
     store.unlock()
     archive = SQLCipherAssuranceArchive(store._thread_conn_or_none)  # noqa: SLF001

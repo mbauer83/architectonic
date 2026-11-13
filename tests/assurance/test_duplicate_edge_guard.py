@@ -34,10 +34,10 @@ def _legal(_source_type: str, _target_type: str) -> frozenset[str]:
 @pytest.fixture()
 def store(tmp_path: Path) -> Any:
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "store.db"
-    init_store(db_path)
+    provision_store(db_path)
     built = SQLCipherAssuranceStore(db_path)
     built.unlock()
     yield built

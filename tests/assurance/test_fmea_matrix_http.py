@@ -45,10 +45,10 @@ def _client(store: Any) -> TestClient:
 @pytest.fixture()
 def locked_store(tmp_path: Path) -> Any:
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "locked.db"
-    init_store(db_path)
+    provision_store(db_path)
     return SQLCipherAssuranceStore(db_path)
 
 

@@ -24,10 +24,10 @@ pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 @pytest.fixture()
 def store(tmp_path: Path):
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "search_safety.db"
-    init_store(db_path)
+    provision_store(db_path)
     s = SQLCipherAssuranceStore(db_path)
     s.unlock()
     s.create_node("loss", "Loss of Control Authority", tlp="TLP:WHITE", content="safety critical loss")

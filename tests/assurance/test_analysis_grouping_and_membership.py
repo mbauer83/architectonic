@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-from src.infrastructure.assurance.lifecycle import init_store
+from tests.support.assurance_store_template import provision_store
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def store(tmp_path: Path) -> SQLCipherAssuranceStore:
     """A real store on a temp path. The credential backend is the suite's in-memory fake — see
     tests/conftest.py; nothing here may reach a developer's keychain."""
     db_path = tmp_path / "store.db"
-    init_store(db_path)
+    provision_store(db_path)
     opened = SQLCipherAssuranceStore(db_path)
     opened.unlock()
     yield opened

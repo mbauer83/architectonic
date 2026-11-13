@@ -12,10 +12,10 @@ pytest.importorskip("cryptography", reason="cryptography not installed")
 def worm_archive(tmp_path):
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore  # noqa: PLC0415
     from src.infrastructure.assurance._worm_archive import WORMSQLCipherAssuranceArchive  # noqa: PLC0415
-    from src.infrastructure.assurance.lifecycle import init_store  # noqa: PLC0415
+    from tests.support.assurance_store_template import provision_store  # noqa: PLC0415
 
     db_path = tmp_path / "store.db"
-    init_store(db_path)
+    provision_store(db_path)
     store = SQLCipherAssuranceStore(db_path)
     store.unlock()
     archive = WORMSQLCipherAssuranceArchive(store._thread_conn_or_none)  # noqa: SLF001

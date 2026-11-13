@@ -68,9 +68,9 @@ pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
 
 def _init(db_path) -> None:  # type: ignore[no-untyped-def]
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
-    init_store(db_path)
+    provision_store(db_path)
 
 
 def test_an_activated_store_reads_as_unlocked_where_a_new_process_opens_it(

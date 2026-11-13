@@ -101,10 +101,10 @@ def _ingest_tool(ctx: _StubContext, monkeypatch: pytest.MonkeyPatch):  # type: i
 def snapshot_store(tmp_path: Path):  # type: ignore[no-untyped-def]
     from src.infrastructure.assurance._snapshot_store import SQLCipherSnapshotStore
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "ingest-tool.db"
-    init_store(db_path)
+    provision_store(db_path)
     store = SQLCipherAssuranceStore(db_path)
     store.unlock()
     yield SQLCipherSnapshotStore(store._thread_conn_or_none)  # noqa: SLF001

@@ -82,14 +82,14 @@ def ctx(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-unt
     import src.infrastructure.assurance.signal_gate as gate
     from src.infrastructure.assurance._snapshot_store import SQLCipherSnapshotStore
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     monkeypatch.setattr(gate, "storage_assurance_store_backend", lambda: "sqlcipher")
     monkeypatch.setattr(gate, "storage_assurance_signals_backend", lambda: "sqlcipher-colocated")
     monkeypatch.setattr(gate, "storage_assurance_archive_backend", lambda: "standard")
 
     db_path = tmp_path / "ingest.db"
-    init_store(db_path)
+    provision_store(db_path)
     store = SQLCipherAssuranceStore(db_path)
     store.unlock()
     yield _RealContext(store, SQLCipherSnapshotStore(store._thread_conn_or_none))  # noqa: SLF001

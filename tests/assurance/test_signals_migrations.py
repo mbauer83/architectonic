@@ -59,10 +59,10 @@ def _sqlite_conn(tmp_path: Path) -> sqlite3.Connection:
 def _sqlcipher_conn(tmp_path: Path) -> Any:
     pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "store.db"
-    init_store(db_path)
+    provision_store(db_path)
     store = SQLCipherAssuranceStore(db_path)
     store.unlock()
     conn = store._thread_conn_or_none()  # noqa: SLF001 — the factory the store receives in production

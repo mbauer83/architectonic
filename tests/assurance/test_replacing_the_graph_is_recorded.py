@@ -31,9 +31,9 @@ ELEMENT = "APP@1777293133.OYEmP1"
 
 def _store(path: Path) -> Any:
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
-    init_store(path)
+    provision_store(path)
     built = SQLCipherAssuranceStore(path)
     built.unlock()
     return built

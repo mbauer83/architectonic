@@ -33,11 +33,11 @@ def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     """A small but structurally real STPA store: a loss, a hazard that leads to it, and a UCA."""
     pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
     from src.infrastructure.mcp.assurance_mcp.context import AssuranceContext
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "reads.db"
-    init_store(db_path)
+    provision_store(db_path)
     opened = SQLCipherAssuranceStore(db_path)
     opened.unlock()
 

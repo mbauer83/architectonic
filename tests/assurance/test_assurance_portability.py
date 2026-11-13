@@ -19,10 +19,10 @@ pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
 def _make_store(tmp_path, name):  # type: ignore[no-untyped-def]
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / name
-    init_store(db_path)
+    provision_store(db_path)
     store = SQLCipherAssuranceStore(db_path)
     store.unlock()
     return store
@@ -117,10 +117,10 @@ def test_replace_is_idempotent(populated_store, tmp_path) -> None:  # type: igno
 def test_import_requires_unlocked_store(tmp_path) -> None:  # type: ignore[no-untyped-def]
     from src.infrastructure.assurance._portability import import_bundle
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "locked.db"
-    init_store(db_path)
+    provision_store(db_path)
     locked = SQLCipherAssuranceStore(db_path)  # not unlocked
     with pytest.raises(RuntimeError, match="unlocked"):
         import_bundle(locked, {"nodes": []})

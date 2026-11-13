@@ -42,10 +42,10 @@ def unlocked_store(tmp_path: Path) -> Iterator[Any]:
     """
     pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
     from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
-    from src.infrastructure.assurance.lifecycle import init_store
+    from tests.support.assurance_store_template import provision_store
 
     db_path = tmp_path / "store.db"
-    init_store(db_path)
+    provision_store(db_path)
     built = SQLCipherAssuranceStore(db_path)
     built.unlock()
     yield built
