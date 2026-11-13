@@ -3,6 +3,26 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.11.3] — 2026-11-13
+
+**[Full detail → `changelog-assets/0.11.3-detail.md`](changelog-assets/0.11.3-detail.md)**
+
+### Fixed
+
+- **Re-syncing a diagram whose type this installation does not provide no longer fails.** On an
+  installation without the confidential assurance store, the assurance diagram types (bow-tie, control
+  structure, UCA and FMEA matrices) are not registered. Since 0.11.1, `artifact_edit_diagram` with
+  `puml='auto-sync'`, and the bulk write and bulk delete when they re-sync a diagram their changes touch,
+  failed on such a diagram with `No diagram type registered with name …`. The diagram is now re-rendered
+  from its stored state, as a diagram drawn from its own records is.
+- **The ArchiMate completeness checks no longer apply to a diagram of an unknown type.** A diagram whose
+  type is not registered, with an empty `diagram-entities`, was checked as if its body were reconciled
+  from the model.
+
+### Upgrading
+
+- No data changes.
+
 ## [0.11.2] — 2026-11-11
 
 **[Full detail → `changelog-assets/0.11.2-detail.md`](changelog-assets/0.11.2-detail.md)**
@@ -1310,6 +1330,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.11.3]: https://github.com/mbauer83/architectonic/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/mbauer83/architectonic/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/mbauer83/architectonic/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/mbauer83/architectonic/compare/v0.10.1...v0.11.0
