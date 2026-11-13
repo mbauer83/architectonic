@@ -185,6 +185,14 @@ def _seal_the_real_credential_backend() -> None:
 _seal_the_real_credential_backend()
 
 
+# ── A test store's key costs one hash, not 256,000 ────────────────────────────
+# Applied at import, beside the credential seal and for the same reason: before any test module
+# builds a store. Why it is sound is in the module.
+from tests.support.store_key_derivation import cheapen_test_store_key_derivation  # noqa: E402
+
+cheapen_test_store_key_derivation()
+
+
 # ── The PlantUML toolchain is a bounded resource, and the bound is here ───────
 #
 # Each render shells out to a cold JVM (which in turn runs GraphViz) under a fixed 60-second budget.
