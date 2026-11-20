@@ -157,10 +157,18 @@ class CandidateStore(CandidateListMixin):
     def enterprise_diagram_ids(self) -> set[str]:
         return self._live.enterprise_diagram_ids() - self._deleted_diagrams
 
+    # The four getters below ask the staged records *before* the superseded set. A touched file
+    # sets its live record aside whether the batch rewrote it or removed it, so the set alone cannot
+    # tell the two apart — a staged record can. Asked the other way round, every artifact the batch
+    # had just written read as absent, which is how a document lost its reference to an entity
+    # created beside it.
+
     def get_entity(self, artifact_id: str) -> EntityRecord | None:
+        if (staged := self._entities.get(artifact_id)) is not None:
+            return staged
         if artifact_id in self._deleted_entities:
             return None
-        return self._entities.get(artifact_id) or self._map_entity(self._live.get_entity(artifact_id))
+        return self._map_entity(self._live.get_entity(artifact_id))
 
     def get_connection(self, artifact_id: str) -> ConnectionRecord | None:
         # `_deleted_connections`/`_connections` are always keyed by the canonical
@@ -170,23 +178,25 @@ class CandidateStore(CandidateListMixin):
         # `connection-ids-used` entry written before a rename), so the query is
         # normalized the same way before either membership check.
         canonical = stable_conn_id(artifact_id)
+        if (staged := self._connections.get(artifact_id) or self._connections.get(canonical)) is not None:
+            return staged
         if artifact_id in self._deleted_connections or canonical in self._deleted_connections:
             return None
-        return (
-            self._connections.get(artifact_id)
-            or self._connections.get(canonical)
-            or self._map_connection(self._live.get_connection(artifact_id))
-        )
+        return self._map_connection(self._live.get_connection(artifact_id))
 
     def get_diagram(self, artifact_id: str) -> DiagramRecord | None:
+        if (staged := self._diagrams.get(artifact_id)) is not None:
+            return staged
         if artifact_id in self._deleted_diagrams:
             return None
-        return self._diagrams.get(artifact_id) or self._map_diagram(self._live.get_diagram(artifact_id))
+        return self._map_diagram(self._live.get_diagram(artifact_id))
 
     def get_document(self, artifact_id: str) -> DocumentRecord | None:
+        if (staged := self._documents.get(artifact_id)) is not None:
+            return staged
         if artifact_id in self._deleted_documents:
             return None
-        return self._documents.get(artifact_id) or self._map_document(self._live.get_document(artifact_id))
+        return self._map_document(self._live.get_document(artifact_id))
 
     def get_icon(self, artifact_id: str) -> IconRecord | None:
         return self._live.get_icon(artifact_id)  # icon bytes are immutable; a batch writes none yet

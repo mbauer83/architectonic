@@ -240,9 +240,3 @@ def _managed_relpath(path: Path, *, live_root: Path, staged_root: Path) -> Path 
 def _is_managed_relpath(relpath: Path) -> bool:
     return bool(relpath.parts) and relpath.parts[0] in _MANAGED_SUBTREES
 
-
-def _ignore_transaction_storage(directory: str, names: list[str]) -> set[str]:
-    path = Path(directory)
-    if path.name == ".arch-repo":
-        return {"transactions"} & set(names)
-    return set()
