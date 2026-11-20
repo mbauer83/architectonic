@@ -139,7 +139,9 @@ def rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[s
         path=source,
         extra={},
     )
-    seen: dict[str, list[str]] = {"svg": [], "bytes": [], "svg_restyler": [], "bytes_restyler": [], "svg_layout": [], "bytes_layout": []}
+    seen: dict[str, list[str]] = {
+        "svg": [], "bytes": [], "svg_restyler": [], "bytes_restyler": [], "svg_layout": [], "bytes_layout": [],
+    }
 
     monkeypatch.setattr(s, "maybe_engagement_root", lambda: tmp_path)
     monkeypatch.setattr(s, "get_repo", lambda: _Repo(record))
