@@ -4741,8 +4741,6 @@ export interface components {
             node_id: string;
             /** Owners */
             owners: components["schemas"]["AssuranceNodeRef"][];
-            /** Risk Score */
-            risk_score: string;
             /** Status */
             status: string;
             /** Treated By */

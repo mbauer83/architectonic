@@ -132,7 +132,6 @@ def risk_register(
             "treatment": str(attrs.get("treatment") or ""),
             "likelihood": str(attrs.get("likelihood") or ""),
             "impact": str(attrs.get("impact") or ""),
-            "risk_score": str(attrs.get("risk_score") or ""),
             "assesses": _refs(_targets_of(rid, "assesses")),
             "treated_by": _refs(_targets_of(rid, "treated-by")),
             "owners": _refs(_sources_of(rid, "accountable-for")),

@@ -90,7 +90,6 @@ class AssuranceRiskRow(Closed):
     treatment: str
     likelihood: str
     impact: str
-    risk_score: str
     #: What this risk is an assessment *of*.
     assesses: list[AssuranceNodeRef]
     #: The constraints or actions treating it.

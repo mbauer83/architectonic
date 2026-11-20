@@ -31,11 +31,11 @@ _What risks exist? Each risk entity should `assesses` a hazard._
 
 _For each identified risk: what is the likelihood and impact?_
 
-| Risk ID | Likelihood | Impact | Risk Score | Rationale |
-|---|---|---|---|---|
-| RSK@… | [rare / unlikely / possible / likely / almost-certain] | [negligible / minor / moderate / major / catastrophic] | [low/medium/high] | [why] |
+| Risk ID | Likelihood | Impact | Rationale |
+|---|---|---|---|
+| RSK@… | [rare / unlikely / possible / likely / almost-certain] | [negligible / minor / moderate / major / catastrophic] | [why] |
 
-> For safety/security risks: the risk score informs priority but never justifies
+> For safety/security risks: likelihood and impact inform priority but never justify
 > accepting a safety/security constraint without proper controls (the safety-subordination safeguard).
 
 ## Risk Evaluation
