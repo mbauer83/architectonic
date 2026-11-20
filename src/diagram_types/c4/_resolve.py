@@ -17,6 +17,7 @@ from src.diagram_types.c4._c4_types import (  # noqa: F401
 from src.diagram_types.c4._resolve_model import resolve_model_backed
 from src.domain.diagrams.bindings import SCOPE_IDS_KEY, SCOPE_KEY
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
+from src.domain.diagrams.drawn_relations import held_connection_id
 
 
 def scope_ids_in(diagram_entities: Mapping[str, object]) -> tuple[str, ...]:
@@ -112,6 +113,7 @@ def _resolve_standalone(
             src_alias=alias_by_lid[str(dc.get("source") or "")],
             tgt_alias=alias_by_lid[str(dc.get("target") or "")],
             label=str(dc.get("label") or ""),
+            key=held_connection_id(dc),
         )
         for dc in diagram_connections
         if isinstance(dc, dict)

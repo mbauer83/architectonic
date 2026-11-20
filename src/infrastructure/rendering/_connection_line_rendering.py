@@ -69,7 +69,8 @@ def render_connection_lines(
         # One arrow per drawing-pair the diagram asks for: the base pair unless it named
         # occurrences, and more than one when a duplicated cluster draws the relation in each
         # copy. The pairs are already deduplicated, so no two arrows land in the same place.
-        for src, tgt in endpoint_aliases(conn):
+        for drawn in endpoint_aliases(conn):
+            src, tgt = drawn.source_alias, drawn.target_alias
             direction: str | None = layout_direction_hints.get((src, tgt)) or rank_direction(
                 src, tgt, domain_rank_by_alias, group_index_by_alias
             )
@@ -87,7 +88,7 @@ def render_connection_lines(
                 arrow = insert_arrow_line_style(arrow, conn_spec.notation.line_style)
             if direction:
                 arrow = insert_arrow_direction(arrow, direction)
-            override = edge_labels.get(f"{src}:{tgt}") if edge_labels else None
+            override = edge_labels.get(drawn.key) if edge_labels else None
             if override is not None:
                 label = override
             else:

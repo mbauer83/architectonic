@@ -18,8 +18,9 @@ router = APIRouter()
 class SetEdgeLabelBody(BaseModel):
     """The label itself, and nothing that names the edge — both are path identity now.
 
-    ``edge_key`` is ``"{src_alias}:{tgt_alias}"`` from the rendered PUML, which contains no slash, so
-    it is a path segment like any other id."""
+    ``edge_key`` is the drawn relation's key as the diagram context serves it: the connection's id,
+    qualified by the instances at its ends where either is a further occurrence. It contains no
+    slash, so it is a path segment like any other id."""
 
     model_config = ConfigDict(extra="forbid")
 

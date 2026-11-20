@@ -10,6 +10,7 @@ from src.application.modeling.artifact_write_layout import ensure_puml_layout, r
 from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path
 from src.application.verification.artifact_verifier import ArtifactVerifier
 
+from ._diagram_edge_labels import merged_edge_labels
 from ._diagram_group_move import _verification_to_dict, commit_diagram_write
 from .boundary import modification_stamp
 from .coerce import as_optional_str_list
@@ -282,20 +283,10 @@ def edit_diagram(
 
     norm_bindings_raw = bindings_to_raw(norm_bindings)
 
-    # Edge-label overrides: merge caller-supplied delta into existing map.
-    # A None value for a key removes that key (single-key clear without full replacement).
-    _raw_el = fm.get("edge-labels")
-    existing_edge_labels: dict[str, str] = dict(_raw_el) if isinstance(_raw_el, dict) else {}
-    if edge_labels is EDGE_LABELS_UNSET:
-        eff_edge_labels: dict[str, str] | None = existing_edge_labels or None
-    else:
-        merged: dict[str, str] = dict(existing_edge_labels)
-        for k, v in (edge_labels or {}).items():
-            if v is None:
-                merged.pop(k, None)
-            else:
-                merged[k] = v
-        eff_edge_labels = merged or None
+    # Edge-label overrides: the caller's delta merged into the stored map, each keyed by its drawn relation.
+    eff_edge_labels = merged_edge_labels(
+        fm.get("edge-labels"), None if edge_labels is EDGE_LABELS_UNSET else edge_labels
+    )
 
     # Determine PUML body; the scope the persist path stripped is restored from the scoped-by
     # binding so the C4 renderer uses model-backed mode.

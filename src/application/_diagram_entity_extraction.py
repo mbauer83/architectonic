@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 
+from src.domain.diagrams.drawn_relations import held_connection_id
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, DiagramRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramTypeModule
 
@@ -216,6 +217,10 @@ def diagram_local_to_full(diag: DiagramRecord, scope: HeldRecordScope) -> dict[s
     return result
 
 
+#: What separates a diagram's id from the id of a connection it holds, in that connection's record id.
+HELD_CONNECTION_MARK = "#conn/"
+
+
 def _diagram_connection_record(
     kc: object, diag: DiagramRecord, local_to_full: dict[str, str]
 ) -> ConnectionRecord | None:
@@ -226,14 +231,14 @@ def _diagram_connection_record(
     """
     if not isinstance(kc, dict):
         return None
+    local_id = held_connection_id(kc)
     conn_type = str(kc.get("conn_type") or "")
+    if local_id is None or not conn_type:
+        return None
     source_local = str(kc.get("source") or kc.get("source_id") or "")
     target_local = str(kc.get("target") or kc.get("target_id") or "")
-    if not (conn_type and source_local and target_local):
-        return None
-    local_id = str(kc.get("id") or f"{source_local}:{conn_type}:{target_local}")
     return ConnectionRecord(
-        artifact_id=f"{diag.artifact_id}#conn/{local_id}",
+        artifact_id=f"{diag.artifact_id}{HELD_CONNECTION_MARK}{local_id}",
         source=local_to_full.get(source_local, f"{diag.artifact_id}#unknown/{source_local}"),
         target=local_to_full.get(target_local, f"{diag.artifact_id}#unknown/{target_local}"),
         conn_type=conn_type,

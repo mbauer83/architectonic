@@ -34,6 +34,7 @@ from src.application.repo_path_helpers import diagram_source_root, resolve_diagr
 from src.application.verification._verifier_rules_puml_completeness import diagram_body_is_reconcile_owned
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.artifact_id import stable_conn_id
+from src.domain.diagrams.relation_key import labels_by_relation
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.rendering.diagram_selection import connections_among
 
@@ -345,8 +346,7 @@ def sync_diagram_to_model(
             deleted_diagram=False,
         )
 
-    raw_el = fm.get("edge-labels")
-    existing_edge_labels = dict(raw_el) if isinstance(raw_el, dict) else None
+    existing_edge_labels = labels_by_relation(fm.get("edge-labels")) or None
     authored_groupings, grouping_warnings = _reconciled_authored_groupings(fm, parsed.puml_body, entity_records)
     # Reported on both paths below: a hand-laid-out diagram goes out of date the same way, and
     # keeping its body verbatim is a reason to say so, not a reason to stay quiet.

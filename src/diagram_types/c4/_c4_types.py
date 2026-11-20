@@ -52,6 +52,9 @@ class _C4Connection:
     tgt_alias: str
     label: str
     artifact_id: str | None = None
+    #: What a statement about this drawn relation is keyed by: the model connection it stands for,
+    #: or its id within the diagram. None for a row that has no identity to key by.
+    key: str | None = None
 
 
 @dataclass(frozen=True)

@@ -113,7 +113,7 @@ def test_edit_diagram_matrix_dry_run_previews_without_moving(repo: Path) -> None
         {"puml": "@startuml\n@enduml\n"},
         {"diagram_entities": {"entity-ids": ["X@1.a.b"]}},
         {"bindings": [{"correspondence_kind": "represents"}]},
-        {"edge_labels": {"a:b": "label"}},
+        {"edge_labels": {"a::b": "label"}},
         {"viewpoint": {"slug": "some-viewpoint"}},
     ],
 )

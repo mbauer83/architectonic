@@ -7,6 +7,7 @@ from difflib import SequenceMatcher
 from typing import Any
 
 from src.application._diagram_entity_extraction import (
+    HELD_CONNECTION_MARK,
     NOTHING_HELD,
     HeldRecordScope,
     axis_entity_ids,
@@ -21,7 +22,9 @@ from src.application.modeling.diagram_kind_palette import (
 )
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.domain.artifact_id import stable_conn_id
 from src.domain.diagrams.element_correspondence import element_correspondences
+from src.domain.diagrams.relation_key import labels_by_relation
 from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.artifact_types import DiagramRecord, EntityRecord
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
@@ -198,8 +201,7 @@ def diagram_context_payload(repo: Any, diag_rec: DiagramRecord, catalogs: Runtim
         if rec is not None:
             in_diagram[entity_id] = rec
     explicit_pairs = parse_explicit_connection_pairs(puml)
-    raw_el = diag_rec.extra.get("edge-labels") if diag_rec.extra else None
-    edge_labels: dict[str, str] = dict(raw_el) if isinstance(raw_el, dict) else {}
+    edge_labels = labels_by_relation(diag_rec.extra.get("edge-labels") if diag_rec.extra else None)
     connections: list[dict[str, Any]] = []
     seen: set[str] = set()
     connection_records = {conn.artifact_id: conn for conn in repo.list_connections()}
@@ -215,13 +217,12 @@ def diagram_context_payload(repo: Any, diag_rec: DiagramRecord, catalogs: Runtim
             continue
         sa = normalize_puml_alias(src.display_alias or "")
         ta = normalize_puml_alias(tgt.display_alias or "")
-        is_owned = conn.path == diag_rec.path and "#conn/" in conn.artifact_id
+        is_owned = conn.path == diag_rec.path and HELD_CONNECTION_MARK in conn.artifact_id
         if not is_owned and (sa, ta) not in explicit_pairs and (ta, sa) not in explicit_pairs:
             continue
-        if (sa, ta) in explicit_pairs:
-            edge_key = f"{sa}:{ta}"
-        else:
-            edge_key = f"{ta}:{sa}"
+        # The key a statement about this drawn relation is filed under: a connection the diagram
+        # holds by its id within the diagram, a model connection by its own.
+        edge_key = conn.artifact_id.partition(HELD_CONNECTION_MARK)[2] if is_owned else stable_conn_id(conn.artifact_id)
         d = s.connection_to_dict(conn)
         d["source_name"] = src.name
         d["target_name"] = tgt.name

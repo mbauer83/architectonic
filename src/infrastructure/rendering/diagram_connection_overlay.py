@@ -5,32 +5,34 @@ The model owns a connection's endpoints: A realizes B, wherever either is drawn.
 two aliases, and without a way to say which one an arrow means, every arrow lands on the first — so
 a second occurrence can only ever be an unconnected copy, which is what made the feature useless.
 
-`diagram-connections` is that overlay. An entry names a connection and may carry:
-
-* `label` and friends — how the arrow reads (owned by the renderer's label logic).
-* `source-occurrence` / `target-occurrence` — an occurrence id from `diagram-entities`, saying which
-  drawing of that endpoint this arrow attaches to. Absent means the base drawing, so every existing
-  diagram routes exactly as it did.
-
-Both the label lookup and the routing lookup match a connection the same way: by stable id, so a
-renamed endpoint slug does not silently orphan the overlay. That match is declared once, here.
+The ``connections`` overlay says so, and `src.domain.diagrams.drawn_relations` is its one reading:
+which arrows a connection draws, between which instances, each under which key. This module is the
+last step, from an instance to the alias its drawing carries.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 
 from src.application.artifacts.parsing import normalize_puml_alias
-from src.domain.artifact_id import stable_conn_id
+from src.domain.diagrams.drawn_relations import connection_overlays, relations_drawn_for
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.rendering.archimate_occurrences import occurrence_id_of
 
-#: Resolves a connection to the arrows it draws — one alias pair each. Empty when neither endpoint
-#: is drawn. Usually one pair; more when a duplicated cluster draws the same relation in each copy.
-EndpointRouter = Callable[[ConnectionRecord], list[tuple[str, str]]]
 
-SOURCE_OCCURRENCE_KEY = "source-occurrence"
-TARGET_OCCURRENCE_KEY = "target-occurrence"
+@dataclass(frozen=True)
+class DrawnArrow:
+    """One arrow of a body: the aliases it joins, and the key a statement about it is filed under."""
+
+    source_alias: str
+    target_alias: str
+    key: str
+
+
+#: Resolves a connection to the arrows it draws. Empty when neither endpoint is drawn. Usually one;
+#: more when a duplicated cluster draws the same relation in each copy.
+EndpointRouter = Callable[[ConnectionRecord], list[DrawnArrow]]
 
 
 def connection_overlay(
@@ -41,24 +43,10 @@ def connection_overlay(
 
     First, not only: a connection drawn in two places has an entry per drawing. The label opt-ins
     are a property of the relation rather than of one arrow, so they are read from whichever entry
-    comes first; the routing keys are read per entry by `connection_overlays`.
+    comes first; the routing keys are read per entry by `relations_drawn_for`.
     """
     entries = connection_overlays(artifact_id, diagram_connections)
     return entries[0] if entries else None
-
-
-def connection_overlays(
-    artifact_id: str,
-    diagram_connections: Sequence[Mapping[str, object]] | None,
-) -> list[Mapping[str, object]]:
-    """Every entry for *artifact_id* — one per arrow the diagram draws for it."""
-    return [
-        item
-        for item in diagram_connections or []
-        if isinstance(item, Mapping)
-        and stable_conn_id(str(item.get("artifact_id") or item.get("connection_id") or "").strip())
-        == stable_conn_id(artifact_id)
-    ]
 
 
 def occurrence_alias_by_id(render_entities: Sequence[EntityRecord]) -> dict[str, str]:
@@ -89,25 +77,23 @@ def endpoint_router(
 
     One entry means one arrow, which is every diagram that predates this. Several entries mean the
     relation is drawn once per entry — what a duplicated cluster needs, so each copy reads as a
-    complete unit instead of one copy holding all the arrows.
-
-    An occurrence id the diagram does not draw falls back to the base alias rather than dropping the
-    arrow: losing a relation is a worse answer to a stale overlay than drawing it in the plain place.
-    Identical pairs collapse, so a diagram cannot stack two arrows in the same place.
+    complete unit instead of one copy holding all the arrows. An end whose instance carries no alias
+    draws no arrow.
     """
 
-    def route(conn: ConnectionRecord) -> list[tuple[str, str]]:
-        base_source = alias_by_id.get(conn.source)
-        base_target = alias_by_id.get(conn.target)
-        overlays = connection_overlays(conn.artifact_id, diagram_connections)
-        pairs: list[tuple[str, str]] = []
-        for overlay in overlays or [{}]:
-            source_key = str(overlay.get(SOURCE_OCCURRENCE_KEY) or "").strip()
-            target_key = str(overlay.get(TARGET_OCCURRENCE_KEY) or "").strip()
-            source = alias_by_occurrence.get(source_key) or base_source
-            target = alias_by_occurrence.get(target_key) or base_target
-            if source and target and (source, target) not in pairs:
-                pairs.append((source, target))
-        return pairs
+    def route(conn: ConnectionRecord) -> list[DrawnArrow]:
+        arrows: list[DrawnArrow] = []
+        for drawn in relations_drawn_for(
+            conn.artifact_id,
+            source=conn.source,
+            target=conn.target,
+            diagram_connections=diagram_connections,
+            occurrences=alias_by_occurrence,
+        ):
+            source = alias_by_occurrence.get(drawn.source_instance) or alias_by_id.get(drawn.source_instance)
+            target = alias_by_occurrence.get(drawn.target_instance) or alias_by_id.get(drawn.target_instance)
+            if source and target:
+                arrows.append(DrawnArrow(source, target, drawn.key.text))
+        return arrows
 
     return route

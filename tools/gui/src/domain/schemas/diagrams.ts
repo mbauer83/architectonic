@@ -163,9 +163,10 @@ export type DiagramContextEntity = typeof DiagramContextEntitySchema.Type
 
 /** One connection as this diagram draws it: the record, plus its rendered identity here.
  *
- * The aliases and `edge_key` locate the drawn line in *this* file, and
- * `edge_label_override` is the label the author set for that edge — it belongs to the diagram, not
- * to the connection, since the same connection drawn twice can carry two labels. */
+ * The aliases locate the drawn line in *this* file; `edge_key` is what a statement about this drawn
+ * relation is filed under (the connection's id, or a held connection's id within the diagram) and is
+ * passed back unread. `edge_label_override` is the label the author set for that edge — it belongs
+ * to the diagram, not to the connection, since the same connection drawn twice can carry two labels. */
 export const DiagramContextConnectionSchema = Schema.Struct({
   artifact_id: Schema.String,
   source: Schema.String,

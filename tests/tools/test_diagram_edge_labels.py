@@ -18,14 +18,17 @@ from functools import lru_cache
 from pathlib import Path
 
 import pytest
-import yaml
 
 from src.application.modeling.diagram_file_format import format_diagram_puml
 from src.application.verification._verifier_rules_edge_labels import check_edge_label_overrides
 from src.application.verification.artifact_verifier_types import Severity, VerificationResult
 from src.diagram_types.c4.renderer import C4PumlRenderer
+from src.domain.repository.frontmatter import parse_frontmatter
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
+
+#: A drawn relation's key: the connection it draws.
+_A_SERVES_B = "APP@1700000001.aaaaaa---APP@1700000002.bbbbbb@@archimate-serving"
 
 
 @lru_cache(maxsize=1)
@@ -105,12 +108,9 @@ def test_format_diagram_puml_writes_edge_labels() -> None:
         status="draft",
         last_updated="2026-01-01",
         puml_body="@startuml test\ntitle Test\n@enduml\n",
-        edge_labels={"APP_A:APP_B": "Reads/writes"},
+        edge_labels={_A_SERVES_B: "Reads/writes"},
     )
-    fm_text = re.search(r"^---(.*?)---", result, re.DOTALL)
-    assert fm_text
-    fm = yaml.safe_load(fm_text.group(1))
-    assert fm["edge-labels"] == {"APP_A:APP_B": "Reads/writes"}
+    assert parse_frontmatter(result)["edge-labels"] == {_A_SERVES_B: "Reads/writes"}
 
 
 def test_format_diagram_puml_no_edge_labels_omits_field() -> None:
@@ -183,9 +183,8 @@ SS_sys_0 --> C_svc_0 : calls
 """
     path = repo / "diagram-catalog" / "diagrams" / f"{artifact_id}.puml"
     path.write_text(content, encoding="utf-8")
-    # The standalone resolver produces alias SS_sys_0 for software-system "sys",
-    # and C_svc_0 for container "svc". Connection is svc→sys = C_svc_0:SS_sys_0.
-    return artifact_id, "C_svc_0:SS_sys_0"
+    # The row states no id and no type, so its key is its two ends around an empty type.
+    return artifact_id, "svc::sys"
 
 
 def test_set_diagram_edge_label_writes_to_frontmatter(repo: Path) -> None:
@@ -204,7 +203,7 @@ def test_set_diagram_edge_label_writes_to_frontmatter(repo: Path) -> None:
         verifier=verifier,
         clear_repo_caches=lambda _: None,
         artifact_id=diag_id,
-        edge_key="APP_A:APP_B",
+        edge_key=_A_SERVES_B,
         label="Reads/writes",
         dry_run=True,
     )
@@ -236,7 +235,7 @@ def test_set_diagram_edge_label_clear_removes_key(repo: Path) -> None:
         verifier=verifier,
         clear_repo_caches=lambda _: None,
         artifact_id=diag_id,
-        edge_key="APP_A:APP_B",
+        edge_key=_A_SERVES_B,
         label="first-label",
         dry_run=True,
     )
@@ -248,7 +247,7 @@ def test_set_diagram_edge_label_clear_removes_key(repo: Path) -> None:
         verifier=verifier,
         clear_repo_caches=lambda _: None,
         artifact_id=diag_id,
-        edge_key="APP_A:APP_B",
+        edge_key=_A_SERVES_B,
         label=None,
         dry_run=True,
     )
@@ -264,50 +263,63 @@ def test_set_diagram_edge_label_clear_removes_key(repo: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_verifier_flags_dangling_edge_label() -> None:
-    puml = "@startuml test\ntitle Test\nAPP_A --> APP_B : uses\n@enduml\n"
-    fm: dict = {"edge-labels": {"APP_X:APP_Y": "label"}}
+def _edge_label_issues(fm: dict) -> list:
     result = VerificationResult(path=Path("fake.puml"), file_type="diagram")
-    check_edge_label_overrides(puml, fm, result, "fake.puml")
-    assert any(i.code == "E410" for i in result.issues)
-    assert any("APP_X:APP_Y" in i.message for i in result.issues)
-    assert all(i.severity == Severity.ERROR for i in result.issues)
+    check_edge_label_overrides(fm, result, "fake.puml")
+    return result.issues
+
+
+def test_verifier_flags_dangling_edge_label() -> None:
+    other = "APP@1700000003.cccccc---APP@1700000004.dddddd@@archimate-flow"
+    issues = _edge_label_issues({"connection-ids-used": [_A_SERVES_B], "edge-labels": {other: "label"}})
+    assert [i.code for i in issues] == ["E410"]
+    assert other in issues[0].message
+    assert all(i.severity == Severity.ERROR for i in issues)
 
 
 def test_verifier_valid_edge_label_no_error() -> None:
-    puml = "@startuml test\ntitle Test\nAPP_A --> APP_B : uses\n@enduml\n"
-    fm: dict = {"edge-labels": {"APP_A:APP_B": "Reads/writes"}}
-    result = VerificationResult(path=Path("fake.puml"), file_type="diagram")
-    check_edge_label_overrides(puml, fm, result, "fake.puml")
-    assert not any(i.code == "E410" for i in result.issues)
+    assert not _edge_label_issues({"connection-ids-used": [_A_SERVES_B], "edge-labels": {_A_SERVES_B: "Reads/writes"}})
 
 
-def test_verifier_hyphenated_alias_is_valid() -> None:
-    """Aliases like APP_Z_fI-N (with hyphens) must not be treated as dangling."""
-    puml = "@startuml test\ntitle Test\nAPP_hkrdtm --> APP_Z_fI-N : calls\n@enduml\n"
-    fm: dict = {"edge-labels": {"APP_hkrdtm:APP_Z_fI-N": "Reads/writes audit log"}}
-    result = VerificationResult(path=Path("fake.puml"), file_type="diagram")
-    check_edge_label_overrides(puml, fm, result, "fake.puml")
-    assert not any(i.code == "E410" for i in result.issues), (
-        "Hyphenated alias should be valid, not dangling"
-    )
+def test_verifier_matches_a_label_however_its_connection_is_spelled() -> None:
+    """A slugged endpoint and its stable form name one connection, so one of them is not dangling."""
+    slugged = "APP@1700000001.aaaaaa.portal---APP@1700000002.bbbbbb.ledger@@archimate-serving"
+    assert not _edge_label_issues({"connection-ids-used": [slugged], "edge-labels": {_A_SERVES_B: "x"}})
+    assert not _edge_label_issues({"connection-ids-used": [_A_SERVES_B], "edge-labels": {slugged: "x"}})
 
 
-def test_verifier_hyphenated_alias_dangling() -> None:
-    """A hyphenated alias key that does not appear in PUML must be flagged."""
-    puml = "@startuml test\ntitle Test\nAPP_A --> APP_B : calls\n@enduml\n"
-    fm: dict = {"edge-labels": {"APP_hkrdtm:APP_Z_fI-N": "label"}}
-    result = VerificationResult(path=Path("fake.puml"), file_type="diagram")
-    check_edge_label_overrides(puml, fm, result, "fake.puml")
-    assert any(i.code == "E410" for i in result.issues)
+def test_verifier_tells_two_relations_between_one_pair_apart() -> None:
+    """What the alias pair could not: a label on the flow is not a label on the serving."""
+    flow = "APP@1700000001.aaaaaa---APP@1700000002.bbbbbb@@archimate-flow"
+    issues = _edge_label_issues({"connection-ids-used": [_A_SERVES_B], "edge-labels": {flow: "label"}})
+    assert [i.code for i in issues] == ["E410"]
+
+
+def test_verifier_accepts_a_label_on_an_occurrence_s_relation_only_where_it_is_drawn() -> None:
+    fm = {
+        "connection-ids-used": [_A_SERVES_B],
+        "diagram-entities": {"occurrence": [{"id": "portal-again", "backing_entity_id": "APP@1700000001.aaaaaa"}]},
+        "connections": [{"artifact_id": _A_SERVES_B, "source-occurrence": "portal-again"}],
+    }
+    drawn = f"{_A_SERVES_B}@portal-again>APP@1700000002.bbbbbb"
+    assert not _edge_label_issues({**fm, "edge-labels": {drawn: "from the copy"}})
+    assert _edge_label_issues({**fm, "edge-labels": {_A_SERVES_B: "from the base, which is not drawn"}})
+
+
+def test_verifier_accepts_a_label_on_a_connection_the_diagram_holds() -> None:
+    fm = {"connections": [{"source": "svc", "target": "sys", "label": "calls"}]}
+    assert not _edge_label_issues({**fm, "edge-labels": {"svc::sys": "Reads"}})
+    assert _edge_label_issues({**fm, "edge-labels": {"sys::svc": "Reads"}})
+
+
+def test_verifier_refuses_the_retired_alias_pair_with_what_to_run() -> None:
+    issues = _edge_label_issues({"connection-ids-used": [_A_SERVES_B], "edge-labels": {"APP_aaaaaa:APP_bbbbbb": "x"}})
+    assert [i.code for i in issues] == ["E410"]
+    assert "arch-repair upgrade" in issues[0].message
 
 
 def test_verifier_no_edge_labels_field_no_error() -> None:
-    puml = "@startuml test\ntitle Test\n@enduml\n"
-    fm: dict = {}
-    result = VerificationResult(path=Path("fake.puml"), file_type="diagram")
-    check_edge_label_overrides(puml, fm, result, "fake.puml")
-    assert not result.issues
+    assert not _edge_label_issues({})
 
 
 # ---------------------------------------------------------------------------
@@ -342,10 +354,8 @@ def test_c4_renderer_applies_edge_label_override(tmp_path: Path) -> None:
         diagram_entities=diagram_entities,
         diagram_connections=diagram_connections,
     )
-    src_alias = re.search(r"(\w+)\s+-->\s+(\w+)", body_default)
-    assert src_alias, "expected connection line"
-    src, tgt = src_alias.group(1), src_alias.group(2)
-    override_key = f"{src}:{tgt}"
+    assert re.search(r"(\w+)\s+-->\s+(\w+)", body_default), "expected connection line"
+    override_key = "svc::sys"
 
     body_override = renderer.render_body(
         "Test",
@@ -372,7 +382,7 @@ def test_c4_renderer_reverts_to_derived_without_override(tmp_path: Path) -> None
         "Test", [], [], "c4-container", tmp_path,
         diagram_entities=diagram_entities,
         diagram_connections=diagram_connections,
-        edge_labels={"NOMATCH_A:NOMATCH_B": "ignored"},
+        edge_labels={"other::pair": "ignored"},
     )
     # override key doesn't match → derived label "calls" is used
     assert "calls" in body
@@ -389,7 +399,7 @@ def test_mcp_edit_diagram_edge_labels_stored(repo: Path) -> None:
 
     result = mcp.artifact_edit_diagram(
         artifact_id=diag_id,
-        edge_labels={"ALIAS_A:ALIAS_B": "via MCP"},
+        edge_labels={_A_SERVES_B: "via MCP"},
         dry_run=True,
         repo_root=str(repo),
     )
@@ -416,7 +426,7 @@ def test_edge_label_per_diagram_independence(repo: Path) -> None:
         verifier=verifier,
         clear_repo_caches=lambda _: None,
         artifact_id=diag_a,
-        edge_key="X:Y",
+        edge_key=_A_SERVES_B,
         label="label in A",
         dry_run=True,
     )
@@ -425,7 +435,7 @@ def test_edge_label_per_diagram_independence(repo: Path) -> None:
         verifier=verifier,
         clear_repo_caches=lambda _: None,
         artifact_id=diag_b,
-        edge_key="X:Y",
+        edge_key=_A_SERVES_B,
         label=None,
         dry_run=True,
     )
@@ -531,7 +541,7 @@ def test_mcp_edge_labels_merges_with_existing(repo: Path) -> None:
     assert r1.content and "original label" in r1.content
 
     # Pass a different key via MCP — the original must be preserved
-    other_key = "OTHER_A:OTHER_B"
+    other_key = "other::pair"
     r2 = mcp.artifact_edit_diagram(
         artifact_id=diag_id,
         edge_labels={other_key: "new label"},
@@ -566,7 +576,7 @@ def test_rest_edge_label_endpoint_calls_service(repo: Path) -> None:
     # Diagram and edge are path identity; the body carries only the label.
     body = SetEdgeLabelBody(label="via REST", dry_run=True)
     # Called as a plain function, so the test supplies what FastAPI would have injected.
-    result = set_edge_label_gui(diag_id, "APP_A:APP_B", body, process_runtime_catalogs())
+    result = set_edge_label_gui(diag_id, _A_SERVES_B, body, process_runtime_catalogs())
     assert "wrote" in result
 
 

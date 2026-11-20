@@ -27,6 +27,7 @@ from typing import NamedTuple
 
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.diagrams.bindings import SCOPE_KEYS, scope_entity_ids
+from src.domain.diagrams.relation_key import labels_by_relation
 from src.infrastructure.rendering.diagram_selection import connections_among, resolve_diagram_selection
 
 from .coerce import as_optional_str_list
@@ -151,7 +152,6 @@ def rendered_membership(
         store, members, wanted_connections
     )
 
-    raw_edge_labels = fm.get("edge-labels")
     raw_groupings = fm.get("authored-groupings")
     stored = [g for g in raw_groupings if isinstance(g, dict)] if isinstance(raw_groupings, list) else []
     # Supplied groupings replace the stored ones wholesale, as membership does: a caller listing the
@@ -163,7 +163,7 @@ def rendered_membership(
             entities,
             connections,
             diagram_type=str(fm.get("diagram-type", "archimate")),
-            edge_labels=dict(raw_edge_labels) if isinstance(raw_edge_labels, dict) else None,
+            edge_labels=labels_by_relation(fm.get("edge-labels")) or None,
             authored_groupings=groupings or None,
         ),
         entity_ids_used=entity_ids_used,

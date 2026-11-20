@@ -146,7 +146,7 @@ def verify_diagram(
 
     check_puml_structure(content, fm, result, loc)
     check_puml_alias_declarations(content, fm, result, loc, diagram_type_catalog=ctx.catalogs.diagram_types)
-    check_edge_label_overrides(content, fm, result, loc)
+    check_edge_label_overrides(fm, result, loc)
 
     repo_root = ctx.repo_root_for_path(path)
     if repo_root is not None:

@@ -225,8 +225,8 @@ class C4PumlRenderer:
             )
         for conn in state.connections:
             raw_label = (
-                edge_labels.get(f"{conn.src_alias}:{conn.tgt_alias}", conn.label)
-                if edge_labels
+                edge_labels.get(conn.key, conn.label)
+                if edge_labels and conn.key
                 else conn.label
             )
             # No label means no ` : ` either. `A --> B : ` reserves label space GraphViz then

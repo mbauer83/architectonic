@@ -17,6 +17,7 @@ from src.diagram_types.c4._c4_types import (
 )
 from src.diagram_types.c4._projection_vocabulary import NODE_TYPE, is_externally_styled
 from src.diagram_types.c4._resolve_nesting import _boundary_aliases, _flatten, _nest
+from src.domain.artifact_id import stable_conn_id
 from src.domain.diagrams.bindings import EXCLUDED_IDS_KEY, INCLUDED_IDS_KEY
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
 from src.domain.icons.element_names import names_most_specific_first
@@ -333,6 +334,7 @@ def resolve_model_backed(
             src_alias=src, tgt_alias=tgt,
             label=_conn_label(c),
             artifact_id=c.artifact_id,
+            key=stable_conn_id(c.artifact_id),
         ))
 
     return _ResolvedState(

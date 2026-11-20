@@ -6551,9 +6551,11 @@ export interface components {
          * DiagramContextConnection
          * @description One connection as this diagram draws it: the record, plus how it is rendered here.
          *
-         *     The aliases and ``edge_key`` are the PlantUML identity of the edge in *this* file, which is what
-         *     an overlay needs to find the drawn line for a connection. ``edge_label_override`` is the label
-         *     the author set for that edge and belongs to the diagram, not to the connection — the same
+         *     The aliases are the PlantUML identity of the edge in *this* file, which is what an overlay needs
+         *     to find the drawn line for a connection. ``edge_key`` is what a statement about this drawn
+         *     relation is filed under — the connection's id, or for a connection the diagram holds itself its
+         *     id within the diagram — and is what the edge-label route takes. ``edge_label_override`` is the
+         *     label the author set for that edge and belongs to the diagram, not to the connection — the same
          *     connection drawn on two diagrams can carry two labels.
          */
         DiagramContextConnection: {
@@ -11611,8 +11613,9 @@ export interface components {
          * SetEdgeLabelBody
          * @description The label itself, and nothing that names the edge — both are path identity now.
          *
-         *     ``edge_key`` is ``"{src_alias}:{tgt_alias}"`` from the rendered PUML, which contains no slash, so
-         *     it is a path segment like any other id.
+         *     ``edge_key`` is the drawn relation's key as the diagram context serves it: the connection's id,
+         *     qualified by the instances at its ends where either is a further occurrence. It contains no
+         *     slash, so it is a path segment like any other id.
          */
         SetEdgeLabelBody: {
             /**
