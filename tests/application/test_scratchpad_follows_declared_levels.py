@@ -134,6 +134,7 @@ class TestTheLadderIsTheDeclaredOne:
         }
 
 
+@pytest.mark.verifies("REQ@1786223986.iMJm0xn")
 class TestTheStepsAreTheDeclaredLevels:
     def test_a_note_is_narrowed_one_declared_level_at_a_time(self) -> None:
         pad = _pad(Note(id="n1", title="A"))
