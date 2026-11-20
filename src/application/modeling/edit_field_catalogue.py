@@ -118,7 +118,10 @@ CREATION: Mapping[ArtifactKind, frozenset[str]] = {
 MECHANICS: Mapping[ArtifactKind, frozenset[str]] = {
     "entity": frozenset(),
     "connection": frozenset(),
-    "document": frozenset(),
+    # `part` makes a change to the body in one place of the stored file — a section, a text, rows of
+    # a table — and leaves the rest of it byte for byte. It is how `body` is changed, not a field
+    # beside it: a proposal has no stored file to change in part, and records the body whole.
+    "document": frozenset({"part"}),
     "diagram": frozenset({"replace_bindings", "rebuild_layout", "committed_repo"}),
 }
 

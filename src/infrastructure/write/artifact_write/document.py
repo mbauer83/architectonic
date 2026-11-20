@@ -1,11 +1,13 @@
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import yaml  # type: ignore[import-untyped]
 
+from src.application.artifacts.document_part_edits import DocumentEditRefused, PartEdit
 from src.application.artifacts.document_schema import get_document_schema, get_document_subdirectory
 from src.application.artifacts.query import ArtifactRepository
-from src.application.document_links import relocated_links
+from src.application.document_links import id_links_expanded, relocated_links
 from src.application.identifier_allocator import get_default_allocator
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.config.repo_paths import DOCS
@@ -17,6 +19,13 @@ from src.infrastructure.atomic_file import write_atomic
 
 from ._artifact_deduplication import extract_friendly_slug, get_repository, validate_document_unique
 from ._document_group_move import _doc_dir, _resolve_document_group_path, commit_document_move
+from ._document_part_edit import (
+    DocumentPartWriteResult,
+    artifact_paths,
+    edit_part,
+    read_as_stored,
+    with_frontmatter,
+)
 from ._document_placeholder import _build_placeholder_body, _declared_tables, _validate_section_templates
 from .boundary import assert_engagement_write_root, modification_stamp
 from .coerce import as_optional_str_list
@@ -47,7 +56,7 @@ def _generate_document_id(abbreviation: str, title: str) -> str:
     return get_default_allocator().allocate(prefix=abbreviation, name_hint=title)
 
 
-def _format_document_markdown(
+def _document_frontmatter_yaml(
     *,
     artifact_id: str,
     doc_type: str,
@@ -57,8 +66,8 @@ def _format_document_markdown(
     last_updated: str,
     keywords: list[str] | None,
     extra_frontmatter: dict[str, object] | None,
-    body: str,
 ) -> str:
+    """A document's frontmatter block as every document write spells it, fences excluded."""
     fm: dict[str, object] = {
         "artifact-id": artifact_id,
         "artifact-type": "document",
@@ -72,8 +81,11 @@ def _format_document_markdown(
         fm["keywords"] = keywords
     if extra_frontmatter:
         fm.update({k: v for k, v in extra_frontmatter.items() if k not in fm})
-    frontmatter = _dump_yaml_text(fm)
-    return f"---\n{frontmatter}\n---\n\n{body.strip()}\n"
+    return _dump_yaml_text(fm)
+
+
+def _format_document_markdown(*, body: str, **frontmatter: Any) -> str:
+    return f"---\n{_document_frontmatter_yaml(**frontmatter)}\n---\n\n{body.strip()}\n"
 
 
 def _verification_to_document_dict(path: Path, res) -> dict[str, object]:
@@ -188,7 +200,11 @@ def create_document(
             },
         )
 
-    actual_body = body or _build_placeholder_body(sections, section_templates, _declared_tables(repo_root, doc_type))
+    actual_body = (
+        id_links_expanded(body, written_to=doc_dir, path_of=artifact_paths(repo_root, verifier.registry))
+        if body
+        else _build_placeholder_body(sections, section_templates, _declared_tables(repo_root, doc_type))
+    )
     actual_body = actual_body.rstrip() + render_references(path, references or [])
     content = _format_document_markdown(
         artifact_id=doc_id,
@@ -273,6 +289,23 @@ def _resolve_document_path(docs_root: Path, artifact_id: str) -> Path | None:
     return short_matches[0] if len(short_matches) == 1 else None
 
 
+def _assert_a_part_can_be_edited(
+    docs_root: Path, artifact_id: str, *, body: str | None, registry: ArtifactRegistry | None
+) -> None:
+    """A part edit is made on a file this repository stores, and beside no replacement of the whole."""
+    if body is not None:
+        raise DocumentEditRefused(
+            "The edit states a whole body and a part of it. Send the body to replace it whole, or the "
+            "section, text or rows to change it in part."
+        )
+    held_elsewhere = registry is not None and registry.find_file_by_id(artifact_id) is not None
+    if _resolve_document_path(docs_root, artifact_id) is None and held_elsewhere:
+        raise DocumentEditRefused(
+            f"'{artifact_id}' is not a document this repository stores, so there is no file to edit in part. "
+            "A change to enterprise-owned content is recorded from the document's whole body."
+        )
+
+
 def edit_document(
     *,
     assert_write_root: Callable[[Path], None],
@@ -290,24 +323,39 @@ def edit_document(
     group: str | None = None,
     registry: ArtifactRegistry | None = None,
     repo: ArtifactRepository | None = None,
+    part: PartEdit | None = None,
     dry_run: bool,
 ) -> WriteResult:
-    """Edit a document, or — where it is a reference to a promoted one — record a change to it."""
-    assert_write_root(repo_root)
+    """Edit a document, or — where it is a reference to a promoted one — record a change to it.
 
-    if (recorded := document_change(
+    *part* edits one section, one text or rows of one table of the body and leaves the rest of the
+    stored file byte for byte; *body* replaces the body whole. A call states one or neither.
+    """
+    assert_write_root(repo_root)
+    docs_root = repo_root / DOCS
+    if part is not None:
+        _assert_a_part_can_be_edited(docs_root, artifact_id, body=body, registry=registry)
+
+    if part is None and (recorded := document_change(
         into=Interception(registry, verifier, clear_repo_caches, repo, repo_root, artifact_id, dry_run),
         title=title, body=body, keywords=keywords, extra_frontmatter=extra_frontmatter, status=status,
         version=version, last_updated=last_updated, group=group,
     )) is not None:
         return recorded
 
-    docs_root = repo_root / DOCS
     path = _resolve_document_path(docs_root, artifact_id)
     if path is None:
         raise DocumentNotFoundError(f"Document '{artifact_id}' not found under {docs_root}")
 
     fm, existing_body = _split_document_frontmatter(path.read_text(encoding="utf-8"), path)
+    states_a_field = any(given is not None for given in (title, status, version, keywords)) or bool(extra_frontmatter)
+    path_of = artifact_paths(repo_root, registry)
+    edited = (
+        edit_part(read_as_stored(path), part, repo_root=repo_root, doc_type=str(fm.get("doc-type", "")),
+                  doc_path=path, path_of=path_of)
+        if part is not None
+        else None
+    )
     fm.update({k: v for k, v in {"title": title, "status": status, "version": version, "keywords": keywords}.items()
                if v is not None})
     fm["last-updated"] = last_updated if last_updated is not None else modification_stamp()
@@ -319,23 +367,38 @@ def edit_document(
     )
     moved = target_path != path
 
-    content = _format_document_markdown(
-        artifact_id=str(fm.get("artifact-id", artifact_id)),
-        doc_type=str(fm.get("doc-type", "")),
-        title=str(fm.get("title", "")),
-        status=str(fm.get("status", "draft")),
-        version=str(fm.get("version", "")),
-        last_updated=str(fm.get("last-updated", modification_stamp())),
-        keywords=as_optional_str_list(fm.get("keywords")),
-        extra_frontmatter={k: v for k, v in fm.items() if k not in _MANAGED_DOC_FM_KEYS},
+    frontmatter: dict[str, Any] = {
+        "artifact_id": str(fm.get("artifact-id", artifact_id)),
+        "doc_type": str(fm.get("doc-type", "")),
+        "title": str(fm.get("title", "")),
+        "status": str(fm.get("status", "draft")),
+        "version": str(fm.get("version", "")),
+        "last_updated": str(fm.get("last-updated", modification_stamp())),
+        "keywords": as_optional_str_list(fm.get("keywords")),
+        "extra_frontmatter": {k: v for k, v in fm.items() if k not in _MANAGED_DOC_FM_KEYS},
+    }
+
+    def _relocated(text: str) -> str:
         # A body is read where the document is and written where it is going. A collection sits
         # one directory deeper than the doc-type's own, so carried across unchanged every relative
         # link in it resolved one level short. A body sent with the move is read the same way: it
         # is an edit of the document as it stands, which is what the GUI's save sends.
-        body=relocated_links(
-            body if body is not None else existing_body,
-            read_from=path.parent, written_to=target_path.parent, moves={path: target_path},
-        ),
+        return relocated_links(text, read_from=path.parent, written_to=target_path.parent, moves={path: target_path})
+
+    content = (
+        with_frontmatter(
+            edited.content,
+            stamp_line=_dump_yaml_text({"last-updated": frontmatter["last_updated"]}),
+            whole_block=_document_frontmatter_yaml(**frontmatter) if states_a_field else None,
+            relocated=_relocated,
+        )
+        if edited is not None
+        else _format_document_markdown(
+            **frontmatter,
+            body=_relocated(
+                id_links_expanded(body, written_to=path.parent, path_of=path_of) if body is not None else existing_body
+            ),
+        )
     )
 
     relative_path = target_path.relative_to(repo_root / DOCS).as_posix()
@@ -349,10 +412,11 @@ def edit_document(
     verification = _verification_to_document_dict(target_path, preview_res)
     warnings = [f"Will move document to group '{group}': {target_path}"] if moved and dry_run else []
 
+    added_row_ids = list(edited.added_row_ids) if edited is not None else []
     if dry_run or not document_write_allowed(preview_res):
-        return WriteResult(
+        return DocumentPartWriteResult(
             wrote=False, path=target_path, artifact_id=artifact_id, content=content,
-            warnings=warnings, verification=verification,
+            warnings=warnings, verification=verification, added_row_ids=added_row_ids,
         )
 
     if moved:
@@ -363,9 +427,9 @@ def edit_document(
     else:
         write_atomic(target_path, content)
     clear_repo_caches(target_path)
-    return WriteResult(
+    return DocumentPartWriteResult(
         wrote=True, path=target_path, artifact_id=artifact_id, content=None,
-        warnings=warnings, verification=verification,
+        warnings=warnings, verification=verification, added_row_ids=added_row_ids,
     )
 
 
