@@ -19,6 +19,7 @@ from collections.abc import Sequence
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
+from src.domain.scratchpad.classification import classification_of, is_classified
 from src.domain.scratchpad.parts import ModelRef, Note, ScratchpadError
 
 if TYPE_CHECKING:
@@ -92,16 +93,12 @@ def refuse_changing_meta_ontology(notes: Sequence[Note], *, current: str, propos
     The state is reachable rather than a trap: forget realizations, unbind bindings, untype the
     rest, and this opens again.
     """
-    typed = sorted(note.id for note in notes if _is_classified(note) or note.document_type)
+    typed = sorted(note.id for note in notes if is_classified(note) or note.document_type)
     if typed and proposed != current:
         raise ScratchpadError(
             f"cannot change meta-ontology while notes are typed: {typed}. "
             "Untype them first — a realized note must be forgotten and a bound note unbound."
         )
-
-
-def _is_classified(note: Note) -> bool:
-    return bool(note.domain or note.element_type or note.specialization)
 
 
 def refuse_forbidden_transitions(stored: Scratchpad, submitted: Scratchpad) -> None:
@@ -146,11 +143,11 @@ def _refuse_reclassification(before: Note, after: Note) -> None:
         return
     if after.destination == "document":
         refuse_documenting(before)
-    elif _is_classified(after):
+    elif is_classified(after):
         refuse_retyping(before)
     else:
         refuse_untyping(before)
 
 
 def _decision(note: Note) -> tuple[object, ...]:
-    return (note.destination, note.domain, note.element_type, note.specialization, note.document_type)
+    return (note.destination, *classification_of(note), note.document_type)

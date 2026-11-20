@@ -36,7 +36,9 @@ def stored(service: ScratchpadService) -> Scratchpad:
     both = created.with_note(Note(id="n1", title="One"), at=Point(40, 60)).with_note(
         Note(id="n2", title="Two"), at=Point(300, 60)
     )
-    typed = both.typed("n1", element_type="outcome")
+    typed = both.with_note(
+        replace(both.note("n1"), destination="element", element_type="outcome")  # type: ignore[type-var]
+    )
     return service.replace(
         typed.with_link(Link(id="l1", source="n1", target="n2")),
         group="strategy-and-value",

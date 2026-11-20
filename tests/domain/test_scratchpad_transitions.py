@@ -12,6 +12,7 @@ from dataclasses import replace
 
 import pytest
 
+from src.domain.ontology_representation.classification_levels import DERIVED_DEFAULT_LEVELS
 from src.domain.scratchpad import (
     ModelRef,
     Note,
@@ -92,7 +93,9 @@ class TestANoteTiedToTheModelKeepsItsType:
         submitted = _pad(replace(stored_note, element_type="goal"))
 
         assert _refusal(stored, submitted) == _mutation_refusal(
-            lambda: stored.typed("n1", element_type="goal")
+            lambda: stored.refined(
+                "n1", level=DERIVED_DEFAULT_LEVELS[1], value="goal", levels=DERIVED_DEFAULT_LEVELS
+            )
         )
 
     @pytest.mark.parametrize("stored_note", [_REALIZED, _BOUND])

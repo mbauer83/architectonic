@@ -27,7 +27,11 @@ from src.application.scratchpad.ports import (
     ScratchpadRepositoryPort,
     ScratchpadSummary,
 )
-from src.application.scratchpad.verification import note_verdict_source, verdict_source
+from src.application.scratchpad.verification import (
+    classification_levels_of,
+    note_verdict_source,
+    verdict_source,
+)
 from src.domain.modules.module_registry import ModuleRegistry
 from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.scratchpad import (
@@ -217,6 +221,7 @@ class ScratchpadService:
             },
             verdict_of=verdict_source(self._registry, scratchpad),
             note_verdict_of=note_verdict_source(self._registry, scratchpad),
+            levels=classification_levels_of(self._registry, scratchpad.meta_ontology),
             draw=draw,
         )
         if dry_run or plan.blocks or plan.is_empty:

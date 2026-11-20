@@ -22,7 +22,7 @@ someone in the middle of drawing.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 
 #: What the canvas can conclude about a link. Ordered from "say nothing" to "this is wrong".
@@ -191,17 +191,3 @@ def _narrowing_slug(
         if found:
             return found
     return ""
-
-
-@dataclass(frozen=True, slots=True)
-class TypingOptions:
-    """What a note may become at one level, in the order the ontology declares them.
-
-    Offered rather than required: every level below the first is optional, and a note that stops
-    at `undecided` has still done its job.
-    """
-
-    level_id: str
-    label: str
-    values: tuple[str, ...] = field(default_factory=tuple)
-    required: bool = False

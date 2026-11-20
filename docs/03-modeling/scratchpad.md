@@ -111,8 +111,8 @@ that holds a one-way reference to model content that is already there.
 The gesture is anchored to a point rather than to a frame on purpose. Area membership here is
 spatial, so where you click is the decision; an affordance attached to the frame would have to
 invent a placement rule, and would cost one control per frame for one capability. The search is
-scoped to the element types that frame permits, so the permitted set does double duty — it filters
-the type picker when narrowing, and scopes the search when pulling something in.
+scoped to the element types that frame permits — the same set the note panel offers first when
+narrowing a note.
 
 Binding is the move that makes a scratchpad useful against a repository that is not empty. Most
 thinking touches things that exist — *this project realizes the capability we already have* — and
@@ -130,10 +130,29 @@ never retracts model content.
 
 ## Narrowing a note, one level at a time
 
-Nothing needs a type, ever. When you do know, the note panel narrows down the meta-ontology's own
-[classification levels](../05-extensibility/ontology-modules.md#classification-levels) rather than
-through a ladder this feature invented: domain, then entity type, then specialization for an
-ontology that declares one.
+Nothing needs a type, ever. When you do know, the note panel shows **one control per
+[classification level](../05-extensibility/ontology-modules.md#classification-levels) the
+scratchpad's meta-ontology declares**, in the order it declares them. For ArchiMate 4 that is
+domain, entity type and specialization. A meta-ontology that declares other levels gets other
+controls: the scratchpad reads the declaration and fixes none of it.
+
+- Each control offers what the level above allows — the types of the chosen domain, the
+  specializations of the chosen type. Choosing a value at a finer level answers the coarser ones it
+  implies.
+- Choosing a value re-opens every level declared after it. Choosing *Undecided* re-opens that
+  level and those after it.
+- What the note's frame permits is offered first. Everything else is still offered, grouped as
+  outside the frame, and choosing it earns the warning described above.
+- A level marked `*` is one the meta-ontology requires. A note can be lifted once every required
+  level is reached; a lift of a note short of one is refused, and the refusal names the level.
+- Attributes attach at the levels the declaration says carry them.
+
+A read serves the ladder as `classification-levels`: each level's `id`, `label`, whether it is
+`required`, whether it `carries-attributes`, and its `options`. A level's `source` says which of a
+note's keys holds its value — `hierarchy` is `domain`, `type` is `element-type`, `specializations`
+is `specialization`. Those three keys are the same under every meta-ontology, on the wire and in
+the file. A note holds one value above its type, so a meta-ontology declaring several levels there
+has the first chosen directly and the others reached by choosing a type.
 
 Narrowing is reversible while nothing downstream depends on it. **Untyping** is free on a note that
 is neither bound nor realized, and every link touching it reverts to unverified. A realized note is

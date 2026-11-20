@@ -28,13 +28,11 @@ import {
   withBinding,
   withBody,
   withDocumentType,
-  withDomain,
   withLink,
   withLinkType,
   withNote,
   withNoteAt,
   withReversedLink,
-  withType,
   withoutBinding,
   withoutLink,
   withoutLinkType,
@@ -42,6 +40,7 @@ import {
   withoutRealization,
   withoutType,
 } from '../composables/scratchpadEdits'
+import { withLevelValue, withoutLevelValue } from '../composables/scratchpadClassification'
 import type { Scratchpad } from '../../domain/schemas/scratchpads'
 import type { EntityDisplayInfo } from '../../domain'
 import type { RepoError } from '../../ports/repositoryErrors'
@@ -321,8 +320,10 @@ const status = computed(() => {
         :selected-link="selectedLink"
         :notes="document.current.value?.notes ?? []"
         :links="document.current.value?.links ?? []"
-        @type-note="refine((c) => withType(c, $event.id, $event.elementType))"
-        @domain-note="refine((c) => withDomain(c, $event.id, $event.domain))"
+        :levels="document.current.value?.['classification-levels'] ?? []"
+        :areas="document.current.value?.areas ?? []"
+        @refine-note="refine((c) => withLevelValue(c, $event.id, $event.levelId, $event.value))"
+        @unrefine-note="refine((c) => withoutLevelValue(c, $event.id, $event.levelId))"
         @body-note="refine((c) => withBody(c, $event.id, $event.body))"
         @document-note="refine((c) => withDocumentType(c, $event.id, $event.documentType))"
         @untype-note="refine((c) => withoutBinding(withoutType(c, $event.id), $event.id))"

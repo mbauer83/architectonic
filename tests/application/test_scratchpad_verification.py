@@ -55,21 +55,47 @@ class TestFindingTheOntology:
 
 
 class TestTheTypingLadder:
+    def _by_source(self, registry) -> dict:
+        return {offered.level.source: offered for offered in typing_options(registry, "archimate-4")}
+
     def test_it_offers_the_levels_the_ontology_declares_in_order(self, registry) -> None:
-        levels = typing_options(registry, "archimate-4")
+        from src.domain.ontology_representation.classification_levels import classification_levels_for
 
-        assert [level.level_id for level in levels] == ["domain", "entity_type", "specialization"]
+        declared = classification_levels_for(registry.all_ontologies()["archimate-4-0"])
 
-    def test_the_type_level_offers_the_ontology_s_entity_types(self, registry) -> None:
-        by_id = {level.level_id: level for level in typing_options(registry, "archimate-4")}
+        assert tuple(offered.level for offered in typing_options(registry, "archimate-4")) == declared
 
-        assert "requirement" in by_id["entity_type"].values
-        assert by_id["entity_type"].required
+    def test_the_type_level_offers_the_ontology_s_entity_types_each_within_its_domain(
+        self, registry
+    ) -> None:
+        offered = {option.value: option.within for option in self._by_source(registry)["type"].options}
 
-    def test_the_specialization_level_is_offered_but_not_required(self, registry) -> None:
-        by_id = {level.level_id: level for level in typing_options(registry, "archimate-4")}
+        assert offered["requirement"] == "motivation"
+        assert self._by_source(registry)["type"].level.required
 
-        assert not by_id["specialization"].required
+    def test_the_first_level_offers_every_domain_a_type_is_offered_within(self, registry) -> None:
+        by_source = self._by_source(registry)
+        domains = {option.value for option in by_source["hierarchy"].options}
+
+        assert domains
+        assert {option.within for option in by_source["type"].options} <= domains
+
+    def test_a_specialization_is_offered_within_a_type_that_is_offered(self, registry) -> None:
+        by_source = self._by_source(registry)
+        types = {option.value for option in by_source["type"].options}
+        specializations = by_source["specializations"].options
+
+        assert specializations, "the shipped ontology declares specializations"
+        assert {option.within for option in specializations} <= types
+        assert not by_source["specializations"].level.required
+
+    def test_a_type_the_module_manages_for_itself_is_not_offered(self, registry) -> None:
+        offered = {option.value for option in self._by_source(registry)["type"].options}
+
+        assert "global-artifact-reference" not in offered
+
+    def test_an_unknown_meta_ontology_offers_nothing(self, registry) -> None:
+        assert typing_options(registry, "no-such-ontology") == ()
 
 
 class TestVerifyingAgainstTheRealOntology:

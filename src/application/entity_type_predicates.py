@@ -4,6 +4,10 @@ from src.domain.modules.catalogs import OntologyCatalog
 from src.domain.modules.module_catalog import ModuleCatalog
 from src.domain.modules.module_types import EntityTypeName
 
+#: The element class of types a module manages for itself. Named once, so the catalog-wide
+#: predicate below and a caller holding a single ontology module ask about the same class.
+INTERNAL_ELEMENT_CLASS = "internal"
+
 
 def is_internal_entity_type(artifact_type: str, ontology: OntologyCatalog) -> bool:
     """Return True if artifact_type belongs to the 'internal' element class.
@@ -11,7 +15,7 @@ def is_internal_entity_type(artifact_type: str, ontology: OntologyCatalog) -> bo
     Internal types (e.g. global-artifact-reference) are system-managed and must
     not be created or surfaced directly in user-facing entity lists.
     """
-    return artifact_type in ontology.entity_types_with_class("internal")
+    return artifact_type in ontology.entity_types_with_class(INTERNAL_ELEMENT_CLASS)
 
 
 def is_assurance_entity_type(artifact_type: str, module_catalog: ModuleCatalog) -> bool:

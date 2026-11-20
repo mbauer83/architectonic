@@ -5537,6 +5537,37 @@ export interface components {
             relation: components["schemas"]["ClassificationLevelResponse"][];
         };
         /**
+         * ClassificationLevelWire
+         * @description One level a note is refined through, as the scratchpad's meta-ontology declares it.
+         *
+         *     `source` says which of a note's keys holds the level's value: `hierarchy` is `domain`, `type` is
+         *     `element-type`, `specializations` is `specialization`. The note's keys stay the same under any
+         *     declaration; what the levels are called, how many there are and which are required do not.
+         */
+        ClassificationLevelWire: {
+            /**
+             * Carries-Attributes
+             * @default false
+             */
+            "carries-attributes": boolean;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Options */
+            options?: components["schemas"]["LevelOptionWire"][];
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "hierarchy" | "type" | "specializations";
+        };
+        /**
          * ClassificationNotPublishableDetails
          * @description ``classification_not_publishable``: the effective classification that forbids publication.
          *
@@ -9304,6 +9335,19 @@ export interface components {
             permitted_operation: string;
         };
         /**
+         * LevelOptionWire
+         * @description One value a classification level offers.
+         */
+        LevelOptionWire: {
+            /** Value */
+            value: string;
+            /**
+             * Within
+             * @default
+             */
+            within: string;
+        };
+        /**
          * LiftItemWire
          * @description One selected note or link, and what the lift would do with it.
          */
@@ -11160,6 +11204,10 @@ export interface components {
             attributes?: {
                 [key: string]: unknown;
             };
+            /** Classification-Levels */
+            "classification-levels"?: {
+                [key: string]: unknown;
+            }[] | null;
             /**
              * Description
              * @default
@@ -11273,6 +11321,8 @@ export interface components {
             attributes?: {
                 [key: string]: unknown;
             };
+            /** Classification-Levels */
+            "classification-levels"?: components["schemas"]["ClassificationLevelWire"][];
             /**
              * Description
              * @default

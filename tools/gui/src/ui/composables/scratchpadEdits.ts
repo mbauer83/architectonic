@@ -32,7 +32,8 @@ function without<T extends Record<string, unknown>>(record: T, ...keys: readonly
  * something it does not own. */
 export function toReplacePayload(scratchpad: Scratchpad): Record<string, unknown> {
   return {
-    ...without(scratchpad, 'group'),
+    // The ladder is the meta-ontology's, derived on every read like the verdicts below.
+    ...without(scratchpad, 'group', 'classification-levels'),
     // `verdict` goes too: the server derives it from an ontology that may have moved on, so
     // sending it back would be the client asserting an answer it does not own.
     notes: (scratchpad.notes ?? []).map((note) => without(note, 'area', 'verdict')),
@@ -118,34 +119,10 @@ export function withoutBinding(scratchpad: Scratchpad, noteId: string): Scratchp
   )
 }
 
-/** Narrow a note to a domain — the first rung, before any type is chosen.
- *
- * Choosing a domain drops a type that was already set: narrowing runs one level at a time, and
- * re-answering the coarser question re-opens the finer one rather than leaving a type the new
- * domain may not contain.
- */
-export function withDomain(scratchpad: Scratchpad, noteId: string, domain: string): Scratchpad {
-  const note = (scratchpad.notes ?? []).find((candidate) => candidate.id === noteId)
-  if (!note || note['model-ref']) return scratchpad
-  return withNote(scratchpad, {
-    ...without(note, 'element-type', 'specialization', 'document-type'),
-    destination: 'element',
-    domain,
-  })
-}
-
 /** Give a note the body that becomes the entity's summary when it is lifted. */
 export function withBody(scratchpad: Scratchpad, noteId: string, body: string): Scratchpad {
   const note = (scratchpad.notes ?? []).find((candidate) => candidate.id === noteId)
   return note ? withNote(scratchpad, { ...note, body }) : scratchpad
-}
-
-/** Narrow a note to an element type. Refused server-side on a note tied to the model, so the
- * panel does not offer it there either. */
-export function withType(scratchpad: Scratchpad, noteId: string, elementType: string): Scratchpad {
-  const note = (scratchpad.notes ?? []).find((candidate) => candidate.id === noteId)
-  if (!note || note['model-ref']) return scratchpad
-  return withNote(scratchpad, { ...note, destination: 'element', 'element-type': elementType })
 }
 
 /** Send a note to a document instead of an element.

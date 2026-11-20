@@ -86,8 +86,8 @@ def _with_declared_permits(document: Mapping[str, Any]) -> dict[str, Any]:
     Without this, the documented loop — "read it, edit it, hand it back" — *erased* what every frame
     declared: a read serves `permitted-domains`, the file stores `permits.domains`, and the reader
     knew only the second. The canvas hands back what it read on every save, so a seeded scratchpad
-    lost the domains of its frames at the first drag, and its type picker then offered everything
-    where it should have offered what the frame holds.
+    lost the domains of its frames at the first drag — and with them what the note panel offers
+    first, what a note outside them is warned about, and what the entity search is scoped to.
     """
     rows = document.get("areas")
     if not isinstance(rows, list):

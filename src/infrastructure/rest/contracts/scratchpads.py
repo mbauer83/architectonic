@@ -98,6 +98,33 @@ class AreaWire(NullsOmitted):
     permitted_document_types: list[str] = Field(default_factory=list, alias="permitted-document-types")
 
 
+class LevelOptionWire(NullsOmitted):
+    """One value a classification level offers."""
+
+    value: str
+    #: The value of the level above that allows this one — a type's domain, a specialization's
+    #: type. Empty at the first level, and where the level above does not constrain this one.
+    within: str = ""
+
+
+class ClassificationLevelWire(NullsOmitted):
+    """One level a note is refined through, as the scratchpad's meta-ontology declares it.
+
+    `source` says which of a note's keys holds the level's value: `hierarchy` is `domain`, `type` is
+    `element-type`, `specializations` is `specialization`. The note's keys stay the same under any
+    declaration; what the levels are called, how many there are and which are required do not.
+    """
+
+    id: str
+    label: str
+    source: Literal["hierarchy", "type", "specializations"]
+    #: A note must reach every required level before it can be lifted.
+    required: bool = False
+    #: A note's attributes are checked against the schema of the deepest such level it has reached.
+    carries_attributes: bool = Field(default=False, alias="carries-attributes")
+    options: list[LevelOptionWire] = Field(default_factory=list)
+
+
 class GroupWire(NullsOmitted):
     id: str
     label: str
@@ -141,6 +168,11 @@ class ScratchpadResponse(NullsOmitted):
     group: str
     meta_ontology: str = Field(alias="meta-ontology")
     attributes: dict[str, object] = Field(default_factory=dict)
+    #: Derived from the meta-ontology on every read and never stored: the levels notes are refined
+    #: through, in declared order, each with what it offers.
+    classification_levels: list[ClassificationLevelWire] = Field(
+        default_factory=list, alias="classification-levels"
+    )
     areas: list[AreaWire] = Field(default_factory=list)
     notes: list[NoteWire] = Field(default_factory=list)
     links: list[LinkWire] = Field(default_factory=list)

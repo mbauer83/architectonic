@@ -92,6 +92,27 @@ export const AreaSchema = Schema.Struct({
 })
 export type Area = typeof AreaSchema.Type
 
+/** One level a note is refined through, as the scratchpad's meta-ontology declares it.
+ *
+ * `source` says which of a note's keys holds the level's value — `hierarchy` is `domain`, `type` is
+ * `element-type`, `specializations` is `specialization` — so the keys stay put under any
+ * declaration while the levels' names, count and rules follow the ontology module. */
+export const ClassificationLevelSchema = Schema.Struct({
+  id: Schema.String,
+  label: Schema.String,
+  source: Schema.Literal('hierarchy', 'type', 'specializations'),
+  /** A note must reach every required level before it can be lifted. */
+  required: Schema.Boolean,
+  /** Attributes are checked against the schema of the deepest such level a note has reached. */
+  'carries-attributes': Schema.Boolean,
+  options: Schema.optional(Schema.Array(Schema.Struct({
+    value: Schema.String,
+    /** The value of the level above that allows this one; empty where nothing constrains it. */
+    within: Schema.String,
+  }))),
+})
+export type ClassificationLevel = typeof ClassificationLevelSchema.Type
+
 export const NoteGroupSchema = Schema.Struct({
   id: Schema.String,
   label: Schema.String,
@@ -117,6 +138,8 @@ export const ScratchpadSchema = Schema.Struct({
   group: Schema.String,
   'meta-ontology': Schema.String,
   attributes: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  /** Derived from the meta-ontology on every read, in declared order; never stored. */
+  'classification-levels': Schema.optional(Schema.Array(ClassificationLevelSchema)),
   areas: Schema.optional(Schema.Array(AreaSchema)),
   notes: Schema.optional(Schema.Array(NoteSchema)),
   links: Schema.optional(Schema.Array(LinkSchema)),

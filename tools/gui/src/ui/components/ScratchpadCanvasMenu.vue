@@ -49,8 +49,8 @@ watch(() => props.at, (at) => {
   if (at) void nextTick(() => root.value?.focus())
 })
 
-/** `fixedEntityTypes` narrows the picker to what this frame permits — the permitted set doing the
- * second half of its job, having already narrowed the type picker. An empty array is passed as
+/** `fixedEntityTypes` narrows the picker to what this frame permits — the same permitted set the
+ * note panel offers first and a note outside it is warned about. An empty array is passed as
  * `undefined`: an area that permits everything must not be read as one that permits nothing. */
 const scope = computed(() => (props.permittedTypes.length ? [...props.permittedTypes] : undefined))
 

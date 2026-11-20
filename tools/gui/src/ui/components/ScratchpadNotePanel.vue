@@ -2,18 +2,17 @@
 /**
  * What a selected note may become, and what a drawn link's verdict means.
  *
- * The refinement ladder is the meta-ontology's own: domain, then entity type, then specialization.
- * `useEntityFilters` already groups the ontology's types by domain and fetches them once, so this
- * reuses it rather than adding a second source — the picker's two levels *are* those two levels.
+ * The refinement ladder is the meta-ontology's own and arrives with the scratchpad, so the panel
+ * renders one control per level it is given and names none of them.
  *
  * Nothing here is required. A note that stays undecided has done its job; the panel offers, and
  * says so.
  */
 import { computed, inject, onMounted } from 'vue'
-import { useEntityFilters } from '../composables/useEntityFilters'
 import { useQuery } from '../composables/useQuery'
 import { modelServiceKey } from '../keys'
-import type { Link, Note } from '../../domain/schemas/scratchpads'
+import ScratchpadNoteClassification from './ScratchpadNoteClassification.vue'
+import type { Area, ClassificationLevel, Link, Note } from '../../domain/schemas/scratchpads'
 import type { DocumentType } from '../../domain/schemas/documents'
 import type { RepoError } from '../../ports/repositoryErrors'
 
@@ -24,10 +23,14 @@ const props = defineProps<{
   selectedLink: Link | null
   /** Every note, so a selected link can be named by its ends rather than by an id. */
   notes: readonly Note[]
+  /** The classification levels the scratchpad's meta-ontology declares, in declared order. */
+  levels: readonly ClassificationLevel[]
+  /** Every area, so the picker can offer first what the selected note's own area permits. */
+  areas: readonly Area[]
 }>()
 const emit = defineEmits<{
-  (event: 'type-note', payload: { id: string; elementType: string }): void
-  (event: 'domain-note', payload: { id: string; domain: string }): void
+  (event: 'refine-note', payload: { id: string; levelId: string; value: string }): void
+  (event: 'unrefine-note', payload: { id: string; levelId: string }): void
   (event: 'body-note', payload: { id: string; body: string }): void
   (event: 'document-note', payload: { id: string; documentType: string }): void
   (event: 'untype-note', payload: { id: string }): void
@@ -38,7 +41,8 @@ const emit = defineEmits<{
   (event: 'delete-link', payload: { id: string }): void
 }>()
 
-const { selectedDomains, domainOptions, availableEntityTypes } = useEntityFilters()
+/** The area the note sits in, or `null` in the margin, where everything is permitted. */
+const area = computed(() => props.areas.find((candidate) => candidate.id === props.note?.area) ?? null)
 
 /** The other destination. Most of portfolio work is prose and figures — budgets, timelines,
  * project outlines — so offering only element types would make the majority case the awkward one. */
@@ -162,31 +166,15 @@ const onLinkType = (connectionType: string): void => {
 
     <template v-else>
       <p class="hint">
-        Choose a domain, then a type, when you know them. Both are optional.
+        Narrow this note when you know more. Every level is optional until it is lifted.
       </p>
-      <label class="field">
-        <span>Domain</span>
-        <select
-          :value="note.domain ?? ''"
-          data-testid="type-domain"
-          @change="selectedDomains = ($event.target as HTMLSelectElement).value
-                     ? [($event.target as HTMLSelectElement).value] : [];
-                   ($event.target as HTMLSelectElement).value
-                     ? emit('domain-note', { id: note.id, domain: ($event.target as HTMLSelectElement).value })
-                     : emit('untype-note', { id: note.id })"
-        >
-          <option value="">
-            Any
-          </option>
-          <option
-            v-for="option in domainOptions"
-            :key="option.key"
-            :value="option.key"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+      <ScratchpadNoteClassification
+        :note="note"
+        :levels="levels"
+        :area="area"
+        @refine-note="emit('refine-note', $event)"
+        @unrefine-note="emit('unrefine-note', $event)"
+      />
       <label
         v-if="documentTypes.length"
         class="field"
@@ -206,27 +194,6 @@ const onLinkType = (connectionType: string): void => {
           </option>
           <option
             v-for="value in documentTypes"
-            :key="value"
-            :value="value"
-          >
-            {{ value }}
-          </option>
-        </select>
-      </label>
-      <label class="field">
-        <span>Element type</span>
-        <select
-          :value="note['element-type'] ?? ''"
-          data-testid="type-element"
-          @change="($event.target as HTMLSelectElement).value
-            ? emit('type-note', { id: note.id, elementType: ($event.target as HTMLSelectElement).value })
-            : emit('untype-note', { id: note.id })"
-        >
-          <option value="">
-            Undecided
-          </option>
-          <option
-            v-for="value in availableEntityTypes"
             :key="value"
             :value="value"
           >

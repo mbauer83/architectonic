@@ -18,7 +18,6 @@ import {
   withNoteAt,
   areaAtPoint,
   withReversedLink,
-  withType,
   withoutBinding,
   withoutLink,
   withoutLinkType,
@@ -254,28 +253,26 @@ describe('binding a note to something that already exists', () => {
 
 
 describe('refining a note down the ontology', () => {
-  it('narrows a note to an element type', () => {
-    const typed = withType(base, 'n1', 'requirement')
-
-    expect(typed.notes?.[0].destination).toBe('element')
-    expect(typed.notes?.[0]['element-type']).toBe('requirement')
-  })
-
   it('untyping clears every link touching the note', () => {
     // A typed link with an untyped end is a claim nothing supports, and the server rejects the
     // document that asserts it.
     const two = withNote(base, note('n2', 'Second'))
     const linked = withLinkType(withLink(two, 'l1', 'n1', 'n2'), 'l1', 'archimate-realization')
 
-    const after = withoutType(withType(linked, 'n1', 'requirement'), 'n1')
+    const typed = withNote(linked, {
+      ...note('n1', 'Grow into mid-market', 'strategy'),
+      destination: 'element',
+      'element-type': 'requirement',
+    })
+
+    const after = withoutType(typed, 'n1')
 
     expect(after.links?.[0]['connection-type']).toBeUndefined()
   })
 
-  it('refuses to retype a note that takes its type from the model', () => {
+  it('refuses to untype a note that takes its type from the model', () => {
     const bound = withBinding(base, 'n1', { artifact_id: 'CAP@1.a.x', artifact_type: 'capability' })
 
-    expect(withType(bound, 'n1', 'goal')).toEqual(bound)
     expect(withoutType(bound, 'n1')).toEqual(bound)
   })
 

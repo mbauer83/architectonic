@@ -20,9 +20,11 @@ the person moving it can see.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 
+from src.domain.ontology_representation.classification_levels import ClassificationLevel
+from src.domain.scratchpad.classification import declassified, refined
 from src.domain.scratchpad.geometry import Point, snap_point
 from src.domain.scratchpad.invariants import (
     validated_groups,
@@ -164,46 +166,29 @@ class Scratchpad:
             self, layout=replace(self.layout, notes={**self.layout.notes, note_id: snap_point(to)})
         ))
 
-    def typed(
-        self, note_id: str, *, element_type: str, specialization: str | None = None
+    def refined(
+        self,
+        note_id: str,
+        *,
+        level: ClassificationLevel,
+        value: str,
+        levels: Sequence[ClassificationLevel],
     ) -> Scratchpad:
-        """Narrow a note to an element type, and optionally one level further.
+        """Narrow a note one level, down the ladder its meta-ontology declares.
+
+        One step for every level rather than a method per level, because which levels there are —
+        how many, in what order, called what — is the ontology module's to say. *levels* is that
+        declaration; choosing a value at one of them re-opens every level declared after it.
 
         Refused on a note that already holds a model reference: a bound note's type is the
-        entity's, and a realized one's is what the lift created. Retyping either would make the
+        entity's, and a realized one's is what the lift created. Changing either would make the
         note describe something the model does not contain.
         """
         note = self.note(note_id)
         if note is None:
             raise ScratchpadError(f"no note {note_id!r} in this scratchpad")
         refuse_retyping(note)
-        return self.with_note(replace(
-            note, destination="element", element_type=element_type, specialization=specialization
-        ))
-
-    def narrowed(self, note_id: str, *, domain: str) -> Scratchpad:
-        """Narrow a note to a domain — the first rung, before any type is chosen.
-
-        A level of its own rather than a filter on the type picker, because "this is motivation
-        work" is a decision someone makes and wants to see. It is the level the meta-ontology's
-        `classification_levels` declares first, which is what that declaration was for.
-
-        Choosing a domain drops an element type that was already set: narrowing runs one level at a
-        time, and re-answering a coarser question re-opens the finer one rather than leaving a type
-        the new domain may not contain.
-        """
-        note = self.note(note_id)
-        if note is None:
-            raise ScratchpadError(f"no note {note_id!r} in this scratchpad")
-        refuse_retyping(note)
-        return self.with_note(replace(
-            note,
-            destination="element",
-            domain=domain,
-            element_type=None,
-            specialization=None,
-            document_type=None,
-        ))
+        return self.with_note(refined(note, level=level, value=value, levels=levels))
 
     def documented(self, note_id: str, *, document_type: str) -> Scratchpad:
         """Send a note to a document rather than to an element.
@@ -218,12 +203,7 @@ class Scratchpad:
             raise ScratchpadError(f"no note {note_id!r} in this scratchpad")
         refuse_documenting(note)
         return self.with_note(replace(
-            note,
-            destination="document",
-            document_type=document_type,
-            domain=None,
-            element_type=None,
-            specialization=None,
+            declassified(note), destination="document", document_type=document_type
         ))
 
     def untyped(self, note_id: str) -> Scratchpad:
@@ -242,10 +222,7 @@ class Scratchpad:
         # is a claim the aggregate can no longer support.
         return self._validated(replace(
             replace(self, notes=tuple(
-                replace(
-                    existing, destination="undecided", domain=None, element_type=None,
-                    specialization=None, document_type=None,
-                )
+                replace(declassified(existing), destination="undecided", document_type=None)
                 if existing.id == note_id else existing
                 for existing in self.notes
             )),
@@ -299,8 +276,7 @@ class Scratchpad:
             raise ScratchpadError(f"no note {note_id!r} in this scratchpad")
         refuse_unbinding(note)
         return self.with_note(replace(
-            note, destination="undecided", domain=None, element_type=None, specialization=None,
-            model_ref=None,
+            declassified(note), destination="undecided", model_ref=None
         ))
 
     def with_meta_ontology(self, meta_ontology: str) -> Scratchpad:

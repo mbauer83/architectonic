@@ -1,11 +1,19 @@
 """The scratchpad domain: the aggregate, its invariants, and canvas geometry."""
 
+from src.domain.scratchpad.classification import (
+    LevelOption,
+    TypingOptions,
+    attribute_level_of,
+    may_be_lifted,
+    reached_levels,
+    unreached_required,
+    value_at,
+)
 from src.domain.scratchpad.geometry import GRID, Point, Rect, snap, snap_point, snap_rect
 from src.domain.scratchpad.link_verdict import (
     UNVERIFIED,
     Endpoint,
     LinkVerdict,
-    TypingOptions,
     VerdictKind,
     verify_link,
 )
@@ -37,6 +45,12 @@ __all__ = [
     "Destination",
     "Group",
     "Layout",
+    "LevelOption",
+    "attribute_level_of",
+    "may_be_lifted",
+    "reached_levels",
+    "unreached_required",
+    "value_at",
     "Link",
     "LinkVerdict",
     "ModelRef",

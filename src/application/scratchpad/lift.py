@@ -9,8 +9,9 @@ what happens.
 
 Four outcomes, and the distinction between them is the whole design:
 
-* **create** — a note that is typed and holds no model reference becomes an entity; a typed link
-  between two of them becomes a connection.
+* **create** — a note that has reached every classification level its meta-ontology requires, and
+  holds no model reference, becomes an entity; a typed link between two of them becomes a
+  connection.
 * **skip** — a note that already carries a `model_ref` is *reported and left alone*. A lift never
   writes back to the model: re-lifting a realized note would be bidirectional sync between a sketch
   and a governed model, and would silently clobber whatever was edited there since. A second lift
@@ -33,6 +34,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import replace
 
+from src.application.scratchpad.lift_notes import note_item
 from src.application.scratchpad.lift_plan import (
     ROOT_MODEL,
     LiftGrouping,
@@ -42,6 +44,10 @@ from src.application.scratchpad.lift_plan import (
     LiftReceipt,
     LiftTarget,
     OutsideSelection,
+)
+from src.domain.ontology_representation.classification_levels import (
+    DERIVED_DEFAULT_LEVELS,
+    ClassificationLevel,
 )
 from src.domain.provisional_reference import provisional
 from src.domain.scratchpad import UNVERIFIED, Link, LinkVerdict, Note, Scratchpad
@@ -67,6 +73,7 @@ def plan_lift(
     targets: Mapping[str, LiftTarget],
     verdict_of: Callable[[Link], LinkVerdict],
     note_verdict_of: Callable[[Note], LinkVerdict] = lambda _note: UNVERIFIED,
+    levels: Sequence[ClassificationLevel] = DERIVED_DEFAULT_LEVELS,
     draw: bool = False,
 ) -> LiftPlan:
     """What lifting *selection* would do. Pure: nothing is written and nothing read.
@@ -76,7 +83,8 @@ def plan_lift(
 
     `verdict_of` and `note_verdict_of` are the verdicts the canvas already renders on each link and
     each note, passed in rather than recomputed, so the preflight cannot disagree with what the
-    person is looking at.
+    person is looking at. `levels` is the classification ladder the scratchpad's meta-ontology
+    declares, which decides when a note is complete enough to become an element.
     """
     chosen = sorted(
         (note for note in scratchpad.notes if note.id in set(selection)),
@@ -89,7 +97,7 @@ def plan_lift(
     if refusal:
         return LiftPlan(targets=_distinct(used.values()), refusal=refusal)
 
-    items = [_note_item(note, used[note.id], note_verdict_of(note)) for note in chosen]
+    items = [note_item(note, used[note.id], note_verdict_of(note), levels) for note in chosen]
     inside = {note.id for note in chosen}
     refs = {note.id: _endpoint_ref(note) for note in chosen}
 
@@ -187,46 +195,6 @@ def _plan_refusal(
                 "same meta-ontology, or create a new one."
             )
     return ""
-
-
-def _note_item(note: Note, target: LiftTarget, verdict: LinkVerdict) -> LiftItem:
-    """What would become of one selected note, and which project it lands in.
-
-    A narrowing — the note decided as something its area does not hold — is carried as a warning and
-    the note is still created: the type is one the meta-ontology declares.
-    """
-    warning = verdict.message if verdict.kind == "narrowed" else ""
-    if note.model_ref is not None:
-        kind = "bound to" if note.model_ref.kind == "bound" else "already realized as"
-        return LiftItem(
-            # Named for what it became: a skipped document reported as an element would be drawn
-            # on the lift's diagram as an entity the model does not hold.
-            kind="document" if note.destination == "document" else "element",
-            id=note.id, outcome="skip", label=note.title, target=target.group,
-            artifact_type=note.element_type or note.document_type or "",
-            artifact_id=note.model_ref.artifact_id,
-            reason=f"{kind} {note.model_ref.artifact_id} — the model is not the scratchpad's to rewrite",
-        )
-    if note.destination == "document":
-        if not note.document_type:
-            return LiftItem(
-                kind="document", id=note.id, outcome="refuse", label=note.title, target=target.group,
-                reason="destined for a document but with no document type chosen",
-            )
-        return LiftItem(
-            kind="document", id=note.id, outcome="create", label=note.title, target=target.group,
-            artifact_type=note.document_type, summary=note.body, warning=warning,
-        )
-    if note.destination != "element" or not note.element_type:
-        return LiftItem(
-            kind="element", id=note.id, outcome="refuse", label=note.title, target=target.group,
-            reason="undecided — give it an element type, or take it out of the selection",
-        )
-    return LiftItem(
-        kind="element", id=note.id, outcome="create", label=note.title, target=target.group,
-        artifact_type=note.element_type, summary=note.body, warning=warning,
-        specializations=(note.specialization,) if note.specialization else (),
-    )
 
 
 def _endpoint_ref(note: Note) -> str:

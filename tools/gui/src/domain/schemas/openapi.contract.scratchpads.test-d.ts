@@ -3,6 +3,7 @@ import type { Immutable, SchemaType } from './contractOracle'
 import type { components } from './openapi.generated'
 import type {
   AreaSchema,
+  ClassificationLevelSchema,
   LiftItemSchema,
   LinkVerdictSchema,
   LayoutSchema,
@@ -50,6 +51,14 @@ describe('a scratchpad, read whole', () => {
     // decoder, and the canvas would render a refused link as though nothing were wrong.
     expectTypeOf<SchemaType<typeof LinkVerdictSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['LinkVerdictWire']>
+    >()
+  })
+
+  it('decodes a classification level, which is what the note panel renders its controls from', () => {
+    // A level the decoder narrowed would be a control the panel never draws, and a note that can
+    // then never reach a level its meta-ontology requires.
+    expectTypeOf<SchemaType<typeof ClassificationLevelSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['ClassificationLevelWire']>
     >()
   })
 

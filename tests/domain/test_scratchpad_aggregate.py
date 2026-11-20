@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import pytest
 
+from src.domain.ontology_representation.classification_levels import DERIVED_DEFAULT_LEVELS
 from src.domain.scratchpad import (
     UNFILED,
     Area,
@@ -23,6 +24,14 @@ from src.domain.scratchpad import (
     ScratchpadError,
     scratchpad_from_parts,
 )
+
+#: The ladder a module gets by declaring nothing: one level above the type, and one below it.
+_LEVELS = DERIVED_DEFAULT_LEVELS
+
+
+def _typed(pad: Scratchpad, note_id: str, element_type: str) -> Scratchpad:
+    """The note narrowed at the level that takes its values from the ontology's types."""
+    return pad.refined(note_id, level=_LEVELS[1], value=element_type, levels=_LEVELS)
 
 
 def _pad(**overrides: object) -> Scratchpad:
@@ -347,7 +356,7 @@ class TestTypingAndUndoingIt:
     typing can be undone. It can — and each of the three ways out means something different."""
 
     def _typed(self) -> Scratchpad:
-        return _pad(notes=[Note(id="n1", title="A")]).typed("n1", element_type="requirement")
+        return _typed(_pad(notes=[Note(id="n1", title="A")]), "n1", "requirement")
 
     def test_typing_narrows_a_note_to_an_element(self) -> None:
         note = self._typed().note("n1")
@@ -355,8 +364,8 @@ class TestTypingAndUndoingIt:
         assert (note.destination, note.element_type) == ("element", "requirement")
 
     def test_typing_may_go_one_level_further(self) -> None:
-        pad = _pad(notes=[Note(id="n1", title="A")]).typed(
-            "n1", element_type="requirement", specialization="regulatory"
+        pad = _typed(_pad(notes=[Note(id="n1", title="A")]), "n1", "requirement").refined(
+            "n1", level=_LEVELS[2], value="regulatory", levels=_LEVELS
         )
 
         assert pad.note("n1").specialization == "regulatory"
@@ -372,7 +381,8 @@ class TestTypingAndUndoingIt:
         pad = _pad(
             notes=[Note(id="n1", title="A"), Note(id="n2", title="B")],
             links=[Link(id="l1", source="n1", target="n2", connection_type="archimate-realization")],
-        ).typed("n1", element_type="requirement")
+        )
+        pad = _typed(pad, "n1", "requirement")
 
         after = pad.untyped("n1")
 
@@ -419,15 +429,13 @@ class TestTypingAndUndoingIt:
         )
 
         with pytest.raises(ScratchpadError, match="unbind it first"):
-            pad.typed("n1", element_type="goal")
+            _typed(pad, "n1", "goal")
 
     def test_the_route_out_of_a_frozen_meta_ontology_is_reachable(self) -> None:
         """Blunt, but always available — which is what invariant 4 needed to not be a trap."""
-        pad = (
-            _pad(notes=[Note(id="n1", title="A"), Note(id="n2", title="B")])
-            .typed("n1", element_type="requirement")
-            .bound("n2", artifact_id="CAP@1.a.x", element_type="capability")
-        )
+        pad = _typed(
+            _pad(notes=[Note(id="n1", title="A"), Note(id="n2", title="B")]), "n1", "requirement"
+        ).bound("n2", artifact_id="CAP@1.a.x", element_type="capability")
 
         freed = pad.untyped("n1").unbound("n2")
 

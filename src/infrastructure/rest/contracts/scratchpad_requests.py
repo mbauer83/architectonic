@@ -255,6 +255,11 @@ class ScratchpadDocumentWire(Closed):
     group: str | None = None
     meta_ontology: str | None = Field(default=None, alias="meta-ontology")
     attributes: dict[str, object] = Field(default_factory=dict)
+    #: Derived from the meta-ontology on every read; accepted so a caller may hand back what it
+    #: read, and never stored.
+    classification_levels: list[dict[str, object]] | None = Field(
+        default=None, alias="classification-levels"
+    )
     areas: list[AreaRequestWire] = Field(default_factory=list)
     notes: list[NoteRequestWire] = Field(default_factory=list)
     links: list[LinkRequestWire] = Field(default_factory=list)

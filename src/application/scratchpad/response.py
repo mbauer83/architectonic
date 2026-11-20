@@ -16,6 +16,7 @@ from src.application.scratchpad.verification import (
     note_verdict_source,
     ontology_domains,
     types_in_domains,
+    typing_options,
     verdict_source,
 )
 from src.domain.modules.module_registry import ModuleRegistry
@@ -37,6 +38,7 @@ def to_response(scratchpad: Scratchpad, *, group: str, registry: ModuleRegistry)
     """
     document = to_document(scratchpad)
     document["group"] = group
+    document["classification-levels"] = _levels_document(registry, scratchpad.meta_ontology)
     _serve_areas(scratchpad, document, registry)
     _serve_notes(scratchpad, document, registry)
     link_verdict_of = verdict_source(registry, scratchpad)
@@ -85,6 +87,28 @@ def _serve_notes(scratchpad: Scratchpad, document: dict[str, Any], registry: Mod
         verdict = note_verdict_of(note)
         if verdict.is_settled:
             row["verdict"] = _verdict_document(verdict)
+
+
+def _levels_document(registry: ModuleRegistry, meta_ontology: str) -> list[dict[str, Any]]:
+    """The ladder a note is refined down, and what each level offers.
+
+    Served with the scratchpad because it is the scratchpad's meta-ontology that declares it: which
+    levels there are, in what order, which must be reached before a lift, and where attributes
+    attach. A client renders one control per level from this and names none of them itself.
+    """
+    return [
+        {
+            "id": offered.level.id,
+            "label": offered.level.label,
+            "source": offered.level.source,
+            "required": offered.level.required,
+            "carries-attributes": offered.level.carries_attributes,
+            "options": [
+                {"value": option.value, "within": option.within} for option in offered.options
+            ],
+        }
+        for offered in typing_options(registry, meta_ontology)
+    ]
 
 
 def _verdict_document(verdict: LinkVerdict) -> dict[str, Any]:

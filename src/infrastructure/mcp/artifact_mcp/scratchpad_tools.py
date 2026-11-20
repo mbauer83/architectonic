@@ -133,7 +133,12 @@ def register_scratchpad_read_tools(mcp: MCPServer) -> None:
             "`destination`, `element-type` and the rest are optional at every moment. A link "
             "carries a `verdict` saying what the meta-ontology makes of it, and a note carries one "
             "when there is something to say: `narrowed` is a warning — the note is decided as "
-            "something its area does not permit — and does not stop a lift; `refused` does."
+            "something its area does not permit — and does not stop a lift; `refused` does. "
+            "`classification-levels` lists the levels this scratchpad's meta-ontology refines a "
+            "note through, in order, each with its `options`; a level's `source` says which note "
+            "key holds its value (`hierarchy` is `domain`, `type` is `element-type`, "
+            "`specializations` is `specialization`), and a note can be lifted once every "
+            "`required` level is reached."
             + _AGGREGATE_NOTE
         ),
         annotations=READ_ONLY,

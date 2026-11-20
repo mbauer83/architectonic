@@ -17,9 +17,11 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
+from src.application.entity_type_predicates import INTERNAL_ELEMENT_CLASS
 from src.domain.modules.module_registry import ModuleRegistry
-from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
+from src.domain.modules.module_types import ConnectionTypeName, ElementClassName, EntityTypeName
 from src.domain.ontology_representation.classification_levels import (
+    DERIVED_DEFAULT_LEVELS,
     ClassificationLevel,
     classification_levels_for,
 )
@@ -27,6 +29,7 @@ from src.domain.ontology_representation.ontology_protocol import OntologyModule
 from src.domain.ontology_representation.specializations import specialization_narrows
 from src.domain.scratchpad import (
     Endpoint,
+    LevelOption,
     Link,
     LinkVerdict,
     Note,
@@ -89,13 +92,7 @@ def _by_alias(modules: Mapping[str, OntologyModule], meta_ontology: str) -> Onto
 def ontology_domains(registry: ModuleRegistry, meta_ontology: str) -> dict[str, str]:
     """Entity type → its domain, read off `hierarchy[0]` rather than from a table beside it."""
     module = _module_for(registry, meta_ontology)
-    if module is None:
-        return {}
-    return {
-        str(name): str(info.hierarchy[0])
-        for name, info in module.entity_types.items()
-        if info.hierarchy
-    }
+    return _domains_by_type(module) if module is not None else {}
 
 
 def types_in_domains(
@@ -119,22 +116,73 @@ def types_in_domains(
     )
 
 
+def classification_levels_of(
+    registry: ModuleRegistry, meta_ontology: str
+) -> tuple[ClassificationLevel, ...]:
+    """The levels a scratchpad's notes are refined through — its meta-ontology's own.
+
+    A vocabulary this workspace does not have gets the derived default, the ladder a module gets by
+    declaring nothing: the scratchpad stays readable and its notes keep meaning what they said.
+    """
+    module = _module_for(registry, meta_ontology)
+    return classification_levels_for(module) if module is not None else DERIVED_DEFAULT_LEVELS
+
+
 def typing_options(registry: ModuleRegistry, meta_ontology: str) -> tuple[TypingOptions, ...]:
     """What a note may be narrowed to, level by level, in the order the ontology declares.
 
-    Only the type level is populated today: a specialization's options depend on the type chosen,
-    so the canvas asks again once it has one.
+    The one place the picker's contents are decided. Each option names the value of the level above
+    that allows it — a type its domain, a specialization its type — so a client offers at each
+    level what the level above allows without knowing what either level is called.
     """
-    view = ontology_view(registry, meta_ontology)
+    module = _module_for(registry, meta_ontology)
+    if module is None:
+        return ()
+    levels = classification_levels_for(module)
     return tuple(
-        TypingOptions(
-            level_id=level.id,
-            label=level.label,
-            values=view.entity_types if level.source == "type" else (),
-            required=level.required,
-        )
-        for level in view.levels
+        TypingOptions(level=level, options=_options_at(module, level, levels)) for level in levels
     )
+
+
+def _options_at(
+    module: OntologyModule, level: ClassificationLevel, levels: Sequence[ClassificationLevel]
+) -> tuple[LevelOption, ...]:
+    above = _source_above(level, levels)
+    # A type the module manages for itself is never something a person decides a note is.
+    internal = module.entity_types_with_class(ElementClassName(INTERNAL_ELEMENT_CLASS))
+    offered = [str(name) for name in module.entity_types if name not in internal]
+    domains = _domains_by_type(module)
+    match level.source:
+        case "hierarchy":
+            return tuple(
+                LevelOption(value=domain)
+                for domain in dict.fromkeys(domains[name] for name in offered if name in domains)
+            )
+        case "type":
+            return tuple(
+                LevelOption(value=name, within=domains.get(name, "") if above == "hierarchy" else "")
+                for name in offered
+            )
+        case "specializations":
+            return tuple(
+                LevelOption(value=entry.slug, within=entry.parent_type if above == "type" else "")
+                for entry in module.specialization_catalog.entries
+                if entry.concept_kind == "entity" and entry.parent_type in offered
+            )
+
+
+def _source_above(level: ClassificationLevel, levels: Sequence[ClassificationLevel]) -> str:
+    """Where the level declared immediately above this one takes its values from, if there is one."""
+    position = list(levels).index(level)
+    return levels[position - 1].source if position else ""
+
+
+def _domains_by_type(module: OntologyModule) -> dict[str, str]:
+    return {
+        str(name): str(info.hierarchy[0])
+        for name, info in module.entity_types.items()
+        if info.hierarchy
+    }
 
 
 def verdict_for(
