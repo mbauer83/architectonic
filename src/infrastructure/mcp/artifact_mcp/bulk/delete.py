@@ -23,6 +23,7 @@ from .common import (
     resolve_root,
     stage_batch_verification,
     temp_repo_callbacks,
+    unexecuted_batch_verification,
 )
 from .delete_apply import (
     apply_implicit_connection_deletes,
@@ -253,13 +254,7 @@ def _staged_delete_verification(
     operation_id: str,
 ) -> dict[str, object]:
     if skipped:
-        return {
-            "valid": False,
-            "executed": False,
-            "counts": {"files": 0, "valid_files": 0, "invalid_files": 0, "errors": 0, "warnings": 0},
-            "results": [],
-            "repo_root": str(live_root),
-        }
+        return unexecuted_batch_verification(live_root)
     operation_registry.set_phase(operation_id, "verify")
     verification = stage_batch_verification(
         staged_root,

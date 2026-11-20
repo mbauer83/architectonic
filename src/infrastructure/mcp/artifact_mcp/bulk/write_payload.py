@@ -31,6 +31,11 @@ _BATCH_LEVEL_ITEM_FIELDS = ("operation_id",)
 _DERIVABLE_ITEM_FIELDS = ("path",)
 
 
+#: What a caller acts on in a batch verification: the verdict, whether it ran, the counts, and the
+#: findings themselves. The rest of the record is bookkeeping about the run, kept in `full`.
+_BATCH_VERIFICATION_FINDINGS = ("valid", "executed", "counts", "results")
+
+
 def _without(item: dict[str, object], fields: tuple[str, ...]) -> dict[str, object]:
     return {key: value for key, value in item.items() if key not in fields}
 
@@ -53,6 +58,19 @@ def items_for(items: list[dict[str, object]], return_mode: BulkWriteReturnMode) 
     ]
 
 
+def batch_verification_for(
+    verification: dict[str, object], return_mode: BulkWriteReturnMode
+) -> dict[str, object]:
+    """The batch verification a mode carries: always its findings, and in `full` the whole record.
+
+    The findings are never narrowed away. They are stated once for the batch, so they do not grow
+    with its size, and a caller that asked for `ids` and was refused still needs to know why.
+    """
+    if return_mode == "full":
+        return verification
+    return {key: verification[key] for key in _BATCH_VERIFICATION_FINDINGS if key in verification}
+
+
 def counts_by_op(items: list[dict[str, object]]) -> dict[str, int]:
     """How many items of each op the batch carried, in the order the ops first appeared."""
     counts: dict[str, int] = {}
@@ -69,6 +87,7 @@ def build_write_payload(
     operation_id: str,
     dry_run: bool,
     committed: bool,
+    batch_verification: dict[str, object],
 ) -> dict[str, object]:
     """The batch's complete record: its own facts, and every item as it was applied.
 
@@ -78,6 +97,10 @@ def build_write_payload(
 
     `refs` is the map most callers actually need from a successful create, and it is stated rather
     than reconstructed: the alias the caller chose against the id the repository allocated.
+
+    `batch_verification` is what verifying the staged repository as a whole found — the refusal a
+    dry run exists to preview, and the warnings of a batch that was accepted. It is the batch's, so
+    it is stated here once and never copied onto the items it refused.
     """
     failed = [item for item in items if item.get("error")]
     return {
@@ -89,6 +112,7 @@ def build_write_payload(
         "counts": counts_by_op(items),
         "refs": dict(ref_map),
         "return_mode": "full",
+        "batch_verification": batch_verification,
         "items": [_without(item, _BATCH_LEVEL_ITEM_FIELDS) for item in items],
     }
 
@@ -101,4 +125,12 @@ def shape_payload(payload: dict[str, object], return_mode: BulkWriteReturnMode) 
     """
     stored = payload.get("items")
     items = [item for item in stored if isinstance(item, dict)] if isinstance(stored, list) else []
-    return {**payload, "return_mode": return_mode, "items": items_for(items, return_mode)}
+    verification = payload.get("batch_verification")
+    return {
+        **payload,
+        "return_mode": return_mode,
+        "batch_verification": batch_verification_for(
+            verification if isinstance(verification, dict) else {}, return_mode
+        ),
+        "items": items_for(items, return_mode),
+    }

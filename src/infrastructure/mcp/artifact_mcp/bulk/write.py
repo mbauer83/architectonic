@@ -18,11 +18,12 @@ from src.infrastructure.write.operation_registry import operation_registry
 
 from .candidate_state import candidate_registry, candidate_store
 from .common import (
-    KNOWN_ITEM_FIELDS,
     KNOWN_OPS,
     normalize_staged_result,
+    normalize_staged_verification,
     resolve_root,
     stage_batch_verification,
+    unexecuted_batch_verification,
     unknown_item_fields,
 )
 from .diagram_refs import auto_sync_diagrams, collect_bulk_write_auto_sync_diagram_ids
@@ -33,6 +34,11 @@ from .write_apply import (
     apply_edits,
 )
 from .write_payload import BulkWriteReturnMode, build_write_payload, shape_payload
+from .write_refusals import (
+    mark_batch_aborted_by_item_failure,
+    mark_verification_failure,
+    unknown_op_items,
+)
 
 
 def artifact_bulk_write(
@@ -69,7 +75,7 @@ def artifact_bulk_write(
     ]
     if unknown:
         payload = build_write_payload(
-            items=_unknown_op_items(
+            items=unknown_op_items(
                 indexed=indexed,
                 unknown=unknown,
                 dry_run=dry_run,
@@ -79,6 +85,7 @@ def artifact_bulk_write(
             operation_id=operation.operation_id,
             dry_run=dry_run,
             committed=False,
+            batch_verification=unexecuted_batch_verification(live_root),
         )
         operation_registry.complete(operation.operation_id, payload)
         return shape_payload(payload, return_mode)
@@ -101,45 +108,6 @@ def artifact_bulk_write(
         return shape_payload(payload, return_mode)
     finally:
         staging_dir.cleanup()
-
-
-def _unknown_op_items(
-    *,
-    indexed: list[tuple[int, dict[str, Any]]],
-    unknown: list[tuple[int, dict[str, Any]]],
-    dry_run: bool,
-    operation_id: str,
-) -> list[dict[str, object]]:
-    results: dict[int, dict[str, object]] = {}
-    for index, item in unknown:
-        op = str(item.get("op", "unknown"))
-        stray = unknown_item_fields(item)
-        if op not in KNOWN_OPS:
-            error = f"Unknown op '{item.get('op')}'"
-        else:
-            accepted = ", ".join(sorted(KNOWN_ITEM_FIELDS[op]))
-            error = (
-                f"Unknown field(s) {', '.join(repr(field) for field in stray)} for op '{op}'. "
-                f"Accepted: {accepted}. A field this op does not accept is not ignored: it would "
-                f"make the item do something other than what it says."
-            )
-        results[index] = {
-            "op": item.get("op", "unknown"),
-            "error": error,
-            "wrote": False,
-            "dry_run": dry_run,
-            "operation_id": operation_id,
-        }
-    for index, item in indexed:
-        if index not in results:
-            results[index] = {
-                "op": str(item.get("op", "unknown")),
-                "error": "Skipped because the batch failed validation",
-                "wrote": False,
-                "dry_run": dry_run,
-                "operation_id": operation_id,
-            }
-    return [results[index] for index in range(len(indexed))]
 
 
 def _execute_staged(
@@ -217,13 +185,15 @@ def _execute_staged(
         )
 
     if skipped:
-        _mark_batch_aborted_by_item_failure(
+        mark_batch_aborted_by_item_failure(
             indexed=indexed, results=results, dry_run=dry_run, operation_id=operation_id
         )
 
-    committed = False
+    # Verification reads the staged repository as the batch left it, so a batch an item stopped has
+    # nothing to verify: it says so rather than answering with a verdict about a partial staging.
+    committed, verification = False, unexecuted_batch_verification(live_root)
     if not skipped:
-        committed = _sync_verify_and_commit(
+        committed, verification = _sync_verify_and_commit(
             indexed=indexed,
             results=results,
             staged_root=staged_root,
@@ -251,6 +221,7 @@ def _execute_staged(
         operation_id=operation_id,
         dry_run=dry_run,
         committed=committed,
+        batch_verification=verification,
     )
 
 
@@ -265,7 +236,8 @@ def _sync_verify_and_commit(
     clear_repo_caches,
     changed_paths: set[Path],
     operation_id: str,
-) -> bool:
+) -> tuple[bool, dict[str, object]]:
+    """Whether the batch was committed, and what verifying it as a whole found either way."""
     if auto_sync_enabled:
         operation_registry.set_phase(operation_id, "sync_diagrams")
         auto_sync_diagram_ids = collect_bulk_write_auto_sync_diagram_ids(
@@ -300,17 +272,21 @@ def _sync_verify_and_commit(
         )
 
     operation_registry.set_phase(operation_id, "verify")
-    verification = stage_batch_verification(
-        staged_root,
-        changed_paths=changed_paths,
-        directly_changed_paths=changed_paths,
+    verification = normalize_staged_verification(
+        stage_batch_verification(
+            staged_root,
+            changed_paths=changed_paths,
+            directly_changed_paths=changed_paths,
+            live_root=live_root,
+        ),
+        staged_root=staged_root,
         live_root=live_root,
     )
     if not verification["valid"]:
-        _mark_verification_failure(indexed=indexed, results=results, dry_run=dry_run, operation_id=operation_id)
-        return False
+        mark_verification_failure(indexed=indexed, results=results, dry_run=dry_run, operation_id=operation_id)
+        return False, verification
     if dry_run:
-        return False
+        return False, verification
 
     operation_registry.set_phase(operation_id, "update_index")
     mutation_context, _live_clear = authoritative_callbacks_for(live_root)
@@ -326,51 +302,4 @@ def _sync_verify_and_commit(
         touched_paths=changed_paths,
         rebuild_index=rebuild_index,
     )
-    return True
-
-
-def _mark_batch_aborted_by_item_failure(
-    *,
-    indexed: list[tuple[int, dict[str, Any]]],
-    results: dict[int, dict[str, object]],
-    dry_run: bool,
-    operation_id: str,
-) -> None:
-    """Backfill a reason on items that succeeded during staging before a later
-    item failed. Without this, a caller cannot tell such an item apart from one
-    that silently no-op'd — items with their own real error (the failing item)
-    or an explicit "Skipped because..." (items after it) already carry one.
-    """
-    for index, item in indexed:
-        existing = results.get(index)
-        if existing is None:
-            results[index] = {
-                "op": str(item.get("op", "unknown")),
-                "error": "Skipped because an earlier batch item failed",
-                "wrote": False,
-                "dry_run": dry_run,
-                "operation_id": operation_id,
-            }
-        elif "error" not in existing:
-            existing["error"] = "Rolled back: a later item in this batch failed, so no changes were committed"
-
-
-def _mark_verification_failure(
-    *,
-    indexed: list[tuple[int, dict[str, Any]]],
-    results: dict[int, dict[str, object]],
-    dry_run: bool,
-    operation_id: str,
-) -> None:
-    for index, item in indexed:
-        existing = results.get(index)
-        if existing is None:
-            results[index] = {
-                "op": str(item.get("op", "unknown")),
-                "error": "Batch verification failed before commit",
-                "wrote": False,
-                "dry_run": dry_run,
-                "operation_id": operation_id,
-            }
-        elif "error" not in existing:
-            existing["error"] = "Batch verification failed before commit"
+    return True, verification

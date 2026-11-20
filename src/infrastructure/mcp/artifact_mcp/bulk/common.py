@@ -138,6 +138,11 @@ def normalize_staged_verification(
     staged_root: Path,
     live_root: Path,
 ) -> dict[str, object]:
+    """A staged verification, addressed to the repository the caller knows.
+
+    The staging copy is removed before the answer is read, so every place a finding names — the file
+    it is about and the location of each issue in it — is restated against the live repository.
+    """
     out = dict(verification)
     out["repo_root"] = str(live_root)
     raw_results = out.get("results", [])
@@ -150,11 +155,38 @@ def normalize_staged_verification(
                 staged_root=staged_root,
                 live_root=live_root,
             ),
+            "issues": [
+                {**issue, "location": _location_in_live(issue.get("location"), staged_root, live_root)}
+                for issue in result.get("issues", [])
+            ],
         }
         for result in results
         if isinstance(result, dict)
     ]
     return out
+
+
+def _location_in_live(location: object, staged_root: Path, live_root: Path) -> object:
+    """An issue's location is a path, optionally followed by a position inside the file."""
+    staged = str(staged_root)
+    if isinstance(location, str) and location.startswith(staged):
+        return f"{live_root}{location[len(staged):]}"
+    return location
+
+
+def unexecuted_batch_verification(live_root: Path) -> dict[str, object]:
+    """What a batch that was stopped before verification answers in its place.
+
+    Not valid, because nothing established that it is; not executed, so a caller can tell "refused by
+    verification" from "never reached it" without reading the items.
+    """
+    return {
+        "valid": False,
+        "executed": False,
+        "counts": {"files": 0, "valid_files": 0, "invalid_files": 0, "errors": 0, "warnings": 0},
+        "results": [],
+        "repo_root": str(live_root),
+    }
 
 
 def _verification_payload(
@@ -166,6 +198,10 @@ def _verification_payload(
     preexisting_invalid_paths: set[Path] | None = None,
 ) -> dict[str, object]:
     invalid = [result for result in results if not result.valid]
+    # Every file with something to say, not only the ones that fail: `counts.warnings` counts the
+    # warnings on valid files too, and a count whose findings are nowhere in the answer cannot be
+    # acted on.
+    reported = [result for result in results if result.issues or not result.valid]
     # When preexisting_invalid_paths is provided, neighbour files whose invalidity
     # predates this batch are non-blocking.  Only files that are newly invalid
     # (i.e. not already broken in the live repo) block the commit.
@@ -198,7 +234,7 @@ def _verification_payload(
                     for issue in result.issues
                 ],
             }
-            for result in invalid
+            for result in reported
         ],
         "repo_root": str(repo_root),
         "registry_entities": len(registry.entity_ids()),

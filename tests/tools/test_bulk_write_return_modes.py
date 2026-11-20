@@ -169,6 +169,7 @@ def test_every_mode_answers_with_the_same_shape(repo: Path, return_mode: str) ->
         "counts",
         "refs",
         "return_mode",
+        "batch_verification",
         "items",
     }
 
