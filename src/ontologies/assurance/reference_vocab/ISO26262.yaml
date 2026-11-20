@@ -1,7 +1,8 @@
 # ISO 26262 — Functional Safety for Road Vehicles (seed profile)
 # Scheme: ISO26262  Version: 2018
 # Source: ISO 26262:2018 — Road vehicles — Functional safety
-# Used with: obligation.cites = "ISO26262:<part>-<clause>"
+# Used with: obligation.source = "ISO 26262", obligation.provision = "<part>-<clause>" (key_clauses),
+#            and as the classification scheme of the integrity levels below.
 
 scheme: ISO26262
 version: "2018"

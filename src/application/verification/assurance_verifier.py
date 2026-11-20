@@ -22,6 +22,7 @@ from src.application.assurance.fmea_occurrence_evidence import ElementSecurityBa
 from src.application.verification import _assurance_rules_chain as chain
 from src.application.verification import _assurance_rules_constraints as constraints
 from src.application.verification import _assurance_rules_failure_modes as failures
+from src.application.verification import _assurance_rules_obligations as obligations
 from src.application.verification import _assurance_rules_risk as risk
 from src.application.verification._assurance_failure_mode_context import (
     read_failure_mode_context,
@@ -35,6 +36,7 @@ from src.application.verification.assurance_issues import (
 )
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.assurance.assurance_node_types import CONTROL_STRUCTURE_NODE
+from src.domain.assurance.obligation_citation import ReferenceProvisions
 
 if TYPE_CHECKING:
     from src.application.assurance.ports import ConfidentialAssuranceStore
@@ -88,11 +90,14 @@ def verify_store(
     *,
     basis: ArchitectureBasis = ArchitectureBasis(),
     security: Mapping[str, ElementSecurityBasis] | None = None,
+    provisions: ReferenceProvisions | None = None,
 ) -> AssuranceVerificationResult:
     """Run every structural and informational check over the whole store.
 
     `basis` is the architecture graph. Without it the store-only checks all run and the three
     that compare the two models are skipped — they have no question to ask, not a silent pass.
+    `provisions` is what the reference vocabularies list, and is the same arrangement: without it
+    an obligation's citation is checked for its form and not against a vocabulary.
     """
     result = AssuranceVerificationResult()
     if not store.is_unlocked():
@@ -138,6 +143,11 @@ def verify_store(
             chain.check_incident_investigates_something(node, all_edges, result)
         elif node_type == "obligation":
             chain.check_obligation_reaches_a_constraint(node, all_edges, result)
+            obligations.check_names_its_source(node, result)
+            obligations.check_citation_is_in_its_current_form(node, result)
+            if provisions is not None:
+                obligations.check_source_has_a_reference_vocabulary(node, provisions, result)
+                obligations.check_provision_is_listed_by_its_source(node, provisions, result)
         elif node_type == "evidence":
             failures.check_evidence_is_not_less_restricted(node, all_edges, nodes_by_id, result)
         elif node_type == failures.FAILURE_MODE:

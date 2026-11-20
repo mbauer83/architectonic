@@ -214,8 +214,11 @@ def register_read_tools(server: MCPServer) -> None:
         from src.application.verification.assurance_verifier import format_result, verify_store  # noqa: PLC0415
         from src.infrastructure.assurance.arch_ref_resolver import dangling_arch_refs  # noqa: PLC0415
         from src.infrastructure.assurance.architecture_basis import shared_artifact_lookup  # noqa: PLC0415
+        from src.infrastructure.assurance.reference_vocab import provisions_by_source  # noqa: PLC0415
 
-        result = verify_store(ctx.store, basis=current_architecture_basis())
+        result = verify_store(
+            ctx.store, basis=current_architecture_basis(), provisions=provisions_by_source(),
+        )
         payload = format_result(result)
         # An assurance node citing an architecture artifact that no longer exists is a
         # modelling gap, and this is the read that surfaces gaps. Reported separately from

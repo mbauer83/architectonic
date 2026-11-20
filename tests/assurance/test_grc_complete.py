@@ -42,7 +42,7 @@ def test_result_structure_shape(store) -> None:  # type: ignore[no-untyped-def]
 def test_obligation_without_constraint_fails(store) -> None:  # type: ignore[no-untyped-def]
     from src.application.verification.grc_complete import run_grc_complete
 
-    store.create_node("obligation", "OBL-1: ISO26262:6-8", attributes={"scheme": "ISO26262", "code": "6-8"})
+    store.create_node("obligation", "OBL-1: ISO26262:6-8", attributes={"source": "ISO 26262", "provision": "6-8"})
     result = run_grc_complete(store)
     assert result["checks"]["obligation_has_constraint"]["passed"] is False
     assert result["checks"]["obligation_has_constraint"]["gap_count"] == 1
@@ -96,7 +96,7 @@ def test_risk_with_owner_passes(store) -> None:  # type: ignore[no-untyped-def]
 def test_complete_grc_chain_passes(store) -> None:  # type: ignore[no-untyped-def]
     from src.application.verification.grc_complete import run_grc_complete
 
-    obl_id = store.create_node("obligation", "OBL-1", attributes={"scheme": "ISO27001", "code": "A.8.1"})
+    obl_id = store.create_node("obligation", "OBL-1", attributes={"source": "ISO 27001", "provision": "A.8.1"})
     acn_id = store.create_node("assurance-constraint", "ACN-1", concern_class="security")
     store.add_edge(acn_id, obl_id, "complies-with")
     risk_id = store.create_node("risk", "RSK-1", attributes={"treatment": "mitigate", "likelihood": "low"})

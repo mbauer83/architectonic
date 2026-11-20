@@ -12,10 +12,19 @@ these fail if either the composition or the vocabulary changes without the other
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from src.application.assurance.guidance import STPA_STEP_NUMBERING, lookup
 from src.domain.assurance.failure_modes import FAILURE_GUIDEWORDS
+from src.domain.assurance.obligation_citation import (
+    PROVISION,
+    PROVISION_LABEL,
+    SOURCE,
+    SOURCE_LABEL,
+    SUPERSEDED_ATTRIBUTES,
+)
 from src.domain.assurance.uca_guidewords import UCA_GUIDEWORDS
 
 
@@ -110,6 +119,51 @@ def test_the_risk_guidance_says_the_ratings_are_ordinal_and_kept_apart() -> None
     assert "impact" in what
     assert "ordinal" in what
     assert "never multiplied" in what
+
+
+# ── An obligation's citation ──────────────────────────────────────────────────
+
+_REPO = Path(__file__).resolve().parents[2]
+_ONTOLOGY = _REPO / "src" / "ontologies" / "assurance" / "entities.yaml"
+_WIZARD = _REPO / "tools" / "gui" / "src" / "ui" / "views" / "AssuranceGrcWizard.helpers.ts"
+
+
+def test_the_obligation_guidance_names_the_two_attributes_the_verifier_reads() -> None:
+    """It taught a `cites` attribute no code read, while the wizard wrote two others."""
+    how = str(lookup("grc-obligations")["how"])
+
+    assert f"`{SOURCE}`" in how
+    assert f"`{PROVISION}`" in how
+    assert SOURCE_LABEL.lower() in how
+    assert PROVISION_LABEL.lower() in how
+
+
+def _teaches_as_an_attribute(text: str, name: str) -> bool:
+    """Whether prose presents *name* as an attribute — "the cites attribute", or a quoted key."""
+    return any(form in text for form in (f"`{name}`", f"{name} attribute", f'"{name}"', f"{name}:"))
+
+
+@pytest.mark.parametrize("superseded", SUPERSEDED_ATTRIBUTES)
+def test_neither_the_guidance_nor_the_ontology_teaches_a_superseded_attribute(superseded: str) -> None:
+    assert not _teaches_as_an_attribute(_text("grc-obligations"), superseded)
+    assert not _teaches_as_an_attribute(_ONTOLOGY.read_text(encoding="utf-8"), superseded)
+
+
+def test_the_ontology_names_the_two_attributes() -> None:
+    obligation = _ONTOLOGY.read_text(encoding="utf-8").split("\n  obligation:")[1].split("\n  evidence:")[0]
+
+    assert f" {SOURCE}," in obligation
+    assert f" {PROVISION}," in obligation
+
+
+def test_the_wizard_writes_the_attributes_and_shows_the_labels_the_domain_declares() -> None:
+    """The form is the third place the citation is spelled; it wrote `scheme` and `code`."""
+    wizard = _WIZARD.read_text(encoding="utf-8")
+
+    assert f"OBLIGATION_SOURCE = '{SOURCE}'" in wizard
+    assert f"OBLIGATION_PROVISION = '{PROVISION}'" in wizard
+    assert f"OBLIGATION_SOURCE_LABEL = '{SOURCE_LABEL}'" in wizard
+    assert f"OBLIGATION_PROVISION_LABEL = '{PROVISION_LABEL}'" in wizard
 
 
 # ── Loss scenarios ────────────────────────────────────────────────────────────

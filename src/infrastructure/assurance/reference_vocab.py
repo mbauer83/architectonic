@@ -6,6 +6,13 @@ bundled seeds in src/ontologies/assurance/reference_vocab/ (defaults).
 
 New/updated catalogs ship as data-only updates — no code or ontology changes.
 Validation is tolerant: unknown schemes are treated as free-form.
+
+A *scheme* here is one catalogue: the file's name, under which its entries are looked up. It is the
+word for what STRIDE is — a classification scheme, whose entries classify a hazard — and it is kept
+for that reason. A catalogue of a standard also lists that standard's key clauses, and those are
+what an obligation cites: `provisions_by_source` reads that one section, for the obligation whose
+`source` names the catalogue. An obligation's source is therefore not a scheme; some sources have a
+catalogue and most do not.
 """
 
 from __future__ import annotations
@@ -14,6 +21,7 @@ import logging
 from functools import lru_cache
 from pathlib import Path
 
+from src.domain.assurance.obligation_citation import ReferenceProvisions, source_key
 from src.domain.yaml_documents import parse_yaml
 
 logger = logging.getLogger(__name__)
@@ -112,3 +120,30 @@ def load_scheme(scheme: str, *, repo_root: Path | None = None) -> dict[str, obje
         if data:
             return data
     return {}
+
+
+#: The section of a vocabulary that lists what an obligation can cite. The other sections hold
+#: classification values (an integrity level, a threat category), which nothing is obliged *by*.
+_PROVISIONS_SECTION = "key_clauses"
+#: Other ways the vocabulary's subject is written, where its file name is not how it is cited.
+_ALSO_CITED_AS = "also_cited_as"
+
+
+def provisions_by_source(*, repo_root: Path | None = None) -> ReferenceProvisions:
+    """What each vocabulary lists as citable, keyed the way an obligation's source is compared.
+
+    A vocabulary with no such section is left out rather than entered empty: it describes a
+    classification scheme, and entering it would report every provision cited against it as
+    unlisted when the truth is that it lists none.
+    """
+    listed: dict[str, frozenset[str]] = {}
+    for scheme in list_schemes(repo_root=repo_root):
+        vocab = load_scheme(scheme, repo_root=repo_root)
+        section = vocab.get(_PROVISIONS_SECTION)
+        if not isinstance(section, dict) or not section:
+            continue
+        provisions = frozenset(str(provision) for provision in section)
+        other_names = vocab.get(_ALSO_CITED_AS)
+        names = [scheme, *(other_names if isinstance(other_names, list) else [])]
+        listed.update({source_key(str(name)): provisions for name in names})
+    return listed

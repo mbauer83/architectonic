@@ -3,8 +3,8 @@
 # All assurance connections are stored assurance-side (one-way persistence rule).
 # Cross-module refs (assurance→architecture) are handled via the arch_refs
 # reference-type catalog (`reference_types` below), never as connections in this
-# registry. External-vocabulary citations (obligation → scheme:code) are node
-# attributes validated against the reference vocabulary, not edges.
+# registry. An obligation's citation (its source and provision) is a pair
+# of node attributes checked against the reference vocabulary, not an edge.
 #
 # The canonical control loop has FOUR positions (Leveson, *Engineering a Safer World* ch. 4;
 # STPA Handbook §2.2): controller, actuator, controlled process, sensor. Both intermediaries are

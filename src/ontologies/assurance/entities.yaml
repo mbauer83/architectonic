@@ -210,9 +210,11 @@ entity_types:
     classes: [obligation-element, assurance-element]
     create_when: >
       Create an obligation to represent a compliance instance — "does our system comply with
-      requirement X of standard/regulation Y?" The public framework catalog entry is referenced
-      via the cites attribute (scheme:code, e.g. ISO26262:6-8), validated against the reference
-      vocabulary. Status and evidence are assurance-owned.
+      requirement X of standard/regulation Y?" Say which rule it comes from in two attributes:
+      source, the regulation, standard or contract (e.g. EU AI Act, ISO 26262), and provision,
+      the article, clause or control in it (e.g. Art. 12, 6-8). The verifier checks the provision
+      where the source has a reference vocabulary and accepts any other source. Status and
+      evidence are assurance-owned.
     never_create_when: >
       Never model an obligation in the ArchiMate motivation layer — obligation status and evidence
       are confidential and must live in the assurance store.

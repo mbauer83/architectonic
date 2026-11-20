@@ -13,6 +13,7 @@ moved to five. An analyst following the older text under-enumerates, and nothing
 from __future__ import annotations
 
 from src.application.assurance.guidance_failure_modes import FAILURE_MODE_GUIDANCE
+from src.domain.assurance.obligation_citation import PROVISION, PROVISION_LABEL, SOURCE, SOURCE_LABEL
 from src.domain.assurance.uca_guidewords import UCA_GUIDEWORDS
 
 #: How this decomposition's step numbers relate to the Handbook's four, stated on every STPA topic
@@ -238,7 +239,10 @@ _GUIDANCE: dict[str, dict[str, object]] = {
             "They enable an auditable compliance statement."
         ),
         "how": (
-            "Create an obligation, set the cites attribute to a scheme:code reference (e.g. ISO26262:6-8). "
+            f"Create an obligation and say which rule it comes from in two attributes: `{SOURCE}`, the "
+            f"{SOURCE_LABEL.lower()} (e.g. EU AI Act, ISO 26262), and `{PROVISION}`, the {PROVISION_LABEL.lower()} "
+            "in it (e.g. Art. 12, 6-8). assurance_verify checks the provision where the source has a reference "
+            "vocabulary; any other source is accepted and reported as unchecked. "
             "Link assurance-constraints via complies-with. Add evidenced-by connections for evidence."
         ),
         "standards": [

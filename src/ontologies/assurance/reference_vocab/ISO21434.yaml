@@ -1,9 +1,13 @@
 # ISO/SAE 21434 — Road vehicles: Cybersecurity engineering (seed profile)
 # Scheme: ISO21434  Version: 2021
 # Source: ISO/SAE 21434:2021 — Road vehicles — Cybersecurity engineering
+# Used with: obligation.source = "ISO/SAE 21434", obligation.provision = "<clause>" (key_clauses),
+#            and as the classification scheme of the assurance levels below.
 
 scheme: ISO21434
 version: "2021"
+# How the standard is cited where that differs from this file's name.
+also_cited_as: ["ISO/SAE 21434"]
 description: >
   ISO/SAE 21434 specifies cybersecurity engineering requirements for road vehicles
   throughout the lifecycle, including concept, product development, production, and

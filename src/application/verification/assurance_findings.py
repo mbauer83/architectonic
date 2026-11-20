@@ -205,6 +205,40 @@ REDUNDANT_ELEMENTS_DO_NOT_SHARE_A_CAUSE = AssuranceFindingKind(
 )
 
 
+# ── An obligation's citation ──────────────────────────────────────────────────
+
+OBLIGATION_NAMES_ITS_SOURCE = AssuranceFindingKind(
+    code="W516",
+    severity="warning",
+    requires=(
+        "an obligation names the regulation, standard or contract it comes from and the article, "
+        "clause or control in it — a duty that cannot say which rule imposes it cannot be audited"
+    ),
+)
+OBLIGATION_CITATION_IS_IN_ITS_CURRENT_FORM = AssuranceFindingKind(
+    code="W517",
+    severity="warning",
+    requires=(
+        "an obligation states its citation in `source` and `provision`, not in the attributes "
+        "those replaced, which nothing reads"
+    ),
+)
+OBLIGATION_PROVISION_IS_LISTED_BY_ITS_SOURCE = AssuranceFindingKind(
+    code="W518",
+    # Informational: the shipped vocabularies list a standard's key clauses, not all of them, so a
+    # provision they do not list is more often a clause they omit than a mistake.
+    severity="info",
+    requires="an obligation's provision is one its source's reference vocabulary lists",
+)
+OBLIGATION_SOURCE_HAS_A_REFERENCE_VOCABULARY = AssuranceFindingKind(
+    code="W519",
+    # Informational: most real sources have no vocabulary here, and that is not a defect in the
+    # obligation. It is said so a reader knows the provision went unchecked rather than passed.
+    severity="info",
+    requires="an obligation's source has a reference vocabulary its provision can be checked against",
+)
+
+
 #: Every allocated kind. Declared last so it can name them all — a kind missing from here is
 #: invisible to every check that iterates the catalogue, which is how a code comes to denote two
 #: rules without anyone noticing.
@@ -235,4 +269,8 @@ ASSURANCE_FINDING_KINDS: tuple[AssuranceFindingKind, ...] = (
     SEVERE_FAILURE_TOUCHES_CLASSIFIED_DATA,
     SECURITY_JUDGEMENT_RESTS_ON_A_CURRENT_SNAPSHOT,
     REDUNDANT_ELEMENTS_DO_NOT_SHARE_A_CAUSE,
+    OBLIGATION_NAMES_ITS_SOURCE,
+    OBLIGATION_CITATION_IS_IN_ITS_CURRENT_FORM,
+    OBLIGATION_PROVISION_IS_LISTED_BY_ITS_SOURCE,
+    OBLIGATION_SOURCE_HAS_A_REFERENCE_VOCABULARY,
 )
