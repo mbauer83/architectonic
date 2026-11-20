@@ -159,6 +159,23 @@ def not_a_failure_mode(node_id: str) -> dict[str, object]:
     )
 
 
+def not_an_fmea_analysis(analysis_id: str, actual_method: str) -> dict[str, object]:
+    """The analysis exists and is readable; its method defines no failure-mode matrix.
+
+    Not ``not_found``: that would send the caller looking for a different id, when the id is right
+    and the projection is what does not exist. The message names the method the analysis has, which
+    is the part a caller acts on.
+    """
+    return failure(
+        "analysis_method_mismatch",
+        "analysis_id",
+        (
+            f"Analysis {analysis_id!r} is a {actual_method or 'non-FMEA'} analysis. A failure-mode "
+            "matrix is a projection of an FMEA analysis."
+        ),
+    )
+
+
 def provenance_immutable(node_id: str, current_analysis_id: str) -> dict[str, object]:
     """Provenance is a historical fact; participation is how another analysis draws on the work."""
     return failure(

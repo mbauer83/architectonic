@@ -60,6 +60,9 @@ class Seed:
     artifact_id: str | None = None
     assurance_node_id: str | None = None
     anchor_entity_id: str | None = None
+    #: A failure-mode matrix is a projection of one FMEA analysis, so the tool cannot be called
+    #: without one.
+    fmea_analysis_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,7 +116,11 @@ READ_CALLS: tuple[ToolCall, ...] = (
     ToolCall("assurance_coverage"),
     ToolCall("assurance_case_completeness"),
     ToolCall("assurance_draft_gsn"),
-    ToolCall("assurance_fmea_matrix"),
+    ToolCall(
+        "assurance_fmea_matrix",
+        lambda s: {"analysis_id": s.fmea_analysis_id},
+        ("fmea_analysis_id",),
+    ),
     ToolCall("assurance_stpa_complete"),
     ToolCall("assurance_cast_complete"),
     ToolCall("assurance_grc_complete"),
@@ -165,12 +172,16 @@ async def _discover_assurance_seed(session: Any, base: Seed) -> Seed:
     nodes = await session.call_tool("assurance_list_nodes", {})
     rows = _rows_of(_decoded(_text_of(nodes)))
     node_id = (rows[0].get("node_id") or rows[0].get("id")) if rows else None
+    analyses = _decoded(_text_of(await session.call_tool("assurance_list_analyses", {"method": "FMEA"})))
+    listed = analyses.get("analyses") if isinstance(analyses, Mapping) else None
+    fmea = [row for row in listed or [] if isinstance(row, Mapping)]
     # The security reads are anchored on an *architecture* entity, not an assurance node.
     return Seed(
         entity_id=base.entity_id,
         artifact_id=base.artifact_id,
         assurance_node_id=node_id,
         anchor_entity_id=base.entity_id,
+        fmea_analysis_id=fmea[0].get("analysis_id") if fmea else None,
     )
 
 
@@ -380,7 +391,8 @@ async def _fmea_basis_digest(url: str, workspace: Any) -> str:
             await session.initialize()
             result = await session.call_tool(
                 "assurance_fmea_matrix",
-                {"analysis_id": workspace.assurance.analysis},
+                # `full`: the digest is a factor's, and the default summary carries no factors.
+                {"analysis_id": workspace.assurance.analysis, "mode": "full"},
                 read_timeout_seconds=write_walk.CALL_TIMEOUT_SECONDS,
             )
     # YAML, not JSON: `decoded` says why, and it takes the text rather than the result object.

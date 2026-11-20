@@ -80,7 +80,7 @@ judgement whose basis has since moved is marked stale rather than left silently 
 | Completeness & coverage | `assurance_grc_complete` | Read-only | Run the grc-control-coverage-complete profile check. |
 | Completeness & coverage | `assurance_case_completeness` | Read-only | Run argument-completeness checks for an assurance case. |
 | Completeness & coverage | `assurance_draft_gsn` | Read-only | Scaffold a GSN (Goal Structuring Notation) argument structure from the assurance store. |
-| Failure modes | `assurance_fmea_matrix` | Read-only | The failure-mode matrix: candidate elements crossed with the five failure guidewords. |
+| Failure modes | `assurance_fmea_matrix` | Read-only | The failure-mode matrix of one FMEA analysis: its candidate elements crossed with the five failure guidewords. |
 | Supply chain / AIBOM | `assurance_aibom_export` | Read-only | Emit a CycloneDX 1.6 ML-BOM/ASBOM JSON document from a list of AI-component dicts. |
 | Supply chain / AIBOM | `assurance_scan_ai_candidates` | Read-only | Heuristic AI-BOM candidate scan over a list of architecture entity dicts. |
 | Security signals | `assurance_list_bom_components` | Read-only | List the software components of the ACTIVE security signal snapshot for an architecture anchor (the current SBOM). |

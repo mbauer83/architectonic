@@ -12,7 +12,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
-from src.application.assurance.exposure import AssuranceExposurePolicy, Visible
+from src.application.assurance.exposure import AssuranceExposurePolicy
 from src.application.assurance.fmea_factors import (
     FactorInvalid,
     FactorLegacyInvalid,
@@ -22,9 +22,14 @@ from src.application.assurance.fmea_factors import (
     RecordFactorRequest,
     record_factor_assessment,
 )
-from src.application.assurance.fmea_rows import matrix_rows
+from src.application.assurance.fmea_matrix import (
+    FMEA_METHOD,
+    MatrixAnalysisNotFound,
+    MatrixMethodMismatch,
+    matrix_of_analysis,
+)
 from src.application.assurance.legacy_invalid import LegacyInvalidNode
-from src.domain.assurance.fmea_factors import OCCURRENCE_SCALE, FactorAssessment
+from src.domain.assurance.fmea_factors import OCCURRENCE_SCALE
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp.context import get_assurance_context
@@ -74,41 +79,26 @@ def fmea_matrix(analysis_id: str) -> JSONResponse:
     ctx, pol = _policy()
     if pol.check_locked():
         raise _locked_response()
-    outcome = pol.apply_analysis(ctx.store.get_analysis(analysis_id))  # type: ignore[attr-defined]
-    if not isinstance(outcome, Visible):
+    outcome = matrix_of_analysis(
+        analysis_id,
+        store=ctx.store,  # type: ignore[attr-defined]
+        policy=pol,
+        read_basis=current_architecture_basis,
+    )
+    if isinstance(outcome, MatrixAnalysisNotFound):
         raise _not_found_response()
-    method = str(outcome.value.get("method") or "")
-    if method != "FMEA":
+    if isinstance(outcome, MatrixMethodMismatch):
         raise ApiError(
             409,
             "analysis_method_mismatch",
             "a failure-mode matrix is a projection of an FMEA analysis",
             MethodMismatchDetails(
-                analysis_id=analysis_id, expected_method="FMEA", actual_method=method,
+                analysis_id=analysis_id,
+                expected_method=FMEA_METHOD,
+                actual_method=outcome.actual_method,
             ),
         )
-    visible_nodes, _ = pol.filter_nodes(ctx.store.list_nodes())  # type: ignore[attr-defined]
-    visible_ids = frozenset(str(n["node_id"]) for n in visible_nodes)
-    edges = pol.filter_edges(ctx.store.list_edges(), visible_ids)  # type: ignore[attr-defined]
-    scoped = [
-        n for n in visible_nodes
-        if str(n.get("analysis_id") or "") == analysis_id
-        or str(n.get("node_type", "")) != "failure-mode"
-    ]
-    failure_mode_ids = [
-        str(n["node_id"]) for n in scoped if str(n.get("node_type", "")) == "failure-mode"
-    ]
-    stored = ctx.store.read_fmea_assessments(failure_mode_ids)  # type: ignore[attr-defined]
-    rows = matrix_rows(
-        nodes=scoped,
-        edges=edges,
-        arch_refs=ctx.store.list_arch_refs(),  # type: ignore[attr-defined]
-        assessments={
-            node_id: [FactorAssessment.from_row(row) for row in revisions]
-            for node_id, revisions in stored.items()
-        },
-        basis=current_architecture_basis(),
-    )
+    rows = list(outcome.rows)
     # The occurrence vocabulary travels with the matrix. A recording surface has to offer the
     # members of the scale and nothing else, and restating them in the client would be a second
     # source of truth for an ordinal set whose order is load-bearing.
