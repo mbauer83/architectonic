@@ -212,11 +212,11 @@ class TestInstallation:
             fn = staticmethod(read)
             is_async = False
 
-        tools = {"artifact_query_read_artifact": _Tool()}
+        tools = {"artifact_query_find_neighbors": _Tool()}
         mcp = type("M", (), {"_tool_manager": type("T", (), {"_tools": tools})()})()
         install_read_result_cache(mcp, ReadResultCache())
 
-        wrapped = tools["artifact_query_read_artifact"].fn
+        wrapped = tools["artifact_query_find_neighbors"].fn
 
         assert wrapped("E@1", repo_root="/tmp") == {"id": "E@1", "root": "/tmp"}
 
@@ -234,10 +234,10 @@ class TestInstallation:
             fn = staticmethod(read)
             is_async = False
 
-        tools = {"artifact_query_read_artifact": _Tool()}
+        tools = {"artifact_query_find_neighbors": _Tool()}
         mcp = type("M", (), {"_tool_manager": type("T", (), {"_tools": tools})()})()
         install_read_result_cache(mcp, ReadResultCache())
-        wrapped = tools["artifact_query_read_artifact"].fn
+        wrapped = tools["artifact_query_find_neighbors"].fn
 
         original = module.generation_for
         module.generation_for = lambda _arguments: 7  # type: ignore[assignment]

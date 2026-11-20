@@ -63,8 +63,6 @@ A requirement whose read must keep serving a validator after the route was renam
     "url",
     [
         "/api/entities",
-        f"/api/entities/{ENTITY_ID}",
-        f"/api/entities/{ENTITY_ID}/context",
     ],
 )
 def test_a_renamed_cache_eligible_read_serves_an_etag(client, url: str) -> None:  # type: ignore[no-untyped-def]
@@ -79,8 +77,6 @@ def test_a_renamed_cache_eligible_read_serves_an_etag(client, url: str) -> None:
     "url",
     [
         "/api/entities",
-        f"/api/entities/{ENTITY_ID}",
-        f"/api/entities/{ENTITY_ID}/context",
     ],
 )
 def test_the_served_validator_is_accepted_back(client, url: str) -> None:  # type: ignore[no-untyped-def]
@@ -95,6 +91,17 @@ def test_the_served_validator_is_accepted_back(client, url: str) -> None:  # typ
     assert revalidated.status_code == 304, url
     assert revalidated.content == b""
     assert revalidated.headers["etag"] == tag
+
+
+@pytest.mark.parametrize("url", [f"/api/entities/{ENTITY_ID}", f"/api/entities/{ENTITY_ID}/context"])
+def test_a_read_that_lists_where_the_entity_is_referenced_serves_no_validator(client, url: str) -> None:  # type: ignore[no-untyped-def]
+    """Both carried an ETag through the rename and have given it up since: their bodies list the
+    scratchpads referencing the entity, which the model generation does not describe. They are
+    still revalidated — `no-cache` — and always answered in full."""
+    response = client.get(url)
+    assert response.status_code == 200, url
+    assert "etag" not in {key.lower() for key in response.headers}
+    assert response.headers.get("cache-control") == "no-cache", url
 
 
 def test_a_read_that_is_not_model_derived_still_serves_no_validator(client) -> None:  # type: ignore[no-untyped-def]
