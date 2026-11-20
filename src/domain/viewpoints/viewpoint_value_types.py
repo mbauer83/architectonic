@@ -27,6 +27,10 @@ SCALAR_KIND_NAMES: frozenset[str] = frozenset(
     {"string", "integer", "number", "date", "boolean", "slug", ORDINAL_KIND}
 )
 
+#: What separates the type slugs an instance type admits — `entity[goal|outcome]`. One name for the
+#: writer and the reader of a result type, so the two cannot come to spell it differently.
+_TYPE_ALTERNATIVE = "|"
+
 #: What a binding may select, as an ordered list a surface can publish.
 #:
 #: Derived from :data:`BindingSelect` rather than spelled again. It had been spelled three times —
@@ -120,7 +124,7 @@ def parse_result_type(raw: str) -> QueryResultType:
         return ScalarType(cast(ScalarKind, raw))
     name, content = _bracketed(raw)
     if name in {"entity", "connection", "entities", "connections"}:
-        types = frozenset(filter(None, content.split("|")))
+        types = frozenset(filter(None, content.split(_TYPE_ALTERNATIVE)))
         constructors = {
             "entity": EntityInstanceType,
             "connection": ConnectionInstanceType,
@@ -292,7 +296,7 @@ def _type_slugs(value: QueryResultType) -> frozenset[str]:
 
 
 def _slugged(name: str, values: frozenset[str]) -> str:
-    return f"{name}[{'|'.join(sorted(values))}]"
+    return f"{name}[{_TYPE_ALTERNATIVE.join(sorted(values))}]"
 
 
 def _bracketed(raw: str) -> tuple[str, str]:

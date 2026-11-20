@@ -137,7 +137,54 @@ _RELEASE_VERSION_FORM = re.compile(r"\\d\+\\\.\\d\+\\\.\\d\+")
 #: The digest half of a `SHA256SUMS` line as a regex source spells it: sixty-four hex characters.
 _CHECKSUM_DIGEST = re.compile(r"\[0-9a-f(A-F)?\]\{64\}")
 
+#: A literal that *opens* with a pipe: the bare glyph a row is split on, a row's opening `| `, a
+#: delimiter row's `|---`, or any of them as a pattern spells it. Every table reading there has been
+#: handed one of these to `split` or `startswith`.
+#:
+#: **Not a pipe anywhere in the literal**, which is every regex alternation in the codebase. And the
+#: bare glyph is kept in, although it is also how a few joined keys are separated: leaving it out
+#: would miss `split("|")`, which is the whole of two of the three readings this row replaced. The
+#: price is that a module separating something else by a pipe must *name* its separator — which the
+#: activity lane bound and the result-type alternative now do — or stand in the exemptions as the
+#: unowned syntax it is.
+_TABLE_PIPE = re.compile(r"\A(?:\^|\\A)?(?:\\s\*|\s*)\\?\|")
+
 SYNTAX_READERS: tuple[SyntaxReader, ...] = (
+    SyntaxReader(
+        syntax="a markdown table — where one is, its rows, and the cells of a row",
+        owners=(Path("src/domain/markdown_table.py"),),
+        instead=(
+            "`src.domain.markdown_table`: `tables_in` for the tables of a text, `row_cells` for one "
+            "row, `format_table` and `format_row` to write, `escape_cell` and `unescape_cell` between "
+            "plain text and a cell. For an entity's `## Properties`, "
+            "`src.domain.repository.properties_section`: `read_properties` and "
+            "`format_properties_section`"
+        ),
+        incident=(
+            "three readings of an entity's Properties table and two of a matrix row, none of which "
+            "could read what the writer wrote: the writer escapes a pipe in a value and all three "
+            "readers split at it, so `a|b` came back as `a\\` from every one of them. The "
+            "index and the editor also took any row "
+            "holding three hyphens for the delimiter row — a connection id as a value vanished — and "
+            "any attribute named `Attribute` for the header, while the verifier read both; the "
+            "verifier alone dropped empty cells before counting them, so it and the index disagreed "
+            "about which cell was the value. The matrix rule called any text with a pipe in it, "
+            "frontmatter included, a table"
+        ),
+        literal_probe=_TABLE_PIPE,
+        #: **Shrink-only, and none of these reads a table.** Each splits a *joined key* on the pipe
+        #: that joins it, and each key has more than one reader of its own and no row here: the
+        #: derivation path key (`id@fwd|id@rev`), whose two readings disagree on a step without an
+        #: orientation, and the index roots key, split at six sites. They stand here because the
+        #: probe cannot tell their glyph from a table's, and they leave when each key has an owner
+        #: that names its separator — which is its own change, with its own round trip.
+        exempt=frozenset({
+            Path("src/domain/relationships/relationship_path_reconstruction.py"),
+            Path("src/application/derivation/refresh.py"),
+            Path("src/infrastructure/mcp/artifact_mcp/context.py"),
+            Path("src/infrastructure/mcp/artifact_mcp/_diagram_binding_modes.py"),
+        }),
+    ),
     SyntaxReader(
         syntax="the release version — `MAJOR.MINOR.PATCH`, with or without its tag's `v`",
         owners=(Path("src/application/software_update/version.py"),),
@@ -420,6 +467,7 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
 #: registers: the number may fall and may never rise, so a twelfth reader cannot arrive quietly by
 #: being added to a list.
 _EXEMPTION_BUDGET: dict[str, int] = {
+    "a markdown table — where one is, its rows, and the cells of a row": 4,
     "what a document's prose refers to — a markdown link and the file it addresses": 1,
     "what it means for a PUML line to declare an alias": 1,
     "the arrow form of a connection — a `###` section, or a standalone reference": 3,
@@ -580,6 +628,36 @@ class TestTheDetectorsCatchWhatTheyClaim:
         ]
 
         assert decisions, reading
+
+    @pytest.mark.parametrize(
+        ("source", "decides"),
+        [
+            pytest.param('stripped.split("|")[1:-1]', True, id="index-and-editor-cells"),
+            pytest.param('stripped.startswith("|---") or stripped.startswith("| ---")', True, id="verifier-delimiter"),
+            pytest.param('stripped.startswith("| Attribute")', True, id="verifier-header"),
+            pytest.param('line.startswith("| ") and "](" not in line', True, id="matrix-row"),
+            pytest.param(r'''re.match(r"^\s*\|", line)''', True, id="as-a-pattern"),
+            pytest.param(r'''re.split(r"\|", line)''', True, id="as-an-escaped-pattern"),
+            pytest.param('"|".join(cells)', False, id="writing-a-row"),
+            pytest.param('value.replace("|", "/")', False, id="rewriting-a-label"),
+            pytest.param('content.split(_TYPE_ALTERNATIVE)', False, id="a-named-separator"),
+            pytest.param(r'''re.search(r"(up|down|left|right)", arrow)''', False, id="an-alternation"),
+            pytest.param('artifact_id.split("---")', False, id="connection-id-separator"),
+        ],
+    )
+    def test_a_table_reading_is_recognised_and_writing_one_is_not(self, source: str, decides: bool) -> None:
+        """The first four are the readings this row replaced, verbatim."""
+        tree = ast.parse(source)
+        decisions = [
+            literal
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and (literal := _first_string_argument(node)) is not None
+            and _called_name(node) in _LOCATING_CALLS
+            and _TABLE_PIPE.search(literal)
+        ]
+
+        assert bool(decisions) is decides, source
 
     @pytest.mark.parametrize(
         "innocent",

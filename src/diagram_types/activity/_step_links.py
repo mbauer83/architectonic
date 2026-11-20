@@ -17,6 +17,10 @@ from src.infrastructure.rendering.puml_text_escaping import puml_line_text
 
 _SENTINEL_START = "[[arch://"
 
+#: What bounds a swimlane header on both sides. Named, because the header's writer, its reader and
+#: the label rewrite that keeps a label from closing one early must spell the same character.
+_LANE_BOUND = "|"
+
 #: The step kinds whose emission carries a sentinel — so the only ones whose presence in a body can
 #: be read back. `fork` is absent because PlantUML's `fork` keyword takes no label or link argument
 #: at all, so a fork and a join are drawn as bare bars with nothing on them to read.
@@ -33,7 +37,7 @@ def puml_text(value: str) -> str:
     because `lane_header` needs it — `_emission` used to own it and imports this module, so leaving it
     there would have made the pair circular.
     """
-    return puml_line_text(value).replace("|", "/")
+    return puml_line_text(value).replace(_LANE_BOUND, "/")
 
 
 def _link_clause(url: str) -> str:
@@ -101,7 +105,7 @@ def lane_header(lane: dict[str, Any]) -> str:
     header, so a label carrying one has to be replaced before it can end the header early.
     """
     label = puml_text(str(lane.get("label") or lane.get("id") or ""))
-    return f"|{sentinel_wrapped(lane, label)}|"
+    return f"{_LANE_BOUND}{sentinel_wrapped(lane, label)}{_LANE_BOUND}"
 
 
 def sentinel_of(line: str) -> str | None:
@@ -128,7 +132,7 @@ def _is_lane_header(line: str) -> bool:
     any `|` a label carried — so the delimiters cannot be anything but the header's own.
     """
     stripped = line.strip()
-    return len(stripped) > 1 and stripped.startswith("|") and stripped.endswith("|")
+    return len(stripped) > 1 and stripped.startswith(_LANE_BOUND) and stripped.endswith(_LANE_BOUND)
 
 
 def drawn_step_counts(body: str) -> Mapping[str, int]:
