@@ -141,6 +141,8 @@ class RenderedPicture:
     elements: Mapping[str, DrawnElement]
     boxes: Mapping[str, DrawnBox]
     relations: tuple[DrawnRelation, ...]
+    #: The text drawn round the diagram rather than in it — its title, its legend — one run per part.
+    surrounding: tuple[tuple[MeasuredWord, ...], ...] = ()
 
     def extent_of(self, alias: str) -> Extent | None:
         """Where the shape drawn under *alias* sits — element or box — or None when none is."""

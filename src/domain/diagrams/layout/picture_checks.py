@@ -8,7 +8,12 @@ looking; four things are not, and they are decided here:
 * a relation drawn **through** an element it does not join;
 * two shapes drawn **over** each other;
 * a label **wider** than the shape it labels;
-* a box drawn **over** a shape that is not inside it.
+* a box drawn **over** a shape that is not inside it;
+* a relation drawn **through text**: a label, a box's title band, the diagram's title or legend;
+* a relation that **bends at an end**, or **runs along** another line or a border — the hard rules
+  of `route_quality` a reader needs to follow a line from one end to the other.
+
+Its soft rules — a jog, two decorations together — are counted beside the findings, like crossings.
 
 Crossings and the worst detour are counted beside them as pointers for the eye, never as findings:
 a dense view cannot avoid a crossing, and a count that failed one would teach authors to ignore it.
@@ -23,7 +28,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from itertools import combinations
 
-from src.domain.diagrams.layout.geometry import Extent, course_length, courses_cross
+from src.domain.diagrams.layout.geometry import Extent, Point, course_length, courses_cross
 from src.domain.diagrams.layout.rendered_picture import (
     DrawnBox,
     DrawnElement,
@@ -31,6 +36,8 @@ from src.domain.diagrams.layout.rendered_picture import (
     RenderedPicture,
     extent_across,
 )
+from src.domain.diagrams.layout.route_quality import Unreadable, kinks, square_course, unreadable
+from src.domain.diagrams.layout.text_clearance import runs_through_text, text_regions
 
 #: How far inside an element a line must run before it counts as drawn through it. A line arriving
 #: at a border, or passing a cut corner, stays within this.
@@ -52,6 +59,17 @@ class PictureDefect(StrEnum):
     SHAPES_OVERLAP = "two shapes drawn over each other"
     LABEL_WIDER_THAN_SHAPE = "a label wider than its shape"
     BOX_OVER_NON_MEMBER = "a box drawn over a shape that is not inside it"
+    RELATION_THROUGH_TEXT = "a relation drawn through text"
+    BEND_AT_AN_END = "a relation that bends inside or right behind the decoration at one of its ends"
+    RUNS_ALONG = "a relation running along another line or a border"
+
+
+#: The defects only a router answers for: the hard rules of `route_quality` and `text_clearance`.
+#: Decided of every picture, and asked only of one whose lines a router drew — GraphViz draws curves
+#: into cluster title bands as a matter of course, which no author can repair.
+KEPT_BY_THE_ROUTER = frozenset({
+    PictureDefect.RELATION_THROUGH_TEXT, PictureDefect.BEND_AT_AN_END, PictureDefect.RUNS_ALONG,
+})
 
 
 @dataclass(frozen=True)
@@ -59,7 +77,9 @@ class PictureFinding:
     """One place the picture is decidably wrong, by the aliases of the shapes it concerns.
 
     For a relation drawn through an element, *shapes* is the relation's two ends and then the
-    element; for the others it is the shapes themselves, the box first where one is a box.
+    element; through text, its two ends and then what the text is of — a box or an element, the two
+    ends of the relation it labels, or nothing for the diagram's title or legend. For the others it
+    is the shapes themselves, the box first where one is a box.
     """
 
     defect: PictureDefect
@@ -83,6 +103,10 @@ class PictureReport:
     crossings: int
     #: The relation drawn least directly, or None where no relation joins two apart shapes. Advisory.
     worst_detour: Detour | None
+    #: Jogs shorter than a readable segment, over every relation. Advisory: a soft rule.
+    jogs: int = 0
+    #: Pairs of end decorations drawn over each other. Advisory: a soft rule.
+    heads_together: int = 0
 
     def of(self, defect: PictureDefect) -> tuple[PictureFinding, ...]:
         return tuple(finding for finding in self.findings if finding.defect is defect)
@@ -160,6 +184,67 @@ def _boxes_over_non_members(picture: RenderedPicture) -> list[PictureFinding]:
     ]
 
 
+def _relations_through_text(picture: RenderedPicture) -> list[PictureFinding]:
+    """Each relation and each text region it runs into, its own label among them."""
+    regions = text_regions(picture, picture.surrounding)
+    return [
+        PictureFinding(PictureDefect.RELATION_THROUGH_TEXT, (*relation.ends, *region.of))
+        for relation in picture.relations
+        for region in regions
+        if runs_through_text(relation.course, region.extent)
+    ]
+
+
+def _course_to_borders(relation: DrawnRelation, picture: RenderedPicture) -> tuple[Point, ...]:
+    """A relation's line as a square course, carried on to the borders it stops short of for its decorations."""
+    course = list(square_course(relation.path))
+    if len(course) < 2:  # noqa: PLR2004 — a line has two ends
+        return tuple(course)
+    for at, before, end in ((0, 1, relation.ends[0]), (-1, -2, relation.ends[1])):
+        extent = picture.extent_of(end)
+        tip, behind = course[at], course[before]
+        length = tip.distance_to(behind)
+        if extent is None or length == 0:
+            continue
+        reach = extent.distance_to(tip)
+        course[at] = Point(tip.x + (tip.x - behind.x) / length * reach, tip.y + (tip.y - behind.y) / length * reach)
+    return tuple(course)
+
+
+def _hard_to_follow(picture: RenderedPicture) -> list[PictureFinding]:
+    """A, B and C of `route_quality`, for each relation of *picture*."""
+    courses = [_course_to_borders(relation, picture) for relation in picture.relations]
+    borders = [shape.extent for shape in (*picture.elements.values(), *picture.boxes.values())]
+    findings: list[PictureFinding] = []
+    for index, (relation, course) in enumerate(zip(picture.relations, courses, strict=True)):
+        others = courses[:index] + courses[index + 1 :]
+        decorated = (bool(relation.first_marks), bool(relation.second_marks))
+        broken = unreadable(course, others, borders, decorated)
+        findings += [
+            PictureFinding(defect, relation.ends)
+            for defect, rules in (
+                (PictureDefect.BEND_AT_AN_END, {Unreadable.BEND_AT_SOURCE, Unreadable.BEND_AT_TARGET}),
+                (PictureDefect.RUNS_ALONG, {Unreadable.RUNS_ALONG}),
+            )
+            if rules & set(broken)
+        ]
+    return findings
+
+
+def _heads_together(picture: RenderedPicture) -> int:
+    """How many pairs of end decorations, of different relations, are drawn over each other."""
+    heads = [
+        (index, around)
+        for index, relation in enumerate(picture.relations)
+        for mark in (*relation.first_marks, *relation.second_marks)
+        if (around := Extent.around(mark.outline)) is not None
+    ]
+    return sum(
+        1 for (first, one), (second, other) in combinations(heads, 2)
+        if first != second and are_drawn_over_each_other(one, other)
+    )
+
+
 def _worst_detour(picture: RenderedPicture) -> Detour | None:
     detours = [
         Detour(ends=relation.ends, ratio=course_length(relation.course) / direct)
@@ -178,10 +263,14 @@ def check_picture(picture: RenderedPicture) -> PictureReport:
             *_overlapping_shapes(picture),
             *_labels_wider_than_shapes(picture),
             *_boxes_over_non_members(picture),
+            *_relations_through_text(picture),
+            *_hard_to_follow(picture),
         ),
         crossings=sum(
             courses_cross(first.course, second.course)
             for first, second in combinations(picture.relations, 2)
         ),
         worst_detour=_worst_detour(picture),
+        jogs=sum(len(kinks(square_course(relation.path))) for relation in picture.relations),
+        heads_together=_heads_together(picture),
     )

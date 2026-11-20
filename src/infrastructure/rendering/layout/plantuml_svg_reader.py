@@ -93,6 +93,18 @@ class RenderedDrawing:
     relations: tuple[RelationMarkup, ...]
 
 
+def _text_around(group: Element) -> tuple[MeasuredWord, ...]:
+    """The words of a title or legend group, as far as they are set as measured runs.
+
+    Read past rather than into, as before: a legend PlantUML sets some other way has no words here,
+    and that does not make the diagram unreadable — none of its shapes depends on them.
+    """
+    try:
+        return measured_words(text for text in group.iter() if tag_of(text) == "text")
+    except Unreadable:
+        return ()
+
+
 def _canvas(root: Element) -> Extent:
     view_box = (root.get("viewBox") or "").split()
     try:
@@ -229,6 +241,10 @@ def _drawing(root: Element) -> RenderedDrawing:
             elements=elements,
             boxes=boxes,
             relations=tuple(drawn for drawn, _markup in relations),
+            surrounding=tuple(
+                words for group_class, group in groups
+                if group_class in _CHROME_CLASSES and (words := _text_around(group))
+            ),
         ),
         root=root,
         backdrop=tuple(child for child in layer if tag_of(child) in _LOOSE_DRAWING_TAGS),

@@ -32,6 +32,7 @@ from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import LabelAnchor, Port, Route, Side
 from src.domain.diagrams.layout.orthogonal import course_of, fraction_along, point_along, stated_course
 from src.infrastructure.rendering.layout.relation_routing import RelationRouting, Undecided
+from tests.support.readability_fixtures import build_readability
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "layout_geometry"
 
@@ -302,6 +303,7 @@ BUILDERS = {
     "breaches.json": build_breaches,
     "repairs.json": build_repairs,
     "walk.json": build_walk,
+    "readability.json": build_readability,
 }
 
 

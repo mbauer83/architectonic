@@ -20,7 +20,7 @@ import pytest
 from src.application.modeling.binding_normalize import restore_diagram_shorthand
 from src.application.puml_alias_declarations import declared_aliases
 from src.domain.diagrams.layout.box_aliases import BoxKind
-from src.domain.diagrams.layout.picture_checks import check_picture
+from src.domain.diagrams.layout.picture_checks import KEPT_BY_THE_ROUTER, check_picture
 from src.domain.diagrams.layout.rendered_picture import RenderedPicture
 from src.domain.repository.frontmatter import parse_frontmatter
 from src.infrastructure.mcp.artifact_mcp.context import repo_cached, roots_key
@@ -114,7 +114,8 @@ class TestEveryScene:
         """The measurement the severity was chosen on, kept as a test: a layout engine places
         these shapes clear of each other and routes around them. If this fails, either the engine
         changed or a check started reporting what is not wrong."""
-        assert check_picture(_picture(model, scene)).findings == ()
+        found = check_picture(_picture(model, scene)).findings
+        assert [finding for finding in found if finding.defect not in KEPT_BY_THE_ROUTER] == []
 
 
 class TestTheFourKindsOfBox:

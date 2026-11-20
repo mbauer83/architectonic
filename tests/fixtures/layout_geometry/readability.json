@@ -1,0 +1,658 @@
+{
+ "tiers": {
+  "text": "hard",
+  "bend-at-an-end": "hard",
+  "runs-along": "hard",
+  "jog": "soft",
+  "heads-together": "soft",
+  "label-obscured": "soft"
+ },
+ "constants": {
+  "END_RUN": 30.0,
+  "SHORTEST_SEGMENT": 16.0,
+  "LINE_CLEARANCE": 6.0,
+  "TEXT_PADDING": 3.0
+ },
+ "text": [
+  {
+   "name": "a line through a title band",
+   "course": [
+    [
+     150,
+     50
+    ],
+    [
+     150,
+     300
+    ]
+   ],
+   "regions": {
+    "band": {
+     "left": 100,
+     "top": 100,
+     "right": 400,
+     "bottom": 130
+    },
+    "label": {
+     "left": 200,
+     "top": 200,
+     "right": 260,
+     "bottom": 214
+    }
+   },
+   "crossed": [
+    "band"
+   ]
+  },
+  {
+   "name": "a line ending on a band's top edge does not enter it",
+   "course": [
+    [
+     150,
+     50
+    ],
+    [
+     150,
+     100
+    ]
+   ],
+   "regions": {
+    "band": {
+     "left": 100,
+     "top": 100,
+     "right": 400,
+     "bottom": 130
+    },
+    "label": {
+     "left": 200,
+     "top": 200,
+     "right": 260,
+     "bottom": 214
+    }
+   },
+   "crossed": []
+  },
+  {
+   "name": "a line grazing a band's side is not through it",
+   "course": [
+    [
+     99.5,
+     50
+    ],
+    [
+     99.5,
+     300
+    ]
+   ],
+   "regions": {
+    "band": {
+     "left": 100,
+     "top": 100,
+     "right": 400,
+     "bottom": 130
+    },
+    "label": {
+     "left": 200,
+     "top": 200,
+     "right": 260,
+     "bottom": 214
+    }
+   },
+   "crossed": []
+  },
+  {
+   "name": "a line through a relation's label",
+   "course": [
+    [
+     150,
+     207
+    ],
+    [
+     300,
+     207
+    ]
+   ],
+   "regions": {
+    "band": {
+     "left": 100,
+     "top": 100,
+     "right": 400,
+     "bottom": 130
+    },
+    "label": {
+     "left": 200,
+     "top": 200,
+     "right": 260,
+     "bottom": 214
+    }
+   },
+   "crossed": [
+    "label"
+   ]
+  },
+  {
+   "name": "a line clear of both",
+   "course": [
+    [
+     50,
+     50
+    ],
+    [
+     50,
+     300
+    ],
+    [
+     450,
+     300
+    ]
+   ],
+   "regions": {
+    "band": {
+     "left": 100,
+     "top": 100,
+     "right": 400,
+     "bottom": 130
+    },
+    "label": {
+     "left": 200,
+     "top": 200,
+     "right": 260,
+     "bottom": 214
+    }
+   },
+   "crossed": []
+  }
+ ],
+ "bends_at_ends": [
+  {
+   "name": "straight: no bend to sit anywhere",
+   "course": [
+    [
+     0,
+     0
+    ],
+    [
+     10,
+     0
+    ]
+   ],
+   "decorated": [
+    true,
+    true
+   ],
+   "breaches": []
+  },
+  {
+   "name": "both runs long enough",
+   "course": [
+    [
+     0,
+     0
+    ],
+    [
+     40,
+     0
+    ],
+    [
+     40,
+     100
+    ],
+    [
+     80,
+     100
+    ]
+   ],
+   "decorated": [
+    true,
+    true
+   ],
+   "breaches": []
+  },
+  {
+   "name": "a bend right behind the source",
+   "course": [
+    [
+     0,
+     0
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     20,
+     100
+    ],
+    [
+     80,
+     100
+    ]
+   ],
+   "decorated": [
+    true,
+    true
+   ],
+   "breaches": [
+    "A:source"
+   ]
+  },
+  {
+   "name": "a bend right behind the target",
+   "course": [
+    [
+     0,
+     0
+    ],
+    [
+     40,
+     0
+    ],
+    [
+     40,
+     100
+    ],
+    [
+     60,
+     100
+    ]
+   ],
+   "decorated": [
+    true,
+    true
+   ],
+   "breaches": [
+    "A:target"
+   ]
+  },
+  {
+   "name": "exactly the run, give or take rounding",
+   "course": [
+    [
+     0,
+     0
+    ],
+    [
+     29.6,
+     0
+    ],
+    [
+     29.6,
+     50
+    ]
+   ],
+   "decorated": [
+    true,
+    true
+   ],
+   "breaches": []
+  },
+  {
+   "name": "a short run at an end with no decoration",
+   "course": [
+    [
+     0,
+     0
+    ],
+    [
+     20,
+     0
+    ],
+    [
+     20,
+     100
+    ],
+    [
+     25,
+     100
+    ]
+   ],
+   "decorated": [
+    true,
+    false
+   ],
+   "breaches": [
+    "A:source"
+   ]
+  }
+ ],
+ "kinks": [
+  {
+   "name": "no jog",
+   "course": [
+    [
+     0,
+     0
+    ],
+    [
+     40,
+     0
+    ],
+    [
+     40,
+     100
+    ],
+    [
+     80,
+     100
+    ]
+   ],
+   "segments": []
+  },
+  {
+   "name": "a jog of ten",
+   "course": [
+    [
+     0,
+     0
+    ],
+    [
+     40,
+     0
+    ],
+    [
+     40,
+     10
+    ],
+    [
+     80,
+     10
+    ],
+    [
+     80,
+     60
+    ]
+   ],
+   "segments": [
+    1
+   ]
+  },
+  {
+   "name": "a jog exactly a readable segment",
+   "course": [
+    [
+     0,
+     0
+    ],
+    [
+     40,
+     0
+    ],
+    [
+     40,
+     16.0
+    ],
+    [
+     80,
+     16.0
+    ]
+   ],
+   "segments": []
+  },
+  {
+   "name": "short first and last runs are not jogs",
+   "course": [
+    [
+     0,
+     0
+    ],
+    [
+     5,
+     0
+    ],
+    [
+     5,
+     100
+    ],
+    [
+     10,
+     100
+    ]
+   ],
+   "segments": []
+  }
+ ],
+ "runs_along": [
+  {
+   "name": "runs along a border inside it",
+   "course": [
+    [
+     50,
+     104
+    ],
+    [
+     250,
+     104
+    ],
+    [
+     250,
+     300
+    ]
+   ],
+   "others": [],
+   "borders": [
+    {
+     "left": 100,
+     "top": 100,
+     "right": 300,
+     "bottom": 200
+    }
+   ],
+   "segments": [
+    0
+   ]
+  },
+  {
+   "name": "crosses a border at a right angle",
+   "course": [
+    [
+     150,
+     50
+    ],
+    [
+     150,
+     150
+    ]
+   ],
+   "others": [],
+   "borders": [
+    {
+     "left": 100,
+     "top": 100,
+     "right": 300,
+     "bottom": 200
+    }
+   ],
+   "segments": []
+  },
+  {
+   "name": "runs along another route",
+   "course": [
+    [
+     0,
+     50
+    ],
+    [
+     200,
+     50
+    ]
+   ],
+   "others": [
+    [
+     [
+      100,
+      53
+     ],
+     [
+      300,
+      53
+     ]
+    ]
+   ],
+   "borders": [],
+   "segments": [
+    0
+   ]
+  },
+  {
+   "name": "parallel to another route a clearance away",
+   "course": [
+    [
+     0,
+     50
+    ],
+    [
+     200,
+     50
+    ]
+   ],
+   "others": [
+    [
+     [
+      100,
+      56
+     ],
+     [
+      300,
+      56
+     ]
+    ]
+   ],
+   "borders": [],
+   "segments": []
+  },
+  {
+   "name": "collinear with another route but not sharing a stretch",
+   "course": [
+    [
+     0,
+     50
+    ],
+    [
+     100,
+     50
+    ]
+   ],
+   "others": [
+    [
+     [
+      101,
+      50
+     ],
+     [
+      300,
+      50
+     ]
+    ]
+   ],
+   "borders": [],
+   "segments": []
+  },
+  {
+   "name": "crosses another route",
+   "course": [
+    [
+     0,
+     50
+    ],
+    [
+     200,
+     50
+    ]
+   ],
+   "others": [
+    [
+     [
+      100,
+      0
+     ],
+     [
+      100,
+      100
+     ]
+    ]
+   ],
+   "borders": [],
+   "segments": []
+  }
+ ],
+ "square": [
+  {
+   "name": "a line with two rounded bends",
+   "through": [
+    [
+     0,
+     0
+    ],
+    [
+     34,
+     0
+    ],
+    [
+     40,
+     6
+    ],
+    [
+     40,
+     94
+    ],
+    [
+     46,
+     100
+    ],
+    [
+     80,
+     100
+    ]
+   ],
+   "course": [
+    [
+     0,
+     0
+    ],
+    [
+     40,
+     0
+    ],
+    [
+     40,
+     100
+    ],
+    [
+     80,
+     100
+    ]
+   ]
+  },
+  {
+   "name": "a line drawn with sharp bends",
+   "through": [
+    [
+     0,
+     0
+    ],
+    [
+     40,
+     0
+    ],
+    [
+     40,
+     100
+    ]
+   ],
+   "course": [
+    [
+     0,
+     0
+    ],
+    [
+     40,
+     0
+    ],
+    [
+     40,
+     100
+    ]
+   ]
+  }
+ ]
+}
