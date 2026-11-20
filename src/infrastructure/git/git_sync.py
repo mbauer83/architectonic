@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
+from src.infrastructure.git._git_command import UNCOMMITTED_CONTENT_QUERY
 from src.infrastructure.git.fetch_attempts import (
     FetchAttempts,
     FetchDeferred,
@@ -194,8 +195,12 @@ class GitSyncManager:
             return None
 
     async def _is_clean(self, repo: Path) -> bool:
-        """True when nothing outside ``.arch/`` changed — runtime sync state is never work."""
-        rc, out, _ = await self._git(repo, "status", "--porcelain", "--", ".", ":(exclude).arch")
+        """True when the repository holds no uncommitted content — runtime state is never work.
+
+        The same question `has_uncommitted_changes` asks, run through this manager's own git so it
+        carries the sync credentials and stays on the event loop.
+        """
+        rc, out, _ = await self._git(repo, *UNCOMMITTED_CONTENT_QUERY)
         return rc == 0 and not out.strip()
 
     async def _upstream_ref(self, repo: Path) -> str | None:
@@ -307,6 +312,7 @@ class GitSyncManager:
             return
 
         from src.infrastructure.git.git_sync_m4 import (  # noqa: PLC0415
+            LocalWorkInTheWay,
             add_detached_worktree,
             prepare_rebase_worktree,
             run_m4_pull,
@@ -332,6 +338,12 @@ class GitSyncManager:
                 finally:
                     await self._git(repo, "worktree", "remove", "--force", str(worktree_path))
                 await self._git(repo, "reset", "--mixed", "HEAD")
+        except LocalWorkInTheWay as exc:
+            # Not a failure: nothing was written, and the remedy is the author's. Reported as the
+            # conflict it is rather than logged as an error on every poll until they save.
+            logger.info("skipping engagement pull %s: %s", repo, exc)
+            await event_bus.publish({"type": "sync_conflict", "repo": str(repo), "error": str(exc)})
+            return
         except Exception as exc:
             logger.exception("pull error for engagement %s", repo)
             await event_bus.publish({

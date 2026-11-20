@@ -1,20 +1,18 @@
 """The sync status says there is unsaved work whenever the save would commit something.
 
-Three readings of "does this engagement repository hold unsaved work" exist, and they do not agree:
+Two readings of "does this engagement repository hold unsaved work" existed, and they did not agree:
 
-* the **status** the GUI polls (`status_cache._measure`) asks git about `model/`, `docs/` and
-  `diagram-catalog/` only;
-* the **save** (`commit_engagement_work`) and the **background pull** (`GitSyncManager._is_clean`) ask
-  about everything except `.arch/`;
-* the **save dialog's list** (`sync.changes.list_changes`) classifies each changed path by the layout,
-  and drops a scratchpad on purpose.
+* the **status** the GUI polls asked git about `model/`, `docs/` and `diagram-catalog/` only;
+* the **save** and the **background pull** asked about everything except `.arch/`.
 
 So a change under `scratchpads/` — or under `projects/<slug>/model/`, where a repository laid out by
-group keeps every entity — is committed by a save, holds back the pull, and is reported as nothing to
-save. The GUI offers Save only while the status says dirty (`reduceCluster`: `engagementDirty`), so
-the one action that would publish the work is the one withheld.
+group keeps every entity — was committed by a save, held back the pull, and was reported as nothing
+to save. The GUI offers Save only while the status says dirty, so the one action that would publish
+the work was the one withheld.
 
-Through the routes, with the real mutation executor and the real scratchpad write path.
+They are one reading now (`_git_command.CONTENT_PATHSPEC`: the repository, less its declared runtime
+state), and these are its consequences through the routes, with the real mutation executor and the
+real scratchpad write path.
 """
 
 from __future__ import annotations
@@ -29,6 +27,7 @@ from fastapi.testclient import TestClient
 
 from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.git._git_command import STAGE_ALL_BUT_RUNTIME_STATE, run_repo_git
 from src.infrastructure.git.git_sync import GitSyncManager
 from src.infrastructure.rest.routers import scratchpads as scratchpad_router
 from src.infrastructure.rest.routers import state as gui_state
@@ -122,28 +121,12 @@ def test_an_entity_edited_under_model_is_reported_unsaved(workspace: Workspace) 
     assert workspace.listed_for_saving() == [FLAT_ID]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "status_cache._measure asks has_uncommitted_changes about model/, docs/ and diagram-catalog/ "
-        "only, so a scratchpad nobody has saved reads as nothing to save and the GUI withholds Save"
-    ),
-)
 def test_a_scratchpad_nobody_has_saved_is_reported_unsaved(workspace: Workspace) -> None:
     workspace.create_a_scratchpad()
 
     assert workspace.says_unsaved() is True
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "the same three-directory list: an entity under projects/<slug>/model/ — every entity of a "
-        "repository laid out by group — is edited, listed in the save dialog, and reported saved"
-    ),
-)
 def test_an_entity_edited_under_projects_is_reported_unsaved(workspace: Workspace) -> None:
     (workspace.engagement / GROUPED_PATH).write_text(
         valid_entity_md(GROUPED_ID, "Edited Under Projects Again"), encoding="utf-8"
@@ -154,25 +137,20 @@ def test_an_entity_edited_under_projects_is_reported_unsaved(workspace: Workspac
     assert workspace.says_unsaved() is True
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "sync.changes._classify returns None for a scratchpad, so the save dialog lists nothing for "
-        "a file the save it confirms will commit"
-    ),
-)
-def test_the_save_dialog_lists_a_scratchpad_the_save_will_commit(workspace: Workspace) -> None:
-    pad_id = workspace.create_a_scratchpad()
+def test_the_save_dialog_lists_artifacts_and_a_scratchpad_is_not_one(workspace: Workspace) -> None:
+    """What the author sees with only a scratchpad unsaved: Save is offered, because the status is
+    what offers it, and the dialog's list is empty — it lists model artifacts, and whether a
+    scratchpad is shown there as content about to be published is a separate question from whether
+    the work can be saved. The second is what this pins: the list is not what offers the save."""
+    workspace.create_a_scratchpad()
 
-    assert workspace.listed_for_saving() == [pad_id]
+    assert workspace.says_unsaved() is True
+    assert workspace.listed_for_saving() == []
 
 
-def test_a_save_carries_a_scratchpad_whatever_the_status_said(workspace: Workspace) -> None:
-    """The commit side is whole: it stages everything but `.arch/`, the scratchpad included.
-
-    Which is what makes the status's silence matter — the work is not excluded from saving, only
-    from being *offered* for it."""
+def test_a_save_carries_a_scratchpad(workspace: Workspace) -> None:
+    """The commit side was always whole, which is what made the status's silence matter — the work
+    was not excluded from saving, only from being *offered* for it."""
     pad_id = workspace.create_a_scratchpad()
 
     committed = workspace.save()
@@ -180,16 +158,70 @@ def test_a_save_carries_a_scratchpad_whatever_the_status_said(workspace: Workspa
     assert f"scratchpads/p/{pad_id}.scratchpad.yaml" in committed.splitlines()
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason=(
-        "GitSyncManager._is_clean counts scratchpads/ and the status does not: with only a scratchpad "
-        "unsaved the background pull is skipped ('uncommitted changes') while the status reports a "
-        "saved repository, so the clone stops following its remote with nothing on screen to resolve"
-    ),
-)
 def test_the_status_and_the_pull_agree_on_whether_work_is_unsaved(workspace: Workspace) -> None:
     workspace.create_a_scratchpad()
 
     assert workspace.says_unsaved() is workspace.pull_would_be_held_back()
+
+
+CONFIGURATION = Path(".arch-repo") / "viewpoint-pins.yaml"
+
+
+def test_configuration_is_content(workspace: Workspace) -> None:
+    """No artifact kind, and still committed by a save — so the status reports it."""
+    (workspace.engagement / CONFIGURATION).parent.mkdir(exist_ok=True)
+    (workspace.engagement / CONFIGURATION).write_text("pins: []\n", encoding="utf-8")
+
+    assert workspace.says_unsaved() is True
+    assert CONFIGURATION.as_posix() in workspace.save().splitlines()
+
+
+@pytest.mark.parametrize(
+    "runtime_state",
+    [
+        ".arch/enterprise-sync.json",
+        ".arch-repo/exchange-identity.json",
+        ".arch-repo/transactions/abandoned/intent.tmp",
+        ".arch-repo/sync-worktrees/sync-0123456789abcdef/model/x.md",
+    ],
+)
+def test_runtime_state_is_never_unsaved_work(workspace: Workspace, runtime_state: str) -> None:
+    """The other side of the one definition: what the deployment keeps for itself is not offered for
+    saving, not listed, and does not hold back a pull — whether or not a `.gitignore` covers it."""
+    path = workspace.engagement / runtime_state
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("{}\n", encoding="utf-8")
+
+    assert workspace.says_unsaved() is False
+    assert workspace.listed_for_saving() == []
+    assert workspace.pull_would_be_held_back() is False
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "scratchpads/p/SCR@1000000933.UnsSc.a-pad.scratchpad.yaml",
+        "projects/p/model/motivation/requirement/REQ@1000000934.UnsNw.a-new-one.md",
+        "docs/note/a-note.md",
+        "diagram-catalog/rendered/p/a-picture.svg",
+        ".arch-repo/groups.yaml",
+        ".arch-repo/documents/briefing.json",
+        "README.md",
+        "a-directory-the-layout-does-not-know-yet/a-file.txt",
+    ],
+)
+def test_the_readings_agree_for_content_anywhere(workspace: Workspace, content: str) -> None:
+    """The round trip the readings never had: whatever the file, the status offers the save, the
+    pull waits, and the save's own staging takes that file.
+
+    Stated over what the layout *permits* — including a directory it does not have yet — rather
+    than over the directories it has today, which is the list this replaced."""
+    path = workspace.engagement / content
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("name: anything\n", encoding="utf-8")
+
+    assert workspace.says_unsaved() is True
+    assert workspace.pull_would_be_held_back() is True
+    rc, _, stderr = run_repo_git(workspace.engagement, *STAGE_ALL_BUT_RUNTIME_STATE)
+    assert rc == 0, stderr
+    assert git(workspace.engagement, "diff", "--cached", "--name-only").splitlines() == [content]

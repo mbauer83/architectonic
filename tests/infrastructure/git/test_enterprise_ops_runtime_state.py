@@ -86,7 +86,3 @@ def test_state_file_alone_is_not_unsaved_work(tmp_path: Path) -> None:
     assert has_uncommitted_changes(repo)
 
 
-def test_pathspec_filtered_check_still_excludes_state(tmp_path: Path) -> None:
-    repo = _init_repo(tmp_path)
-    _write_state(repo)
-    assert not has_uncommitted_changes(repo, ".arch")

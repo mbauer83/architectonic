@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src.infrastructure.git._git_command import (
+    CONTENT_PATHSPEC,
     STAGE_ALL_BUT_RUNTIME_STATE,
     commit_with_identity,
     run_repo_git,
@@ -99,8 +100,8 @@ def restore_worktree_checkpoint(repo: Path, checkpoint: WorktreeCheckpoint) -> N
     never HEAD's attachment.
 
     Then the original three: ``reset --hard`` to the checkpoint restores every tracked file;
-    ``clean`` removes everything the promotion left untracked (``.arch/`` excepted — it is runtime
-    state and was never part of the checkpoint); the final ``reset`` moves HEAD back so prior work is
+    ``clean`` removes everything the promotion left untracked (runtime state excepted — it was never
+    part of the checkpoint, which staged content only); the final ``reset`` moves HEAD back so prior work is
     uncommitted again, exactly as before ``begin``.
     """
     _abandon_any_operation_in_progress(repo)
@@ -109,7 +110,7 @@ def restore_worktree_checkpoint(repo: Path, checkpoint: WorktreeCheckpoint) -> N
     rc, _, stderr = run_repo_git(repo, "reset", "--hard", checkpoint.checkpoint)
     if rc != 0:
         raise RuntimeError(f"Failed to reset enterprise worktree to promotion checkpoint: {stderr}")
-    rc, _, stderr = run_repo_git(repo, "clean", "-fd", "--", ".", ":(exclude).arch")
+    rc, _, stderr = run_repo_git(repo, "clean", "-fd", "--", *CONTENT_PATHSPEC)
     if rc != 0:
         raise RuntimeError(f"Failed to clean enterprise worktree after promotion abort: {stderr}")
     if checkpoint.checkpoint != checkpoint.head:
