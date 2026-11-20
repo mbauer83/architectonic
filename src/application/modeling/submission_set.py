@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
+from src.application.modeling.claim_overlap import contested
 from src.application.modeling.proposal_standing import PendingProposal
 from src.application.modeling.proposed_change import DRAFT_STATE
 from src.domain.submission_phase import validate_proposal_ids
@@ -71,14 +72,18 @@ def _refuse_overlap(composed: tuple[PendingProposal, ...]) -> None:
     Stated over the *set* rather than over consecutive pairs: the two need not be adjacent in the
     order, and a rule that only looked at neighbours would pass the arrangement that hides the
     problem.
+
+    `contested` is the detector, shared with the change set, which asks the same question over a
+    finer key. What an overlap costs is decided here: a submission refuses on sight.
     """
-    claimed: dict[tuple[str, str], str] = {}
-    for proposal in composed:
-        for field in proposal.edit.fields:
-            owner = claimed.setdefault((proposal.edit.artifact_id, field), proposal.proposal_id)
-            if owner != proposal.proposal_id:
-                raise UnsubmittableSet(
-                    f"'{owner}' and '{proposal.proposal_id}' both change the {field!r} of "
-                    f"'{proposal.edit.artifact_id}'. Whichever replayed second would silently "
-                    "overwrite the other, so the pair is refused rather than ordered."
-                )
+    claims = (
+        ((proposal.edit.artifact_id, field), proposal.proposal_id)
+        for proposal in composed
+        for field in proposal.edit.fields
+    )
+    for (artifact_id, field), (owner, other, *_) in contested(claims).items():
+        raise UnsubmittableSet(
+            f"'{owner}' and '{other}' both change the {field!r} of '{artifact_id}'. Whichever "
+            "replayed second would silently overwrite the other, so the pair is refused rather "
+            "than ordered."
+        )

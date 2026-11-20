@@ -20,13 +20,14 @@ from pathlib import Path
 from src.application.derivation.path_staleness import classify_accepted_path_staleness
 from src.application.derivation.strategy_registry import DerivationStrategyCatalog
 from src.application.derivation.types import ModelQuery
+from src.domain.content_revision import content_revision
 from src.domain.modules.module_catalog import ModuleCatalog
 from src.domain.viewpoints.view_derivations import ViewDerivation
 
 
 def compute_revision(path: Path) -> str:
     """Return a 16-hex-char SHA-256 hash of the file content."""
-    return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+    return content_revision(path.read_bytes())
 
 
 # ---------------------------------------------------------------------------

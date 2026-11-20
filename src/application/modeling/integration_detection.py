@@ -98,9 +98,23 @@ def fields_moved_upstream(
         for field, proposed in sorted(edit.fields.items())
         if field in base_values
         and current.get(field) is not None
-        and comparable(current[field]) != comparable(base_values[field])
-        and comparable(current[field]) != comparable(proposed)
+        and moved_since(base=base_values[field], current=current[field], proposed=proposed)
     )
+
+
+def moved_since(*, base: Any, current: Any, proposed: Any) -> bool:
+    """Whether *current* is neither what a change was written against nor what it asks for.
+
+    The whole rule, for one value. Equal to the base is content that has not moved; equal to the
+    proposal is content that already agrees; anything else was put there by someone else after the
+    author last looked. It is stated once because two things ask it — a proposed change being
+    rebased, and a change set's operation being read against the model — and an author told
+    "drifted" by one and "clean" by the other for the same three values has been told nothing.
+
+    Which values are *decidable* is not part of it. Each caller knows what an absent reading means
+    where it stands, and says so there.
+    """
+    return comparable(current) != comparable(base) and comparable(current) != comparable(proposed)
 
 
 def current_values_of(record: EntityRecord | DocumentRecord | None) -> Mapping[str, Any] | None:

@@ -19,6 +19,11 @@ against. A surface needs all three and needs to tell them apart: a connection ed
 `source_entity` to find the connection and never to move it, and a proposal records what to change
 without dictating how a future replay should apply it.
 
+**How a field is addressed is a fact about the field.** `KEYED` names the mappings that are patched
+key by key, `PROSE` the text that is replaced whole, and what is left is a value replaced whole and
+compared as a value. The write path has always behaved this way; it is stated here because a change
+set records one edit per addressable thing and has to know what the things are.
+
 **The wire envelope is not here.** `op` and `_ref` belong to the MCP bulk decoder: they say which
 operation an item is and what the caller calls it, which is a property of a batch request rather
 than of an artifact. Keeping them out is what lets this catalogue be checked against the write
@@ -69,6 +74,45 @@ CONTENT: Mapping[ArtifactKind, frozenset[str]] = {
     }),
 }
 
+#: The kinds a change set's operations address. Not `PROPOSABLE`, and the difference is the point: a
+#: proposal is addressed to a global artifact reference, which a connection does not have, while a
+#: change set is addressed to a repository, where a connection is reached by its triple as every
+#: connection write reaches it. Documents and diagrams are absent because a set has no operation for
+#: them yet, which is a decision about scope and not about what could be addressed.
+IN_A_CHANGE_SET: tuple[ArtifactKind, ...] = ("entity", "connection")
+
+#: The fields whose value is a mapping the write path PATCHES key by key: a key that is sent is set,
+#: a key mapped to null is removed, and every other key is kept. Stated here because it decides what
+#: one edit *is* — a change to one attribute of `properties` and a change to another are two edits
+#: that cannot collide, where two changes to `name` are one field written twice.
+KEYED: Mapping[ArtifactKind, frozenset[str]] = {
+    "entity": frozenset({"properties", "attribute_types"}),
+    "connection": frozenset({"metadata"}),
+    # `extra_frontmatter` is merged, but a null does not remove a key, so it is not patched in the
+    # sense above and is not claimed here.
+    "document": frozenset(),
+    "diagram": frozenset(),
+}
+
+#: The fields that hold prose: free text an edit replaces whole, because nothing inside it has a
+#: name to address. What is recorded about the text an edit replaces is its revision rather than the
+#: text — enough to know it moved, not enough to show what it said.
+PROSE: Mapping[ArtifactKind, frozenset[str]] = {
+    "entity": frozenset({"summary", "notes"}),
+    "connection": frozenset({"description"}),
+    "document": frozenset({"body"}),
+    "diagram": frozenset({"puml"}),
+}
+
+#: What a *create* states beyond what an edit may change: the facts that are fixed once the artifact
+#: exists. An entity's type is one. A connection's `version` and `status` are the other two — its
+#: create takes them and its edit does not. Given for the kinds in `IN_A_CHANGE_SET`; a document's
+#: create is still spelled by the bulk decoder alone.
+CREATION: Mapping[ArtifactKind, frozenset[str]] = {
+    "entity": frozenset({"artifact_type"}),
+    "connection": frozenset({"version", "status"}),
+}
+
 #: What tells the applier how to behave rather than what the artifact should say. Never part of a
 #: proposal: a proposal records the change, and how a replay applies it is the replay's decision.
 MECHANICS: Mapping[ArtifactKind, frozenset[str]] = {
@@ -82,6 +126,16 @@ MECHANICS: Mapping[ArtifactKind, frozenset[str]] = {
 def editable(kind: ArtifactKind) -> frozenset[str]:
     """Everything an edit of *kind* may name: what addresses the subject, and what it may change."""
     return ADDRESSING[kind] | CONTENT[kind]
+
+
+def atomic(kind: ArtifactKind) -> frozenset[str]:
+    """The fields an edit replaces whole and compares by value: neither keyed nor prose."""
+    return CONTENT[kind] - KEYED[kind] - PROSE[kind]
+
+
+def creatable(kind: ArtifactKind) -> frozenset[str]:
+    """Everything a create of *kind* may state about what it creates, its address aside."""
+    return CONTENT[kind] | CREATION[kind]
 
 
 def accepted(kind: ArtifactKind) -> frozenset[str]:
