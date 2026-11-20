@@ -25,11 +25,17 @@ which is what keeps the pair a round trip.
 **What is a line.** Markdown's: text up to a line feed, a carriage return, or the two together. Not
 `str.splitlines`, which also breaks at a form feed and at the Unicode separators — characters a cell
 may hold, and a reading that broke a row at one cut the value there.
+
+**Rows are edited where they stand.** `with_rows` rewrites, removes and adds rows of a table that was
+read from a text and answers that text with every other line as it was — its bytes, its line ending,
+and whether the text ends in one. A row it rewrites is written as `format_row` writes one, behind the
+indentation the line had.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator, Sequence
+import re
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
@@ -49,6 +55,9 @@ _FENCES = ("```", "~~~")
 
 #: Four columns of indentation make a line code rather than a table row.
 _CODE_INDENT = 4
+
+#: One line and the ending it carries, which is empty only for a last line that has none.
+_LINE_AND_ENDING = re.compile(r"([^\r\n]*)(\r\n|\r|\n)|([^\r\n]+)")
 
 
 @dataclass(frozen=True)
@@ -225,3 +234,49 @@ def format_table(
     aligned = _fitted(tuple(alignment), len(header), unaligned)
     delimiter = _PIPE + "".join(_DELIMITER_CELL[stated] + _PIPE for stated in aligned)
     return "\n".join([format_row(header), delimiter, *(format_row(row) for row in rows)])
+
+
+def _lines_with_endings(text: str) -> list[tuple[str, str]]:
+    """Each line of `text` beside its own ending: the lines `text_lines` answers, nothing lost."""
+    return [(match.group(1) or match.group(3) or "", match.group(2) or "") for match in _LINE_AND_ENDING.finditer(text)]
+
+
+def _indent_of(line: str) -> str:
+    return line[: len(line) - len(line.lstrip())]
+
+
+def with_rows(
+    text: str,
+    table: MarkdownTable,
+    *,
+    changed: Mapping[int, Sequence[str]] | None = None,
+    removed: Collection[int] = (),
+    added: Sequence[Sequence[str]] = (),
+) -> str:
+    """`text` with rows of `table` rewritten, removed and added, and every other line as it was.
+
+    `table` is one `tables_in(text)` answered. `changed` and `removed` name body rows by their index
+    in `table.rows`; a changed row is given whole, as spelled cells. `added` rows follow the table's
+    last line. The text ends in a line ending exactly when it did before.
+    """
+    rewritten = changed or {}
+    lines = _lines_with_endings(text)
+    first_row = table.first_line + 2
+    after_table = table.first_line + table.line_count
+    newline = lines[table.first_line][1]
+    indent = _indent_of(lines[table.first_line][0])
+
+    def _as_edited(at: int) -> list[tuple[str, str]]:
+        line, ending = lines[at]
+        row = at - first_row
+        if not 0 <= row < len(table.rows):
+            return [(line, ending)]
+        if row in removed:
+            return []
+        return [(_indent_of(line) + format_row(rewritten[row]), ending) if row in rewritten else (line, ending)]
+
+    before = [edited for at in range(after_table) for edited in _as_edited(at)]
+    joined = [(line, ending or newline) for line, ending in before] if added else before
+    out = [*joined, *((indent + format_row(cells), newline) for cells in added), *lines[after_table:]]
+    ends_as_before = [*out[:-1], (out[-1][0], lines[-1][1])] if out else out
+    return "".join(line + ending for line, ending in ends_as_before)
