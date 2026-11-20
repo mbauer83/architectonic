@@ -15,6 +15,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+from src.domain.repository.repo_layout import ARCH_REPO
+
 _ACTIVE_STAGED_ROOTS: set[Path] = set()
 _ACTIVE_LIVE_ROOTS: dict[Path, Path] = {}
 _DELETED_RELPATHS: dict[Path, set[Path]] = {}
@@ -34,6 +36,7 @@ class StagedWorkspace:
 
     def create_mirror(self) -> None:
         self.staged_root.mkdir()
+        _stage_repository_configuration(self.staged_root, self.live_root)
 
     def activate(self) -> None:
         staged_root = self.staged_root.resolve()
@@ -46,6 +49,35 @@ class StagedWorkspace:
 
     def materialize(self, path: Path) -> None:
         _materialize_for_write(path, self.staged_root)
+
+
+#: Where a transaction keeps its own staging trees, inside the configuration directory. Staging it
+#: would stage the tree being created, and every other transaction's with it.
+_TRANSACTION_STORAGE = "transactions"
+
+
+def _stage_repository_configuration(staged_root: Path, live_root: Path) -> None:
+    """Make the live repository's configuration readable under *staged_root*, file by file.
+
+    Configuration is what an operation consults without having been told about it: the document
+    types, the group registry, the attribute schemata. Readers find it by listing a directory or by
+    asking whether a file exists, and a lazy tree answers both with "nothing" — so a batch saw a
+    repository that declared no document types and refused every document, and read a group
+    registry of synthesised defaults. It is staged when the tree is created because no operation
+    names these paths first, and the cost is the size of the configuration, not of the repository.
+
+    Directories are made and files are linked, never a directory linked whole: a write through a
+    linked directory would land in the live repository, where a linked file is copied first.
+    """
+    live_config = live_root / ARCH_REPO
+    if not live_config.is_dir():
+        return
+    for entry in sorted(live_config.iterdir()):
+        if entry.name == _TRANSACTION_STORAGE:
+            continue
+        members = sorted(entry.rglob("*")) if entry.is_dir() else []
+        for live_path in (entry, *members):
+            stage_live_path(staged_root / live_path.relative_to(live_root), live_path)
 
 
 @contextmanager

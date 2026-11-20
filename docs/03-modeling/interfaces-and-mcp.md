@@ -77,7 +77,7 @@ looking entirely normal. See
 | Scratchpads | `scratchpad_create` | Write | Create a scratchpad. |
 | Scratchpads | `scratchpad_replace` | Destructive | Replace a scratchpad whole. |
 | Scratchpads | `scratchpad_delete` | Destructive | Delete a scratchpad and everything on it. |
-| Bulk | `artifact_bulk_write` | Destructive | Batch entity creates, connection adds, and edits in one call. |
+| Bulk | `artifact_bulk_write` | Destructive | Batch entity creates, document creates, connection adds, and edits in one call. |
 | Bulk | `artifact_bulk_delete` | Destructive | Batch destructive operations with dependency-aware planning and final repository verification. |
 | Grouping | `artifact_group` | Destructive | Manage artifact group containers across all three grouping axes. |
 | Promotion & sync | `artifact_promote_to_enterprise` | Destructive | Promote an explicit selection of entities, connections, documents, and diagrams from the engagement repo to the enterprise repo (entity_ids, connection_ids, document_ids, diagram_ids; entity_id names the selection root). |

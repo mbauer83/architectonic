@@ -89,3 +89,28 @@ def test_model_roots_are_discoverable_under_a_staged_root(tmp_path: Path) -> Non
         Path("projects/platform-core/model"),
         Path("projects/assurance/model"),
     }
+
+
+def test_repository_configuration_is_readable_under_a_staged_root(tmp_path: Path) -> None:
+    """Configuration is found by listing and by `exists()`, which a lazy tree answers with nothing."""
+    live = _live_repo(tmp_path / "live")
+    (live / ".arch-repo" / "documents").mkdir()
+    (live / ".arch-repo" / "documents" / "adr.json").write_text("{}")
+    (live / ".arch-repo" / "groups.yaml").write_text("model-projects: []\n")
+    staged = tmp_path / "staged"
+    workspace = StagedWorkspace(live_root=live, staged_root=staged)
+    workspace.create_mirror()
+    workspace.activate()
+    try:
+        assert [p.name for p in (staged / ".arch-repo" / "documents").glob("*.json")] == ["adr.json"]
+        assert (staged / ".arch-repo" / "groups.yaml").read_text() == "model-projects: []\n"
+        assert not (staged / ".arch-repo" / "transactions").exists()
+
+        # A write to staged configuration is the batch's own: it never reaches the live file.
+        (staged / ".arch-repo" / "groups.yaml").write_text("staged\n")
+        (staged / ".arch-repo" / "documents" / "spec.json").write_text("{}")
+    finally:
+        workspace.deactivate()
+
+    assert (live / ".arch-repo" / "groups.yaml").read_text() == "model-projects: []\n"
+    assert not (live / ".arch-repo" / "documents" / "spec.json").exists()

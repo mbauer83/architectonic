@@ -23,9 +23,11 @@ def register(mcp: MCPServer) -> None:
         name="artifact_bulk_write",
         title="Artifact Write: Bulk Create/Edit",
         description=(
-            "Batch entity creates, connection adds, and edits in one call. "
-            "Items auto-sort (create_entity → add_connection → edits); submit in any order.\n"
+            "Batch entity creates, document creates, connection adds, and edits in one call. "
+            "Items auto-sort (create_entity → create_document → add_connection → edits); "
+            "submit in any order.\n"
             "op values: create_entity (artifact_type, name), "
+            "create_document (doc_type, title), "
             "add_connection (source_entity, connection_type, target_entity), "
             "edit_entity (artifact_id), "
             "edit_connection (source_entity, target_entity, connection_type, operation=update|remove). "
