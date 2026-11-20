@@ -11,6 +11,7 @@ from pathlib import Path
 
 from src.application.artifacts.document_schema import SectionSpec
 from src.application.artifacts.document_sections import document_body, document_section_spans
+from src.application.artifacts.document_table_rows import read_document_tables
 from src.application.artifacts.reference_terms import (
     LinkedArtifactTypes,
     ReferenceTermVocabulary,
@@ -19,6 +20,7 @@ from src.application.artifacts.reference_terms import (
 )
 from src.application.document_links import resolve_artifact_links
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.application.verification._verifier_document_tables import document_table_issues
 from src.application.verification.artifact_verifier_parsing import parse_frontmatter, read_file
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_rules import check_enum, check_internal_links
@@ -213,6 +215,14 @@ def verify_document(  # noqa: C901
                     vocabulary=vocabulary,
                     section_spans=section_spans,
                     sections=schema.sections,
+                )
+                result.issues.extend(
+                    document_table_issues(
+                        read_document_tables(path, content, schema),
+                        present_sections=present,
+                        vocabulary=vocabulary,
+                        loc=loc,
+                    )
                 )
 
     check_internal_links(content, path, result, loc)

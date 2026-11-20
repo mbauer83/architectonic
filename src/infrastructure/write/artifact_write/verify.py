@@ -3,11 +3,22 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
+from src.application.verification._verifier_document_tables import is_about_a_table_in_progress
 from src.application.verification.artifact_verifier import ArtifactVerifier, VerificationResult
 from src.application.verification.artifact_verifier_types import VerificationFileType
 from src.config.repo_paths import ARCH_REPO, DIAGRAM_CATALOG, DIAGRAMS, DOCS, MODEL, PROJECTS
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
+
+
+def document_write_allowed(res: VerificationResult) -> bool:
+    """Whether a document that verifies as *res* may be written.
+
+    A document write is refused by any finding, a warning included: a dangling link is a warning, and
+    a document is not written with one. The one thing a document may be written with is a typed table
+    still being filled in, which is the state every such table is in until its last row is complete.
+    """
+    return res.valid and all(is_about_a_table_in_progress(issue) for issue in res.issues)
 
 
 def _diagram_temp_path(tmp_root: Path, desired_name: str, support_repo_root: Path | None) -> Path:

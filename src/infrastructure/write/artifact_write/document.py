@@ -17,12 +17,12 @@ from src.infrastructure.atomic_file import write_atomic
 
 from ._artifact_deduplication import extract_friendly_slug, get_repository, validate_document_unique
 from ._document_group_move import _doc_dir, _resolve_document_group_path, commit_document_move
-from ._document_placeholder import _build_placeholder_body, _validate_section_templates
+from ._document_placeholder import _build_placeholder_body, _declared_tables, _validate_section_templates
 from .boundary import assert_engagement_write_root, modification_stamp
 from .coerce import as_optional_str_list
 from .enterprise_edit_arguments import Interception, document_change
 from .types import WriteResult
-from .verify import verify_content_in_temp_path
+from .verify import document_write_allowed, verify_content_in_temp_path
 
 
 class DocumentNotFoundError(ValueError):
@@ -85,10 +85,6 @@ def _verification_to_document_dict(path: Path, res) -> dict[str, object]:
             {"severity": i.severity, "code": i.code, "message": i.message, "location": i.location} for i in res.issues
         ],
     }
-
-
-def _document_write_allowed(res) -> bool:
-    return res.valid and not res.issues
 
 
 #: The heading a one-way reference is recorded under. One name, so `references_to_entity` finds the
@@ -192,7 +188,7 @@ def create_document(
             },
         )
 
-    actual_body = body or _build_placeholder_body(sections, section_templates)
+    actual_body = body or _build_placeholder_body(sections, section_templates, _declared_tables(repo_root, doc_type))
     actual_body = actual_body.rstrip() + render_references(path, references or [])
     content = _format_document_markdown(
         artifact_id=doc_id,
@@ -215,7 +211,7 @@ def create_document(
     )
     verification = _verification_to_document_dict(path, preview_res)
 
-    if dry_run or not _document_write_allowed(preview_res):
+    if dry_run or not document_write_allowed(preview_res):
         return WriteResult(
             wrote=False,
             path=path,
@@ -353,7 +349,7 @@ def edit_document(
     verification = _verification_to_document_dict(target_path, preview_res)
     warnings = [f"Will move document to group '{group}': {target_path}"] if moved and dry_run else []
 
-    if dry_run or not _document_write_allowed(preview_res):
+    if dry_run or not document_write_allowed(preview_res):
         return WriteResult(
             wrote=False, path=target_path, artifact_id=artifact_id, content=content,
             warnings=warnings, verification=verification,

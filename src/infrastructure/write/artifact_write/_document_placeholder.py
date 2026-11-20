@@ -4,10 +4,17 @@ Split out of ``document.py`` to keep its CRUD/write-path functions the
 cohesive unit; these are pure functions over a doc-type schema's sections.
 """
 
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+
 from src.application.artifacts.document_schema import (
     REQUIRED_CONNECTIONS_KEY,
     SUGGESTED_CONNECTIONS_KEY,
+    get_document_schema_object,
 )
+from src.application.artifacts.document_tables import TableSpec
+
+_PLACEHOLDER = "<!-- Add content here -->"
 
 
 def _validate_section_templates(
@@ -34,11 +41,30 @@ def _validate_section_templates(
             )
 
 
+def _declared_tables(repo_root: Path, doc_type: str) -> dict[str, tuple[TableSpec, ...]]:
+    """The typed tables each section of `doc_type` declares, by section name."""
+    schema = get_document_schema_object(repo_root, doc_type)
+    return {section.name: section.tables for section in schema.sections} if schema else {}
+
+
+def _starter(template_body: str | None, *, holds_a_table: bool) -> str:
+    if template_body is not None:
+        return template_body.rstrip()
+    return "" if holds_a_table else _PLACEHOLDER
+
+
 def _build_placeholder_body(
     required_sections: list[object],
     section_templates: dict[str, str] | None = None,
+    tables: Mapping[str, Sequence[TableSpec]] | None = None,
 ) -> str:
+    """A body with every section the type declares: its starter text, then each table it declares.
+
+    A section that declares a table is given the table's header and no placeholder comment — the
+    empty table is what there is to fill in.
+    """
     parts = []
+    declared = tables or {}
     templates = section_templates or {}
     for section in required_sections:
         if isinstance(section, dict):
@@ -52,11 +78,10 @@ def _build_placeholder_body(
             hint = ""
         if not section_name:
             continue
-        intro = f"## {section_name}\n\n{hint}"
-        if template_body is not None:
-            parts.append(f"{intro}{template_body.rstrip()}\n")
-        else:
-            parts.append(f"{intro}<!-- Add content here -->\n")
+        scaffolds = [table.scaffold() for table in declared.get(section_name, ())]
+        starter = _starter(template_body, holds_a_table=bool(scaffolds))
+        blocks = "\n\n".join(block for block in (starter, *scaffolds) if block)
+        parts.append(f"## {section_name}\n\n{hint}{blocks}\n")
     return "\n".join(parts)
 
 
