@@ -149,6 +149,10 @@ _CHECKSUM_DIGEST = re.compile(r"\[0-9a-f(A-F)?\]\{64\}")
 #: unowned syntax it is.
 _TABLE_PIPE = re.compile(r"\A(?:\^|\\A)?(?:\\s\*|\s*)\\?\|")
 
+#: The prefix of a provisional reference. A literal carrying it, handed to a locating call, is
+#: deciding where an alias begins. JSON Schema's bare `"$ref"` key has no colon and is not this.
+_PROVISIONAL_REFERENCE = re.compile(r"\$ref:")
+
 SYNTAX_READERS: tuple[SyntaxReader, ...] = (
     SyntaxReader(
         syntax="a markdown table — where one is, its rows, and the cells of a row",
@@ -184,6 +188,23 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             Path("src/infrastructure/mcp/artifact_mcp/context.py"),
             Path("src/infrastructure/mcp/artifact_mcp/_diagram_binding_modes.py"),
         }),
+    ),
+    SyntaxReader(
+        syntax="a provisional reference — `$ref:<alias>`, naming what a batch has not created yet",
+        owners=(Path("src/domain/provisional_reference.py"),),
+        instead=(
+            "`src.domain.provisional_reference`: `provisional` to write one, `alias_of` to ask "
+            "whether a reference is one and what it names, `name_in` for the alias or the id"
+        ),
+        incident=(
+            "a row written when the fourth reader was about to arrive. The bulk write resolved the "
+            "form with `startswith` and a slice of five characters, the scratchpad lift took it off "
+            "twice with `removeprefix`, and four writers composed it as an f-string — and a change "
+            "set, whose operations name the entities it creates the same way, needed to read it "
+            "again. Nothing had failed yet; the three readings agreed only because the form has "
+            "never changed"
+        ),
+        literal_probe=_PROVISIONAL_REFERENCE,
     ),
     SyntaxReader(
         syntax="the release version — `MAJOR.MINOR.PATCH`, with or without its tag's `v`",

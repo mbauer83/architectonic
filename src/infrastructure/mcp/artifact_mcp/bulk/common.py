@@ -8,6 +8,7 @@ from typing import Literal
 
 from src.application.modeling import edit_field_catalogue as catalogue
 from src.application.verification.artifact_verifier import ArtifactRegistry
+from src.domain.provisional_reference import alias_of
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp.artifact_mcp.edit_tools import _require_registry, _resolve
@@ -64,8 +65,8 @@ def unknown_item_fields(item: dict) -> tuple[str, ...]:
 
 
 def resolve_ref(value: str, ref_map: dict[str, str]) -> str:
-    if value.startswith("$ref:"):
-        key = value[5:]
+    key = alias_of(value)
+    if key is not None:
         resolved = ref_map.get(key)
         if resolved is None:
             raise ValueError(f"Unresolved $ref '{key}' — no create_entity item with _ref='{key}' succeeded")

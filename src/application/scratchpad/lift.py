@@ -43,6 +43,7 @@ from src.application.scratchpad.lift_plan import (
     OutsideSelection,
 )
 from src.domain.modules.module_registry import ModuleRegistry
+from src.domain.provisional_reference import provisional
 from src.domain.scratchpad import Endpoint, Link, LinkVerdict, Note, Scratchpad
 
 #: Re-exported, so every caller keeps importing one name from one place regardless of which half of
@@ -119,7 +120,7 @@ def _diagram_item(scratchpad: Scratchpad, items: list[LiftItem]) -> LiftItem | N
         label=scratchpad.name, artifact_type="archimate-layered",
         reason="drawn after the content commits, since it can only name entities that exist",
         entity_refs=tuple(
-            item.artifact_id or f"$ref:{item.id}" for item in drawn
+            item.artifact_id or provisional(item.id) for item in drawn
         ),
     )
 
@@ -129,7 +130,7 @@ def _groupings(scratchpad: Scratchpad, inside: set[str]) -> list[LiftGrouping]:
     found: list[LiftGrouping] = []
     for group in sorted(scratchpad.groups, key=lambda item: item.id):
         members = tuple(
-            (note.model_ref.artifact_id if note.model_ref else f"$ref:{note.id}")
+            (note.model_ref.artifact_id if note.model_ref else provisional(note.id))
             for member in sorted(group.members)
             if (note := scratchpad.note(member)) is not None and member in inside
         )
@@ -155,7 +156,7 @@ def _with_references(items: list[LiftItem]) -> list[LiftItem]:
     if not by_document:
         return items
     return [
-        replace(item, entity_refs=tuple(by_document.get(f"$ref:{item.id}", ())))
+        replace(item, entity_refs=tuple(by_document.get(provisional(item.id), ())))
         if item.kind == "document" and item.outcome == "create" else item
         for item in items
     ]
@@ -224,7 +225,7 @@ def _note_item(note: Note, target: LiftTarget) -> LiftItem:
 
 def _endpoint_ref(note: Note) -> str:
     """How a connection addresses this note: what it already is, or the alias its create will get."""
-    return note.model_ref.artifact_id if note.model_ref is not None else f"$ref:{note.id}"
+    return note.model_ref.artifact_id if note.model_ref is not None else provisional(note.id)
 
 
 def _link_item(

@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from src.application.scratchpad.lift import LiftItem, LiftPlan, LiftReceipt, LiftTarget
+from src.domain.provisional_reference import name_in
 
 
 class BulkWriteLiftWriter:
@@ -83,7 +84,7 @@ class BulkWriteLiftWriter:
         """
         from src.infrastructure.write.artifact_write import diagram as diagram_ops  # noqa: PLC0415
 
-        resolve = lambda ref: receipt.realized.get(ref.removeprefix("$ref:"), ref)  # noqa: E731
+        resolve = lambda ref: receipt.realized.get(name_in(ref), ref)  # noqa: E731
         entity_ids = [resolve(ref) for ref in item.entity_refs]
         groupings = [
             {"label": grouping.label, "entity-ids": [resolve(ref) for ref in grouping.members]}
@@ -209,7 +210,7 @@ def _receipt(answer: dict[str, object], creates: tuple[LiftItem, ...]) -> LiftRe
     # A reference is recorded on its document, so it became part of whatever that note became. The
     # link says so, which is what lets the next lift report it as recorded rather than plan it again.
     for item in creates:
-        document = realized.get(item.source_ref.removeprefix("$ref:"))
+        document = realized.get(name_in(item.source_ref))
         if item.kind == "reference" and document:
             realized[item.id] = document
     return LiftReceipt(
