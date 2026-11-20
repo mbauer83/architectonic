@@ -29,8 +29,7 @@ from src.application.verification.artifact_verifier_types import (
     Issue,
     VerificationResult,
 )
-from src.domain.repository.artifact_location import artifact_kind_at
-from src.domain.repository.repo_layout import DIAGRAM_CATALOG, DOCS, ICONS
+from src.domain.repository.artifact_location import ARTIFACT_KINDS, artifact_kind_declared_at, source_globs
 
 
 class _NullPumlSyntax:
@@ -71,8 +70,13 @@ class FilesystemInventoryAdapter:
         return inventory_files(repo_path, include_diagrams=include_diagrams)
 
     def list_standalone_artifacts(self, repo_path: Path) -> list[Path]:
-        roots = (repo_path / DOCS, repo_path / DIAGRAM_CATALOG / ICONS)
-        found = (path for root in roots if root.exists() for path in root.rglob("*.md"))
+        found = (
+            path
+            for kind in ARTIFACT_KINDS
+            if kind.verification == "standalone"
+            for pattern in source_globs(kind)
+            for path in repo_path.glob(pattern)
+        )
         return sorted(self.filter_standalone_artifacts(repo_path, list(found)))
 
     def filter_standalone_artifacts(self, repo_path: Path, candidates: list[Path]) -> list[Path]:
@@ -84,7 +88,8 @@ def _is_standalone(repo_path: Path, path: Path) -> bool:
         relative = path.resolve().relative_to(repo_path.resolve())
     except ValueError:
         return False
-    return artifact_kind_at(relative) in ("document", "icon")
+    declared = artifact_kind_declared_at(relative)
+    return declared is not None and declared.verification == "standalone"
 
 
 class DefaultIncrementalStateAdapter:

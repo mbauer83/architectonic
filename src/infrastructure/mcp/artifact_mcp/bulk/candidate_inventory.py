@@ -6,7 +6,7 @@ from typing import Literal
 from src.application.verification._verifier_inventory import FileInventory
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import entity_id_from_path
-from src.domain.repository.artifact_location import artifact_kind_at, model_file_kind
+from src.domain.repository.artifact_location import artifact_kind_at, artifact_kind_declared_at, model_file_kind
 
 
 class CandidateInventoryPort:
@@ -28,7 +28,8 @@ class CandidateInventoryPort:
         return [
             path for path in candidates
             if (rel := rel_to_root(path.resolve(), repo_path.resolve())) is not None
-            and artifact_kind_at(rel) in ("document", "icon")
+            and (declared := artifact_kind_declared_at(rel)) is not None
+            and declared.verification == "standalone"
         ]
 
 

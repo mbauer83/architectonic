@@ -3,7 +3,11 @@ from pathlib import Path
 from typing import Any
 
 from src.application.artifacts.document_part_edits import DocumentEditRefused, PartEdit
-from src.application.artifacts.document_schema import get_document_schema, get_document_subdirectory
+from src.application.artifacts.document_schema import (
+    document_id_prefix,
+    get_document_schema,
+    get_document_subdirectory,
+)
 from src.application.artifacts.query import ArtifactRepository
 from src.application.document_links import id_links_expanded, relocated_links
 from src.application.identifier_allocator import get_default_allocator
@@ -75,7 +79,7 @@ def create_document(
     if schema is None:
         raise ValueError(f"Unknown doc-type: {doc_type!r}. No schema found at .arch-repo/documents/{doc_type}.json")
 
-    abbreviation: str = schema.get("abbreviation") or doc_type.upper()
+    abbreviation = document_id_prefix(schema, doc_type)
     doc_subdirectory = get_document_subdirectory(schema, doc_type)
     required_sections: list[str] = schema.get("required_sections") or []
     sections_raw = schema.get("sections")

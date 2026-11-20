@@ -36,6 +36,7 @@ from src.domain.ontology_representation.artifact_types import (
     summary_from_document,
     summary_from_entity,
 )
+from src.domain.repository.artifact_location import artifact_kind
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 
 from . import _sqlite_queries as _q
@@ -63,8 +64,9 @@ from .versioning import ReadModelVersion, build_read_model_etag, read_model_vers
 
 _T = TypeVar("_T", EntityRecord, ConnectionRecord, DiagramRecord, DocumentRecord, ScratchpadNoteRecord)
 
+#: How what `_service_incremental.CHANGE_READERS` read is applied: one entry per row of the kind table.
 _CHANGE_APPLIERS = {
-    "outgoing": lambda service, path, data: _apply_outgoing_records(path, data, service._mem, service._db),
+    "connection": lambda service, path, data: _apply_outgoing_records(path, data, service._mem, service._db),
     "entity": lambda service, path, data: _apply_entity_record(path, data, service._mem, service._db),
     "diagram": lambda service, path, data: apply_diagram_change(
         path, service._mem, service._db, parsed=data,
@@ -72,9 +74,7 @@ _CHANGE_APPLIERS = {
         attr_type_ref_fn=service._attr_type_ref_extractor,
     ),
     "document": lambda service, path, data: apply_document_change(path, service._mem, service._db, parsed=data),
-    "scratchpad": lambda service, path, data: apply_scratchpad_change(
-        path, service._mem, service._db, parsed=data
-    ),
+    "scratchpad": lambda service, path, data: apply_scratchpad_change(path, service._mem, service._db, parsed=data),
     "icon": lambda service, path, data: apply_icon_change(path, service._mem, parsed=data),
 }
 
@@ -204,7 +204,7 @@ class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries, _IconQueri
             # invalidate every model ETag in the product at that rate, for a change almost no model
             # reader can observe. The two kinds that do each have a counter of their own
             # (`ReadDependence`): every scratchpad change, and one that alters a reference list.
-            if any(kind != "scratchpad" for kind, _path, _data in parsed):
+            if any(artifact_kind(kind).moves_model_generation for kind, _path, _data in parsed):
                 self._bump_generation()
             else:
                 self._scratchpad_generation += 1

@@ -17,6 +17,7 @@ from collections.abc import Iterable, Iterator
 from itertools import chain
 from typing import TYPE_CHECKING
 
+from src.application._startup_kind_table_consistency import kind_table_consistency_msgs
 from src.domain.diagrams.bindings import CORE_CORRESPONDENCE_KINDS
 from src.domain.relationships.permitted_mappings import concept_scope_from_mapping_spec
 
@@ -171,6 +172,7 @@ def _collect_consistency_errors(registry: "ModuleRegistry") -> list[str]:
         _diagram_type_consistency_msgs(registry),
         _id_prefix_consistency_msgs(registry),
         _permitted_mapping_source_msgs(registry),
+        kind_table_consistency_msgs(registry),
     ))
     errors.extend(_collect_bridge_errors(registry))
     return errors
