@@ -23,8 +23,9 @@ Four outcomes, and the distinction between them is the whole design:
   refusal: it is a decision, and the person makes it by extending the selection or accepting that
   the link is not realized.
 
-Narrowings (W128/W129) are warnings and pass. The relation exists; a specialization says it does not
-apply here, which is worth knowing and is not the ontology refusing anything.
+Narrowings are warnings and pass. A relation exists and a specialization says it does not apply here
+(W128/W129); a type exists and the area the note sits in does not hold it. Either is worth knowing
+and neither is the ontology refusing anything.
 """
 
 from __future__ import annotations
@@ -42,9 +43,8 @@ from src.application.scratchpad.lift_plan import (
     LiftTarget,
     OutsideSelection,
 )
-from src.domain.modules.module_registry import ModuleRegistry
 from src.domain.provisional_reference import provisional
-from src.domain.scratchpad import Endpoint, Link, LinkVerdict, Note, Scratchpad
+from src.domain.scratchpad import UNVERIFIED, Link, LinkVerdict, Note, Scratchpad
 
 #: Re-exported, so every caller keeps importing one name from one place regardless of which half of
 #: this pair defines it — the same arrangement `startup_validation` uses for its two.
@@ -58,7 +58,6 @@ __all__ = [
     "LiftTarget",
     "OutsideSelection",
     "plan_lift",
-    "verdict_source",
 ]
 
 def plan_lift(
@@ -67,6 +66,7 @@ def plan_lift(
     selection: Sequence[str],
     targets: Mapping[str, LiftTarget],
     verdict_of: Callable[[Link], LinkVerdict],
+    note_verdict_of: Callable[[Note], LinkVerdict] = lambda _note: UNVERIFIED,
     draw: bool = False,
 ) -> LiftPlan:
     """What lifting *selection* would do. Pure: nothing is written and nothing read.
@@ -74,8 +74,9 @@ def plan_lift(
     *targets* maps a frame's id to the project its content lands in; a frame with no entry lands in
     the root model, which is also where a note sitting in no frame goes.
 
-    `verdict_of` is the same verdict the canvas already renders beside each link, passed in rather
-    than recomputed, so the preflight cannot disagree with what the person is looking at.
+    `verdict_of` and `note_verdict_of` are the verdicts the canvas already renders on each link and
+    each note, passed in rather than recomputed, so the preflight cannot disagree with what the
+    person is looking at.
     """
     chosen = sorted(
         (note for note in scratchpad.notes if note.id in set(selection)),
@@ -88,7 +89,7 @@ def plan_lift(
     if refusal:
         return LiftPlan(targets=_distinct(used.values()), refusal=refusal)
 
-    items = [_note_item(note, used[note.id]) for note in chosen]
+    items = [_note_item(note, used[note.id], note_verdict_of(note)) for note in chosen]
     inside = {note.id for note in chosen}
     refs = {note.id: _endpoint_ref(note) for note in chosen}
 
@@ -188,8 +189,13 @@ def _plan_refusal(
     return ""
 
 
-def _note_item(note: Note, target: LiftTarget) -> LiftItem:
-    """What would become of one selected note, and which project it lands in."""
+def _note_item(note: Note, target: LiftTarget, verdict: LinkVerdict) -> LiftItem:
+    """What would become of one selected note, and which project it lands in.
+
+    A narrowing — the note decided as something its area does not hold — is carried as a warning and
+    the note is still created: the type is one the meta-ontology declares.
+    """
+    warning = verdict.message if verdict.kind == "narrowed" else ""
     if note.model_ref is not None:
         kind = "bound to" if note.model_ref.kind == "bound" else "already realized as"
         return LiftItem(
@@ -209,7 +215,7 @@ def _note_item(note: Note, target: LiftTarget) -> LiftItem:
             )
         return LiftItem(
             kind="document", id=note.id, outcome="create", label=note.title, target=target.group,
-            artifact_type=note.document_type, summary=note.body,
+            artifact_type=note.document_type, summary=note.body, warning=warning,
         )
     if note.destination != "element" or not note.element_type:
         return LiftItem(
@@ -218,7 +224,7 @@ def _note_item(note: Note, target: LiftTarget) -> LiftItem:
         )
     return LiftItem(
         kind="element", id=note.id, outcome="create", label=note.title, target=target.group,
-        artifact_type=note.element_type, summary=note.body,
+        artifact_type=note.element_type, summary=note.body, warning=warning,
         specializations=(note.specialization,) if note.specialization else (),
     )
 
@@ -333,29 +339,3 @@ def _outside(scratchpad: Scratchpad, inside: set[str]) -> list[OutsideSelection]
             link_id=link.id, note_id=stranded, note_title=note.title if note else stranded,
         ))
     return found
-
-
-def verdict_source(registry: ModuleRegistry, scratchpad: Scratchpad) -> Callable[[Link], LinkVerdict]:
-    """The verdict function `plan_lift` needs, built from the registry once for the whole plan."""
-    from src.application.scratchpad.verification import verdict_for  # noqa: PLC0415
-
-    endpoints = {
-        note.id: Endpoint(
-            destination=note.destination,
-            element_type=note.element_type,
-            specialization=note.specialization,
-            document_type=note.document_type,
-        )
-        for note in scratchpad.notes
-    }
-
-    def verdict_of(link: Link) -> LinkVerdict:
-        return verdict_for(
-            registry,
-            meta_ontology=scratchpad.meta_ontology,
-            source=endpoints.get(link.source, Endpoint()),
-            target=endpoints.get(link.target, Endpoint()),
-            connection_type=link.connection_type,
-        )
-
-    return verdict_of

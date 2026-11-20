@@ -35,7 +35,7 @@ export function toReplacePayload(scratchpad: Scratchpad): Record<string, unknown
     ...without(scratchpad, 'group'),
     // `verdict` goes too: the server derives it from an ontology that may have moved on, so
     // sending it back would be the client asserting an answer it does not own.
-    notes: (scratchpad.notes ?? []).map((note) => without(note, 'area')),
+    notes: (scratchpad.notes ?? []).map((note) => without(note, 'area', 'verdict')),
     links: (scratchpad.links ?? []).map((link) => without(link, 'verdict')),
   }
 }

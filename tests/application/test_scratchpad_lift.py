@@ -316,11 +316,18 @@ class _Writer:
         return self.receipt
 
 
+class _NoOntologies:
+    """A module registry with nothing registered: a scratchpad's vocabulary is then unknown."""
+
+    def all_ontologies(self) -> dict[str, object]:
+        return {}
+
+
 def _service(scratchpad, writer: _Writer) -> tuple[ScratchpadService, _Repository]:  # noqa: ANN001
     repository = _Repository(scratchpad, writer.journal)
-    # The registry is only reached to build verdicts, and every case here supplies its own links'
-    # types explicitly, so `None` is honest: this suite is about what the service does with a plan.
-    return ScratchpadService(repository, None, writer), repository  # type: ignore[arg-type]
+    # The registry is only reached to build verdicts, and this suite is about what the service does
+    # with a plan — so it registers no ontology, and every verdict is the one nothing is said in.
+    return ScratchpadService(repository, _NoOntologies(), writer), repository  # type: ignore[arg-type]
 
 
 class TestPerformingALift:

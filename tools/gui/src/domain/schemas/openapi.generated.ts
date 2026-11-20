@@ -9437,12 +9437,12 @@ export interface components {
         };
         /**
          * LinkVerdictWire
-         * @description What the meta-ontology says about a drawn link.
+         * @description What the meta-ontology and the scratchpad's own areas say about a link or a note.
          *
-         *     Served with the link rather than behind its own endpoint: the two-tier split is a property of
-         *     the ontology's declared classification levels, and deciding it a second time in a client would
-         *     put it in two places. `blocks` distinguishes a refusal, which stops a lift, from a narrowing,
-         *     which warns.
+         *     Served with what it is about rather than behind its own endpoint: the two-tier split is a
+         *     property of the ontology's declared classification levels, and deciding it a second time in a
+         *     client would put it in two places. `blocks` distinguishes a refusal, which stops a lift, from a
+         *     narrowing, which warns. One shape for both rows, so a client reads one channel.
          */
         LinkVerdictWire: {
             /** Alternatives */
@@ -9913,6 +9913,10 @@ export interface components {
             specialization?: string | null;
             /** Title */
             title?: string | null;
+            /** Verdict */
+            verdict?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * NoteRequestWire
@@ -9950,6 +9954,10 @@ export interface components {
             specialization?: string | null;
             /** Title */
             title: string;
+            /** Verdict */
+            verdict?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * NoteWire
@@ -9986,6 +9994,7 @@ export interface components {
             specialization?: string;
             /** Title */
             title: string;
+            verdict?: components["schemas"]["LinkVerdictWire"];
         };
         /** OfferedIcon */
         OfferedIcon: {

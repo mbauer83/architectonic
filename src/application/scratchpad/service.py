@@ -21,13 +21,13 @@ from src.application.scratchpad.lift import (
     LiftPlan,
     LiftReceipt,
     plan_lift,
-    verdict_source,
 )
 from src.application.scratchpad.ports import (
     LiftWriterPort,
     ScratchpadRepositoryPort,
     ScratchpadSummary,
 )
+from src.application.scratchpad.verification import note_verdict_source, verdict_source
 from src.domain.modules.module_registry import ModuleRegistry
 from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.scratchpad import (
@@ -216,6 +216,7 @@ class ScratchpadService:
                 area: self._lift_writer.resolve_target(group) for area, group in targets.items()
             },
             verdict_of=verdict_source(self._registry, scratchpad),
+            note_verdict_of=note_verdict_source(self._registry, scratchpad),
             draw=draw,
         )
         if dry_run or plan.blocks or plan.is_empty:

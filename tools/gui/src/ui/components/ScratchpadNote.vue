@@ -67,6 +67,7 @@ const emit = defineEmits<{
       bound: note['model-ref']?.kind === 'bound',
       realized: note['model-ref']?.kind === 'realized',
     }"
+    :data-verdict="note.verdict?.kind ?? ''"
     :data-note-id="note.id"
     :data-area="note.area"
     :data-domain="note.domain ?? ''"
@@ -137,6 +138,18 @@ const emit = defineEmits<{
         v-else
         class="sp-untyped"
       >untyped</span>
+      <!-- What the server says about the note, in the colours a link's verdict already wears: amber
+           warns and does not stop a lift, red does. The sentence is the title, and the panel shows
+           it in full. -->
+      <span
+        v-if="note.verdict"
+        class="sp-verdict"
+        :class="note.verdict.kind"
+        :title="note.verdict.message"
+        :data-note-verdict="note.id"
+        role="img"
+        :aria-label="note.verdict.message"
+      >⚠</span>
       <button
         class="sp-delete"
         type="button"
@@ -197,6 +210,9 @@ const emit = defineEmits<{
 .sp-type { font-size: 10.5px; color: #7c3aed; font-weight: 600; }
 .sp-untyped { font-size: 10.5px; color: #9ca3af; }
 .sp-domain { font-size: 10.5px; color: #6b7280; font-weight: 600; }
+.sp-verdict { font-size: 11px; line-height: 1; margin-left: auto; cursor: help; }
+.sp-verdict.narrowed { color: #d97706; }
+.sp-verdict.refused { color: #dc2626; }
 .sp-delete {
   border: none; background: none; color: #b0b0b8; font-size: 15px; line-height: 1;
   cursor: pointer; padding: 0 2px; border-radius: 3px;

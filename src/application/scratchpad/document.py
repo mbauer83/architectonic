@@ -6,8 +6,8 @@ response and a person reading the file are reading one document — and writing 
 would have made the deliberate sameness a coincidence maintained by hand, with two places to drift
 and no test able to see the drift until a round trip through the wrong one lost a field.
 
-So: `to_document` and `from_document` here, `yaml.safe_dump` in the repository, and two derived
-conveniences added by the REST layer that the file has no business storing.
+So: `to_document` and `from_document` here, `yaml.safe_dump` in the repository, and — in
+`response` — what a read adds that the file has no business storing.
 """
 
 from __future__ import annotations
@@ -19,11 +19,9 @@ from src.application.scratchpad.ports import ScratchpadSummary
 
 if TYPE_CHECKING:
     from src.application.scratchpad.lift import LiftPlan, LiftReceipt
-    from src.domain.modules.module_registry import ModuleRegistry
 
 from src.domain.scratchpad import (
     Area,
-    Endpoint,
     Group,
     Layout,
     Link,
@@ -38,7 +36,7 @@ from src.domain.scratchpad import (
 )
 
 
-def _drop_empty(mapping: dict[str, Any]) -> dict[str, Any]:
+def drop_empty(mapping: dict[str, Any]) -> dict[str, Any]:
     """Omit what carries no information. A document full of `null`s reads as a document full of
     decisions, and an untyped note should look untyped."""
     return {key: value for key, value in mapping.items() if value not in (None, "", (), [], {})}
@@ -63,7 +61,7 @@ def to_document(scratchpad: Scratchpad) -> dict[str, Any]:
     Stable order is what makes a no-op save produce no diff; layout last is what keeps an
     afternoon of tidying and an afternoon of thinking in different parts of the file.
     """
-    document = _drop_empty({
+    document = drop_empty({
         "artifact-id": scratchpad.artifact_id,
         "artifact-type": "scratchpad",
         "name": scratchpad.name,
@@ -73,10 +71,10 @@ def to_document(scratchpad: Scratchpad) -> dict[str, Any]:
         "meta-ontology": scratchpad.meta_ontology,
         "attributes": dict(scratchpad.attributes),
         "areas": [
-            _drop_empty({
+            drop_empty({
                 "id": area.id,
                 "label": area.label,
-                "permits": _drop_empty({
+                "permits": drop_empty({
                     "domains": list(area.permitted_domains),
                     "elements": list(area.permitted_element_types),
                     "documents": list(area.permitted_document_types),
@@ -85,7 +83,7 @@ def to_document(scratchpad: Scratchpad) -> dict[str, Any]:
             for area in sorted(scratchpad.areas, key=lambda item: item.id)
         ],
         "notes": [
-            _drop_empty({
+            drop_empty({
                 "id": note.id,
                 "title": note.title,
                 "body": note.body,
@@ -100,11 +98,11 @@ def to_document(scratchpad: Scratchpad) -> dict[str, Any]:
             for note in sorted(scratchpad.notes, key=lambda item: item.id)
         ],
         "groups": [
-            _drop_empty({"id": group.id, "label": group.label, "members": sorted(group.members)})
+            drop_empty({"id": group.id, "label": group.label, "members": sorted(group.members)})
             for group in sorted(scratchpad.groups, key=lambda item: item.id)
         ],
         "links": [
-            _drop_empty({
+            drop_empty({
                 "id": link.id,
                 "source": link.source,
                 "target": link.target,
@@ -114,7 +112,7 @@ def to_document(scratchpad: Scratchpad) -> dict[str, Any]:
             for link in sorted(scratchpad.links, key=lambda item: item.id)
         ],
     })
-    layout = _drop_empty({
+    layout = drop_empty({
         "areas": {key: [rect.x, rect.y, rect.width, rect.height]
                   for key, rect in sorted(scratchpad.layout.areas.items())},
         "notes": {key: [point.x, point.y] for key, point in sorted(scratchpad.layout.notes.items())},
@@ -219,109 +217,6 @@ def summary_to_document(summary: ScratchpadSummary) -> dict[str, Any]:
         "meta-ontology": summary.meta_ontology,
         "note-count": summary.note_count,
     }
-
-
-def to_response(
-    scratchpad: Scratchpad, *, group: str, registry: "ModuleRegistry"
-) -> dict[str, Any]:
-    """The served shape: the document, plus what a reader needs and a file must not store.
-
-    `group` is where the file sits, which the file cannot know about itself. `area` is derived from
-    geometry, and a link's `verdict` from the meta-ontology — both served because otherwise every
-    client re-implements them, and derives them slightly differently.
-
-    **The verdict travels with the link rather than behind its own endpoint.** Phase C planned for
-    the canvas to call `/api/ontology/pairs` and decide for itself; that predates the two-tier
-    verdict being a domain concept, and re-deciding it in the client would put the E126-versus-W128
-    split in two places — the one thing `classification_levels` exists to prevent. It would also be
-    blind to specialization narrowing, which is not a property of a type *pair*. Serving it here
-    adds no route, no per-link request, and no second implementation.
-
-    Only the *served* shape carries verdicts. The file must not: a verdict is derived from an
-    ontology that may change under a stored scratchpad, so persisting one would record an answer as
-    though it were content. That is why `to_document` exists beside this and takes no registry,
-    rather than this taking an optional one and meaning two things.
-    """
-    from src.application.scratchpad.verification import types_in_domains  # noqa: PLC0415
-
-    document = to_document(scratchpad)
-    document["group"] = group
-    for area, row in zip(
-        sorted(scratchpad.areas, key=lambda item: item.id), document.get("areas", []), strict=False
-    ):
-        # The file says what a frame *declares*; the wire says what that currently resolves to. The
-        # nested `permits` block is the file's vocabulary and has no business on the wire, where a
-        # client would then have two places to look for one answer.
-        row.pop("permits", None)
-        # Derived, like a note's area: a frame declares the *domains* it holds, and the types that
-        # follow from them are whatever the ontology currently declares. A frame that names types
-        # outright keeps them; one that narrows nothing serves nothing, which reads as "anything".
-        derived = area.permitted_element_types or types_in_domains(
-            registry, scratchpad.meta_ontology, area.permitted_domains
-        )
-        if area.permitted_domains:
-            row["permitted-domains"] = list(area.permitted_domains)
-        if derived:
-            row["permitted-element-types"] = list(derived)
-        if area.permitted_document_types:
-            row["permitted-document-types"] = list(area.permitted_document_types)
-    for note in document.get("notes", []):
-        note["area"] = scratchpad.area_of(str(note["id"]))
-    domains = _domains_by_type(registry, scratchpad.meta_ontology)
-    stored = {note.id: note for note in scratchpad.notes}
-    for row in document.get("notes", []):
-        # Derived when a type is chosen, because the type implies it: two places to read the domain
-        # from is two answers waiting to disagree, and the type is the more specific decision.
-        note = stored.get(str(row["id"]))
-        derived = domains.get(note.element_type or "") if note is not None else None
-        if derived:
-            row["domain"] = derived
-    endpoints = {note.id: _endpoint(note) for note in scratchpad.notes}
-    for link in document.get("links", []):
-        link["verdict"] = _verdict_document(scratchpad, link, endpoints, registry)
-    return document
-
-
-def _domains_by_type(registry: "ModuleRegistry", meta_ontology: str) -> dict[str, str]:
-    """Entity type → the domain it belongs to, for the scratchpad's own meta-ontology."""
-    from src.application.scratchpad.verification import ontology_domains  # noqa: PLC0415
-
-    return ontology_domains(registry, meta_ontology)
-
-
-def _endpoint(note: Note) -> Endpoint:
-    return Endpoint(
-        destination=note.destination,
-        element_type=note.element_type,
-        specialization=note.specialization,
-        document_type=note.document_type,
-    )
-
-
-def _verdict_document(
-    scratchpad: Scratchpad,
-    link: dict[str, Any],
-    endpoints: dict[str, Endpoint],
-    registry: "ModuleRegistry",
-) -> dict[str, Any]:
-    from src.application.scratchpad.verification import verdict_for  # noqa: PLC0415
-
-    verdict = verdict_for(
-        registry,
-        meta_ontology=scratchpad.meta_ontology,
-        source=endpoints.get(str(link["source"]), Endpoint()),
-        target=endpoints.get(str(link["target"]), Endpoint()),
-        connection_type=link.get("connection-type"),
-    )
-    return _drop_empty({
-        "kind": verdict.kind,
-        "code": verdict.code,
-        "message": verdict.message,
-        "alternatives": list(verdict.alternatives),
-        "reverse-permitted": verdict.reverse_permitted or None,
-        "narrowed-by": verdict.narrowed_by,
-        "blocks": verdict.blocks or None,
-    })
 
 
 def lift_to_document(

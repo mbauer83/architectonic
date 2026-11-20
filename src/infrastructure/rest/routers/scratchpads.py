@@ -27,11 +27,11 @@ from pydantic import BaseModel, ConfigDict, Field
 from src.application.scratchpad.document import (
     lift_to_document,
     summary_to_document,
-    to_response,
 )
 from src.application.scratchpad.edit import ScratchpadEdit
 from src.application.scratchpad.ports import ScratchpadNotFoundError, ScratchpadVersionConflictError
 from src.application.scratchpad.requests import from_request_document
+from src.application.scratchpad.response import to_response
 from src.application.scratchpad.service import ScratchpadService
 from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.scratchpad import ScratchpadError

@@ -30,6 +30,14 @@ business processes as readily as requirements, and narrowing those would invent 
 not have. A frame declares the **domains** it holds rather than a list of types, so the declaration
 keeps meaning the same thing when the ontology gains one.
 
+**A frame narrows what goes in it, as a warning.** What a frame permits is read from its declaration: the
+element types it names outright, otherwise the types of the domains it names, and the document types
+it names. A frame that declares nothing permits everything, and so does the margin outside every
+frame. A note decided as something its frame does not hold carries a **warning** — on the card, in
+the note panel, and on the read as the note's `verdict`, in the shape a link's verdict has. The type
+is still one the ontology declares, so the note can be lifted, and the lift's preflight lists the
+warning.
+
 **Which area a note is in is decided by where it sits**, not by a field. Dragging a note into the
 Portfolio frame *makes* it portfolio work; a note in no frame is `unfiled`, which is a legitimate
 place to be, because thinking often starts in the margin. Where frames overlap, the smallest one
@@ -185,7 +193,7 @@ execution runs rather than a client's guess at it:
 | **Will be created** | Each typed note becomes an entity; each typed, permitted link becomes a connection. |
 | **Refused** | A note with no type, or a link the ontology declares no relation for (**E126**). |
 | **Already in the model** | A bound or realized note, named by the artifact it already is. |
-| **Warnings** | A narrowing (**W128/W129**). The relation exists, so the lift proceeds. |
+| **Warnings** | A narrowing: a relation a specialization says does not apply here (**W128/W129**), or a note decided as something its frame does not hold. Both exist in the ontology, so the lift proceeds. |
 | **Links reaching outside the selection** | One end in, one end out. Extend the selection, or accept that the link is not realized. |
 
 **A refusal blocks the whole lift.** The write is one transaction — everything or nothing — and half

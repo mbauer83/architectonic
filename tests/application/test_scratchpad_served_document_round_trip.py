@@ -19,8 +19,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.application.scratchpad.document import to_response
 from src.application.scratchpad.requests import from_request_document
+from src.application.scratchpad.response import to_response
 from src.domain.modules.module_registry import ModuleRegistry
 from src.domain.scratchpad import Area, scratchpad_from_parts
 from src.infrastructure.app_bootstrap import build_module_registry

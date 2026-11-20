@@ -77,6 +77,8 @@ class NotePatchWire(_Patch):
     #: that vocabulary includes this — but it is derived from the layout, so a stored one would be a
     #: second answer to a question the geometry already settles.
     area: str | None = None
+    #: Derived on every read, never stored; accepted so a caller may hand back what it was given.
+    verdict: dict[str, object] | None = None
 
 
 class AreaPatchWire(_Patch):
@@ -194,6 +196,8 @@ class NoteRequestWire(_Row):
     #: Derived from geometry and served on every read, so a caller handing back what it was given
     #: sends it. Accepted and ignored — the layout is the one answer to where a note sits.
     area: str | None = None
+    #: Recomputed on every read and never stored; accepted so a caller may hand back what it read.
+    verdict: dict[str, object] | None = None
 
 
 class AreaRequestWire(_Row):

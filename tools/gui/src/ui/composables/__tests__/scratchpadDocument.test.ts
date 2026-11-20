@@ -175,6 +175,19 @@ describe('the replace payload', () => {
     expect((payload.notes as Array<Record<string, unknown>>)[0]).not.toHaveProperty('area')
   })
 
+  it('omits a note verdict, which the server derives on every read as it does a link verdict', () => {
+    const warned = withNote(base, {
+      ...note('n9', 'Out of place'),
+      verdict: { kind: 'narrowed', code: '', message: 'Outside what the area permits.' },
+    })
+
+    const sent = (toReplacePayload(warned).notes as Array<Record<string, unknown>>)
+      .find((row) => row.id === 'n9')
+
+    expect(sent).toBeDefined()
+    expect(sent).not.toHaveProperty('verdict')
+  })
+
   it('keeps everything the server does not derive', () => {
     const payload = toReplacePayload(base)
 

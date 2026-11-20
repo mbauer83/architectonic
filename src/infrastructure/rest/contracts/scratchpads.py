@@ -26,6 +26,27 @@ class ModelRefWire(NullsOmitted):
     kind: Literal["realized", "bound"]
 
 
+class LinkVerdictWire(NullsOmitted):
+    """What the meta-ontology and the scratchpad's own areas say about a link or a note.
+
+    Served with what it is about rather than behind its own endpoint: the two-tier split is a
+    property of the ontology's declared classification levels, and deciding it a second time in a
+    client would put it in two places. `blocks` distinguishes a refusal, which stops a lift, from a
+    narrowing, which warns. One shape for both rows, so a client reads one channel.
+    """
+
+    kind: Literal["unverified", "reference", "permitted", "narrowed", "refused"]
+    code: str = ""
+    message: str = ""
+    #: Connection types the ontology permits for this pair — offered as "did you mean one of these".
+    alternatives: list[str] = Field(default_factory=list)
+    #: Leads the remedies: dragging an ordered triple the wrong way is the commonest slip there is.
+    reverse_permitted: bool | None = Field(default=None, alias="reverse-permitted")
+    #: The specialization that narrowed a link, or the area that narrowed a note.
+    narrowed_by: str | None = Field(default=None, alias="narrowed-by")
+    blocks: bool | None = None
+
+
 class NoteWire(NullsOmitted):
     """A note. Only `id` and `title` are ever required — that is the feature."""
 
@@ -45,26 +66,9 @@ class NoteWire(NullsOmitted):
     #: Derived from geometry, never stored — served because every client would otherwise
     #: recompute point-in-rect over the layout block, and derive it slightly differently.
     area: str
-
-
-class LinkVerdictWire(NullsOmitted):
-    """What the meta-ontology says about a drawn link.
-
-    Served with the link rather than behind its own endpoint: the two-tier split is a property of
-    the ontology's declared classification levels, and deciding it a second time in a client would
-    put it in two places. `blocks` distinguishes a refusal, which stops a lift, from a narrowing,
-    which warns.
-    """
-
-    kind: Literal["unverified", "reference", "permitted", "narrowed", "refused"]
-    code: str = ""
-    message: str = ""
-    #: Connection types the ontology permits for this pair — offered as "did you mean one of these".
-    alternatives: list[str] = Field(default_factory=list)
-    #: Leads the remedies: dragging an ordered triple the wrong way is the commonest slip there is.
-    reverse_permitted: bool | None = Field(default=None, alias="reverse-permitted")
-    narrowed_by: str | None = Field(default=None, alias="narrowed-by")
-    blocks: bool | None = None
+    #: Present when there is something to say: the note is decided as something its area does not
+    #: hold, which warns. Derived on every read and never stored, like a link's.
+    verdict: LinkVerdictWire | None = None
 
 
 class LinkWire(NullsOmitted):

@@ -24,26 +24,10 @@ const ModelRefSchema = Schema.Struct({
 export const DestinationSchema = Schema.Literal('undecided', 'element', 'document', 'none')
 export type Destination = typeof DestinationSchema.Type
 
-export const NoteSchema = Schema.Struct({
-  id: Schema.String,
-  title: Schema.String,
-  body: Schema.String,
-  destination: DestinationSchema,
-  /** The first classification level. Chosen before a type, and derived from the type once one is —
-   * which is what the canvas colours a note by, at either level. */
-  domain: Schema.optional(Schema.String),
-  'element-type': Schema.optional(Schema.String),
-  specialization: Schema.optional(Schema.String),
-  'document-type': Schema.optional(Schema.String),
-  'model-ref': Schema.optional(ModelRefSchema),
-  attributes: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
-  /** Derived server-side from where the note sits. Served rather than recomputed here, so the
-   * canvas and the API cannot disagree about which frame owns a note. */
-  area: Schema.String,
-})
-export type Note = typeof NoteSchema.Type
-
-/** What the meta-ontology says about a drawn link.
+/** What the meta-ontology says about a drawn link, and what a note's area says about the note.
+ *
+ * One shape for both rows, so the canvas reads one channel: a link is narrowed by a specialization,
+ * a note by the area it sits in, and either is a warning that does not stop a lift.
  *
  * Served with the link rather than fetched per pair: the two-tier split — a refusal at the level
  * relationships are keyed on, a warning at a level that only narrows them — is a property of the
@@ -62,6 +46,28 @@ export const LinkVerdictSchema = Schema.Struct({
   blocks: Schema.optional(Schema.Boolean),
 })
 export type LinkVerdict = typeof LinkVerdictSchema.Type
+
+export const NoteSchema = Schema.Struct({
+  id: Schema.String,
+  title: Schema.String,
+  body: Schema.String,
+  destination: DestinationSchema,
+  /** The first classification level. Chosen before a type, and derived from the type once one is —
+   * which is what the canvas colours a note by, at either level. */
+  domain: Schema.optional(Schema.String),
+  'element-type': Schema.optional(Schema.String),
+  specialization: Schema.optional(Schema.String),
+  'document-type': Schema.optional(Schema.String),
+  'model-ref': Schema.optional(ModelRefSchema),
+  attributes: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  /** Derived server-side from where the note sits. Served rather than recomputed here, so the
+   * canvas and the API cannot disagree about which frame owns a note. */
+  area: Schema.String,
+  /** Present when there is something to say about the note — it is decided as something its area
+   * does not hold. Derived on every read and never stored, like a link's. */
+  verdict: Schema.optional(LinkVerdictSchema),
+})
+export type Note = typeof NoteSchema.Type
 
 export const LinkSchema = Schema.Struct({
   id: Schema.String,

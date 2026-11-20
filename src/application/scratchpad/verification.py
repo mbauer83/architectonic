@@ -25,7 +25,17 @@ from src.domain.ontology_representation.classification_levels import (
 )
 from src.domain.ontology_representation.ontology_protocol import OntologyModule
 from src.domain.ontology_representation.specializations import specialization_narrows
-from src.domain.scratchpad import Endpoint, LinkVerdict, TypingOptions, verify_link
+from src.domain.scratchpad import (
+    Endpoint,
+    Link,
+    LinkVerdict,
+    Note,
+    Scratchpad,
+    TypingOptions,
+    area_narrowing,
+    note_verdict,
+    verify_link,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -192,3 +202,52 @@ def _narrowing_probe(
         return None
 
     return narrows
+
+
+def verdict_source(registry: ModuleRegistry, scratchpad: Scratchpad) -> Callable[[Link], LinkVerdict]:
+    """The verdict of each link of one scratchpad, built from the registry once.
+
+    One source for the read and for the lift preflight, so the plan cannot disagree with what the
+    person is looking at.
+    """
+    endpoints = {
+        note.id: Endpoint(
+            destination=note.destination,
+            element_type=note.element_type,
+            specialization=note.specialization,
+            document_type=note.document_type,
+        )
+        for note in scratchpad.notes
+    }
+
+    def verdict_of(link: Link) -> LinkVerdict:
+        return verdict_for(
+            registry,
+            meta_ontology=scratchpad.meta_ontology,
+            source=endpoints.get(link.source, Endpoint()),
+            target=endpoints.get(link.target, Endpoint()),
+            connection_type=link.connection_type,
+        )
+
+    return verdict_of
+
+
+def note_verdict_source(
+    registry: ModuleRegistry, scratchpad: Scratchpad
+) -> Callable[[Note], LinkVerdict]:
+    """The verdict of each note of one scratchpad — the same source for the read and the lift.
+
+    A note is judged against the area it sits in. An area narrows and never refuses, so what comes
+    back from it is a warning: the type is one the meta-ontology declares, and the area is a scope
+    someone configured over it.
+    """
+    domains = ontology_domains(registry, scratchpad.meta_ontology)
+    areas = {area.id: area for area in scratchpad.areas}
+
+    def verdict_of(note: Note) -> LinkVerdict:
+        narrowing = area_narrowing(
+            note, areas.get(scratchpad.area_of(note.id)), domain_of=domains.get
+        )
+        return note_verdict([narrowing] if narrowing else [])
+
+    return verdict_of

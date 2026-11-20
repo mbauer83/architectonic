@@ -236,6 +236,16 @@ const onLinkType = (connectionType: string): void => {
       </label>
     </template>
 
+    <!-- The note's own verdict, worded and coloured as a link's is. -->
+    <p
+      v-if="note.verdict"
+      class="verdict"
+      :class="note.verdict.kind"
+      data-testid="note-verdict"
+    >
+      <span class="msg">{{ note.verdict.message }}</span>
+    </p>
+
     <label class="field body">
       <span>Body</span>
       <!-- Becomes the entity's summary on lift, which is why it is worth writing here rather than

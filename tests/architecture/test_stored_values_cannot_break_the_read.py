@@ -21,7 +21,8 @@ from typing import Literal, get_args, get_origin
 
 import pytest
 
-from src.application.scratchpad.document import from_document, to_response
+from src.application.scratchpad.document import from_document
+from src.application.scratchpad.response import to_response
 from src.infrastructure.rest.contracts.scratchpads import NoteWire, ScratchpadResponse
 
 _ARTIFACT_ID = "SCR@1786299627.aaaaaa.a-canvas"

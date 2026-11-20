@@ -9,6 +9,7 @@ from src.domain.scratchpad.link_verdict import (
     VerdictKind,
     verify_link,
 )
+from src.domain.scratchpad.note_verdict import NoteFinding, area_narrowing, note_verdict
 from src.domain.scratchpad.parts import (
     DESTINATIONS,
     UNFILED,
@@ -42,6 +43,9 @@ __all__ = [
     "ModelRefKind",
     "parse_destination",
     "Note",
+    "NoteFinding",
+    "area_narrowing",
+    "note_verdict",
     "Point",
     "Rect",
     "Scratchpad",
