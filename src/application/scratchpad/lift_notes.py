@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from src.application.scratchpad.lift_plan import LiftItem, LiftTarget
+from src.application.scratchpad.note_attributes import adhoc_attribute_types
 from src.domain.ontology_representation.classification_levels import ClassificationLevel
 from src.domain.scratchpad import LinkVerdict, Note, may_be_lifted, unreached_required
 
@@ -58,6 +59,7 @@ def note_item(
         artifact_type=note.element_type or "", summary=note.body, warning=warning,
         specializations=(note.specialization,) if note.specialization else (),
         properties=dict(note.attributes),
+        attribute_types=adhoc_attribute_types(note.attributes),
     )
 
 

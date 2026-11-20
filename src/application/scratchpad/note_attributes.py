@@ -39,6 +39,31 @@ def free_attribute_schema(_element_type: str, _specializations: Sequence[str]) -
     return None
 
 
+def adhoc_attribute_types(attributes: Mapping[str, object]) -> dict[str, str]:
+    """The type each attribute's value was written as, where it is not text.
+
+    An entity states the type of an attribute its schema does not declare beside its properties,
+    and reads the cell as text when it states none. A note holds typed values, so the statement is
+    read off them — which is what lets a number or a list written on a note still be one on the
+    entity. A schema-declared attribute ignores it: its type is the schema's.
+    """
+    return {str(name): kind for name, value in attributes.items() if (kind := _written_as(value))}
+
+
+def _written_as(value: object) -> str:
+    match value:
+        case bool():
+            return "boolean"
+        case int():
+            return "integer"
+        case float():
+            return "number"
+        case list():
+            return "array"
+        case _:
+            return ""
+
+
 def attribute_findings(
     note: Note,
     levels: Sequence[ClassificationLevel],
@@ -68,7 +93,8 @@ def attribute_findings(
                 message=issue.message, blocks=issue.severity is Severity.ERROR, code=issue.code
             )
             for issue in stated_property_issues(
-                cells, schema, artifact_type=note.element_type, attribute_types={}, loc=""
+                cells, schema, artifact_type=note.element_type,
+                attribute_types=adhoc_attribute_types(note.attributes), loc="",
             )
         ),
         *(

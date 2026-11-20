@@ -26,22 +26,14 @@ import {
   areaAtPoint,
   toReplacePayload,
   withBinding,
-  withBody,
-  withDocumentType,
   withLink,
-  withLinkType,
   withNote,
   withNoteAt,
-  withReversedLink,
   withoutBinding,
   withoutLink,
-  withoutLinkType,
   withoutNote,
-  withoutRealization,
-  withoutType,
 } from '../composables/scratchpadEdits'
-import { withAttribute } from '../composables/scratchpadAttributes'
-import { withLevelValue, withoutLevelValue } from '../composables/scratchpadClassification'
+import { notePanelEdits } from '../composables/scratchpadPanelEdits'
 import type { Scratchpad } from '../../domain/schemas/scratchpads'
 import type { EntityDisplayInfo } from '../../domain'
 import type { RepoError } from '../../ports/repositoryErrors'
@@ -224,6 +216,7 @@ const refine = (next: (current: Scratchpad) => Scratchpad): void => {
   const current = document.current.value
   if (current) edit(next(current))
 }
+const panelEdits = notePanelEdits(refine)
 
 /** A committed lift rewrites the notes it realized, so the canvas reloads rather than guessing.
  * Reloading also drops the undo history, which is correct: what a lift created is not undoable
@@ -323,16 +316,7 @@ const status = computed(() => {
         :links="document.current.value?.links ?? []"
         :levels="document.current.value?.['classification-levels'] ?? []"
         :areas="document.current.value?.areas ?? []"
-        @refine-note="refine((c) => withLevelValue(c, $event.id, $event.levelId, $event.value))"
-        @unrefine-note="refine((c) => withoutLevelValue(c, $event.id, $event.levelId))"
-        @body-note="refine((c) => withBody(c, $event.id, $event.body))"
-        @attribute-note="refine((c) => withAttribute(c, $event.id, $event.name, $event.value))"
-        @document-note="refine((c) => withDocumentType(c, $event.id, $event.documentType))"
-        @untype-note="refine((c) => withoutBinding(withoutType(c, $event.id), $event.id))"
-        @forget-note="refine((c) => withoutRealization(c, $event.id))"
-        @reverse-link="refine((c) => withReversedLink(c, $event.id))"
-        @type-link="refine((c) => withLinkType(c, $event.id, $event.connectionType))"
-        @untype-link="refine((c) => withoutLinkType(c, $event.id))"
+        v-on="panelEdits"
         @delete-link="onDeleteLink($event)"
       />
       <ScratchpadCanvasMenu

@@ -8,15 +8,19 @@
  * they render. Below that level nothing is offered: no schema applies yet, and attributes the note
  * already holds are left exactly as they are.
  *
- * An attribute the schema does not declare stays editable as text. It is carried into a lift as an
- * ad-hoc property, and the server's warning on the note says so.
+ * An attribute the schema does not declare can be added, typed, and removed, as the entity form's
+ * "Add property" allows. It is carried into a lift as an ad-hoc property of the type it was given,
+ * and the server's warning on the note says so.
  */
 import { computed, inject, ref, watch } from 'vue'
 import { Effect } from 'effect'
 import TypedPropertyInput from './TypedPropertyInput.vue'
 import { modelServiceKey } from '../keys'
 import { attributeLevel } from '../composables/scratchpadClassification'
-import { attributeCell, attributeRows } from '../composables/scratchpadAttributes'
+import {
+  AD_HOC_TYPES, adHocTypeOf, adHocValue, attributeCell, attributeNameProblem, attributeRows,
+} from '../composables/scratchpadAttributes'
+import type { AdHocType, AttributeRow } from '../composables/scratchpadAttributes'
 import { without } from '../composables/scratchpadEdits'
 import type { EntityAttributeDescriptor } from '../../domain'
 import type { ClassificationLevel, Note } from '../../domain/schemas/scratchpads'
@@ -26,7 +30,7 @@ const props = defineProps<{
   levels: readonly ClassificationLevel[]
 }>()
 const emit = defineEmits<{
-  (event: 'attribute-note', payload: { id: string; name: string; value: string }): void
+  (event: 'attribute-note', payload: { id: string; name: string; value: unknown }): void
 }>()
 
 const svc = inject(modelServiceKey)!
@@ -78,17 +82,42 @@ const rows = computed(() => attributeRows(props.note.attributes ?? {}, declared.
 const drafts = ref<Record<string, string>>({})
 watch(() => props.note.id, () => { drafts.value = {} })
 
-const commit = (name: string): void => {
-  const value = drafts.value[name]
-  if (value === undefined) return
-  drafts.value = without(drafts.value, name)
-  emit('attribute-note', { id: props.note.id, name, value })
+const typeOf = (row: AttributeRow): AdHocType => adHocTypeOf(row.value)
+
+/** A declared attribute stores its cell; an undeclared one stores a value of the type chosen. */
+const commit = (row: AttributeRow): void => {
+  const cell = drafts.value[row.name]
+  if (cell === undefined) return
+  drafts.value = without(drafts.value, row.name)
+  const value = row.declared ? cell : adHocValue(typeOf(row), cell)
+  emit('attribute-note', { id: props.note.id, name: row.name, value })
+}
+
+const retype = (row: AttributeRow, type: AdHocType): void => {
+  const value = adHocValue(type, type === 'boolean' ? 'false' : attributeCell(row.value))
+  emit('attribute-note', { id: props.note.id, name: row.name, value })
+}
+
+/** The attribute being added: one the schema does not declare, as the entity form's
+ * "Add property" offers. Declared ones need no adding — each already has its row. */
+const adding = ref<{ name: string; type: AdHocType; cell: string } | null>(null)
+watch(() => props.note.id, () => { adding.value = null })
+const addingProblem = computed(() =>
+  adding.value ? attributeNameProblem(adding.value.name, rows.value) : null)
+
+const add = (): void => {
+  const draft = adding.value
+  if (!draft || addingProblem.value) return
+  const value = adHocValue(draft.type, draft.cell)
+  adding.value = null
+  // Empty text would be no attribute at all, so there is nothing to add yet.
+  if (value !== '') emit('attribute-note', { id: props.note.id, name: draft.name.trim(), value })
 }
 </script>
 
 <template>
   <section
-    v-if="subject && rows.length"
+    v-if="subject"
     class="attributes"
     data-testid="note-attributes"
   >
@@ -98,7 +127,7 @@ const commit = (name: string): void => {
       :key="row.name"
       class="row"
       :data-attribute="row.name"
-      @change="commit(row.name)"
+      @change="commit(row)"
     >
       <span
         class="name"
@@ -111,11 +140,87 @@ const commit = (name: string): void => {
       >*</abbr></span>
       <TypedPropertyInput
         :model-value="drafts[row.name] ?? attributeCell(row.value)"
-        :descriptor="descriptors[row.name] ?? { type: 'string' }"
+        :descriptor="descriptors[row.name] ?? { type: typeOf(row) }"
         :required="required.has(row.name)"
         @update:model-value="drafts = { ...drafts, [row.name]: $event }"
       />
+      <template v-if="!row.declared">
+        <select
+          class="type"
+          title="Value type"
+          :value="typeOf(row)"
+          :data-attribute-type="row.name"
+          @change.stop="retype(row, ($event.target as HTMLSelectElement).value as AdHocType)"
+        >
+          <option
+            v-for="type in AD_HOC_TYPES"
+            :key="type"
+            :value="type"
+          >
+            {{ type === 'string' ? 'text' : type }}
+          </option>
+        </select>
+        <button
+          type="button"
+          class="remove"
+          title="Remove this attribute"
+          :data-remove-attribute="row.name"
+          @click="emit('attribute-note', { id: note.id, name: row.name, value: '' })"
+        >
+          ×
+        </button>
+      </template>
     </div>
+
+    <div
+      v-if="adding"
+      class="row adding"
+      data-testid="note-attribute-adding"
+    >
+      <input
+        v-model="adding.name"
+        class="new-name"
+        placeholder="name"
+        aria-label="Attribute name"
+      >
+      <select
+        v-model="adding.type"
+        class="type"
+        title="Value type"
+        @change="adding.cell = adding.type === 'boolean' ? 'false' : ''"
+      >
+        <option
+          v-for="type in AD_HOC_TYPES"
+          :key="type"
+          :value="type"
+        >
+          {{ type === 'string' ? 'text' : type }}
+        </option>
+      </select>
+      <TypedPropertyInput
+        v-model="adding.cell"
+        :descriptor="{ type: adding.type }"
+      />
+      <button
+        type="button"
+        class="confirm"
+        :disabled="!!addingProblem"
+        :title="addingProblem ?? 'Add this attribute'"
+        data-testid="note-attribute-confirm"
+        @click="add"
+      >
+        Add
+      </button>
+    </div>
+    <button
+      v-else
+      type="button"
+      class="add"
+      data-testid="note-attribute-add"
+      @click="adding = { name: '', type: 'string', cell: '' }"
+    >
+      + Add attribute
+    </button>
   </section>
 </template>
 
@@ -128,4 +233,14 @@ const commit = (name: string): void => {
 .name { flex: 1; color: #6b7280; padding-top: 6px; word-break: break-word; }
 .name.undeclared { font-style: italic; color: #d97706; }
 .required { color: #b91c1c; text-decoration: none; margin-left: 2px; }
+.type, .new-name { padding: 5px 4px; border: 1px solid #d1d5db; border-radius: 5px; font-size: 11.5px; }
+.new-name { flex: 1; min-width: 0; }
+.remove, .add, .confirm {
+  border: 1px solid #d1d5db; border-radius: 5px; background: #fff; color: #374151;
+  font-size: 11.5px; cursor: pointer; padding: 4px 8px;
+}
+.remove { border: none; color: #b0b0b8; font-size: 15px; padding: 2px 4px; }
+.remove:hover { color: #dc2626; }
+.confirm:disabled { opacity: .5; cursor: not-allowed; }
+.adding { flex-wrap: wrap; }
 </style>

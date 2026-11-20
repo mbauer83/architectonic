@@ -137,6 +137,14 @@ class TestWhatBlocksAndWhatWarns:
         assert (finding.blocks, finding.code) == (True, "E042")
         assert "Attribute 'Priority' holds a dict" in finding.message
 
+    def test_an_undeclared_attribute_written_as_a_number_or_a_list_is_read_as_one(self) -> None:
+        """Only the not-declared warning: the value is read as what it was written as, where
+        reading it as text would make a list a type error."""
+        findings = _findings(_note(attributes={"Owners": ["a", "b"], "Weight": 3, "Live": True}))
+
+        assert [finding.blocks for finding in findings] == [False, False, False]
+        assert all("is not declared" in finding.message for finding in findings)
+
     def test_each_finding_is_the_one_the_verifier_s_rule_gives_for_the_written_cell(self) -> None:
         """The same rule, asked the same question — so the canvas cannot disagree with the write."""
         attributes = {"Count": "abc", "Priority": "medium"}
@@ -206,6 +214,17 @@ class TestTheReadAndTheLiftAgree:
 
         assert created.properties == {"Priority": "high", "Count": 3}
         assert created.warning == ""
+
+    def test_a_lift_states_the_type_of_each_attribute_that_is_not_text(
+        self, registry: ModuleRegistry
+    ) -> None:
+        pad = _pad(_note(attributes={"Sponsor": "CFO", "Weight": 3, "Live": True, "Owners": ["a"]}))
+
+        (created,) = self._plan(registry, pad).of("create")
+
+        assert created.attribute_types == {
+            "Weight": "integer", "Live": "boolean", "Owners": "array",
+        }
 
     def test_a_note_below_the_attribute_level_is_served_no_verdict_and_keeps_its_attributes(
         self, registry: ModuleRegistry

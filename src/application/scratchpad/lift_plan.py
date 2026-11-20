@@ -74,6 +74,9 @@ class LiftItem:
     specializations: tuple[str, ...] = ()
     #: The note's attributes, which become the entity's properties.
     properties: Mapping[str, object] = field(default_factory=dict)
+    #: The type of each attribute whose value is not text, stated beside the properties so one the
+    #: schema does not declare is read back as what it was written as.
+    attribute_types: Mapping[str, str] = field(default_factory=dict)
     #: For a connection: how each end is addressed. Either an artifact id that already exists, or
     #: `$ref:<note id>` naming an entity this same batch creates — the alias `artifact_bulk_write`
     #: resolves, which is what lets a lift create both ends and the relation between them in one

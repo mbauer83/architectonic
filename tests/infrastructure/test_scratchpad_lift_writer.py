@@ -65,8 +65,15 @@ class TestOnePlanItemAsOneBatchItem:
 
         assert item["properties"] == {"Priority": "high", "Count": 3}
 
+    def test_the_stated_types_of_its_attributes_go_with_them(self) -> None:
+        item = _batch_item(_element(properties={"Count": 3}, attribute_types={"Count": "integer"}))
+
+        assert item["attribute_types"] == {"Count": "integer"}
+
     def test_no_attributes_sends_no_properties(self) -> None:
-        assert "properties" not in _batch_item(_element())
+        item = _batch_item(_element())
+
+        assert "properties" not in item and "attribute_types" not in item
 
     def test_a_connection_addresses_ends_exactly_as_the_plan_resolved_them(self) -> None:
         item = _batch_item(_connection())

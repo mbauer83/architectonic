@@ -177,8 +177,11 @@ and the check is the one the entity write runs:
 | The value breaks another constraint — an enum, a range, a pattern (**W042**) | verdict `narrowed` | a warning; the note is lifted |
 | The attribute is not declared | verdict `narrowed` | a warning; carried as an ad-hoc property |
 
-The note panel shows the schema's attributes with the typed inputs the entity forms use, and keeps
-any undeclared attribute the note already holds editable as text. A note tied to the model is not
+The note panel lists the schema's attributes, set or not, with the typed inputs the entity forms
+use. **Add attribute** adds one the schema does not declare, with a name and a type — text, integer,
+number, boolean or array — as the entity form's *Add property* does; such an attribute can be
+retyped and removed. A lift states the type of each undeclared attribute that is not text beside the
+entity's properties, so a number or a list on a note is one on the entity. A note tied to the model is not
 checked: the entity holds its own properties.
 
 **A lift carries a note's attributes into the entity's properties.** The body becomes the summary.

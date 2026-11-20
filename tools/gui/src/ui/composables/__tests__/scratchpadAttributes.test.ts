@@ -7,7 +7,9 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ClassificationLevel, Note, Scratchpad } from '../../../domain/schemas/scratchpads'
-import { attributeCell, attributeRows, withAttribute } from '../scratchpadAttributes'
+import {
+  adHocTypeOf, adHocValue, attributeCell, attributeNameProblem, attributeRows, withAttribute,
+} from '../scratchpadAttributes'
 import { attributeLevel } from '../scratchpadClassification'
 
 const level = (
@@ -103,5 +105,52 @@ describe('editing an attribute', () => {
     const before = pad(typed)
 
     expect(withAttribute(before, 'ghost', 'Count', '3')).toEqual(before)
+  })
+})
+
+describe('an attribute the schema does not declare', () => {
+  it('is added to a note that has none', () => {
+    const after = withAttribute(pad(typed), 'n1', 'Sponsor', 'CFO')
+
+    expect(after.notes?.[0].attributes).toEqual({ Sponsor: 'CFO' })
+  })
+
+  it('stores a value of the type it was given', () => {
+    expect(adHocValue('string', '3')).toBe('3')
+    expect(adHocValue('integer', '3')).toBe(3)
+    expect(adHocValue('number', '2.5')).toBe(2.5)
+    expect(adHocValue('boolean', 'true')).toBe(true)
+    expect(adHocValue('boolean', 'false')).toBe(false)
+    expect(adHocValue('array', '["a","b"]')).toEqual(['a', 'b'])
+  })
+
+  it('keeps what was typed as text where it cannot be read as the chosen type', () => {
+    expect(adHocValue('integer', 'three')).toBe('three')
+    expect(adHocValue('integer', '2.5')).toBe('2.5')
+    expect(adHocValue('integer', '')).toBe('')
+    expect(adHocValue('array', '{"not":"a list"}')).toBe('{"not":"a list"}')
+    expect(adHocValue('array', 'a, b')).toBe('a, b')
+  })
+
+  it('reads back the type a stored value was written as', () => {
+    expect(['CFO', 3, 2.5, false, ['a']].map(adHocTypeOf))
+      .toEqual(['string', 'integer', 'number', 'boolean', 'array'])
+  })
+
+  it('stores a typed value and removes it again', () => {
+    const added = withAttribute(pad(typed), 'n1', 'Reviewed', false)
+
+    expect(added.notes?.[0].attributes).toEqual({ Reviewed: false })
+    expect(withAttribute(added, 'n1', 'Reviewed', '').notes?.[0]).not.toHaveProperty('attributes')
+  })
+
+  it('needs a name that is one line and not already listed', () => {
+    const rows = attributeRows({ Sponsor: 'CFO' }, ['Priority'])
+
+    expect(attributeNameProblem('  ', rows)).toMatch(/name/)
+    expect(attributeNameProblem('two\nlines', rows)).toMatch(/one line/)
+    expect(attributeNameProblem('Sponsor', rows)).toMatch(/already listed/)
+    expect(attributeNameProblem(' Priority ', rows)).toMatch(/already listed/)
+    expect(attributeNameProblem('Owner', rows)).toBeNull()
   })
 })

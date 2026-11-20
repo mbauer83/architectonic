@@ -33,7 +33,7 @@ const emit = defineEmits<{
   (event: 'refine-note', payload: { id: string; levelId: string; value: string }): void
   (event: 'unrefine-note', payload: { id: string; levelId: string }): void
   (event: 'body-note', payload: { id: string; body: string }): void
-  (event: 'attribute-note', payload: { id: string; name: string; value: string }): void
+  (event: 'attribute-note', payload: { id: string; name: string; value: unknown }): void
   (event: 'document-note', payload: { id: string; documentType: string }): void
   (event: 'untype-note', payload: { id: string }): void
   (event: 'forget-note', payload: { id: string }): void

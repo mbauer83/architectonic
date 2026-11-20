@@ -161,6 +161,8 @@ def _batch_item(item: LiftItem) -> dict[str, Any]:
             create["specializations"] = list(item.specializations)
         if item.properties:
             create["properties"] = dict(item.properties)
+        if item.attribute_types:
+            create["attribute_types"] = dict(item.attribute_types)
         return create
     if item.kind == "document":
         document: dict[str, Any] = {

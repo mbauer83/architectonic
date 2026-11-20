@@ -107,3 +107,16 @@ def test_an_attribute_the_schema_does_not_declare_warns_and_is_carried(repo: Pat
     assert "Attribute 'Sponsor' is not declared for goal" in lift["items"][0]["warning"]
     (entity,) = _entities(repo)
     assert "| Sponsor | CFO |" in entity.read_text(encoding="utf-8")
+
+
+def test_an_ad_hoc_attribute_keeps_the_type_it_was_written_as(repo: Path) -> None:
+    pad = _pad_with(repo, {"Owners": ["finance", "ops"], "Reviewed": True})
+
+    lift = _lift(repo, pad)
+
+    assert lift["committed"] and not lift["errors"], lift
+    (entity,) = _entities(repo)
+    written = entity.read_text(encoding="utf-8")
+    assert "Owners: array" in written and "Reviewed: boolean" in written
+    assert '| Owners | ["finance","ops"] |' in written
+    assert "| Reviewed | true |" in written
