@@ -16,6 +16,7 @@ entity-ids-used:
 - APP@1777293136.yaxrWl.plantuml-renderer
 - GRP@1786958823.e0vtbVx.diagram-rendering
 - APP@1781976554.AeU7V3.identifier-allocation-service
+- APP@1795196233.qk3Is42.rendered-geometry-reader
 connection-ids-used:
 - APP@1712870400.JOmFWy---APP@1777293133.OYEmP1@@archimate-serving
 - APP@1712870400.YOOEbL---APP@1777293133.OYEmP1@@archimate-serving
@@ -31,6 +32,9 @@ connection-ids-used:
 - APP@1780783992.Je9pmw---APP@1777293133.OYEmP1@@archimate-serving
 - APP@1780783993.JqIBPJ---APP@1777293133.OYEmP1@@archimate-serving
 - APP@1781976554.AeU7V3---APP@1776633697.SCKD2U@@archimate-serving
+- APP@1789640743.3hRHTJT---APP@1777293133.OYEmP1@@archimate-association
+- APP@1790305394.r5k14Kq---APP@1777293136.yaxrWl@@archimate-serving
+- APP@1795196233.qk3Is42---APP@1712870400.ca3vm7@@archimate-serving
 diagram-entities: {}
 connections: []
 view_derivations:
@@ -76,10 +80,15 @@ view_derivations:
             value: archimate-serving
   selection:
     included_entity_ids:
-    - GRP@1786958823.e0vtbVx.diagram-rendering
-    - APP@1777293136.yaxrWl.plantuml-renderer
     - APP@1776633697.SCKD2U.diagram-scaffolder
+    - APP@1777293136.yaxrWl.plantuml-renderer
     - APP@1781976554.AeU7V3.identifier-allocation-service
+    - APP@1795196233.qk3Is42.rendered-geometry-reader
+    - GRP@1786958823.e0vtbVx.diagram-rendering
+    included_connection_ids:
+    - GRP@1786958823.e0vtbVx---APP@1776633697.SCKD2U@@archimate-aggregation
+    - GRP@1786958823.e0vtbVx---APP@1777293136.yaxrWl@@archimate-aggregation
+    - GRP@1786958823.e0vtbVx---APP@1795196233.qk3Is42@@archimate-aggregation
 bindings:
 - id: bind-scope
   subject:
@@ -87,7 +96,7 @@ bindings:
   correspondence_kind: scoped-by
   target:
     entity_id: APP@1777293133.OYEmP1.architecture-backend
-last-updated: '2026-08-17T12:18:17Z'
+last-updated: '2026-11-20T17:38:19Z'
 ---
 @startuml architecture-backend---diagram-rendering
 !include <C4/C4_Component>
@@ -105,7 +114,9 @@ System_Boundary(APP_OYEmP1, "Architecture Backend") {
   Boundary(GRP_e0vtbVx, "Diagram Rendering", "group") {
     Component(APP_SCKD2U, "Diagram Scaffolder", "")
     Component(APP_yaxrWl, "PlantUML Renderer", "")
+    Component(APP_qk3Is42, "Rendered Geometry Reader", "")
     APP_SCKD2U -[hidden]right- APP_yaxrWl
+    APP_yaxrWl -[hidden]right- APP_qk3Is42
 
   }
   APP_AeU7V3 -[hidden]right- GRP_e0vtbVx

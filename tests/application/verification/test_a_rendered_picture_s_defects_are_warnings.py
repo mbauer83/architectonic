@@ -67,6 +67,7 @@ def _only(issues: list[Issue]) -> Issue:
     return issues[0]
 
 
+@pytest.mark.verifies("REQ@1795196233.GIvmUuQ")
 class TestEachDefectHasItsCode:
     def test_a_relation_through_an_element_is_w371_and_names_all_three(self) -> None:
         issue = _only(picture_issues(_THROUGH, _LOC))
