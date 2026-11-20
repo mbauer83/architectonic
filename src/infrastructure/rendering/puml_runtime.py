@@ -12,9 +12,12 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS
+from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.infrastructure.diagram_type_registry import get_diagram_type
+from src.infrastructure.rendering.laid_out_rendering import NoCanvasSizeError, drawn_from_layout, png_like_plantuml
 from src.infrastructure.rendering.native_svg import render_native_svg
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter, strip_startuml_name
+from src.infrastructure.rendering.svg_to_png import RasteriseFailedError
 
 #: The renderer writes its scratch file *into* the diagram catalog, because PlantUML resolves the
 #: `!include`s that `_prepare_body` injects against the including file's directory. So the naming
@@ -85,6 +88,7 @@ def render_puml_bytes(
     diagram_type: str | None,
     *,
     restyle_prepared: Callable[[str], str] | None = None,
+    laid_out: LaidOutDiagram | None = None,
 ) -> tuple[bytes | None, str, list[str]]:
     """Render *puml_body* and return the image **bytes**, the media type they are, and any warnings.
 
@@ -98,14 +102,11 @@ def render_puml_bytes(
     The media type is returned rather than inferred from *fmt* because the two can differ: a diagram
     type with a native SVG renderer answers a PNG request with SVG, which was already true and is now
     *sayable*. A caller that sets a `Content-Type` from `fmt` alone would have mislabelled those bytes.
+
+    *laid_out* is the layout a stored diagram states, joined to its picture: the picture is then
+    PlantUML's composed again from it, and a PNG is rasterised from that composed SVG.
     """
     from src.application.puml_directive_policy import find_unsafe_puml_directives
-    from src.application.verification.artifact_verifier_syntax import (
-        find_graphviz_dot,
-        find_plantuml_jar,
-        plantuml_command,
-    )
-    from src.config.settings import plantuml_limit_size, render_dpi
 
     diag_dir = repo_root / DIAGRAM_CATALOG / DIAGRAMS
     if not diag_dir.exists():
@@ -131,6 +132,29 @@ def render_puml_bytes(
         # Answered in SVG whatever was asked for: this diagram type renders natively and there is no
         # PNG to produce. Saying so in the media type is the whole reason it is returned.
         return native_svg.encode("utf-8"), "image/svg+xml", []
+
+    if laid_out is None:
+        return _drawn_by_plantuml(render_body, diag_dir, fmt)
+    plantuml_svg, _media_type, warnings = _drawn_by_plantuml(render_body, diag_dir, "svg")
+    if plantuml_svg is None:
+        return None, _MEDIA_TYPES[fmt], warnings
+    svg, composing = drawn_from_layout(plantuml_svg.decode("utf-8"), laid_out)
+    if fmt == "svg":
+        return svg.encode("utf-8"), _MEDIA_TYPES["svg"], [*warnings, *composing]
+    try:
+        return png_like_plantuml(svg), _MEDIA_TYPES["png"], [*warnings, *composing]
+    except (RasteriseFailedError, NoCanvasSizeError) as exc:
+        return None, _MEDIA_TYPES["png"], [f"PNG render failed: {exc}"]
+
+
+def _drawn_by_plantuml(render_body: str, diag_dir: Path, fmt: str) -> tuple[bytes | None, str, list[str]]:
+    """What PlantUML draws for a prepared body, in *fmt*, with its media type and any warnings."""
+    from src.application.verification.artifact_verifier_syntax import (  # noqa: PLC0415
+        find_graphviz_dot,
+        find_plantuml_jar,
+        plantuml_command,
+    )
+    from src.config.settings import plantuml_limit_size, render_dpi  # noqa: PLC0415
 
     jar = find_plantuml_jar()
     if jar is None:
@@ -187,9 +211,10 @@ def render_puml_svg(
     diagram_type: str | None = None,
     *,
     restyle_prepared: Callable[[str], str] | None = None,
+    laid_out: LaidOutDiagram | None = None,
 ) -> tuple[str | None, list[str]]:
     """Render a diagram to SVG."""
     image, _media_type, warnings = render_puml_bytes(
-        puml_body, repo_root, "svg", diagram_type, restyle_prepared=restyle_prepared
+        puml_body, repo_root, "svg", diagram_type, restyle_prepared=restyle_prepared, laid_out=laid_out
     )
     return (None if image is None else image.decode("utf-8")), warnings

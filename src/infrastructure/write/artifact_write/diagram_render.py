@@ -5,8 +5,6 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from defusedxml.ElementTree import fromstring
-
 from src.application.puml_directive_policy import find_unsafe_puml_directives
 from src.application.repo_path_helpers import rendered_dir_for_diagram, repo_root_for_diagram_path
 from src.application.verification.artifact_verifier_syntax import (
@@ -15,12 +13,18 @@ from src.application.verification.artifact_verifier_syntax import (
     plantuml_command,
 )
 from src.config.settings import plantuml_limit_size, render_dpi
+from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.ontology_protocol import IconPresentingRenderer
+from src.infrastructure.rendering.laid_out_rendering import (
+    NoCanvasSizeError,
+    drawn_from_layout,
+    png_like_plantuml,
+    stored_layout,
+)
 from src.infrastructure.rendering.native_svg import render_native_svg
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter, strip_startuml_name
-from src.infrastructure.rendering.svg_extent import declared_extent
-from src.infrastructure.rendering.svg_to_png import RasteriseFailedError, draw_svg_to_png
+from src.infrastructure.rendering.svg_to_png import RasteriseFailedError
 
 from .diagram_body_preparation import _prepare_diagram_puml_body
 from .diagram_confidentiality import is_confidential_diagram_source
@@ -203,7 +207,13 @@ def _render_diagram_png(
     # temp→final rename below.
     puml_body_for_render = strip_startuml_name(puml_body)
     if (native_svg := render_native_svg(puml_body_for_render, diagram_type)) is not None:
-        return _rasterise_native_svg(native_svg, rendered_dir / f"{puml_path.stem}.png", warnings, failures)
+        return _rasterise_svg(native_svg, rendered_dir / f"{puml_path.stem}.png", warnings, failures)
+    if _laid_out(puml_path) is not None:
+        # Drawn from the SVG just composed, which is the picture: PlantUML never draws a laid-out one.
+        composed = rendered_dir / f"{puml_path.stem}.svg"
+        if not composed.exists():
+            return None
+        return _rasterise_svg(composed.read_text(encoding="utf-8"), composed.with_suffix(".png"), warnings, failures)
 
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".puml", dir=puml_path.parent, delete=False, encoding="utf-8"
@@ -268,34 +278,25 @@ def _render_diagram_png(
             pass
 
 
-#: An opaque page, as every PlantUML PNG has: a transparent diagram PNG shows its black text on black in
-#: any dark viewer, and the GSN legend disappeared that way.
-_PNG_BACKGROUND = "#FFFFFF"
-
-
-def _rasterise_native_svg(
-    native_svg: str, final: Path, warnings: list[str], failures: list[str] | None
-) -> Path | None:
-    """The PNG of a diagram type that draws its own SVG, at the size PlantUML's PNG would have.
+def _rasterise_svg(svg: str, final: Path, warnings: list[str], failures: list[str] | None) -> Path | None:
+    """The PNG of a picture PlantUML did not draw as it stands — a diagram type's own SVG, or a laid-out one.
 
     The menu and the download route offer PNG for every diagram, and a type that owns its SVG notation
     used to answer that with nothing but advice to save first — which could never produce one (B88).
-    PlantUML renders at `render_dpi()` over its 96-dpi base (measured: PNG / SVG = 1.56 at 150 dpi), so
-    the same scale gives the same picture density; the canvas is capped at PlantUML's own size limit.
     """
-    extent = declared_extent(dict(fromstring(native_svg).attrib))
-    if extent is None or extent[0] <= 0 or extent[1] <= 0:
-        _fail(warnings, failures, "PNG render skipped: the diagram's SVG declares no canvas size")
-        return None
-    scale = render_dpi() / 96
-    limit = plantuml_limit_size()
-    width, height = (min(limit, max(1, round(edge * scale))) for edge in extent)
     try:
-        final.write_bytes(draw_svg_to_png(native_svg, width=width, height=height, background=_PNG_BACKGROUND))
-    except RasteriseFailedError as exc:
+        final.write_bytes(png_like_plantuml(svg))
+    except (RasteriseFailedError, NoCanvasSizeError) as exc:
         _fail(warnings, failures, f"PNG render failed: {exc}")
         return None
     return final
+
+
+def _laid_out(puml_path: Path) -> LaidOutDiagram | None:
+    """The layout the stored diagram is drawn from, joined to its picture; None for PlantUML's own arrangement."""
+    from src.infrastructure.app_bootstrap import process_runtime_catalogs  # noqa: PLC0415
+
+    return stored_layout(puml_path, process_runtime_catalogs().ontology)
 
 
 def _render_diagram_svg(
@@ -370,7 +371,10 @@ def _render_diagram_svg(
             return None
         if rendered.exists():
             final = rendered_dir / f"{puml_path.stem}.svg"
-            rendered.rename(final)
+            svg, composing = drawn_from_layout(rendered.read_text(encoding="utf-8"), _laid_out(puml_path))
+            warnings.extend(composing)
+            final.write_text(svg, encoding="utf-8")
+            rendered.unlink()
             return final
         warnings.append("SVG render produced no output file")
         return None

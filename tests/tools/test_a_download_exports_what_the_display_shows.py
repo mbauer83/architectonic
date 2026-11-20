@@ -139,7 +139,7 @@ def rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[s
         path=source,
         extra={},
     )
-    seen: dict[str, list[str]] = {"svg": [], "bytes": [], "svg_restyler": [], "bytes_restyler": []}
+    seen: dict[str, list[str]] = {"svg": [], "bytes": [], "svg_restyler": [], "bytes_restyler": [], "svg_layout": [], "bytes_layout": []}
 
     monkeypatch.setattr(s, "maybe_engagement_root", lambda: tmp_path)
     monkeypatch.setattr(s, "get_repo", lambda: _Repo(record))
@@ -172,8 +172,10 @@ def rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[s
         diagram_type: str | None = None,
         *,
         restyle_prepared: Callable[[str], str] | None = None,
+        laid_out: object = None,
     ) -> tuple[str, list[str]]:
         seen["svg"].append(body)
+        seen["svg_layout"].append(laid_out)  # type: ignore[arg-type]
         seen["svg_restyler"].append(restyle_prepared)  # type: ignore[arg-type]
         return "<svg>rendered</svg>", []
 
@@ -184,8 +186,10 @@ def rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[s
         diagram_type: str | None,
         *,
         restyle_prepared: Callable[[str], str] | None = None,
+        laid_out: object = None,
     ) -> tuple[bytes, str, list[str]]:
         seen["bytes"].append(body)
+        seen["bytes_layout"].append(laid_out)  # type: ignore[arg-type]
         seen["bytes_restyler"].append(restyle_prepared)  # type: ignore[arg-type]
         return b"rendered", "image/png", []
 
@@ -214,6 +218,8 @@ class TestTheExportIsTheDisplay:
         assert _get(rendered, f"/api/diagrams/{_ID}/download", format="png", **_LENS).status_code == 200
 
         assert rendered["svg"] == rendered["bytes"]
+        # The diagram states no layout, so neither draws one; both ask the same owner whether there is one.
+        assert rendered["svg_layout"] == rendered["bytes_layout"] == [None]
 
     def test_both_routes_agree_about_turning_the_element_kinds_down(self, rendered: dict) -> None:
         """Muting reaches the renderer as a restyler rather than inside the body, so "the export is

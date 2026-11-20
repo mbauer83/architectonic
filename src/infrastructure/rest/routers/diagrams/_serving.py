@@ -290,12 +290,14 @@ def get_diagram_svg(
         if svg_path is not None:
             return Response(content=svg_path.read_bytes(), media_type="image/svg+xml")
     from src.infrastructure.rendering.diagram_builder import render_puml_svg  # noqa: PLC0415
+    from src.infrastructure.rendering.laid_out_rendering import stored_layout  # noqa: PLC0415
 
     svg, warnings = render_puml_svg(
         _lensed_body(id, diagram_path, lens, catalogs, repo_root),
         repo_root,
         diagram_type,
         restyle_prepared=_kind_muting(lens, repo_root),
+        laid_out=stored_layout(diagram_path, catalogs.ontology),
     )
     if svg is None:
         raise HTTPException(500, f"SVG render failed: {'; '.join(warnings)}")
@@ -357,6 +359,7 @@ def download_diagram(
         diagram_path = diag_rec.path
     if not diagram_path.exists():
         raise HTTPException(404, f"Diagram '{id}' not found")
+    from src.infrastructure.rendering.laid_out_rendering import stored_layout  # noqa: PLC0415
     from src.infrastructure.rendering.puml_runtime import render_puml_bytes  # noqa: PLC0415
 
     image, produced, warnings = render_puml_bytes(
@@ -365,6 +368,7 @@ def download_diagram(
         format,
         diag_rec.diagram_type,
         restyle_prepared=_kind_muting(lens, repo_root),
+        laid_out=stored_layout(diagram_path, catalogs.ontology),
     )
     if image is None:
         raise HTTPException(500, f"{format.upper()} render failed: {'; '.join(warnings)}")
