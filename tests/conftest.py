@@ -228,13 +228,12 @@ cheapen_test_store_key_derivation()
 _RENDER_BUDGET_SECONDS = 300
 
 
-@pytest.fixture(scope="session", autouse=True)
-def _bound_concurrent_plantuml_renders(tmp_path_factory: pytest.TempPathFactory):
-    """One PlantUML subprocess at a time, across every xdist worker in the session."""
-    from src.infrastructure.rendering import puml_runtime
+def _plantuml_lock_path(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
+    return tmp_path_factory.getbasetemp().parent / "plantuml-render.lock"
 
-    lock_path = tmp_path_factory.getbasetemp().parent / "plantuml-render.lock"
-    real_subprocess = puml_runtime.subprocess
+
+def _one_render_at_a_time(real_subprocess: object, lock_path: pathlib.Path) -> object:
+    """*real_subprocess* with `run` serialised across the session under the widened budget."""
 
     class _OneRenderAtATime:
         """`subprocess` as this module uses it, with `run` serialised.
@@ -254,11 +253,39 @@ def _bound_concurrent_plantuml_renders(tmp_path_factory: pytest.TempPathFactory)
         def __getattr__(self, name: str) -> object:
             return getattr(real_subprocess, name)
 
-    puml_runtime.subprocess = _OneRenderAtATime()
+    return _OneRenderAtATime()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _bound_concurrent_plantuml_renders(tmp_path_factory: pytest.TempPathFactory):
+    """One PlantUML subprocess at a time, across every xdist worker in the session."""
+    from src.infrastructure.rendering import puml_runtime
+
+    real_subprocess = puml_runtime.subprocess
+    puml_runtime.subprocess = _one_render_at_a_time(real_subprocess, _plantuml_lock_path(tmp_path_factory))
     try:
         yield
     finally:
         puml_runtime.subprocess = real_subprocess
+
+
+@pytest.fixture
+def plantuml_syntax_check(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> None:
+    """Let this test run the real PlantUML syntax check, under the same bound as every render.
+
+    The syntax check starts the JVM in a second place. `tests/tools` switches it off for its whole
+    process (`ARCH_SKIP_PUML_SYNTAX`), so whether it runs depends on which conftest a worker has
+    loaded. A test that is *about* the check asks for it here: switched on whatever was loaded, and
+    queued behind the same lock instead of joining twenty other JVMs under a production timeout.
+    """
+    from src.application.verification import artifact_verifier_syntax
+
+    monkeypatch.delenv("ARCH_SKIP_PUML_SYNTAX", raising=False)
+    monkeypatch.setattr(
+        artifact_verifier_syntax,
+        "subprocess",
+        _one_render_at_a_time(artifact_verifier_syntax.subprocess, _plantuml_lock_path(tmp_path_factory)),
+    )
 
 
 @pytest.fixture(autouse=True)

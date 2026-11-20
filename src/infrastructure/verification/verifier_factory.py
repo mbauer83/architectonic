@@ -22,11 +22,23 @@ missing `plantuml.jar` degrades to a W350 warning rather than an error.
 from __future__ import annotations
 
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.application.verification._verifier_rules_rendered_picture import RenderedPictureRule
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.verifier_ports import FileInventoryPort, IconLibrary
 from src.infrastructure.icons.raster_codec import StoredPngInspector
+from src.infrastructure.rendering.layout.plantuml_svg_reader import read_rendered_picture
 from src.infrastructure.verification.adapters import DefaultPumlSyntaxAdapter
+
+
+def _syntax_port() -> DefaultPumlSyntaxAdapter:
+    """The syntax port, reading each picture it renders before the picture is discarded.
+
+    The checks on a rendered picture ride on the syntax check because that is where a picture
+    already exists: a second render per diagram would turn a pass of seconds into one of minutes.
+    They are therefore on exactly when the syntax check is, and cached with it.
+    """
+    return DefaultPumlSyntaxAdapter(picture_checks=RenderedPictureRule(read=read_rendered_picture))
 
 
 def build_artifact_verifier(
@@ -50,7 +62,7 @@ def build_artifact_verifier(
         committed_repo=committed_repo,
         file_inventory=file_inventory,
         check_puml_syntax=check_puml_syntax,
-        puml_syntax=DefaultPumlSyntaxAdapter() if check_puml_syntax else None,
+        puml_syntax=_syntax_port() if check_puml_syntax else None,
         picture_inspector=StoredPngInspector(),
         icon_library=icon_library,
     )

@@ -15,8 +15,10 @@ import re
 import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 
+from src.application.verification._verifier_rules_rendered_picture import RenderedPictureChecks
 from src.application.verification.artifact_verifier_syntax import (
     check_puml_syntax,
     check_puml_syntax_batch,
@@ -40,49 +42,78 @@ class DefaultPumlSyntaxAdapter:
     pass never reaches them (the inventory scans `diagram-catalog/diagrams/`, they live one
     level above), but `artifact_verify_file` takes a caller-supplied path, so an agent can
     point it at one.
+
+    With *picture_checks*, the picture each check renders is read before it is discarded, and what
+    its geometry decides is reported with the syntax findings — one render answers both.
     """
+
+    def __init__(self, picture_checks: RenderedPictureChecks | None = None) -> None:
+        self._picture_checks = picture_checks
 
     def check_one(self, path: Path, loc: str) -> list[Issue]:
         if is_managed_include(path.name):
             return []
-        with _with_managed_includes_inlined([path]) as checked:
-            return check_puml_syntax(checked[path], loc)
+        with _staged_for_plantuml([path]) as staged:
+            checked = staged.get(path, path)
+            issues = check_puml_syntax(checked, loc, picture_checks=self._picture_checks)
+            return _reported_against(issues, staged=checked, source=path, loc=loc)
 
     def check_batch(self, paths: list[Path]) -> dict[Path, list[Issue]]:
         checkable = [p for p in paths if not is_managed_include(p.name)]
         if not checkable:
             return {p: [] for p in paths}
-        with _with_managed_includes_inlined(checkable) as checked:
-            results = check_puml_syntax_batch([checked[p] for p in checkable])
-            return {p: results.get(checked.get(p, p), []) for p in paths}
+        with _staged_for_plantuml(checkable) as staged:
+            results = check_puml_syntax_batch(list(staged.values()), picture_checks=self._picture_checks)
+            found = {
+                source: _reported_against(results.get(copy, []), staged=copy, source=source, loc=str(source))
+                for source, copy in staged.items()
+            }
+            # A file that could not be read could not be staged; PlantUML is asked about it where it is.
+            found.update({p: check_puml_syntax(p, str(p)) for p in checkable if p not in staged})
+            return {p: found.get(p, []) for p in paths}
+
+
+def _reported_against(issues: list[Issue], *, staged: Path, source: Path, loc: str) -> list[Issue]:
+    """*issues* speaking of the file the caller named, not of the copy PlantUML was shown."""
+    if staged == source:
+        return issues
+    return [
+        replace(
+            issue,
+            location=loc if issue.location == str(staged) else issue.location,
+            message=issue.message.replace(str(staged), str(source)),
+        )
+        for issue in issues
+    ]
 
 
 @contextmanager
-def _with_managed_includes_inlined(paths: list[Path]) -> Iterator[dict[Path, Path]]:
-    """Each path, or a temporary copy of it with its managed-fragment markers replaced by the fragment.
+def _staged_for_plantuml(paths: list[Path]) -> Iterator[dict[Path, Path]]:
+    """Each readable path → a copy in a directory of its own, its managed-fragment markers inlined.
 
-    PlantUML runs sandboxed, and the sandbox refuses every file include — including a stored body's
-    marker for a fragment the product generated itself. Every render already inlines those fragments
-    before PlantUML sees the body; the syntax check has to hand over the same bytes, or it reports a
-    refusal as a syntax error. A marker naming anything but a managed fragment is left in place, where
-    the body policy refuses it.
+    **Inlined**, because PlantUML runs sandboxed and the sandbox refuses every file include —
+    including a stored body's marker for a fragment the product generated itself. Every render
+    already inlines those fragments before PlantUML sees the body; the syntax check has to hand over
+    the same bytes, or it reports a refusal as a syntax error. A marker naming anything but a managed
+    fragment is left in place, where the body policy refuses it.
+
+    **A directory of its own**, because a batch renders each picture beside its source: PlantUML
+    names a picture after the body's `@startuml`, so two bodies of one name would overwrite each
+    other in a shared directory and one file's picture would be read as the other's.
     """
     with tempfile.TemporaryDirectory(prefix="arch-syntax-") as scratch:
-        mapping: dict[Path, Path] = {}
+        staged: dict[Path, Path] = {}
         for index, path in enumerate(paths):
             try:
                 text = path.read_text(encoding="utf-8")
             except (OSError, UnicodeDecodeError):
-                mapping[path] = path
                 continue
             inlined = _MANAGED_MARKER_RE.sub(lambda m, base=path.parent: _fragment_or_marker(m, base), text)
-            if inlined == text:
-                mapping[path] = path
-                continue
-            copy = Path(scratch) / f"{index}-{path.name}"
+            copy = Path(scratch) / str(index) / path.name
+            copy.parent.mkdir()
             copy.write_text(inlined, encoding="utf-8")
-            mapping[path] = copy
-        yield mapping
+            staged[path] = copy
+        yield staged
 
 
 def _fragment_or_marker(match: re.Match[str], base: Path) -> str:

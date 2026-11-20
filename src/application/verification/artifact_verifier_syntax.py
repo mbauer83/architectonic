@@ -7,6 +7,13 @@ from functools import lru_cache
 from pathlib import Path
 
 from src.application.puml_directive_policy import find_unsafe_puml_directives
+from src.application.verification._verifier_rules_rendered_picture import (
+    PICTURE_BESIDE_ITS_SOURCE,
+    RenderedPictureChecks,
+    add_picture_issues,
+    issues_for_picture_in,
+    require_a_directory_each,
+)
 from src.application.verification.artifact_verifier_types import Issue, Severity
 
 #: Where the PlantUML jar may sit relative to the directory holding pyproject.toml, in
@@ -176,7 +183,10 @@ def body_reaches_outside(path: Path, loc: str) -> Issue | None:
     )
 
 
-def check_puml_syntax(path: Path, loc: str) -> list[Issue]:
+def check_puml_syntax(
+    path: Path, loc: str, *, picture_checks: RenderedPictureChecks | None = None
+) -> list[Issue]:
+    """E350 where PlantUML refuses the body; where it draws it, what *picture_checks* say of the picture."""
     if (refused := body_reaches_outside(path, loc)) is not None:
         return [refused]
     if os.environ.get("ARCH_SKIP_PUML_SYNTAX"):
@@ -207,6 +217,8 @@ def check_puml_syntax(path: Path, loc: str) -> list[Issue]:
                 timeout=30,
                 env=env,
             )
+            if proc.returncode == 0 and picture_checks is not None:
+                return issues_for_picture_in(Path(tmp_out), picture_checks, loc)
     except FileNotFoundError:
         return [Issue(Severity.WARNING, "W351", "java not found on PATH; PUML syntax check skipped", loc)]
     except subprocess.TimeoutExpired:
@@ -240,7 +252,18 @@ def check_puml_syntax(path: Path, loc: str) -> list[Issue]:
     return [Issue(Severity.ERROR, "E350", f"PlantUML error (exit {proc.returncode}): {msg[:200]}", loc)]
 
 
-def check_puml_syntax_batch(paths: list[Path], *, chunk_size: int = 120) -> dict[Path, list[Issue]]:
+def check_puml_syntax_batch(
+    paths: list[Path], *, chunk_size: int = 120, picture_checks: RenderedPictureChecks | None = None
+) -> dict[Path, list[Issue]]:
+    """The syntax findings of every path, one JVM per chunk.
+
+    With *picture_checks*, each picture is rendered beside its source rather than into one shared
+    directory, and read there: PlantUML names a picture after the body's `@startuml`, not after the
+    file, so two files of one chunk can render to one name and a shared directory would hand a file
+    another file's picture. That needs every path in a directory of its own, which is required.
+    """
+    if picture_checks is not None:
+        require_a_directory_each(paths)
     issues_by_path: dict[Path, list[Issue]] = {p: [] for p in paths}
     refused = {p: issue for p in paths if (issue := body_reaches_outside(p, str(p))) is not None}
     for path, issue in refused.items():
@@ -271,8 +294,9 @@ def check_puml_syntax_batch(paths: list[Path], *, chunk_size: int = 120) -> dict
         path_chunk = paths[i : i + chunk_size]
         try:
             with tempfile.TemporaryDirectory() as tmp_out:
+                rendered_into = tmp_out if picture_checks is None else PICTURE_BESIDE_ITS_SOURCE
                 proc = subprocess.run(
-                    plantuml_command(jar, "-tsvg", "-verbose", "-o", tmp_out, *[str(p) for p in path_chunk]),
+                    plantuml_command(jar, "-tsvg", "-verbose", "-o", rendered_into, *[str(p) for p in path_chunk]),
                     capture_output=True,
                     text=True,
                     timeout=120,
@@ -349,4 +373,6 @@ def check_puml_syntax_batch(paths: list[Path], *, chunk_size: int = 120) -> dict
             single_issues = check_puml_syntax(path, str(path))
             issues_by_path[path].extend(single_issues)
 
+    if picture_checks is not None:
+        add_picture_issues(issues_by_path, picture_checks)
     return issues_by_path
