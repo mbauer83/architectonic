@@ -1,0 +1,695 @@
+{
+ "courses": [
+  {
+   "name": "facing ports in line run straight",
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 0,
+    "right": 400,
+    "bottom": 60
+   },
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    }
+   },
+   "course": [
+    [
+     100,
+     30.0
+    ],
+    [
+     300,
+     30.0
+    ]
+   ]
+  },
+  {
+   "name": "facing ports out of line make a Z through the middle",
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    }
+   },
+   "course": [
+    [
+     100,
+     30.0
+    ],
+    [
+     200.0,
+     30.0
+    ],
+    [
+     200.0,
+     230.0
+    ],
+    [
+     300,
+     230.0
+    ]
+   ]
+  },
+  {
+   "name": "a side and a top make an L",
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "top",
+     "at": 0.25
+    }
+   },
+   "course": [
+    [
+     100,
+     30.0
+    ],
+    [
+     330.0,
+     30.0
+    ],
+    [
+     330.0,
+     200
+    ]
+   ]
+  },
+  {
+   "name": "upright ports out of line make a Z through the middle",
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "route": {
+    "from": {
+     "side": "bottom",
+     "at": 0.5
+    },
+    "to": {
+     "side": "top",
+     "at": 0.5
+    }
+   },
+   "course": [
+    [
+     50.0,
+     60
+    ],
+    [
+     50.0,
+     130.0
+    ],
+    [
+     360.0,
+     130.0
+    ],
+    [
+     360.0,
+     200
+    ]
+   ]
+  },
+  {
+   "name": "a bottom and a left make an L",
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "route": {
+    "from": {
+     "side": "bottom",
+     "at": 0.3
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    }
+   },
+   "course": [
+    [
+     30.0,
+     60
+    ],
+    [
+     30.0,
+     230.0
+    ],
+    [
+     300,
+     230.0
+    ]
+   ]
+  },
+  {
+   "name": "bends on the ports' lines are kept as stated",
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ]
+   },
+   "course": [
+    [
+     100,
+     30.0
+    ],
+    [
+     160,
+     30
+    ],
+    [
+     160,
+     230
+    ],
+    [
+     300,
+     230.0
+    ]
+   ]
+  },
+  {
+   "name": "a bend off the port's line is reached by an elbow",
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "top",
+     "at": 0.5
+    },
+    "via": [
+     [
+      180,
+      120
+     ]
+    ]
+   },
+   "course": [
+    [
+     100,
+     30.0
+    ],
+    [
+     180,
+     30.0
+    ],
+    [
+     180,
+     160.0
+    ],
+    [
+     360.0,
+     160.0
+    ],
+    [
+     360.0,
+     200
+    ]
+   ]
+  },
+  {
+   "name": "a bend in the middle of a straight run turns nothing and is dropped",
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 0,
+    "right": 400,
+    "bottom": 60
+   },
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      200,
+      30
+     ]
+    ]
+   },
+   "course": [
+    [
+     100,
+     30.0
+    ],
+    [
+     300,
+     30.0
+    ]
+   ]
+  },
+  {
+   "name": "a bend half a pixel off its line is on it",
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.505
+    },
+    "to": {
+     "side": "top",
+     "at": 0.5
+    },
+    "via": [
+     [
+      360,
+      30
+     ]
+    ]
+   },
+   "course": [
+    [
+     100,
+     30.3
+    ],
+    [
+     360,
+     30
+    ],
+    [
+     360.0,
+     200
+    ]
+   ]
+  },
+  {
+   "name": "leaving upright through two bends",
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 10,
+    "top": 200,
+    "right": 110,
+    "bottom": 260
+   },
+   "route": {
+    "from": {
+     "side": "top",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      50,
+      -40
+     ],
+     [
+      -40,
+      -40
+     ],
+     [
+      -40,
+      230
+     ]
+    ]
+   },
+   "course": [
+    [
+     50.0,
+     0
+    ],
+    [
+     50,
+     -40
+    ],
+    [
+     -40,
+     -40
+    ],
+    [
+     -40,
+     230
+    ],
+    [
+     10,
+     230.0
+    ]
+   ]
+  },
+  {
+   "name": "only the source end stated: the course stops at its last bend",
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      45
+     ]
+    ]
+   },
+   "course": [
+    [
+     100,
+     30.0
+    ],
+    [
+     160,
+     30.0
+    ],
+    [
+     160,
+     45
+    ]
+   ]
+  },
+  {
+   "name": "only the target end stated: the course starts at its first bend",
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "route": {
+    "to": {
+     "side": "top",
+     "at": 0.5
+    },
+    "via": [
+     [
+      200,
+      100
+     ]
+    ]
+   },
+   "course": [
+    [
+     200,
+     100
+    ],
+    [
+     360.0,
+     100
+    ],
+    [
+     360.0,
+     200
+    ]
+   ]
+  },
+  {
+   "name": "neither end stated: the bends alone",
+   "source": null,
+   "target": null,
+   "route": {
+    "via": [
+     [
+      10,
+      10
+     ],
+     [
+      10,
+      50
+     ]
+    ]
+   },
+   "course": [
+    [
+     10,
+     10
+    ],
+    [
+     10,
+     50
+    ]
+   ]
+  },
+  {
+   "name": "an element of unknown extent is the router's end",
+   "source": null,
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      200,
+      230
+     ]
+    ]
+   },
+   "course": [
+    [
+     200,
+     230
+    ],
+    [
+     300,
+     230.0
+    ]
+   ]
+  }
+ ],
+ "along": {
+  "course": [
+   [
+    100,
+    30.0
+   ],
+   [
+    160,
+    30
+   ],
+   [
+    160,
+    230
+   ],
+   [
+    300,
+    230.0
+   ]
+  ],
+  "points": [
+   {
+    "at": 0.0,
+    "point": [
+     100.0,
+     30.0
+    ]
+   },
+   {
+    "at": 0.25,
+    "point": [
+     160.0,
+     70.0
+    ]
+   },
+   {
+    "at": 0.5,
+    "point": [
+     160.0,
+     170.0
+    ]
+   },
+   {
+    "at": 0.31,
+    "point": [
+     160.0,
+     94.0
+    ]
+   },
+   {
+    "at": 1.0,
+    "point": [
+     300.0,
+     230.0
+    ]
+   }
+  ],
+  "fractions": [
+   {
+    "point": [
+     130,
+     10
+    ],
+    "fraction": 0.075
+   },
+   {
+    "point": [
+     160,
+     140
+    ],
+    "fraction": 0.425
+   },
+   {
+    "point": [
+     250,
+     240
+    ],
+    "fraction": 0.875
+   },
+   {
+    "point": [
+     -50,
+     -50
+    ],
+    "fraction": 0.0
+   },
+   {
+    "point": [
+     500,
+     500
+    ],
+    "fraction": 1.0
+   }
+  ]
+ }
+}

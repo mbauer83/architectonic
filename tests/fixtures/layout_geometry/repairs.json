@@ -1,0 +1,670 @@
+{
+ "repairs": [
+  {
+   "name": "I3: the source moved down, its bend follows and the shape is kept",
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   },
+   "source": {
+    "left": 0,
+    "top": 40,
+    "right": 100,
+    "bottom": 100
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "reattached": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      70
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   }
+  },
+  {
+   "name": "I3: the target moved right, its bend follows",
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   },
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 380,
+    "top": 180,
+    "right": 500,
+    "bottom": 240
+   },
+   "reattached": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      210
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   }
+  },
+  {
+   "name": "I3: the source resized, the port and its bend move with the side",
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   },
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 140,
+    "bottom": 120
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "reattached": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      60
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   }
+  },
+  {
+   "name": "I4: the source moved past its bend, the end turns to the side its route lies beyond",
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   },
+   "source": {
+    "left": 200,
+    "top": 0,
+    "right": 300,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "reattached": {
+    "from": {
+     "side": "left",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   }
+  },
+  {
+   "name": "I4: the target moved left of the route, the end turns",
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   },
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 20,
+    "top": 200,
+    "right": 140,
+    "bottom": 260
+   },
+   "reattached": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "right",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   }
+  },
+  {
+   "name": "I4: no side faces the route and the bend goes",
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      130,
+      30
+     ],
+     [
+      130,
+      230
+     ]
+    ]
+   },
+   "source": {
+    "left": 60,
+    "top": 0,
+    "right": 160,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "reattached": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    }
+   }
+  },
+  {
+   "name": "I4: both ends turn to face each other",
+   "route": {
+    "from": {
+     "side": "bottom",
+     "at": 0.5
+    },
+    "to": {
+     "side": "top",
+     "at": 0.5
+    }
+   },
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 160,
+    "top": 20,
+    "right": 260,
+    "bottom": 80
+   },
+   "reattached": {
+    "from": {
+     "side": "right",
+     "at": 0.3333
+    },
+    "to": {
+     "side": "left",
+     "at": 0.1
+    }
+   }
+  },
+  {
+   "name": "I4: nothing settles and the arrow is formed afresh, straight where its ends face each other",
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   },
+   "source": {
+    "left": 250,
+    "top": 200,
+    "right": 350,
+    "bottom": 260
+   },
+   "target": {
+    "left": 140,
+    "top": 330,
+    "right": 260,
+    "bottom": 390
+   },
+   "reattached": {
+    "from": {
+     "side": "bottom",
+     "at": 0.05
+    },
+    "to": {
+     "side": "top",
+     "at": 0.9583
+    },
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   }
+  },
+  {
+   "name": "I4: formed afresh as a Z where its ends sit diagonal with room between",
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   },
+   "source": {
+    "left": -80,
+    "top": 290,
+    "right": 20,
+    "bottom": 350
+   },
+   "target": {
+    "left": 40,
+    "top": 200,
+    "right": 160,
+    "bottom": 260
+   },
+   "reattached": {
+    "from": {
+     "side": "top",
+     "at": 0.5
+    },
+    "to": {
+     "side": "bottom",
+     "at": 0.5
+    },
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   }
+  },
+  {
+   "name": "I4: both ends turn where its ends sit diagonal and close",
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   },
+   "source": {
+    "left": 160,
+    "top": 150,
+    "right": 260,
+    "bottom": 210
+   },
+   "target": {
+    "left": 40,
+    "top": 225,
+    "right": 150,
+    "bottom": 285
+   },
+   "reattached": {
+    "from": {
+     "side": "left",
+     "at": 0.9
+    },
+    "to": {
+     "side": "top",
+     "at": 0.9
+    },
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   }
+  },
+  {
+   "name": "a route the router decides is left alone",
+   "route": {
+    "via": [
+     [
+      160,
+      30
+     ]
+    ]
+   },
+   "source": {
+    "left": 0,
+    "top": 40,
+    "right": 100,
+    "bottom": 100
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "reattached": {
+    "via": [
+     [
+      160,
+      30
+     ]
+    ]
+   }
+  },
+  {
+   "name": "a sound route is left exactly as it was",
+   "route": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   },
+   "source": {
+    "left": 0,
+    "top": 0,
+    "right": 100,
+    "bottom": 60
+   },
+   "target": {
+    "left": 300,
+    "top": 200,
+    "right": 420,
+    "bottom": 260
+   },
+   "reattached": {
+    "from": {
+     "side": "right",
+     "at": 0.5
+    },
+    "to": {
+     "side": "left",
+     "at": 0.5
+    },
+    "via": [
+     [
+      160,
+      30
+     ],
+     [
+      160,
+      230
+     ]
+    ],
+    "label": {
+     "at": 0.4,
+     "dx": 6,
+     "dy": -8
+    }
+   }
+  }
+ ]
+}

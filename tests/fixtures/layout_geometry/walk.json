@@ -1,0 +1,12919 @@
+{
+ "extents": {
+  "e0": {
+   "left": 40,
+   "top": 40,
+   "right": 160,
+   "bottom": 90
+  },
+  "e1": {
+   "left": 300,
+   "top": 40,
+   "right": 460,
+   "bottom": 100
+  },
+  "e2": {
+   "left": 560,
+   "top": 40,
+   "right": 650,
+   "bottom": 80
+  },
+  "e3": {
+   "left": 820,
+   "top": 40,
+   "right": 840,
+   "bottom": 60
+  },
+  "e4": {
+   "left": 40,
+   "top": 230,
+   "right": 180,
+   "bottom": 282
+  },
+  "e5": {
+   "left": 300,
+   "top": 230,
+   "right": 420,
+   "bottom": 280
+  },
+  "e6": {
+   "left": 560,
+   "top": 230,
+   "right": 660,
+   "bottom": 274
+  },
+  "e7": {
+   "left": 820,
+   "top": 230,
+   "right": 980,
+   "bottom": 290
+  },
+  "e8": {
+   "left": 40,
+   "top": 420,
+   "right": 160,
+   "bottom": 470
+  },
+  "e9": {
+   "left": 300,
+   "top": 420,
+   "right": 390,
+   "bottom": 460
+  }
+ },
+ "ends": {
+  "r0": [
+   "e0",
+   "e1"
+  ],
+  "r1": [
+   "e1",
+   "e2"
+  ],
+  "r2": [
+   "e0",
+   "e4"
+  ],
+  "r3": [
+   "e4",
+   "e5"
+  ],
+  "r4": [
+   "e5",
+   "e6"
+  ],
+  "r5": [
+   "e1",
+   "e5"
+  ],
+  "r6": [
+   "e2",
+   "e3"
+  ],
+  "r7": [
+   "e3",
+   "e7"
+  ],
+  "r8": [
+   "e4",
+   "e8"
+  ],
+  "r9": [
+   "e8",
+   "e9"
+  ],
+  "r10": [
+   "e5",
+   "e9"
+  ],
+  "r11": [
+   "e0",
+   "e5"
+  ],
+  "r12": [
+   "e6",
+   "e7"
+  ]
+ },
+ "routes": {
+  "r0": {
+   "from": {
+    "side": "right",
+    "at": 0.3333
+   },
+   "to": {
+    "side": "left",
+    "at": 0.5
+   },
+   "via": [
+    [
+     230,
+     57
+    ],
+    [
+     230,
+     70
+    ]
+   ]
+  },
+  "r1": {
+   "from": {
+    "side": "right",
+    "at": 0.5
+   },
+   "to": {
+    "side": "left",
+    "at": 0.5
+   },
+   "via": [
+    [
+     510,
+     70
+    ],
+    [
+     510,
+     60
+    ]
+   ]
+  },
+  "r10": {
+   "from": {
+    "side": "bottom",
+    "at": 0.5
+   },
+   "to": {
+    "side": "top",
+    "at": 0.5
+   },
+   "via": [
+    [
+     360,
+     350
+    ],
+    [
+     345,
+     350
+    ]
+   ]
+  },
+  "r11": {
+   "from": {
+    "side": "right",
+    "at": 0.6667
+   },
+   "to": {
+    "side": "left",
+    "at": 0.3333
+   },
+   "via": [
+    [
+     230,
+     73
+    ],
+    [
+     230,
+     247
+    ]
+   ]
+  },
+  "r12": {
+   "from": {
+    "side": "right",
+    "at": 0.5
+   },
+   "to": {
+    "side": "left",
+    "at": 0.5
+   },
+   "via": [
+    [
+     740,
+     252
+    ],
+    [
+     740,
+     260
+    ]
+   ]
+  },
+  "r2": {
+   "from": {
+    "side": "bottom",
+    "at": 0.5
+   },
+   "to": {
+    "side": "top",
+    "at": 0.5
+   },
+   "via": [
+    [
+     100,
+     160
+    ],
+    [
+     110,
+     160
+    ]
+   ]
+  },
+  "r3": {
+   "from": {
+    "side": "right",
+    "at": 0.5
+   },
+   "to": {
+    "side": "left",
+    "at": 0.6667
+   },
+   "via": [
+    [
+     240,
+     256
+    ],
+    [
+     240,
+     263
+    ]
+   ]
+  },
+  "r4": {
+   "from": {
+    "side": "right",
+    "at": 0.5
+   },
+   "to": {
+    "side": "left",
+    "at": 0.5
+   },
+   "via": [
+    [
+     490,
+     255
+    ],
+    [
+     490,
+     252
+    ]
+   ]
+  },
+  "r5": {
+   "from": {
+    "side": "bottom",
+    "at": 0.5
+   },
+   "to": {
+    "side": "top",
+    "at": 0.5
+   },
+   "via": [
+    [
+     380,
+     165
+    ],
+    [
+     360,
+     165
+    ]
+   ]
+  },
+  "r6": {
+   "from": {
+    "side": "right",
+    "at": 0.5
+   },
+   "to": {
+    "side": "left",
+    "at": 0.5
+   },
+   "via": [
+    [
+     735,
+     60
+    ],
+    [
+     735,
+     50
+    ]
+   ]
+  },
+  "r7": {
+   "from": {
+    "side": "right",
+    "at": 0.5
+   },
+   "to": {
+    "side": "top",
+    "at": 0.5
+   },
+   "via": [
+    [
+     900,
+     50
+    ]
+   ]
+  },
+  "r8": {
+   "from": {
+    "side": "bottom",
+    "at": 0.5
+   },
+   "to": {
+    "side": "top",
+    "at": 0.5
+   },
+   "via": [
+    [
+     110,
+     351
+    ],
+    [
+     100,
+     351
+    ]
+   ]
+  },
+  "r9": {
+   "from": {
+    "side": "right",
+    "at": 0.5
+   },
+   "to": {
+    "side": "left",
+    "at": 0.5
+   },
+   "via": [
+    [
+     230,
+     445
+    ],
+    [
+     230,
+     440
+    ]
+   ]
+  }
+ },
+ "steps": [
+  {
+   "move": "e7",
+   "to": [
+    794,
+    206
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       740,
+       252
+      ],
+      [
+       740,
+       236
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     },
+     "via": [
+      [
+       874,
+       50
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    729,
+    0
+   ],
+   "routes": {
+    "r1": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       510,
+       70
+      ],
+      [
+       510,
+       20
+      ]
+     ]
+    },
+    "r6": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r6"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    113,
+    312
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     }
+    },
+    "r9": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.5
+     },
+     "via": [
+      [
+       230,
+       445
+      ],
+      [
+       230,
+       332
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    43,
+    82
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "right",
+      "at": 0.3333
+     },
+     "to": {
+      "side": "right",
+      "at": 0.5
+     },
+     "via": [
+      [
+       230,
+       57
+      ],
+      [
+       230,
+       112
+      ]
+     ]
+    },
+    "r1": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       510,
+       112
+      ],
+      [
+       510,
+       20
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     },
+     "via": [
+      [
+       123,
+       165
+      ],
+      [
+       360,
+       165
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r0"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    750,
+    78
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     }
+    },
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    111,
+    89
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "via": [
+      [
+       100,
+       160
+      ],
+      [
+       181,
+       160
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     }
+    },
+    "r8": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     },
+     "via": [
+      [
+       181,
+       351
+      ],
+      [
+       100,
+       351
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r2": [
+     "e1"
+    ],
+    "r8": [
+     "e9"
+    ]
+   },
+   "conflicts": [
+    "r2"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    91,
+    396
+   ],
+   "routes": {
+    "r9": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.5
+     },
+     "via": [
+      [
+       230,
+       445
+      ],
+      [
+       230,
+       416
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r9"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    597,
+    164
+   ],
+   "routes": {
+    "r6": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     }
+    },
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    379,
+    -10
+   ],
+   "routes": {
+    "r6": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.7
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    773,
+    -78
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    114,
+    99
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     }
+    },
+    "r1": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       510,
+       129
+      ],
+      [
+       510,
+       20
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {
+    "r0": [
+     "e4"
+    ]
+   },
+   "conflicts": [
+    "r0"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    335,
+    -55
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    952,
+    88
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    787,
+    258
+   ],
+   "routes": {},
+   "crossing": {
+    "r7": [
+     "e6"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       717,
+       -53
+      ],
+      [
+       717,
+       312
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e3",
+   "to": [
+    205,
+    -170
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       717,
+       -168
+      ],
+      [
+       717,
+       312
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    623,
+    125
+   ],
+   "routes": {
+    "r4": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       490,
+       255
+      ],
+      [
+       490,
+       147
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    989,
+    458
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       717,
+       -168
+      ],
+      [
+       717,
+       512
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r7": [
+     "e6"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -168
+      ],
+      [
+       607,
+       512
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e3",
+   "to": [
+    326,
+    -28
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -26
+      ],
+      [
+       607,
+       512
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -154,
+    -41
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "via": [
+      [
+       100,
+       160
+      ],
+      [
+       -84,
+       160
+      ]
+     ]
+    },
+    "r8": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     },
+     "via": [
+      [
+       -84,
+       351
+      ],
+      [
+       100,
+       351
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r3": [
+     "e0",
+     "e1"
+    ],
+    "r8": [
+     "e9"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       288,
+       -15
+      ],
+      [
+       288,
+       263
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e9",
+   "to": [
+    66,
+    426
+   ],
+   "routes": {
+    "r9": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5917
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r9"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    471,
+    -12
+   ],
+   "routes": {
+    "r4": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {
+    "r12": [
+     "e2"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       10
+      ],
+      [
+       717,
+       87
+      ],
+      [
+       977,
+       87
+      ],
+      [
+       977,
+       488
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e4",
+   "to": [
+    -423,
+    -39
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "via": [
+      [
+       100,
+       160
+      ],
+      [
+       -353,
+       160
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       288,
+       -13
+      ],
+      [
+       288,
+       263
+      ]
+     ]
+    },
+    "r8": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     },
+     "via": [
+      [
+       -353,
+       351
+      ],
+      [
+       100,
+       351
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    238,
+    -42
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       -20
+      ],
+      [
+       717,
+       87
+      ],
+      [
+       977,
+       87
+      ],
+      [
+       977,
+       488
+      ]
+     ]
+    },
+    "r4": {
+     "from": {
+      "side": "top",
+      "at": 0.1
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.74
+     }
+    }
+   },
+   "crossing": {
+    "r12": [
+     "e3"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -42,
+    472
+   ],
+   "routes": {
+    "r8": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     },
+     "via": [
+      [
+       -353,
+       351
+      ],
+      [
+       18,
+       351
+      ]
+     ]
+    },
+    "r9": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r9"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    482,
+    -52
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -50
+      ],
+      [
+       607,
+       512
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1112,
+    594
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       -20
+      ],
+      [
+       717,
+       87
+      ],
+      [
+       977,
+       87
+      ],
+      [
+       977,
+       624
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -50
+      ],
+      [
+       607,
+       648
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -498,
+    -231
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "via": [
+      [
+       100,
+       160
+      ],
+      [
+       -428,
+       160
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       288,
+       -205
+      ],
+      [
+       288,
+       263
+      ]
+     ]
+    },
+    "r8": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     },
+     "via": [
+      [
+       -428,
+       351
+      ],
+      [
+       18,
+       351
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r3": [
+     "e6"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -29,
+       -205
+      ],
+      [
+       -29,
+       263
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e3",
+   "to": [
+    536,
+    26
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       28
+      ],
+      [
+       607,
+       648
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1086,
+    397
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       -20
+      ],
+      [
+       717,
+       87
+      ],
+      [
+       977,
+       87
+      ],
+      [
+       977,
+       427
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       28
+      ],
+      [
+       607,
+       451
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    834,
+    -94
+   ],
+   "routes": {
+    "r6": {
+     "from": {
+      "side": "top",
+      "at": 0.9
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.1
+     }
+    },
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -92
+      ],
+      [
+       607,
+       451
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    119,
+    149
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       171
+      ],
+      [
+       717,
+       87
+      ],
+      [
+       977,
+       87
+      ],
+      [
+       977,
+       427
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -30,
+    331
+   ],
+   "routes": {
+    "r8": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     }
+    },
+    "r9": {
+     "from": {
+      "side": "bottom",
+      "at": 0.9
+     },
+     "to": {
+      "side": "top",
+      "at": 0.1333
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    379,
+    80
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       102
+      ],
+      [
+       717,
+       87
+      ],
+      [
+       977,
+       87
+      ],
+      [
+       977,
+       427
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -293,
+    -213
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "via": [
+      [
+       100,
+       160
+      ],
+      [
+       -223,
+       160
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -29,
+       -187
+      ],
+      [
+       -29,
+       263
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    -183,
+    160
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     }
+    },
+    "r11": {
+     "from": {
+      "side": "right",
+      "at": 0.6667
+     },
+     "to": {
+      "side": "left",
+      "at": 0.3333
+     },
+     "via": [
+      [
+       230,
+       193
+      ],
+      [
+       230,
+       247
+      ]
+     ]
+    },
+    "r2": {
+     "from": {
+      "side": "top",
+      "at": 0.1
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    172,
+    220
+   ],
+   "routes": {
+    "r1": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       510,
+       250
+      ],
+      [
+       510,
+       20
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "right",
+      "at": 0.5833
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {
+    "r1": [
+     "e5"
+    ]
+   },
+   "conflicts": [
+    "r5"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -308,
+    192
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -485,
+    -319
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -29,
+       -293
+      ],
+      [
+       -29,
+       263
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r3": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    961,
+    464
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       102
+      ],
+      [
+       717,
+       494
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -92
+      ],
+      [
+       607,
+       518
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -716,
+    -192
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -29,
+       -166
+      ],
+      [
+       -29,
+       263
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r3": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    847,
+    460
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       102
+      ],
+      [
+       717,
+       490
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -92
+      ],
+      [
+       607,
+       514
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -323,
+    136
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -907,
+    -171
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -29,
+       -145
+      ],
+      [
+       -29,
+       263
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r3": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -35,
+    239
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    263,
+    19
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       41
+      ],
+      [
+       717,
+       490
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r4": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    275,
+    152
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "right",
+      "at": 0.6667
+     },
+     "to": {
+      "side": "left",
+      "at": 0.3333
+     },
+     "via": [
+      [
+       230,
+       193
+      ],
+      [
+       230,
+       169
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -29,
+       -145
+      ],
+      [
+       -29,
+       185
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "top",
+      "at": 0.8219
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.2375
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -87,
+    150
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    12,
+    138
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "right",
+      "at": 0.6667
+     },
+     "to": {
+      "side": "right",
+      "at": 0.34
+     },
+     "via": [
+      [
+       230,
+       193
+      ],
+      [
+       230,
+       155
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -29,
+       -145
+      ],
+      [
+       -29,
+       171
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r11": [
+     "e8"
+    ],
+    "r3": [
+     "e8"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -343,
+    44
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    951,
+    -27
+   ],
+   "routes": {
+    "r6": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     }
+    },
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -25
+      ],
+      [
+       607,
+       514
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -205,
+    585
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1039,
+    -82
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -29,
+       -56
+      ],
+      [
+       -29,
+       171
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r2": [
+     "e8"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r2": {
+     "from": {
+      "side": "top",
+      "at": 0.1
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "via": [
+      [
+       -171,
+       -18
+      ],
+      [
+       -969,
+       -18
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e7",
+   "to": [
+    1084,
+    295
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       41
+      ],
+      [
+       717,
+       325
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -25
+      ],
+      [
+       607,
+       349
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    277,
+    162
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       184
+      ],
+      [
+       717,
+       325
+      ]
+     ]
+    },
+    "r4": {
+     "from": {
+      "side": "right",
+      "at": 0.9
+     },
+     "to": {
+      "side": "left",
+      "at": 0.4773
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1084,
+    -271
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "top",
+      "at": 0.1
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "via": [
+      [
+       -171,
+       -18
+      ],
+      [
+       -1014,
+       -18
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -29,
+       -245
+      ],
+      [
+       -29,
+       171
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    19,
+    399
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    880,
+    -185
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -183
+      ],
+      [
+       607,
+       349
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    288,
+    173
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "right",
+      "at": 0.6667
+     },
+     "to": {
+      "side": "left",
+      "at": 0.34
+     },
+     "via": [
+      [
+       230,
+       193
+      ],
+      [
+       230,
+       190
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -29,
+       -245
+      ],
+      [
+       -29,
+       206
+      ]
+     ]
+    },
+    "r4": {
+     "from": {
+      "side": "top",
+      "at": 0.3708
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.555
+     }
+    },
+    "r5": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {
+    "r11": [
+     "e6"
+    ]
+   },
+   "conflicts": [
+    "r4",
+    "r5"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    795,
+    -54
+   ],
+   "routes": {
+    "r6": {
+     "from": {
+      "side": "top",
+      "at": 0.7333
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.1
+     }
+    },
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -52
+      ],
+      [
+       607,
+       349
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -391,
+    6
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    929,
+    -12
+   ],
+   "routes": {
+    "r1": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       510,
+       250
+      ],
+      [
+       510,
+       8
+      ]
+     ]
+    },
+    "r6": {
+     "from": {
+      "side": "left",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1153,
+    396
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       184
+      ],
+      [
+       717,
+       426
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -52
+      ],
+      [
+       607,
+       450
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r12": [
+     "e5"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -321,
+    -112
+   ],
+   "routes": {},
+   "crossing": {
+    "r9": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r9": {
+     "from": {
+      "side": "bottom",
+      "at": 0.9
+     },
+     "to": {
+      "side": "top",
+      "at": 0.1333
+     },
+     "via": [
+      [
+       -213,
+       387
+      ],
+      [
+       31,
+       387
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e8",
+   "to": [
+    -452,
+    -86
+   ],
+   "routes": {
+    "r9": {
+     "from": {
+      "side": "bottom",
+      "at": 0.9
+     },
+     "to": {
+      "side": "top",
+      "at": 0.1333
+     },
+     "via": [
+      [
+       -344,
+       387
+      ],
+      [
+       31,
+       387
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    -97,
+    110
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "right",
+      "at": 0.6667
+     },
+     "to": {
+      "side": "left",
+      "at": 0.34
+     },
+     "via": [
+      [
+       230,
+       143
+      ],
+      [
+       230,
+       190
+      ]
+     ]
+    },
+    "r2": {
+     "from": {
+      "side": "top",
+      "at": 0.1
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "via": [
+      [
+       -85,
+       -18
+      ],
+      [
+       -1014,
+       -18
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r11": [
+     "e6"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    875,
+    337
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       184
+      ],
+      [
+       717,
+       367
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -52
+      ],
+      [
+       607,
+       391
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r12": [
+     "e5"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    519,
+    -134
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -132
+      ],
+      [
+       607,
+       391
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    497,
+    -59
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -57
+      ],
+      [
+       607,
+       391
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1343,
+    -306
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "top",
+      "at": 0.1
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "via": [
+      [
+       -85,
+       -18
+      ],
+      [
+       -1273,
+       -18
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -29,
+       -280
+      ],
+      [
+       -29,
+       206
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r3": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -727,
+    9
+   ],
+   "routes": {
+    "r9": {
+     "from": {
+      "side": "bottom",
+      "at": 0.9
+     },
+     "to": {
+      "side": "top",
+      "at": 0.1333
+     },
+     "via": [
+      [
+       -619,
+       387
+      ],
+      [
+       31,
+       387
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    161,
+    99
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "right",
+      "at": 0.6667
+     },
+     "to": {
+      "side": "left",
+      "at": 0.34
+     }
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -29,
+       -280
+      ],
+      [
+       -29,
+       132
+      ]
+     ]
+    },
+    "r4": {
+     "from": {
+      "side": "bottom",
+      "at": 0.9833
+     },
+     "to": {
+      "side": "top",
+      "at": 0.02
+     }
+    },
+    "r5": {
+     "from": {
+      "side": "top",
+      "at": 0.3063
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {
+    "r10": [
+     "e1"
+    ],
+    "r3": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r10": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     },
+     "via": [
+      [
+       221,
+       208
+      ],
+      [
+       64,
+       208
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       149,
+       -280
+      ],
+      [
+       149,
+       132
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e8",
+   "to": [
+    -622,
+    -115
+   ],
+   "routes": {
+    "r9": {
+     "from": {
+      "side": "bottom",
+      "at": 0.9
+     },
+     "to": {
+      "side": "top",
+      "at": 0.1333
+     },
+     "via": [
+      [
+       -514,
+       387
+      ],
+      [
+       31,
+       387
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    753,
+    -48
+   ],
+   "routes": {
+    "r1": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       510,
+       250
+      ],
+      [
+       510,
+       -28
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    808,
+    230
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       184
+      ],
+      [
+       717,
+       260
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -57
+      ],
+      [
+       607,
+       284
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    650,
+    -152
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -150
+      ],
+      [
+       607,
+       284
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1550,
+    -219
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "top",
+      "at": 0.1
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "via": [
+      [
+       -85,
+       -18
+      ],
+      [
+       -1480,
+       -18
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       149,
+       -193
+      ],
+      [
+       149,
+       132
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1675,
+    -35
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "top",
+      "at": 0.1
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     }
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       149,
+       -9
+      ],
+      [
+       149,
+       132
+      ]
+     ]
+    },
+    "r8": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    16,
+    312
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       334
+      ],
+      [
+       717,
+       260
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r4": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r4": {
+     "from": {
+      "side": "bottom",
+      "at": 0.9833
+     },
+     "to": {
+      "side": "top",
+      "at": 0.02
+     },
+     "via": [
+      [
+       279,
+       161
+      ],
+      [
+       35,
+       161
+      ],
+      [
+       35,
+       292
+      ],
+      [
+       18,
+       292
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e3",
+   "to": [
+    398,
+    7
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       9
+      ],
+      [
+       607,
+       284
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    473,
+    -15
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -13
+      ],
+      [
+       607,
+       284
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    745,
+    -14
+   ],
+   "routes": {
+    "r6": {
+     "from": {
+      "side": "bottom",
+      "at": 0.0667
+     },
+     "to": {
+      "side": "top",
+      "at": 0.7
+     }
+    },
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -12
+      ],
+      [
+       607,
+       284
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r6"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    76,
+    286
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     }
+    },
+    "r11": {
+     "from": {
+      "side": "top",
+      "at": 0.7083
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.1
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r0"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    793,
+    370
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       334
+      ],
+      [
+       717,
+       400
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       -12
+      ],
+      [
+       607,
+       424
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r12": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    379,
+    -73
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     },
+     "via": [
+      [
+       439,
+       208
+      ],
+      [
+       64,
+       208
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       149,
+       -9
+      ],
+      [
+       149,
+       -40
+      ]
+     ]
+    },
+    "r4": {
+     "from": {
+      "side": "bottom",
+      "at": 0.9833
+     },
+     "to": {
+      "side": "top",
+      "at": 0.02
+     },
+     "via": [
+      [
+       497,
+       161
+      ],
+      [
+       35,
+       161
+      ],
+      [
+       35,
+       292
+      ],
+      [
+       18,
+       292
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r10": [
+     "e6"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r10": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     },
+     "via": [
+      [
+       439,
+       387
+      ],
+      [
+       64,
+       387
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e1",
+   "to": [
+    463,
+    194
+   ],
+   "routes": {
+    "r1": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    533,
+    46
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       607,
+       48
+      ],
+      [
+       607,
+       424
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r7": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       673,
+       48
+      ],
+      [
+       673,
+       424
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e5",
+   "to": [
+    276,
+    -141
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     },
+     "via": [
+      [
+       336,
+       387
+      ],
+      [
+       64,
+       387
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       149,
+       -9
+      ],
+      [
+       149,
+       -108
+      ]
+     ]
+    },
+    "r4": {
+     "from": {
+      "side": "bottom",
+      "at": 0.9833
+     },
+     "to": {
+      "side": "top",
+      "at": 0.02
+     },
+     "via": [
+      [
+       394,
+       161
+      ],
+      [
+       35,
+       161
+      ],
+      [
+       35,
+       292
+      ],
+      [
+       18,
+       292
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -100,
+    371
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     }
+    },
+    "r9": {
+     "from": {
+      "side": "bottom",
+      "at": 0.9
+     },
+     "to": {
+      "side": "top",
+      "at": 0.1333
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    448,
+    -60
+   ],
+   "routes": {
+    "r6": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.8
+     }
+    },
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       673,
+       -58
+      ],
+      [
+       673,
+       424
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    945,
+    316
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       334
+      ],
+      [
+       717,
+       346
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       673,
+       -58
+      ],
+      [
+       673,
+       370
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r12": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    905,
+    422
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       334
+      ],
+      [
+       717,
+       452
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "right",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       673,
+       -58
+      ],
+      [
+       673,
+       476
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r12": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    711,
+    10
+   ],
+   "routes": {
+    "r6": {
+     "from": {
+      "side": "left",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     }
+    },
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       673,
+       12
+      ],
+      [
+       673,
+       476
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -680,
+    -159
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1876,
+    40
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       149,
+       66
+      ],
+      [
+       149,
+       -108
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -326,
+    271
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    956,
+    50
+   ],
+   "routes": {
+    "r6": {
+     "from": {
+      "side": "left",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1172,
+    455
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       334
+      ],
+      [
+       717,
+       485
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       673,
+       12
+      ],
+      [
+       673,
+       509
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r12": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    397,
+    0
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       149,
+       66
+      ],
+      [
+       149,
+       33
+      ]
+     ]
+    },
+    "r4": {
+     "from": {
+      "side": "bottom",
+      "at": 0.9833
+     },
+     "to": {
+      "side": "top",
+      "at": 0.02
+     },
+     "via": [
+      [
+       515,
+       161
+      ],
+      [
+       35,
+       161
+      ],
+      [
+       35,
+       292
+      ],
+      [
+       18,
+       292
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -531,
+    167
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1863,
+    148
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       149,
+       174
+      ],
+      [
+       149,
+       33
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r3": [
+     "e9"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -663,
+       174
+      ],
+      [
+       -663,
+       33
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e5",
+   "to": [
+    499,
+    184
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     }
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -663,
+       174
+      ],
+      [
+       -663,
+       217
+      ]
+     ]
+    },
+    "r4": {
+     "from": {
+      "side": "top",
+      "at": 0.9
+     },
+     "to": {
+      "side": "top",
+      "at": 0.02
+     },
+     "via": [
+      [
+       607,
+       161
+      ],
+      [
+       35,
+       161
+      ],
+      [
+       35,
+       292
+      ],
+      [
+       18,
+       292
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "top",
+      "at": 0.6
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {
+    "r11": [
+     "e1"
+    ],
+    "r3": [
+     "e1"
+    ]
+   },
+   "conflicts": [
+    "r5"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    624,
+    289
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "right",
+      "at": 0.9
+     },
+     "to": {
+      "side": "left",
+      "at": 0.84
+     }
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -663,
+       174
+      ],
+      [
+       -663,
+       322
+      ]
+     ]
+    },
+    "r4": {
+     "from": {
+      "side": "top",
+      "at": 0.9
+     },
+     "to": {
+      "side": "top",
+      "at": 0.02
+     },
+     "via": [
+      [
+       732,
+       161
+      ],
+      [
+       35,
+       161
+      ],
+      [
+       35,
+       292
+      ],
+      [
+       18,
+       292
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.9
+     },
+     "to": {
+      "side": "top",
+      "at": 0.1
+     }
+    }
+   },
+   "crossing": {
+    "r10": [
+     "e0"
+    ],
+    "r3": [
+     "e0",
+     "e6"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       208,
+       294
+      ],
+      [
+       208,
+       189
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -543,
+       174
+      ],
+      [
+       -543,
+       266
+      ],
+      [
+       612,
+       266
+      ],
+      [
+       612,
+       322
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e2",
+   "to": [
+    1239,
+    102
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    224,
+    264
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1577,
+    246
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     }
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       -543,
+       272
+      ],
+      [
+       -543,
+       266
+      ],
+      [
+       612,
+       266
+      ],
+      [
+       612,
+       322
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r3": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       212,
+       272
+      ],
+      [
+       212,
+       326
+      ],
+      [
+       612,
+       326
+      ],
+      [
+       612,
+       322
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e8",
+   "to": [
+    -928,
+    -262
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1509,
+    349
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       212,
+       375
+      ],
+      [
+       212,
+       326
+      ],
+      [
+       612,
+       326
+      ],
+      [
+       612,
+       322
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1223,
+    -418
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    621,
+    225
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     }
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3938
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r5"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1443,
+    53
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -683,
+    221
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       208,
+       294
+      ],
+      [
+       208,
+       243
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r10": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    994,
+    39
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       673,
+       41
+      ],
+      [
+       673,
+       509
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r7": [
+     "e1",
+     "e5"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r7": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       982,
+       41
+      ],
+      [
+       982,
+       509
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e2",
+   "to": [
+    1670,
+    7
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1048,
+    -313
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    916,
+    643
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       717,
+       334
+      ],
+      [
+       717,
+       673
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     }
+    }
+   },
+   "crossing": {
+    "r12": [
+     "e5"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       516,
+       334
+      ],
+      [
+       516,
+       673
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1222,
+    394
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6667
+     },
+     "via": [
+      [
+       212,
+       420
+      ],
+      [
+       212,
+       326
+      ],
+      [
+       612,
+       326
+      ],
+      [
+       612,
+       322
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    157,
+    132
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       516,
+       154
+      ],
+      [
+       516,
+       673
+      ]
+     ]
+    },
+    "r4": {
+     "from": {
+      "side": "left",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    477,
+    488
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       208,
+       493
+      ],
+      [
+       208,
+       243
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.66
+     },
+     "via": [
+      [
+       212,
+       420
+      ],
+      [
+       212,
+       326
+      ],
+      [
+       612,
+       326
+      ],
+      [
+       612,
+       521
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    673,
+    694
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       516,
+       154
+      ],
+      [
+       516,
+       724
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r12": [
+     "e5"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       465,
+       154
+      ],
+      [
+       465,
+       724
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e3",
+   "to": [
+    817,
+    -54
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1269,
+    -194
+   ],
+   "routes": {
+    "r8": {
+     "from": {
+      "side": "top",
+      "at": 0.1
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5083
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    -38,
+    159
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1712,
+    47
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -119,
+    136
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       465,
+       158
+      ],
+      [
+       465,
+       724
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    392,
+    358
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -552,
+    242
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       208,
+       493
+      ],
+      [
+       208,
+       264
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    243,
+    162
+   ],
+   "routes": {},
+   "crossing": {
+    "r11": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r11": {
+     "from": {
+      "side": "right",
+      "at": 0.9
+     },
+     "to": {
+      "side": "left",
+      "at": 0.84
+     },
+     "via": [
+      [
+       380,
+       207
+      ],
+      [
+       380,
+       530
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e0",
+   "to": [
+    503,
+    324
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "bottom",
+      "at": 0.2042
+     },
+     "to": {
+      "side": "top",
+      "at": 0.8469
+     }
+    },
+    "r11": {
+     "from": {
+      "side": "left",
+      "at": 0.9
+     },
+     "to": {
+      "side": "left",
+      "at": 0.84
+     },
+     "via": [
+      [
+       380,
+       369
+      ],
+      [
+       380,
+       530
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r11": [
+     "e1"
+    ]
+   },
+   "conflicts": [
+    "r0"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1439,
+    444
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.66
+     },
+     "via": [
+      [
+       212,
+       470
+      ],
+      [
+       212,
+       326
+      ],
+      [
+       612,
+       326
+      ],
+      [
+       612,
+       521
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r3": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.66
+     },
+     "via": [
+      [
+       609,
+       470
+      ],
+      [
+       609,
+       521
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e5",
+   "to": [
+    326,
+    404
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       208,
+       409
+      ],
+      [
+       208,
+       264
+      ]
+     ]
+    },
+    "r11": {
+     "from": {
+      "side": "left",
+      "at": 0.9
+     },
+     "to": {
+      "side": "right",
+      "at": 0.1
+     }
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.66
+     },
+     "via": [
+      [
+       609,
+       470
+      ],
+      [
+       609,
+       437
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1688
+     },
+     "to": {
+      "side": "top",
+      "at": 0.775
+     }
+    }
+   },
+   "crossing": {
+    "r11": [
+     "e1"
+    ]
+   },
+   "conflicts": [
+    "r5"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -432,
+    113
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       208,
+       409
+      ],
+      [
+       208,
+       135
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    626,
+    271
+   ],
+   "routes": {},
+   "crossing": {
+    "r11": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -652,
+    189
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       208,
+       409
+      ],
+      [
+       208,
+       211
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    721,
+    527
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       465,
+       158
+      ],
+      [
+       465,
+       557
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r12": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       614,
+       158
+      ],
+      [
+       614,
+       557
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e2",
+   "to": [
+    1809,
+    -145
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    372,
+    431
+   ],
+   "routes": {
+    "r5": {
+     "from": {
+      "side": "top",
+      "at": 0.2313
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.6917
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r5"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    911,
+    51
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1257,
+    -248
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1490,
+    591
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.66
+     },
+     "via": [
+      [
+       609,
+       617
+      ],
+      [
+       609,
+       437
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r3": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -218,
+    83
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       614,
+       105
+      ],
+      [
+       614,
+       557
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1004,
+    48
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -412,
+    -55
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       614,
+       -33
+      ],
+      [
+       614,
+       557
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    671,
+    231
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "top",
+      "at": 0.6875
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.2344
+     }
+    },
+    "r5": {
+     "from": {
+      "side": "left",
+      "at": 0.9
+     },
+     "to": {
+      "side": "right",
+      "at": 0.1
+     }
+    }
+   },
+   "crossing": {
+    "r5": [
+     "e0"
+    ]
+   },
+   "conflicts": [
+    "r0"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -522,
+    98
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       208,
+       409
+      ],
+      [
+       208,
+       120
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -397,
+    117
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       614,
+       139
+      ],
+      [
+       614,
+       557
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    534,
+    510
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {
+    "r7": [
+     "e0",
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1014,
+       498
+      ],
+      [
+       622,
+       498
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e5",
+   "to": [
+    483,
+    385
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       208,
+       390
+      ],
+      [
+       208,
+       120
+      ]
+     ]
+    },
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5
+     }
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     }
+    }
+   },
+   "crossing": {
+    "r10": [
+     "e6"
+    ],
+    "r5": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -420,
+       390
+      ],
+      [
+       -420,
+       120
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e0",
+   "to": [
+    837,
+    342
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "left",
+      "at": 0.86
+     },
+     "to": {
+      "side": "right",
+      "at": 0.1
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -544,
+    62
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    785,
+    702
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1014,
+       498
+      ],
+      [
+       873,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    734,
+    197
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "bottom",
+      "at": 0.4042
+     },
+     "to": {
+      "side": "top",
+      "at": 0.6969
+     }
+    }
+   },
+   "crossing": {
+    "r11": [
+     "e1"
+    ]
+   },
+   "conflicts": [
+    "r0"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    601,
+    223
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "bottom",
+      "at": 0.7917
+     },
+     "to": {
+      "side": "top",
+      "at": 0.1563
+     }
+    },
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r0"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    810,
+    159
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "bottom",
+      "at": 0.0875
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9344
+     }
+    }
+   },
+   "crossing": {
+    "r11": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -817,
+    275
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -420,
+       390
+      ],
+      [
+       -420,
+       297
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1069,
+    512
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1014,
+       498
+      ],
+      [
+       1157,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -556,
+    -129
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -849,
+    75
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -420,
+       390
+      ],
+      [
+       -420,
+       97
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1334,
+    562
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1014,
+       498
+      ],
+      [
+       1422,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -927,
+    -118
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -420,
+       390
+      ],
+      [
+       -420,
+       -96
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r10": [
+     "e6"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       390
+      ],
+      [
+       -825,
+       -96
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e6",
+   "to": [
+    -687,
+    69
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -1148,
+    -233
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       390
+      ],
+      [
+       -825,
+       -211
+      ]
+     ]
+    },
+    "r9": {
+     "from": {
+      "side": "right",
+      "at": 0.65
+     },
+     "to": {
+      "side": "left",
+      "at": 0.4375
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r9"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1837,
+    -151
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1512,
+    754
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1089,
+    232
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1099,
+       498
+      ],
+      [
+       1422,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    827,
+    -8
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    560,
+    442
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       447
+      ],
+      [
+       -825,
+       -211
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     }
+    }
+   },
+   "crossing": {
+    "r11": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       839,
+       219
+      ],
+      [
+       659,
+       219
+      ],
+      [
+       659,
+       430
+      ],
+      [
+       668,
+       430
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e1",
+   "to": [
+    533,
+    44
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "left",
+      "at": 0.9
+     },
+     "to": {
+      "side": "right",
+      "at": 0.1
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    887,
+    100
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       899,
+       219
+      ],
+      [
+       659,
+       219
+      ],
+      [
+       659,
+       430
+      ],
+      [
+       668,
+       430
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    338,
+    16
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1632,
+    760
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -540,
+    40
+   ],
+   "routes": {},
+   "crossing": {
+    "r12": [
+     "e1"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       62
+      ],
+      [
+       326,
+       88
+      ],
+      [
+       1322,
+       88
+      ],
+      [
+       1322,
+       592
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e5",
+   "to": [
+    520,
+    571
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       576
+      ],
+      [
+       -825,
+       -211
+      ]
+     ]
+    },
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       899,
+       219
+      ],
+      [
+       659,
+       219
+      ],
+      [
+       659,
+       430
+      ],
+      [
+       628,
+       430
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -437,
+    -118
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -96
+      ],
+      [
+       326,
+       88
+      ],
+      [
+       1322,
+       88
+      ],
+      [
+       1322,
+       592
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1709,
+    -148
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1794,
+    727
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1841,
+    -292
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1415,
+    726
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -96
+      ],
+      [
+       326,
+       88
+      ],
+      [
+       1322,
+       88
+      ],
+      [
+       1322,
+       756
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1099,
+       498
+      ],
+      [
+       1503,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1788,
+    -257
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1186,
+    289
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1196,
+       498
+      ],
+      [
+       1503,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1300,
+    -90
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    437,
+    -96
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    798,
+    735
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       740
+      ],
+      [
+       -825,
+       -211
+      ]
+     ]
+    },
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       899,
+       219
+      ],
+      [
+       659,
+       219
+      ],
+      [
+       659,
+       430
+      ],
+      [
+       906,
+       430
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    623,
+    760
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       765
+      ],
+      [
+       -825,
+       -211
+      ]
+     ]
+    },
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       899,
+       219
+      ],
+      [
+       659,
+       219
+      ],
+      [
+       659,
+       430
+      ],
+      [
+       731,
+       430
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    360,
+    -255
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1187,
+    -220
+   ],
+   "routes": {
+    "r9": {
+     "from": {
+      "side": "top",
+      "at": 0.6625
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.45
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r9"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1481,
+    130
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1491,
+       498
+      ],
+      [
+       1503,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1444,
+    -52
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1523,
+    274
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1533,
+       498
+      ],
+      [
+       1503,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1349,
+    917
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -96
+      ],
+      [
+       326,
+       88
+      ],
+      [
+       1322,
+       88
+      ],
+      [
+       1322,
+       947
+      ]
+     ]
+    },
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1533,
+       498
+      ],
+      [
+       1437,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    500,
+    574
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       579
+      ],
+      [
+       -825,
+       -211
+      ]
+     ]
+    },
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       899,
+       219
+      ],
+      [
+       659,
+       219
+      ],
+      [
+       659,
+       430
+      ],
+      [
+       608,
+       430
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    1026,
+    2
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       1038,
+       219
+      ],
+      [
+       659,
+       219
+      ],
+      [
+       659,
+       430
+      ],
+      [
+       608,
+       430
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -1112,
+    -69
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       579
+      ],
+      [
+       -825,
+       -47
+      ]
+     ]
+    },
+    "r9": {
+     "from": {
+      "side": "right",
+      "at": 0.46
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -290,
+    -89
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -67
+      ],
+      [
+       326,
+       88
+      ],
+      [
+       1322,
+       88
+      ],
+      [
+       1322,
+       947
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1710,
+    -173
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1490,
+    244
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1500,
+       498
+      ],
+      [
+       1437,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    727,
+    -34
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       739,
+       219
+      ],
+      [
+       659,
+       219
+      ],
+      [
+       659,
+       430
+      ],
+      [
+       608,
+       430
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1757,
+    337
+   ],
+   "routes": {
+    "r6": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     }
+    },
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1767,
+       498
+      ],
+      [
+       1437,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1568,
+    -95
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1649,
+    152
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1659,
+       498
+      ],
+      [
+       1437,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    202,
+    -423
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -1870,
+    743
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1654,
+    318
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     },
+     "via": [
+      [
+       1664,
+       498
+      ],
+      [
+       1437,
+       498
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1359,
+    469
+   ],
+   "routes": {
+    "r7": {
+     "from": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.55
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    2084,
+    -306
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2170,
+    734
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    676,
+    375
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       380
+      ],
+      [
+       -825,
+       -47
+      ]
+     ]
+    },
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       739,
+       219
+      ],
+      [
+       784,
+       219
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r5": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       218,
+       -351
+      ],
+      [
+       715,
+       -351
+      ],
+      [
+       715,
+       363
+      ],
+      [
+       784,
+       363
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e2",
+   "to": [
+    1899,
+    -494
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1260,
+    906
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -67
+      ],
+      [
+       326,
+       936
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    474,
+    -248
+   ],
+   "routes": {
+    "r5": {
+     "from": {
+      "side": "top",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       490,
+       -351
+      ],
+      [
+       715,
+       -351
+      ],
+      [
+       715,
+       363
+      ],
+      [
+       784,
+       363
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    1002,
+    -161
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       1014,
+       219
+      ],
+      [
+       784,
+       219
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    771,
+    -169
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       783,
+       219
+      ],
+      [
+       784,
+       219
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1261,
+    276
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    677,
+    -268
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "top",
+      "at": 0.55
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.9
+     }
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    733,
+    321
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       326
+      ],
+      [
+       -825,
+       -47
+      ]
+     ]
+    },
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       783,
+       219
+      ],
+      [
+       841,
+       219
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -1099,
+    -157
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       326
+      ],
+      [
+       -825,
+       -135
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2326,
+    915
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    841,
+    -231
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [
+    "r0"
+   ],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2395,
+    1097
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -1172,
+    -295
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       326
+      ],
+      [
+       -825,
+       -273
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    470,
+    174
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       179
+      ],
+      [
+       -825,
+       -273
+      ]
+     ]
+    },
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1778,
+    -636
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1370,
+    28
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2620,
+    1212
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -1172,
+    -375
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       179
+      ],
+      [
+       -825,
+       -353
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    640,
+    199
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       204
+      ],
+      [
+       -825,
+       -353
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    643,
+    253
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       258
+      ],
+      [
+       -825,
+       -353
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1605,
+    -659
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    526,
+    315
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       320
+      ],
+      [
+       -825,
+       -353
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    680,
+    -343
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "top",
+      "at": 0.1
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1568,
+    189
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1560,
+    273
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    556,
+    -337
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    479,
+    -469
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2703,
+    1223
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    994,
+    708
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -67
+      ],
+      [
+       326,
+       738
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1107,
+    213
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -1081,
+    -308
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       320
+      ],
+      [
+       -825,
+       -286
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1449,
+    446
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2994,
+    1123
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -280,
+    -191
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -169
+      ],
+      [
+       326,
+       738
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -338,
+    -158
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -136
+      ],
+      [
+       326,
+       738
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    785,
+    -155
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1149,
+    433
+   ],
+   "routes": {
+    "r9": {
+     "from": {
+      "side": "top",
+      "at": 0.5667
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.1
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -869,
+    630
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1268,
+    836
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -136
+      ],
+      [
+       326,
+       866
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    1111,
+    291
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    625,
+    399
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       404
+      ],
+      [
+       -825,
+       -286
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    496,
+    -611
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1330,
+    955
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -136
+      ],
+      [
+       326,
+       985
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1636,
+    -655
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    348,
+    -551
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    543,
+    -388
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    831,
+    365
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -190,
+    -233
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -211
+      ],
+      [
+       326,
+       985
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2783,
+    1094
+   ],
+   "routes": {},
+   "crossing": {
+    "r2": [
+     "e9"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2631,
+       -354
+      ],
+      [
+       -2631,
+       1141
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e1",
+   "to": [
+    1066,
+    -254
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -968,
+    -283
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       404
+      ],
+      [
+       -825,
+       -261
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -145,
+    -312
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -290
+      ],
+      [
+       326,
+       985
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    371,
+    391
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -825,
+       396
+      ],
+      [
+       -825,
+       -261
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -778,
+    759
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    402,
+    -351
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2631,
+       -317
+      ],
+      [
+       -2631,
+       1141
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1048,
+    650
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    102,
+    -358
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2631,
+       -324
+      ],
+      [
+       -2631,
+       1141
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -885,
+    -381
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1230,
+    495
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -748,
+    -366
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1434,
+    968
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -290
+      ],
+      [
+       326,
+       998
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -992,
+    -418
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    880,
+    -374
+   ],
+   "routes": {
+    "r0": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.6833
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -397,
+    -159
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -137
+      ],
+      [
+       326,
+       998
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1406,
+    1150
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -137
+      ],
+      [
+       326,
+       1180
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -762,
+    -572
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    479,
+    276
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1262,
+    1299
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -137
+      ],
+      [
+       326,
+       1329
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1399,
+    399
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1694,
+    222
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1350,
+    -517
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    378,
+    320
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    1057,
+    -466
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    155,
+    141
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1661,
+    77
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1439,
+    81
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -776,
+    -586
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1291,
+    132
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -234,
+    -194
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -172
+      ],
+      [
+       326,
+       1329
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    819,
+    -285
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1299,
+    32
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    25,
+    -44
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    958,
+    -485
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    167,
+    -305
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2631,
+       -271
+      ],
+      [
+       -2631,
+       1141
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    618,
+    309
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -1042,
+    -677
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -3009,
+    1202
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2631,
+       -271
+      ],
+      [
+       -2631,
+       1249
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    466,
+    116
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1155,
+    -342
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2903,
+    1355
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2631,
+       -271
+      ],
+      [
+       -2631,
+       1402
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -1083,
+    -661
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1283,
+    1377
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -172
+      ],
+      [
+       326,
+       1407
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1181,
+    -482
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1180,
+    1530
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -172
+      ],
+      [
+       326,
+       1560
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -962,
+    -667
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1272,
+    1678
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -172
+      ],
+      [
+       326,
+       1708
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    973,
+    -600
+   ],
+   "routes": {},
+   "crossing": {
+    "r5": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       1033,
+       -56
+      ],
+      [
+       86,
+       -56
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e2",
+   "to": [
+    1328,
+    -680
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -759,
+    -588
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1438,
+    -601
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2898,
+    1351
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2631,
+       -271
+      ],
+      [
+       -2631,
+       1398
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -948,
+    -675
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2742,
+    1411
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     }
+    }
+   },
+   "crossing": {
+    "r2": [
+     "e8"
+    ],
+    "r3": [
+     "e8"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2590,
+       -271
+      ],
+      [
+       -2590,
+       1458
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1437
+      ],
+      [
+       13,
+       1
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e3",
+   "to": [
+    299,
+    199
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    64,
+    378
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    97,
+    -395
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2590,
+       -361
+      ],
+      [
+       -2590,
+       1458
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    -34,
+    292
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1257,
+    1521
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -172
+      ],
+      [
+       326,
+       1551
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2850,
+    1254
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2590,
+       -361
+      ],
+      [
+       -2590,
+       1301
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1280
+      ],
+      [
+       13,
+       1
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -438,
+    -198
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -176
+      ],
+      [
+       326,
+       1551
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1094,
+    1715
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -176
+      ],
+      [
+       326,
+       1745
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1664,
+    -480
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1443,
+    -297
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1435,
+    -326
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    269,
+    -591
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2590,
+       -557
+      ],
+      [
+       -2590,
+       1301
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    1073,
+    1879
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -176
+      ],
+      [
+       326,
+       1909
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    705,
+    -729
+   ],
+   "routes": {
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       765,
+       -56
+      ],
+      [
+       86,
+       -56
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    69,
+    -524
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2590,
+       -490
+      ],
+      [
+       -2590,
+       1301
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -718,
+    -715
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    -118,
+    -580
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2590,
+       -546
+      ],
+      [
+       -2590,
+       1301
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -1005,
+    -792
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1340,
+    -113
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    -214,
+    128
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1280
+      ],
+      [
+       13,
+       173
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       765,
+       -56
+      ],
+      [
+       -153,
+       -56
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    -283,
+    284
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1280
+      ],
+      [
+       13,
+       329
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       765,
+       -56
+      ],
+      [
+       -222,
+       -56
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1404,
+    -196
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    48,
+    293
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1109,
+    -374
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    168,
+    106
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    -225,
+    -598
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -2590,
+       -564
+      ],
+      [
+       -2590,
+       1301
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    -548,
+    221
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1280
+      ],
+      [
+       13,
+       266
+      ]
+     ]
+    },
+    "r4": {
+     "from": {
+      "side": "top",
+      "at": 0.9
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.1
+     }
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       765,
+       -56
+      ],
+      [
+       -487,
+       -56
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r11": [
+     "e6"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -213,
+       209
+      ],
+      [
+       -440,
+       209
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e1",
+   "to": [
+    695,
+    -814
+   ],
+   "routes": {
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       755,
+       -56
+      ],
+      [
+       -487,
+       -56
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    -275,
+    244
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -213,
+       209
+      ],
+      [
+       -167,
+       209
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1280
+      ],
+      [
+       13,
+       289
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       755,
+       -56
+      ],
+      [
+       -214,
+       -56
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    260,
+    -35
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -399,
+    -331
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -309
+      ],
+      [
+       326,
+       1909
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    -487,
+    228
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -213,
+       209
+      ],
+      [
+       -379,
+       209
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1280
+      ],
+      [
+       13,
+       273
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       755,
+       -56
+      ],
+      [
+       -426,
+       -56
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -1120,
+    2
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2672,
+    1329
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     }
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1355
+      ],
+      [
+       13,
+       273
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1026,
+    -393
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -904,
+    53
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    974,
+    -934
+   ],
+   "routes": {
+    "r1": {
+     "from": {
+      "side": "bottom",
+      "at": 0.325
+     },
+     "to": {
+      "side": "top",
+      "at": 0.1
+     }
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       1034,
+       -56
+      ],
+      [
+       -426,
+       -56
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r5": [
+     "e2"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       1034,
+       -405
+      ],
+      [
+       -426,
+       -405
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e8",
+   "to": [
+    -698,
+    56
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    -107,
+    -551
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -95,
+       209
+      ],
+      [
+       -379,
+       209
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    -650,
+    70
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -95,
+       209
+      ],
+      [
+       -542,
+       209
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1355
+      ],
+      [
+       13,
+       115
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       1034,
+       -405
+      ],
+      [
+       -589,
+       -405
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r10": [
+     "e8"
+    ],
+    "r5": [
+     "e8"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    769,
+    -912
+   ],
+   "routes": {
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       829,
+       -405
+      ],
+      [
+       -589,
+       -405
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r5": [
+     "e8"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    997,
+    2013
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -309
+      ],
+      [
+       326,
+       2043
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2890,
+    1289
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1315
+      ],
+      [
+       13,
+       115
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r8": [
+     "e5"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    742,
+    2179
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -309
+      ],
+      [
+       326,
+       2209
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    742,
+    2225
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -309
+      ],
+      [
+       326,
+       2255
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    -306,
+    -482
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -294,
+       209
+      ],
+      [
+       -542,
+       209
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -920,
+    21
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    -838,
+    119
+   ],
+   "routes": {
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -294,
+       209
+      ],
+      [
+       -730,
+       209
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1315
+      ],
+      [
+       13,
+       164
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       829,
+       -405
+      ],
+      [
+       -777,
+       -405
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r10": [
+     "e8"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -932,
+       124
+      ],
+      [
+       -932,
+       -740
+      ],
+      [
+       -903,
+       -740
+      ],
+      [
+       -903,
+       -770
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e5",
+   "to": [
+    -793,
+    214
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -932,
+       219
+      ],
+      [
+       -932,
+       -740
+      ],
+      [
+       -903,
+       -740
+      ],
+      [
+       -903,
+       -770
+      ]
+     ]
+    },
+    "r11": {
+     "from": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "to": {
+      "side": "top",
+      "at": 0.9
+     }
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1315
+      ],
+      [
+       13,
+       259
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       829,
+       -405
+      ],
+      [
+       -732,
+       -405
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    969,
+    -242
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    -322,
+    -337
+   ],
+   "routes": {},
+   "crossing": {
+    "r2": [
+     "e6"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2758,
+    1139
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1165
+      ],
+      [
+       13,
+       259
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r2": [
+     "e6"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    263,
+    83
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    -37,
+    -385
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    513,
+    2090
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       326,
+       -309
+      ],
+      [
+       326,
+       2120
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    328,
+    1915
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2692,
+    1159
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1185
+      ],
+      [
+       13,
+       259
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -807,
+    210
+   ],
+   "routes": {},
+   "crossing": {
+    "r8": [
+     "e5"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -521,
+    -360
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2634,
+    1257
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1283
+      ],
+      [
+       13,
+       259
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r2": [
+     "e6"
+    ],
+    "r8": [
+     "e5"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -409,
+       -351
+      ],
+      [
+       -409,
+       71
+      ],
+      [
+       -2482,
+       71
+      ],
+      [
+       -2482,
+       1304
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e9",
+   "to": [
+    -1111,
+    -625
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -932,
+       219
+      ],
+      [
+       -932,
+       -740
+      ],
+      [
+       -903,
+       -740
+      ],
+      [
+       -903,
+       -603
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r10": [
+     "e8"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    65,
+    -23
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1264,
+    -203
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1085,
+    -318
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1200,
+    -232
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -1123,
+    -691
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "left",
+      "at": 0.1
+     },
+     "to": {
+      "side": "right",
+      "at": 0.55
+     },
+     "via": [
+      [
+       -932,
+       219
+      ],
+      [
+       -932,
+       -740
+      ],
+      [
+       -903,
+       -740
+      ],
+      [
+       -903,
+       -669
+      ]
+     ]
+    }
+   },
+   "crossing": {
+    "r10": [
+     "e8"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -939,
+    -674
+   ],
+   "routes": {
+    "r10": {
+     "from": {
+      "side": "top",
+      "at": 0.5
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.5
+     }
+    }
+   },
+   "crossing": {
+    "r10": [
+     "e8"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -566,
+    -362
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    207,
+    55
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -465,
+    -529
+   ],
+   "routes": {},
+   "crossing": {
+    "r12": [
+     "e0"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       316,
+       -507
+      ],
+      [
+       316,
+       1945
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e0",
+   "to": [
+    -284,
+    -220
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -409,
+       -186
+      ],
+      [
+       -409,
+       71
+      ],
+      [
+       -2482,
+       71
+      ],
+      [
+       -2482,
+       1304
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    -12,
+    -46
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -409,
+       -12
+      ],
+      [
+       -409,
+       71
+      ],
+      [
+       -2482,
+       71
+      ],
+      [
+       -2482,
+       1304
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -616,
+    -505
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       316,
+       -483
+      ],
+      [
+       316,
+       1945
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    35,
+    54
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    476,
+    1963
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       316,
+       -483
+      ],
+      [
+       316,
+       1993
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1242,
+    -271
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e3",
+   "to": [
+    8,
+    113
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e7",
+   "to": [
+    670,
+    1836
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       316,
+       -483
+      ],
+      [
+       316,
+       1866
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e6",
+   "to": [
+    -827,
+    -337
+   ],
+   "routes": {
+    "r12": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "left",
+      "at": 0.5
+     },
+     "via": [
+      [
+       316,
+       -315
+      ],
+      [
+       316,
+       1866
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e5",
+   "to": [
+    -984,
+    261
+   ],
+   "routes": {
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1283
+      ],
+      [
+       13,
+       306
+      ]
+     ]
+    },
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       829,
+       -405
+      ],
+      [
+       -923,
+       -405
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    -102,
+    -63
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -409,
+       -29
+      ],
+      [
+       -409,
+       71
+      ],
+      [
+       -2482,
+       71
+      ],
+      [
+       -2482,
+       1304
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    801,
+    -806
+   ],
+   "routes": {
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       861,
+       -405
+      ],
+      [
+       -923,
+       -405
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e1",
+   "to": [
+    503,
+    -936
+   ],
+   "routes": {
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       563,
+       -405
+      ],
+      [
+       -923,
+       -405
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -781,
+    333
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1380,
+    -119
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e2",
+   "to": [
+    1140,
+    -289
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e4",
+   "to": [
+    -2878,
+    1273
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -409,
+       -29
+      ],
+      [
+       -409,
+       71
+      ],
+      [
+       -2482,
+       71
+      ],
+      [
+       -2482,
+       1320
+      ]
+     ]
+    },
+    "r3": {
+     "from": {
+      "side": "right",
+      "at": 0.5
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       13,
+       1299
+      ],
+      [
+       13,
+       306
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e8",
+   "to": [
+    -917,
+    484
+   ],
+   "routes": {},
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e0",
+   "to": [
+    -386,
+    45
+   ],
+   "routes": {
+    "r2": {
+     "from": {
+      "side": "left",
+      "at": 0.68
+     },
+     "to": {
+      "side": "right",
+      "at": 0.9
+     },
+     "via": [
+      [
+       -409,
+       79
+      ],
+      [
+       -409,
+       71
+      ],
+      [
+       -2482,
+       71
+      ],
+      [
+       -2482,
+       1320
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  },
+  {
+   "move": "e9",
+   "to": [
+    -739,
+    -655
+   ],
+   "routes": {},
+   "crossing": {
+    "r9": [
+     "e6"
+    ]
+   },
+   "conflicts": [],
+   "rerouted": {
+    "r9": {
+     "from": {
+      "side": "top",
+      "at": 0.5667
+     },
+     "to": {
+      "side": "bottom",
+      "at": 0.1
+     },
+     "via": [
+      [
+       -849,
+       -603
+      ],
+      [
+       -730,
+       -603
+      ]
+     ]
+    }
+   }
+  },
+  {
+   "move": "e1",
+   "to": [
+    701,
+    -739
+   ],
+   "routes": {
+    "r5": {
+     "from": {
+      "side": "bottom",
+      "at": 0.3719
+     },
+     "to": {
+      "side": "top",
+      "at": 0.5042
+     },
+     "via": [
+      [
+       761,
+       -405
+      ],
+      [
+       -923,
+       -405
+      ]
+     ]
+    }
+   },
+   "crossing": {},
+   "conflicts": [],
+   "rerouted": {}
+  }
+ ]
+}
