@@ -17,84 +17,30 @@ Three things a group's declaration does not have to say:
   *drawing* falls out rather than one per entity.
 * **That it is flat.** A group may hold subgroups under ``groups``, nested to any depth, and a
   subgroup's members count towards its ancestors' domain — a box is one thing however deep it goes.
+* **Who is in it, one by one.** A group may state a ``rule`` instead of a list — a domain, or an
+  element type within its parent — and then holds what the rule admits. Who settles where is
+  `src.domain.diagrams.grouping_membership`'s to say; a ruled group's members are laid out by the
+  same component canvas a computed domain box uses.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from src.application.artifacts.parsing import normalize_puml_alias
-from src.domain.artifact_id import stable_id
 from src.domain.diagrams.layout.box_aliases import authored_grouping_alias
-from src.domain.diagrams.recorded_references import (
-    GROUPING_MEMBERS_KEY,
-    GROUPING_SUBGROUPS_KEY,
-)
 from src.domain.ontology_representation.artifact_types import EntityRecord
+from src.infrastructure.rendering._authored_grouping_members import (
+    ResolvedGroup,
+    claimed_aliases,
+    resolve_authored_members,
+)
 from src.infrastructure.rendering._diagram_layout import wrapped_grid_lines
-from src.infrastructure.rendering.archimate_occurrences import occurrence_id_of
 
 #: The look of a group whose members come from more than one domain: the ArchiMate grouping
 #: notation (dashed border, no fill), which is what the notation means when a box is not a layer.
 MIXED_DOMAIN_STEREOTYPE = "Grouping"
-
-
-@dataclass(frozen=True)
-class ResolvedGroup:
-    """One authored group with its members and subgroups resolved to records and aliases."""
-
-    declaration: dict[str, object]
-    members: list[tuple[EntityRecord, str]]
-    subgroups: list[ResolvedGroup] = field(default_factory=list)
-
-    @property
-    def label(self) -> str:
-        return str(self.declaration.get("label", ""))
-
-    def is_empty(self) -> bool:
-        """True when nothing would be drawn — no members at any depth."""
-        return not self.members and all(subgroup.is_empty() for subgroup in self.subgroups)
-
-    def own_aliases(self) -> list[str]:
-        return [alias for _record, alias in self.members]
-
-    def all_aliases(self) -> Iterator[str]:
-        """Every alias this group claims, including its subgroups'."""
-        yield from self.own_aliases()
-        for subgroup in self.subgroups:
-            yield from subgroup.all_aliases()
-
-    def all_records(self) -> Iterator[EntityRecord]:
-        for record, _alias in self.members:
-            yield record
-        for subgroup in self.subgroups:
-            yield from subgroup.all_records()
-
-
-def claimed_aliases(resolved: list[ResolvedGroup]) -> set[str]:
-    """Every alias any authored group claims, at any depth."""
-    return {alias for group in resolved for alias in group.all_aliases()}
-
-
-def release_authored_members(
-    authored_groupings: list[dict[str, object]],
-    render_entities: list[EntityRecord],
-    children_map: dict[str, list[EntityRecord]],
-    nested_aliases: set[str],
-) -> set[str]:
-    """Take every authored group's members out of modelled nesting; return the aliases still nested.
-
-    Declared membership in an authored group outranks modelled containment: the relation stays in
-    the model, but the picture keeps the user's box. *children_map* is updated in place, as the
-    renderer's nesting walk reads it afterwards.
-    """
-    claimed = claimed_aliases(resolve_authored_members(authored_groupings, render_entities))
-    for parent_alias in list(children_map):
-        children_map[parent_alias] = [
-            child for child in children_map[parent_alias] if normalize_puml_alias(child.display_alias) not in claimed
-        ]
-    return nested_aliases - claimed
 
 
 def group_stereotype(
@@ -130,21 +76,32 @@ def render_authored_groupings(
     stereotype_of: Callable[[str], str],
     direction_hints: dict[tuple[str, str], str] | None = None,
     connected_pairs: frozenset[frozenset[str]] = frozenset(),
+    ruled_canvas: RuledCanvas | None = None,
 ) -> list[str]:
     """Lines for every authored grouping; claimed members leave the domain pools.
+
+    A ruled grouping chooses from what *domain_entities* still holds — the top-level elements no
+    element nests — and lays its members out through *ruled_canvas*.
 
     ``direction_hints`` (when given) receives left/right hints for connections whose
     BOTH endpoints sit in the same group, following the declared member order — so
     intra-group arrows run along the group instead of stacking members vertically.
     Groups chain via their own aliases: a hidden edge from a member of one box to a
     member of another crashes GraphViz."""
-    resolved_groups = resolve_authored_members(authored_groupings, render_entities)
+    del nested_aliases
+    resolved_groups = resolve_authored_members(
+        authored_groupings,
+        render_entities,
+        free=[entity for entities in domain_entities.values() for entity in entities],
+        domain_of=domain_of,
+    )
     emitter = _GroupEmitter(
         render_entity=render_entity,
         domain_of=domain_of,
         stereotype_of=stereotype_of,
         direction_hints=direction_hints,
         connected_pairs=connected_pairs,
+        ruled_canvas=ruled_canvas,
     )
     emitter.order_members = _member_count(resolved_groups) <= _HIDDEN_CHAIN_MEMBER_BUDGET
     lines = emitter.emit(resolved_groups, indent="")
@@ -175,6 +132,11 @@ def _member_count(groups: list[ResolvedGroup]) -> int:
     return sum(len(group.members) + _member_count(group.subgroups) for group in groups)
 
 
+#: Lays out a ruled grouping's own members inside its box: the members, the box's stereotype, the
+#: indent of what goes inside, and a namespace keeping this canvas's aliases apart from another's.
+RuledCanvas = Callable[[list[EntityRecord], str, str, str], list[str]]
+
+
 @dataclass
 class _GroupEmitter:
     """Emits a group tree, allocating one alias per box and ranking siblings at each level."""
@@ -184,6 +146,7 @@ class _GroupEmitter:
     stereotype_of: Callable[[str], str]
     direction_hints: dict[tuple[str, str], str] | None
     connected_pairs: frozenset[frozenset[str]]
+    ruled_canvas: RuledCanvas | None = None
     #: Set once from the whole tree, so a nested `emit` cannot re-decide it per level.
     order_members: bool = True
     _counter: int = 0
@@ -201,16 +164,23 @@ class _GroupEmitter:
             group_alias = authored_grouping_alias(rank)
             stereotype = group_stereotype(group, domain_of=self.domain_of, stereotype_of=self.stereotype_of)
             lines.append(f'{indent}rectangle "{group.label}" <<{stereotype}>> as {group_alias} {{')
-            for record, _alias in group.members:
-                lines.extend(self.render_entity(record, indent + "  ", "right"))
+            member_aliases = group.own_aliases()
+            canvas = self.ruled_canvas if group.is_ruled else None
+            if canvas is not None:
+                # The canvas orders and chains what it lays out, as it does inside a domain box.
+                own = [record for record, _alias in group.members]
+                lines.extend(canvas(own, stereotype, indent + "  ", f"{group_alias}_"))
+            else:
+                for record, _alias in group.members:
+                    lines.extend(self.render_entity(record, indent + "  ", "right"))
             lines.extend(self.emit(group.subgroups, indent=indent + "  "))
             lines.append(f"{indent}}}")
 
-            member_aliases = group.own_aliases()
-            lines.extend(self._chain(member_aliases, indent=indent))
+            if canvas is None:
+                lines.extend(self._chain(member_aliases, indent=indent))
+                self._hint_within(member_aliases)
             for alias in member_aliases:
                 self._rank_by_alias[alias] = rank
-            self._hint_within(member_aliases)
 
             # A hidden edge between two boxes crashes GraphViz shape-dependently; when
             # arrows already join the groups, their direction hints do the ranking.
@@ -255,69 +225,3 @@ class _GroupEmitter:
             for tgt, tgt_rank in self._rank_by_alias.items():
                 if src_rank != tgt_rank:
                     self.direction_hints.setdefault((src, tgt), "down" if tgt_rank > src_rank else "up")
-
-
-def _member_index(render_entities: list[EntityRecord]) -> dict[str, EntityRecord]:
-    """Every way a member may be named → the record it means.
-
-    An entity drawn twice contributes an occurrence record per drawing, each carrying the occurrence
-    id in ``host_diagram_id`` and its own ``BASE__n`` alias. Both the entity id and each occurrence id
-    resolve, so a group may say "this entity" or "this drawing of it".
-
-    The base record wins the entity id even though the occurrences share its ``artifact_id``: an
-    id-keyed index built by last-write would silently hand the *last* drawing to a group that named
-    the entity.
-    """
-    index: dict[str, EntityRecord] = {}
-    for entity in render_entities:
-        occurrence_id = occurrence_id_of(entity)
-        if occurrence_id:
-            index[occurrence_id] = entity
-            index.setdefault(stable_id(entity.artifact_id), entity)
-        else:
-            index[stable_id(entity.artifact_id)] = entity
-    return index
-
-
-def resolve_authored_members(
-    authored_groupings: list[dict[str, object]],
-    render_entities: list[EntityRecord],
-) -> list[ResolvedGroup]:
-    """Resolve each authored group's members and subgroups to (record, alias), in declared order.
-
-    A drawing may appear in one group only (first declaration wins), which is why ``claimed`` is
-    keyed by alias rather than by entity: two drawings of one entity are two things to place.
-    Membership in an authored group WINS over modelled containment nesting: the caller uses these
-    aliases to release members from the visual-nesting tree before rendering.
-    """
-    return _resolve(authored_groupings, _member_index(render_entities), claimed=set())
-
-
-def _resolve(
-    authored_groupings: list[dict[str, object]],
-    index: dict[str, EntityRecord],
-    *,
-    claimed: set[str],
-) -> list[ResolvedGroup]:
-    resolved: list[ResolvedGroup] = []
-    for group in authored_groupings:
-        if not isinstance(group, dict):
-            continue
-        member_records: list[tuple[EntityRecord, str]] = []
-        raw_members = group.get(GROUPING_MEMBERS_KEY)
-        for raw_id in raw_members if isinstance(raw_members, list) else []:
-            named = str(raw_id).strip()
-            record = index.get(named) or index.get(stable_id(named))
-            alias = normalize_puml_alias(record.display_alias) if record is not None else ""
-            if record is None or not alias or alias in claimed:
-                continue
-            member_records.append((record, alias))
-            claimed.add(alias)
-        raw_subgroups = group.get(GROUPING_SUBGROUPS_KEY)
-        subgroups = (
-            _resolve([g for g in raw_subgroups if isinstance(g, dict)], index, claimed=claimed)
-            if isinstance(raw_subgroups, list)
-            else []
-        )
-        resolved.append(ResolvedGroup(declaration=group, members=member_records, subgroups=subgroups))
-    return resolved

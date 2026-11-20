@@ -6,7 +6,7 @@ components in order and emits entities, type boxes and hidden layout chains.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 from src.application.artifacts.parsing import normalize_puml_alias
@@ -23,6 +23,21 @@ from src.infrastructure.rendering._component_grouping import (
 from src.infrastructure.rendering._diagram_layout import wrapped_grid_lines
 from src.infrastructure.rendering.archimate_entity_declarations import ordered_entity_type_groups
 
+#: Decides whether the elements of one type get a box of their own: how many there are, and whether
+#: the caller asked for single ones to be boxed too.
+TypeBoxing = Callable[[int, bool], bool]
+
+
+def boxed_when_several(count: int, box_singletons: bool) -> bool:
+    """The automatic rule: a type is boxed when it has several elements, or the caller insists."""
+    return count > 1 or box_singletons
+
+
+def never_boxed(count: int, box_singletons: bool) -> bool:
+    """For a diagram that states its boxes: nothing is boxed that no grouping says is."""
+    del count, box_singletons
+    return False
+
 
 class _CanvasEmitter:
     """Accumulates canvas lines with one running anchor chain down the page."""
@@ -38,8 +53,10 @@ class _CanvasEmitter:
         indent: str,
         alias_namespace: str = "",
         connected_pairs: frozenset[frozenset[str]] = frozenset(),
+        type_boxing: TypeBoxing = boxed_when_several,
     ) -> None:
         self.lines: list[str] = []
+        self._type_boxing = type_boxing
         self._entity_by_alias = entity_by_alias
         self._render_entity = render_entity
         self._group_index_by_alias = group_index_by_alias
@@ -149,7 +166,7 @@ class _CanvasEmitter:
         box_singletons: bool,
         anchored: bool = True,
     ) -> None:
-        boxed = len(grouped) > 1 or box_singletons
+        boxed = self._type_boxing(len(grouped), box_singletons)
         box_alias: str | None = None
         if boxed:
             self._box_counter += 1
@@ -194,6 +211,7 @@ def render_component_canvas(
     indent: str = "",
     alias_namespace: str = "",
     orders_upward: Any = None,
+    type_boxing: TypeBoxing = boxed_when_several,
 ) -> list[str]:
     """One canvas unit per connected component; see ``_component_grouping`` for the rules."""
     top_aliases = [alias for entity in top_entities if (alias := normalize_puml_alias(entity.display_alias))]
@@ -245,6 +263,7 @@ def render_component_canvas(
         indent=indent,
         alias_namespace=alias_namespace,
         connected_pairs=connected_pairs,
+        type_boxing=type_boxing,
     )
 
     def _type_of(alias: str) -> str:

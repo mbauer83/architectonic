@@ -1,0 +1,126 @@
+@startuml more-elements-than-chains-are-kept-for
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+skinparam defaultTextAlignment center
+
+title More elements than chains are kept for
+
+rectangle "Business" <<BusinessGrouping>> as DOM_business {
+  rectangle "<$archimate_business_actor{scale=1.2}> Customer Placing An Order" <<business_actor>> as BAX_act001
+
+}
+
+rectangle "Common" <<CommonGrouping>> as DOM_common {
+  rectangle "Services" <<CommonGrouping>> as GRPT_common_1 {
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 1" <<service>> as SXX_srw001
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 2" <<service>> as SXX_srw002
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 3" <<service>> as SXX_srw003
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 4" <<service>> as SXX_srw004
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 5" <<service>> as SXX_srw005
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 6" <<service>> as SXX_srw006
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 7" <<service>> as SXX_srw007
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 8" <<service>> as SXX_srw008
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 9" <<service>> as SXX_srw009
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 10" <<service>> as SXX_srw010
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 11" <<service>> as SXX_srw011
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 12" <<service>> as SXX_srw012
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 13" <<service>> as SXX_srw013
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 14" <<service>> as SXX_srw014
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 15" <<service>> as SXX_srw015
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 16" <<service>> as SXX_srw016
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 17" <<service>> as SXX_srw017
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 18" <<service>> as SXX_srw018
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 19" <<service>> as SXX_srw019
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 20" <<service>> as SXX_srw020
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 21" <<service>> as SXX_srw021
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 22" <<service>> as SXX_srw022
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 23" <<service>> as SXX_srw023
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 24" <<service>> as SXX_srw024
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 25" <<service>> as SXX_srw025
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 26" <<service>> as SXX_srw026
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 27" <<service>> as SXX_srw027
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 28" <<service>> as SXX_srw028
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 29" <<service>> as SXX_srw029
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 30" <<service>> as SXX_srw030
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 31" <<service>> as SXX_srw031
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 32" <<service>> as SXX_srw032
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 33" <<service>> as SXX_srw033
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 34" <<service>> as SXX_srw034
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 35" <<service>> as SXX_srw035
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 36" <<service>> as SXX_srw036
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 37" <<service>> as SXX_srw037
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 38" <<service>> as SXX_srw038
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 39" <<service>> as SXX_srw039
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 40" <<service>> as SXX_srw040
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 41" <<service>> as SXX_srw041
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 42" <<service>> as SXX_srw042
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 43" <<service>> as SXX_srw043
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 44" <<service>> as SXX_srw044
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 45" <<service>> as SXX_srw045
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 46" <<service>> as SXX_srw046
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 47" <<service>> as SXX_srw047
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 48" <<service>> as SXX_srw048
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 49" <<service>> as SXX_srw049
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 50" <<service>> as SXX_srw050
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 51" <<service>> as SXX_srw051
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 52" <<service>> as SXX_srw052
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 53" <<service>> as SXX_srw053
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 54" <<service>> as SXX_srw054
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 55" <<service>> as SXX_srw055
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 56" <<service>> as SXX_srw056
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 57" <<service>> as SXX_srw057
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 58" <<service>> as SXX_srw058
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 59" <<service>> as SXX_srw059
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 60" <<service>> as SXX_srw060
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 61" <<service>> as SXX_srw061
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 62" <<service>> as SXX_srw062
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 63" <<service>> as SXX_srw063
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 64" <<service>> as SXX_srw064
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 65" <<service>> as SXX_srw065
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 66" <<service>> as SXX_srw066
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 67" <<service>> as SXX_srw067
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 68" <<service>> as SXX_srw068
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 69" <<service>> as SXX_srw069
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 70" <<service>> as SXX_srw070
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 71" <<service>> as SXX_srw071
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 72" <<service>> as SXX_srw072
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 73" <<service>> as SXX_srw073
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 74" <<service>> as SXX_srw074
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 75" <<service>> as SXX_srw075
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 76" <<service>> as SXX_srw076
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 77" <<service>> as SXX_srw077
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 78" <<service>> as SXX_srw078
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 79" <<service>> as SXX_srw079
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 80" <<service>> as SXX_srw080
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 81" <<service>> as SXX_srw081
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 82" <<service>> as SXX_srw082
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 83" <<service>> as SXX_srw083
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 84" <<service>> as SXX_srw084
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 85" <<service>> as SXX_srw085
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 86" <<service>> as SXX_srw086
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 87" <<service>> as SXX_srw087
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 88" <<service>> as SXX_srw088
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 89" <<service>> as SXX_srw089
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 90" <<service>> as SXX_srw090
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 91" <<service>> as SXX_srw091
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 92" <<service>> as SXX_srw092
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 93" <<service>> as SXX_srw093
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 94" <<service>> as SXX_srw094
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 95" <<service>> as SXX_srw095
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 96" <<service>> as SXX_srw096
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 97" <<service>> as SXX_srw097
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 98" <<service>> as SXX_srw098
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 99" <<service>> as SXX_srw099
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 100" <<service>> as SXX_srw100
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 101" <<service>> as SXX_srw101
+    rectangle "<$archimate_service{scale=1.2}> Wide Service 102" <<service>> as SXX_srw102
+  }
+
+}
+
+rectangle "Application" <<ApplicationGrouping>> as DOM_application {
+  rectangle "<$archimate_application_component{scale=1.2}> Order System" <<application_component>> as ACX_app001
+
+}
+
+@enduml

@@ -1,0 +1,57 @@
+@startuml short-labels
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+skinparam defaultTextAlignment center
+
+title Short labels
+
+rectangle "Business" <<BusinessGrouping>> as DOM_business {
+  rectangle "<$archimate_business_actor{scale=1.2}> Customer" <<business_actor>> as BAX_act001
+
+}
+
+rectangle "Common" <<CommonGrouping>> as DOM_common {
+  rectangle "<$archimate_process{scale=1.2}> Handle Order" <<process>> as PXX_prc001 {
+    rectangle "<$archimate_function{scale=1.2}> Check Stock" <<function>> as FXX_fnc001
+    rectangle "<$archimate_function{scale=1.2}> Ship Goods" <<function>> as FXX_fnc002
+    rectangle "<$archimate_function{scale=1.2}> Bill Customer" <<function>> as FXX_fnc003
+    circle " " as AJX_jct001 #1F1F1F
+    circle " " as OJX_jct002 #FFFFFF
+    FXX_fnc001 -[hidden]down- AJX_jct001
+    AJX_jct001 -[hidden]down- OJX_jct002
+    OJX_jct002 -[hidden]down- FXX_fnc002
+    FXX_fnc002 -[hidden]right- FXX_fnc003
+    OJX_jct002 -[hidden]down- FXX_fnc002
+    OJX_jct002 -[hidden]down- FXX_fnc003
+  }
+
+  rectangle "<$archimate_role{scale=1.2}> Clerk\n«Business Role»" <<role>> as RXX_rol001
+
+}
+
+rectangle "Application" <<ApplicationGrouping>> as DOM_application {
+  rectangle "<$archimate_application_component{scale=1.2}> OMS" <<application_component>> as ACX_app001
+  rectangle "<$archimate_application_component{scale=1.2}> Billing" <<application_component>> as ACX_app002
+  ACX_app001 -[hidden]down- ACX_app002
+
+}
+
+rectangle "Technology" <<TechnologyGrouping>> as DOM_technology {
+  rectangle "<$archimate_technology_node{scale=1.2}> Broker" <<technology_node>> as TNX_nod001
+
+}
+
+' Connections
+FXX_fnc001 ..> AJX_jct001
+AJX_jct001 ..> FXX_fnc002
+FXX_fnc001 --> OJX_jct002
+OJX_jct002 --> FXX_fnc002
+OJX_jct002 --> FXX_fnc003
+BAX_act001 -down- PXX_prc001
+BAX_act001 -down-> RXX_rol001
+RXX_rol001 -up-> PXX_prc001
+ACX_app001 -up- PXX_prc001
+ACX_app001 -- ACX_app002
+TNX_nod001 -up-> ACX_app001
+
+@enduml

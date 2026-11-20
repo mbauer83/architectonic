@@ -1,0 +1,45 @@
+@startuml more-boxed-members-than-the-chain-budget
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+skinparam defaultTextAlignment center
+
+title More boxed members than the chain budget
+
+rectangle "First half" <<CommonGrouping>> as GRPA_1 {
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 1" <<service>> as SXX_srb001
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 2" <<service>> as SXX_srb002
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 3" <<service>> as SXX_srb003
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 4" <<service>> as SXX_srb004
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 5" <<service>> as SXX_srb005
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 6" <<service>> as SXX_srb006
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 7" <<service>> as SXX_srb007
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 8" <<service>> as SXX_srb008
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 9" <<service>> as SXX_srb009
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 10" <<service>> as SXX_srb010
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 11" <<service>> as SXX_srb011
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 12" <<service>> as SXX_srb012
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 13" <<service>> as SXX_srb013
+}
+
+rectangle "Second half" <<CommonGrouping>> as GRPA_2 {
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 14" <<service>> as SXX_srb014
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 15" <<service>> as SXX_srb015
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 16" <<service>> as SXX_srb016
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 17" <<service>> as SXX_srb017
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 18" <<service>> as SXX_srb018
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 19" <<service>> as SXX_srb019
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 20" <<service>> as SXX_srb020
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 21" <<service>> as SXX_srb021
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 22" <<service>> as SXX_srb022
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 23" <<service>> as SXX_srb023
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 24" <<service>> as SXX_srb024
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 25" <<service>> as SXX_srb025
+  rectangle "<$archimate_service{scale=1.2}> Boxed Service 26" <<service>> as SXX_srb026
+}
+
+rectangle "Application" <<ApplicationGrouping>> as DOM_application {
+  rectangle "<$archimate_application_component{scale=1.2}> Order System" <<application_component>> as ACX_app001
+
+}
+
+@enduml

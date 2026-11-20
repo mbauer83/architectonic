@@ -1,0 +1,20 @@
+@startuml why-we-track-parcels
+skinparam wrapWidth 240
+top to bottom direction
+
+skinparam maxMessageSize 240
+skinparam defaultTextAlignment center
+
+title Why we track parcels
+
+rectangle "<$archimate_driver{scale=1.2}> Late Deliveries" <<driver>> as DXX_drv001
+
+rectangle "<$archimate_goal{scale=1.2}> Deliver On Time" <<goal>> as GXX_gol001
+
+rectangle "<$archimate_requirement{scale=1.2}> Track Every Parcel" <<requirement>> as RXX_req001
+
+' Connections
+DXX_drv001 .down.> GXX_gol001
+RXX_req001 .up.|> GXX_gol001
+
+@enduml

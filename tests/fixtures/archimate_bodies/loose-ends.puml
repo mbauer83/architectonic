@@ -1,0 +1,34 @@
+@startuml loose-ends
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+skinparam defaultTextAlignment center
+
+title Loose ends
+
+rectangle "Business" <<BusinessGrouping>> as DOM_business {
+  rectangle "<$archimate_business_actor{scale=1.2}> Customer Placing An Order" <<business_actor>> as BAX_act001
+
+}
+
+rectangle "Common" <<CommonGrouping>> as DOM_common {
+  rectangle "Services" <<CommonGrouping>> as GRPT_common_1 {
+    rectangle "<$archimate_service{scale=1.2}> Service 1" <<service>> as SXX_srv001
+    rectangle "<$archimate_service{scale=1.2}> Service 2" <<service>> as SXX_srv002
+    rectangle "<$archimate_service{scale=1.2}> Service 3" <<service>> as SXX_srv003
+  }
+  SXX_srv001 -[hidden]down- SXX_srv002
+  SXX_srv002 -[hidden]down- SXX_srv003
+
+  rectangle "<$archimate_role{scale=1.2}> Clerk\n«Business Role»" <<role>> as RXX_rol001
+  GRPT_common_1 -[hidden]down- RXX_rol001
+
+}
+DOM_business -[hidden]down- DOM_common
+
+rectangle "Technology" <<TechnologyGrouping>> as DOM_technology {
+  rectangle "<$archimate_technology_node{scale=1.2}> Broker" <<technology_node>> as TNX_nod001
+
+}
+DOM_common -[hidden]down- DOM_technology
+
+@enduml

@@ -1,0 +1,29 @@
+@startuml services-and-components
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+skinparam defaultTextAlignment center
+
+title Services and components
+
+rectangle "Common" <<CommonGrouping>> as DOM_common {
+  rectangle "Services" <<CommonGrouping>> as GRPT_common_1 {
+    rectangle "<$archimate_service{scale=1.2}> Service 1" <<service>> as SXX_srv001
+    rectangle "<$archimate_service{scale=1.2}> Service 2" <<service>> as SXX_srv002
+    rectangle "<$archimate_service{scale=1.2}> Service 3" <<service>> as SXX_srv003
+  }
+  SXX_srv001 -[hidden]down- SXX_srv002
+  SXX_srv002 -[hidden]down- SXX_srv003
+
+}
+
+rectangle "Application" <<ApplicationGrouping>> as DOM_application {
+  rectangle "Application Components" <<ApplicationGrouping>> as GRPT_application_1 {
+    rectangle "<$archimate_application_component{scale=1.2}> Order System" <<application_component>> as ACX_app001
+    rectangle "<$archimate_application_component{scale=1.2}> Billing" <<application_component>> as ACX_app002
+  }
+  ACX_app001 -[hidden]down- ACX_app002
+
+}
+DOM_common -[hidden]down- DOM_application
+
+@enduml

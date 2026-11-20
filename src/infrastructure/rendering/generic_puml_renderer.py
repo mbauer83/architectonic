@@ -11,8 +11,8 @@ from typing import Any
 
 from src.application.artifacts.parsing import normalize_puml_alias
 from src.application.puml_icon_header import with_icon_block
+from src.domain.diagrams.authored_groupings import states_a_ruled_grouping
 from src.domain.diagrams.instance_statements import DiagramInstances
-from src.domain.diagrams.layout.box_aliases import domain_box_alias
 from src.domain.icons.icon_ref import IconStyle
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
@@ -21,14 +21,14 @@ from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
 from src.domain.ontology_representation.specializations import SpecializationCatalog, merge_specialization_catalogs
 from src.infrastructure.rendering import archimate_occurrences as instances
 from src.infrastructure.rendering._archimate_includes import inject_archimate_includes
-from src.infrastructure.rendering._authored_grouping_rendering import (
-    release_authored_members,
-    render_authored_groupings,
-)
+from src.infrastructure.rendering._authored_grouping_members import release_authored_members
+from src.infrastructure.rendering._authored_grouping_rendering import render_authored_groupings
 from src.infrastructure.rendering._component_canvas import render_component_canvas
 from src.infrastructure.rendering._component_grouping import collect_subtree_aliases
 from src.infrastructure.rendering._connection_line_rendering import render_connection_lines
 from src.infrastructure.rendering._diagram_layout import build_branch_direction_hints, build_nested_layout_lines
+from src.infrastructure.rendering._domain_boxes import render_domain_boxes
+from src.infrastructure.rendering._stated_box_canvases import StatedBoxCanvases
 from src.infrastructure.rendering.archimate_entity_declarations import (
     entity_declaration,
     entity_nest_declaration,
@@ -205,13 +205,24 @@ class GenericPumlRenderer:
             if (src_alias := alias_by_id.get(conn.source)) and (tgt_alias := alias_by_id.get(conn.target))
             and src_alias != tgt_alias
         )
+        group_index_by_alias: dict[str, int] = {}
+        domain_rank_by_alias: dict[str, int] = {}
+        # What every component canvas of this diagram shares — the whole diagram's, or one per box.
+        canvas = functools.partial(
+            render_component_canvas,
+            connections=connections, alias_by_id=alias_by_id, children_map=children_map, flow_edges=flow_edges,
+            render_entity=render_entity, group_index_by_alias=group_index_by_alias,
+            nesting_conn_types=self._nesting_conn_types(), registry=_registry(), orders_upward=self._orders_upward,
+        )
+        stated_boxes = StatedBoxCanvases(canvas, group_index_by_alias)
         if authored_groupings:
             lines.extend(
                 render_authored_groupings(
                     authored_groupings,
                     render_entities=render_entities,
                     nested_aliases=nested_aliases,
-                    domain_entities=domain_entities,
+                    # In layer order, which is the order a ruled grouping takes its members in.
+                    domain_entities=(domain_entities := {key: domain_entities[key] for key in ordered_domain_keys}),
                     render_entity=render_entity,
                     # The vocabulary is the caller's: the grouping module names no domain, and this
                     # is the same pair of lookups the computed per-domain boxes below are built from.
@@ -219,70 +230,31 @@ class GenericPumlRenderer:
                     stereotype_of=lambda domain: grouping_stereotype(self._config, domain),
                     direction_hints=layout_direction_hints,
                     connected_pairs=connection_alias_pairs,
+                    ruled_canvas=stated_boxes.in_box,
                 )
             )
 
-        group_index_by_alias: dict[str, int] = {}
-        domain_rank_by_alias: dict[str, int] = {}
-        # What every component canvas of this diagram shares — the whole diagram's, or one per domain box.
-        canvas = functools.partial(
-            render_component_canvas,
-            connections=connections, alias_by_id=alias_by_id, children_map=children_map, flow_edges=flow_edges,
-            render_entity=render_entity, group_index_by_alias=group_index_by_alias,
-            nesting_conn_types=self._nesting_conn_types(), registry=_registry(), orders_upward=self._orders_upward,
-        )
-        if single_domain and ordered_domain_keys:
+        if states_a_ruled_grouping(authored_groupings):
+            # The diagram says which boxes it has, so none is computed: what no grouping holds
+            # stands on the canvas as it is.
+            lines.extend(stated_boxes.unboxed([e for key in ordered_domain_keys for e in domain_entities[key]]))
+        elif single_domain and ordered_domain_keys:
             lines.insert(len(self._includes()) + 2, "top to bottom direction")
             lines.insert(len(self._includes()) + 3, "")
             domain = ordered_domain_keys[0]
             grouping = grouping_stereotype(self._config, domain)
             lines.extend(canvas(top_entities=domain_entities[domain], grouping=grouping))
         else:
-            # Domain boxes stack in the ontology's declared layer order (motivation
-            # above strategy above business/common/application/technology); the alias
-            # lets a hidden chain enforce that rank on the canvas.
-            previous_domain_alias: str | None = None
-            previous_domain_members: set[str] = set()
-            for domain_rank, domain in enumerate(ordered_domain_keys):
-                for entity in domain_entities[domain]:
-                    alias = normalize_puml_alias(entity.display_alias)
-                    if alias:
-                        domain_rank_by_alias[alias] = domain_rank
-            # Only the domains with something left to show. Claiming empties a domain's list
-            # rather than removing the domain, so one an authored grouping emptied still has a key
-            # here — and drew an empty labelled box, which a cross-domain grouping makes routine.
-            for domain in (key for key in ordered_domain_keys if domain_entities[key]):
-                domain_alias = domain_box_alias(domain)
-                lines.append(
-                    f'rectangle "{domain.title()}" <<{grouping_stereotype(self._config, domain)}>> '
-                    f"as {domain_alias} {{"
+            lines.extend(
+                render_domain_boxes(
+                    ordered_domain_keys,
+                    domain_entities,
+                    canvas=canvas,
+                    stereotype_of=lambda domain: grouping_stereotype(self._config, domain),
+                    connection_alias_pairs=connection_alias_pairs,
+                    domain_rank_by_alias=domain_rank_by_alias,
                 )
-                # The same component canvas runs INSIDE each domain box — a domain used
-                # to emit its members unordered, which erased the flow entirely.
-                lines.extend(
-                    canvas(
-                        top_entities=domain_entities[domain],
-                        grouping=grouping_stereotype(self._config, domain),
-                        indent="  ",
-                        alias_namespace=f"{re.sub(r'[^A-Za-z0-9_]', '_', domain)}_",
-                    )
-                )
-                lines.append("}")
-                domain_aliases = {
-                    alias
-                    for entity in domain_entities[domain]
-                    if (alias := normalize_puml_alias(entity.display_alias))
-                }
-                domains_connected = any(
-                    frozenset((prev, curr)) in connection_alias_pairs
-                    for prev in previous_domain_members
-                    for curr in domain_aliases
-                )
-                if previous_domain_alias and not domains_connected:
-                    lines.append(f"{previous_domain_alias} -[hidden]down- {domain_alias}")
-                previous_domain_alias = domain_alias
-                previous_domain_members = domain_aliases
-                lines.append("")
+            )
 
         conn_lines = render_connection_lines(
             connections,
