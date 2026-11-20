@@ -3,6 +3,63 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.11.4] — 2026-11-20
+
+**[Full detail → `changelog-assets/0.11.4-detail.md`](changelog-assets/0.11.4-detail.md)**
+
+### Fixed
+
+- **A rebase reports a conflict when the enterprise artifact changed the same field.** A change asking
+  for one value was replayed over a different value the enterprise had since given that field, and the
+  rebase called it clean. A change now records what each field it names said when it was written; a
+  field that has since been changed to something else is reported as a conflict, naming the artifact
+  and the field. `GET /api/changes` and `artifact_list_changes` say per field whether it moved.
+- **Moving a document, entity or diagram to another group keeps its links.** A moved document's own
+  relative links pointed at the wrong place afterwards, and the move was refused. Links into a moved
+  artifact that carry a `#section`, links in matrix diagrams, and document links to a moved diagram's
+  rendered image were not updated by any move or group rename. All of them now follow the move.
+- **A scratchpad note can be lifted into a document.** The lift answered without writing the
+  document. It now writes it, records on the note which document it became, keeps the document's
+  references to elements lifted with it, and skips the note on a second lift.
+- **A scratchpad lift made against an outdated version is refused before anything is written.** It
+  wrote its content to the model, then reported the version conflict and left the notes unmarked, so
+  repeating it created the same content twice.
+- **A bulk write can create documents.** Every `create_document` item was refused with
+  `Unknown doc-type`. A batch now also reads the repository's group registry and attribute schemata,
+  where it used defaults.
+- **A document created in a bulk write keeps its references to entities created in the same batch.**
+  They were dropped without a finding.
+- **A bulk write returns its batch verification.** `artifact_bulk_write` answers with
+  `batch_verification` on a dry run and on a write, so a caller sees which files the batch as a whole is
+  refused or warned for. `artifact_bulk_delete` lists warnings on files it leaves valid.
+- **Reinitialising a store, rotating its key or restoring over it is refused while a process has the
+  store open.** `arch-assurance init --force` could replace the store file under a running backend,
+  which went on writing to the file it had opened.
+
+### Changed
+
+- **`assurance_fmea_matrix` requires an `analysis_id` and answers a summary by default.** The summary
+  names each cell's guideword, state, action priority and next action. `mode='full'` returns the whole
+  grid, and `element_id` narrows either to one element.
+
+### Documentation
+
+- The failure-mode pages state that a matrix's rows come only from elements a control structure names;
+  a load-bearing element no analysis has reached is reported as finding `W511`. The REST reference
+  states the factor write as it is served.
+- The GRC guidance no longer describes a risk score computed from likelihood and impact.
+- The assurance and scaffolding skills name the tools, arguments and relationship types the product
+  has.
+- Key management states that `rotate-key`, `init --force` and a restore need the store closed.
+
+### Upgrading
+
+- No data migration. A proposed change written from this version on carries `base-values`; earlier
+  changes are read as before and rebase as before.
+- A `store.db.hold` file appears beside an assurance store once it is opened. Restart a running
+  backend after updating, so that it takes part in the check.
+- An agent or script calling `assurance_fmea_matrix` without `analysis_id` must now pass one.
+
 ## [0.11.3] — 2026-11-13
 
 **[Full detail → `changelog-assets/0.11.3-detail.md`](changelog-assets/0.11.3-detail.md)**
@@ -1330,6 +1387,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.11.4]: https://github.com/mbauer83/architectonic/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/mbauer83/architectonic/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/mbauer83/architectonic/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/mbauer83/architectonic/compare/v0.11.0...v0.11.1
