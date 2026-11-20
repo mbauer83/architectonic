@@ -59,7 +59,7 @@ from ._service_scan import scan_mount
 from ._sqlite_store import _SqliteStore
 from .bootstrap import normalize_mounts, service_key
 from .types import EntityContextConnection, EntityContextReadModel
-from .versioning import ReadModelVersion, build_read_model_etag
+from .versioning import ReadModelVersion, build_read_model_etag, read_model_version_at
 
 _T = TypeVar("_T", EntityRecord, ConnectionRecord, DiagramRecord, DocumentRecord, ScratchpadNoteRecord)
 
@@ -91,6 +91,7 @@ class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries, _IconQueri
         self._ready = threading.Event()
         self._generation = 0
         self._etag = build_read_model_etag(self._scope_key, 0)
+        self._reference_generation = self._scratchpad_generation = 0
         self._mem = _MemStore()
         name_hash = hashlib.blake2b(service_key(mounts).encode("utf-8"), digest_size=10).hexdigest()
         self._db = _SqliteStore(name_hash, self._mem, self.scope_for_path)
@@ -193,21 +194,28 @@ class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries, _IconQueri
                 return self.read_model_version()
             parsed.append(change)
         with self._lock.writing():
+            references_before = self._mem.scratchpad_references_as_listed()
             for kind, path, data in parsed:
                 _CHANGE_APPLIERS[kind](self, path, data)
             # The generation is the *model's* read-model validator, and a scratchpad is not model
             # content: it is not listed by `list_artifacts`, it ranks below everything in search, and
             # its own routes are `no-cache` precisely because it changes independently of the model.
             # A canvas saves about once a second while someone is thinking, so bumping here would
-            # invalidate every model ETag in the product at that rate, for a change no model reader
-            # can observe.
+            # invalidate every model ETag in the product at that rate, for a change almost no model
+            # reader can observe. The two kinds that do each have a counter of their own
+            # (`ReadDependence`): every scratchpad change, and one that alters a reference list.
             if any(kind != "scratchpad" for kind, _path, _data in parsed):
                 self._bump_generation()
+            else:
+                self._scratchpad_generation += 1
+            if self._mem.scratchpad_references_as_listed() != references_before:
+                self._reference_generation += 1
         return self.read_model_version()
 
     def read_model_version(self) -> ReadModelVersion:
         self._ensure_loaded()
-        return ReadModelVersion(generation=self._generation, etag=self._etag)
+        beside = {"references": self._reference_generation, "scratchpads": self._scratchpad_generation}
+        return read_model_version_at(self._scope_key, self._generation, **beside)
 
     def generation(self) -> int:
         self._ensure_loaded()

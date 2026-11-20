@@ -173,13 +173,13 @@ class TestInstallation:
 
         import src.infrastructure.mcp.artifact_mcp.install_read_cache as module
 
-        original = module.generation_for
-        module.generation_for = lambda _arguments: 42  # type: ignore[assignment]
+        original = module.validator_for
+        module.validator_for = lambda _tool, _arguments: 42  # type: ignore[assignment]
         try:
             first = wrapped()
             second = wrapped()
         finally:
-            module.generation_for = original  # type: ignore[assignment]
+            module.validator_for = original  # type: ignore[assignment]
 
         assert first == second == {"n": 1}
         assert calls["n"] == 1
@@ -212,11 +212,11 @@ class TestInstallation:
             fn = staticmethod(read)
             is_async = False
 
-        tools = {"artifact_query_find_neighbors": _Tool()}
+        tools = {"artifact_query_read_artifact": _Tool()}
         mcp = type("M", (), {"_tool_manager": type("T", (), {"_tools": tools})()})()
         install_read_result_cache(mcp, ReadResultCache())
 
-        wrapped = tools["artifact_query_find_neighbors"].fn
+        wrapped = tools["artifact_query_read_artifact"].fn
 
         assert wrapped("E@1", repo_root="/tmp") == {"id": "E@1", "root": "/tmp"}
 
@@ -234,18 +234,18 @@ class TestInstallation:
             fn = staticmethod(read)
             is_async = False
 
-        tools = {"artifact_query_find_neighbors": _Tool()}
+        tools = {"artifact_query_read_artifact": _Tool()}
         mcp = type("M", (), {"_tool_manager": type("T", (), {"_tools": tools})()})()
         install_read_result_cache(mcp, ReadResultCache())
-        wrapped = tools["artifact_query_find_neighbors"].fn
+        wrapped = tools["artifact_query_read_artifact"].fn
 
-        original = module.generation_for
-        module.generation_for = lambda _arguments: 7  # type: ignore[assignment]
+        original = module.validator_for
+        module.validator_for = lambda _tool, _arguments: 7  # type: ignore[assignment]
         try:
             assert wrapped("E@1") == 1
             assert wrapped(entity_id="E@1") == 1
         finally:
-            module.generation_for = original  # type: ignore[assignment]
+            module.validator_for = original  # type: ignore[assignment]
 
         assert calls["n"] == 1
 
@@ -254,22 +254,24 @@ class TestGenerationScoping:
     """A stamp may only validate results the stamped index can actually see."""
 
     def test_an_unresolvable_repo_is_never_cached(self) -> None:
-        from src.infrastructure.mcp.artifact_mcp.install_read_cache import generation_for
+        from src.infrastructure.mcp.artifact_mcp.install_read_cache import validator_for
 
-        assert generation_for({"repo_root": "\x00 not a path", "repo_scope": "engagement"}) is None
+        unresolvable = {"repo_root": "\x00 not a path", "repo_scope": "engagement"}
+
+        assert validator_for("artifact_query_stats", unresolvable) is None
 
     def test_the_stamp_comes_from_the_index_the_call_resolves_to(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
         """Two roots, two indexes: their generations must not be interchangeable."""
         from src.infrastructure.artifact_index import shared_artifact_index
-        from src.infrastructure.mcp.artifact_mcp.install_read_cache import generation_for
+        from src.infrastructure.mcp.artifact_mcp.install_read_cache import validator_for
 
         root = tmp_path / "engagements" / "ENG-STAMP" / "architecture-repository"
         (root / "model").mkdir(parents=True)
         index = shared_artifact_index([root])
         index.refresh()
-        before = generation_for({"repo_root": str(root), "repo_scope": "engagement"})
+        before = validator_for("artifact_query_stats", {"repo_root": str(root), "repo_scope": "engagement"})
         assert before is not None
 
         index.refresh()
 
-        assert generation_for({"repo_root": str(root), "repo_scope": "engagement"}) != before
+        assert validator_for("artifact_query_stats", {"repo_root": str(root), "repo_scope": "engagement"}) != before

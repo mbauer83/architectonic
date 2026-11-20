@@ -67,4 +67,9 @@ class CombinedArtifactView(
     def read_model_version(self) -> ReadModelVersion:
         eng = self._engagement.read_model_version()
         ent = self._enterprise.read_model_version()
-        return ReadModelVersion(generation=eng.generation + ent.generation, etag=f"{eng.etag}:{ent.etag}")
+        return ReadModelVersion(
+            generation=eng.generation + ent.generation,
+            etag=f"{eng.etag}:{ent.etag}",
+            references_etag=f"{eng.references_etag}:{ent.references_etag}",
+            scratchpads_etag=f"{eng.scratchpads_etag}:{ent.scratchpads_etag}",
+        )

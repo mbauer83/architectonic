@@ -84,9 +84,7 @@ def test_the_table_is_not_empty_on_either_side() -> None:
     # Both assertions above are satisfiable by an empty table; these are what stop that.
     assert len(MODEL_PURE_READS) > 5
     assert len(conditional_rest_templates()) > 5
-    # Five since 0.11.5: reading one artifact left the memo, because for an entity the answer lists
-    # the scratchpads referencing it and the generation does not describe those.
-    assert len(cacheable_mcp_tools()) > 4
+    assert len(cacheable_mcp_tools()) > 5
     # No floor under the pending set: it is empty as of 0.2.0, and a floor would mean requiring a
     # known divergence to exist. The partition test above is what keeps it honest when it is not.
 

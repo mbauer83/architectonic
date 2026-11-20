@@ -34,6 +34,8 @@ from typing import Any
 from starlette.requests import Request
 from starlette.responses import Response
 
+from src.application.read_model_purity import dependence_of_rest_template
+from src.application.read_models import ReadDependence
 from src.infrastructure.rest.route_policy import SERVED_CONDITIONAL_READ_TEMPLATES, template_matcher
 
 #: Route templates whose body is a pure function of the indexed model and the URL, compiled once.
@@ -49,13 +51,25 @@ from src.infrastructure.rest.route_policy import SERVED_CONDITIONAL_READ_TEMPLAT
 #: the deliberate exclusions — viewpoint definitions live outside the index and are reloaded per
 #: request; schemata are repo data outside the indexed artifact set; anything under `/api/sync/` or
 #: `/api/assurance/` moves with git state or the confidential store, independently of the model.
-_CACHEABLE_TEMPLATES: tuple[re.Pattern[str], ...] = tuple(
-    template_matcher(template) for template in sorted(SERVED_CONDITIONAL_READ_TEMPLATES)
+#:
+#: Each carries **what its body depends on**, which is the purity table's to say and decides which of
+#: the read model's validators answers for it. Nearly all depend on the model alone. An entity's page
+#: also lists the scratchpads that reference the entity, and a search returns scratchpads themselves;
+#: a scratchpad save does not move the model's generation, so those two were told `304` over a body
+#: that had changed.
+_CACHEABLE_TEMPLATES: tuple[tuple[re.Pattern[str], ReadDependence], ...] = tuple(
+    (template_matcher(template), dependence_of_rest_template(template))
+    for template in sorted(SERVED_CONDITIONAL_READ_TEMPLATES)
 )
 
 
 def _is_cacheable(path: str) -> bool:
-    return any(pattern.match(path) for pattern in _CACHEABLE_TEMPLATES)
+    return _dependence_of(path) is not None
+
+
+def _dependence_of(path: str) -> ReadDependence | None:
+    """What the read at *path* depends on, or None when it is not a conditional read at all."""
+    return next((dependence for pattern, dependence in _CACHEABLE_TEMPLATES if pattern.match(path)), None)
 
 
 def _entity_tag(model_etag: str, request: Request) -> str:
@@ -66,12 +80,13 @@ def _entity_tag(model_etag: str, request: Request) -> str:
     return f'W/"{digest}"'
 
 
-def _current_model_etag() -> str | None:
-    """The read model's own version tag, or None when no repository is initialized yet."""
+def _current_validator(dependence: ReadDependence) -> str | None:
+    """The read model's tag for a body with this dependence, or None when no repository is
+    initialized yet."""
     from src.infrastructure.rest.routers import state as s  # noqa: PLC0415
 
     try:
-        return str(s.get_repo().read_model_version().etag)
+        return s.get_repo().read_model_version().validator(dependence)
     except Exception:  # noqa: BLE001 — never let caching break a request
         return None
 
@@ -79,10 +94,11 @@ def _current_model_etag() -> str | None:
 async def conditional_read_middleware(
     request: Request, call_next: Callable[[Request], Awaitable[Any]]
 ) -> Any:
-    if request.method != "GET" or not _is_cacheable(request.url.path):
+    dependence = _dependence_of(request.url.path) if request.method == "GET" else None
+    if dependence is None:
         return await call_next(request)
 
-    model_etag = _current_model_etag()
+    model_etag = _current_validator(dependence)
     if model_etag is None:
         return await call_next(request)
 
