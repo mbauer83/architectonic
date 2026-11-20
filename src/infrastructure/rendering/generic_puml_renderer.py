@@ -12,6 +12,7 @@ from typing import Any
 from src.application.artifacts.parsing import normalize_puml_alias
 from src.application.puml_icon_header import with_icon_block
 from src.domain.diagrams.instance_statements import DiagramInstances
+from src.domain.diagrams.layout.box_aliases import domain_box_alias
 from src.domain.icons.icon_ref import IconStyle
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
@@ -251,7 +252,7 @@ class GenericPumlRenderer:
             # rather than removing the domain, so one an authored grouping emptied still has a key
             # here — and drew an empty labelled box, which a cross-domain grouping makes routine.
             for domain in (key for key in ordered_domain_keys if domain_entities[key]):
-                domain_alias = f"DOM_{re.sub(r'[^A-Za-z0-9_]', '_', domain)}"
+                domain_alias = domain_box_alias(domain)
                 lines.append(
                     f'rectangle "{domain.title()}" <<{grouping_stereotype(self._config, domain)}>> '
                     f"as {domain_alias} {{"

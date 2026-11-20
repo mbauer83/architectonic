@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 
 from src.application.artifacts.parsing import normalize_puml_alias
 from src.domain.artifact_id import stable_id
+from src.domain.diagrams.layout.box_aliases import authored_grouping_alias
 from src.domain.diagrams.recorded_references import (
     GROUPING_MEMBERS_KEY,
     GROUPING_SUBGROUPS_KEY,
@@ -197,7 +198,7 @@ class _GroupEmitter:
                 continue
             self._counter += 1
             rank = self._counter
-            group_alias = f"GRPA_{rank}"
+            group_alias = authored_grouping_alias(rank)
             stereotype = group_stereotype(group, domain_of=self.domain_of, stereotype_of=self.stereotype_of)
             lines.append(f'{indent}rectangle "{group.label}" <<{stereotype}>> as {group_alias} {{')
             for record, _alias in group.members:

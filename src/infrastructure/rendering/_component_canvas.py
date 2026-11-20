@@ -11,6 +11,7 @@ from typing import Any
 
 from src.application.artifacts.parsing import normalize_puml_alias
 from src.application.modeling.flow_ordering import order_aliases_along_flow
+from src.domain.diagrams.layout.box_aliases import type_box_alias
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.rendering._component_grouping import (
     RenderEntity,
@@ -152,7 +153,7 @@ class _CanvasEmitter:
         box_alias: str | None = None
         if boxed:
             self._box_counter += 1
-            box_alias = f"GRPT_{self._alias_namespace}{self._box_counter}"
+            box_alias = type_box_alias(self._alias_namespace, self._box_counter)
             self.lines.append(f'{self._indent}rectangle "{label}" <<{self._grouping}>> as {box_alias} {{')
         member_aliases: list[str] = []
         for entity in grouped:
