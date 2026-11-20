@@ -459,7 +459,11 @@ fraction `at` along it from the top or the left, so it stays on the border when 
 resized. Pass the whole block as `layout` to `artifact_create_diagram` or `artifact_edit_diagram`;
 `layout={}` removes it and changes nothing else, and omitting the argument keeps the stored one.
 
-The block is stored, read back and verified. The picture is still arranged by PlantUML.
+The block is stored, read back and verified, and the diagram is drawn from it: PlantUML draws the
+elements, and they are placed and sized where the layout says. A relation whose route the layout
+states follows it; any other relation keeps the line PlantUML drew while its ends stay where they
+were, and is routed again otherwise. A routed line never passes through text, does not bend right
+behind an arrowhead or other end decoration, and never runs along another line or a box border.
 
 A layout is refused when it is malformed, when it names an element, grouping or relation the diagram
 does not hold, and on a `manual-layout` diagram: a diagram keeps a hand-written body verbatim or
@@ -471,7 +475,9 @@ entry naming nothing on the diagram, `E372` a layout on a diagram that cannot ca
 its geometry decides as a warning: a rule key no element satisfies (`W375`), a relation that does
 not leave its element straight outward (`W376`) or runs through one of its own ends (`W377`), two
 connected elements over each other (`W378`), and a box over an element that is not inside it
-(`W379`).
+(`W379`). On a diagram drawn from a layout it also warns about a relation drawn through text
+(`W380`), one that bends right behind the decoration at one of its ends (`W381`), and one that runs
+along another line or a box border (`W382`).
 
 ### Diagrams from an earlier format
 
