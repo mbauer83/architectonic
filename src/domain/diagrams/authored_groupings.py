@@ -95,6 +95,23 @@ def grouping_ids(groupings: object) -> tuple[str, ...]:
     )
 
 
+NOT_YET_UPGRADED = (
+    "This diagram's groupings have no ids: it is stored in the format from before a grouping had an "
+    f"identity of its own, and only the repository upgrade converts it. {UPGRADE_SENTENCE}"
+)
+
+
+def stored_before_groupings_had_ids(groupings: object) -> bool:
+    """Whether a *stored* groupings value holds an entry with no id — the earlier format.
+
+    Asked of what a file holds, never of what a caller states: a grouping a caller states now without
+    an id is new and is given one by the write, while one a file holds without an id is content of
+    an earlier format, which is the upgrade's to convert — rehearsed, reported, and only for the
+    tiers a deployment owns.
+    """
+    return any(not entry.get(GROUPING_ID_KEY) for _trail, entry in walk_groupings(groupings))
+
+
 def states_a_ruled_grouping(groupings: object) -> bool:
     """Whether any entry is ruled — which is what makes the stated groupings the whole list of boxes."""
     return any(GROUPING_RULE_KEY in entry for _trail, entry in walk_groupings(groupings))

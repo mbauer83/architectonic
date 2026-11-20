@@ -499,7 +499,7 @@ class TestARewriteKeepsWhatItWasNotAskedToChange:
             "    correspondence_kind: represents\n"
             f"    target:\n      entity_id: {kept_id}\n"
             "edge-labels:\n  e1: REST\n"
-            f"authored-groupings:\n  - label: Outer\n    entity-ids:\n      - {kept_id}\n"
+            f"authored-groupings:\n  - id: g-Outer1\n    label: Outer\n    entity-ids:\n      - {kept_id}\n"
             "---\n@startuml\n@enduml\n",
             encoding="utf-8",
         )
@@ -526,7 +526,7 @@ class TestARewriteKeepsWhatItWasNotAskedToChange:
         assert fm.get("viewpoint") == {"slug": "layered"}
         assert [b.get("id") for b in (fm.get("bindings") or [])] == ["b1"]
         assert fm.get("edge-labels") == {"e1": "REST"}
-        assert fm.get("authored-groupings") == [{"label": "Outer", "entity-ids": [kept_id]}]
+        assert fm.get("authored-groupings") == [{"id": "g-Outer1", "label": "Outer", "entity-ids": [kept_id]}]
         # And it still did the job it was called for.
         assert fm.get("entity-ids-used") == [kept_id]
 

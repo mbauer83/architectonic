@@ -20,6 +20,7 @@ from src.domain.repository.groups import UNCATEGORIZED
 
 from ._artifact_deduplication import extract_friendly_slug, get_repository, validate_diagram_unique
 from ._diagram_layout_write import identified_groupings, layout_for_write
+from ._workspace_id_refusal import refused_for_workspace_ids
 from .boundary import assert_engagement_write_root
 from .diagram_body_preparation import (
     _prepare_diagram_puml_body,
@@ -210,35 +211,13 @@ def create_diagram(
     norm_bindings_raw = bindings_to_raw(norm_bindings)
 
     # Workspace-id format check: all workspace entity ids in a new diagram are new.
-    if diagram_entities is not None and isinstance(clean_entities, dict):
-        from src.application.verification._workspace_identity_rules import (
-            validate_workspace_entity_ids,  # noqa: PLC0415
-        )
-        try:
-            _dt_module = verifier.runtime_catalogs.diagram_types.find_diagram_type(diagram_type)
-        except Exception:  # noqa: BLE001
-            _dt_module = None
-        if _dt_module is not None:
-            _ws_errors = validate_workspace_entity_ids(clean_entities, _dt_module, committed_ids=None)
-            from src.config.settings import datatype_type_references_blocking  # noqa: PLC0415
-            if _ws_errors and datatype_type_references_blocking():
-                _dummy_id = artifact_id or "new-diagram"
-                return WriteResult(
-                    wrote=False,
-                    path=repo_root / "diagram-catalog" / "diagrams" / f"{_dummy_id}.puml",
-                    artifact_id=_dummy_id,
-                    content=None,
-                    warnings=warnings,
-                    verification={
-                        "path": f"{_dummy_id}.puml",
-                        "file_type": "diagram",
-                        "valid": False,
-                        "issues": [
-                            {"severity": "error", "code": "E335-fmt", "message": m, "location": _dummy_id}
-                            for m in _ws_errors
-                        ],
-                    },
-                )
+    _named = artifact_id or "new-diagram"
+    if diagram_entities is not None and (refusal := refused_for_workspace_ids(
+        verifier=verifier, diagram_type=diagram_type, entities=clean_entities, stored_frontmatter=None,
+        path=repo_root / "diagram-catalog" / "diagrams" / f"{_named}.puml", artifact_id=_named,
+        verified_as=f"{_named}.puml", issue_location=_named, warnings=warnings,
+    )) is not None:
+        return refusal
 
     if diagram_entities is not None and not puml:
         build = _build_model_backed(

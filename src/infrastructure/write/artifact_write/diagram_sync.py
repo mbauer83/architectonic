@@ -38,6 +38,7 @@ from src.domain.diagrams.relation_key import labels_by_relation
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.rendering.diagram_selection import connections_among
 
+from ._diagram_layout_write import left_for_the_upgrade
 from ._sync_helpers import (
     LookupStore,
     current_reference_spellings,
@@ -315,6 +316,9 @@ def sync_diagram_to_model(
             f"Diagram '{artifact_id}' is model-backed (scope-bound). "
             "Use refresh_diagram() — sync_diagram_to_model must not be called on projector-owned diagrams."
         )
+
+    if (left_alone := left_for_the_upgrade(fm, diagram_path, artifact_id)) is not None:
+        return left_alone
 
     existing_entity_ids: list[str] = as_optional_str_list(fm.get("entity-ids-used")) or []
     existing_conn_ids: list[str] = as_optional_str_list(fm.get("connection-ids-used")) or []

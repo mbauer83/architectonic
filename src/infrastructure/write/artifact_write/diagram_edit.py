@@ -14,6 +14,7 @@ from src.domain.diagrams.layout.layout_block import LAYOUT_KEY
 from ._diagram_edge_labels import merged_edge_labels
 from ._diagram_group_move import _verification_to_dict, commit_diagram_write
 from ._diagram_layout_write import identified_groupings, layout_for_write
+from ._workspace_id_refusal import refused_for_workspace_ids
 from .boundary import modification_stamp
 from .coerce import as_optional_str_list
 from .diagram_body_preparation import (
@@ -176,7 +177,7 @@ def edit_diagram(
     eff_manual_layout = manual_layout if manual_layout is not None else fm.get("manual-layout") is True
     _raw_ag = fm.get("authored-groupings")
     _existing_ag = [g for g in _raw_ag if isinstance(g, dict)] if isinstance(_raw_ag, list) else []
-    stated_groupings = identified_groupings(authored_groupings, diagram_id=artifact_id)
+    stated_groupings = identified_groupings(authored_groupings, diagram_id=artifact_id, stored=_existing_ag)
     eff_authored_groupings = stated_groupings if stated_groupings is not None else _existing_ag
     # A caller may name an entity by its short id; recorded beside the full id the body's inference
     # finds, it was listed twice (B83). Normalised here, where the caller's statement enters.
@@ -212,36 +213,12 @@ def edit_diagram(
     )
 
     # Workspace-id format check: validate any NEW workspace entity ids in this edit.
-    if diagram_entities is not None and isinstance(clean_entities, dict):
-        from src.application.verification._workspace_identity_rules import (  # noqa: PLC0415
-            committed_workspace_entity_ids,
-            validate_workspace_entity_ids,
-        )
-        try:
-            _dt_module = verifier.runtime_catalogs.diagram_types.find_diagram_type(diagram_type)
-        except Exception:  # noqa: BLE001
-            _dt_module = None
-        if _dt_module is not None:
-            _committed_ids = committed_workspace_entity_ids(fm, _dt_module)
-            _ws_errors = validate_workspace_entity_ids(clean_entities, _dt_module, committed_ids=_committed_ids)
-            from src.config.settings import datatype_type_references_blocking  # noqa: PLC0415
-            if _ws_errors and datatype_type_references_blocking():
-                return WriteResult(
-                    wrote=False,
-                    path=diagram_path,
-                    artifact_id=artifact_id,
-                    content=None,
-                    warnings=warnings,
-                    verification={
-                        "path": str(diagram_path),
-                        "file_type": "diagram",
-                        "valid": False,
-                        "issues": [
-                            {"severity": "error", "code": "E335-fmt", "message": m, "location": str(diagram_path)}
-                            for m in _ws_errors
-                        ],
-                    },
-                )
+    if diagram_entities is not None and (refusal := refused_for_workspace_ids(
+        verifier=verifier, diagram_type=diagram_type, entities=clean_entities, stored_frontmatter=fm,
+        path=diagram_path, artifact_id=artifact_id, verified_as=str(diagram_path),
+        issue_location=str(diagram_path), warnings=warnings,
+    )) is not None:
+        return refusal
 
     # E334 reference-impact: detect removed classifiers still referenced by other diagrams.
     if committed_repo is not None and diagram_entities is not None and isinstance(clean_entities, dict):

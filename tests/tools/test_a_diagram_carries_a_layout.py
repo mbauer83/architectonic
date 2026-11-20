@@ -103,9 +103,8 @@ class _View:
             version=stated["version"], status=stated["status"], last_updated=stated["last-updated"],
             puml_body=body_after_frontmatter(text), entity_ids_used=stated.get("entity-ids-used"),
             connection_ids_used=stated.get("connection-ids-used"), manual_layout=bool(stated.get("manual-layout")),
-            authored_groupings=stated.get("authored-groupings"),
         )
-        extra = {key: stated[key] for key in ("layout",) if key in stated}
+        extra = {key: stated[key] for key in ("authored-groupings", "layout") if key in stated}
         head, fence, body = written.partition("last-updated:")
         injected = yaml.safe_dump(extra, sort_keys=False) if extra else ""
         self.path.write_text(head + injected + fence + body, encoding="utf-8")

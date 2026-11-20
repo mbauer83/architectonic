@@ -14,6 +14,7 @@ from typing import TypedDict
 import yaml  # type: ignore[import-untyped]
 
 from src.application.modeling.diagram_identities import diagram_identities
+from src.domain.diagrams.authored_groupings import NOT_YET_UPGRADED, stored_before_groupings_had_ids
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, layout_as_written, read_layout
 from src.domain.diagrams.layout.layout_checks import pruned_to
 
@@ -147,6 +148,10 @@ def format_diagram_puml(
     if edge_labels:
         frontmatter["edge-labels"] = edge_labels
     if authored_groupings:
+        # No writer stores a grouping without its id: one a caller states is given it before this
+        # point, and one a file already held without it is the repository upgrade's to convert.
+        if stored_before_groupings_had_ids(authored_groupings):
+            raise ValueError(NOT_YET_UPGRADED)
         frontmatter["authored-groupings"] = authored_groupings
     if layout is not None:
         # Geometry is keyed by what the diagram holds, so what is written is cut down to that here,
