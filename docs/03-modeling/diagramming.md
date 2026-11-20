@@ -356,16 +356,23 @@ panel in the GUI's diagram authoring flow; the list replaces the diagram's boxes
 
 ```yaml
 authored-groupings:
-- label: Forces
+- id: g-7Fq2aB
+  label: Forces
   entity-ids: [DRV@…, DRV@…]        # one domain  → that domain's look
-- label: Cross-cutting
+- id: g-Xk29Lm
+  label: Cross-cutting
   entity-ids: [APP@…, DRV@…]        # several     → the dashed ArchiMate grouping look
-- label: Outer
+- id: g-p0QzR4
+  label: Outer
   entity-ids: [GOL@…]
   groups:                            # boxes nest, to any depth
-  - label: Inner
+  - id: g-Ty81cD
+    label: Inner
     entity-ids: [OUT@…]
 ```
+
+Every grouping has a stable `id`. A grouping passed without one is new and is given one; pass back
+the `id` you read to keep a box's identity when you rename it or change its members.
 
 Three things the declaration does not have to say:
 
@@ -381,6 +388,98 @@ Three things the declaration does not have to say:
 
 Membership in a box beats modelled containment: the composition stays in the model, and the picture
 keeps the box you asked for.
+
+#### A grouping whose members a rule selects
+
+Instead of listing members, a grouping may state a `rule`: a domain, or an element type within its
+parent.
+
+```yaml
+authored-groupings:
+- id: g-Bs1n3s
+  label: Business
+  rule: {domain: business}
+  groups:
+  - id: g-Sv2c9K
+    label: Services
+    rule: {type: business-service}   # the business services, taken from the box above
+- id: g-Rv13wQ
+  label: Under review
+  entity-ids: [APP@…]                # a listed grouping claims its members first
+```
+
+A listed grouping claims its members first; every other element settles in the most specific rule
+that admits it. A ruled grouping takes only elements that stand free on the diagram: an element drawn
+inside the element that composes it stays there.
+
+A diagram that states no ruled grouping is drawn with a box per domain. Once any grouping
+is ruled, the stated groupings are the diagram's whole list of boxes: no domain or type box is added,
+and an element no grouping holds stands unboxed.
+
+### Labelling one relation on one diagram
+
+`edge_labels` on `artifact_edit_diagram` overrides the label of a relation on that diagram only. Each
+label is keyed by the relation it labels:
+
+| The relation | Its key |
+| --- | --- |
+| a model connection, drawn between the two elements themselves | the connection's id |
+| a model connection drawn at a further occurrence of either element | `<connection id>@<source instance>><target instance>`, an instance being an entity id or an occurrence id |
+| a connection the diagram holds itself, as in a C4 view | the connection's id within the diagram |
+
+Two relations between the same two elements therefore carry two labels. A `null` value removes one
+label; omitting `edge_labels` keeps them all.
+
+### Storing a layout
+
+An ArchiMate diagram may carry a `layout`: where each element sits and how large it is, how boxes are
+sized, where each relation attaches and bends, where its label sits, and how things stack. It holds
+geometry only, keyed by the identities the diagram already uses.
+
+```yaml
+layout:
+  grid: 10
+  elements:                          # by instance: an entity id, or an occurrence id
+    APP@1712870400.xVrBYD: {x: 320, y: 200}
+    occ-clerk-again: {x: 40, y: 200, w: 160, h: 60}     # w and h only when resized
+  boxes:                             # a grouping by its id; a computed box by its rule
+    g-7Fq2aB: {x: 600, y: 40, w: 420, h: 260}
+    rule:domain=business: {x: 40, y: 300, w: 900, h: 220}
+  relations:                         # by the same key an edge label uses
+    APP@1712870400.xVrBYD---APP@1776149382.lmO0mp@@archimate-serving:
+      from: {side: right, at: 0.5}
+      to: {side: left, at: 0.45}
+      via: [[480, 210], [480, 330]]
+      label: {at: 0.31, dx: 6, dy: 59}
+  z: {g-7Fq2aB: 1, APP@1712870400.xVrBYD: -1}
+```
+
+Positions and sizes are whole numbers. A port is a `side` (`top`, `right`, `bottom`, `left`) and a
+fraction `at` along it from the top or the left, so it stays on the border when the element is
+resized. Pass the whole block as `layout` to `artifact_create_diagram` or `artifact_edit_diagram`;
+`layout={}` removes it and changes nothing else, and omitting the argument keeps the stored one.
+
+The block is stored, read back and verified. The picture is still arranged by PlantUML.
+
+A layout is refused when it is malformed, when it names an element, grouping or relation the diagram
+does not hold, and on a `manual-layout` diagram: a diagram keeps a hand-written body verbatim or
+carries a layout. An edit that removes an element, a grouping or a relation removes their layout
+entries in the same write and reports it.
+
+Verification reports a stored layout it cannot accept as an error (`E370` unreadable, `E371` an
+entry naming nothing on the diagram, `E372` a layout on a diagram that cannot carry one) and what
+its geometry decides as a warning: a rule key no element satisfies (`W375`), a relation that does
+not leave its element straight outward (`W376`) or runs through one of its own ends (`W377`), two
+connected elements over each other (`W378`), and a box over an element that is not inside it
+(`W379`).
+
+### Diagrams from an earlier format
+
+A grouping without an `id`, or an edge label keyed by two PlantUML aliases, is the earlier form and
+is refused. `arch-repair upgrade --commit` gives each grouping its id and re-keys each edge label by
+the relation it labels. Where two relations fit one alias pair, or none does, it leaves the label as
+it is and names the candidates; set it again with `edge_labels`. See
+[CLI & backend](../reference/cli-and-backend.md) for running an upgrade.
 
 See [Interfaces & MCP](interfaces-and-mcp.md) for the full tool surface.
 
