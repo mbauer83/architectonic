@@ -168,8 +168,8 @@ class TestTheAllowlistStaysHonest:
 
         assert CONDITIONAL_READ_TEMPLATES == frozenset({
             "/api/entities",
-            "/api/entities/{artifact_id}",
-            "/api/entities/{artifact_id}/context",
+            # `/api/entities/{artifact_id}` and its `/context` left in 0.11.5: both list the
+            # scratchpads referencing the entity, which the model generation does not describe.
             # 0.2.0: the neighbourhood is a function of the index like the reads beside it, and its
             # derived arm is the most expensive read this surface serves.
             "/api/entities/{artifact_id}/neighbors",
