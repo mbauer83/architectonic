@@ -30,6 +30,10 @@ _PERMITTED_VALUES = (
     "ENT@1.a.source---ENT@2.b.target",
     "a dash --- in prose",
     "two\nlines",
+    "two\r\nwindows lines",
+    "a lone\rcarriage return",
+    "a line\u2028separator and a form\x0cfeed",
+    "a literal \\r and a literal \\n",
     "`code | span`",
     "[a link|with a pipe](target.md)",
 )
@@ -60,6 +64,13 @@ class TestTheSectionRoundTrips:
 
         assert read is not None
         assert decode(read["typed"], kind) == value
+
+    @pytest.mark.parametrize("name", ["two\nlines", "two\r\nlines", "two\rlines"])
+    def test_a_name_of_several_lines_is_refused_by_name(self, name: str) -> None:
+        with pytest.raises(ValueError, match="an attribute name is one line") as refusal:
+            format_properties_section([(name, "value")])
+
+        assert repr(name) in str(refusal.value)
 
     def test_an_unfilled_attribute_is_stated_empty(self) -> None:
         assert read_properties("\n".join(format_properties_section([("owner", "x"), ("tier", "")]))) == {

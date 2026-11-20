@@ -17,7 +17,14 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
 
-from src.domain.markdown_table import escape_cell, format_table, tables_in, unescape_cell
+from src.domain.markdown_table import (
+    escape_cell,
+    format_table,
+    spans_lines,
+    tables_in,
+    text_lines,
+    unescape_cell,
+)
 
 PROPERTIES_HEADING = "## Properties"
 
@@ -32,7 +39,7 @@ _SECTION_ENDS = ("## ", "<!--")
 
 def _section_lines(text: str) -> Iterator[str] | None:
     """The lines under the heading, up to the next section; `None` when there is no such heading."""
-    lines = iter(text.splitlines())
+    lines = iter(text_lines(text))
     if not any(line.strip() == PROPERTIES_HEADING for line in lines):
         return None
     return iter(_until_next_section(lines))
@@ -64,7 +71,20 @@ def read_properties(text: str) -> dict[str, str] | None:
 
 
 def format_properties_section(properties: Iterable[tuple[str, str]]) -> list[str]:
-    """The section's lines, from attribute names and their already-encoded value cells."""
-    rows = [(escape_cell(name), cell) for name, cell in properties]
+    """The section's lines, from attribute names and their already-encoded value cells.
+
+    Refuses an attribute name that holds a line ending. A value of several lines is the codec's to
+    spell and arrives here as one; a name has no such spelling, and a row is one line.
+    """
+    rows = [(escape_cell(_one_line(name)), cell) for name, cell in properties]
     table = format_table(_HEADER, rows or [(_NO_PROPERTIES, _NO_PROPERTIES)])
-    return [PROPERTIES_HEADING, "", *table.splitlines()]
+    return [PROPERTIES_HEADING, "", *text_lines(table)]
+
+
+def _one_line(name: str) -> str:
+    if spans_lines(name):
+        raise ValueError(
+            f"Attribute name {name!r} holds a line break, and an attribute name is one line. "
+            "Put the text in the attribute's value, which may span lines, and give it a one-line name."
+        )
+    return name

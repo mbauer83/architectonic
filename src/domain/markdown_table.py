@@ -21,6 +21,10 @@ codec (`src.domain.ontology_representation.property_value`) layers its own line-
 this one and can only undo both in a single pass. A caller holding plain text converts with
 `escape_cell` and `unescape_cell`; `format_row` refuses a cell that would not read back as one cell,
 which is what keeps the pair a round trip.
+
+**What is a line.** Markdown's: text up to a line feed, a carriage return, or the two together. Not
+`str.splitlines`, which also breaks at a form feed and at the Unicode separators — characters a cell
+may hold, and a reading that broke a row at one cut the value there.
 """
 
 from __future__ import annotations
@@ -66,6 +70,17 @@ class MarkdownTable:
     @property
     def line_count(self) -> int:
         return 2 + len(self.rows)
+
+
+def text_lines(text: str) -> list[str]:
+    """The lines of `text` as markdown counts them, without their endings."""
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    return lines[:-1] if lines[-1] == "" else lines
+
+
+def spans_lines(text: str) -> bool:
+    """Whether `text` holds a line ending, and so cannot be written inside one row."""
+    return len(text_lines(text)) > 1 or text != "".join(text_lines(text))
 
 
 def _boundaries(line: str) -> Iterator[int]:
@@ -151,7 +166,7 @@ def _table_at(lines: Sequence[str], at: int) -> MarkdownTable | None:
 
 def tables_in(text: str) -> tuple[MarkdownTable, ...]:
     """Every table in `text`, in order. Line endings and trailing whitespace do not matter."""
-    lines = text.splitlines()
+    lines = text_lines(text)
     found: list[MarkdownTable] = []
     fence: str | None = None
     at = 0
@@ -195,7 +210,7 @@ def format_row(cells: Iterable[str]) -> str:
     """One row line from spelled cells. An empty cell is written as a single space between pipes."""
     spelled = tuple(cell.strip() for cell in cells)
     for cell in spelled:
-        if row_cells(f"{_PIPE} {cell} {_PIPE}") != (cell,) or len(cell.splitlines()) > 1:
+        if row_cells(f"{_PIPE} {cell} {_PIPE}") != (cell,) or spans_lines(cell):
             raise ValueError(f"not one table cell as spelled — escape it with escape_cell first: {cell!r}")
     return _PIPE + "".join(f" {cell} {_PIPE}" if cell else f" {_PIPE}" for cell in spelled)
 

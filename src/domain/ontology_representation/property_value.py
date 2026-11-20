@@ -7,7 +7,7 @@ This is the WU-B3 spike deliverable. After OQ-2 review, the full port follows
 Canonical Lexical Grammar (how values are stored in Markdown table cells)
 --------------------------------------------------------------------------
   type      canonical form             Markdown-cell escaping applied?
-  string    verbatim                   YES: \\ → \\\\  |  →  \\|  LF → \\n
+  string    verbatim                   YES: \\ → \\\\  |  →  \\|  LF → \\n  CR → \\r
   integer   -?[0-9]+                   no (safe chars only)
   number    Python str(float) form     no (safe chars only)
   boolean   "true" or "false"          no (safe chars only)
@@ -78,7 +78,7 @@ _SENTINEL = "\x00BACKSLASH\x00"  # Never appears in real content
 
 def _md_escape(text: str) -> str:
     """Escape a string for safe embedding in a Markdown table cell."""
-    return escape_cell(text).replace("\n", "\\n")
+    return escape_cell(text).replace("\n", "\\n").replace("\r", "\\r")
 
 
 def _md_unescape(cell: str) -> str:
@@ -92,6 +92,7 @@ def _md_unescape(cell: str) -> str:
         .replace("\\\\", _SENTINEL)
         .replace("\\|", "|")
         .replace("\\n", "\n")
+        .replace("\\r", "\r")
         .replace(_SENTINEL, "\\")
     )
 

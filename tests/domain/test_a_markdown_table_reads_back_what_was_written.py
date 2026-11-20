@@ -17,6 +17,7 @@ from src.domain.markdown_table import (
     format_table,
     row_cells,
     tables_in,
+    text_lines,
     unescape_cell,
 )
 
@@ -38,6 +39,7 @@ _PERMITTED_TEXTS = (
     "`code | span`",
     "[a link|with a pipe](target.md)",
     "ünïcödé ✓",
+    "a line\u2028separator, a paragraph\u2029separator and a form\x0cfeed",
     "&nbsp;",
 )
 
@@ -109,6 +111,10 @@ class TestWhatTheSyntaxPermitsIsRead:
         noisy = tables_in("| a | b |  \r\n|---|---|\t\r\n| 1 | 2 | \r\n")
 
         assert noisy == plain
+
+    def test_a_line_ends_where_markdown_says_and_nowhere_else(self) -> None:
+        assert text_lines("a\nb\r\nc\rd\u2028e\x0cf\n") == ["a", "b", "c", "d\u2028e\x0cf"]
+        assert text_lines("") == []
 
     def test_a_table_may_follow_a_paragraph_directly(self) -> None:
         (table,) = tables_in("Some prose.\n| a | b |\n|---|---|\n| 1 | 2 |\n\nMore prose.")

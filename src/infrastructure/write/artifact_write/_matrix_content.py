@@ -13,7 +13,7 @@ import yaml
 
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS
-from src.domain.markdown_table import tables_in
+from src.domain.markdown_table import tables_in, text_lines
 from src.domain.repository.frontmatter import parse_frontmatter
 
 _ENTITY_ID_PATTERN = re.compile(r"\b([A-Z]{2,6}@\d+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*)\b")
@@ -49,7 +49,7 @@ def _rewriting_unlinked_rows(matrix_markdown: str, rewrite: Callable[[str], str]
     Which lines are rows is the table reading's answer, so a delimiter row, prose that merely opens
     with a pipe, and a table shown inside a code fence are all left as they are.
     """
-    lines = matrix_markdown.splitlines()
+    lines = text_lines(matrix_markdown)
     rows = {at for table in tables_in(matrix_markdown) for at in table.cell_lines}
     return "\n".join(
         rewrite(line) if at in rows and "](" not in line else line for at, line in enumerate(lines)
