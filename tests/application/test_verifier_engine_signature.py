@@ -72,11 +72,44 @@ class TestThePolicy:
         assert source_tree_signature(pkg) == before
 
 
-class TestTheWiring:
-    def test_the_signature_covers_the_verification_package(self) -> None:
-        package_dir = Path(incremental.__file__).parent
+    def test_changes_when_a_module_in_a_package_below_changes(self, tmp_path: Path) -> None:
+        """A rule is decided in the packages it calls into, not only where it is dispatched."""
+        pkg = _package(tmp_path, rules="RULE = 1")
+        (pkg / "domain" / "layout").mkdir(parents=True)
+        (pkg / "domain" / "layout" / "checks.py").write_text("MARGIN = 1", encoding="utf-8")
+        before = source_tree_signature(pkg)
 
-        assert verifier_engine_signature() == source_tree_signature(package_dir)
+        (pkg / "domain" / "layout" / "checks.py").write_text("MARGIN = 2", encoding="utf-8")
+
+        assert source_tree_signature(pkg) != before
+
+    def test_changes_when_data_a_rule_reads_changes(self, tmp_path: Path) -> None:
+        """An ontology's YAML decides which relationship is permitted as surely as any module."""
+        pkg = _package(tmp_path, rules="RULE = 1")
+        (pkg / "ontology.yaml").write_text("permitted: [a]", encoding="utf-8")
+        before = source_tree_signature(pkg)
+
+        (pkg / "ontology.yaml").write_text("permitted: [a, b]", encoding="utf-8")
+
+        assert source_tree_signature(pkg) != before
+
+    def test_ignores_what_the_interpreter_caches(self, tmp_path: Path) -> None:
+        pkg = _package(tmp_path, rules="RULE = 1")
+        before = source_tree_signature(pkg)
+
+        (pkg / "__pycache__").mkdir()
+        (pkg / "__pycache__" / "rules.cpython-314.pyc").write_bytes(b"\x00compiled")
+
+        assert source_tree_signature(pkg) == before
+
+
+class TestTheWiring:
+    def test_the_signature_is_of_the_whole_product_source(self) -> None:
+        """Which packages a verdict depends on is held by
+        `tests/architecture/test_a_cached_verdict_depends_on_nothing_unhashed.py`."""
+        assert incremental.PRODUCT_SOURCE.name == "src"
+        assert Path(incremental.__file__).is_relative_to(incremental.PRODUCT_SOURCE)
+        assert verifier_engine_signature() != source_tree_signature(Path(incremental.__file__).parent)
 
     def test_the_package_holds_more_rule_modules_than_any_list_would_track(self) -> None:
         package_dir = Path(incremental.__file__).parent

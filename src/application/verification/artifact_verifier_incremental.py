@@ -3,10 +3,12 @@ import json
 import os
 import subprocess
 import tempfile
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
 from src.application.verification._verifier_inventory import FileInventory
+from src.application.verification.artifact_verifier_syntax import find_plantuml_jar
 from src.application.verification.artifact_verifier_types import (
     IncrementalState,
     VerificationResult,
@@ -17,8 +19,16 @@ from src.application.verification.artifact_verifier_types import (
 STATE_SCHEMA_VERSION = 2
 
 
+#: The product's own source tree: `src/`, three levels above this module.
+PRODUCT_SOURCE = Path(__file__).resolve().parents[2]
+
+#: Directories holding nothing a verdict is computed from: the interpreter's own caches.
+_NOT_SOURCE = frozenset({"__pycache__"})
+
+
+@lru_cache(maxsize=1)
 def verifier_engine_signature() -> str:
-    """Fingerprint the verifier's own rules, so cached results never outlive them.
+    """Fingerprint everything a verdict is computed from, so cached results never outlive it.
 
     Incremental state has to be invalidated when the rules change, even though the
     repository files and git HEAD have not: otherwise an upgraded verifier keeps reporting
@@ -26,28 +36,52 @@ def verifier_engine_signature() -> str:
     happens to change. A silent stale pass is the worst outcome available here — it looks
     exactly like a clean repository.
 
-    Every module in this package is hashed, rather than a hand-listed subset. A list has to
-    be maintained in step with the filenames it names, and when it is not, it degrades
-    silently in the unsafe direction: nothing fails, the signature simply stops responding
-    to the rules it was meant to watch. Content, not mtime, so a fresh checkout of unchanged
-    rules does not force a needless full pass.
+    **The whole product source, and the renderer.** This hashed the verification package alone,
+    which is where the rules are *dispatched* and not where they are decided: a rule here asks the
+    domain what a relationship may join, a diagram type what its own statements mean, an ontology's
+    YAML which types exist, and — through adapters it is handed at composition, so no import shows
+    it — the reader of a rendered picture. A corrected rule in any of those went on being reported
+    from the cache as it was before the correction. A list of the packages that matter has to be
+    kept in step with what the rules reach, and degrades silently in the unsafe direction when it
+    is not; the import graph does not show what is injected or loaded as data. So nothing is
+    listed: every file under `src/` is hashed, with the PlantUML jar, whose drawing the syntax and
+    picture findings are read from. The cost of covering more than a verdict strictly needs is one
+    full pass after an upgrade, which is seconds.
+
+    Content, not mtime, so a fresh checkout of unchanged source does not force a needless full
+    pass. Computed once per process: a running process verifies with the source it loaded.
     """
-    return source_tree_signature(Path(__file__).parent)
+    digest = hashlib.sha256(source_tree_signature(PRODUCT_SOURCE).encode("ascii"))
+    digest.update(_file_digest(find_plantuml_jar()))
+    return digest.hexdigest()[:16]
 
 
+def engine_source_files(root: Path) -> list[Path]:
+    """Every file under *root* the signature covers, in a stable order."""
+    return sorted(
+        path
+        for path in root.rglob("*")
+        if path.is_file() and not _NOT_SOURCE.intersection(path.relative_to(root).parts)
+    )
 
 
-def source_tree_signature(package_dir: Path) -> str:
-    """Content fingerprint of every ``*.py`` directly in *package_dir*, name-ordered."""
+def _file_digest(path: Path | None) -> bytes:
+    if path is None:
+        return b"absent"
+    try:
+        return hashlib.sha256(path.read_bytes()).digest()
+    except OSError:
+        # Unreadable now, readable later: mark it distinctly so the signature changes
+        # deterministically once the file can be hashed.
+        return b"unreadable"
+
+
+def source_tree_signature(root: Path) -> str:
+    """Content fingerprint of every file under *root*, by its path within it."""
     digest = hashlib.sha256()
-    for module_path in sorted(package_dir.glob("*.py")):
-        digest.update(module_path.name.encode("utf-8"))
-        try:
-            digest.update(hashlib.sha256(module_path.read_bytes()).digest())
-        except OSError:
-            # Unreadable now, readable later: mark it distinctly so the signature changes
-            # deterministically once the file can be hashed.
-            digest.update(b"unreadable")
+    for path in engine_source_files(root):
+        digest.update(path.relative_to(root).as_posix().encode("utf-8"))
+        digest.update(_file_digest(path))
     return digest.hexdigest()[:16]
 
 
