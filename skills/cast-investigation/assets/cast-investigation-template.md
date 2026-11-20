@@ -33,7 +33,7 @@ Link each to a `unsafe-control-action` entity with `mode=observed`._
 
 | UCA ID | Control Action | Type | Context |
 |---|---|---|---|
-| UCA@… | [action name] | [not-provided / provided / wrong-timing / stopped-too-soon] | [context variables] |
+| UCA@… | [action name] | [not-provided / provided-in-unsafe-context / provided-incorrectly / wrong-timing / wrong-duration] | [context variables] |
 
 ## Causal Scenarios
 

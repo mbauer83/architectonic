@@ -21,7 +21,7 @@ What losses (from STPA) does this assessment address?_
 
 ## Risk Identification
 
-_What risks exist? Each risk entity should `assesses` a hazard or loss-scenario._
+_What risks exist? Each risk entity should `assesses` a hazard._
 
 | Risk ID | Name | Hazard/Scenario Assessed | Concern Class |
 |---|---|---|---|
@@ -33,7 +33,7 @@ _For each identified risk: what is the likelihood and impact?_
 
 | Risk ID | Likelihood | Impact | Risk Score | Rationale |
 |---|---|---|---|---|
-| RSK@… | [low/medium/high] | [low/medium/high] | [low/medium/high] | [why] |
+| RSK@… | [rare / unlikely / possible / likely / almost-certain] | [negligible / minor / moderate / major / catastrophic] | [low/medium/high] | [why] |
 
 > For safety/security risks: the risk score informs priority but never justifies
 > accepting a safety/security constraint without proper controls (the safety-subordination safeguard).
@@ -54,7 +54,8 @@ _How will each risk be treated? Link to treating constraints._
 |---|---|---|---|---|
 | RSK@… | [mitigate / transfer / avoid / accept] | ACN@… | [owner] | YYYY-MM-DD |
 
-> **Note:** `accept` treatment is not permitted for safety/security concern_class (E506).
+> **Note:** `accept` cannot be the sole treatment of a risk over a safety/security hazard: the risk
+> must also be treated by at least one constraint (E506).
 
 ## Monitoring and Review
 

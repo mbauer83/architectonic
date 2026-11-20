@@ -7,6 +7,8 @@ Each subdirectory is a self-contained *ontology module* — a pluggable vocabula
 ```
 src/ontologies/
   archimate_4/     ← shipped module
+  sysml_v2_min/    ← shipped module
+  assurance/       ← shipped module (registered when the confidential store is available)
   <your-ontology>/    ← your module here
   __init__.py
 
@@ -183,17 +185,19 @@ join and endpoint fields describe how the two stored relationships are oriented.
 
 ### Step 5 — Register the module
 
-In `src/infrastructure/app_bootstrap.py`:
+In `src/infrastructure/app_bootstrap.py`, load the module beside the shipped ones and add it to
+`_ALL_ONTOLOGY_MODULES`. `build_module_registry` registers every enabled module in that tuple:
 
 ```python
-from src.ontologies.my_ontology import module as my_ontology_module
+from src.ontologies.my_ontology._loader import _PACKAGE_DIR as _MY_ONTOLOGY_PACKAGE_DIR
+from src.ontologies.my_ontology._loader import load_my_ontology_module
 
-def build_module_registry() -> ModuleRegistry:
-    registry = ModuleRegistry()
-    registry.register_ontology(archimate_4_module)
-    registry.register_ontology(my_ontology_module)   # ← add this line
-    register_default_diagram_types(registry)
-    return registry
+_my_ontology_module = load_my_ontology_module(_MY_ONTOLOGY_PACKAGE_DIR)
+
+_ALL_ONTOLOGY_MODULES = (
+    _archimate_4_module, _sysml_v2_min_module, _assurance_module,
+    _my_ontology_module,   # ← add it here
+)
 ```
 
 The registry merges all ontologies: `registry.all_entity_types()` returns the union of every registered ontology's entity vocabulary. Type names must be globally unique across all registered ontologies.

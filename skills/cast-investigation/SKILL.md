@@ -24,10 +24,19 @@ All assurance work goes through `assurance_*` MCP tools. Never edit the SQLCiphe
 
 ### Step 1 — Create the Incident Entity
 
+Every node belongs to the analysis that produced it, and `assurance_create_node` requires
+its id. Create the investigation's analysis first, and pass the returned `analysis_id` to
+every `assurance_create_node` call below:
+
+```
+assurance_create_analysis(name="<incident> investigation", method="CAST")
+```
+
 An incident anchors the investigation. It represents the actual occurred loss event.
 
 ```
-assurance_create_node(node_type="incident", name="INC-1: <brief description>",
+assurance_create_node(analysis_id=analysis_id, node_type="incident",
+                      name="INC-1: <brief description>",
                       concern_class="safety")  # or security/operational
 ```
 
@@ -39,7 +48,7 @@ CAST reconstructs the control structure as-existed *at the incident*. A sealed b
 pins the model state and makes the investigation reproducible and audit-defensible (§10).
 
 ```
-assurance_seal_baseline(notes="CAST baseline for INC-1: <date>", analysis_id="INC-1")
+assurance_seal_baseline(notes="CAST baseline for INC-1: <date>", analysis_id=analysis_id)
 ```
 
 **This must be done before creating observed UCAs/scenarios.**
@@ -54,14 +63,14 @@ assurance_add_edge(source_id=incident_id, target_id=csn_id, conn_type="investiga
 assurance_add_edge(source_id=incident_id, target_id=hazard_id, conn_type="investigates")
 ```
 
-Mark UCAs and loss-scenarios as observed (mode=observed in attributes):
+Mark UCAs and loss-scenarios as observed with the `mode` argument:
 
 ```
-assurance_create_node(node_type="unsafe-control-action", name="UCA-OBS-1: ...",
-                      uca_type="not-provided", concern_class="safety",
-                      attributes={"mode": "observed"})
+assurance_create_node(analysis_id=analysis_id, node_type="unsafe-control-action",
+                      name="UCA-OBS-1: ...", uca_type="not-provided",
+                      concern_class="safety", mode="observed")
 assurance_add_edge(source_id=uca_id, target_id=ca_id, conn_type="concerns")
-assurance_add_edge(source_id=uca_id, target_id=hazard_id, conn_type="violates")
+assurance_add_edge(source_id=uca_id, target_id=hazard_id, conn_type="leads-to")
 ```
 
 ### Step 4 — Identify Causal Scenarios and Corrective Actions
@@ -69,11 +78,12 @@ assurance_add_edge(source_id=uca_id, target_id=hazard_id, conn_type="violates")
 Create loss-scenarios with mode=observed and corrective-action entities.
 
 ```
-assurance_create_node(node_type="loss-scenario", name="LS-OBS-1: ...",
-                      attributes={"mode": "observed"})
+assurance_create_node(analysis_id=analysis_id, node_type="loss-scenario",
+                      name="LS-OBS-1: ...", mode="observed")
 assurance_add_edge(source_id=ls_id, target_id=uca_id, conn_type="explains")
 
-assurance_create_node(node_type="corrective-action", name="CRA-1: ...")
+assurance_create_node(analysis_id=analysis_id, node_type="corrective-action",
+                      name="CRA-1: ...")
 ```
 
 ### Step 5 — Derive Corrective Constraints
@@ -81,8 +91,9 @@ assurance_create_node(node_type="corrective-action", name="CRA-1: ...")
 Corrective actions must derive assurance-constraints that enter the GRC lifecycle.
 
 ```
-assurance_create_node(node_type="assurance-constraint", name="ACN-CRA-1: ...",
-                      concern_class="safety", disposition="controlled-with-evidence")
+assurance_create_node(analysis_id=analysis_id, node_type="assurance-constraint",
+                      name="ACN-CRA-1: ...", concern_class="safety",
+                      disposition="controlled-with-evidence")
 assurance_add_edge(source_id=incident_id, target_id=acn_id, conn_type="derives")
 assurance_add_edge(source_id=cra_id, target_id=acn_id, conn_type="derives")
 assurance_add_edge(source_id=ls_id, target_id=acn_id, conn_type="derives")
@@ -105,8 +116,8 @@ Fix all gaps before declaring the investigation complete.
 
 - **Seal the baseline before creating observed UCAs** — the baseline pins "as-existed" state.
   `assurance_cast_complete` (G-g) blocks completion without it.
-- **Use mode=observed in attributes** for UCAs and loss-scenarios found in CAST
-  (vs mode=hypothesized for STPA). Pass `attributes={"mode": "observed"}` to `assurance_create_node`.
+- **Use mode=observed** for UCAs and loss-scenarios found in CAST
+  (vs mode=hypothesized for STPA). Pass `mode="observed"` to `assurance_create_node`.
 - **E505 fires if an incident has no investigates edge** — always connect the incident to
   the CSN or hazard it touched.
 - **Corrective constraints enter the same GRC lifecycle** — they need concern_class, owner,

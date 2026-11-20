@@ -132,5 +132,5 @@ resolved before argument completeness can be confirmed.
 | `top_goal.claim` is generic | No losses in store | Add losses first (STPA Step 1) |
 | `sub_goals` is empty | No hazards in store | Add hazards (STPA Step 2) |
 | All constraints in gaps | No evidenced-by edges | Add evidence and link with evidenced-by |
-| Strategy has no constraint_ids | UCAs not linked to hazard via violates | Add UCA→violates→hazard edges |
+| Strategy has no constraint_ids | UCAs not linked to hazard via leads-to | Add UCA→leads-to→hazard edges |
 | Store locked error | Store not unlocked | Run `arch-assurance unlock` |

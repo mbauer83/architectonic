@@ -9,62 +9,48 @@ with current vulnerability context.
 
 ---
 
-## Step 1 — Ingest the SBOM
+## Step 1 — Ingest the SBOM and its advisories
+
+One call ingests a CycloneDX BOM for one architecture anchor, optionally with the OSV
+advisory records for its components. It produces a new active signal snapshot that
+supersedes the anchor's previous one:
 
 ```
-arch-assurance import-sbom <path/to/bom.cdx.json> \
-  --anchor <arch-entity-id>   # the architecture entity this BOM belongs to
-```
-
-Or via MCP (for AI-agent orchestration):
-
-```
-assurance_import_bom(
-  bom_data=<dict>,
-  anchor_entity_id="<arch-entity-id>",
+assurance_ingest_security_signals(
+  anchor_entity_id="<arch-entity-id>",   # the architecture entity this BOM belongs to
+  bom=<parsed CycloneDX 1.x JSON document>,
+  vulnerabilities=[<OSV record>, ...],   # optional; each needs "id" and "affected"
+  source="osv",                          # optional
+  request_id="<idempotency key>",        # optional
 )
 ```
 
-Re-ingestion is idempotent (keyed by anchor + BOM serialNumber + version).
+Resubmitting the same `request_id` with the same payload returns the original outcome and
+writes nothing. Without a `request_id` every call ingests anew.
+
+Each advisory is matched to its component by package identity and version range. Advisories
+that do not apply are excluded and counted, not stored as findings. Omit `vulnerabilities`
+for a BOM-only inventory snapshot.
+
+The GUI offers the same ingest on the anchor entity's page.
 
 ---
 
-## Step 2 — Set anchor mappings for key components
-
-Map individual component PURLs to architecture entities once; mappings persist
-and are applied automatically on future re-ingestion:
+## Step 2 — Read what was ingested
 
 ```
-assurance_set_anchor(
-  component_ref="pkg:pypi/requests@2.31.0",
-  arch_entity_id="<arch-entity-id>",
-  ref_type="purl",
-)
+assurance_list_bom_components(anchor_entity_id="<arch-entity-id>")
+assurance_security_metrics(anchor_entity_id="<arch-entity-id>")
+assurance_security_stats()
 ```
 
 ---
 
-## Step 3 — Ingest vulnerability data (OSV / NVD / CISA-KEV)
-
-OSV-format records (from `osv.dev` or Dependency-Track export):
+## Step 3 — Trace one advisory to what it affects
 
 ```
-assurance_import_vulnerabilities(
-  vuln_records=[
-    {
-      "id": "CVE-2026-xxxxx",
-      "purl": "pkg:pypi/requests@2.31.0",
-      "severity": "HIGH",
-      "cvss_score": 7.5,
-      "summary": "...",
-      "vex_status": "affected",
-    }
-  ],
-  source="osv",
-)
+assurance_vulnerability_impact(identifier="CVE-2026-xxxxx")
 ```
-
-For Dependency-Track: export the findings JSON and pass the list directly.
 
 ---
 
@@ -89,9 +75,11 @@ For each HIGH/CRITICAL finding on a component that is:
 
 For each contextualised hazard with new vulnerability evidence:
 - Check whether a `risk` entity exists (`assurance_list_nodes(node_type='risk')`).
-- If not, create one: `assurance_create_node('risk', ...)` with `treatment` and owner.
+- If not, create one: `assurance_create_node(analysis_id=..., node_type='risk', ...)` with a
+  `treatment` attribute, and give it an owner (`accountable-for` from a control-structure node).
 - Update `treated-by` links to existing `assurance-constraint` entities.
-- Add evidence: `evidenced-by` edge from the constraint to the CVE finding record.
+- Add evidence: create an `evidence` node that records the finding, and link it with an
+  `evidenced-by` edge from the constraint.
 
 ---
 
@@ -100,28 +88,28 @@ For each contextualised hazard with new vulnerability evidence:
 ```
 assurance_grc_complete()    # GRC coverage profile
 assurance_coverage()        # gap dashboard
-assurance_aibom_coverage()  # AI-BOM marking gaps
+artifact_aibom_coverage()   # AI-BOM marking gaps (on arch-repo-read)
 ```
 
 ---
 
 ## Automation path (CI integration)
 
-Post SBOMs from the build pipeline to the REST endpoint (when a
-network-reachable store is configured):
+Post SBOMs from the build pipeline to the REST endpoint of a backend the pipeline can
+reach. The anchor is the path, and the body wraps the BOM:
 
 ```yaml
 # GitHub Actions example
 - name: Upload SBOM to assurance store
   run: |
-    curl -X POST $ARCH_BACKEND_URL/api/assurance/sbom \
-      -H "Authorization: Bearer $ARCH_ASSURANCE_TOKEN" \
+    jq '{bom: .}' sbom.cdx.json | curl -X POST \
+      "$ARCH_BACKEND_URL/api/assurance/arch-artifacts/$ANCHOR_ENTITY_ID/security-snapshots" \
       -H "Content-Type: application/json" \
-      --data-binary @sbom.cdx.json
+      --data-binary @-
 ```
 
-Local/SQLCipher users use rungs 1–2 (GUI upload or `arch-assurance import-sbom`).
-Network-reachable stores (PocketBase / Supabase) support the CI rungs.
+The body also accepts `vulnerabilities`, `source` and `request_id`, with the same meaning
+as the MCP tool's arguments.
 
 ---
 

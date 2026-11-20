@@ -13,9 +13,9 @@ Gather the following before creating any files. Ask all at once if not already p
 
 1. **Module name** — snake_case directory name (e.g. `archimate_4`, `domain_v2`).
 2. **Display name** — human-readable name used in the `OntologyModule.name` property.
-3. **Entity types** — list of entity types to define, each with: `prefix`, `hierarchy` path, `element_classes`, `create_when`, `never_create_when`.
+3. **Entity types** — list of entity types to define, each with: `prefix`, `hierarchy` path, `classes`, `create_when`, `never_create_when`.
 4. **Element classes** — abstract classification classes used by entity types (e.g. `motivation-element`, `active-structure-element`).
-5. **Connection types** — connection types with `puml_arrow`, `symmetric`, `classifications`, and any ArchiMate relationship metadata.
+5. **Connection types** — connection types with `puml_arrow`, `symmetric`, `classes`, and any ArchiMate relationship metadata.
 6. **Permitted relationships** — rules as `[source, target, [conn-short-names]]`. May use `@all`, `@same`, or `@<class>` references.
 
 ---
@@ -37,7 +37,7 @@ entity_types:
     hierarchy:
       - <domain>
       - <subdomain>
-    element_classes: [<class-name>]
+    classes: [<class-name>]
     create_when: >-
       <when to model something as this type>
     never_create_when: >-
@@ -55,7 +55,7 @@ connection_types:
       archimate_relationship_type: <Type>
       puml_arrow: "-->"
       symmetric: false
-      classifications: []
+      classes: []
 
 permitted_relationships:
   - [<source>, <target>, [<conn-short-name>]]
@@ -63,8 +63,9 @@ permitted_relationships:
 
 ### 3. `src/ontologies/<name>/_loader.py`
 
-Model after `src/ontologies/archimate_4/_loader.py`:
-- Load `entities.yaml` and `connections.yaml` with `yaml.safe_load`
+Model after `src/ontologies/sysml_v2_min/_loader.py` (the smallest shipped loader):
+- Load `entities.yaml` and `connections.yaml` with `parse_yaml` from `src.domain.yaml_documents`,
+  the project's one YAML reader — never `yaml.safe_load`
 - Parse `element_classes`, `entity_types`, `connection_types`, and `permitted_relationships`
 - Build and return an `OntologyModule`-compatible object
 
@@ -77,36 +78,42 @@ from pathlib import Path
 from src.domain.ontology_representation.ontology_protocol import OntologyModule
 from src.ontologies.<name>._loader import load_<name>_module
 
-_mod = load_<name>_module(Path(__file__).parent)
-module: OntologyModule = _mod
+module: OntologyModule = load_<name>_module(Path(__file__).parent)
 ```
 
 ---
 
 ## Registration
 
-### 5. `src/application/app_bootstrap.py`
+### 5. `src/infrastructure/app_bootstrap.py`
 
-Add the import and register the ontology before diagram types:
+Each shipped module is loaded once at import time and listed in `_ALL_ONTOLOGY_MODULES`;
+`build_module_registry` registers every enabled module from that tuple. Load the new module
+beside the others and add it to the tuple:
+
 ```python
-from src.ontologies.<name> import module as <name>_module
+from src.ontologies.<name>._loader import _PACKAGE_DIR as _<NAME>_PACKAGE_DIR
+from src.ontologies.<name>._loader import load_<name>_module
 
-def build_module_registry() -> ModuleRegistry:
-    registry = ModuleRegistry()
-    registry.register_ontology(archimate_4_module)
-    registry.register_ontology(<name>_module)  # add here
-    register_default_diagram_types(registry)
-    return registry
+_<name>_module = load_<name>_module(_<NAME>_PACKAGE_DIR)
+
+_ALL_ONTOLOGY_MODULES = (
+    _archimate_4_module, _sysml_v2_min_module, _assurance_module, _<name>_module,
+)
 ```
+
+Each loader module defines `_PACKAGE_DIR = Path(__file__).parent`. A loader that accepts a
+`guidance` overlay is passed `_load_guidance_overlay(<alias>)`, as the shipped modules are.
 
 ---
 
 ## Verification
 
 ```bash
-uv run pytest tests/ -q
-uv run ruff check src/ontologies/<name>/
-uv run zuban check src/
+uv run pytest <the new test file> -q
+uv run ruff check src/ tests/
+uv run zuban check
+uv run tools/ontology/generate_types.py   # then commit tools/gui/src/domain/types.generated.ts
 ```
 
 Add a smoke test confirming the ontology loads and key entity types are present:

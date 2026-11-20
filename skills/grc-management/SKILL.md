@@ -33,24 +33,37 @@ Hazard/Loss-Scenario → Risk (evaluate) → Treatment → Assurance-Constraint 
 
 ### Step 1 — Evaluate Risk
 
-Risk is **optional** — constraints are valid without a risk entity (§9 anti-subordination safeguard).
-Create a risk entity to prioritise and track treatment.
+Every node belongs to the analysis that produced it, and `assurance_create_node` requires
+its id. Create the analysis first, or find an existing one with `assurance_list_analyses`,
+and pass its `analysis_id` to every `assurance_create_node` call below:
 
 ```
-assurance_create_node(node_type="risk", name="RSK-1: <brief description>",
-                      attributes={"likelihood": "medium", "impact": "high",
-                                  "risk_score": "high", "treatment": "mitigate",
+assurance_create_analysis(name="<scope> risk and compliance", method="GRC")
+```
+
+Risk is **optional** — constraints are valid without a risk entity (§9 anti-subordination safeguard).
+Create a risk entity to prioritise and track treatment. `likelihood` is one of rare, unlikely,
+possible, likely, almost-certain; `impact` is one of negligible, minor, moderate, major,
+catastrophic. The two are rated separately and never multiplied into a score.
+
+```
+assurance_create_node(analysis_id=analysis_id, node_type="risk",
+                      name="RSK-1: <brief description>",
+                      attributes={"likelihood": "possible", "impact": "major",
+                                  "treatment": "mitigate",
                                   "review_date": "YYYY-MM-DD"})
 assurance_add_edge(source_id=risk_id, target_id=hazard_id, conn_type="assesses")
 assurance_add_edge(source_id=risk_id, target_id=constraint_id, conn_type="treated-by")
 ```
 
-> **Safety/security constraints cannot be "closed" by a risk accept** — E506 blocks this.
-> treatment=accept is only valid for non-safety concern_class.
+> **Safety/security constraints cannot be "closed" by a risk accept** — E506 reports a risk
+> with treatment=accept that assesses a safety or security hazard and is not `treated-by`
+> at least one constraint.
 
-Assign an owner to every risk:
+Assign an owner to every risk. The owner is an organizational control-structure node, and
+the edge runs from the owner to the risk:
 ```
-assurance_add_edge(source_id=risk_id, target_id=role_node_id, conn_type="accountable-to")
+assurance_add_edge(source_id=owner_csn_id, target_id=risk_id, conn_type="accountable-for")
 ```
 
 ### Step 2 — Define Compliance Obligations
@@ -59,7 +72,7 @@ An obligation represents "does our system comply with clause X of standard Y?"
 Status and evidence are assurance-owned and confidential.
 
 ```
-assurance_create_node(node_type="obligation",
+assurance_create_node(analysis_id=analysis_id, node_type="obligation",
                       name="OBL-1: ISO 26262:6-8 compliance",
                       attributes={"scheme": "ISO26262", "code": "6-8",
                                   "status": "in-progress"})
@@ -75,14 +88,16 @@ W504 fires for obligations with no complies-with constraint — run `assurance_v
 
 ### Step 3 — Add Evidence Links
 
-Link constraints to their evidence artifacts (documents, test results, audit records):
+Link constraints to their evidence nodes (test results, audit records, review outcomes):
 ```
-assurance_add_edge(source_id=constraint_id, target_id=evidence_arch_id,
+assurance_create_node(analysis_id=analysis_id, node_type="evidence", name="EVD-1: ...")
+assurance_add_edge(source_id=constraint_id, target_id=evidence_id,
                    conn_type="evidenced-by")
 ```
 
-> For architecture artifacts as evidence: use `assurance_register_arch_ref` for the
-> one-way assurance→architecture reference, then reference the arch_id in the evidenced-by edge.
+> For an architecture artifact as evidence, no evidence node is needed: register a one-way
+> assurance→architecture reference from the constraint with
+> `assurance_register_arch_ref(assurance_node_id=constraint_id, arch_artifact_id=..., ref_type="evidenced-by-artifact")`.
 
 ### Step 4 — Coverage and Gaps
 
@@ -99,7 +114,7 @@ assurance_verify()           # §17(A) hard validity (E502–E505) + warnings (W
 
 Before promoting findings to a wider audience or enterprise tier:
 ```
-assurance_promotion_preflight()   # Checks all safety/security constraints have owner + evidence
+assurance_promotion_preflight()   # Checks all safety/security constraints have a responsible controller + evidence
 ```
 
 ---
@@ -116,8 +131,10 @@ Create these via the `artifact_create_document` tool on `arch-repo-write`.
 
 ## Gotchas
 
-- **Safety/security constraints need owners** — E502 fires without an accountable-to connection.
-- **risk.treatment=accept is blocked for safety hazards** — E506 enforces the safety-subordination safeguard.
+- **Safety/security constraints need a responsible controller** — E502 fires without an incoming
+  `responsible-for` connection from a control-structure node.
+- **risk.treatment=accept cannot be the whole answer to a safety hazard** — E506 fires unless the
+  risk is also `treated-by` at least one constraint.
 - **W505 fires for risks without a treatment attribute** — always set treatment.
 - **W504 fires for obligations with no complies-with** — link at least one constraint.
 - **GRC is optional** — STPA/CAST constraints are valid and enforced with no risk entity.

@@ -30,7 +30,8 @@ outgoing `evidenced-by` edge pointing to an evidence artefact.
 1. Identify which evidence artefacts support the constraint
 2. Create the evidence artefact node if it does not exist:
    ```
-   assurance_create_node(node_type="evidence", name="Test Report T-001", ...)
+   assurance_create_node(analysis_id=analysis_id, node_type="evidence",
+                         name="Test Report T-001", ...)
    ```
 3. Link constraint to evidence:
    ```
@@ -40,22 +41,23 @@ outgoing `evidenced-by` edge pointing to an evidence artefact.
 ### Check 2: `hazard_has_constraint`
 
 Every `hazard` entity must have at least one `assurance-constraint` derived
-via the UCA chain: hazard ← (violates) ← UCA → (derives) → constraint.
+via the UCA chain: hazard ← (leads-to) ← UCA → (derives) → constraint.
 
 Also accepts: hazard ← UCA ← (explains) ← loss-scenario → (derives) → constraint.
 
-**Fails when:** A hazard exists but no UCA violates it and derives a constraint.
+**Fails when:** A hazard exists but no UCA leads to it and derives a constraint.
 
 **Resolution:**
-1. Identify which UCAs should violate this hazard
+1. Identify which UCAs lead to this hazard
 2. If UCAs exist but lacks `derives` edge:
    ```
    assurance_add_edge(source_id=uca_id, target_id=constraint_id, conn_type="derives")
    ```
 3. If no UCAs exist for this hazard — complete UCA analysis:
    ```
-   assurance_create_node(node_type="unsafe-control-action", name="...", uca_type="not-provided")
-   assurance_add_edge(source_id=uca_id, target_id=hazard_id, conn_type="violates")
+   assurance_create_node(analysis_id=analysis_id, node_type="unsafe-control-action",
+                         name="...", uca_type="not-provided")
+   assurance_add_edge(source_id=uca_id, target_id=hazard_id, conn_type="leads-to")
    assurance_add_edge(source_id=uca_id, target_id=control_action_id, conn_type="concerns")
    ```
 

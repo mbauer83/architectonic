@@ -19,14 +19,17 @@ safeguard — risk never closes a safety obligation.
 ISO 31000 defines risk as "effect of uncertainty on objectives." In this platform:
 
 - **`risk` entity** = the GRC overlay evaluating a hazard/loss-scenario (optional)
-- **Attributes**: `likelihood`, `impact`, `risk_score`, `treatment`, `residual_*`, `review_date`
-- **Connections**: `assesses → hazard/loss-scenario`; `treated-by → assurance-constraint`; `accountable-to → owner`
+- **Attributes**: `likelihood`, `impact`, `treatment`, `residual_likelihood`, `residual_impact`, `review_date`.
+  Likelihood and impact are ordinal ratings kept side by side; no score is computed from them.
+- **Connections**: `assesses → hazard`; `treated-by → assurance-constraint`; owner (an organizational
+  control-structure node) `accountable-for → risk`
 
 Treatment options (per ISO 31000):
 - `mitigate` — reduce likelihood or impact
 - `transfer` — shift risk to another party (insurance, contract)
 - `avoid` — eliminate the risk source
-- `accept` — tolerate residual risk (NOT valid for safety/security concern_class)
+- `accept` — tolerate residual risk (over a safety/security hazard, only together with at least one
+  `treated-by` constraint — E506)
 
 ## Obligations and Compliance
 
@@ -34,9 +37,10 @@ An `obligation` entity represents a specific compliance instance:
 - "Does our system satisfy clause 6-8 of ISO 26262?"
 - The answer (status + evidence) is assurance-owned and confidential
 
-The public framework catalog is referenced via the `cites` connection:
+The public framework catalog is referenced by the obligation's `scheme` and `code` attributes
+(there is no `cites` connection type):
 ```
-obligation → cites → scheme:code (e.g. ISO26262:6-8, GDPR:Art.5, EU-AI-ACT:Art.12)
+scheme: ISO26262, code: 6-8      (likewise GDPR / Art.5, EU-AI-ACT / Art.12)
 ```
 
 The constraint → obligation link:

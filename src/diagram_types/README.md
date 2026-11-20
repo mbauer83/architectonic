@@ -9,10 +9,15 @@ src/diagram_types/
   c4/                      ← C4 diagram type family
     __init__.py
     _type.py               ← shared loader for the built-in C4 view family
+    _c4_types.py, _manifest.py
     renderer.py            ← PlantUML renderer
-    _resolve.py            ← C4 state resolution (model-backed + standalone)
-    _projection.py         ← C4 projection engine + strategy registration
+    _resolve*.py           ← C4 state resolution (model-backed + standalone)
+    _projection*.py        ← C4 projection engine + strategy registration
     _navigation.py         ← C4 parent/child diagram navigation
+    system_landscape/      ← the systems of an enterprise and the people who use them
+      __init__.py
+      config.yaml
+      ontology.yaml
     system_context/        ← C4 level 1 view with mapped diagram-owned entities
       __init__.py
       config.yaml
@@ -22,6 +27,10 @@ src/diagram_types/
       config.yaml
       ontology.yaml
     component/             ← C4 level 3 view
+      __init__.py
+      config.yaml
+      ontology.yaml
+    deployment/            ← containers mapped onto deployment nodes
       __init__.py
       config.yaml
       ontology.yaml
@@ -54,16 +63,46 @@ src/diagram_types/
     config.yaml
     ontology.yaml          ← activity-specific entity/connection type ontology
     renderer.py
+    _*.py                  ← step graph, emission and verification contributions
   sequence/                ← UML sequence view
     __init__.py
     config.yaml
     ontology.yaml
     renderer.py
+  datatype/                ← datatype (class) view
+    __init__.py
+    config.yaml
+    ontology.yaml
+    renderer.py
+    _*.py                  ← type catalog, projection and verification contributions
   matrix/                  ← free-ontology (accepts all entity types)
     __init__.py
     config.yaml
+  control_structure/       ← assurance: STPA control structure, drawn from the store
+    __init__.py
+    config.yaml
+    notation.py
+  uca_matrix/              ← assurance: unsafe-control-action matrix
+    __init__.py
+    config.yaml
+  fmea_matrix/             ← assurance: failure-mode matrix
+    __init__.py
+    config.yaml
+  bowtie/                  ← assurance: bowtie view
+    __init__.py
+    config.yaml
+    notation.py
+  gsn/                     ← assurance case in Goal Structuring Notation
+    __init__.py
+    config.yaml
+    notation.puml
+    renderer.py
+    svg_renderer.py
+  _base.py                 ← DiagramTypeBase: default DiagramTypeModule implementations
   _config_type.py          ← config-backed loader for ontology-bound views (shared)
-  __init__.py              ← register_default_diagram_types()
+  _store_graph_payload.py, _assurance_analysis_scope.py, _assurance_puml_alias.py
+                           ← shared by the store-projected assurance types
+  __init__.py              ← DEFAULT_DIAGRAM_KINDS, register_default_diagram_types()
 ```
 
 ## `config.yaml` schema
@@ -305,12 +344,12 @@ ArchiMate-specific note:
 
 The `matrix` diagram type is an example: it uses `_MatrixRenderer` that raises `ValueError` on `render_body` because matrix diagrams use a separate Markdown rendering path, not PlantUML. See `src/diagram_types/matrix/__init__.py`.
 
-Custom renderers also own two extension hooks beyond `render_body(...)`:
+Custom renderers implement one further method beyond `render_body(...)`, and may add optional capabilities:
 
-- `inject_includes(body, repo_root)` adds stereotype marker includes if absent and rewrites them to selectively inline only the skinparam blocks and SVG sprites that the diagram actually uses. No external `_macros.puml` file is used. Activity and C4 renderers return the body unchanged.
-- `collect_references(diagram_type, repo_root, *, diagram_entities, diagram_connections)` returns model `entity_ids` and `connection_ids` implied by diagram-owned data or annotation metadata. The shared write path persists those references into frontmatter without any diagram-type-specific branching.
+- `inject_includes(body, repo_root)` (required by `DiagramRenderer`) adds stereotype marker includes if absent and rewrites them to selectively inline only the skinparam blocks and SVG sprites that the diagram actually uses. No external `_macros.puml` file is used. Activity and C4 renderers return the body unchanged.
+- `collect_references(diagram_type, repo_root, *, diagram_entities, diagram_connections, bindings)` is the optional `ModelReferencingDiagramRenderer` capability. It returns model `entity_ids` and `connection_ids` implied by diagram-owned data or annotation metadata. The shared write path persists those references into frontmatter without any diagram-type-specific branching. A renderer whose diagram-owned data names no model artifacts does not implement it.
 
-Generic infrastructure must call these hooks through the renderer protocol. It must not inspect diagram type names to decide how to prepare or analyze a diagram.
+The other optional capabilities are declared beside `DiagramRenderer` in `ontology_protocol.py` (for example `NativeSvgDiagramRenderer` and `IconPresentingRenderer`). Generic infrastructure asks for a capability with `isinstance` and calls it through the protocol. It must not inspect diagram type names to decide how to prepare or analyze a diagram.
 
 ## Adding a new diagram type
 
@@ -367,14 +406,16 @@ For a non-ArchiMate diagram-owned family with shared behavior, provide a custom 
 
 ### Step 4 — Register the module
 
-In `src/diagram_types/__init__.py`, add the import and register call:
+In `src/diagram_types/__init__.py`, add the import and add the module to `DEFAULT_DIAGRAM_KINDS`.
+`register_default_diagram_types` registers every enabled module in that tuple:
 
 ```python
 from src.diagram_types.my_view import module as my_view
 
-def register_default_diagram_types(registry: ModuleRegistry) -> None:
-    for module in [..., my_view]:
-        registry.register_diagram_type(module)
+DEFAULT_DIAGRAM_KINDS: tuple[DiagramTypeModule, ...] = (
+    ...,
+    my_view,
+)
 ```
 
 ### Step 5 — Verify

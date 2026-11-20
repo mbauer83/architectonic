@@ -35,7 +35,7 @@ connection_types:
 
 entity_types:
   <entity-type>:
-    element_classes: []
+    classes: []
     min: 0
     create_when: >-
       <when to create this entity type>
@@ -71,7 +71,8 @@ ui:
 
 Copy the pattern from `src/diagram_types/activity/__init__.py`:
 - Import the renderer class
-- Define `_OWN_ENTITY_TYPES` and `_OWN_CONNECTION_TYPES` (empty dicts if none)
+- Define `_OWN_ENTITY_TYPES` (an empty dict if none); `own_connection_types` returns the
+  connection types `ontology.yaml` declares (`dict(self._ontology.connection_types)`)
 - Define the `_<Name>DiagramType(DiagramTypeBase)` class
 - Wire `_config`, `_ontology`, and the exported `module: DiagramTypeModule`
 
@@ -86,8 +87,13 @@ Implement a class with:
 ```python
 class <Name>PumlRenderer:
     def render_body(self, name, entities, connections, diagram_type, repo_root, *, diagram_entities=None, diagram_connections=None) -> str: ...
-    def collect_references(self, diagram_type, repo_root, *, diagram_entities=None, diagram_connections=None) -> DiagramRendererReferences: ...
+    def inject_includes(self, body, repo_root) -> str: ...
 ```
+
+Those two methods are the `DiagramRenderer` protocol. `collect_references(self, diagram_type,
+repo_root, *, diagram_entities=None, diagram_connections=None, bindings=None) -> DiagramRendererReferences`
+is the optional `ModelReferencingDiagramRenderer` capability: implement it only when the
+diagram's own data names model entities or connections.
 
 ---
 
@@ -107,9 +113,9 @@ from src.diagram_types.<name> import module as <name_snake>
 
 After creating all files, run:
 ```bash
-uv run pytest tests/tools/test_diagram_type_routes.py -q
-uv run ruff check src/diagram_types/<name>/
-uv run zuban check src/
+uv run pytest tests/tools/test_diagram_type_routes.py tests/domain/test_protocol_compliance.py -q
+uv run ruff check src/ tests/
+uv run zuban check
 ```
 
 Add a test in `tests/tools/test_diagram_type_routes.py` following the pattern:

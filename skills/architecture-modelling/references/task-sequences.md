@@ -44,7 +44,8 @@ artifact_query_search_artifacts(query="<key concept>", limit=10)
 ```
 
 If the scope is genuinely unclear, call `artifact_query_stats` first. If a
-candidate exists, read it with `artifact_query_read_artifact(mode="full")` to
+candidate exists, read it with
+`artifact_query_read_artifact(artifact_id=<candidate id>, mode="full")` to
 decide whether to reuse, edit, or create a distinct entity.
 
 Check for existing connections before adding any:

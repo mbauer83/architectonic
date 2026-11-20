@@ -19,16 +19,17 @@ control problems, not failure chains. Three core axioms:
 | 1. Identify Losses | `loss` nodes | — |
 | 2. Identify Hazards | `hazard` nodes | `leads-to` (hazard→loss) |
 | 3. Model Control Structure | `control-structure-node`, `control-action` | `issues`, `acts-on`, `feedback` |
-| 4. UCAs → Constraints | `unsafe-control-action`, `loss-scenario`, `assurance-constraint` | `concerns`, `violates`, `explains`, `derives` |
+| 4. UCAs → Constraints | `unsafe-control-action`, `loss-scenario`, `assurance-constraint` | `concerns`, `leads-to` (UCA→hazard), `explains`, `derives` |
 
 ## UCA Guidewords
 
 | uca_type | Meaning |
 |----------|---------|
 | `not-provided` | Control action not given when needed |
-| `provided-when-unsafe` | Control action given in an unsafe context |
-| `wrong-timing` | Control action given too early or too late |
-| `stopped-too-soon` | Stopped before completing / applied too long |
+| `provided-in-unsafe-context` | A well-formed control action given in a state where it should not be |
+| `provided-incorrectly` | Control action given with the wrong content or parameters |
+| `wrong-timing` | Control action given too early, too late, or out of order |
+| `wrong-duration` | A control action held over time stops too soon or continues too long |
 
 ## Key Terms
 
