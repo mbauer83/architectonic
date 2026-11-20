@@ -8,6 +8,7 @@ from typing import Sequence
 
 from src.config.git_identity import load_service_git_identity
 from src.domain.repository.git_repair import RepairState
+from src.infrastructure.git._git_command import STAGE_ALL_BUT_RUNTIME_STATE
 from src.infrastructure.mutation_adapters import run_git
 
 _STATE_FILE = Path(".git") / "arch-repair-state.json"
@@ -62,17 +63,16 @@ class GitRepairAdapter:
         self._checked(args)
 
     def stage_and_validate(self) -> None:
-        # Stage the working tree, but NEVER the transient M4 transaction journal
-        # (.arch-repo/transactions/): an interrupted write may have left one on disk, and a
-        # blind `git add -A` would otherwise commit and push runtime internals. The pathspec
-        # exclude holds even when the repo has no .gitignore.
+        # Stage the working tree as every other commit path does: content, never runtime state.
+        # The transient M4 transaction journal is why this matters most here — an interrupted
+        # write may have left one on disk, and a blind `git add -A` would commit and push it.
         #
         # We deliberately do NOT run `git diff --cached --check`: it false-fails on legitimate
         # model content — trailing whitespace in Markdown, and `===`/`---` setext underlines it
         # mistakes for conflict markers — which is style, not correctness. Commit-worthiness is
         # decided by has_staged_changes(); referential safety by the upstream guard + ff-only
         # promote, neither of which can introduce conflict markers.
-        self._checked(["add", "-A", "--", ".", ":(exclude).arch-repo/transactions"])
+        self._checked(list(STAGE_ALL_BUT_RUNTIME_STATE))
 
     def has_staged_changes(self) -> bool:
         return not self._quiet(["diff", "--cached", "--quiet"])

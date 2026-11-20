@@ -12,6 +12,7 @@ from src.domain.repository.repo_default_schemata import (
     BASE_DOCUMENT_SCHEMAS,
     DEFAULT_SCHEMATA,
 )
+from src.infrastructure.runtime_state_ignore import ensure_runtime_state_ignored
 from src.infrastructure.workspace._assurance_doc_types import ASSURANCE_DOCUMENT_SCHEMAS
 
 INITIAL_COMMIT_MESSAGE = "Initialize engagement architecture repository"
@@ -98,6 +99,10 @@ def ensure_arch_repo_defaults(
         if not target.exists():
             _write_json_if_missing(target, schema)
             added_schemata.append(filename)
+
+    # Tracked from the first commit, so that no later operation is the first to write it: a pull
+    # into a repository without one left it behind as an untracked file the next save committed.
+    ensure_runtime_state_ignored(path)
 
     migrated = _migrate_legacy_flat_schemata(arch_repo_dir, schemata_dir)
     config_added = not (arch_repo_dir / "config.yaml").exists()

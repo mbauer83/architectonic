@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-from src.domain.repository.repo_layout import ARCH_REPO
+from src.domain.repository.repo_layout import ARCH_REPO, TRANSACTIONS
 
 _ACTIVE_STAGED_ROOTS: set[Path] = set()
 _ACTIVE_LIVE_ROOTS: dict[Path, Path] = {}
@@ -53,7 +53,7 @@ class StagedWorkspace:
 
 #: Where a transaction keeps its own staging trees, inside the configuration directory. Staging it
 #: would stage the tree being created, and every other transaction's with it.
-_TRANSACTION_STORAGE = "transactions"
+_TRANSACTION_STORAGE = TRANSACTIONS
 
 
 def _stage_repository_configuration(staged_root: Path, live_root: Path) -> None:

@@ -10,7 +10,9 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal
 
+from src.domain.repository.repo_layout import ARCH_REPO, TRANSACTIONS
 from src.infrastructure.mutation_adapters import run_git
+from src.infrastructure.runtime_state_ignore import ensure_runtime_state_ignored
 
 ChangeKind = Literal["create", "replace", "delete"]
 _SHA256_LENGTH = 64
@@ -123,7 +125,7 @@ def recover_transactions(
     *,
     rebuild_index: Callable[[], object],
 ) -> int:
-    transactions = repo_root / ".arch-repo" / "transactions"
+    transactions = repo_root / ARCH_REPO / TRANSACTIONS
     if not transactions.exists():
         return 0
     recovered = 0
@@ -179,22 +181,18 @@ def fsync_directory(path: Path) -> None:
 
 
 def ensure_transactions_root(repo_root: Path) -> Path:
-    """Return ``<repo>/.arch-repo/transactions``, creating it if absent and recording a
-    tracked ``.arch-repo/.gitignore`` that excludes it.
+    """Return ``<repo>/.arch-repo/transactions``, creating it if absent.
 
-    The transient transaction journal must never be staged by any commit path — normal
-    ``git add .`` saves, git-sync, or ``arch-repair`` — regardless of whether the repo carries
-    a top-level .gitignore.  Keeping the ignore in ``.arch-repo/.gitignore`` (not inside
-    ``transactions/``) leaves the journal directory itself empty at rest.
+    The transient transaction journal must never be staged by any commit path. The product's own
+    are held to that by `CONTENT_PATHSPEC`; a person's ``git add .`` is held to it by the tracked
+    ``.arch-repo/.gitignore``, which a scaffolded repository carries from its first commit and
+    which is repaired here for one that predates that. Keeping the ignore beside the journal
+    rather than inside it leaves the journal directory itself empty at rest.
     """
-    arch_repo = repo_root / ".arch-repo"
-    transactions = arch_repo / "transactions"
+    arch_repo = repo_root / ARCH_REPO
+    transactions = arch_repo / TRANSACTIONS
     transactions.mkdir(parents=True, exist_ok=True)
-    gitignore = arch_repo / ".gitignore"
-    lines = gitignore.read_text(encoding="utf-8").splitlines() if gitignore.exists() else []
-    if "transactions/" not in lines:
-        with gitignore.open("a", encoding="utf-8") as handle:
-            handle.write("transactions/\n")
+    if ensure_runtime_state_ignored(repo_root):
         fsync_directory(arch_repo)
     return transactions
 

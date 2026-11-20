@@ -7,6 +7,7 @@ import pytest
 
 from src.infrastructure.cli import arch_repair
 from src.infrastructure.git import repair_adapter
+from src.infrastructure.git._git_command import STAGE_ALL_BUT_RUNTIME_STATE
 from src.infrastructure.git.git_auth import GitCredentials
 
 
@@ -56,8 +57,10 @@ def test_repair_wires_auth_and_runs_guarded_sequence(
 
     assert result.phase == "complete"
     assert ("fetch", "origin", "main") in calls
-    # Stages the tree but excludes the transient M4 transaction journal.
-    assert ("add", "-A", "--", ".", ":(exclude).arch-repo/transactions") in calls
+    # Stages the tree as every commit path does — content, never runtime state, the transient M4
+    # transaction journal included.
+    assert STAGE_ALL_BUT_RUNTIME_STATE in calls
+    assert any("transactions" in spec for spec in STAGE_ALL_BUT_RUNTIME_STATE)
     # Must NOT gate on `git diff --cached --check`: it false-fails on legitimate model
     # whitespace and Markdown setext underlines mistaken for conflict markers.
     assert ("diff", "--cached", "--check") not in calls

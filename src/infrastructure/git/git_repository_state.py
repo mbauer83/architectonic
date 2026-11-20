@@ -15,8 +15,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.config.repo_paths import DIAGRAM_CATALOG, DOCS, MODEL
-from src.infrastructure.git._git_command import PUSH_TIMEOUT, run_repo_git
+from src.infrastructure.git._git_command import (
+    CONTENT_PATHSPEC,
+    PUSH_TIMEOUT,
+    UNCOMMITTED_CONTENT_QUERY,
+    run_repo_git,
+)
 
 #: What an enterprise working branch is opened from and merged back into. Spelled here because two
 #: questions need it — how far behind a branch is, and what a rebase re-applies onto — and a second
@@ -45,11 +49,15 @@ def is_repository_top_level(path: Path) -> bool:
     return rc == 0 and Path(out.strip()).resolve() == path.resolve()
 
 
-def has_uncommitted_changes(repo: Path, *pathspecs: str) -> bool:
-    # `.arch/` holds runtime sync state, never user work — it must not count as
-    # (or ever be committed with) unsaved changes.
-    args = ["status", "--porcelain", "--", *(pathspecs or (".",)), ":(exclude).arch"]
-    rc, out, _ = run_repo_git(repo, *args)
+def has_uncommitted_changes(repo: Path) -> bool:
+    """Whether the repository holds content nobody has committed — what a save would commit.
+
+    Takes no pathspec, deliberately. It took one, and the sync status passed it three directories:
+    a scratchpad, or any entity of a repository laid out by group, was then committed by a save,
+    held back the pull, and was reported as nothing to save — so the GUI withheld the one action
+    that would have published it. What counts is `CONTENT_PATHSPEC`'s to say, for every caller.
+    """
+    rc, out, _ = run_repo_git(repo, *UNCOMMITTED_CONTENT_QUERY)
     return rc == 0 and bool(out)
 
 
@@ -76,7 +84,7 @@ def is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool:
 def content_is_upstream(repo: Path, ref: str) -> bool:
     """Whether `ref` holds no reviewable content that `origin/main` does not already have.
 
-    Over the content paths only, so a branch differing in nothing but runtime state or a commit
+    Over repository content only, so a branch differing in nothing but runtime state or a commit
     message still counts as merged — which is what "merged externally" means after a squash, where
     no hash survives to compare.
 
@@ -104,9 +112,7 @@ def content_changed_against_upstream(repo: Path, ref: str) -> tuple[str, ...] | 
 
 def _content_diff(repo: Path, ref: str) -> tuple[int, str]:
     """The one comparison both questions above are asked of."""
-    rc, out, _ = run_repo_git(
-        repo, "diff", "--name-only", UPSTREAM_REF, ref, "--", MODEL, DOCS, DIAGRAM_CATALOG
-    )
+    rc, out, _ = run_repo_git(repo, "diff", "--name-only", UPSTREAM_REF, ref, "--", *CONTENT_PATHSPEC)
     return rc, out
 
 

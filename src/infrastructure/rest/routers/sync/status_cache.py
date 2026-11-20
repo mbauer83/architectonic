@@ -15,8 +15,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-from src.config.repo_paths import DIAGRAM_CATALOG, DOCS, MODEL
-
 _MAX_STALE_S = 120.0
 _lock = asyncio.Lock()
 _refresh_task: asyncio.Task[dict[str, Any]] | None = None
@@ -36,7 +34,7 @@ async def _measure() -> dict[str, Any]:
     eng_root = s.maybe_engagement_root()
     if eng_root is not None:
         measurements["engagement_dirty"] = await asyncio.to_thread(
-            git_repository_state.has_uncommitted_changes, eng_root, MODEL, DOCS, DIAGRAM_CATALOG
+            git_repository_state.has_uncommitted_changes, eng_root
         )
 
     ent_root = s.maybe_enterprise_root()

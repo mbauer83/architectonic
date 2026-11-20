@@ -22,6 +22,7 @@ import os
 from pathlib import Path
 
 from src.config.git_identity import GitIdentity, load_service_git_identity
+from src.domain.repository.repo_layout import RUNTIME_STATE
 from src.infrastructure.mutation_adapters import run_git
 
 #: Local plumbing answers immediately or something is wrong.
@@ -30,17 +31,38 @@ GIT_TIMEOUT = 30
 #: Network operations reach a remote, so they get longer.
 PUSH_TIMEOUT = 60
 
-#: Stage everything EXCEPT `.arch/` — the runtime sync-state directory. A blind `git add .` once
-#: carried `.arch/enterprise-sync.json` through a PR into origin/main; the pathspec exclude holds
-#: even when the repo has no `.gitignore`. Here rather than beside either caller because the
-#: checkpoint and both work commits stage the same way, and the incident above is the reason they
-#: must not drift apart.
-#: `**/.arch/**` rather than `.arch`: when the repository's own `.gitignore` lists `.arch/` and the
-#: directory exists, git 2.39 treats a plain `:(exclude).arch` as a path named on the command line
-#: that is ignored, and refuses the whole `add` — so a data upgrade's checkpoint failed on exactly
-#: the enterprise repositories the template ships. The glob form is not a named path, and it holds
-#: in both configurations: `.arch/` ignored, and `.arch/` merely untracked.
-STAGE_ALL_BUT_RUNTIME_STATE = ("add", "-A", "--", ".", ":(exclude,glob)**/.arch/**")
+#: **Repository content, as git is asked about it**: the whole repository except its declared runtime
+#: state. The one pathspec every git question about content carries — what a save stages, whether
+#: there is anything to save, what a pull installs, what a branch changes against upstream. They
+#: were five spellings; three named `model/`, `docs/` and `diagram-catalog/` and so left
+#: `projects/` and `scratchpads/` out, and a pull that moved the branch without installing those
+#: made the next save publish the reversal of a teammate's work. What is runtime state is the
+#: layout's to declare (`repo_layout.RUNTIME_STATE`); this is only its git dialect.
+#:
+#: A glob that **opens with a wildcard** rather than a plain `:(exclude).arch`: when a `.gitignore`
+#: lists the path and it exists, git treats whatever literal text an exclude begins with as a path
+#: named on the command line that is ignored, and refuses the whole `add` — so a data upgrade's
+#: checkpoint failed on exactly the enterprise repositories the template ships. `**/` matches at any
+#: depth, the root included, leaves no literal prefix to be mistaken for a named path, and so holds
+#: whether the runtime state is ignored or merely untracked.
+CONTENT_PATHSPEC: tuple[str, ...] = (
+    ".",
+    *(f":(exclude,glob)**/{path}{'**' if path.endswith('/') else ''}" for path in RUNTIME_STATE),
+)
+
+#: Stage everything that is content. A blind `git add .` once carried `.arch/enterprise-sync.json`
+#: through a PR into origin/main; the exclude holds even when the repository has no `.gitignore`.
+#: Here rather than beside a caller because the checkpoint, the repair and every work commit stage
+#: the same way, and the incident above is the reason they must not drift apart.
+STAGE_ALL_BUT_RUNTIME_STATE = ("add", "-A", "--", *CONTENT_PATHSPEC)
+
+#: The question "does this repository hold content nobody has committed", as git is asked it.
+#: Untracked files are listed one by one (`-u`) so that an untracked directory holding only runtime
+#: state is not reported by its content-named parent. Stated as arguments rather than as a function
+#: because it has two askers that run git differently — the write path synchronously, the sync
+#: manager on its event loop — and they have to be asking the same thing: the status once reported
+#: a saved repository that the pull refused to touch as unsaved.
+UNCOMMITTED_CONTENT_QUERY = ("status", "--porcelain", "-u", "--", *CONTENT_PATHSPEC)
 
 
 def run_repo_git(

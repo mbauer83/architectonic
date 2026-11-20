@@ -22,6 +22,13 @@ from .m4_transaction import (
 )
 from .staged_workspace import StagedWorkspace, deactivate_staged_workspace, staged_workspace_guard
 
+#: The subtrees an artifact write may change inside a staged transaction: where entities,
+#: connections, documents and diagrams live. **Not** "repository content" — that is everything but
+#: declared runtime state (`_git_command.CONTENT_PATHSPEC`) and is what git is asked about. This is
+#: narrower on purpose: it is a write permission, and a batch has no business replacing the
+#: repository's configuration or a scratchpad, which is saved whole by its own repository under its
+#: own concurrency token. A list of members is right here for the reason it is wrong there — a
+#: directory the layout gains later should stay out of a batch's reach until someone decides it is in.
 _MANAGED_SUBTREES = (MODEL, DOCS, DIAGRAM_CATALOG, PROJECTS)
 
 
