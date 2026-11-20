@@ -25,6 +25,7 @@ from typing import Any, Callable
 
 from src.infrastructure.assurance._schema import ASSURANCE_PRAGMAS_SQL
 from src.infrastructure.assurance._sqlcipher_util import dict_row_factory as _dict_row_factory
+from src.infrastructure.assurance._store_hold import OpenStoreHold
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,8 @@ class ThreadLocalConnectionManager:
         self._mgmt_lock = threading.Lock()
         self._all_conns: list[Any] = []
         self._generation = 0
+        # Kept from open() to close(), so nothing replaces the file under these connections.
+        self._hold = OpenStoreHold(db_path)
 
     def availability_revision(self) -> int:
         """Monotonic generation, bumped on every open/close (lock/unlock/rekey) —
@@ -62,11 +65,16 @@ class ThreadLocalConnectionManager:
     def open(self, key: str) -> None:
         """Activate the manager with *key* and open the bootstrap connection."""
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._hold.take()
         with self._mgmt_lock:
             self._key = key
             self._generation += 1
             self._open = True
-        conn = self._open_connection(bootstrap=True)
+        try:
+            conn = self._open_connection(bootstrap=True)
+        except Exception:
+            self._hold.release()
+            raise
         self._local.conn = conn
         self._local.gen = self._generation
         logger.info("Assurance store connections opened at %s", self._db_path)
@@ -111,6 +119,8 @@ class ThreadLocalConnectionManager:
             except Exception:  # noqa: BLE001
                 pass
         self._local.__dict__.pop("conn", None)
+        # After the connections, never before: the hold is what says they are still there.
+        self._hold.release()
         logger.info("Assurance store connections closed")
 
     def get_or_none(self) -> Any:

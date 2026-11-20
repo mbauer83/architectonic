@@ -33,6 +33,7 @@ def _print_yaml(data: object) -> None:
 
 
 def cmd_init(args: argparse.Namespace) -> int:
+    from src.infrastructure.assurance._store_hold import StoreReplacementRefusedError  # noqa: PLC0415
     from src.infrastructure.assurance.lifecycle import init_store  # noqa: PLC0415
 
     backend = getattr(args, "backend", None) or "sqlcipher"
@@ -47,7 +48,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     else:
         try:
             result = init_store(db_path, force=args.force)
-        except FileExistsError as exc:
+        except (FileExistsError, StoreReplacementRefusedError) as exc:
             print(f"Error: {exc}", file=sys.stderr)
             return 1
 

@@ -9,6 +9,7 @@ so one physical database opens exactly once.
 
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from pathlib import Path
 
 from src.application.deployment_upgrade.ports import OperationalTargetHandle
@@ -37,6 +38,13 @@ def _stored_key(assurance_path: Path) -> str | None:
     from src.infrastructure.assurance import _credential_accounts as accounts  # noqa: PLC0415
 
     return accounts.read(accounts.DB_KEY, assurance_path)
+
+
+def _held_alone_for_a_restore(assurance_path: Path) -> AbstractContextManager[None]:
+    """Refuses while any process has the store open; the store's own hold says whether one does."""
+    from src.infrastructure.assurance._store_hold import sole_access  # noqa: PLC0415
+
+    return sole_access(assurance_path, to="restore over")
 
 
 def discover_operational_handles(
@@ -112,6 +120,7 @@ def discover_operational_handles(
                 connect=factory if factory is not None else _never_connect(assurance_path),
                 inspectable=readable,
                 path=assurance_path,
+                overwrite_guard=_held_alone_for_a_restore,
             )
         )
 

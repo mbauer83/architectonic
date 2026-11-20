@@ -23,6 +23,7 @@ from src.infrastructure.assurance._schema import (
     SCHEMA_VERSION,
 )
 from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
+from src.infrastructure.assurance._store_hold import sole_access
 
 logger = logging.getLogger(__name__)
 
@@ -46,19 +47,20 @@ def init_store(db_path: Path, *, force: bool = False) -> dict[str, object]:
     - Adds db_path to .gitignore if possible.
 
     Returns a dict with status info. Raises if the store already exists and
-    force=False.
+    force=False, and refuses while any process has the store open (see `_store_hold`).
     """
-    import sqlcipher3  # type: ignore[import-untyped]
-
-
-
     if db_path.exists() and not force:
         raise FileExistsError(
             f"Assurance store already exists at {db_path}. "
             "Use --force to reinitialise (this DESTROYS all existing data)."
         )
-
     db_path.parent.mkdir(parents=True, exist_ok=True)
+    with sole_access(db_path, to="reinitialise"):
+        return _initialise(db_path)
+
+
+def _initialise(db_path: Path) -> dict[str, object]:
+    import sqlcipher3  # type: ignore[import-untyped]
 
     key = secrets.token_hex(32)
     recovery_key = secrets.token_hex(32)
@@ -151,7 +153,7 @@ def init_store(db_path: Path, *, force: bool = False) -> dict[str, object]:
 
 def _add_to_gitignore(directory: Path) -> None:
     gitignore = directory / ".gitignore"
-    entry = "*.db\n*.db-wal\n*.db-shm\n"
+    entry = "*.db\n*.db-wal\n*.db-shm\n*.db.hold\n"
     if gitignore.exists():
         existing = gitignore.read_text()
         if "*.db" not in existing:
@@ -271,8 +273,14 @@ def rotate_key(db_path: Path) -> dict[str, object]:
     could open, and the operation reported success.
 
     Now: verify the old key opens the store, copy the file aside, rekey, reopen with the new key,
-    and only then write it. Any failure leaves the credential and the file as they were.
+    and only then write it. Any failure leaves the credential and the file as they were. Refused
+    while any process has the store open: its connections would keep the key this replaces.
     """
+    with sole_access(db_path, to="rotate the key of"):
+        return _rotate(db_path)
+
+
+def _rotate(db_path: Path) -> dict[str, object]:
     import sqlcipher3  # type: ignore[import-untyped]
 
     old_key = accounts.read(accounts.DB_KEY, db_path)

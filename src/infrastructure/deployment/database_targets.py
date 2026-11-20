@@ -13,6 +13,7 @@ from __future__ import annotations
 import shutil
 import sqlite3
 from collections.abc import Callable
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,12 @@ SIGNAL_SCHEMA_META_TABLE = "signal_schema_meta"
 SIGNAL_SCHEMA_VERSION_KEY = "signal_schema_version"
 
 ConnectionFactory = Callable[[], Any]
+#: What a target's file must be held under while it is overwritten; refuses by raising on entry.
+OverwriteGuard = Callable[[Path], AbstractContextManager[None]]
+
+
+def _unguarded(_path: Path) -> AbstractContextManager[None]:
+    return nullcontext()
 
 
 def signal_schema_version(conn: Any) -> int:
@@ -111,6 +118,9 @@ class DatabaseTargetHandle:
     #: Where the database file is, for the file-level copy a backup is. None only for a handle a
     #: test builds around a connection with no file behind it; such a handle has nothing to back up.
     path: Path | None = None
+    #: Supplied by whoever discovers the target, for a file whose openers can be told apart from
+    #: nobody: the assurance store's keep a hold a restore must have alone.
+    overwrite_guard: OverwriteGuard = _unguarded
 
     def view(self) -> _DatabaseView:
         return _DatabaseView(self.target, self.connect)
@@ -139,12 +149,13 @@ class DatabaseTargetHandle:
         """Put the file (and its log) back; a stale `-shm` is scratch state SQLite rebuilds."""
         if self.path is None:
             raise RuntimeError(f"{self.target.display_location}: no file to restore into")
-        for sidecar in ("-wal", "-shm"):
-            self.path.with_name(self.path.name + sidecar).unlink(missing_ok=True)
-        shutil.copy2(backup, self.path)
-        wal = backup.with_name(backup.name + "-wal")
-        if wal.exists():
-            shutil.copy2(wal, self.path.with_name(self.path.name + "-wal"))
+        with self.overwrite_guard(self.path):
+            for sidecar in ("-wal", "-shm"):
+                self.path.with_name(self.path.name + sidecar).unlink(missing_ok=True)
+            shutil.copy2(backup, self.path)
+            wal = backup.with_name(backup.name + "-wal")
+            if wal.exists():
+                shutil.copy2(wal, self.path.with_name(self.path.name + "-wal"))
 
 
 def sqlite_connection_factory(path: Path) -> ConnectionFactory:

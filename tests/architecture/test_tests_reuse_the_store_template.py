@@ -21,6 +21,7 @@ _TESTS = Path(__file__).resolve().parents[1]
 #: file (relative to tests/) → what about initialisation it tests.
 INITIALISES_ON_PURPOSE: dict[str, str] = {
     "support/assurance_store_template.py": "the one per-process initialisation every copy is made from",
+    "assurance/test_a_held_store_is_not_replaced.py": "that init refuses to replace a store held open",
     "assurance/test_a_provisioned_store_is_what_init_leaves.py": "compares a copy against a real init",
     "assurance/test_credential_scoping.py": "that init writes only its own path's accounts",
     "assurance/test_key_rotation_and_wal_safety.py": "re-initialising and rotating a store's key",
