@@ -20,7 +20,7 @@ from src.application.scratchpad.lift import (
 )
 from src.application.scratchpad.ports import ScratchpadVersionConflictError
 from src.application.scratchpad.service import ScratchpadService
-from src.domain.scratchpad import Link, LinkVerdict, ModelRef, Note, scratchpad_from_parts
+from src.domain.scratchpad import Link, LinkVerdict, ModelRef, Note, ScratchpadError, scratchpad_from_parts
 
 PERMITTED = LinkVerdict(kind="permitted", message="archimate-realization is permitted here.")
 REFUSED = LinkVerdict(kind="refused", code="E126", message="not a permitted triple.")
@@ -395,6 +395,8 @@ class TestPerformingALift:
     @pytest.mark.parametrize("failure", [
         OSError("No space left on device"),
         ScratchpadVersionConflictError("SCR@1.a.pad", "0.1.4", "0.1.5"),
+        ScratchpadError("note 'n1' is refused by the aggregate"),
+        RuntimeError("anything else"),
     ])
     def test_a_lift_that_committed_but_could_not_be_recorded_says_both(
         self, failure: Exception
@@ -413,6 +415,23 @@ class TestPerformingALift:
         assert len(receipt.errors) == 1
         assert "written to the model" in receipt.errors[0] and str(failure) in receipt.errors[0]
         assert "Do not lift these notes again" in receipt.errors[0]
+
+    def test_a_lift_the_scratchpad_could_not_record_is_refused_before_the_model_is_written(self) -> None:
+        """Asked of the aggregate the lift would leave behind. Learning it after the write leaves
+        content in the model that no note admits to, and a retry that writes it again."""
+        unrecordable = replace(
+            self._pad_with_one_liftable_note(), links=(Link(id="l9", source="n1", target="ghost"),)
+        )
+        writer = _Writer(LiftReceipt(committed=True, realized={"n1": "ENT@5.q.grow"}))
+        service, repository = _service(unrecordable, writer)
+
+        with pytest.raises(ScratchpadError, match="not a note in this scratchpad"):
+            service.lift(
+                "SCR@1.a.pad", selection=["n1"], targets={}, expected_version="0.1.4", dry_run=False,
+            )
+
+        assert writer.executed == []
+        assert repository.journal == ["require_version"]
 
     def test_nothing_left_to_create_skips_the_write_path_entirely(self) -> None:
         bound = Note(
@@ -476,6 +495,51 @@ class TestDocumentsAndTheReferencesTheyRecord:
 
         document = next(item for item in plan.items if item.kind == "document")
         assert document.entity_refs == ("$ref:n1",)
+
+    def _lifted_document_and_element(self, **link_fields: object):  # noqa: ANN202
+        return _pad(
+            notes=[
+                Note(
+                    id="d1", title="Q3 vision", destination="document", document_type="vision",
+                    model_ref=ModelRef(artifact_id="VIS@5.q.q3-vision", kind="realized"),
+                ),
+                _typed("n1", "Order management"),
+            ],
+            links=[Link(id="l1", source="n1", target="d1", **link_fields)],  # type: ignore[arg-type]
+        )
+
+    def test_a_document_note_already_lifted_is_skipped_and_reported_as_the_document_it_is(self) -> None:
+        plan = plan_lift(
+            self._lifted_document_and_element(), selection=["d1", "n1"], targets={},
+            verdict_of=_always(PERMITTED), draw=True,
+        )
+
+        document = next(item for item in plan.items if item.id == "d1")
+        assert (document.kind, document.outcome) == ("document", "skip")
+        assert (document.artifact_type, document.artifact_id) == ("vision", "VIS@5.q.q3-vision")
+        # Reported as an element it would be drawn as one, on a diagram that can only name entities.
+        drawn = next(item for item in plan.items if item.kind == "diagram")
+        assert drawn.entity_refs == ("$ref:n1",)
+
+    def test_a_reference_already_recorded_is_skipped(self) -> None:
+        recorded = ModelRef(artifact_id="VIS@5.q.q3-vision", kind="realized")
+        plan = plan_lift(
+            self._lifted_document_and_element(model_ref=recorded), selection=["d1", "n1"], targets={},
+            verdict_of=_always(PERMITTED),
+        )
+
+        reference = next(item for item in plan.items if item.kind == "reference")
+        assert (reference.outcome, reference.artifact_id) == ("skip", "VIS@5.q.q3-vision")
+
+    def test_a_link_drawn_to_a_document_that_exists_is_skipped_because_a_lift_does_not_rewrite_it(self) -> None:
+        plan = plan_lift(
+            self._lifted_document_and_element(), selection=["d1", "n1"], targets={},
+            verdict_of=_always(PERMITTED),
+        )
+
+        reference = next(item for item in plan.items if item.kind == "reference")
+        assert reference.outcome == "skip" and "already exists" in reference.reason
+        assert not plan.blocks
 
     def test_two_documents_produce_nothing_because_they_relate_in_prose(self) -> None:
         pad = _pad(

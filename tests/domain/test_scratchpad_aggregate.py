@@ -304,6 +304,44 @@ class TestBinding:
             )])
 
 
+class TestADocumentNoteALiftHasWritten:
+    """A lift writes a document from a note, and the note records which — the one reference a
+    document note may hold, and what makes a second lift skip it."""
+
+    def _lifted(self) -> Scratchpad:
+        return _pad(notes=[Note(
+            id="d1", title="Vision", destination="document", document_type="vision",
+            model_ref=ModelRef(artifact_id="VIS@1.a.vision", kind="realized"),
+        )])
+
+    def test_it_holds_a_realized_reference_to_the_document(self) -> None:
+        assert self._lifted().note("d1").model_ref == ModelRef(artifact_id="VIS@1.a.vision", kind="realized")
+
+    def test_it_is_not_bound_because_only_an_element_borrows_a_type(self) -> None:
+        with pytest.raises(ScratchpadError, match="only an element is bound"):
+            _pad(notes=[Note(
+                id="d1", title="Vision", destination="document", document_type="vision",
+                model_ref=ModelRef(artifact_id="VIS@1.a.vision", kind="bound"),
+            )])
+
+    def test_it_keeps_the_type_it_was_lifted_as(self) -> None:
+        with pytest.raises(ScratchpadError, match="no document type"):
+            _pad(notes=[Note(
+                id="d1", title="Vision", destination="document",
+                model_ref=ModelRef(artifact_id="VIS@1.a.vision", kind="realized"),
+            )])
+
+    def test_it_is_forgotten_like_any_realization_and_keeps_its_destination(self) -> None:
+        after = self._lifted().forgotten("d1")
+
+        assert after.note("d1").model_ref is None
+        assert after.note("d1").document_type == "vision"
+
+    def test_it_is_not_retyped_while_it_refers_to_the_document(self) -> None:
+        with pytest.raises(ScratchpadError, match="forget the realization"):
+            self._lifted().documented("d1", document_type="outline")
+
+
 class TestTypingAndUndoingIt:
     """Invariant 4 froze the meta-ontology while anything is typed, which is only livable if
     typing can be undone. It can — and each of the three ways out means something different."""

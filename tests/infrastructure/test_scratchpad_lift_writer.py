@@ -84,6 +84,31 @@ class TestTheBatchAnswerAsAReceipt:
         assert receipt.realized == {"n1": "ENT@5.q.grow", "l1": "CON@5.r.realizes"}
         assert receipt.operation_id == "op-1"
 
+    def test_a_reference_became_part_of_the_document_it_is_recorded_on(self) -> None:
+        # It contributes no batch item, so no row answers for it — the document's row does, and the
+        # link says so, which is what lets the next lift report it as recorded rather than plan it.
+        document = LiftItem(
+            kind="document", id="d1", outcome="create", label="Q3 vision", artifact_type="vision",
+            entity_refs=("$ref:n1",),
+        )
+        reference = LiftItem(
+            kind="reference", id="l1", outcome="create", label="d1 --> n1",
+            source_ref="$ref:d1", target_ref="$ref:n1",
+        )
+        answer = {
+            "committed": True,
+            "items": [
+                {"op": "create_entity", "artifact_id": "ENT@5.q.grow"},
+                {"op": "create_document", "artifact_id": "VIS@5.q.q3-vision"},
+            ],
+        }
+
+        receipt = _receipt(answer, (_element(), document, reference))
+
+        assert receipt.realized == {
+            "n1": "ENT@5.q.grow", "d1": "VIS@5.q.q3-vision", "l1": "VIS@5.q.q3-vision",
+        }
+
     def test_an_item_that_failed_is_reported_by_label_and_allocates_nothing(self) -> None:
         answer = {
             "committed": False,

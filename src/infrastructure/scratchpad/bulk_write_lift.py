@@ -206,6 +206,12 @@ def _receipt(answer: dict[str, object], creates: tuple[LiftItem, ...]) -> LiftRe
         allocated = row.get("artifact_id")
         if allocated:
             realized[item.id] = str(allocated)
+    # A reference is recorded on its document, so it became part of whatever that note became. The
+    # link says so, which is what lets the next lift report it as recorded rather than plan it again.
+    for item in creates:
+        document = realized.get(item.source_ref.removeprefix("$ref:"))
+        if item.kind == "reference" and document:
+            realized[item.id] = document
     return LiftReceipt(
         committed=bool(answer.get("committed")),
         realized=realized,

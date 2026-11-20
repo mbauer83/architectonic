@@ -13,11 +13,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from src.domain.scratchpad.parts import DESTINATIONS, Area, Group, Link, Note, ScratchpadError
+from src.domain.scratchpad.parts import DESTINATIONS, Area, Group, Link, ModelRef, Note, ScratchpadError
 
 
 def validated_notes(notes: tuple[Note, ...]) -> set[str]:
-    """Every note has a title and a unique id; a model reference implies an element with a type."""
+    """Every note has a title and a unique id; a reference implies a destination with a type."""
     seen: set[str] = set()
     bound_entities: dict[str, str] = {}
     for note in notes:
@@ -66,16 +66,28 @@ def _validate_destination(note: Note) -> None:
 
 
 def _validate_model_ref(note: Note, bound_entities: dict[str, str]) -> None:
-    """A reference reached the `element` destination by one of two routes, and both imply a type:
-    a bound note reads it off the entity, a realized one chose it before the lift. Either way, a
-    reference without a type describes model content the scratchpad cannot say anything about."""
+    """A reference says what the note already is, so the note must say what kind of thing that is.
+
+    It reaches an `element` by one of two routes, and both imply a type: a bound note reads it off
+    the entity, a realized one chose it before the lift. It reaches a `document` by one route only —
+    a lift wrote the document, so the reference is `realized` and the note carries the document type
+    it was written as. That reference is what makes a second lift skip the note rather than write
+    the document again. Binding stays an element's: a document is prose the scratchpad does not
+    borrow a type from, and no lift needs an existing one chosen for it.
+
+    Either way, a reference without a type describes content the scratchpad cannot say anything
+    about.
+    """
     reference = note.model_ref
     if reference is None:
+        return
+    if note.destination == "document":
+        _validate_realized_document(note, reference)
         return
     if note.destination != "element":
         raise ScratchpadError(
             f"note {note.id!r} references {reference.artifact_id!r} but its destination is "
-            f"{note.destination!r}; a note holding a model reference is an element"
+            f"{note.destination!r}; a note holding a reference is an element, or a document a lift wrote"
         )
     if not note.element_type:
         raise ScratchpadError(
@@ -94,6 +106,19 @@ def _validate_model_ref(note: Note, bound_entities: dict[str, str]) -> None:
             f"{reference.artifact_id!r}; bind it once per scratchpad"
         )
     bound_entities[reference.artifact_id] = note.id
+
+
+def _validate_realized_document(note: Note, reference: ModelRef) -> None:
+    if reference.kind != "realized":
+        raise ScratchpadError(
+            f"note {note.id!r} is destined for a document and bound to {reference.artifact_id!r}; "
+            "only an element is bound — a document note refers to the document a lift wrote from it"
+        )
+    if not note.document_type:
+        raise ScratchpadError(
+            f"note {note.id!r} references {reference.artifact_id!r} with no document type; "
+            "a realized document note keeps the type it was lifted as"
+        )
 
 
 def validated_links(links: tuple[Link, ...], note_ids: set[str]) -> None:

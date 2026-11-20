@@ -89,11 +89,11 @@ def parse_scratchpad(path: Path, *, group: str) -> tuple[ScratchpadRecord | None
 def _still_a_thought(note: Note) -> bool:
     """Whether this note is the thing search should return, or whether the model now is.
 
-    A note is searchable until it has a model counterpart. Once it holds a `model_ref` the aggregate
-    itself calls it an element — `invariants.py` refuses the reference unless the note's destination
-    is `element`, "a note holding a model reference is an element" — so the model has a artifact
-    standing for the same thought, and returning both offers two results for one thing. The weaker
-    one goes: a scratchpad note is a half-formed thought and an entity is a commitment.
+    A note is searchable until it has a counterpart. Once it holds a `model_ref` the aggregate
+    itself says what it became — `invariants.py` refuses the reference unless the note is an element
+    with a type, or a document a lift wrote — so the repository has an artifact standing for the
+    same thought, and returning both offers two results for one thing. The weaker one goes: a
+    scratchpad note is a half-formed thought and an entity or a document is a commitment.
 
     Both kinds, not only `realized`. The flag distinguishes a lift this pad performed from content a
     user attached that already existed, and it earns its keep deciding whether untyping is free — not

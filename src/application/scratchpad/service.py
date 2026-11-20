@@ -27,7 +27,6 @@ from src.application.scratchpad.ports import (
     LiftWriterPort,
     ScratchpadRepositoryPort,
     ScratchpadSummary,
-    ScratchpadVersionConflictError,
 )
 from src.domain.modules.module_registry import ModuleRegistry
 from src.domain.repository.groups import UNCATEGORIZED
@@ -205,6 +204,7 @@ class ScratchpadService:
             return plan, LiftReceipt()
 
         self._repository.require_version(artifact_id, expected_version)
+        _recordable(scratchpad, plan)
         receipt = self._lift_writer.execute(
             plan, meta_ontology=scratchpad.meta_ontology, dry_run=False
         )
@@ -223,7 +223,10 @@ class ScratchpadService:
         The model write has committed by now and cannot be taken back, so a failure here is
         *reported on the receipt* rather than raised: an exception would tell the caller the lift
         failed, and the retry that invites is the duplicate. The receipt still says `committed` and
-        still carries every id, which is everything needed to bind the notes by hand.
+        still carries every id, which is everything needed to bind the notes by hand. That holds
+        for *any* failure, not only the ones this was written expecting: a refusal by the aggregate
+        once escaped here as an exception, and a lift that had written a document answered
+        `refused`.
         """
         try:
             self._repository.save(
@@ -231,9 +234,21 @@ class ScratchpadService:
                 group=self._repository.group_of(scratchpad.artifact_id),
                 expected_version=expected_version,
             )
-        except (OSError, ScratchpadVersionConflictError) as exc:
+        except Exception as exc:  # noqa: BLE001 — whatever failed, the model write stands; see above
             return replace(receipt, errors=(*receipt.errors, _unrecorded(exc)))
         return receipt
+
+
+def _recordable(scratchpad: Scratchpad, plan: LiftPlan) -> None:
+    """Refuse a lift whose outcome the scratchpad could not record, before anything is written.
+
+    Asked of the aggregate itself, by building the scratchpad the lift would leave behind and
+    validating it. The alternative is to learn it after the model write has committed, when the only
+    honest answer left is "it is written, and nothing here says so" — and the retry that invites
+    writes it again. Raises `ScratchpadError`, the refusal every other write on this surface gives.
+    """
+    pending = {item.id: f"pending:{item.id}" for item in plan.of("create")}
+    _realized(scratchpad, pending).validate()
 
 
 def _unrecorded(cause: Exception) -> str:

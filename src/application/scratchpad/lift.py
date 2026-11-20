@@ -192,8 +192,12 @@ def _note_item(note: Note, target: LiftTarget) -> LiftItem:
     if note.model_ref is not None:
         kind = "bound to" if note.model_ref.kind == "bound" else "already realized as"
         return LiftItem(
-            kind="element", id=note.id, outcome="skip", label=note.title, target=target.group,
-            artifact_type=note.element_type or "", artifact_id=note.model_ref.artifact_id,
+            # Named for what it became: a skipped document reported as an element would be drawn
+            # on the lift's diagram as an entity the model does not hold.
+            kind="document" if note.destination == "document" else "element",
+            id=note.id, outcome="skip", label=note.title, target=target.group,
+            artifact_type=note.element_type or note.document_type or "",
+            artifact_id=note.model_ref.artifact_id,
             reason=f"{kind} {note.model_ref.artifact_id} — the model is not the scratchpad's to rewrite",
         )
     if note.destination == "document":
@@ -292,6 +296,13 @@ def _reference_item(
         return LiftItem(
             kind="reference", id=link.id, outcome="skip", label=label,
             artifact_id=link.model_ref.artifact_id, reason="already recorded on the document",
+        )
+    if document.model_ref is not None:
+        # The document was written by an earlier lift, and a lift never writes back to what exists.
+        return LiftItem(
+            kind="reference", id=link.id, outcome="skip", label=label,
+            artifact_id=document.model_ref.artifact_id,
+            reason="the document already exists — add this reference to it there; a lift does not rewrite it",
         )
     return LiftItem(
         kind="reference", id=link.id, outcome="create", label=label,
