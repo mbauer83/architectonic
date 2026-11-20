@@ -86,6 +86,32 @@ def test_the_failure_mode_guidance_names_every_failure_guideword() -> None:
     assert missing == [], f"guidance does not teach: {missing}"
 
 
+# ── The risk ratings ──────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize("arithmetic", ["×", " x ", "*", "multipl", "= risk score", "product of"])
+def test_the_risk_guidance_teaches_no_arithmetic_over_the_two_ratings(arithmetic: str) -> None:
+    """Likelihood and impact are ordinal scales, and nothing in the product multiplies them.
+
+    The risk register reports the two ratings side by side and computes no score. The guidance said
+    "likelihood × impact = risk score", which teaches an operation the software does not perform and
+    that the failure-mode side refuses by decision (`domain.assurance.fmea_action_priority`): a
+    product of ordinal ranks measures nothing.
+    """
+    what = str(lookup("grc-risk")["what"]).lower()
+
+    assert arithmetic not in what.replace("never multiplied", "")
+
+
+def test_the_risk_guidance_says_the_ratings_are_ordinal_and_kept_apart() -> None:
+    what = str(lookup("grc-risk")["what"]).lower()
+
+    assert "likelihood" in what
+    assert "impact" in what
+    assert "ordinal" in what
+    assert "never multiplied" in what
+
+
 # ── Loss scenarios ────────────────────────────────────────────────────────────
 
 

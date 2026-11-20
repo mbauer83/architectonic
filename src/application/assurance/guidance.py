@@ -211,7 +211,9 @@ _GUIDANCE: dict[str, dict[str, object]] = {
     "grc-risk": {
         "step": "GRC — Risk Evaluation",
         "what": (
-            "A risk entity evaluates a hazard or loss-scenario: likelihood × impact = risk score. "
+            "A risk entity evaluates a hazard or loss-scenario by rating its likelihood and its "
+            "impact, each on its own ordinal scale. The two ratings are reported side by side and "
+            "never multiplied into a score: ranks on an ordinal scale are not quantities. "
             "OPTIONAL — constraints are valid without a risk entity, and a risk evaluation can "
             "never be a precondition for one existing."
         ),
