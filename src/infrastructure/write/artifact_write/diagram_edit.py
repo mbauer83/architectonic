@@ -2,16 +2,18 @@
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from src.application.candidate_repository import CandidateRepository
 from src.application.modeling.artifact_write import format_diagram_puml
 from src.application.modeling.artifact_write_layout import ensure_puml_layout, rebuild_puml_layout
 from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path
 from src.application.verification.artifact_verifier import ArtifactVerifier
+from src.domain.diagrams.layout.layout_block import LAYOUT_KEY
 
 from ._diagram_edge_labels import merged_edge_labels
 from ._diagram_group_move import _verification_to_dict, commit_diagram_write
+from ._diagram_layout_write import identified_groupings, layout_for_write
 from .boundary import modification_stamp
 from .coerce import as_optional_str_list
 from .diagram_body_preparation import (
@@ -38,28 +40,6 @@ from .types import WriteResult
 
 if TYPE_CHECKING:
     from src.application.artifacts.query import ArtifactRepository
-
-
-def _extract_workspace_ids(fm: dict, module: object) -> set[str]:
-    """Return the set of workspace entity ids currently in the committed diagram frontmatter."""
-    result: set[str] = set()
-    try:
-        de: dict[str, Any] = fm.get("diagram-entities") or {}
-        for ui_cfg in module.ui_config.diagram_only_types:  # type: ignore[attr-defined]
-            if ui_cfg.identity_scope != "workspace":
-                continue
-            items: list[Any] = de.get(str(ui_cfg.entity_type)) or []
-            for item in items:
-                if isinstance(item, dict):
-                    eid = str(item.get("id") or "")
-                    if eid:
-                        result.add(eid)
-    except Exception:  # noqa: BLE001
-        pass
-    return result
-
-
-
 
 
 def edit_diagram(
@@ -91,6 +71,7 @@ def edit_diagram(
     authored_groupings: list[dict[str, object]] | None = None,
     manual_layout: bool | None = None,
     repo: "ArtifactRepository | None" = None,
+    layout: dict[str, object] | None = None,
 ) -> WriteResult:
     """Edit an existing diagram file.
 
@@ -99,6 +80,9 @@ def edit_diagram(
     ``group`` re-homes the diagram to a different diagram-collection slug
     (moving the source file and its rendered outputs); omit to leave it in
     place. Always re-verifies and re-renders PNG on successful write.
+
+    ``layout``: the whole ``layout`` block to store — omit to keep the diagram's own, pass an empty
+    mapping to remove it and return the diagram to PlantUML's arrangement with nothing else changed.
 
     ``viewpoint``: the ``ViewpointApplication`` frontmatter mapping (``{slug, version,
     enforcement_override?, derivation_params?}``) — omit to keep the diagram's existing
@@ -122,7 +106,7 @@ def edit_diagram(
         diagram_connections=diagram_connections, entity_ids_used=entity_ids_used, bindings=bindings,
         connection_ids_used=connection_ids_used, view_derivations=view_derivations, tlp=tlp, group=group,
         version=version, status=status, edge_labels=edge_labels, authored_groupings=authored_groupings,
-        manual_layout=manual_layout,
+        manual_layout=manual_layout, layout=layout,
     )) is not None:
         return recorded
 
@@ -154,6 +138,9 @@ def edit_diagram(
 
     if diagram_type == "matrix":
         from ._diagram_matrix_edit import edit_matrix_diagram  # noqa: PLC0415
+
+        if layout is not None:
+            raise ValueError("A matrix diagram is a table and takes no layout.")
 
         return edit_matrix_diagram(
             repo_root=repo_root, verifier=verifier, clear_repo_caches=clear_repo_caches,
@@ -189,7 +176,8 @@ def edit_diagram(
     eff_manual_layout = manual_layout if manual_layout is not None else fm.get("manual-layout") is True
     _raw_ag = fm.get("authored-groupings")
     _existing_ag = [g for g in _raw_ag if isinstance(g, dict)] if isinstance(_raw_ag, list) else []
-    eff_authored_groupings = authored_groupings if authored_groupings is not None else _existing_ag
+    stated_groupings = identified_groupings(authored_groupings, diagram_id=artifact_id)
+    eff_authored_groupings = stated_groupings if stated_groupings is not None else _existing_ag
     # A caller may name an entity by its short id; recorded beside the full id the body's inference
     # finds, it was listed twice (B83). Normalised here, where the caller's statement enters.
     eff_entity_ids_used = full_entity_spellings(entity_ids_used, verifier.registry)
@@ -225,15 +213,16 @@ def edit_diagram(
 
     # Workspace-id format check: validate any NEW workspace entity ids in this edit.
     if diagram_entities is not None and isinstance(clean_entities, dict):
-        from src.application.verification._workspace_identity_rules import (
-            validate_workspace_entity_ids,  # noqa: PLC0415
+        from src.application.verification._workspace_identity_rules import (  # noqa: PLC0415
+            committed_workspace_entity_ids,
+            validate_workspace_entity_ids,
         )
         try:
             _dt_module = verifier.runtime_catalogs.diagram_types.find_diagram_type(diagram_type)
         except Exception:  # noqa: BLE001
             _dt_module = None
         if _dt_module is not None:
-            _committed_ids = _extract_workspace_ids(fm, _dt_module)
+            _committed_ids = committed_workspace_entity_ids(fm, _dt_module)
             _ws_errors = validate_workspace_entity_ids(clean_entities, _dt_module, committed_ids=_committed_ids)
             from src.config.settings import datatype_type_references_blocking  # noqa: PLC0415
             if _ws_errors and datatype_type_references_blocking():
@@ -378,6 +367,15 @@ def edit_diagram(
 
         _refuse_signal_viewpoint_persistence(eff_viewpoint, verifier)
 
+    eff_diagram_conns_raw = eff_diagram_connections if isinstance(eff_diagram_connections, list) else None
+    eff_layout = layout_for_write(
+        stated=layout, stored=fm.get(LAYOUT_KEY), manual_layout=eff_manual_layout, verifier=verifier,
+        diagram_type=diagram_type, warnings=warnings, entity_ids_used=eff_entity_ids_used,
+        connection_ids_used=eff_connection_ids_used, diagram_entities=clean_entities,
+        diagram_connections=eff_diagram_conns_raw, authored_groupings=eff_authored_groupings,
+        bindings=norm_bindings_raw,
+    )
+
     content = format_diagram_puml(
         artifact_id=artifact_id,
         diagram_type=diagram_type,
@@ -387,7 +385,7 @@ def edit_diagram(
         last_updated=modification_stamp(),
         keywords=eff_keywords,
         diagram_entities=clean_entities,
-        diagram_connections=eff_diagram_connections if isinstance(eff_diagram_connections, list) else None,
+        diagram_connections=eff_diagram_conns_raw,
         entity_ids_used=eff_entity_ids_used,
         connection_ids_used=eff_connection_ids_used,
         view_derivations=eff_view_derivations,
@@ -399,6 +397,7 @@ def edit_diagram(
         diagram_format_version=eff_format_version,
         authored_groupings=eff_authored_groupings or None,
         manual_layout=eff_manual_layout,
+        layout=eff_layout,
     )
 
     return commit_diagram_write(

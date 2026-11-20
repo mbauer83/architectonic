@@ -69,11 +69,22 @@ export const withMemberBeside = (
     return nested === group.groups || nested === undefined ? group : { ...group, groups: [...nested] }
   })
 
-/** Drop groups that would draw nothing, at any depth — an empty box is noise, not a statement. */
+/**
+ * Drop groups that would draw nothing, at any depth — an empty box is noise, not a statement.
+ *
+ * A box whose members a rule selects lists none and is not empty: it is sent as it was read. Every
+ * box keeps its `id`, because that is what its layout is attached to; one sent without it would come
+ * back as a new box.
+ */
 export const withoutEmptyGroups = (
   groups: readonly AuthoredGrouping[],
 ): readonly AuthoredGrouping[] =>
   groups
     .map((group) => ({ ...group, groups: withoutEmptyGroups(group.groups ?? []) }))
-    .filter((group) => group['entity-ids'].length > 0 || (group.groups?.length ?? 0) > 0)
-    .map((group) => (group.groups.length > 0 ? group : { label: group.label, 'entity-ids': group['entity-ids'] }))
+    .filter((group) => group['entity-ids'].length > 0 || group.groups.length > 0 || group.rule !== undefined)
+    .map((group) => (group.groups.length > 0 ? group : {
+      ...(group.id === undefined ? {} : { id: group.id }),
+      label: group.label,
+      'entity-ids': group['entity-ids'],
+      ...(group.rule === undefined ? {} : { rule: group.rule }),
+    }))

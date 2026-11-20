@@ -12,8 +12,8 @@ from dataclasses import dataclass, field
 
 from src.application.artifacts.parsing import normalize_puml_alias
 from src.domain.artifact_id import stable_id
-from src.domain.diagrams.authored_groupings import GROUPING_RULE_KEY
 from src.domain.diagrams.grouping_membership import DrawingTraits, PlacedGrouping, place_in_groupings
+from src.domain.diagrams.recorded_references import GROUPING_RULE_KEY
 from src.domain.ontology_representation.artifact_types import EntityRecord
 from src.infrastructure.rendering.archimate_occurrences import occurrence_id_of
 

@@ -13,6 +13,7 @@ from src.application.modeling.binding_normalize import restore_diagram_shorthand
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING
+from src.domain.diagrams.layout.layout_block import LAYOUT_KEY
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
 from src.infrastructure.rest.contracts.diagrams import (
     DiagramConnectionListResponse,
@@ -83,6 +84,8 @@ def _read_diagram_impl(id: str, catalogs: RuntimeCatalogs) -> dict[str, Any]:
         authored_groupings = frontmatter.get("authored-groupings")
         if isinstance(authored_groupings, list):
             result["authored_groupings"] = [g for g in authored_groupings if isinstance(g, dict)]
+        if isinstance(layout := frontmatter.get(LAYOUT_KEY), dict):
+            result["layout"] = layout
         result["viewpoint"] = frontmatter.get("viewpoint")
         dt = catalogs.diagram_types.find_diagram_type(diag_rec.diagram_type)
         if dt:

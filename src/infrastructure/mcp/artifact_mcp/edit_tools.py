@@ -205,6 +205,7 @@ def artifact_edit_diagram(
     authored_groupings: list[dict[str, object]] | None = None,
     group: str | None = None,
     manual_layout: bool | None = None,
+    layout: dict[str, object] | None = None,
     dry_run: bool = True,
     repo_root: str | None = None,
 ) -> dict[str, object]:
@@ -242,7 +243,7 @@ def artifact_edit_diagram(
                 ("bindings", bindings), ("version", version), ("status", status), ("tlp", tlp),
                 ("viewpoint", viewpoint), ("edge_labels", edge_labels),
                 ("authored_groupings", authored_groupings), ("group", group),
-                ("manual_layout", manual_layout),
+                ("manual_layout", manual_layout), ("layout", layout),
             ) if value is not None
         )
         if ignored:
@@ -293,7 +294,7 @@ def artifact_edit_diagram(
             ("viewpoint", viewpoint),
             ("entity_ids_used", entity_ids), ("connection_ids_used", connection_ids),
             ("authored_groupings", authored_groupings),
-            ("manual_layout", manual_layout),
+            ("manual_layout", manual_layout), ("layout", layout),
         ) if v is not None
     }
     if edge_labels is not None:

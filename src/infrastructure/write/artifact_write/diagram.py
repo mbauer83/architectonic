@@ -19,6 +19,7 @@ from src.domain.icons.resolved_icon import IconSource
 from src.domain.repository.groups import UNCATEGORIZED
 
 from ._artifact_deduplication import extract_friendly_slug, get_repository, validate_diagram_unique
+from ._diagram_layout_write import identified_groupings, layout_for_write
 from .boundary import assert_engagement_write_root
 from .diagram_body_preparation import (
     _prepare_diagram_puml_body,
@@ -169,6 +170,7 @@ def create_diagram(
     view_derivations: list[dict[str, object]] | None = None,
     bindings: list[dict[str, object]] | None = None,
     authored_groupings: list[dict[str, object]] | None = None,
+    layout: dict[str, object] | None = None,
     version: str,
     status: str,
     last_updated: str | None,
@@ -265,6 +267,13 @@ def create_diagram(
     viewpoint_fm = normalize_viewpoint_frontmatter(viewpoint, target_kind="diagram", target_id=effective_id)
     _refuse_signal_viewpoint_persistence(viewpoint_fm, verifier)
 
+    authored_groupings = identified_groupings(authored_groupings, diagram_id=effective_id)
+    stated_layout = layout_for_write(
+        stated=layout, stored=None, manual_layout=False, verifier=verifier, diagram_type=diagram_type,
+        warnings=warnings, entity_ids_used=build.entity_ids_used, connection_ids_used=build.connection_ids_used,
+        diagram_entities=clean_entities, diagram_connections=diagram_connections,
+        authored_groupings=authored_groupings, bindings=norm_bindings_raw,
+    )
     content = format_diagram_puml(
         artifact_id=effective_id,
         diagram_type=diagram_type,
@@ -280,6 +289,7 @@ def create_diagram(
         view_derivations=view_derivations,
         bindings=bindings_to_raw(norm_bindings) if norm_bindings else None,
         authored_groupings=authored_groupings,
+        layout=stated_layout,
         puml_body=puml_body,
         tlp=tlp,
         viewpoint=viewpoint_fm,

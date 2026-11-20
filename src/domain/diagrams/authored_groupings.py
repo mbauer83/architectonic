@@ -18,11 +18,14 @@ from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal, get_args
 
-from src.domain.diagrams.recorded_references import GROUPING_MEMBERS_KEY, GROUPING_SUBGROUPS_KEY
+from src.domain.diagrams.recorded_references import (
+    GROUPING_MEMBERS_KEY,
+    GROUPING_RULE_KEY,
+    GROUPING_SUBGROUPS_KEY,
+)
 from src.domain.diagrams.relation_key import UPGRADE_SENTENCE
 
 GROUPING_ID_KEY = "id"
-GROUPING_RULE_KEY = "rule"
 _ENTRY_KEYS = frozenset(
     {GROUPING_ID_KEY, "label", "stereotype", GROUPING_MEMBERS_KEY, GROUPING_RULE_KEY, GROUPING_SUBGROUPS_KEY}
 )
@@ -137,7 +140,7 @@ def _entry_problems(entry: Mapping[str, object], where: str) -> list[str]:
         problems.append(f"{where} has no id; every grouping carries a stable one. {UPGRADE_SENTENCE}")
     elif not isinstance(grouping_id, str) or not _GROUPING_ID.fullmatch(grouping_id):
         problems.append(f"{where} has the id {grouping_id!r}; a grouping id reads 'g-' and 4 to 12 letters or digits.")
-    if GROUPING_RULE_KEY in entry and GROUPING_MEMBERS_KEY in entry:
+    if GROUPING_RULE_KEY in entry and entry.get(GROUPING_MEMBERS_KEY):
         problems.append(f"{where} states both a rule and a list of members; a grouping is listed or ruled.")
     try:
         rule_of(entry)
@@ -169,7 +172,8 @@ def _minted(seed: str, taken: set[str]) -> str:
 def with_grouping_ids(groupings: Sequence[object], *, diagram_id: str) -> list[dict[str, object]]:
     """*groupings* with an id on every entry that had none, the stated ones kept and put first.
 
-    An entry's id leads it, so a reader of the file meets the identity before the content.
+    An entry's id leads it, so a reader of the file meets the identity before the content. A ruled
+    entry's empty member list is dropped: listed or ruled, and an empty list is neither.
     """
     taken = set(grouping_ids(list(groupings)))
 
@@ -186,6 +190,10 @@ def with_grouping_ids(groupings: Sequence[object], *, diagram_id: str) -> list[d
                 taken.add(grouping_id)
             rebuilt: dict[str, object] = {GROUPING_ID_KEY: grouping_id}
             rebuilt.update({key: value for key, value in entry.items() if key != GROUPING_ID_KEY})
+            if GROUPING_RULE_KEY in entry and not entry.get(GROUPING_MEMBERS_KEY):
+                # A ruled grouping read back from a surface that always serves a member list carries
+                # an empty one. It states no members, and is not written as though it listed some.
+                rebuilt.pop(GROUPING_MEMBERS_KEY, None)
             nested = entry.get(GROUPING_SUBGROUPS_KEY)
             if isinstance(nested, list):
                 rebuilt[GROUPING_SUBGROUPS_KEY] = identified(nested, here)

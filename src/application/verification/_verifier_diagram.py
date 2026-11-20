@@ -21,6 +21,7 @@ from src.application.verification._verifier_contribution_runner import run_diagr
 from src.application.verification._verifier_rules_diagram_references import check_diagram_references_scoped
 from src.application.verification._verifier_rules_edge_labels import check_edge_label_overrides
 from src.application.verification._verifier_rules_icons import check_icon_assignments
+from src.application.verification._verifier_rules_layout import check_groupings_are_identified, check_layout
 from src.application.verification._verifier_rules_puml_completeness import check_puml_relation_rules
 from src.application.verification._verifier_rules_puml_declarations import check_puml_alias_declarations
 from src.application.verification._verifier_rules_schema import check_frontmatter_schema
@@ -89,6 +90,23 @@ def _check_scoped_references(
     )
 
 
+def _check_layout(
+    ctx: DiagramRuleContext, registry: ArtifactRegistry, fm: dict[str, Any], result: VerificationResult, loc: str
+) -> None:
+    """The layout rules, told the two things only the catalogs know: a type's domain, and who draws the body."""
+    entity_types = ctx.catalogs.ontology.all_entity_types()
+    module = ctx.catalogs.diagram_types.find_diagram_type(str(fm.get("diagram-type", "")))
+
+    def domain_of_type(artifact_type: str) -> str:
+        info = entity_types.get(artifact_type)
+        return info.hierarchy[0] if info is not None and info.hierarchy else "common"
+
+    check_layout(
+        fm, registry, result, loc, domain_of_type=domain_of_type,
+        holds_its_own_records=module is not None and module.body_is_rendered_from_diagram_entities,
+    )
+
+
 def _no_registry_issue(loc: str) -> Issue:
     return Issue(
         Severity.WARNING, "W002", "No ArtifactRegistry provided; entity/connection reference checks skipped", loc
@@ -129,6 +147,7 @@ def verify_diagram(
             loc=loc,
         )
         check_icon_assignments(fm, ctx.registry, ctx.icon_library or ctx.registry, ctx.catalogs, result, loc)
+        _check_layout(ctx, ctx.registry, fm, result, loc)
         if ctx.candidate_repo is not None and module is not None:
             run_diagram_contributions(
                 module=module,
@@ -147,6 +166,7 @@ def verify_diagram(
     check_puml_structure(content, fm, result, loc)
     check_puml_alias_declarations(content, fm, result, loc, diagram_type_catalog=ctx.catalogs.diagram_types)
     check_edge_label_overrides(fm, result, loc)
+    check_groupings_are_identified(fm, result, loc)
 
     repo_root = ctx.repo_root_for_path(path)
     if repo_root is not None:

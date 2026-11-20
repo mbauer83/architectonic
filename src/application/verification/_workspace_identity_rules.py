@@ -130,3 +130,22 @@ from src.domain.diagrams.diagram_verification import _GENERIC_REPOSITORY_CONTRIB
 _E335_SINGLETON = WorkspaceIdUniquenessContribution()
 if not any(isinstance(c, WorkspaceIdUniquenessContribution) for c in _GENERIC_REPOSITORY_CONTRIBUTIONS):
     _GENERIC_REPOSITORY_CONTRIBUTIONS.append(_E335_SINGLETON)
+
+
+def committed_workspace_entity_ids(fm: dict, module: object) -> set[str]:
+    """Return the set of workspace entity ids currently in the committed diagram frontmatter."""
+    result: set[str] = set()
+    try:
+        de: dict[str, Any] = fm.get("diagram-entities") or {}
+        for ui_cfg in module.ui_config.diagram_only_types:  # type: ignore[attr-defined]
+            if ui_cfg.identity_scope != "workspace":
+                continue
+            items: list[Any] = de.get(str(ui_cfg.entity_type)) or []
+            for item in items:
+                if isinstance(item, dict):
+                    eid = str(item.get("id") or "")
+                    if eid:
+                        result.add(eid)
+    except Exception:  # noqa: BLE001
+        pass
+    return result

@@ -4,6 +4,7 @@ from typing import Literal
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
+from src.infrastructure.mcp.artifact_mcp.edit_tool_descriptions import GROUPING_RULES_AND_IDS, LAYOUT_ARGUMENT
 from src.infrastructure.mcp.artifact_mcp.write._common import (
     DiagramConnectionInferenceMode,
     _out,
@@ -83,6 +84,7 @@ def artifact_create_diagram(
     view_derivations: list[dict[str, object]] | None = None,
     bindings: list[dict[str, object]] | None = None,
     authored_groupings: list[dict[str, object]] | None = None,
+    layout: dict[str, object] | None = None,
     version: str = "0.1.0",
     status: str = "draft",
     tlp: str | None = None,
@@ -162,6 +164,7 @@ def artifact_create_diagram(
         view_derivations=view_derivations,
         bindings=bindings,
         authored_groupings=authored_groupings,
+        layout=layout,
         entity_ids_used=entity_ids_used,
         connection_ids_used=connection_ids_used,
         version=version,
@@ -226,7 +229,7 @@ def register(mcp: MCPServer) -> None:
             "entity id or an occurrence id, so an entity drawn twice can sit in a different box each time; each "
             "drawing belongs to one box, first declaration winning. The look is DERIVED from the members — one "
             "domain gives that domain's look, several give the dashed ArchiMate grouping look — so omit "
-            "stereotype unless you mean to override it.\n"
+            "stereotype unless you mean to override it. " + GROUPING_RULES_AND_IDS + "\n" + LAYOUT_ARGUMENT + "\n"
             "direction='left_to_right' | 'top_to_bottom' (default). "
             "auto_include_stereotypes=true injects !include lines. "
             "connection_inference: 'none' | 'auto' (warn) | 'strict' (error) on unknown stereotypes.\n\n"

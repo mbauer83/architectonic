@@ -17,7 +17,9 @@ def check_edge_label_overrides(fm: dict, result: VerificationResult, loc: str) -
     raw = fm.get("edge-labels")
     if not isinstance(raw, dict) or not raw:
         return
-    drawn = drawn_relation_ends(fm.get("connection-ids-used"), fm.get("diagram-entities"), fm.get("connections"))
+    drawn = drawn_relation_ends(
+        fm.get("connection-ids-used"), fm.get("diagram-entities"), fm.get("connections"), fm.get("bindings")
+    )
     for key in raw:
         try:
             named = read_relation_key(str(key)).text

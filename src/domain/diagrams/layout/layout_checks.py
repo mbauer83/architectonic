@@ -224,10 +224,13 @@ def check_layout_geometry(
         box_extent = placed_extent(placed)
         if box_extent is None or box not in members_of_box:
             continue
+        members = [extents[member] for member in members_of_box[box] if member in extents]
         findings.extend(
             LayoutFinding(LayoutDefect.BOX_HIDES_ELEMENT, (box, element))
             for element, extent in extents.items()
             if element not in members_of_box[box]
+            # A part drawn inside a member is inside the box with it.
+            and not any(member.encloses(extent) for member in members)
             and layout.z.get(element, 0) <= layout.z.get(box, 0)
             and are_drawn_over_each_other(box_extent, extent)
         )

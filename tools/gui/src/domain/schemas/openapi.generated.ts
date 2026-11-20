@@ -5068,14 +5068,24 @@ export interface components {
          *     A member may name an entity or a single *occurrence* of one, which is how an entity drawn twice
          *     sits in a different box each time. ``stereotype`` is an override the backend still honours; the
          *     look is otherwise derived from the members' domains.
+         *
+         *     A box states either the members it lists or a ``rule`` that selects them — ``{domain: …}`` or
+         *     ``{type: …}`` within its parent. ``id`` is the box's own stable identity, which a layout
+         *     addresses it by: a client sends back the id it read, and a box sent without one is new.
          */
         AuthoredGroupingResponse: {
             /** Entity-Ids */
             "entity-ids": string[];
             /** Groups */
             groups?: components["schemas"]["AuthoredGroupingResponse"][];
+            /** Id */
+            id?: string;
             /** Label */
             label: string;
+            /** Rule */
+            rule?: {
+                [key: string]: string;
+            };
             /** Stereotype */
             stereotype?: string;
         };
@@ -5952,6 +5962,10 @@ export interface components {
             group?: string | null;
             /** Keywords */
             keywords?: string[] | null;
+            /** Layout */
+            layout?: {
+                [key: string]: unknown;
+            } | null;
             /** Name */
             name: string;
             /**
@@ -6764,6 +6778,7 @@ export interface components {
             is_global: boolean;
             /** Last Updated */
             last_updated?: string;
+            layout?: components["schemas"]["DiagramLayoutContract"];
             /** Name */
             name: string;
             /** Path */
@@ -6820,6 +6835,34 @@ export interface components {
         DiagramEntityListResponse: {
             /** Items */
             items: components["schemas"]["DiagramContextEntity"][];
+        };
+        /**
+         * DiagramLayoutContract
+         * @description A diagram's stated layout: geometry only, keyed by the identities the diagram already uses.
+         *
+         *     ``elements`` by instance id (an entity's stable id, or an occurrence id); ``boxes`` by grouping
+         *     id, or by rule key (``rule:domain=business``) for a box no grouping states; ``relations`` by the
+         *     same key ``edge_key`` serves; ``z`` the stacking of any of the first two.
+         */
+        DiagramLayoutContract: {
+            /** Boxes */
+            boxes?: {
+                [key: string]: components["schemas"]["LayoutPlacedContract"];
+            };
+            /** Elements */
+            elements?: {
+                [key: string]: components["schemas"]["LayoutPlacedContract"];
+            };
+            /** Grid */
+            grid?: number;
+            /** Relations */
+            relations?: {
+                [key: string]: components["schemas"]["LayoutRouteContract"];
+            };
+            /** Z */
+            z?: {
+                [key: string]: number;
+            };
         };
         /**
          * DiagramListResponse
@@ -7633,6 +7676,10 @@ export interface components {
             entity_ids: string[];
             /** Group */
             group?: string | null;
+            /** Layout */
+            layout?: {
+                [key: string]: unknown;
+            } | null;
             /** Name */
             name: string;
             /** Status */
@@ -9330,6 +9377,24 @@ export interface components {
             query: string;
         };
         /**
+         * LayoutLabelContract
+         * @description Where a relation's label sits: a fraction along its route and an offset from that point.
+         */
+        LayoutLabelContract: {
+            /** At */
+            at: number;
+            /**
+             * Dx
+             * @default 0
+             */
+            dx: number;
+            /**
+             * Dy
+             * @default 0
+             */
+            dy: number;
+        };
+        /**
          * LayoutPatchWire
          * @description Where things sit: `[x, y]` for a note, `[x, y, w, h]` for a frame, `null` to unplace.
          *
@@ -9348,6 +9413,47 @@ export interface components {
             notes?: {
                 [key: string]: number[] | null;
             };
+        };
+        /**
+         * LayoutPlacedContract
+         * @description Where a shape's top-left corner sits, and its size where the diagram states one.
+         */
+        LayoutPlacedContract: {
+            /** H */
+            h?: number;
+            /** W */
+            w?: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /**
+         * LayoutPortContract
+         * @description Where a relation attaches: a side of its element and a fraction along it, from the top or left.
+         */
+        LayoutPortContract: {
+            /** At */
+            at: number;
+            /**
+             * Side
+             * @enum {string}
+             */
+            side: "top" | "right" | "bottom" | "left";
+        };
+        /**
+         * LayoutRouteContract
+         * @description How one drawn relation runs; anything absent is the router's to decide.
+         */
+        LayoutRouteContract: {
+            from?: components["schemas"]["LayoutPortContract"];
+            label?: components["schemas"]["LayoutLabelContract"];
+            to?: components["schemas"]["LayoutPortContract"];
+            /** Via */
+            via?: [
+                number,
+                number
+            ][];
         };
         /**
          * LayoutWire

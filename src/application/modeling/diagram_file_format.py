@@ -158,7 +158,7 @@ def format_diagram_puml(
             diagram_identities(
                 entity_ids_used=entity_ids_used, connection_ids_used=connection_ids_used,
                 diagram_entities=diagram_entities, diagram_connections=diagram_connections,
-                authored_groupings=authored_groupings,
+                authored_groupings=authored_groupings, bindings=bindings,
             ),
         )
         if written := layout_as_written(kept):

@@ -42,6 +42,9 @@ class DiagramPreviewBody(DiagramComposition):
 
 
 class CreateDiagramGuiBody(DiagramComposition, FiledOnCreate):
+    #: The whole layout block to store with the new diagram. Read and refused by the layout's own
+    #: reader, so a malformed block is answered with its sentence rather than a schema error.
+    layout: dict[str, Any] | None = None
     keywords: list[str] | None = None
     version: str = "0.1.0"
     status: str = "draft"
@@ -51,6 +54,9 @@ class CreateDiagramGuiBody(DiagramComposition, FiledOnCreate):
 
 
 class EditDiagramGuiBody(DiagramComposition, _Body, Rehomeable):
+    #: The whole layout block to store. Absent keeps the diagram's own; an empty object removes it
+    #: and returns the diagram to PlantUML's arrangement with nothing else changed.
+    layout: dict[str, Any] | None = None
     version: str | None = None
     status: str | None = None
     tlp: str | None = None

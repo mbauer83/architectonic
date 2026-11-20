@@ -1,5 +1,28 @@
 """MCP edit tool description text."""
 
+#: Said once for the two tools that take groupings, so create and edit cannot describe them apart.
+GROUPING_RULES_AND_IDS = (
+    "Instead of entity-ids a grouping may state rule: {domain: <name>} or rule: {type: <element type>} "
+    "(within its parent) and then holds whatever of the diagram the rule admits; a listed grouping "
+    "claims its members first, then the most specific rule. Once any grouping is ruled, the stated "
+    "groupings are the diagram's whole list of boxes: no domain or type box is computed, and what no "
+    "grouping holds stands unboxed. Every grouping has a stable id ('g-…'): send back the id you read "
+    "to keep a box's identity; one sent without an id is new and is given one."
+)
+
+#: Said once for the two tools that take a whole layout block.
+LAYOUT_ARGUMENT = (
+    "layout: the diagram's whole layout block — geometry only, for a diagram drawn from the model: "
+    "{grid, elements: {<instance id>: {x, y, w?, h?}}, boxes: {<grouping id> | 'rule:domain=<name>' | "
+    "'rule:domain=<name>/type=<element type>': {x, y, w?, h?}}, relations: {<relation key, as for "
+    "edge_labels>: {from: {side, at}, to: {side, at}, via: [[x, y], …], label: {at, dx, dy}}}, "
+    "z: {<instance or box>: <int>}}. Positions and sizes are whole numbers, side is top|right|bottom|"
+    "left, at is a fraction 0–1. Every key must name something the diagram holds. Pass {} to remove "
+    "the layout and return the diagram to PlantUML's arrangement with nothing else changed; omit to "
+    "keep it. A diagram is either manual-layout or laid out, never both. This stores and verifies a "
+    "layout; the stored picture is still PlantUML's."
+)
+
 EDIT_ENTITY_DESCRIPTION = (
     "Edit an existing entity. Pass only fields to change; omitted fields are preserved. "
     "Supports name, summary, properties, notes, keywords, version, status, "
@@ -63,13 +86,16 @@ EDIT_DIAGRAM_DESCRIPTION = (
     "occurrence id, so an entity drawn twice can sit in a different box each time; each drawing "
     "belongs to one box, first declaration winning. The look is DERIVED — members all in one domain "
     "give that domain's look, members from several give the dashed ArchiMate grouping look — so omit "
-    "stereotype unless you mean to override it. "
+    "stereotype unless you mean to override it. " + GROUPING_RULES_AND_IDS + " " + LAYOUT_ARGUMENT + " "
     "Frontmatter fields updated if provided; bindings merges + normalizes shorthand. "
     "ArchiMate occurrence edits may pass diagram_entities={'occurrence': "
     "[{'id': '<occurrence-id>', 'backing_entity_id': '<model-entity-id>'}]}; "
     "the occurrence id distinguishes the diagram element and visual_role is optional metadata. "
-    "edge_labels: per-diagram edge-label overrides keyed by '{src_alias}:{tgt_alias}'; "
-    "omit to preserve existing overrides; pass {} to clear all. "
+    "edge_labels: per-diagram edge-label overrides, merged into the stored ones — each keyed by the "
+    "relation it labels: the connection's artifact_id, or '<connection id>@<source instance>><target "
+    "instance>' where an end is a further occurrence (an instance is an entity id or an occurrence "
+    "id); a connection the diagram holds itself is keyed by its id within the diagram. A null value "
+    "removes that key; omit to keep the stored overrides. "
     "viewpoint: replace the diagram's ViewpointApplication frontmatter — "
     "{slug, version, enforcement_override?, derivation_params?}; omit to keep the existing "
     "application (if any) unchanged. Call artifact_query_viewpoint(action='list') to discover "

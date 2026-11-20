@@ -96,6 +96,9 @@ def body_contradicts_reference(
 #: nor reported, and the id survived in the file pointing at nothing with `artifact_verify` clean.
 GROUPING_MEMBERS_KEY = "entity-ids"
 GROUPING_SUBGROUPS_KEY = "groups"
+#: What a grouping states instead of members when a rule selects them. Such a grouping names no
+#: entity, so nothing prunes it: it is empty only while the diagram holds nothing its rule admits.
+GROUPING_RULE_KEY = "rule"
 
 
 def grouping_member_ids(authored_groupings: object) -> tuple[str, ...]:
@@ -160,7 +163,7 @@ def pruned_groupings(
         nested = pruned_groupings(group.get(GROUPING_SUBGROUPS_KEY), keep)
         dropped.extend(nested.dropped_members)
         emptied.extend(nested.emptied_labels)
-        if not surviving and not nested.groupings:
+        if not surviving and not nested.groupings and GROUPING_RULE_KEY not in group:
             if declared:
                 emptied.append(label)
             continue

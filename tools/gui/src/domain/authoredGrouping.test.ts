@@ -50,6 +50,29 @@ describe('what gets sent', () => {
   })
 })
 
+describe('what a save must not lose', () => {
+  it('sends back the id it read, so a box stays the box its layout is attached to', () => {
+    const sent = withoutEmptyGroups([
+      { id: 'g-Front1', label: 'Front', 'entity-ids': ['one'] },
+      { id: 'g-Outer1', label: 'Outer', 'entity-ids': [], groups: [{ id: 'g-Inner1', label: 'Inner', 'entity-ids': ['two'] }] },
+    ])
+
+    expect(sent[0]).toEqual({ id: 'g-Front1', label: 'Front', 'entity-ids': ['one'] })
+    expect(sent[1].id).toBe('g-Outer1')
+    expect(sent[1].groups?.[0].id).toBe('g-Inner1')
+  })
+
+  it('keeps a box whose members a rule selects, although it lists none', () => {
+    const ruled: AuthoredGrouping = { id: 'g-Ruled1', label: 'Business', 'entity-ids': [], rule: { domain: 'business' } }
+
+    expect(withoutEmptyGroups([ruled])).toEqual([ruled])
+  })
+
+  it('sends a new box without an id, for the backend to give it one', () => {
+    expect(withoutEmptyGroups([group('New', ['one'])])[0]).not.toHaveProperty('id')
+  })
+})
+
 describe('a grouping with no members yet', () => {
   it('survives editing, so a box can be named before it is filled', () => {
     // The editor creates an empty box first; dropping it on every keystroke would make that

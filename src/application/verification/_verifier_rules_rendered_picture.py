@@ -23,7 +23,7 @@ verifier knows two severities, and a warning on every dense view is a warning no
 One finding per kind per diagram, naming the first few places and counting the rest, so a picture
 with a dozen overlaps reads as one statement about that picture rather than a dozen about its parts.
 
-W375–W379 and E370–E379 are left for the rules of a stated layout.
+The rules of a stated layout are `_verifier_rules_layout` (E370–E373, W375–W379); E374–E379 are free.
 """
 
 from __future__ import annotations
