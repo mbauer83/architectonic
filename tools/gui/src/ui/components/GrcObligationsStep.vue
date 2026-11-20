@@ -1,19 +1,24 @@
 <script setup lang="ts">
-/** GRC wizard's "Obligations" step: add-obligation form (name + citation scheme/code) +
+/** GRC wizard's "Obligations" step: add-obligation form (name + the rule it comes from) +
  * obligation list, each linkable to the controls that comply with it. */
 import { inject, ref } from 'vue'
 import { grcWizardDataKey } from '../composables/useGrcWizardData'
+import {
+  OBLIGATION_PROVISION_LABEL,
+  OBLIGATION_SOURCE_LABEL,
+  obligationCitation,
+  obligationCitationAttributes,
+} from '../views/AssuranceGrcWizard.helpers'
 
 const data = inject(grcWizardDataKey)!
 
-const newObligation = ref({ name: '', scheme: '', code: '' })
+const blank = () => ({ name: '', source: '', provision: '' })
+const newObligation = ref(blank())
 
 const addObligation = async () => {
-  const attrs: Record<string, string> = {}
-  if (newObligation.value.scheme.trim()) attrs['scheme'] = newObligation.value.scheme.trim()
-  if (newObligation.value.code.trim()) attrs['code'] = newObligation.value.code.trim()
-  const id = await data.createNode('obligation', newObligation.value.name, attrs)
-  if (id) { newObligation.value = { name: '', scheme: '', code: '' }; await data.loadNodes() }
+  const { name, source, provision } = newObligation.value
+  const id = await data.createNode('obligation', name, obligationCitationAttributes(source, provision))
+  if (id) { newObligation.value = blank(); await data.loadNodes() }
 }
 </script>
 
@@ -27,16 +32,18 @@ const addObligation = async () => {
         @keyup.enter="addObligation"
       >
       <input
-        v-model="newObligation.scheme"
+        v-model="newObligation.source"
         class="cite-input"
-        placeholder="scheme"
-        aria-label="Citation scheme"
+        :placeholder="OBLIGATION_SOURCE_LABEL"
+        :aria-label="OBLIGATION_SOURCE_LABEL"
+        @keyup.enter="addObligation"
       >
       <input
-        v-model="newObligation.code"
+        v-model="newObligation.provision"
         class="cite-input"
-        placeholder="code"
-        aria-label="Citation code"
+        :placeholder="OBLIGATION_PROVISION_LABEL"
+        :aria-label="OBLIGATION_PROVISION_LABEL"
+        @keyup.enter="addObligation"
       >
       <button
         class="add-btn"
@@ -63,6 +70,10 @@ const addObligation = async () => {
         class="link-row"
       >
         <span class="node-name">{{ obligation.name }}</span>
+        <span
+          v-if="obligationCitation(obligation)"
+          class="citation"
+        >{{ obligationCitation(obligation) }}</span>
         <span class="link-chips">
           <span
             v-for="c in data.compliantControls(obligation)"
@@ -96,7 +107,7 @@ const addObligation = async () => {
 .step-body { display: flex; flex-direction: column; gap: 12px; }
 .add-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .add-input { flex: 1; min-width: 200px; font-size: 13px; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
-.cite-input { width: 90px; font-size: 13px; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.cite-input { width: 220px; font-size: 13px; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
 .add-btn {
   font-size: 13px; padding: 7px 14px; border: none; border-radius: 6px;
   background: #2563eb; color: #fff; font-weight: 600; cursor: pointer;
@@ -105,6 +116,7 @@ const addObligation = async () => {
 .empty { color: #94a3b8; font-size: 13px; }
 .node-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .node-name { font-size: 13px; font-weight: 500; }
+.citation { font-size: 12px; color: #475569; }
 .link-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; flex-wrap: wrap; }
 .link-chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
 .chip { font-size: 11px; background: #eef2ff; color: #3730a3; padding: 2px 8px; border-radius: 10px; }

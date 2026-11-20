@@ -10,6 +10,10 @@ import {
   gapNodeIds,
   linkedSourceIds,
   unlinkedSources,
+  obligationCitation,
+  obligationCitationAttributes,
+  OBLIGATION_SOURCE_LABEL,
+  OBLIGATION_PROVISION_LABEL,
   type AssuranceNode,
   type AssuranceEdge,
 } from '../AssuranceGrcWizard.helpers'
@@ -38,6 +42,40 @@ describe('parseAttributes', () => {
   it('returns an empty map for missing or malformed json', () => {
     expect(parseAttributes({ node_id: 'x', node_type: 'risk', name: 'r' })).toEqual({})
     expect(parseAttributes({ node_id: 'x', node_type: 'risk', name: 'r', attributes_json: '{' })).toEqual({})
+  })
+})
+
+describe('an obligation says which rule it comes from', () => {
+  it('is created with source and provision, and with neither former attribute', () => {
+    expect(obligationCitationAttributes(' EU AI Act ', ' Art. 12 ')).toEqual({
+      source: 'EU AI Act', provision: 'Art. 12',
+    })
+  })
+
+  it('does not write a part that was left blank', () => {
+    expect(obligationCitationAttributes('GDPR', '  ')).toEqual({ source: 'GDPR' })
+    expect(obligationCitationAttributes('', '')).toEqual({})
+  })
+
+  it('asks for them in the words of the people who own the duty', () => {
+    expect(OBLIGATION_SOURCE_LABEL).toBe('Regulation, standard or contract')
+    expect(OBLIGATION_PROVISION_LABEL).toBe('Article, clause or control')
+  })
+
+  it('shows the citation it reads from those two attributes', () => {
+    const node: AssuranceNode = {
+      node_id: 'OBL@1', node_type: 'obligation', name: 'o',
+      attributes_json: '{"source":"ISO 26262","provision":"6-8"}',
+    }
+    expect(obligationCitation(node)).toBe('ISO 26262, 6-8')
+  })
+
+  it('shows nothing for a citation still in the attributes those replaced', () => {
+    const node: AssuranceNode = {
+      node_id: 'OBL@1', node_type: 'obligation', name: 'o',
+      attributes_json: '{"scheme":"ISO26262","code":"6-8","cites":"ISO26262:6-8"}',
+    }
+    expect(obligationCitation(node)).toBe('')
   })
 })
 

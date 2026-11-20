@@ -88,6 +88,28 @@ export function riskScore(node: AssuranceNode): string {
   return `${likelihood || '—'} × ${impact || '—'}`
 }
 
+/**
+ * Which rule an obligation comes from: the two attributes it is stored in, and what the form calls
+ * them. The names and labels are the backend's (`domain/assurance/obligation_citation.py`), which
+ * the verifier reads; `tests/assurance/test_guidance_matches_vocabularies.py` holds the two together.
+ */
+export const OBLIGATION_SOURCE = 'source'
+export const OBLIGATION_PROVISION = 'provision'
+export const OBLIGATION_SOURCE_LABEL = 'Regulation, standard or contract'
+export const OBLIGATION_PROVISION_LABEL = 'Article, clause or control'
+
+/** The attributes a new obligation is created with; a part left blank is not written. */
+export function obligationCitationAttributes(source: string, provision: string): Record<string, string> {
+  const stated = [[OBLIGATION_SOURCE, source.trim()], [OBLIGATION_PROVISION, provision.trim()]] as const
+  return Object.fromEntries(stated.filter(([, value]) => value))
+}
+
+/** An obligation's citation as shown beside its name ('' when it states neither part). */
+export function obligationCitation(node: AssuranceNode): string {
+  const attrs = parseAttributes(node)
+  return [attrs[OBLIGATION_SOURCE], attrs[OBLIGATION_PROVISION]].filter(Boolean).join(', ')
+}
+
 /** Source ids already linked to `targetId` via `connType`. */
 export function linkedSourceIds(
   edges: AssuranceEdge[],
