@@ -105,6 +105,7 @@ class TestALiftAgainstAStaleVersion:
 
 
 class TestALiftAgainstTheCurrentVersion:
+    @pytest.mark.verifies("REQ@1786223986.VV89psV")
     def test_it_commits_and_the_note_says_what_it_became(self, repo_root: Path) -> None:
         pad = _pad_with_a_liftable_note(repo_root)
 

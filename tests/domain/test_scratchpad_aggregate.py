@@ -31,6 +31,7 @@ def _pad(**overrides: object) -> Scratchpad:
 
 
 class TestANoteNeedsOnlyATitle:
+    @pytest.mark.verifies("REQ@1786223986.ElzukOP")
     def test_a_bare_title_is_a_complete_note(self) -> None:
         pad = _pad(notes=[Note(id="n1", title="Grow into mid-market")])
 
@@ -231,6 +232,8 @@ class TestBinding:
 
     def _pad_with_note(self) -> Scratchpad:
         return _pad(notes=[Note(id="n1", title="Self-serve onboarding")])
+
+    @pytest.mark.verifies("REQ@1786223986.IufRPnC")
 
     def test_binding_takes_the_type_from_the_entity(self) -> None:
         """The entity is the authority on what it is; the note is only borrowing."""

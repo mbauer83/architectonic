@@ -12,6 +12,8 @@ specialization says not here" is the difference between changing a type and acce
 
 from __future__ import annotations
 
+import pytest
+
 from src.domain.scratchpad import Endpoint, LinkVerdict, verify_link
 
 #: A tiny ontology: a requirement realizes an outcome, a capability serves a goal.
@@ -58,6 +60,7 @@ class TestVerificationDoesNotNag:
 
 
 class TestTheKeyingTierRefuses:
+    @pytest.mark.verifies("REQ@1786223986.cMuroZ9")
     def test_an_unpermitted_triple_is_refused_as_e126(self) -> None:
         verdict = _verify(_element("goal"), _element("capability"), "archimate-serving")
 
