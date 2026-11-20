@@ -105,7 +105,7 @@ def _relations_through_elements(picture: RenderedPicture) -> list[PictureFinding
     ]
 
 
-def _are_drawn_over_each_other(first: Extent, second: Extent) -> bool:
+def are_drawn_over_each_other(first: Extent, second: Extent) -> bool:
     shared = first.overlap_with(second)
     return shared is not None and shared.width > _OVERLAP_MARGIN and shared.height > _OVERLAP_MARGIN
 
@@ -115,14 +115,14 @@ def _overlapping_shapes(picture: RenderedPicture) -> list[PictureFinding]:
     elements = [
         PictureFinding(PictureDefect.SHAPES_OVERLAP, (first.alias, second.alias))
         for first, second in combinations(picture.elements.values(), 2)
-        if _are_drawn_over_each_other(first.extent, second.extent)
+        if are_drawn_over_each_other(first.extent, second.extent)
     ]
     boxes = [
         PictureFinding(PictureDefect.SHAPES_OVERLAP, (first.alias, second.alias))
         for first, second in combinations(picture.boxes.values(), 2)
         if first.alias not in picture.boxes_around(second.alias)
         and second.alias not in picture.boxes_around(first.alias)
-        and _are_drawn_over_each_other(first.extent, second.extent)
+        and are_drawn_over_each_other(first.extent, second.extent)
     ]
     return elements + boxes
 
@@ -156,7 +156,7 @@ def _boxes_over_non_members(picture: RenderedPicture) -> list[PictureFinding]:
         for box in picture.boxes.values()
         for element in picture.elements.values()
         if box.alias not in picture.boxes_around(element.alias)
-        and _are_drawn_over_each_other(box.extent, element.extent)
+        and are_drawn_over_each_other(box.extent, element.extent)
     ]
 
 

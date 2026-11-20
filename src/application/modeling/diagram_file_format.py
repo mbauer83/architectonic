@@ -13,6 +13,10 @@ from typing import TypedDict
 
 import yaml  # type: ignore[import-untyped]
 
+from src.application.modeling.diagram_identities import diagram_identities
+from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, layout_as_written, read_layout
+from src.domain.diagrams.layout.layout_checks import pruned_to
+
 
 def _dump_yaml_text(data: object) -> str:
     """Frontmatter YAML, dumped exactly as the other artifact formatters dump it.
@@ -39,6 +43,7 @@ class CarriedDiagramFields(TypedDict, total=False):
     bindings: list[dict[str, object]]
     edge_labels: dict[str, str]
     authored_groupings: list[dict[str, object]]
+    layout: dict[str, object]
 
 
 def carried_diagram_fields(frontmatter: Mapping[str, object]) -> CarriedDiagramFields:
@@ -75,6 +80,8 @@ def carried_diagram_fields(frontmatter: Mapping[str, object]) -> CarriedDiagramF
         carried["edge_labels"] = {str(k): str(v) for k, v in labels.items()}
     if isinstance(groupings := frontmatter.get("authored-groupings"), list):
         carried["authored_groupings"] = [dict(g) for g in groupings if isinstance(g, dict)]
+    if isinstance(layout := frontmatter.get(LAYOUT_KEY), dict):
+        carried["layout"] = dict(layout)
     return carried
 
 
@@ -100,6 +107,7 @@ def format_diagram_puml(
     viewpoint: dict[str, object] | None = None,
     authored_groupings: list[dict[str, object]] | None = None,
     manual_layout: bool = False,
+    layout: dict[str, object] | None = None,
 ) -> str:
     # A diagram name is a single-line label. Collapse control characters in the
     # (user-controlled) name so it cannot break out of the frontmatter `name:` value
@@ -140,13 +148,29 @@ def format_diagram_puml(
         frontmatter["edge-labels"] = edge_labels
     if authored_groupings:
         frontmatter["authored-groupings"] = authored_groupings
+    if layout is not None:
+        # Geometry is keyed by what the diagram holds, so what is written is cut down to that here,
+        # at the one place a diagram file is composed: no writer can store a position for an
+        # instance, grouping or relation the same file no longer states. A block that cannot be
+        # read is refused rather than carried.
+        kept, _dropped = pruned_to(
+            read_layout(layout),
+            diagram_identities(
+                entity_ids_used=entity_ids_used, connection_ids_used=connection_ids_used,
+                diagram_entities=diagram_entities, diagram_connections=diagram_connections,
+                authored_groupings=authored_groupings,
+            ),
+        )
+        if written := layout_as_written(kept):
+            frontmatter[LAYOUT_KEY] = written
     frontmatter["last-updated"] = last_updated
 
     ordered_keys = [
         "artifact-id", "artifact-type", "name", "version", "status", "keywords",
         "diagram-type", "diagram-format-version", "manual-layout", "tlp", "viewpoint",
         "entity-ids-used", "connection-ids-used", "diagram-entities", "connections",
-        "view_derivations", "bindings", "edge-labels", "authored-groupings", "last-updated",
+        "view_derivations", "bindings", "edge-labels", "authored-groupings", LAYOUT_KEY,
+        "last-updated",
     ]
     fm_out = {key: frontmatter[key] for key in ordered_keys if key in frontmatter}
     yaml_text = _dump_yaml_text(fm_out)
