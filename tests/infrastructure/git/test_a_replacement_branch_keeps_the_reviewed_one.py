@@ -100,7 +100,7 @@ def test_a_replacement_opened_in_the_same_second_gets_its_own_name(submitted) ->
     assert replacement.startswith("arch/work-")
 
 
-def test_the_name_steps_past_every_branch_that_still_exists(tmp_path) -> None:
+def test_the_name_steps_past_every_branch_that_still_exists(tmp_path, monkeypatch) -> None:
     """One suffix is a coincidence that works once; the loop is what makes it a rule.
 
     Stated over branches that *still exist*, which is the actual invariant. A name freed by a
@@ -108,7 +108,17 @@ def test_the_name_steps_past_every_branch_that_still_exists(tmp_path) -> None:
     a retirement would have pinned something the design does not promise.
     """
     _, enterprise = build_workflow_pair(tmp_path)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    # One instant for the test and for the name it is about. Read twice, the two straddled a second
+    # boundary under load and the test compared a name stamped :07 with a prefix stamped :06.
+    instant = datetime.now(timezone.utc)
+
+    class _Frozen(datetime):
+        @classmethod
+        def now(cls, tz=None):  # noqa: ANN001, ANN206 — the signature is datetime's
+            return instant if tz is None else instant.astimezone(tz)
+
+    monkeypatch.setattr(lifecycle, "datetime", _Frozen)
+    stamp = instant.strftime("%Y%m%d-%H%M%S")
     for taken in (f"arch/work-{stamp}", f"arch/work-{stamp}-2"):
         git(enterprise, "branch", taken)
 
