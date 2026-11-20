@@ -43,7 +43,7 @@ from src.infrastructure.rendering.layout._svg_drawing import (
     outline_extent,
     tag_of,
 )
-from src.infrastructure.rendering.layout._svg_relations import read_relation
+from src.infrastructure.rendering.layout._svg_relations import RelationMarkup, read_relation
 
 #: The diagram kind PlantUML states on the root for a picture laid out as shapes and links.
 _DESCRIPTION_KIND = "DESCRIPTION"
@@ -72,6 +72,27 @@ class _Shape:
     words: tuple[MeasuredWord, ...]
 
 
+@dataclass(frozen=True)
+class RenderedDrawing:
+    """A rendered picture together with the markup that draws each part of it.
+
+    For the composer, which draws the same parts somewhere else: it re-places PlantUML's own drawing
+    of an element rather than drawing the notation a second time. The markup is the parsed document's
+    own elements and is not to be changed; a caller copies what it moves.
+    """
+
+    picture: RenderedPicture
+    root: Element
+    #: What PlantUML draws directly in the layer, behind everything: the background.
+    backdrop: tuple[Element, ...]
+    #: The groups drawn around the diagram rather than in it — title, legend, caption — in order.
+    chrome: tuple[Element, ...]
+    #: The group that draws each element and each box, by alias.
+    shapes: Mapping[str, Element]
+    #: The markup of each relation, in the order of `picture.relations`.
+    relations: tuple[RelationMarkup, ...]
+
+
 def _canvas(root: Element) -> Extent:
     view_box = (root.get("viewBox") or "").split()
     try:
@@ -90,7 +111,7 @@ def _drawing_layer(root: Element) -> Element:
 
 
 def _classed_groups(layer: Element) -> Iterator[tuple[str, Element]]:
-    """Each group of the drawing with its class. A group of no known class is unreadable."""
+    """Each group of the drawing with its class, chrome included. A group of no known class is unreadable."""
     for child in layer:
         tag = tag_of(child)
         if tag in _LOOSE_DRAWING_TAGS:
@@ -99,6 +120,7 @@ def _classed_groups(layer: Element) -> Iterator[tuple[str, Element]]:
             raise Unreadable(f"a <{tag}> directly in the drawing layer")
         group_class = child.get("class") or ""
         if group_class in _CHROME_CLASSES:
+            yield group_class, child
             continue
         if group_class not in (_BOX_CLASS, _ELEMENT_CLASS, _RELATION_CLASS):
             raise Unreadable(f"a group of class {group_class!r}")
@@ -160,13 +182,15 @@ def _another_kind(root: Element) -> str | None:
     return None if kind == _DESCRIPTION_KIND else f"a picture of PlantUML's {kind} kind"
 
 
-def _picture(root: Element) -> RenderedPicture:
-    groups = list(_classed_groups(_drawing_layer(root)))
-    shapes = [
-        _shape(group, is_box=group_class == _BOX_CLASS)
+def _drawing(root: Element) -> RenderedDrawing:
+    layer = _drawing_layer(root)
+    groups = list(_classed_groups(layer))
+    shape_groups = [
+        (group, group_class == _BOX_CLASS)
         for group_class, group in groups
-        if group_class != _RELATION_CLASS
+        if group_class in (_BOX_CLASS, _ELEMENT_CLASS)
     ]
+    shapes = [_shape(group, is_box=is_box) for group, is_box in shape_groups]
     boxes_by_name = {shape.qualified_name: shape for shape in shapes if shape.is_box}
 
     alias_by_group_id: dict[str, str] = {}
@@ -174,7 +198,8 @@ def _picture(root: Element) -> RenderedPicture:
     boxes: dict[str, DrawnBox] = {}
     alias_by_name: dict[str, str] = {}
     outer_by_name: dict[str, _Shape | None] = {}
-    for shape in shapes:
+    markup_by_alias: dict[str, Element] = {}
+    for shape, (group, _is_box) in zip(shapes, shape_groups, strict=True):
         outer = _enclosing_box(shape, boxes_by_name)
         alias = shape.qualified_name[len(outer.qualified_name) + 1 :] if outer else shape.qualified_name
         if alias in alias_by_name.values():
@@ -182,6 +207,7 @@ def _picture(root: Element) -> RenderedPicture:
         alias_by_group_id[shape.group_id] = alias
         alias_by_name[shape.qualified_name] = alias
         outer_by_name[shape.qualified_name] = outer
+        markup_by_alias[alias] = group
     for shape in shapes:
         alias = alias_by_name[shape.qualified_name]
         outer = outer_by_name[shape.qualified_name]
@@ -192,20 +218,28 @@ def _picture(root: Element) -> RenderedPicture:
             elements[alias] = DrawnElement(alias=alias, extent=shape.extent, inside=inside, words=shape.words)
 
     extent_by_alias = {alias: drawn.extent for alias, drawn in (*elements.items(), *boxes.items())}
-    return RenderedPicture(
-        canvas=_canvas(root),
-        elements=elements,
-        boxes=boxes,
-        relations=tuple(
-            read_relation(group, alias_by_group_id=alias_by_group_id, extent_by_alias=extent_by_alias)
-            for group_class, group in groups
-            if group_class == _RELATION_CLASS
+    relations = [
+        read_relation(group, alias_by_group_id=alias_by_group_id, extent_by_alias=extent_by_alias)
+        for group_class, group in groups
+        if group_class == _RELATION_CLASS
+    ]
+    return RenderedDrawing(
+        picture=RenderedPicture(
+            canvas=_canvas(root),
+            elements=elements,
+            boxes=boxes,
+            relations=tuple(drawn for drawn, _markup in relations),
         ),
+        root=root,
+        backdrop=tuple(child for child in layer if tag_of(child) in _LOOSE_DRAWING_TAGS),
+        chrome=tuple(group for group_class, group in groups if group_class in _CHROME_CLASSES),
+        shapes=markup_by_alias,
+        relations=tuple(markup for _drawn, markup in relations),
     )
 
 
-def read_rendered_picture(svg: str) -> RenderedPicture | NotReadable:
-    """What the picture in *svg* draws, or `NotReadable` naming what it met.
+def read_rendered_drawing(svg: str) -> RenderedDrawing | NotReadable:
+    """What the picture in *svg* draws and the markup that draws it, or `NotReadable` naming what it met.
 
     Never a partial reading, and never an exception for anything about the document: input that is
     not XML, that declares a DTD or an entity, or that is not a description diagram PlantUML drew is
@@ -218,6 +252,12 @@ def read_rendered_picture(svg: str) -> RenderedPicture | NotReadable:
     if (another := _another_kind(root)) is not None:
         return NotReadable(met=another)
     try:
-        return _picture(root)
+        return _drawing(root)
     except Unreadable as unreadable:
         return NotReadable(met=unreadable.met, stated_the_kind_read=True)
+
+
+def read_rendered_picture(svg: str) -> RenderedPicture | NotReadable:
+    """What the picture in *svg* draws, or `NotReadable` naming what it met. Whole, or not at all."""
+    read = read_rendered_drawing(svg)
+    return read.picture if isinstance(read, RenderedDrawing) else read

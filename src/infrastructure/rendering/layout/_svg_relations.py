@@ -12,6 +12,7 @@ diagram's connections.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from xml.etree.ElementTree import Element  # the type only; input is parsed by defusedxml
 
 from src.domain.diagrams.layout.geometry import Extent, Point
@@ -24,6 +25,21 @@ from src.infrastructure.rendering.layout._svg_drawing import (
     path_course,
     tag_of,
 )
+
+
+@dataclass(frozen=True)
+class RelationMarkup:
+    """The markup one relation is drawn with, told apart the way its reading tells it apart.
+
+    For whoever draws the relation again somewhere else: the group that names it, its own line, the
+    decorations at each end — filed under the same end as the reading files their marks — and its text.
+    """
+
+    group: Element
+    line: Element
+    first_marks: tuple[Element, ...]
+    second_marks: tuple[Element, ...]
+    texts: tuple[Element, ...]
 
 
 def _end_alias(group_id: str | None, alias_by_group_id: Mapping[str, str]) -> str:
@@ -69,8 +85,8 @@ def read_relation(
     *,
     alias_by_group_id: Mapping[str, str],
     extent_by_alias: Mapping[str, Extent],
-) -> DrawnRelation:
-    """The relation drawn in *group*. Raises `Unreadable`."""
+) -> tuple[DrawnRelation, RelationMarkup]:
+    """The relation drawn in *group*, and the markup that draws it. Raises `Unreadable`."""
     first, second = _end_aliases(group, alias_by_group_id)
     line_type = group.get("data-link-type")
     if not line_type:
@@ -83,8 +99,8 @@ def read_relation(
     if _runs_second_to_first(course, extent_by_alias[first], extent_by_alias[second]):
         path, course = path[::-1], course[::-1]
 
-    first_marks: list[EndMark] = []
-    second_marks: list[EndMark] = []
+    first_marks: list[tuple[EndMark, Element]] = []
+    second_marks: list[tuple[EndMark, Element]] = []
     texts: list[Element] = []
     for child in group:
         if child is line:
@@ -96,16 +112,24 @@ def read_relation(
             mark = end_mark(child)
             centre = _mark_centre(mark)
             nearer_first = centre.distance_to(course[0]) <= centre.distance_to(course[-1])
-            (first_marks if nearer_first else second_marks).append(mark)
+            (first_marks if nearer_first else second_marks).append((mark, child))
         else:
             raise Unreadable(f"a <{tag}> inside a relation")
 
-    return DrawnRelation(
+    drawn = DrawnRelation(
         ends=(first, second),
         line_type=line_type,
         path=path,
         course=course,
-        first_marks=tuple(first_marks),
-        second_marks=tuple(second_marks),
+        first_marks=tuple(mark for mark, _element in first_marks),
+        second_marks=tuple(mark for mark, _element in second_marks),
         words=measured_words(texts),
     )
+    markup = RelationMarkup(
+        group=group,
+        line=line,
+        first_marks=tuple(element for _mark, element in first_marks),
+        second_marks=tuple(element for _mark, element in second_marks),
+        texts=tuple(texts),
+    )
+    return drawn, markup
