@@ -1,5 +1,7 @@
 """An SVG path's `d` attribute, read as the points it is drawn through and the course it follows.
 
+`moved_path` writes one back with every point somewhere else, for a drawing that is placed again.
+
 Only what PlantUML writes: absolute commands, `M`, `L`, `C`, `Q`, `A` and `Z`. Anything else — a
 relative command, a shorthand curve — raises `UnreadablePath` rather than being approximated, because
 the caller's contract is that a picture is read whole or named as unread.
@@ -8,7 +10,7 @@ the caller's contract is that a picture is read whole or named as unread.
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from itertools import pairwise
 
@@ -102,3 +104,31 @@ def read_path(d: str) -> PathReading:
     if not through:
         raise UnreadablePath("a path that draws nothing")
     return PathReading(through=tuple(through), course=tuple(course))
+
+
+def written_number(value: float) -> str:
+    """*value* as a coordinate is written: four places, no trailing zeros."""
+    return f"{value:.4f}".rstrip("0").rstrip(".") or "0"
+
+
+def moved_path(d: str, move: Callable[[float, float], tuple[float, float]], *, turned_by: float = 0.0) -> str:
+    """*d* with every point it names — ends and control points alike — put through *move*.
+
+    An arc keeps its radii and its flags; its own rotation is turned by *turned_by* degrees, which
+    is what a caller turning the whole path passes. Raises `UnreadablePath`.
+    """
+    written: list[str] = []
+    for command, numbers in _pieces(d):
+        if command == "Z":
+            written.append("Z")
+        elif command == "A":
+            radius_x, radius_y, rotation, large, sweep, x, y = numbers
+            end_x, end_y = move(x, y)
+            written.append(
+                f"A{written_number(radius_x)},{written_number(radius_y)} {written_number(rotation + turned_by)} "
+                f"{int(large)} {int(sweep)} {written_number(end_x)},{written_number(end_y)}"
+            )
+        else:
+            pairs = [move(numbers[index], numbers[index + 1]) for index in range(0, len(numbers), 2)]
+            written.append(command + " ".join(f"{written_number(x)},{written_number(y)}" for x, y in pairs))
+    return " ".join(written)
