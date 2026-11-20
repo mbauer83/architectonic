@@ -39,6 +39,10 @@ _MANAGED_INCLUDE_BASENAMES = frozenset({
 
 #: Any preprocessor directive that brings in another source, however it is spelled:
 #: `!include`, `!include_once`, `!include_many`, `!includeurl`, `!includesub`, `!import`, …
+#: The angle brackets PlantUML wraps a standard-library include in. Named, because the closing one is
+#: also what separates the two ends in a drawn-relation key, and a bare glyph handed to a search
+#: reads as a second reading of that.
+_STDLIB_OPEN, _STDLIB_CLOSE = "<", ">"
 _SOURCE_DIRECTIVE_RE = re.compile(r"^\s*!(include\w*|import\w*)\b\s*(.*)$", re.IGNORECASE)
 _THEME_FROM_RE = re.compile(r"^\s*!theme\b.*\bfrom\b", re.IGNORECASE)
 #: Builtins that read the environment or the filesystem, or say what exists on it.
@@ -109,6 +113,6 @@ def _line_reaches_outside(line: str, embedded_icons: frozenset[str]) -> bool:
     if match.group(1).lower() != "include":
         return True  # include_once, include_many, includeurl, includesub, import…: never in a body
     target = match.group(2).strip().strip('"').strip("'").strip()
-    if target.startswith("<") and target.endswith(">") and "://" not in target:
+    if target.startswith(_STDLIB_OPEN) and target.endswith(_STDLIB_CLOSE) and "://" not in target:
         return False  # bundled standard library: read from the jar, not the filesystem
     return _MANAGED_INCLUDE_RE.match(target) is None

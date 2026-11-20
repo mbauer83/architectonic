@@ -175,6 +175,19 @@ _COMPUTED_BOX_MARKER = re.compile(r"\A\^?(DOM|GRPT|GRPA)_")
 #: of exactly this key is a reading of the declaration.
 _TABLE_DECLARATION_KEY = re.compile(r"\Atables\Z")
 
+#: What separates the two end instances in a drawn-relation key. The whole literal, because the
+#: glyph is common inside longer ones; a reader of a key hands exactly this to `partition` or `split`.
+_RELATION_ENDS_SEPARATOR = re.compile(r"\A>\Z")
+
+#: The prefix of a rule key. A literal carrying it, handed to a locating call, is deciding whether a
+#: layout key addresses a box by its rule.
+_RULE_KEY_PREFIX = re.compile(r"\Arule:")
+
+#: Two words only a reading of the layout block asks a mapping for: where a relation bends, and the
+#: section that sizes boxes. Whole literals, and deliberately not `layout` itself — a diagram type's
+#: configuration and a scratchpad's document each have a `layout` of their own that is not this one.
+_LAYOUT_BLOCK_WORD = re.compile(r"\A(via|boxes)\Z")
+
 SYNTAX_READERS: tuple[SyntaxReader, ...] = (
     SyntaxReader(
         syntax="the typed tables a document type's section declares, and the form of a row's id",
@@ -564,6 +577,59 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             "authored grouping, and a layout keyed by box kind would have filed it under the wrong rule"
         ),
         literal_probe=_COMPUTED_BOX_MARKER,
+    ),
+    SyntaxReader(
+        syntax="the layout block of a diagram's frontmatter — its sections, a placement, a port, a route",
+        owners=(Path("src/domain/diagrams/layout/layout_block.py"),),
+        instead=(
+            "`src.domain.diagrams.layout.layout_block`: `read_layout` for the value a parsed block "
+            "states (it refuses what is not one, with a sentence), `layout_as_written` for the mapping "
+            "a frontmatter holds, `LAYOUT_KEY` for the key; the frontmatter itself is read and written "
+            "by its own owners"
+        ),
+        incident=(
+            "none, and on purpose: the block arrived with one reader, one writer and a round trip "
+            "stated over what it permits, written into a diagram that holds what it names. It is read "
+            "by the write path, the file writer, the verifier and, later, a composer and an editor; a "
+            "second reading that took a port for a point, or kept a size the block states half of, "
+            "would draw a picture the verifier had passed as another one"
+        ),
+        literal_probe=_LAYOUT_BLOCK_WORD,
+        also_located_by=_ATTRIBUTE_LOOKUPS,
+    ),
+    SyntaxReader(
+        syntax="the key of a drawn relation — a connection id, and its end instances where one is an occurrence",
+        owners=(Path("src/domain/diagrams/relation_key.py"),),
+        instead=(
+            "`src.domain.diagrams.relation_key`: `drawn_relation_key` to write one, `read_relation_key` "
+            "to read one in canonical spelling, `labels_by_relation` for a stored `edge-labels` mapping, "
+            "`alias_pair_of` for the retired form; `src.domain.diagrams.drawn_relations` for which "
+            "relations a diagram draws and under which keys"
+        ),
+        incident=(
+            "the key it replaced was composed and read at five sites as `f\"{src}:{tgt}\"` — two "
+            "renderers, the diagram context, the verifier and the write path — and could not tell two "
+            "relations between one pair apart, so a label meant for a flow was drawn on the serving "
+            "beside it. An edge label and a layout route are both filed under this key; two readings "
+            "of it would put a label on one arrow and its route on another"
+        ),
+        literal_probe=_RELATION_ENDS_SEPARATOR,
+    ),
+    SyntaxReader(
+        syntax="a rule key — `rule:domain=business/type=…`, addressing a box no grouping states",
+        owners=(Path("src/domain/diagrams/authored_groupings.py"),),
+        instead=(
+            "`src.domain.diagrams.authored_groupings`: `RuleKey(...).text` to write one, `read_rule_key` "
+            "to read one, `is_rule_key` to ask whether a key is spelled as one; `rule_of` for the rule "
+            "a grouping entry states"
+        ),
+        incident=(
+            "registered with its owner: a computed box had no identity but a renderer's counter, "
+            "which two renders of a changed diagram need not agree on. A layout addresses such a box "
+            "by this key, so a second reading that ordered the rules differently would size one "
+            "domain's box with another's rectangle"
+        ),
+        literal_probe=_RULE_KEY_PREFIX,
     ),
 )
 
