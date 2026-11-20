@@ -25,15 +25,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from src.application.artifacts.document_schema import get_document_schema_object
+from src.application.artifacts.document_sections import document_body, document_section_spans
 from src.application.artifacts.reference_terms import (
     ReferenceTermVocabulary,
     parse_reference_term,
 )
 from src.application.document_links import ResolvedArtifactLink, resolve_artifact_links
-from src.application.verification._verifier_document import (
-    document_body,
-    document_section_spans,
-)
 from src.domain.artifact_id import (
     MalformedArtifactIdError,
     connection_id_as_written,

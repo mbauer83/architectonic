@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
 
-import re
 from pathlib import Path
 
 from src.application.artifacts.document_schema import SectionSpec
+from src.application.artifacts.document_sections import document_body, document_section_spans
 from src.application.artifacts.reference_terms import (
     LinkedArtifactTypes,
     ReferenceTermVocabulary,
@@ -28,10 +28,7 @@ from src.application.verification.artifact_verifier_types import (
     Severity,
     VerificationResult,
 )
-from src.domain.repository.frontmatter import body_after_frontmatter
 from src.domain.repository.repo_layout import ARCH_REPO, DOCS, MODEL
-
-_SECTION_HEADING_RE = re.compile(r"^##\s+(.+)$", re.MULTILINE)
 
 
 def _infer_repo_root_for_document(path: Path) -> Path | None:
@@ -53,21 +50,6 @@ def _doc_repo_root(path: Path, registry: ArtifactRegistry | None) -> Path | None
             except ValueError:
                 continue
     return _infer_repo_root_for_document(path)
-
-
-def document_body(content: str) -> str:
-    """Document content with the YAML frontmatter block removed."""
-    return body_after_frontmatter(content)
-
-
-def document_section_spans(body: str) -> dict[str, str]:
-    matches = list(_SECTION_HEADING_RE.finditer(body))
-    spans: dict[str, list[str]] = {}
-    for index, match in enumerate(matches):
-        name = match.group(1).strip()
-        end = matches[index + 1].start() if index + 1 < len(matches) else len(body)
-        spans.setdefault(name, []).append(body[match.start() : end])
-    return {name: "\n".join(parts) for name, parts in spans.items()}
 
 
 def linked_types_in(doc_path: Path, content: str) -> LinkedArtifactTypes:
