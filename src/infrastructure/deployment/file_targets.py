@@ -5,6 +5,7 @@ commit — one unit of work per target, never a partial rewrite."""
 from __future__ import annotations
 
 import shutil
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -28,6 +29,9 @@ class TextTargetUnitOfWork:
 
     def execute_sql(self, sql: str, parameters: tuple[object, ...] = ()) -> None:
         raise NotImplementedError("text-file targets have no SQL surface")
+
+    def record_audit(self, operation: str, *, node_id: str, payload: Mapping[str, object]) -> None:
+        raise NotImplementedError("text-file targets have no audit archive")
 
     def commit(self) -> None:
         for relative, content in self._staged.items():

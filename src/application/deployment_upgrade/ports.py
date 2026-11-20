@@ -59,6 +59,17 @@ class OperationalTargetUnitOfWork(Protocol):
         """Stage SQL inside the target's single migration transaction."""
         ...
 
+    def record_audit(self, operation: str, *, node_id: str, payload: Mapping[str, object]) -> None:
+        """Stage one entry in the target's audit archive, inside the same transaction.
+
+        For a step that changes what a confidential store's records *say*: the archive is the
+        store's account of every such change, and a migration that rewrote a record without an
+        entry would be the one change the account omits. Appended through the archive's own
+        function, so the entry joins the hash chain like any other. Targets with no audit archive
+        raise `NotImplementedError`.
+        """
+        ...
+
     def commit(self) -> None: ...
 
     def rollback(self) -> None: ...
@@ -161,6 +172,9 @@ def build_operational_registry(
     from src.application.deployment_upgrade.steps.guidance_cache_format import (  # noqa: PLC0415
         GuidanceCacheFormatStep,
     )
+    from src.application.deployment_upgrade.steps.obligation_citation_form import (  # noqa: PLC0415
+        ObligationCitationFormStep,
+    )
     from src.application.deployment_upgrade.steps.signals_snapshot_schema import (  # noqa: PLC0415
         PublicSqliteSignalsSchemaStep,
         SignalsSnapshotSchemaStep,
@@ -169,6 +183,7 @@ def build_operational_registry(
     registry = OperationalStepRegistry()
     registry.register(AssuranceRelationshipReconciliationStep())
     registry.register(AssuranceArchRefRespellStep(canonical_entity_ids))
+    registry.register(ObligationCitationFormStep())
     registry.register(GuidanceCacheFormatStep(guidance_hierarchies))
     registry.register(SignalsSnapshotSchemaStep())
     registry.register(PublicSqliteSignalsSchemaStep())

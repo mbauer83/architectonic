@@ -24,7 +24,10 @@ def _seed_store(path: Path) -> None:
     conn = sqlcipher3.connect(str(path))
     conn.execute(f"PRAGMA key = '{_KEY}'")
     conn.execute(
-        "CREATE TABLE assurance_nodes (node_id TEXT PRIMARY KEY, node_type TEXT NOT NULL, name TEXT)"
+        # Carries `attributes_json` as every real store does: the registry runs each assurance step
+        # over the target, and the obligation-citation step reads that column.
+        "CREATE TABLE assurance_nodes (node_id TEXT PRIMARY KEY, node_type TEXT NOT NULL, name TEXT, "
+        "attributes_json TEXT NOT NULL DEFAULT '{}')"
     )
     conn.execute(
         "CREATE TABLE assurance_edges (edge_id TEXT PRIMARY KEY, source_id TEXT, target_id TEXT, conn_type TEXT)"
@@ -40,7 +43,7 @@ def _seed_store(path: Path) -> None:
         ("RSK@1", "risk", "Risk"),
         ("CSN@1", "control-structure-node", "Controller"),
     ]
-    conn.executemany("INSERT INTO assurance_nodes VALUES (?,?,?)", nodes)
+    conn.executemany("INSERT INTO assurance_nodes (node_id, node_type, name) VALUES (?,?,?)", nodes)
     edges = [
         # violates duplicated by an existing leads-to → deleted
         ("E1", "UCA@1", "HAZ@1", "violates"),

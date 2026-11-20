@@ -27,6 +27,9 @@ class _FakeUow:
     def execute_sql(self, sql: str, parameters: tuple[object, ...] = ()) -> None:
         self.writes.append(("sql", sql))
 
+    def record_audit(self, operation: str, *, node_id: str, payload: object) -> None:
+        self.writes.append(("audit", operation))
+
     def commit(self) -> None:
         self.committed = True
 

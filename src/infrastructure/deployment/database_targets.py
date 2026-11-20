@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import shutil
 import sqlite3
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
@@ -67,6 +67,13 @@ class DatabaseUnitOfWork:
 
     def execute_sql(self, sql: str, parameters: tuple[object, ...] = ()) -> None:
         self._conn.execute(sql, parameters)
+
+    def record_audit(self, operation: str, *, node_id: str, payload: Mapping[str, object]) -> None:
+        """One hash-chained entry in the store's archive, in this transaction — so the entry and
+        the change it describes commit or roll back together."""
+        from src.infrastructure.assurance._archive import append_audit_row  # noqa: PLC0415
+
+        append_audit_row(self._conn, operation, node_id=node_id, payload=dict(payload))
 
     def commit(self) -> None:
         try:

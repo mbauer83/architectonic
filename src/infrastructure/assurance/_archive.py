@@ -33,6 +33,15 @@ def _compute_hash(
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
+def _only_column(row: Any) -> Any:
+    """The value of a one-column row, whichever shape the connection hands rows back in.
+
+    The store's own connection returns mappings; the connection a deployment upgrade migrates
+    through is opened without the store and returns tuples. Both append to the one chain.
+    """
+    return next(iter(row.values())) if isinstance(row, dict) else row[0]
+
+
 def append_audit_row(
     conn: Any,
     operation: str,
@@ -46,14 +55,9 @@ def append_audit_row(
     ``append`` method wraps this with its own commit."""
     timestamp = _now_iso()
     payload_json = json.dumps(payload or {})
-    head = conn.execute(
-        "SELECT seq, entry_hash FROM audit_log ORDER BY seq DESC LIMIT 1"
-    ).fetchone()
-    prev_hash = head["entry_hash"] if head else ""
-    seq_row = conn.execute(
-        "SELECT COALESCE(MAX(seq), 0) + 1 AS next_seq FROM audit_log"
-    ).fetchone()
-    seq = int(seq_row["next_seq"])
+    head = conn.execute("SELECT entry_hash FROM audit_log ORDER BY seq DESC LIMIT 1").fetchone()
+    prev_hash = str(_only_column(head)) if head else ""
+    seq = int(_only_column(conn.execute("SELECT COALESCE(MAX(seq), 0) + 1 FROM audit_log").fetchone()))
     entry_hash = _compute_hash(seq, timestamp, operation, payload_json, prev_hash)
     conn.execute(
         "INSERT INTO audit_log (seq, timestamp, operation, node_id, payload_json, prev_hash, entry_hash) "

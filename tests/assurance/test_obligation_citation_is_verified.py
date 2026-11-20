@@ -6,18 +6,24 @@ ontology's form all verified identically. Four findings now tell them apart — 
 W517 (a citation in the attributes that were replaced, with the fix), W518 (a provision its
 source's vocabulary does not list) and W519 (a source no vocabulary describes).
 
+The last class runs the store's migration over a real encrypted store, because the migration
+connection is not the store's own: it returns rows in another shape, and the entry it appends has
+to join the chain the store itself goes on appending to.
+
 Every store here is a temporary one, provisioned from the per-process template under `tmp_path`.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 import pytest
 
 pytest.importorskip("sqlcipher3", reason="sqlcipher3 not installed")
 
+from src.application.assurance.node_attributes import attributes_of  # noqa: E402
 from src.application.verification._assurance_rules_obligations import UPGRADE_COMMAND  # noqa: E402
 from src.application.verification.assurance_verifier import verify_store  # noqa: E402
 from src.domain.assurance.obligation_citation import source_key  # noqa: E402
@@ -158,3 +164,63 @@ class TestWhatTheShippedVocabulariesList:
         """STRIDE lists threat categories and no provisions, so it is absent, not empty."""
         assert source_key("STRIDE") not in provisions_by_source()
 
+
+class TestMigratingARealStore:
+    def test_the_upgrade_step_moves_the_citation_and_the_store_reads_a_whole_chain(self, tmp_path: Path) -> None:
+        from src.application.deployment_upgrade.steps.obligation_citation_form import (
+            ObligationCitationFormStep,
+        )
+        from src.domain.repository.operational_upgrade import UpgradeTarget
+        from src.infrastructure.assurance import _credential_accounts as accounts
+        from src.infrastructure.assurance._archive import SQLCipherAssuranceArchive
+        from src.infrastructure.assurance._sqlcipher_store import SQLCipherAssuranceStore
+        from src.infrastructure.deployment.database_targets import (
+            DatabaseTargetHandle,
+            sqlcipher_connection_factory,
+        )
+        from tests.support.assurance_store_template import provision_store
+
+        db_path = provision_store(tmp_path / "store.db")
+        store = SQLCipherAssuranceStore(db_path)
+        store.unlock()
+        archive = SQLCipherAssuranceArchive(store.unlocked_connection)
+        by_wizard = str(store.create_node("obligation", "A", attributes={"scheme": "ISO26262", "code": "6-8"}))
+        archive.append("CREATE", node_id=by_wizard, payload={"node_type": "obligation"})
+        by_agent = str(store.create_node("obligation", "B", attributes={"cites": "EU-AI-Act:Art-12", "status": "x"}))
+        store.lock()
+
+        key = accounts.read(accounts.DB_KEY, db_path)
+        assert key is not None
+        handle = DatabaseTargetHandle(
+            target=UpgradeTarget(
+                kind="assurance_sqlcipher",
+                stable_id=f"assurance_sqlcipher:{db_path}",
+                display_location=str(db_path),
+                current_version=None,
+                credential_requirement="sqlcipher_key",
+            ),
+            connect=sqlcipher_connection_factory(db_path, key),
+            inspectable=True,
+            path=db_path,
+        )
+        step = ObligationCitationFormStep()
+        view = handle.view()
+        uow = handle.begin()
+        step.apply(view, uow, step.detect(view))
+        uow.commit()
+
+        store.unlock()
+        try:
+            archive = SQLCipherAssuranceArchive(store.unlocked_connection)
+            assert attributes_of(store.get_node(by_wizard)) == {"source": "ISO26262", "provision": "6-8"}
+            assert attributes_of(store.get_node(by_agent)) == {
+                "source": "EU-AI-Act", "provision": "Art-12", "status": "x",
+            }
+            migrated = [e for e in archive.list_entries() if "upgrade_step" in str(e["payload_json"])]
+            assert sorted(str(e["node_id"]) for e in migrated) == sorted([by_wizard, by_agent])
+            archive.append("UPDATE", node_id=by_wizard, payload={"updated_fields": ["name"]})
+            assert archive.verify_chain(), "the store's next entry must chain onto the migration's"
+            assert "W517" not in {issue.code for issue in verify_store(store).issues}
+            assert step.detect(handle.view()) == []
+        finally:
+            store.lock()
