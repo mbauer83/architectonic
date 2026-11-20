@@ -222,6 +222,7 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "artifact_create_matrix": (False, True, False, False),
         "artifact_create_document": (False, False, False, False),
         "artifact_edit_document": (False, True, False, False),
+        "artifact_edit_document_table": (False, True, False, False),
         "artifact_delete_document": (False, True, False, False),
         "artifact_create_icon": (False, False, False, False),
         "artifact_edit_icon": (False, False, False, False),

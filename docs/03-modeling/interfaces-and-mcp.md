@@ -38,6 +38,7 @@ looking entirely normal. See
 | `artifact_diagram_scaffold` | Read-only | Generate a ready-to-edit @startuml…@enduml scaffold from a list of entity IDs. |
 | `artifact_list_changes` | Read-only | List the local changes this repository is holding: edits to artifacts promoted to the enterprise repository, which cannot be written here and are recorded as local changes instead. |
 | `artifact_query_datatype_types` | Read-only | List available attribute types for datatype diagrams. |
+| `artifact_query_document_tables` | Read-only | Read the rows of the typed tables a document's type declares. |
 | `artifact_query_find_connections_for` | Read-only | Find connection records that touch a given entity_id. |
 | `artifact_query_find_neighbors` | Read-only | Graph traversal: return direct or derived neighbors within max_hops. |
 | `artifact_query_icons` | Read-only | List the icons of the library a diagram may show. |
@@ -68,6 +69,7 @@ looking entirely normal. See
 | Diagrams | `artifact_create_matrix` | Destructive | Create a markdown connection-matrix diagram. |
 | Documents | `artifact_create_document` | Write | Create a new architecture document (e.g. ADR, RFC). |
 | Documents | `artifact_edit_document` | Destructive | Edit an existing architecture document's frontmatter or body. |
+| Documents | `artifact_edit_document_table` | Destructive | Add, change and remove rows of one typed table a document's type declares, leaving every other line of the document as it is. |
 | Documents | `artifact_delete_document` | Destructive | Delete a single architecture document. |
 | Icons | `artifact_create_icon` | Write | Add an icon to the repository's shared library, for diagrams to show on their elements. |
 | Icons | `artifact_edit_icon` | Write | Change what a library icon says about itself: its name, attribution, the types and specializations it applies to, its default style, its tags, or its status. |

@@ -22,11 +22,11 @@ in the document's body, so that a row is edited in the table this reading found 
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
-from src.application.artifacts.document_schema import DocumentSchema
+from src.application.artifacts.document_schema import DocumentSchema, get_document_schema_object
 from src.application.artifacts.document_sections import document_body, document_sections
 from src.application.artifacts.document_tables import ColumnSpec, TableSpec, row_ids_in
 from src.application.document_links import ResolvedArtifactLink, iter_markdown_links, resolve_artifact_links
@@ -219,3 +219,15 @@ def read_document_tables(doc_path: Path, content: str, schema: DocumentSchema) -
             for spec in section.tables
         )
     )
+
+
+def tables_of_stored_document(doc_path: Path, doc_type: str, repo_roots: Sequence[Path]) -> DocumentTables:
+    """The typed tables of the document stored at `doc_path`, as the first of `repo_roots` that
+    declares `doc_type` declares them. No tables where none declares the type."""
+    schema = next(
+        (declared for root in repo_roots if (declared := get_document_schema_object(root, doc_type)) is not None),
+        None,
+    )
+    if schema is None:
+        return DocumentTables()
+    return read_document_tables(doc_path, doc_path.read_text(encoding="utf-8"), schema)

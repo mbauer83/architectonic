@@ -13,14 +13,20 @@ from src.application.artifacts.document_part_edits import RowChangedSinceRead
 from src.application.artifacts.document_schema import (
     REQUIRED_CONNECTIONS_KEY,
     SUGGESTED_CONNECTIONS_KEY,
-    get_document_schema_object,
     get_document_subdirectory,
     load_document_schemata,
 )
-from src.application.artifacts.document_table_rows import DocumentTables, read_document_tables
+from src.application.artifacts.document_table_rows import DocumentTables, tables_of_stored_document
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING
+from src.infrastructure.document_part_wire import (
+    SectionEditBody,
+    TextReplacementBody,
+    stated_part,
+    table_row_edits,
+    tables_as_served,
+)
 from src.infrastructure.rest.contracts.artifact_home import FiledOnCreate, Rehomeable
 from src.infrastructure.rest.contracts.authoring_catalogs import DocumentTypeListResponse
 from src.infrastructure.rest.contracts.document_tables import DocumentTablesResponse
@@ -31,14 +37,7 @@ from src.infrastructure.rest.contracts.documents import (
 )
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
-from src.infrastructure.rest.routers._document_parts import (
-    EditDocumentTableRequest,
-    SectionEditBody,
-    TextReplacementBody,
-    stated_part,
-    table_row_edits,
-    tables_as_served,
-)
+from src.infrastructure.rest.routers._document_parts import EditDocumentTableRequest
 from src.infrastructure.rest.routers._openapi import (
     READ_RESPONSES,
     TAG_DOCUMENTS,
@@ -311,10 +310,7 @@ def _tables_of(artifact_id: str) -> DocumentTables:
     doc = s.get_repo().get_document(artifact_id)
     if doc is None:
         raise HTTPException(404, f"Not found: {artifact_id!r}")
-    schema = get_document_schema_object(_get_engagement_root(), doc.doc_type)
-    if schema is None:
-        return DocumentTables()
-    return read_document_tables(doc.path, doc.path.read_text(encoding="utf-8"), schema)
+    return tables_of_stored_document(doc.path, doc.doc_type, [_get_engagement_root()])
 
 
 @router.get("/api/documents/{artifact_id}/tables", tags=[TAG_DOCUMENTS],
@@ -357,7 +353,7 @@ def edit_document_table(artifact_id: str, table: str, req: EditDocumentTableRequ
             artifact_id=artifact_id,
             registry=registry,
             repo=s.maybe_get_repo(),
-            part=table_row_edits(table, req),
+            part=table_row_edits(table, req.rows),
             title=None,
             body=None,
             keywords=None,
