@@ -9,8 +9,9 @@ picture's own terms — aliases, extents, courses — so it can be checked witho
   with the renderer's own padding and never narrower than its title, widened to what the layout
   states for it and never narrowed;
 * a **relation** runs the course its stated route completes to; one that leaves a port unstated is
-  routed, around every element, keeping apart from the stated ones;
-* a **label** sits where its route's anchor says, or beside its route clear of every element;
+  routed, around every element and every text, keeping apart from the stated ones;
+* a **label** sits where its route's anchor says, or beside its route clear of every element, every
+  text and every line;
 * **painting** follows containment: a box and everything in it are one unit, siblings in `z` order
   with ties in the order the renderer drew them, boxes before the elements beside them.
 """
@@ -21,24 +22,25 @@ from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from src.domain.diagrams.layout.attachment import elements_crossed
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.domain.diagrams.layout.layout_block import Placed, Route
 from src.domain.diagrams.layout.layout_checks import placed_extent
 from src.domain.diagrams.layout.orthogonal import course_of
 from src.domain.diagrams.layout.rendered_picture import DrawnBox, MeasuredWord, RenderedPicture, extent_across
+from src.domain.diagrams.layout.route_quality import square_course
+from src.domain.diagrams.layout.text_clearance import padded, text_extent, texts_crossed, title_band
 from src.infrastructure.rendering.layout.box_identities import box_keys_by_alias
 from src.infrastructure.rendering.layout.label_placement import label_box, placed_label
 from src.infrastructure.rendering.layout.relation_routing import RelationRouting, Undecided
+from src.infrastructure.rendering.layout.router import Surroundings
 
 #: How far a size may differ from the one the renderer drew and still be the same size.
 _SAME_SIZE = 0.5
 
 #: The least room kept either side of a box's title.
 _TITLE_MARGIN = 8.0
-
-#: A label's line above its baseline and below it, in the renderer's label font.
-_ABOVE_BASELINE, _BELOW_BASELINE = 11.0, 3.0
 
 
 @dataclass(frozen=True)
@@ -49,6 +51,8 @@ class ArrangedRelation:
     course: tuple[Point, ...]
     #: Where the middle of its label goes, or None for a relation that carries none.
     label_centre: Point | None = None
+    #: Drawn exactly as the renderer drew it: nothing about it, its ends or what it passes changed.
+    as_drawn: bool = False
 
 
 @dataclass(frozen=True)
@@ -67,12 +71,7 @@ class Arrangement:
 
 def label_extent(words: Sequence[MeasuredWord]) -> Extent | None:
     """The rectangle a run of label text occupies, or None for no text."""
-    if not words:
-        return None
-    return Extent(
-        min(word.start.x for word in words), min(word.start.y for word in words) - _ABOVE_BASELINE,
-        max(word.end_x for word in words), max(word.start.y for word in words) + _BELOW_BASELINE,
-    )
+    return text_extent(words)
 
 
 def _union(extents: Sequence[Extent]) -> Extent:
@@ -178,20 +177,58 @@ class _Arranging:
                 keyed[index] = (key, self._picture.relations[index].ends[0] != source)
         return keyed
 
+    def bands(self) -> dict[str, Extent]:
+        """Each box's title band where it is drawn now: the band it had, carried with the box's top."""
+        bands: dict[str, Extent] = {}
+        for alias, box in self._picture.boxes.items():
+            title = text_extent(box.words)
+            if title is not None:
+                drawn, now = box.extent, self.boxes[alias]
+                band = title_band(drawn, title)
+                bands[alias] = Extent(now.left, now.top, now.right, now.top + (band.bottom - drawn.top))
+        return bands
+
+    def _labels_outside(self) -> dict[str, Extent]:
+        """Each element's label set outside its outline — an actor's, below it — where it is now."""
+        labels: dict[str, Extent] = {}
+        for alias, element in self._picture.elements.items():
+            label = text_extent(element.words)
+            if label is None or element.extent.encloses(label) or alias in self.resized:
+                continue
+            dx, dy = self.elements[alias].left - element.extent.left, self.elements[alias].top - element.extent.top
+            moved = padded(label)
+            labels[alias] = Extent(moved.left + dx, moved.top + dy, moved.right + dx, moved.bottom + dy)
+        return labels
+
+    def text(self) -> dict[str, Extent]:
+        """Every text region a route keeps out of, before any relation's label is placed."""
+        return {
+            **{f"band:{alias}": band for alias, band in self.bands().items()},
+            **{f"label:{alias}": label for alias, label in self._labels_outside().items()},
+        }
+
     def relations(self) -> tuple[ArrangedRelation, ...]:
         extents: dict[str, Extent] = {**self.boxes, **self.elements}
-        routing = RelationRouting(extents, self.elements)
+        around = Surroundings(text=self.text(), borders=list(extents.values()))
+        routing = RelationRouting(extents, self.elements, around, self.bands())
         keyed = self._keyed()
         courses: dict[int, tuple[Point, ...]] = {}
         routes: dict[int, Route] = {}
         undecided: list[Undecided] = []
+        kept: dict[int, tuple[Point, ...]] = {}
         for index, relation in enumerate(self._picture.relations):
             key, turned = keyed.get(index, ("", False))
             source, target = relation.ends[::-1] if turned else relation.ends
             routes[index] = self._layout.relations.get(key, Route())
             stated = course_of(routes[index], extents[source], extents[target])
+            if key not in self._layout.relations and self._still_as_drawn(index):
+                kept[index] = relation.course
+                routing.keep_apart_from(square_course(relation.path))
+                continue
             if stated is None:
-                undecided.append(Undecided(str(index), source, target, routes[index]))
+                marks = (bool(relation.first_marks), bool(relation.second_marks))
+                decorated = (marks[1], marks[0]) if turned else marks
+                undecided.append(Undecided(str(index), source, target, routes[index], decorated))
                 continue
             routing.keep_apart_from(stated)
             courses[index] = stated[::-1] if turned else stated
@@ -201,15 +238,49 @@ class _Arranging:
             source, target = self._picture.relations[index].ends[:: -1 if turned else 1]
             course = course_of(decided, extents[source], extents[target]) or ()
             courses[index] = course[::-1] if turned else course
-        return self._labelled(courses, routes, keyed)
+        return self._labelled(courses, routes, keyed, kept)
+
+    def _unchanged(self, alias: str) -> bool:
+        drawn = self._picture.extent_of(alias)
+        now = self.elements.get(alias) or self.boxes.get(alias)
+        return drawn is not None and now is not None and all(
+            abs(was - is_now) <= _SAME_SIZE
+            for was, is_now in zip(
+                (drawn.left, drawn.top, drawn.right, drawn.bottom), (now.left, now.top, now.right, now.bottom),
+                strict=True,
+            )
+        )
+
+    def _still_as_drawn(self, index: int) -> bool:
+        """Whether a relation no route is stated for can stay exactly as the renderer drew it.
+
+        So it can where neither end moved or changed size and its line breaks no hard rule where things
+        now are: it crosses no other element and no text. A relation nothing forces to change keeps the
+        renderer's line, bends and all — re-routing it would add bends no move asked for.
+        """
+        relation = self._picture.relations[index]
+        if not all(self._unchanged(end) for end in relation.ends):
+            return False
+        others = {alias: extent for alias, extent in self.elements.items() if alias not in relation.ends}
+        return not elements_crossed(relation.course, others, relation.ends) and not texts_crossed(
+            relation.course, self.text()
+        )
 
     def _labelled(
         self, courses: Mapping[int, tuple[Point, ...]], routes: Mapping[int, Route],
-        keyed: Mapping[int, tuple[str, bool]],
+        keyed: Mapping[int, tuple[str, bool]], kept: Mapping[int, tuple[Point, ...]],
     ) -> tuple[ArrangedRelation, ...]:
-        taken = list(self.elements.values())
+        kept_labels = [
+            label for index in kept if (label := label_extent(self._picture.relations[index].words)) is not None
+        ]
+        taken = [*self.elements.values(), *self.text().values(), *kept_labels]
+        lines = [*courses.values(), *kept.values()]
         arranged: list[ArrangedRelation] = []
         for index, relation in enumerate(self._picture.relations):
+            if index in kept:
+                label = label_extent(relation.words)
+                arranged.append(ArrangedRelation(kept[index], label.centre if label else None, as_drawn=True))
+                continue
             course, text = courses[index], label_extent(relation.words)
             if text is None:
                 arranged.append(ArrangedRelation(course))
@@ -217,7 +288,7 @@ class _Arranging:
             size = (text.width, text.height)
             # An anchor is stated along the route from its source; the course here may run the other way.
             as_stated = course[::-1] if keyed.get(index, ("", False))[1] else course
-            anchor = routes[index].label or placed_label(as_stated, size, taken)
+            anchor = routes[index].label or placed_label(as_stated, size, taken, lines)
             box = label_box(as_stated, anchor, size)
             taken.append(box)
             arranged.append(ArrangedRelation(course, box.centre))

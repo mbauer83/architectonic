@@ -16,7 +16,7 @@ from src.domain.diagrams.layout.layout_block import LabelAnchor
 from src.domain.diagrams.layout.orthogonal import IN_LINE, half_up, point_along
 
 #: How far along a route a label is tried, the middle first.
-_FRACTIONS = (0.5, 0.35, 0.65, 0.25, 0.75, 0.15, 0.85)
+_FRACTIONS = (0.5, 0.35, 0.65, 0.25, 0.75, 0.15, 0.85, 0.42, 0.58, 0.3, 0.7, 0.2, 0.8)
 
 #: The room left between a label and the line it labels.
 _OFF_THE_LINE = 4.0
@@ -49,10 +49,19 @@ def _offsets(level: bool, size: tuple[float, float]) -> tuple[tuple[int, int], .
     return ((away, 0), (-away, 0))
 
 
+def _is_crossed(box: Extent, lines: Sequence[Sequence[Point]]) -> bool:
+    inner = box.shrunk_by(1.0)
+    return inner is not None and any(
+        inner.is_entered_by(start, end) for line in lines for start, end in zip(line, line[1:], strict=False)
+    )
+
+
 def placed_label(
-    course: Sequence[Point], size: tuple[float, float], keep_clear_of: Sequence[Extent]
+    course: Sequence[Point], size: tuple[float, float], keep_clear_of: Sequence[Extent],
+    lines: Sequence[Sequence[Point]] = (),
 ) -> LabelAnchor:
-    """An anchor for a label of *size* on *course* whose box lies over nothing in *keep_clear_of*."""
+    """An anchor for a label of *size* on *course* whose box lies over nothing in *keep_clear_of* and
+    no line of *lines* runs through: a line never passes through text."""
     candidates = [
         LabelAnchor(at, dx, dy)
         for at in _FRACTIONS
@@ -62,6 +71,7 @@ def placed_label(
         (
             anchor for anchor in candidates
             if not any(label_box(course, anchor, size).overlap_with(taken) for taken in keep_clear_of)
+            and not _is_crossed(label_box(course, anchor, size), lines)
         ),
         candidates[0],
     )

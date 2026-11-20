@@ -4,12 +4,15 @@ The one place a relation's end decoration is placed. A decoration is drawn in an
 point on the element's border the relation arrives at, and the heading it arrives with. Whoever has
 decorations drawn in one frame hands them over with that frame and the frame they are wanted in, and
 gets them back turned and carried there. Today the decorations are the ones PlantUML drew, taken with
-the frame it drew them in (`frame_as_drawn`); a notation corrected from the relationship-notation
+the frame they were drawn in (`frame_as_drawn`); a notation corrected from the relationship-notation
 declaration is the same call with decorations drawn in a frame of its own choosing.
 
 A relation's line stops short of some decorations — it ends at the base of a hollow head, not at its
 tip — so the frame also says how far short the line was drawn, and `stopping_short` gives a course
 the same gap at its new ends.
+
+The decoration's tip is placed exactly at the route's end, which a port puts on the element's border:
+so a decoration cannot be drawn away from its element, whatever the line did where PlantUML drew it.
 """
 
 from __future__ import annotations
@@ -20,14 +23,14 @@ from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
 from src.domain.diagrams.layout.geometry import Extent, Point
+from src.domain.diagrams.layout.rendered_picture import EndMark, MarkShape
 from src.infrastructure.rendering.layout.svg_markup import Motion, moved
 
 #: How far back along a line its heading is taken from. A drawn line may hook at its very end —
 #: PlantUML overshoots a box's border and comes back — so the last step alone can face the wrong way.
 _HEADING_TAKEN_OVER = 8.0
 
-#: The longest gap a line is taken to leave before its end. Further than this, the line simply ends
-#: somewhere else than at the element, and the decoration is anchored where the line ends.
+#: The longest gap a line is taken to leave before its end, for the longest decoration drawn there.
 _LONGEST_GAP = 40.0
 
 #: The shortest run a line keeps when it stops short of a decoration.
@@ -54,28 +57,34 @@ def heading_at_end(course: Sequence[Point]) -> tuple[float, float]:
     return ((end.x - back.x) / length, (end.y - back.y) / length) if length > 0 else (0.0, 1.0)
 
 
-def _reach_to(extent: Extent, start: Point, heading: tuple[float, float]) -> float:
-    """How far from *start* along *heading* the border of *extent* is; zero from inside it or past it."""
-    entering, leaving = 0.0, math.inf
-    for towards, low, high, position in (
-        (heading[0], extent.left, extent.right, start.x), (heading[1], extent.top, extent.bottom, start.y),
-    ):
-        if towards == 0:
-            if not low <= position <= high:
-                return 0.0
-            continue
-        near, far = sorted(((low - position) / towards, (high - position) / towards))
-        entering, leaving = max(entering, near), min(leaving, far)
-    return entering if entering <= leaving else 0.0
+def _unit(dx: float, dy: float) -> tuple[float, float] | None:
+    length = math.hypot(dx, dy)
+    return (dx / length, dy / length) if length > 0 else None
 
 
-def frame_as_drawn(course: Sequence[Point], end: Extent) -> EndFrame:
-    """The frame a relation's end was drawn in: *course* runs towards the element occupying *end*."""
-    heading, stops = heading_at_end(course), course[-1]
-    gap = _reach_to(end, stops, heading)
-    if gap > _LONGEST_GAP:
-        gap = 0.0
-    return EndFrame(Point(stops.x + heading[0] * gap, stops.y + heading[1] * gap), heading, gap)
+def frame_as_drawn(marks: Sequence[EndMark], course: Sequence[Point], end: Extent) -> EndFrame:
+    """The frame the decorations at one end were drawn in, read off the decorations themselves.
+
+    *course* runs towards the element occupying *end*. The frame is where the decorations touch the
+    element — their point nearest it — and the way they point, from their middle to that point. It is
+    not read off the line: PlantUML's line hooks in its last few pixels, and a heading taken from
+    the hook placed an arrowhead beside its element instead of against it. A dot points nowhere, so
+    the line gives its heading; an end with no decoration is where the line ends.
+    """
+    line_end, line_heading = course[-1], heading_at_end(course)
+    shaped = [point for mark in marks if mark.shape is not MarkShape.ELLIPSE for point in mark.outline]
+    dots = [Extent.around(mark.outline) for mark in marks if mark.shape is MarkShape.ELLIPSE]
+    if shaped:
+        tip = min(shaped, key=end.distance_to)
+        middle = Point(sum(point.x for point in shaped) / len(shaped), sum(point.y for point in shaped) / len(shaped))
+        heading = _unit(tip.x - middle.x, tip.y - middle.y) or line_heading
+    elif dots and (dot := dots[0]) is not None:
+        heading, radius = line_heading, dot.width / 2
+        tip = Point(dot.centre.x + heading[0] * radius, dot.centre.y + heading[1] * radius)
+    else:
+        return EndFrame(line_end, line_heading, 0.0)
+    gap = (tip.x - line_end.x) * heading[0] + (tip.y - line_end.y) * heading[1]
+    return EndFrame(tip, heading, max(0.0, min(gap, _LONGEST_GAP)))
 
 
 def frame_at_end(course: Sequence[Point], gap: float) -> EndFrame:

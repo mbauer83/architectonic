@@ -12,7 +12,9 @@ from xml.etree.ElementTree import Element
 import pytest
 
 from src.domain.diagrams.layout.geometry import Extent, Point
+from src.domain.diagrams.layout.rendered_picture import EndMark, MarkShape
 from src.infrastructure.rendering.layout._svg_drawing import SVG_NAMESPACE, outline_extent
+from src.infrastructure.rendering.layout.relation_decorations import frame_as_drawn
 from src.infrastructure.rendering.layout.svg_markup import Motion, drawn_extent, fitted, moved
 from src.infrastructure.rendering.layout.svg_path_data import moved_path, read_path
 
@@ -79,3 +81,16 @@ def test_an_outline_fitted_to_a_new_rectangle_keeps_its_corners_as_drawn() -> No
     assert Point(210, 100) in points
     assert Point(250, 220) in points
     assert outline_extent(stretched) == Extent(200, 100, 260, 220)
+
+
+def test_a_decoration_s_frame_is_read_off_the_decoration_not_off_the_hook_in_the_line() -> None:
+    """The line PlantUML drew into Dogfood's left side hooked upwards in its last pixels; a frame taken
+    from that hook put the arrowhead 15 px below the element once it was carried to a new end."""
+    element = Extent(100, 0, 200, 40)
+    hooked = (Point(0, 20), Point(80, 20), Point(84, 18), Point(88, 14))  # the line's last run turns up
+    head = EndMark(MarkShape.POLYGON, (Point(100, 20), Point(91, 16), Point(91, 24)), filled=True)
+
+    frame = frame_as_drawn((head,), hooked, element)
+
+    assert frame.at == Point(100, 20)
+    assert frame.heading == pytest.approx((1.0, 0.0))

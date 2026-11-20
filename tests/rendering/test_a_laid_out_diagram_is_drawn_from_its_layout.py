@@ -234,3 +234,22 @@ def test_the_stored_picture_follows_the_layout_and_returns_when_it_is_removed(mo
     assert removed["wrote"], removed
     assert any(element.extent.left == first["x"] for element in laid_out.elements.values())
     assert rendered.read_bytes() == automatic
+
+
+@pytest.mark.parametrize("scene", _SCENES)
+def test_every_decoration_is_drawn_against_the_element_it_belongs_to(model: RenderedModel, scene: str) -> None:
+    """An arrowhead once sat 15 px below its element: its frame was read off the hook PlantUML's line
+    makes in its last pixels. The frame is now read off the decoration itself and its tip put on the
+    port, so no decoration can stand away from its element, wherever the element is moved."""
+    frontmatter = _harvested(model, scene)
+    for placed in list(frontmatter["layout"]["elements"].values())[::2]:  # type: ignore[union-attr]
+        placed["y"] += 30
+    after = _composed(model, scene, frontmatter)
+
+    for relation in after.relations:
+        for end, marks in ((relation.ends[0], relation.first_marks), (relation.ends[1], relation.second_marks)):
+            extent = after.extent_of(end)
+            assert extent is not None
+            for mark in marks:
+                nearest = min(extent.distance_to(point) for point in mark.outline)
+                assert nearest <= 1.5, (relation.ends, end, nearest)  # noqa: PLR2004 — a stroke's width
