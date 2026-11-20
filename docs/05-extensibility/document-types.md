@@ -63,6 +63,95 @@ type still satisfies it, so a template stays usable on a host that cannot create
 The earlier `required_entity_type_connections` / `suggested_entity_type_connections` spelling is
 still accepted, and reads as a list of entity terms. Schemas are not rewritten on upgrade.
 
+## Typed tables
+
+A section may declare tables under `sections[].tables`. A document of that type then holds, in that
+section, a markdown table whose columns are typed and whose rows carry ids.
+
+```json
+{
+  "sections": [
+    { "name": "Stressors", "tables": [ { "name": "stressors", "row_id": "S", "columns": [
+        { "name": "stressor", "required": true },
+        { "name": "origin", "enum": ["drawn", "elicited", "model-prompted"] },
+        { "name": "plausible", "type": "boolean" },
+        { "name": "set", "enum": ["design", "test"], "required": true },
+        { "name": "end_state", "type": "row", "table": "end-states" } ] } ] },
+    { "name": "End States", "tables": [ { "name": "end-states", "row_id": "E", "columns": [
+        { "name": "end_state", "required": true },
+        { "name": "required_behaviour", "type": "reference", "to": ["requirement"] },
+        { "name": "affects", "type": "reference", "to": ["driver", "goal"], "many": true } ] } ] }
+  ]
+}
+```
+
+```markdown
+## Stressors
+
+| Id | Stressor | Origin | Plausible | Set | End state |
+|---|---|---|---|---|---|
+| S1 | The payment provider is down | drawn | true | design | E1 |
+
+## End States
+
+| Id | End state | Required behaviour | Affects |
+|---|---|---|---|
+| E1 | Orders cannot be paid | | |
+```
+
+| Table key | Purpose |
+|---|---|
+| `name` | Identifies the table within the document type. Lowercase, unique across the type. |
+| `row_id` | The prefix of a row id: letters, the first a capital, unique across the type. |
+| `row_id_title` | The header of the id column. `Id` unless stated; two tables of one section state different titles, because the title says which table is which. |
+| `columns` | The columns after the id column, in the order a new document is given them. |
+
+| Column key | Purpose |
+|---|---|
+| `name` | Identifies the column. Lowercase with underscores, unique within the table. |
+| `title` | The header cell. Defaults to the name with underscores as spaces, capitalised. |
+| `required` | Whether a row is incomplete while the cell is empty. |
+| `type` | `string` (the default), `integer`, `number`, `boolean`, `array`, `reference` or `row`. |
+| `to` | On a `reference` column: the [reference terms](#reference-terms) a linked artifact must satisfy one of. |
+| `table` | On a `row` column: the table whose rows its cells name. |
+| `many` | On a `reference` or `row` column: whether a cell may address several. |
+
+A column of any of the first five types is written as a property of an
+[attribute schema](schemata-and-profiles.md) is. Any other key is a JSON Schema keyword and constrains
+the cell: `enum`, `pattern`, `minimum`, `maximum`, `minLength`, `format`. Cells are written as
+attribute values are: `true` and `false` for a boolean, a JSON array for an `array`.
+
+A `reference` cell holds a markdown link to an entity, a document or a diagram, written as a link in
+the document's prose is. A `many` cell holds several links. A `row` cell holds a row id of the named
+table, and a `many` cell holds several separated by commas.
+
+**Row ids.** The first column of every table is the row's id: the table's prefix and a number, such
+as `S3`. An id stays with its row when rows are
+reordered or removed, and prefixes differ between the tables of one type, so an id names one row of
+one table.
+
+**Hand edits.** Columns are found by their titles, so their order does not matter. A table in the
+section whose first header cell is not a declared `row_id_title` is left alone.
+
+**Verification.** A document can be written while its tables are being filled in; what is incomplete
+is reported and does not refuse the write.
+
+| Code | Severity | Finding |
+|---|---|---|
+| W162 | warning | A declared table is missing from its section. |
+| W163 | warning | A declared column is missing from the table's header. Its cells read empty. |
+| W164 | warning | The table has a column the declaration does not. It is not read. |
+| W165 | warning | A row does not satisfy the table's row schema: a required cell is empty, or a value is outside its `enum`, `pattern`, bounds or `format`. |
+| W166 | warning | A reference cell links something that is not an artifact in the repository, or one the column's `to` does not take. |
+| W167 | warning | A row carries no id. |
+| W168 | warning | A `row` cell names a row its table does not hold. |
+| E162 | error | A cell cannot be read as its column's type. |
+| E163 | error | A row id is not its table's prefix and a number, or two rows carry the same id. |
+
+A `to` term that does not expand is **W157**, as for a section's own terms.
+
+Creating a document without a body writes each declared table's header in its section.
+
 ## arc42
 
 Every repository is scaffolded with an `arc42` document type: the template's twelve sections, each

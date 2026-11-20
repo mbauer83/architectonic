@@ -25,7 +25,7 @@ a *link* resolves to, and a row is not a file.
 **A row's id is the first column**, written `<prefix><number>` — `S3`. In the table, because an id
 kept anywhere else (a comment, an anchor, the row's position) is lost or moved by the first hand edit;
 a prefix, so that an id says which table it belongs to and prefixes are distinct across one document
-type; a number, so that the next id is one more than the highest and never a reuse of a deleted one.
+type; a number, so that the next id is one past the highest in use.
 The column's header is `row_id_title`, `Id` unless stated, and it is what says which table of a
 section is the declared one — so two tables of one section state different titles.
 
