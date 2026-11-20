@@ -136,7 +136,8 @@ def _labels(path: Path) -> dict:
 
 def _still_dangling(path: Path) -> list[str]:
     result = VerificationResult(path=path, file_type="diagram")
-    check_edge_label_overrides(parse_frontmatter(path.read_text(encoding="utf-8")), result, str(path))
+    text = path.read_text(encoding="utf-8")
+    check_edge_label_overrides(text, parse_frontmatter(text), result, str(path))
     return [issue.message for issue in result.issues]
 
 

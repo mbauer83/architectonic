@@ -263,10 +263,32 @@ def test_set_diagram_edge_label_clear_removes_key(repo: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _edge_label_issues(fm: dict) -> list:
+def _edge_label_issues(fm: dict, body: str = "") -> list:
     result = VerificationResult(path=Path("fake.puml"), file_type="diagram")
-    check_edge_label_overrides(fm, result, "fake.puml")
+    check_edge_label_overrides(body, fm, result, "fake.puml")
     return result.issues
+
+
+_HAND = {"manual-layout": True, "entity-ids-used": ["APP@1700000001.aaaaaa.portal", "APP@1700000002.bbbbbb.ledger"]}
+
+
+def test_on_a_hand_written_body_a_label_needs_the_arrow_the_body_draws() -> None:
+    """The body is the only statement of what is drawn there; a recorded connection is a claim about it."""
+    fm = {**_HAND, "connection-ids-used": [_A_SERVES_B], "edge-labels": {_A_SERVES_B: "reads"}}
+    drawn = "@startuml\nAPP_aaaaaa --> APP_bbbbbb : x\n@enduml\n"
+    not_drawn = "@startuml\nrectangle \"P\" as APP_aaaaaa\nrectangle \"L\" as APP_bbbbbb\n@enduml\n"
+    hidden_only = "@startuml\nAPP_aaaaaa -[hidden]down- APP_bbbbbb\n@enduml\n"
+
+    assert not _edge_label_issues(fm, drawn)
+    assert not _edge_label_issues(fm, "@startuml\nAPP_bbbbbb <-- APP_aaaaaa\n@enduml\n"), "either way round"
+    assert [i.code for i in _edge_label_issues(fm, not_drawn)] == ["E410"]
+    assert [i.code for i in _edge_label_issues(fm, hidden_only)] == ["E410"]
+
+
+def test_on_a_generated_body_the_recorded_connections_are_what_is_asked() -> None:
+    fm = {"connection-ids-used": [_A_SERVES_B], "edge-labels": {_A_SERVES_B: "reads"}}
+
+    assert not _edge_label_issues(fm, "@startuml\n@enduml\n")
 
 
 def test_verifier_flags_dangling_edge_label() -> None:

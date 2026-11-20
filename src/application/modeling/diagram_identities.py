@@ -11,9 +11,15 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 
-from src.application.diagram_occurrences import occurrence_statements
+from src.application.artifacts.parsing import normalize_puml_alias, standard_alias_of
+from src.application.diagram_occurrences import occurrence_alias, occurrence_statements
 from src.application.modeling.binding_normalize import restore_diagram_shorthand
-from src.domain.artifact_id import MalformedArtifactIdError, canonical_entity_key, connection_id_as_written
+from src.domain.artifact_id import (
+    MalformedArtifactIdError,
+    canonical_entity_key,
+    connection_id_as_written,
+    stable_id,
+)
 from src.domain.diagrams.authored_groupings import RuleKey, grouping_ids
 from src.domain.diagrams.drawn_relations import held_connection_id, relations_drawn_for
 from src.domain.diagrams.layout.layout_checks import DiagramIdentities
@@ -21,6 +27,35 @@ from src.domain.diagrams.layout.layout_checks import DiagramIdentities
 
 def _rows(value: object) -> list[Mapping[str, object]]:
     return [row for row in value if isinstance(row, Mapping)] if isinstance(value, list) else []
+
+
+def strings_of(value: object) -> list[str]:
+    return [str(item) for item in value] if isinstance(value, list) else []
+
+
+def alias_by_instance(frontmatter: Mapping[str, object]) -> dict[str, str]:
+    """The alias each instance is drawn under, as far as the diagram's own statements say.
+
+    Resolved the way the product assigns one — from the element's id, a further occurrence numbered
+    in the order stated, a held element by the alias its row states — and never from another file,
+    so the answer cannot depend on what else a checkout happens to hold. An instance whose alias
+    cannot be told this way is absent, and a caller treats absence as not knowing.
+    """
+    aliases: dict[str, str] = {}
+    for entity_id in strings_of(frontmatter.get("entity-ids-used")):
+        if alias := standard_alias_of(entity_id):
+            aliases[stable_id(entity_id)] = normalize_puml_alias(alias)
+    stated = frontmatter.get("diagram-entities")
+    drawings: dict[str, int] = {}
+    for occurrence_id, backing in occurrences_stated(stated, frontmatter.get("bindings")):
+        drawings[backing] = drawings.get(backing, 1) + 1
+        if base := standard_alias_of(backing):
+            aliases[occurrence_id] = occurrence_alias(normalize_puml_alias(base), drawings[backing])
+    for rows in (stated.values() if isinstance(stated, Mapping) else ()):
+        for row in rows if isinstance(rows, list) else ():
+            if isinstance(row, Mapping) and row.get("id") and row.get("alias"):
+                aliases[str(row["id"])] = normalize_puml_alias(str(row["alias"]))
+    return aliases
 
 
 def occurrences_stated(diagram_entities: object, bindings: object) -> list[tuple[str, str]]:

@@ -29,9 +29,8 @@ from dataclasses import dataclass, field
 
 import yaml  # type: ignore[import-untyped]
 
-from src.application.artifacts.parsing import extract_yaml_block, normalize_puml_alias, standard_alias_of
-from src.application.diagram_occurrences import occurrence_alias
-from src.application.modeling.diagram_identities import drawn_relation_ends, occurrences_stated
+from src.application.artifacts.parsing import extract_yaml_block
+from src.application.modeling.diagram_identities import alias_by_instance, drawn_relation_ends, strings_of
 from src.application.repository_upgrade.ports import RepoUpgradeView, RepoUpgradeWriter
 from src.application.repository_upgrade.steps._frontmatter_scan import list_frontmatter_candidate_files
 from src.domain.artifact_id import stable_id
@@ -49,29 +48,6 @@ _GROUPINGS = "authored-groupings"
 _EDGE_LABELS = "edge-labels"
 
 
-def _strings(value: object) -> list[str]:
-    return [str(item) for item in value] if isinstance(value, list) else []
-
-
-def _alias_by_instance(frontmatter: Mapping[str, object]) -> dict[str, str]:
-    """The alias of each instance the diagram draws, as far as the diagram's own statements say."""
-    aliases: dict[str, str] = {}
-    for entity_id in _strings(frontmatter.get("entity-ids-used")):
-        if alias := standard_alias_of(str(entity_id)):
-            aliases[stable_id(str(entity_id))] = normalize_puml_alias(alias)
-    stated = frontmatter.get("diagram-entities")
-    drawings: dict[str, int] = {}
-    for occurrence_id, backing in occurrences_stated(stated, frontmatter.get("bindings")):
-        drawings[backing] = drawings.get(backing, 1) + 1
-        if base := standard_alias_of(backing):
-            aliases[occurrence_id] = occurrence_alias(normalize_puml_alias(base), drawings[backing])
-    for rows in (stated.values() if isinstance(stated, Mapping) else ()):
-        for row in rows if isinstance(rows, list) else ():
-            if isinstance(row, Mapping) and row.get("id") and row.get("alias"):
-                aliases[str(row["id"])] = normalize_puml_alias(str(row["alias"]))
-    return aliases
-
-
 @dataclass(frozen=True)
 class _Rekeying:
     """What becomes of one diagram's alias-pair keys: those with one relation to name, and the rest."""
@@ -86,11 +62,11 @@ def _rekeying(frontmatter: Mapping[str, object]) -> _Rekeying:
     retired = [str(key) for key in labels if alias_pair_of(str(key))] if isinstance(labels, Mapping) else []
     if not retired:
         return _Rekeying()
-    aliases = _alias_by_instance(frontmatter)
+    aliases = alias_by_instance(frontmatter)
     drawn = {
         key: (aliases.get(stable_id(source), aliases.get(source)), aliases.get(stable_id(target), aliases.get(target)))
         for key, (source, target) in drawn_relation_ends(
-            _strings(frontmatter.get("connection-ids-used")),
+            strings_of(frontmatter.get("connection-ids-used")),
             frontmatter.get("diagram-entities"),
             frontmatter.get("connections"),
             frontmatter.get("bindings"),
