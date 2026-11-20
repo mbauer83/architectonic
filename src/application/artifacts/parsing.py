@@ -27,6 +27,7 @@ from src.domain.ontology_representation.property_value import decode_lenient, ge
 from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 from src.domain.repository.connection_declaration import parse_connection_declarations
 from src.domain.repository.frontmatter import Frontmatter, body_after_frontmatter, read_frontmatter
+from src.domain.repository.properties_section import read_properties
 from src.domain.yaml_documents import parse_yaml
 
 
@@ -81,7 +82,7 @@ def decode_entity_properties(
     """Decode raw Markdown-cell property strings to typed Python values.
 
     *raw_props* is a ``{attr_name: cell_string}`` dict (from
-    ``_extract_properties_map``).  *prop_schemata* is the ``properties`` dict
+    ``read_properties``).  *prop_schemata* is the ``properties`` dict
     from the entity's JSON-Schema attribute schema.  *attribute_types* is the
     ``attribute-types`` frontmatter map used for ad-hoc (non-schema) attributes.
 
@@ -117,22 +118,6 @@ def parse_entity_content_sections(content_section: str) -> dict[str, Any]:
                 summary_lines.append(line)
         return "\n".join(summary_lines).strip()
 
-    def _extract_properties_map(text: str) -> dict[str, str]:
-        props: dict[str, str] = {}
-        in_table = False
-        for line in text.splitlines():
-            stripped = line.strip()
-            if stripped == "## Properties":
-                in_table = True
-                continue
-            if in_table and stripped.startswith("## "):
-                break
-            if in_table and stripped.startswith("|") and "---" not in stripped:
-                cells = [c.strip() for c in stripped.split("|")[1:-1]]
-                if len(cells) >= 2 and cells[0] not in ("Attribute", "(none)"):
-                    props[cells[0]] = cells[1]
-        return props
-
     def _extract_notes_text(text: str) -> str:
         lines = text.splitlines()
         in_notes = False
@@ -150,7 +135,7 @@ def parse_entity_content_sections(content_section: str) -> dict[str, Any]:
 
     return {
         "summary": _extract_summary_text(content_section),
-        "properties": _extract_properties_map(content_section),
+        "properties": read_properties(content_section) or {},
         "notes": _extract_notes_text(content_section),
     }
 

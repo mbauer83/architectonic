@@ -15,6 +15,7 @@ from src.application.verification.artifact_verifier_types import Issue, Severity
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
 from src.domain.ontology_representation.property_value import decode_lenient, get_adhoc_type
 from src.domain.ontology_representation.specializations import SpecializationCatalog
+from src.domain.repository.properties_section import read_properties
 
 # ---------------------------------------------------------------------------
 # Configurable JSON Schema checks (WS-C)
@@ -85,7 +86,7 @@ def check_attribute_schema(
         result.issues.append(Issue(Severity.ERROR, "E043", f"Attribute schema ({artifact_type}): {msg}", loc))
     if schema is None:
         return
-    props = parse_properties_table(content)
+    props = stated_properties(content)
     if props is None:
         required = schema.get("required", [])
         if required:
@@ -191,43 +192,16 @@ def check_connection_metadata_schema(
         )
 
 
-def parse_properties_table(content: str) -> dict[str, str] | None:
-    """Extract key-value pairs from the ``## Properties`` markdown table.
+def stated_properties(content: str) -> dict[str, str] | None:
+    """The attributes the ``## Properties`` table gives a value, or ``None`` without such a section.
 
-    Returns ``None`` if no Properties table is found, or a dict mapping
-    attribute names to their values.
+    An attribute whose cell is empty is the scaffold row the writer leaves for a schema key nobody
+    has filled in. The table states it; the entity does not, so no rule here is asked about it.
     """
-    lines = content.splitlines()
-    in_table = False
-    header_found = False
-    props: dict[str, str] = {}
-    for line in lines:
-        stripped = line.strip()
-        if stripped.startswith("## Properties"):
-            header_found = True
-            continue
-        if header_found and not in_table:
-            # Skip the table header row and separator
-            if stripped.startswith("| Attribute"):
-                continue
-            if stripped.startswith("|---") or stripped.startswith("| ---"):
-                in_table = True
-                continue
-            if stripped.startswith("##") or stripped.startswith("<!--"):
-                # Hit next section without finding table
-                break
-            continue
-        if in_table:
-            if not stripped.startswith("|"):
-                break
-            cells = [c.strip() for c in stripped.split("|")]
-            # split on | gives ['', 'key', 'value', ''] for '| key | value |'
-            cells = [c for c in cells if c]
-            if len(cells) >= 2 and cells[0] != "(none)":
-                props[cells[0]] = cells[1]
-    if not header_found:
+    properties = read_properties(content)
+    if properties is None:
         return None
-    return props
+    return {name: cell for name, cell in properties.items() if name and cell}
 
 
 # ---------------------------------------------------------------------------
@@ -256,7 +230,7 @@ def check_module_source_path(
     ancestor directory containing ``src/`` can be found (the architecture repo
     is not co-located with the source tree).
     """
-    props = parse_properties_table(content)
+    props = stated_properties(content)
     if not props:
         return
     module_val = props.get("Module", "").strip()

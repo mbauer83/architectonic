@@ -11,6 +11,7 @@ from pathlib import Path
 from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 from src.domain.repository.connection_declaration import ConnectionDeclaration, parse_connection_declarations
 from src.domain.repository.frontmatter import Frontmatter, parse_frontmatter, read_frontmatter
+from src.domain.repository.properties_section import read_properties
 
 
 @dataclass
@@ -67,7 +68,7 @@ def parse_entity_file(path: Path) -> ParsedEntity:
     display_section = _extract_after(text, "<!-- §display -->")
 
     summary = _extract_summary(content_section, frontmatter.get("name", ""))
-    properties = _extract_properties(content_section)
+    properties = read_properties(content_section) or {}
     notes = _extract_notes(content_section)
     display_section_id, display_content = _extract_display_block(display_section)
 
@@ -184,27 +185,6 @@ def _extract_summary(content_section: str, entity_name: object) -> str | None:
 
     text = "\n".join(summary_lines).strip()
     return text if text else None
-
-
-def _extract_properties(content_section: str) -> dict[str, str]:
-    """Extract key-value pairs from the Properties table."""
-    props: dict[str, str] = {}
-    lines = content_section.splitlines()
-    in_table = False
-
-    for line in lines:
-        stripped = line.strip()
-        if stripped == "## Properties":
-            in_table = True
-            continue
-        if in_table and stripped.startswith("## "):
-            break
-        if in_table and stripped.startswith("|") and "---" not in stripped:
-            cells = [c.strip() for c in stripped.split("|")[1:-1]]
-            if len(cells) >= 2 and cells[0] not in ("Attribute", "(none)"):
-                props[cells[0]] = cells[1]
-
-    return props
 
 
 def _extract_notes(content_section: str) -> str | None:

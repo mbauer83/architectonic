@@ -15,6 +15,7 @@ from src.application.verification.artifact_verifier_types import (
     VerificationResult,
     entity_id_from_path,
 )
+from src.domain.markdown_table import tables_in
 from src.domain.repository.repo_layout import ARTIFACT_SOURCE_SUFFIXES, MODEL
 
 
@@ -243,7 +244,7 @@ def check_matrix_markdown_shape(fm: dict, content: str, result: VerificationResu
             Severity.WARNING, "W321",
             "Markdown diagram file under diagram-catalog/diagrams should use diagram-type: matrix", loc,
         ))
-    if "|" not in content:
+    if not tables_in(content):
         result.issues.append(Issue(
             Severity.WARNING, "W322",
             "Matrix diagram markdown has no table markup; expected at least one matrix table", loc,

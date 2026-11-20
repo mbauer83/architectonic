@@ -11,6 +11,7 @@ from src.application.artifacts.schema import (
 )
 from src.domain.ontology_representation.property_value import encode as _encode_cell
 from src.domain.repository.connection_declaration import ConnectionDeclaration, format_connection_declaration
+from src.domain.repository.properties_section import format_properties_section
 
 
 def _specialization_frontmatter_value(specializations: Sequence[str] | None) -> str | list[str] | None:
@@ -108,21 +109,10 @@ def format_entity_markdown(
         content_lines.append(summary.strip())
         content_lines.append("")
 
-    content_lines.extend(["## Properties", "", "| Attribute | Value |", "|---|---|"])
     props = properties or {}
-    scaffold_keys = _scaffold_keys_from_schema(repo_root, artifact_type)
-    if props:
-        for key in sorted(props.keys()):
-            content_lines.append(f"| {key} | {_encode_cell(props[key])} |")
-        for key in scaffold_keys:
-            if key not in props:
-                content_lines.append(f"| {key} | |")
-    elif scaffold_keys:
-        for key in scaffold_keys:
-            content_lines.append(f"| {key} | |")
-    else:
-        content_lines.append("| (none) | (none) |")
-    content_lines.append("")
+    stated = [(key, _encode_cell(props[key])) for key in sorted(props)]
+    scaffold = [(key, "") for key in _scaffold_keys_from_schema(repo_root, artifact_type) if key not in props]
+    content_lines.extend([*format_properties_section([*stated, *scaffold]), ""])
 
     if notes and notes.strip():
         content_lines.extend(["## Notes", "", notes.strip(), ""])

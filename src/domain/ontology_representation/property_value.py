@@ -45,6 +45,8 @@ import json
 import re
 from typing import Union
 
+from src.domain.markdown_table import escape_cell
+
 # ---------------------------------------------------------------------------
 # Value ADT
 # ---------------------------------------------------------------------------
@@ -76,16 +78,15 @@ _SENTINEL = "\x00BACKSLASH\x00"  # Never appears in real content
 
 def _md_escape(text: str) -> str:
     """Escape a string for safe embedding in a Markdown table cell."""
-    return (
-        text
-        .replace("\\", "\\\\")  # must come first
-        .replace("|", "\\|")
-        .replace("\n", "\\n")
-    )
+    return escape_cell(text).replace("\n", "\\n")
 
 
 def _md_unescape(cell: str) -> str:
-    r"""Reverse _md_escape. Sentinel prevents double-unescaping \\  →  \ ."""
+    r"""Reverse _md_escape. Sentinel prevents double-unescaping \\  →  \ .
+
+    One pass over all three escapes, and not `unescape_cell` followed by the line break: undoing the
+    table's two first would turn an escaped backslash before an `n` into a line break.
+    """
     return (
         cell
         .replace("\\\\", _SENTINEL)

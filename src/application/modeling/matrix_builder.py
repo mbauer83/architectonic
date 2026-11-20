@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from src.domain.markdown_table import escape_cell, format_table
+
 
 @dataclass
 class ConnTypeConfig:
@@ -53,12 +55,18 @@ def build_matrix_tables(
     return "\n\n".join(_single_table(row_ids, col_ids, entity_names, cfg.conn_type, conn_set) for cfg in active)
 
 
-def _header_cell(entity_id: str) -> str:
-    return entity_id  # plain ID — linkified by create_matrix
+#: What a cell holds where the two elements are not related. A non-breaking space, so that a renderer
+#: draws the cell at all.
+_EMPTY_MARK = "&nbsp;"
+
+
+def _header(col_ids: list[str]) -> list[str]:
+    """The corner cell, then each column's plain id — linkified by create_matrix."""
+    return ["", *(escape_cell(entity_id) for entity_id in col_ids)]
 
 
 def _row_cell(entity_id: str) -> str:
-    return f"**{entity_id}**"
+    return f"**{escape_cell(entity_id)}**"
 
 
 def _single_table(
@@ -70,13 +78,11 @@ def _single_table(
 ) -> str:
     _ = entity_names  # available for future use
     pairs = conn_set.get(conn_type, set())
-    header = "| | " + " | ".join(_header_cell(e) for e in col_ids) + " |"
-    sep = "|---|" + "---|" * len(col_ids)
-    rows = [f"## {conn_type}", "", header, sep]
-    for row_id in row_ids:
-        cells = ["✓" if (row_id, col_id) in pairs else "&nbsp;" for col_id in col_ids]
-        rows.append("| " + _row_cell(row_id) + " | " + " | ".join(cells) + " |")
-    return "\n".join(rows)
+    rows = [
+        [_row_cell(row_id), *("✓" if (row_id, col_id) in pairs else _EMPTY_MARK for col_id in col_ids)]
+        for row_id in row_ids
+    ]
+    return "\n".join([f"## {conn_type}", "", format_table(_header(col_ids), rows)])
 
 
 _LANG_PREFIXES = ("archimate-", "er-", "sequence-", "activity-", "usecase-")
@@ -120,15 +126,11 @@ def _combined_table(
 ) -> str:
     _ = entity_names  # available for future use
     abbrevs = _abbreviations(active, ontology_abbreviations)
-    header = "| | " + " | ".join(_header_cell(e) for e in col_ids) + " |"
-    sep = "|---|" + "---|" * len(col_ids)
-    rows = [header, sep]
-    for row_id in row_ids:
-        cells = []
-        for col_id in col_ids:
-            marks = [abbrevs[cfg.conn_type] for cfg in active if (row_id, col_id) in conn_set.get(cfg.conn_type, set())]
-            cells.append(", ".join(marks) if marks else "&nbsp;")
-        rows.append("| " + _row_cell(row_id) + " | " + " | ".join(cells) + " |")
+    def marks(row_id: str, col_id: str) -> str:
+        held = [abbrevs[cfg.conn_type] for cfg in active if (row_id, col_id) in conn_set.get(cfg.conn_type, set())]
+        return ", ".join(held) or _EMPTY_MARK
+
+    rows = [[_row_cell(row_id), *(marks(row_id, col_id) for col_id in col_ids)] for row_id in row_ids]
 
     def _strip_prefix(ct: str) -> str:
         for pfx in _LANG_PREFIXES:
@@ -137,4 +139,4 @@ def _combined_table(
         return ct
 
     legend = "*Legend: " + ", ".join(f"{abbrevs[cfg.conn_type]}={_strip_prefix(cfg.conn_type)}" for cfg in active) + "*"
-    return "\n".join(rows) + "\n\n" + legend
+    return format_table(_header(col_ids), rows) + "\n\n" + legend

@@ -6,12 +6,14 @@ edits can share the same table-content composition without duplicating it.
 
 import os
 import re
+from collections.abc import Callable
 from pathlib import Path
 
 import yaml
 
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS
+from src.domain.markdown_table import tables_in
 from src.domain.repository.frontmatter import parse_frontmatter
 
 _ENTITY_ID_PATTERN = re.compile(r"\b([A-Z]{2,6}@\d+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*)\b")
@@ -39,6 +41,19 @@ def _display_name_from_entity_file(path: Path, artifact_id: str) -> str:
     if not name:
         return artifact_id
     return name
+
+
+def _rewriting_unlinked_rows(matrix_markdown: str, rewrite: Callable[[str], str]) -> str:
+    """The body with `rewrite` applied to each table row that carries no link yet.
+
+    Which lines are rows is the table reading's answer, so a delimiter row, prose that merely opens
+    with a pipe, and a table shown inside a code fence are all left as they are.
+    """
+    lines = matrix_markdown.splitlines()
+    rows = {at for table in tables_in(matrix_markdown) for at in table.cell_lines}
+    return "\n".join(
+        rewrite(line) if at in rows and "](" not in line else line for at, line in enumerate(lines)
+    )
 
 
 def _linkify_matrix_ids(
@@ -77,14 +92,7 @@ def _linkify_matrix_ids(
         replaced += 1
         return f"[{link_text}]({target})"
 
-    out_lines: list[str] = []
-    for line in matrix_markdown.splitlines():
-        if line.startswith("| ") and not line.startswith("|---") and "](" not in line:
-            out_lines.append(_ENTITY_ID_PATTERN.sub(repl, line))
-        else:
-            out_lines.append(line)
-
-    return "\n".join(out_lines), replaced
+    return _rewriting_unlinked_rows(matrix_markdown, lambda line: _ENTITY_ID_PATTERN.sub(repl, line)), replaced
 
 
 def _build_diagram_id_to_relpath(*, diagrams_dir: Path, registry: ArtifactRegistry) -> dict[str, str]:
@@ -134,15 +142,8 @@ def _linkify_known_tokens_in_matrix_rows(
             out = pattern.sub(_repl, out)
         return out
 
-    out_lines: list[str] = []
-    for line in matrix_markdown.splitlines():
-        if line.startswith("| ") and not line.startswith("|---") and "](" not in line:
-            linked = replace_token_links(line, diagram_id_to_relpath)
-            out_lines.append(linked)
-        else:
-            out_lines.append(line)
-
-    return "\n".join(out_lines), replaced
+    linked = _rewriting_unlinked_rows(matrix_markdown, lambda line: replace_token_links(line, diagram_id_to_relpath))
+    return linked, replaced
 
 
 def compose_matrix_body(

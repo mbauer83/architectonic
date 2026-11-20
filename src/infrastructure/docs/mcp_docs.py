@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, cast
 
+from src.domain.markdown_table import escape_cell, format_table
+
 
 @dataclass(frozen=True)
 class ToolInfo:
@@ -266,9 +268,10 @@ def write_documents(documents: list[GeneratedDocument]) -> None:
 
 
 def render_arch_read_table(tools: list[ToolInfo]) -> str:
-    rows = ["| Tool | Access | Purpose |", "|---|---|---|"]
-    rows.extend(f"| `{tool.name}` | {tool.access} | {escape_table(tool.description)} |" for tool in tools)
-    return "\n".join(rows)
+    return format_table(
+        ("Tool", "Access", "Purpose"),
+        [(f"`{tool.name}`", tool.access, escape_cell(tool.description)) for tool in tools],
+    )
 
 
 def render_arch_write_table(tools: list[ToolInfo]) -> str:
@@ -295,25 +298,19 @@ def render_grouped_table(
     rows and a list of name fragments was the patch. The annotations say it per tool.
     """
     by_name = {tool.name: tool for tool in tools}
-    rows = ["| Capability | Tool | Access | Purpose |", "|---|---|---|---|"]
-    covered: set[str] = set()
-    for group_name, names in groups:
-        for name in names:
-            if name in by_name:
-                covered.add(name)
-                rows.append(render_grouped_row(group_name, by_name[name]))
-    for tool in tools:
-        if tool.name not in covered:
-            rows.append(render_grouped_row("Other", tool))
-    return "\n".join(rows)
+    grouped = [
+        (group_name, by_name[name]) for group_name, names in groups for name in names if name in by_name
+    ]
+    covered = {tool.name for _, tool in grouped}
+    ungrouped = [("Other", tool) for tool in tools if tool.name not in covered]
+    return format_table(
+        ("Capability", "Tool", "Access", "Purpose"),
+        [grouped_row(group_name, tool) for group_name, tool in [*grouped, *ungrouped]],
+    )
 
 
-def render_grouped_row(group_name: str, tool: ToolInfo) -> str:
-    return f"| {group_name} | `{tool.name}` | {tool.access} | {escape_table(tool.description)} |"
-
-
-def escape_table(value: str) -> str:
-    return value.replace("|", "\\|")
+def grouped_row(group_name: str, tool: ToolInfo) -> tuple[str, str, str, str]:
+    return (group_name, f"`{tool.name}`", tool.access, escape_cell(tool.description))
 
 
 def readme_tool_mentions(repo_root: Path) -> set[str]:

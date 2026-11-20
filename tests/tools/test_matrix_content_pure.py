@@ -199,11 +199,20 @@ class TestLinkifyKnownTokensInMatrixRows:
         assert count == 0
 
     def test_multiple_distinct_tokens_replaced(self) -> None:
-        md = "| alpha | beta |\n"
+        md = "| alpha | beta |\n|---|---|\n"
         mapping = {"alpha": "alpha.md", "beta": "beta.md"}
         result, count = _linkify_known_tokens_in_matrix_rows(matrix_markdown=md, diagram_id_to_relpath=mapping)
         assert "[alpha](alpha.md)" in result
         assert "[beta](beta.md)" in result
+        assert count == 2
+
+    def test_a_pipe_line_outside_a_table_is_not_a_row(self) -> None:
+        """A row is what the table reading says is one: no delimiter row, no table, nothing to link."""
+        md = "| alpha | beta |\n\n| alpha |\n|---|\n| beta |\n"
+        mapping = {"alpha": "alpha.md", "beta": "beta.md"}
+        result, count = _linkify_known_tokens_in_matrix_rows(matrix_markdown=md, diagram_id_to_relpath=mapping)
+        assert result.splitlines()[0] == "| alpha | beta |"
+        assert result.splitlines()[2:] == ["| [alpha](alpha.md) |", "|---|", "| [beta](beta.md) |"]
         assert count == 2
 
     def test_non_table_rows_unchanged(self) -> None:
@@ -233,7 +242,7 @@ class TestLinkifyMatrixIds:
         eid = "REQ@1000000230.MatLnk.mat-lnk"
         self._write_entity(root, eid, "Mat Link")
         registry = ArtifactRegistry(shared_artifact_index([root]))
-        md = f"| {eid} | description |\n|---|\n"
+        md = f"| {eid} | description |\n|---|---|\n"
         result, count = _linkify_matrix_ids(
             repo_root=root,
             registry=registry,
