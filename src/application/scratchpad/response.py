@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from src.application.scratchpad.document import drop_empty, to_document
+from src.application.scratchpad.note_attributes import AttributeSchemaSource, free_attribute_schema
 from src.application.scratchpad.verification import (
     note_verdict_source,
     ontology_domains,
@@ -23,7 +24,13 @@ from src.domain.modules.module_registry import ModuleRegistry
 from src.domain.scratchpad import LinkVerdict, Scratchpad
 
 
-def to_response(scratchpad: Scratchpad, *, group: str, registry: ModuleRegistry) -> dict[str, Any]:
+def to_response(
+    scratchpad: Scratchpad,
+    *,
+    group: str,
+    registry: ModuleRegistry,
+    attribute_schema: AttributeSchemaSource = free_attribute_schema,
+) -> dict[str, Any]:
     """The document as a read serves it.
 
     `group` is where the file sits, which the file cannot know about itself. `area` is derived from
@@ -40,7 +47,7 @@ def to_response(scratchpad: Scratchpad, *, group: str, registry: ModuleRegistry)
     document["group"] = group
     document["classification-levels"] = _levels_document(registry, scratchpad.meta_ontology)
     _serve_areas(scratchpad, document, registry)
-    _serve_notes(scratchpad, document, registry)
+    _serve_notes(scratchpad, document, registry, attribute_schema)
     link_verdict_of = verdict_source(registry, scratchpad)
     stored_links = {link.id: link for link in scratchpad.links}
     for row in document.get("links", []):
@@ -70,9 +77,14 @@ def _serve_areas(scratchpad: Scratchpad, document: dict[str, Any], registry: Mod
             row["permitted-document-types"] = list(area.permitted_document_types)
 
 
-def _serve_notes(scratchpad: Scratchpad, document: dict[str, Any], registry: ModuleRegistry) -> None:
+def _serve_notes(
+    scratchpad: Scratchpad,
+    document: dict[str, Any],
+    registry: ModuleRegistry,
+    attribute_schema: AttributeSchemaSource,
+) -> None:
     domains = ontology_domains(registry, scratchpad.meta_ontology)
-    note_verdict_of = note_verdict_source(registry, scratchpad)
+    note_verdict_of = note_verdict_source(registry, scratchpad, attribute_schema)
     stored = {note.id: note for note in scratchpad.notes}
     for row in document.get("notes", []):
         note = stored[str(row["id"])]

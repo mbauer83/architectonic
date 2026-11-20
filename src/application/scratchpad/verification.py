@@ -18,6 +18,11 @@ from dataclasses import dataclass
 from typing import Literal
 
 from src.application.entity_type_predicates import INTERNAL_ELEMENT_CLASS
+from src.application.scratchpad.note_attributes import (
+    AttributeSchemaSource,
+    attribute_findings,
+    free_attribute_schema,
+)
 from src.domain.modules.module_registry import ModuleRegistry
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName, EntityTypeName
 from src.domain.ontology_representation.classification_levels import (
@@ -281,21 +286,28 @@ def verdict_source(registry: ModuleRegistry, scratchpad: Scratchpad) -> Callable
 
 
 def note_verdict_source(
-    registry: ModuleRegistry, scratchpad: Scratchpad
+    registry: ModuleRegistry,
+    scratchpad: Scratchpad,
+    attribute_schema: AttributeSchemaSource = free_attribute_schema,
 ) -> Callable[[Note], LinkVerdict]:
     """The verdict of each note of one scratchpad — the same source for the read and the lift.
 
-    A note is judged against the area it sits in. An area narrows and never refuses, so what comes
-    back from it is a warning: the type is one the meta-ontology declares, and the area is a scope
-    someone configured over it.
+    A note is judged against the area it sits in, and its attributes against the schema of what it
+    has become. An area narrows and never refuses, so what comes back from it is a warning: the
+    type is one the meta-ontology declares, and the area is a scope someone configured over it. An
+    attribute may block — where the write of the entity would itself refuse the value.
     """
     domains = ontology_domains(registry, scratchpad.meta_ontology)
+    levels = classification_levels_of(registry, scratchpad.meta_ontology)
     areas = {area.id: area for area in scratchpad.areas}
 
     def verdict_of(note: Note) -> LinkVerdict:
         narrowing = area_narrowing(
             note, areas.get(scratchpad.area_of(note.id)), domain_of=domains.get
         )
-        return note_verdict([narrowing] if narrowing else [])
+        return note_verdict([
+            *([narrowing] if narrowing else []),
+            *attribute_findings(note, levels, attribute_schema),
+        ])
 
     return verdict_of

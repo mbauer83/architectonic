@@ -22,6 +22,7 @@ from src.application.scratchpad.lift import (
     LiftReceipt,
     plan_lift,
 )
+from src.application.scratchpad.note_attributes import AttributeSchemaSource, free_attribute_schema
 from src.application.scratchpad.ports import (
     LiftWriterPort,
     ScratchpadRepositoryPort,
@@ -76,10 +77,13 @@ class ScratchpadService:
         repository: ScratchpadRepositoryPort,
         registry: ModuleRegistry,
         lift_writer: LiftWriterPort,
+        *,
+        attribute_schema: AttributeSchemaSource = free_attribute_schema,
     ) -> None:
         self._repository = repository
         self._registry = registry
         self._lift_writer = lift_writer
+        self._attribute_schema = attribute_schema
 
     # ── Reads ────────────────────────────────────────────────────────────────
 
@@ -220,7 +224,9 @@ class ScratchpadService:
                 area: self._lift_writer.resolve_target(group) for area, group in targets.items()
             },
             verdict_of=verdict_source(self._registry, scratchpad),
-            note_verdict_of=note_verdict_source(self._registry, scratchpad),
+            note_verdict_of=note_verdict_source(
+                self._registry, scratchpad, self._attribute_schema
+            ),
             levels=classification_levels_of(self._registry, scratchpad.meta_ontology),
             draw=draw,
         )

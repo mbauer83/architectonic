@@ -298,12 +298,12 @@ class TestTheDestinationEnumOnThisSurfaceToo:
         """Where the `targets` pointer lives now: in the description an agent reads *before* it
         calls, rather than in a message it only sees after guessing wrong. The name is the whole
         problem — `destination` reads as "which project this lands in"."""
-        from src.infrastructure.mcp.artifact_mcp.scratchpad_tools import (
-            _EDIT_DESCRIPTION,
-            _REPLACE_DESCRIPTION,
+        from src.infrastructure.mcp.artifact_mcp.scratchpad_tool_descriptions import (
+            EDIT_DESCRIPTION,
+            REPLACE_DESCRIPTION,
         )
 
-        for description in (_EDIT_DESCRIPTION, _REPLACE_DESCRIPTION):
+        for description in (EDIT_DESCRIPTION, REPLACE_DESCRIPTION):
             assert "targets" in description
             assert "scratchpad_lift" in description
 

@@ -11,6 +11,7 @@
 import { computed, inject, onMounted } from 'vue'
 import { useQuery } from '../composables/useQuery'
 import { modelServiceKey } from '../keys'
+import ScratchpadNoteAttributes from './ScratchpadNoteAttributes.vue'
 import ScratchpadNoteClassification from './ScratchpadNoteClassification.vue'
 import type { Area, ClassificationLevel, Link, Note } from '../../domain/schemas/scratchpads'
 import type { DocumentType } from '../../domain/schemas/documents'
@@ -32,6 +33,7 @@ const emit = defineEmits<{
   (event: 'refine-note', payload: { id: string; levelId: string; value: string }): void
   (event: 'unrefine-note', payload: { id: string; levelId: string }): void
   (event: 'body-note', payload: { id: string; body: string }): void
+  (event: 'attribute-note', payload: { id: string; name: string; value: string }): void
   (event: 'document-note', payload: { id: string; documentType: string }): void
   (event: 'untype-note', payload: { id: string }): void
   (event: 'forget-note', payload: { id: string }): void
@@ -202,6 +204,13 @@ const onLinkType = (connectionType: string): void => {
         </select>
       </label>
     </template>
+
+    <ScratchpadNoteAttributes
+      v-if="!boundOrRealized"
+      :note="note"
+      :levels="levels"
+      @attribute-note="emit('attribute-note', $event)"
+    />
 
     <!-- The note's own verdict, worded and coloured as a link's is. -->
     <p

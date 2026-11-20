@@ -31,7 +31,6 @@ from src.application.scratchpad.document import (
 from src.application.scratchpad.edit import ScratchpadEdit
 from src.application.scratchpad.ports import ScratchpadNotFoundError, ScratchpadVersionConflictError
 from src.application.scratchpad.requests import from_request_document
-from src.application.scratchpad.response import to_response
 from src.application.scratchpad.service import ScratchpadService
 from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.scratchpad import ScratchpadError
@@ -52,29 +51,23 @@ from src.infrastructure.rest.routers._openapi import (
     TAG_SCRATCHPADS,
     WRITE_RESPONSES,
 )
-from src.infrastructure.scratchpad.bulk_write_lift import BulkWriteLiftWriter
-from src.infrastructure.scratchpad.yaml_repository import YamlScratchpadRepository
+from src.infrastructure.scratchpad.composition import scratchpad_service, served
 
 if TYPE_CHECKING:
-    from src.domain.modules.module_registry import ModuleRegistry
+    from pathlib import Path
 
 router = APIRouter()
 
 
-def _registry() -> "ModuleRegistry":
-    """The module registry, so a served link can carry its verdict. One lookup per response."""
-    from src.infrastructure.app_bootstrap import get_module_registry  # noqa: PLC0415
-
-    return get_module_registry()
-
-
-def _service() -> ScratchpadService:
+def _root() -> Path:
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Engagement repository is not initialised")
-    return ScratchpadService(
-        YamlScratchpadRepository(repo_root), _registry(), BulkWriteLiftWriter(repo_root)
-    )
+    return repo_root
+
+
+def _service() -> ScratchpadService:
+    return scratchpad_service(_root())
 
 
 class _ClosedBody(BaseModel):
@@ -191,7 +184,7 @@ def read_scratchpad(artifact_id: str) -> dict[str, Any]:
     service = _service()
     try:
         scratchpad = service.read(artifact_id)
-        return to_response(scratchpad, group=service.group_of(artifact_id), registry=_registry())
+        return served(scratchpad, group=service.group_of(artifact_id), repo_root=_root())
     except ScratchpadNotFoundError as exc:
         raise _refuse(exc) from exc
 
@@ -220,7 +213,7 @@ def create_scratchpad(body: CreateScratchpadBody, response: Response) -> dict[st
     except (ScratchpadError, ScratchpadVersionConflictError) as exc:
         raise _refuse(exc) from exc
     response.headers["Location"] = f"/api/scratchpads/{created.artifact_id}"
-    return to_response(created, group=body.group, registry=_registry())
+    return served(created, group=body.group, repo_root=_root())
 
 
 @router.put(
@@ -249,7 +242,7 @@ def replace_scratchpad(artifact_id: str, body: ReplaceScratchpadBody) -> dict[st
         )
     except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:
         raise _refuse(exc) from exc
-    return to_response(stored, group=body.group, registry=_registry())
+    return served(stored, group=body.group, repo_root=_root())
 
 
 @router.patch(
@@ -281,7 +274,7 @@ def edit_scratchpad(artifact_id: str, body: EditScratchpadBody) -> dict[str, Any
         )
     except (ScratchpadError, ScratchpadNotFoundError, ScratchpadVersionConflictError) as exc:
         raise _refuse(exc) from exc
-    return to_response(stored, group=service.group_of(artifact_id), registry=_registry())
+    return served(stored, group=service.group_of(artifact_id), repo_root=_root())
 
 
 @router.post(

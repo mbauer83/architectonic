@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -100,21 +101,47 @@ def check_attribute_schema(
             )
         return
 
+    attribute_types: dict[str, str] = fm.get("attribute-types", {}) or {}
+    result.issues.extend(
+        stated_property_issues(
+            props, schema, artifact_type=str(artifact_type), attribute_types=attribute_types, loc=loc
+        )
+    )
+
+
+def stated_property_issues(
+    props: Mapping[str, str],
+    schema: Mapping[str, Any],
+    *,
+    artifact_type: str,
+    attribute_types: Mapping[str, str],
+    loc: str,
+) -> list[Issue]:
+    """What an attribute schema says about the property cells an entity states.
+
+    The value checks of `check_attribute_schema`, apart from where the cells came from — so
+    something that is not yet an entity file can ask what the write of one would be told. A
+    scratchpad note about to be lifted does: it holds the same properties, and the answer it is
+    shown has to be the one the entity write gives.
+
+    Cells are decoded by the schema's declared type. A cell that cannot be decoded is a blocking
+    E042; every other constraint violation is a W042 warning until schemas are fully remediated.
+    """
+    issues: list[Issue] = []
     # Schema-driven decode: convert raw cell strings to typed values before
     # running jsonschema.  This makes type: integer / boolean / number work
     # correctly and detects genuinely wrong values (E042 = blocking).
     prop_schemata: dict[str, Any] = schema.get("properties", {}) or {}
-    attribute_types: dict[str, str] = fm.get("attribute-types", {}) or {}
     decoded: dict[str, Any] = {}
     for key, cell in props.items():
         prop_schema = prop_schemata.get(key)
         if prop_schema:
             value, err = decode_lenient(cell, prop_schema)
         else:
-            adhoc_type = get_adhoc_type(key, attribute_types)
+            adhoc_type = get_adhoc_type(key, dict(attribute_types))
             value, err = decode_lenient(cell, {"type": adhoc_type})
         if err:
-            result.issues.append(
+            issues.append(
                 Issue(
                     Severity.ERROR,
                     "E042",
@@ -124,8 +151,8 @@ def check_attribute_schema(
             )
         decoded[key] = value
 
-    for msg in validate_against_schema(decoded, schema):
-        result.issues.append(
+    for msg in validate_against_schema(decoded, dict(schema)):
+        issues.append(
             Issue(
                 Severity.WARNING,
                 "W042",
@@ -136,7 +163,7 @@ def check_attribute_schema(
 
     missing_recommended = [name for name in schema.get("x-recommended", []) if name not in decoded]
     if missing_recommended:
-        result.issues.append(
+        issues.append(
             Issue(
                 Severity.WARNING,
                 "W042",
@@ -144,6 +171,7 @@ def check_attribute_schema(
                 loc,
             )
         )
+    return issues
 
 
 def check_connection_metadata_schema(

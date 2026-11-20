@@ -8,6 +8,7 @@ what a person read is what runs.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -71,6 +72,8 @@ class LiftItem:
     #: The note's body, which becomes the entity's summary.
     summary: str = ""
     specializations: tuple[str, ...] = ()
+    #: The note's attributes, which become the entity's properties.
+    properties: Mapping[str, object] = field(default_factory=dict)
     #: For a connection: how each end is addressed. Either an artifact id that already exists, or
     #: `$ref:<note id>` naming an entity this same batch creates — the alias `artifact_bulk_write`
     #: resolves, which is what lets a lift create both ends and the relation between them in one

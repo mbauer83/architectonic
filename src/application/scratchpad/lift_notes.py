@@ -23,8 +23,9 @@ def note_item(
 ) -> LiftItem:
     """What would become of one selected note, and which project it lands in.
 
-    A narrowing — the note decided as something its area does not hold — is carried as a warning and
-    the note is still created: the type is one the meta-ontology declares.
+    A narrowing — the note decided as something its area does not hold, an attribute its schema
+    does not declare — is carried as a warning and the note is still created. Its attributes become
+    the entity's properties.
     """
     warning = verdict.message if verdict.kind == "narrowed" else ""
     if note.model_ref is not None:
@@ -44,10 +45,19 @@ def note_item(
             kind="element", id=note.id, outcome="refuse", label=note.title, target=target.group,
             reason=f"undecided — {_what_it_needs(note, levels)}, or take it out of the selection",
         )
+    if verdict.blocks:
+        # Something the write of this entity would itself refuse — an attribute value it cannot
+        # read as its declared type. Said here, with the verifier's code, rather than discovered
+        # when the batch rolls back.
+        return LiftItem(
+            kind="element", id=note.id, outcome="refuse", label=note.title, target=target.group,
+            artifact_type=note.element_type or "", code=verdict.code, reason=verdict.message,
+        )
     return LiftItem(
         kind="element", id=note.id, outcome="create", label=note.title, target=target.group,
         artifact_type=note.element_type or "", summary=note.body, warning=warning,
         specializations=(note.specialization,) if note.specialization else (),
+        properties=dict(note.attributes),
     )
 
 

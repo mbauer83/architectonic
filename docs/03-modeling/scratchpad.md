@@ -145,7 +145,8 @@ controls: the scratchpad reads the declaration and fixes none of it.
   outside the frame, and choosing it earns the warning described above.
 - A level marked `*` is one the meta-ontology requires. A note can be lifted once every required
   level is reached; a lift of a note short of one is refused, and the refusal names the level.
-- Attributes attach at the levels the declaration says carry them.
+- Attributes attach at the levels the declaration says carry them — see
+  [Attributes](#attributes) below.
 
 A read serves the ladder as `classification-levels`: each level's `id`, `label`, whether it is
 `required`, whether it `carries-attributes`, and its `options`. A level's `source` says which of a
@@ -159,6 +160,28 @@ is neither bound nor realized, and every link touching it reverts to unverified.
 **forgotten** instead — the reference is dropped and the entity stays exactly where it is. That is
 what keeps the frozen meta-ontology from being a trap: forget the realizations, unbind the
 bindings, untype the rest, and the scratchpad can change vocabulary again.
+
+### Attributes
+
+A note may hold `attributes` from the moment it exists. Below the first level that carries
+attributes they are free: no schema applies, nothing is checked, and they are stored as written.
+
+Once the note reaches such a level — for ArchiMate 4, once it has an entity type — its attributes
+are checked against the [attribute schema](../05-extensibility/schemata-and-profiles.md) of that type, merged with its
+specialization's where it has one. This is the schema an entity of that type is verified against,
+and the check is the one the entity write runs:
+
+| What the schema says | On the note | In a lift |
+|---|---|---|
+| The value cannot be read as the declared type (**E042**) | verdict `refused` | the note is refused, and the lift with it |
+| The value breaks another constraint — an enum, a range, a pattern (**W042**) | verdict `narrowed` | a warning; the note is lifted |
+| The attribute is not declared | verdict `narrowed` | a warning; carried as an ad-hoc property |
+
+The note panel shows the schema's attributes with the typed inputs the entity forms use, and keeps
+any undeclared attribute the note already holds editable as text. A note tied to the model is not
+checked: the entity holds its own properties.
+
+**A lift carries a note's attributes into the entity's properties.** The body becomes the summary.
 
 ### What a link verdict says
 
@@ -209,10 +232,10 @@ execution runs rather than a client's guess at it:
 
 | Group | What it means |
 |---|---|
-| **Will be created** | Each typed note becomes an entity; each typed, permitted link becomes a connection. |
-| **Refused** | A note with no type, or a link the ontology declares no relation for (**E126**). |
+| **Will be created** | Each note that has reached every required level becomes an entity, with its body as the summary and its attributes as properties; each typed, permitted link becomes a connection. |
+| **Refused** | A note short of a classification level its meta-ontology requires, a note with an attribute value its schema's type cannot read (**E042**), or a link the ontology declares no relation for (**E126**). |
 | **Already in the model** | A bound or realized note, named by the artifact it already is. |
-| **Warnings** | A narrowing: a relation a specialization says does not apply here (**W128/W129**), or a note decided as something its frame does not hold. Both exist in the ontology, so the lift proceeds. |
+| **Warnings** | A relation a specialization says does not apply here (**W128/W129**), a note decided as something its frame does not hold, or an attribute its schema warns about or does not declare (**W042**). The lift proceeds. |
 | **Links reaching outside the selection** | One end in, one end out. Extend the selection, or accept that the link is not realized. |
 
 **A refusal blocks the whole lift.** The write is one transaction — everything or nothing — and half

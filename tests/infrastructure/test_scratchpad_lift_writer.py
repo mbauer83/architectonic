@@ -58,6 +58,16 @@ class TestOnePlanItemAsOneBatchItem:
         assert item["summary"] == "Why we are here"
         assert item["specializations"] == ["strategic-goal"]
 
+    def test_a_note_s_attributes_become_the_entity_s_properties(self) -> None:
+        """They were dropped here: the plan item had nowhere to carry them, so an attribute written
+        on a note was gone from the entity it became."""
+        item = _batch_item(_element(properties={"Priority": "high", "Count": 3}))
+
+        assert item["properties"] == {"Priority": "high", "Count": 3}
+
+    def test_no_attributes_sends_no_properties(self) -> None:
+        assert "properties" not in _batch_item(_element())
+
     def test_a_connection_addresses_ends_exactly_as_the_plan_resolved_them(self) -> None:
         item = _batch_item(_connection())
 

@@ -1,7 +1,7 @@
 import type {
   Area, ClassificationLevel, Note, Scratchpad,
 } from '../../domain/schemas/scratchpads'
-import { withNote, withoutType } from './scratchpadEdits'
+import { withNote, without, withoutType } from './scratchpadEdits'
 
 /**
  * A note's refinement, read through the levels its scratchpad's meta-ontology declares.
@@ -26,6 +26,21 @@ const KEY_OF: Readonly<Record<ClassificationLevel['source'], LevelKey>> = {
 /** The value the note holds at *level*, or `undefined`. */
 export function valueAt(note: Note, level: ClassificationLevel): string | undefined {
   return note[KEY_OF[level.source]]
+}
+
+/** Whether the note has answered *level*, by choosing or by implication: a type implies its
+ * hierarchy, so choosing one reaches every level above it that takes its values from there. */
+function isReached(note: Note, level: ClassificationLevel): boolean {
+  return valueAt(note, level) !== undefined
+    || (level.source === 'hierarchy' && note['element-type'] !== undefined)
+}
+
+/** The level whose attribute schema applies to the note — the deepest reached one the
+ * meta-ontology says carries attributes — or `null` while the note is below every such level. */
+export function attributeLevel(
+  note: Note, levels: readonly ClassificationLevel[],
+): ClassificationLevel | null {
+  return levels.filter((level) => level['carries-attributes'] && isReached(note, level)).at(-1) ?? null
 }
 
 /** What an area permits at *level*, or `null` where it says nothing about that level. */
@@ -70,12 +85,6 @@ export function optionsAt(
 const findNote = (scratchpad: Scratchpad, noteId: string): Note | undefined =>
   (scratchpad.notes ?? []).find((candidate) => candidate.id === noteId)
 
-function withoutKeys(note: Note, keys: readonly (LevelKey | 'document-type')[]): Note {
-  const copy = { ...note }
-  for (const key of keys) delete copy[key]
-  return copy
-}
-
 /** The keys of every level declared after *levelId*. */
 function finerKeys(levels: readonly ClassificationLevel[], levelId: string): LevelKey[] {
   const position = levels.findIndex((candidate) => candidate.id === levelId)
@@ -110,7 +119,7 @@ export function withLevelValue(
   const note = findNote(scratchpad, noteId)
   if (position < 0 || !note || note['model-ref']) return scratchpad
   return withNote(scratchpad, {
-    ...withoutKeys(note, [...finerKeys(levels, levelId), 'document-type']),
+    ...without(note, ...finerKeys(levels, levelId), 'document-type'),
     destination: 'element',
     ...implied(levels, position, value),
     [KEY_OF[levels[position].source]]: value,
@@ -128,7 +137,7 @@ export function withoutLevelValue(
   const level = levels.find((candidate) => candidate.id === levelId)
   const note = findNote(scratchpad, noteId)
   if (!level || !note || note['model-ref']) return scratchpad
-  const reopened = withoutKeys(note, [KEY_OF[level.source], ...finerKeys(levels, levelId)])
+  const reopened = without(note, KEY_OF[level.source], ...finerKeys(levels, levelId))
   const stillDecided = levels.some((candidate) => valueAt(reopened, candidate) !== undefined)
   return stillDecided ? withNote(scratchpad, reopened) : withoutType(scratchpad, noteId)
 }

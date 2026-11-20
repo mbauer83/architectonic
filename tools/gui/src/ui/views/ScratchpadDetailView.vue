@@ -40,6 +40,7 @@ import {
   withoutRealization,
   withoutType,
 } from '../composables/scratchpadEdits'
+import { withAttribute } from '../composables/scratchpadAttributes'
 import { withLevelValue, withoutLevelValue } from '../composables/scratchpadClassification'
 import type { Scratchpad } from '../../domain/schemas/scratchpads'
 import type { EntityDisplayInfo } from '../../domain'
@@ -325,6 +326,7 @@ const status = computed(() => {
         @refine-note="refine((c) => withLevelValue(c, $event.id, $event.levelId, $event.value))"
         @unrefine-note="refine((c) => withoutLevelValue(c, $event.id, $event.levelId))"
         @body-note="refine((c) => withBody(c, $event.id, $event.body))"
+        @attribute-note="refine((c) => withAttribute(c, $event.id, $event.name, $event.value))"
         @document-note="refine((c) => withDocumentType(c, $event.id, $event.documentType))"
         @untype-note="refine((c) => withoutBinding(withoutType(c, $event.id), $event.id))"
         @forget-note="refine((c) => withoutRealization(c, $event.id))"

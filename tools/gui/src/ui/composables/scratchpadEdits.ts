@@ -19,7 +19,7 @@ import type { Layout, Note, Scratchpad } from '../../domain/schemas/scratchpads'
  * says "not set" — a `null` would fail the decoder. Written once because it was written eleven
  * times.
  */
-function without<T extends Record<string, unknown>>(record: T, ...keys: readonly (keyof T & string)[]): T {
+export function without<T extends Record<string, unknown>>(record: T, ...keys: readonly (keyof T & string)[]): T {
   const copy = { ...record }
   for (const key of keys) delete copy[key]
   return copy
