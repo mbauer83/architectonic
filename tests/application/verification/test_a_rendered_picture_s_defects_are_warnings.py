@@ -175,11 +175,13 @@ class TestAPictureThatCannotBeRead:
     def test_a_readable_picture_is_checked(self) -> None:
         assert _only(RenderedPictureRule(read=lambda _svg: _THROUGH).check("<svg/>", _LOC)).code == "W371"
 
-    def test_the_codes_are_five_of_their_own(self) -> None:
-        """W370–W374; the rest of W37x and all of E37x are left for a stated layout's rules."""
+    def test_the_codes_are_their_own(self) -> None:
+        """W370–W374, and W380–W382 for what a router answers for; W375–W379 and E37x are a stated layout's."""
         from src.application.verification._verifier_rules_rendered_picture import _CODE_OF
 
-        assert sorted([UNREAD_PICTURE_CODE, *_CODE_OF.values()]) == ["W370", "W371", "W372", "W373", "W374"]
+        assert sorted([UNREAD_PICTURE_CODE, *_CODE_OF.values()]) == [
+            "W370", "W371", "W372", "W373", "W374", "W380", "W381", "W382",
+        ]
 
 
 class _Recording:
@@ -241,3 +243,53 @@ class TestWhichPictureIsRead:
         with pytest.raises(ValueError, match="directory of its own"):
             require_a_directory_each([tmp_path / "a.puml", tmp_path / "b.puml"])
         require_a_directory_each([tmp_path / "1" / "a.puml", tmp_path / "2" / "a.puml"])
+
+
+class TestWhatARouterAnswersFor:
+    """W380–W382 are decided of every picture and reported only of one a router drew from a layout."""
+
+    _BAND = DrawnBox(
+        alias="G", extent=Extent(150, -60, 350, 200), inside=None,
+        words=(MeasuredWord("Team", Point(230, -40), 40),),
+    )
+    _THROUGH_THE_TITLE = _picture(
+        _named("A", "Orders", 0, 100), _named("B", "Billing", 400, 100), _BAND,
+        relations=(_line("A", "B", (100, 120), (120, 120), (120, -45), (380, -45), (380, 120), (400, 120)),),
+    )
+    _ALONG_A_BORDER = _picture(
+        _named("A", "Orders", 0, 100), _named("B", "Billing", 400, 100), _BAND,
+        relations=(_line("A", "B", (50, 140), (50, 197), (450, 197), (450, 140)),),
+    )
+
+    def test_a_relation_through_a_box_title_is_w380_on_a_laid_out_picture(self) -> None:
+        codes = {issue.code for issue in picture_issues(self._THROUGH_THE_TITLE, _LOC, laid_out=True)}
+
+        assert "W380" in codes
+
+    def test_and_none_of_them_on_a_picture_graphviz_laid_out(self) -> None:
+        codes = {issue.code for issue in picture_issues(self._THROUGH_THE_TITLE, _LOC)}
+
+        assert not codes & {"W380", "W381", "W382"}
+
+    def test_a_short_run_at_an_end_with_no_decoration_is_no_w381(self) -> None:
+        codes = {issue.code for issue in picture_issues(self._THROUGH_THE_TITLE, _LOC, laid_out=True)}
+
+        assert "W381" not in codes
+
+    def test_a_relation_running_along_a_box_border_is_w382(self) -> None:
+        codes = {issue.code for issue in picture_issues(self._ALONG_A_BORDER, _LOC, laid_out=True)}
+
+        assert "W382" in codes
+
+    def test_a_rule_reads_the_picture_drawn_for_the_source_and_asks_the_router_s_rules_of_it(self) -> None:
+        read: list[str] = []
+
+        def reader(svg: str) -> RenderedPicture:
+            read.append(svg)
+            return self._ALONG_A_BORDER
+
+        rule = RenderedPictureRule(read=reader, drawn=lambda svg, loc: (f"composed {svg}", True))
+        codes = {issue.code for issue in rule.check("plantuml", _LOC)}
+
+        assert read == ["composed plantuml"]
+        assert "W382" in codes

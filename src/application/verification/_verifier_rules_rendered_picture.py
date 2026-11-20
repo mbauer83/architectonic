@@ -1,4 +1,4 @@
-"""What a diagram's rendered picture gets wrong that its body cannot show (W370–W374).
+"""What a diagram's rendered picture gets wrong that its body cannot show (W370–W374, W380–W382).
 
 The syntax check already renders every diagram to find out whether PlantUML accepts it, and threw
 the picture away. This reads that picture before it goes, so the checks cost a parse and no render:
@@ -7,6 +7,16 @@ the picture away. This reads that picture before it goes, so the checks cost a p
 * **W372** — two shapes drawn over each other;
 * **W373** — a label wider than the shape it labels;
 * **W374** — a box drawn over a shape that is not inside it;
+* **W380** — a relation drawn through text: a label, a box's title band, the diagram's title or
+  legend. Only on a picture drawn from a stated layout, where the router owns every line and keeps
+  them out of text. GraphViz does not: measured when the rule was written, 33 of the 45 pictures
+  PlantUML lays out for this project's own model run a line into a cluster's title band, which no
+  author can repair;
+* **W381** — a relation that bends inside or right behind the decoration at one of its ends;
+* **W382** — a relation running along another line, or along the border of an element or a box.
+  With W380 these are the hard rules of `route_quality`, what a reader needs to follow a line end to
+  end, and like it are reported only of a picture drawn from a stated layout: GraphViz draws curves,
+  which neither describes. Its soft rules — a jog, two decorations together — are advisory counts;
 * **W370** — the picture stated the kind this project reads and could not be read, so none of the
   four were decided. Reported rather than passed over, because a check that silently stopped
   examining pictures looks exactly like a repository of clean ones.
@@ -23,6 +33,9 @@ verifier knows two severities, and a warning on every dense view is a warning no
 One finding per kind per diagram, naming the first few places and counting the rest, so a picture
 with a dozen overlaps reads as one statement about that picture rather than a dozen about its parts.
 
+A diagram that states a layout is judged on the picture drawn from it, not on PlantUML's: the rule is
+told what is drawn for each source (`drawn`), and a laid-out picture is composed before it is read.
+
 The rules of a stated layout are `_verifier_rules_layout` (E370–E373, W375–W379); E374–E379 are free.
 """
 
@@ -35,6 +48,7 @@ from typing import Protocol
 
 from src.application.verification.artifact_verifier_types import Issue, Severity
 from src.domain.diagrams.layout.picture_checks import (
+    KEPT_BY_THE_ROUTER,
     PictureDefect,
     PictureFinding,
     PictureReport,
@@ -54,7 +68,19 @@ _CODE_OF: Mapping[PictureDefect, str] = {
     PictureDefect.SHAPES_OVERLAP: "W372",
     PictureDefect.LABEL_WIDER_THAN_SHAPE: "W373",
     PictureDefect.BOX_OVER_NON_MEMBER: "W374",
+    PictureDefect.RELATION_THROUGH_TEXT: "W380",
+    PictureDefect.BEND_AT_AN_END: "W381",
+    PictureDefect.RUNS_ALONG: "W382",
 }
+
+
+#: What is drawn for a source, given the picture PlantUML rendered for it and where the source is:
+#: the picture itself, or one composed from the layout the source states — and whether it was.
+DrawnPicture = Callable[[str, str], tuple[str, bool]]
+
+
+def as_plantuml_drew_it(svg: str, _loc: str) -> tuple[str, bool]:
+    return svg, False
 
 
 class RenderedPictureChecks(Protocol):
@@ -77,6 +103,15 @@ def _place(picture: RenderedPicture, finding: PictureFinding) -> str:
         return names[0]
     if finding.defect is PictureDefect.BOX_OVER_NON_MEMBER:
         return f"the box {names[0]} over {names[1]}"
+    if finding.defect is PictureDefect.RELATION_THROUGH_TEXT:
+        whose = (
+            "the diagram's title or legend" if len(names) == 2  # noqa: PLR2004 — the two ends alone
+            else f"the label of the relation between {names[2]} and {names[3]}" if len(names) == 4  # noqa: PLR2004
+            else f"the text of {names[2]}"
+        )
+        return f"the relation between {names[0]} and {names[1]} through {whose}"
+    if finding.defect in (PictureDefect.BEND_AT_AN_END, PictureDefect.RUNS_ALONG):
+        return f"the relation between {names[0]} and {names[1]}"
     return f"{names[0]} and {names[1]}"
 
 
@@ -84,6 +119,8 @@ def _advisory(report: PictureReport) -> dict[str, object]:
     detour = report.worst_detour
     return {
         "crossings": report.crossings,
+        "jogs": report.jogs,
+        "heads_together": report.heads_together,
         "worst_detour": None
         if detour is None
         else {"between": list(detour.ends), "times_the_direct_line": round(detour.ratio, 2)},
@@ -111,13 +148,13 @@ def _issue(
     )
 
 
-def picture_issues(picture: RenderedPicture, loc: str) -> list[Issue]:
-    """One warning per kind of defect the geometry of *picture* decides."""
+def picture_issues(picture: RenderedPicture, loc: str, *, laid_out: bool = False) -> list[Issue]:
+    """One warning per kind of defect the geometry of *picture* decides, and is reported of it."""
     report = check_picture(picture)
     return [
         _issue(picture, report, defect, found, loc)
         for defect in PictureDefect
-        if (found := report.of(defect))
+        if (laid_out or defect not in KEPT_BY_THE_ROUTER) and (found := report.of(defect))
     ]
 
 
@@ -130,11 +167,13 @@ class RenderedPictureRule:
     """
 
     read: PictureReader
+    drawn: DrawnPicture = as_plantuml_drew_it
 
     def check(self, svg: str, loc: str) -> list[Issue]:
-        picture = self.read(svg)
+        drawn, laid_out = self.drawn(svg, loc)
+        picture = self.read(drawn)
         if isinstance(picture, RenderedPicture):
-            return picture_issues(picture, loc)
+            return picture_issues(picture, loc, laid_out=laid_out)
         if not picture.stated_the_kind_read:
             return []
         return [

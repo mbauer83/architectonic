@@ -17,6 +17,7 @@ import pytest
 
 from src.application.verification._verifier_rules_rendered_picture import RenderedPictureRule
 from src.application.verification.artifact_verifier_types import Issue, Severity
+from src.infrastructure.rendering.laid_out_rendering import drawn_for_source
 from src.infrastructure.rendering.layout.plantuml_svg_reader import read_rendered_picture
 from src.infrastructure.verification.adapters import DefaultPumlSyntaxAdapter
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
@@ -60,7 +61,7 @@ def test_the_factory_gives_the_syntax_port_the_picture_checks() -> None:
     port = verifier._puml_port
 
     assert isinstance(port, DefaultPumlSyntaxAdapter)
-    assert port._picture_checks == RenderedPictureRule(read=read_rendered_picture)
+    assert port._picture_checks == RenderedPictureRule(read=read_rendered_picture, drawn=drawn_for_source)
 
 
 def test_a_verifier_that_may_not_start_a_subprocess_checks_no_picture() -> None:

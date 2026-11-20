@@ -27,6 +27,7 @@ from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.verifier_ports import FileInventoryPort, IconLibrary
 from src.infrastructure.icons.raster_codec import StoredPngInspector
+from src.infrastructure.rendering.laid_out_rendering import drawn_for_source
 from src.infrastructure.rendering.layout.plantuml_svg_reader import read_rendered_picture
 from src.infrastructure.verification.adapters import DefaultPumlSyntaxAdapter
 
@@ -38,7 +39,9 @@ def _syntax_port() -> DefaultPumlSyntaxAdapter:
     already exists: a second render per diagram would turn a pass of seconds into one of minutes.
     They are therefore on exactly when the syntax check is, and cached with it.
     """
-    return DefaultPumlSyntaxAdapter(picture_checks=RenderedPictureRule(read=read_rendered_picture))
+    return DefaultPumlSyntaxAdapter(
+        picture_checks=RenderedPictureRule(read=read_rendered_picture, drawn=drawn_for_source)
+    )
 
 
 def build_artifact_verifier(

@@ -67,3 +67,21 @@ def png_like_plantuml(svg: str) -> bytes:
     scale, limit = render_dpi() / _SVG_DPI, plantuml_limit_size()
     width, height = (min(limit, max(1, round(edge * scale))) for edge in extent)
     return draw_svg_to_png(svg, width=width, height=height, background=PNG_BACKGROUND)
+
+
+def drawn_for_source(plantuml_svg: str, loc: str) -> tuple[str, bool]:
+    """What is drawn for the diagram stored at *loc*, given PlantUML's picture of it, and whether it is laid out.
+
+    For the verifier, which judges the picture a reader sees: a laid-out diagram's is the composed one.
+    A source that cannot be read as a diagram, or whose layout cannot be applied, is PlantUML's.
+    """
+    from src.infrastructure.app_bootstrap import process_runtime_catalogs  # noqa: PLC0415
+
+    try:
+        laid_out = stored_layout(Path(loc), process_runtime_catalogs().ontology)
+    except (OSError, UnicodeDecodeError, ValueError):
+        return plantuml_svg, False
+    if laid_out is None:
+        return plantuml_svg, False
+    composed = compose(plantuml_svg, laid_out)
+    return (plantuml_svg, False) if isinstance(composed, NotComposed) else (composed, True)
