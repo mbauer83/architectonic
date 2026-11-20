@@ -59,6 +59,9 @@ ArtifactLinkKind = Literal["entity", "document", "diagram"]
 
 MARKDOWN_LINK_RE = re.compile(r"(\[([^\]]*)\]\()([^)\s]+)(\))")
 SECTION_HEADING_RE = re.compile(r"^##\s+(.+)$", re.MULTILINE)
+#: A section's heading or one beneath it: its level, then its title. The same reading as the line
+#: above at level two, so what is a section does not depend on which of the two was asked.
+HEADING_RE = re.compile(r"^(#{2,6})\s+(.+)$", re.MULTILINE)
 
 
 @dataclass(frozen=True)
