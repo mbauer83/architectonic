@@ -23,7 +23,7 @@ import time
 
 from src.application.read_models import ReadModelVersion
 
-__all__ = ["ReadModelVersion", "build_read_model_etag"]
+__all__ = ["ReadModelVersion", "build_read_model_etag", "read_model_version_at"]
 
 #: This process, distinctly enough that two of them never agree.
 #:
@@ -32,9 +32,32 @@ __all__ = ["ReadModelVersion", "build_read_model_etag"]
 _PROCESS_IDENTITY = f"{os.getpid()}:{time.time_ns()}"
 
 
-def build_read_model_etag(scope_key: str, generation: int) -> str:
+def build_read_model_etag(scope_key: str, generation: int, *, beside: tuple[str, int] | None = None) -> str:
+    """The tag for one generation of the model — and, with `beside`, of something that moves beside it.
+
+    `beside` names a second counter and its value: what a read depends on that changes without the
+    model changing. The model's generation stays in the tag, so such a tag moves whenever the model
+    does and additionally on its own, and the name keeps two counters that happen to hold the same
+    number from producing the same tag.
+    """
+    moment = f"{generation}" if beside is None else f"{generation}+{beside[0]}{beside[1]}"
     digest = hashlib.blake2b(
-        f"{scope_key}:{_PROCESS_IDENTITY}:{generation}".encode("utf-8"),
+        f"{scope_key}:{_PROCESS_IDENTITY}:{moment}".encode("utf-8"),
         digest_size=10,
     ).hexdigest()
-    return f'W/"model-{generation}-{digest}"'
+    return f'W/"model-{moment}-{digest}"'
+
+
+def read_model_version_at(scope_key: str, generation: int, *, references: int, scratchpads: int) -> ReadModelVersion:
+    """The version an index publishes: the model's tag, and one for each thing that moves beside it.
+
+    `references` counts the changes that altered a "referenced in scratchpads" list without the
+    model changing, and `scratchpads` every scratchpad change — see `ReadDependence` for which
+    reads carry which, and why neither is folded into the model's own generation.
+    """
+    return ReadModelVersion(
+        generation=generation,
+        etag=build_read_model_etag(scope_key, generation),
+        references_etag=build_read_model_etag(scope_key, generation, beside=("references", references)),
+        scratchpads_etag=build_read_model_etag(scope_key, generation, beside=("scratchpads", scratchpads)),
+    )

@@ -17,7 +17,7 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from src.application.read_model_purity import cacheable_mcp_tools
+from src.application.read_model_purity import cacheable_mcp_tools, dependence_of_mcp_tool
 from src.infrastructure.mcp.artifact_mcp.read_result_cache import ReadResultCache
 
 logger = logging.getLogger(__name__)
@@ -31,8 +31,13 @@ logger = logging.getLogger(__name__)
 CACHEABLE_READ_TOOLS: frozenset[str] = cacheable_mcp_tools()
 
 
-def generation_for(arguments: dict[str, Any]) -> int | None:
-    """The generation that validates a result computed from *arguments*, if one exists.
+def validator_for(tool: str, arguments: dict[str, Any]) -> str | None:
+    """The validator for *tool*'s result computed from *arguments*, if one exists.
+
+    Which validator is the purity table's to say: the model's for most reads, and one that also
+    moves with scratchpad references or scratchpads for the reads whose results carry them — a
+    result stamped with the model's generation alone went on being served after a scratchpad bound
+    the entity it described, or after the note a search had matched was rewritten.
 
     Resolved through the very helpers the tools use to pick their index, so the stamp always
     describes the store the answer actually came from. Deriving it from any single well-known
@@ -56,8 +61,8 @@ def generation_for(arguments: dict[str, Any]) -> int | None:
             repo_preset=arguments.get("repo_preset"),
             enterprise_root=arguments.get("enterprise_root"),
         )
-        return int(repo_cached(roots_key(roots)).read_model_version().generation)
-    except Exception:  # noqa: BLE001 — an unavailable generation means "do not cache"
+        return repo_cached(roots_key(roots)).read_model_version().validator(dependence_of_mcp_tool(tool))
+    except Exception:  # noqa: BLE001 — an unavailable validator means "do not cache"
         return None
 
 
@@ -95,7 +100,7 @@ def _memoized(name: str, original: Callable[..., Any], cache: ReadResultCache) -
         bound.apply_defaults()
         arguments = dict(bound.arguments)
         return cache.get_or_compute(
-            name, arguments, generation_for(arguments), lambda: original(*args, **kwargs)
+            name, arguments, validator_for(name, arguments), lambda: original(*args, **kwargs)
         )
 
     return call

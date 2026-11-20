@@ -5,11 +5,48 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal, TypedDict, get_args
 
+#: What a read's body is a function of, beyond the request's own arguments.
+#:
+#: Every cached read is a function of the indexed model. Two kinds are a function of something more,
+#: which changes *without* the model changing — a scratchpad is not model content, and saving one
+#: deliberately leaves the model's generation where it was, because a canvas saves about once a
+#: second and would otherwise invalidate every model read in the product at that rate:
+#:
+#: * ``model+references`` — the body lists where an artifact is referred to, and a scratchpad note
+#:   bound to it is one of the places. An entity's page showed a pad that had been deleted, and did
+#:   not show one that had just bound it, for as long as the client kept revalidating.
+#: * ``model+scratchpads`` — the body carries scratchpads or their notes themselves, as a search does.
+#:
+#: The first moves only when a reference list would read differently, so a canvas being typed into
+#: does not disturb the entity pages; the second moves with every scratchpad save, and is carried
+#: only by reads that would otherwise serve the save's own text stale.
+ReadDependence = Literal["model", "model+references", "model+scratchpads"]
+
 
 @dataclass(frozen=True)
 class ReadModelVersion:
+    """The read model's version, and the validator for each thing a read can depend on.
+
+    ``generation`` and ``etag`` describe the model alone. The other two tags move whenever ``etag``
+    does and also on their own, so a read validated by one can never be *less* fresh than the model.
+    All four are required: a default would let a new index answer "the model's tag" for a read that
+    depends on more, which is the stale 304 this exists to prevent.
+    """
+
     generation: int
     etag: str
+    references_etag: str
+    scratchpads_etag: str
+
+    def validator(self, dependence: ReadDependence) -> str:
+        """The tag that stays the same exactly as long as a body with this dependence does."""
+        match dependence:
+            case "model":
+                return self.etag
+            case "model+references":
+                return self.references_etag
+            case "model+scratchpads":
+                return self.scratchpads_etag
 
 
 #: Which way a connection runs relative to the entity being read.

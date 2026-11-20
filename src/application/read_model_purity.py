@@ -28,8 +28,6 @@ request's own arguments, and of nothing else. The standing exclusions, once:
 * **repository files outside the indexed set** — viewpoint definitions and JSON schemata are reloaded
   per request; the generation says nothing about them.
 * **verification** — re-running it is the point.
-* **scratchpads** — not model content, and saving one leaves the generation where it was. A body
-  that lists the scratchpads referencing an artifact is therefore not a function of the generation.
 
 The table below names each underlying read once and both addresses it is served at. It is the MCP
 transport's authority directly, and it is held against the route-policy manifest — which stays the
@@ -40,6 +38,8 @@ REST authority, because one row per REST operation is what the rest of that mani
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+
+from src.application.read_models import ReadDependence
 
 
 @dataclass(frozen=True)
@@ -60,6 +60,12 @@ class ModelPureRead:
     #: and recording that beats leaving it undeclared.
     rest_pending: str = ""
     tags: frozenset[str] = field(default_factory=frozenset)
+    #: What the body depends on beside the request, and so which validator both transports use.
+    #: ``model`` unless the body carries something that changes without the model changing — see
+    #: `ReadDependence`. Stated here, with the read, because it is the same judgement as whether the
+    #: read qualifies at all: an entity's page was validated by the model generation alone while it
+    #: listed the scratchpads referencing the entity, which a scratchpad save does not move.
+    depends_on: ReadDependence = "model"
 
 
 MODEL_PURE_READS: tuple[ModelPureRead, ...] = (
@@ -74,18 +80,34 @@ MODEL_PURE_READS: tuple[ModelPureRead, ...] = (
         mcp_tools=("artifact_query_list_artifacts",),
     ),
     ModelPureRead(
+        what="One artifact with its content — and, for an entity, where it is referenced.",
+        rest_templates=("/api/entities/{artifact_id}",),
+        mcp_tools=("artifact_query_read_artifact",),
+        depends_on="model+references",
+    ),
+    ModelPureRead(
         what="One document or diagram with its content.",
         rest_templates=("/api/documents/{artifact_id}", "/api/diagrams/{artifact_id}"),
     ),
     ModelPureRead(
-        what="Keyword and reference search over the indexed artifacts.",
-        rest_templates=("/api/search", "/api/reference-search"),
+        what="Keyword search over everything indexed, scratchpads and their notes included.",
+        rest_templates=("/api/search",),
         mcp_tools=("artifact_query_search_artifacts",),
+        depends_on="model+scratchpads",
+    ),
+    ModelPureRead(
+        what="Search for something a document can reference, which a scratchpad is not.",
+        rest_templates=("/api/reference-search",),
     ),
     ModelPureRead(
         what="An entity's neighbourhood, stated or derived.",
         rest_templates=("/api/entities/{artifact_id}/neighbors",),
         mcp_tools=("artifact_query_find_neighbors",),
+    ),
+    ModelPureRead(
+        what="One entity with its resolved connections and where it is referenced.",
+        rest_templates=("/api/entities/{artifact_id}/context",),
+        depends_on="model+references",
     ),
     ModelPureRead(
         what="Connections matching the filters, both endpoints resolved.",
@@ -101,17 +123,6 @@ MODEL_PURE_READS: tuple[ModelPureRead, ...] = (
         rest_templates=("/api/diagrams/{artifact_id}/entities",),
     ),
     # ── Refused, with the reason ───────────────────────────────────────────────
-    #
-    # One entity with its content (`/api/entities/{artifact_id}`), with its resolved connections
-    # (`/api/entities/{artifact_id}/context`), and the `artifact_query_read_artifact` tool that
-    # answers for an artifact of any kind: each lists where an entity is referenced, and a
-    # scratchpad whose note is bound to the entity is one of the places. A scratchpad is not model
-    # content and saving one does not move the generation, so the page went on naming a deleted
-    # scratchpad, and omitting one that had just bound the entity, for as long as it was
-    # revalidated. Refused on both transports rather than validated by something broader: the
-    # generation is deliberately not moved by a scratchpad save, which happens about once a second
-    # while someone is thinking. A validator that moves with reference lists belongs with a read of
-    # them, and these qualify again when one exists.
     #
     # `/api/artifact-search` looks like the two searches above and is not one of them: it merges
     # assurance-store hits into its result (`entities/search.py:110`). The store moves independently
@@ -150,3 +161,13 @@ def pending_rest_templates() -> frozenset[str]:
     return frozenset(
         template for read in MODEL_PURE_READS if read.rest_pending for template in read.rest_templates
     )
+
+
+def dependence_of_rest_template(template: str) -> ReadDependence:
+    """What a conditional REST read's body depends on, and so which validator answers for it."""
+    return next(read.depends_on for read in MODEL_PURE_READS if template in read.rest_templates)
+
+
+def dependence_of_mcp_tool(tool: str) -> ReadDependence:
+    """What a memoised MCP read's result depends on, and so which validator stamps it."""
+    return next(read.depends_on for read in MODEL_PURE_READS if tool in read.mcp_tools)

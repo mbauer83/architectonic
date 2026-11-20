@@ -56,7 +56,7 @@ class ReadResultCache:
         self._max_entries = max_entries
         self._max_entry_bytes = max_entry_bytes
         self._lock = threading.Lock()
-        self._entries: OrderedDict[str, tuple[int, Any]] = OrderedDict()
+        self._entries: OrderedDict[str, tuple[int | str, Any]] = OrderedDict()
         self._hits = self._misses = self._stored = self._too_large = 0
 
     def _key(self, tool: str, arguments: dict[str, Any]) -> str:
@@ -66,7 +66,7 @@ class ReadResultCache:
         return f"{tool}\n{json.dumps(arguments, sort_keys=True, default=str)}"
 
     def get_or_compute(
-        self, tool: str, arguments: dict[str, Any], generation: int | None, compute: Callable[[], Any]
+        self, tool: str, arguments: dict[str, Any], generation: int | str | None, compute: Callable[[], Any]
     ) -> Any:
         """Return a cached result for this generation, or compute, maybe store, and return.
 

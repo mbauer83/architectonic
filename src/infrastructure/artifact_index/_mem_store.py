@@ -296,6 +296,23 @@ class _MemStore:
         for ref_id in _scratchpad_reference_ids(rec):
             _discard_from(self.scratchpads_by_reference, ref_id, rec.artifact_id)
 
+    def scratchpad_references_as_listed(self) -> frozenset[tuple[str, str, str, frozenset[str]]]:
+        """Everything a "referenced in scratchpads" list can show, for every artifact at once.
+
+        One entry per pad that references anything: the pad as a list row names it — its id, name
+        and status — and what it references. Two of these being equal means every such list reads
+        the same, which is the question a validator for those lists has to answer; a pad that
+        references nothing appears in no list, so nothing about it is here.
+
+        Whole rather than per artifact because it is compared once around a change to one file, and
+        a repository has few pads: the cost is their number, not the model's.
+        """
+        return frozenset(
+            (pad.artifact_id, pad.name, pad.status, frozenset(references))
+            for pad in self.scratchpads.values()
+            if (references := _scratchpad_reference_ids(pad))
+        )
+
     def index_diagram(self, rec: DiagramRecord) -> None:
         self.diagram_by_path[rec.path.resolve()] = rec.artifact_id
         for ref_id in _diagram_reference_ids(rec):

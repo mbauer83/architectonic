@@ -134,7 +134,7 @@ class FakeStore:
         pass
 
     def read_model_version(self) -> ReadModelVersion:
-        return ReadModelVersion(generation=0, etag="fake")
+        return ReadModelVersion(generation=0, etag="fake", references_etag="fake", scratchpads_etag="fake")
 
     def apply_file_changes(self, paths: list[Path]) -> ReadModelVersion:
         return self.read_model_version()

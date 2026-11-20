@@ -20,15 +20,9 @@ ENTITY_ROWS: tuple[RouteRow, ...] = (
         "POST", "/api/entities", "collection", "entities_create_entity", TYPED,
         mutation_domain="repository",
     ),
-    # Not a conditional read, and neither is the context read below: both bodies list where the
-    # entity is referenced, the scratchpads among the places, and a scratchpad save does not move
-    # the model generation — the only validator there is. An ETag keyed on it answered 304 over a
-    # list that had gained a scratchpad or still named a deleted one, which is the hazard
-    # `_scratchpads.py` states for its own reads. They qualify again once the reference lists have
-    # a validator of their own.
     RouteRow(
         "GET", "/api/entities/{artifact_id}", "detail", "entities_read_entity", TYPED,
-        identity_parameters=("artifact_id",), cache_directive="no-cache",
+        identity_parameters=("artifact_id",), cache_directive="no-cache", conditional_read="etag",
     ),
     RouteRow(
         "PATCH", "/api/entities/{artifact_id}", "detail", "entities_update_entity", TYPED,
@@ -41,7 +35,7 @@ ENTITY_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
         "GET", "/api/entities/{artifact_id}/context", "subresource", "entities_read_entity_context",
         TYPED,
-        identity_parameters=("artifact_id",), cache_directive="no-cache",
+        identity_parameters=("artifact_id",), cache_directive="no-cache", conditional_read="etag",
     ),
     RouteRow(
         "GET", "/api/entities/{artifact_id}/neighbors", "subresource", "connections_read_entity_neighbors",
