@@ -32,8 +32,11 @@ from src.domain.scratchpad.parts import (
     ScratchpadError,
     parse_destination,
 )
-from src.domain.scratchpad.scratchpad import Scratchpad, scratchpad_from_parts
-from src.domain.scratchpad.transitions import refuse_forbidden_transitions
+from src.domain.scratchpad.scratchpad import (
+    Scratchpad,
+    refuse_forbidden_transitions,
+    scratchpad_from_parts,
+)
 
 __all__ = [
     "GRID",

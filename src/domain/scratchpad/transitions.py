@@ -1,10 +1,11 @@
 """What a note may stop being, and what a whole-document write may therefore change.
 
 Every refusal a transition carries is stated here once, as a guard over the note it is asked of. The
-aggregate's mutations call these before changing anything; `refuse_forbidden_transitions` calls the
-same ones over the difference between a stored scratchpad and a submitted one. That second caller is
+aggregate's mutations call these before changing anything; `refuse_forbidden_transitions`, beside
+the aggregate, calls the same ones over the difference between a stored scratchpad and a submitted
+one. That second caller is
 the reason the guards are apart from the mutations: both surfaces write a whole document, so a rule
-held only inside `Scratchpad.typed` was a rule no write ever ran — a replace could retype a note
+held only inside a mutation was a rule no write ever ran — a replace could retype a note
 that had already become model content, and nothing compared the two states to notice.
 
 A guard looks at one note and nothing else. What must hold *between* notes is `invariants`, and it
@@ -17,13 +18,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import replace
-from typing import TYPE_CHECKING
 
 from src.domain.scratchpad.classification import classification_of, is_classified
 from src.domain.scratchpad.parts import ModelRef, Note, ScratchpadError
-
-if TYPE_CHECKING:
-    from src.domain.scratchpad.scratchpad import Scratchpad
 
 
 def _release_verb(reference: ModelRef) -> str:
@@ -101,19 +98,16 @@ def refuse_changing_meta_ontology(notes: Sequence[Note], *, current: str, propos
         )
 
 
-def refuse_forbidden_transitions(stored: Scratchpad, submitted: Scratchpad) -> None:
-    """Refuse a write that moves the stored scratchpad somewhere its own transitions would not.
+def refuse_forbidden_note_transitions(stored: Sequence[Note], submitted: Sequence[Note]) -> None:
+    """Refuse a set of notes that moves the stored ones somewhere their own transitions would not.
 
-    The meta-ontology is asked first and of the *stored* notes: the vocabulary changes only once
-    nothing is typed in it, which is a write of its own. Then each note both states hold is read as
-    the transition it amounts to, and the guard for that transition is asked. A note only one state
-    holds is a creation or a removal, and neither is guarded.
+    Each note both sets hold is read as the transition it amounts to, and the guard for that
+    transition is asked. A note only one set holds is a creation or a removal, and neither is
+    guarded.
     """
-    refuse_changing_meta_ontology(
-        stored.notes, current=stored.meta_ontology, proposed=submitted.meta_ontology
-    )
-    for before in stored.notes:
-        after = submitted.note(before.id)
+    proposed = {note.id: note for note in submitted}
+    for before in stored:
+        after = proposed.get(before.id)
         if after is not None:
             _refuse_note_transition(before, after)
 

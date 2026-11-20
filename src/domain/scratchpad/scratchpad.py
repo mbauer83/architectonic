@@ -45,6 +45,7 @@ from src.domain.scratchpad.transitions import (
     refuse_binding,
     refuse_changing_meta_ontology,
     refuse_documenting,
+    refuse_forbidden_note_transitions,
     refuse_forgetting,
     refuse_retyping,
     refuse_unbinding,
@@ -320,3 +321,17 @@ def scratchpad_from_parts(
     )
     scratchpad.validate()
     return scratchpad
+
+
+def refuse_forbidden_transitions(stored: Scratchpad, submitted: Scratchpad) -> None:
+    """Refuse a write that moves the stored scratchpad somewhere its own transitions would not.
+
+    What a whole-document write is asked before it is saved: the guards the mutations above call,
+    over the difference between the two states. The meta-ontology is asked first and of the
+    *stored* notes — the vocabulary changes only once nothing is typed in it, which is a write of
+    its own — and then every note both states hold.
+    """
+    refuse_changing_meta_ontology(
+        stored.notes, current=stored.meta_ontology, proposed=submitted.meta_ontology
+    )
+    refuse_forbidden_note_transitions(stored.notes, submitted.notes)
