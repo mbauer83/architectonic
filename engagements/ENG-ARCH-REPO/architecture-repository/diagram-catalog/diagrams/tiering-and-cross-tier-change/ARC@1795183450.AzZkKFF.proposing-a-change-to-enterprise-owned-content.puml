@@ -1,0 +1,178 @@
+---
+artifact-id: ARC@1795183450.AzZkKFF.proposing-a-change-to-enterprise-owned-content
+artifact-type: diagram
+name: Proposing a Change to Enterprise-Owned Content
+version: 0.1.0
+status: draft
+keywords:
+- proposed-change
+- enterprise
+- tiering
+- review
+diagram-type: archimate-business
+entity-ids-used:
+- FNC@1795183439.jffoRU1.record-a-proposed-change
+- PRC@1788599603.i3hnRI7.submit-proposed-changes-for-review
+- EVT@1795183439.3t09Jx_.enterprise-content-moved-under-a-pending-change
+- FNC@1788599613.wW2yWGx.detect-accepted-changes
+- FNC@1788599624.K03IoKU.reconcile-proposed-changes-with-a-moved-enterprise-tier
+- BOB@1788599593.6x8cR_3.proposed-change
+- BOB@1712870400.6Uok0b.enterprise-repository
+- SRV@1712870400.Uv9Wx9.repository-promotion-service
+connection-ids-used:
+- BOB@1788599593.6x8cR_3---BOB@1712870400.6Uok0b@@archimate-association
+- FNC@1788599613.wW2yWGx---BOB@1788599593.6x8cR_3@@archimate-access
+- FNC@1788599624.K03IoKU---BOB@1788599593.6x8cR_3@@archimate-access
+- FNC@1795183439.jffoRU1---BOB@1788599593.6x8cR_3@@archimate-access
+- PRC@1788599603.i3hnRI7---BOB@1788599593.6x8cR_3@@archimate-access
+- EVT@1795183439.3t09Jx_---FNC@1788599613.wW2yWGx@@archimate-triggering
+- FNC@1788599613.wW2yWGx---FNC@1788599624.K03IoKU@@archimate-triggering
+- FNC@1795183439.jffoRU1---PRC@1788599603.i3hnRI7@@archimate-triggering
+- SRV@1712870400.Uv9Wx9---PRC@1788599603.i3hnRI7@@archimate-serving
+last-updated: '2026-11-20T14:04:10Z'
+---
+@startuml proposing-a-change-to-enterprise-owned-content
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+skinparam defaultTextAlignment center
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Access(from, to, label) from -[dotted]-> to
+!define Rel_Access_Up(from, to, label) from -[dotted]up-> to
+!define Rel_Access_Down(from, to, label) from -[dotted]down-> to
+!define Rel_Access_Left(from, to, label) from -[dotted]left-> to
+!define Rel_Access_Right(from, to, label) from -[dotted]right-> to
+!define Rel_Aggregation(from, to, label) from o-- to
+!define Rel_Aggregation_Up(from, to, label) from o-up- to
+!define Rel_Aggregation_Down(from, to, label) from o-down- to
+!define Rel_Aggregation_Left(from, to, label) from o-left- to
+!define Rel_Aggregation_Right(from, to, label) from o-right- to
+!define Rel_Assignment(from, to, label) from --> to
+!define Rel_Assignment_Up(from, to, label) from -up-> to
+!define Rel_Assignment_Down(from, to, label) from -down-> to
+!define Rel_Assignment_Left(from, to, label) from -left-> to
+!define Rel_Assignment_Right(from, to, label) from -right-> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Up(from, to, label) from -up- to
+!define Rel_Association_Down(from, to, label) from -down- to
+!define Rel_Association_Left(from, to, label) from -left- to
+!define Rel_Association_Right(from, to, label) from -right- to
+!define Rel_Composition(from, to, label) from *-- to
+!define Rel_Composition_Up(from, to, label) from *-up- to
+!define Rel_Composition_Down(from, to, label) from *-down- to
+!define Rel_Composition_Left(from, to, label) from *-left- to
+!define Rel_Composition_Right(from, to, label) from *-right- to
+!define Rel_Flow(from, to, label) from ..> to
+!define Rel_Flow_Up(from, to, label) from .up.> to
+!define Rel_Flow_Down(from, to, label) from .down.> to
+!define Rel_Flow_Left(from, to, label) from .left.> to
+!define Rel_Flow_Right(from, to, label) from .right.> to
+!define Rel_Influence(from, to, label) from ..> to
+!define Rel_Influence_Up(from, to, label) from .up.> to
+!define Rel_Influence_Down(from, to, label) from .down.> to
+!define Rel_Influence_Left(from, to, label) from .left.> to
+!define Rel_Influence_Right(from, to, label) from .right.> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from .up.|> to
+!define Rel_Realization_Down(from, to, label) from .down.|> to
+!define Rel_Realization_Left(from, to, label) from .left.|> to
+!define Rel_Realization_Right(from, to, label) from .right.|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Serving_Up(from, to, label) from -up-> to
+!define Rel_Serving_Down(from, to, label) from -down-> to
+!define Rel_Serving_Left(from, to, label) from -left-> to
+!define Rel_Serving_Right(from, to, label) from -right-> to
+!define Rel_Specialization(from, to, label) from --|> to
+!define Rel_Specialization_Up(from, to, label) from -up-|> to
+!define Rel_Specialization_Down(from, to, label) from -down-|> to
+!define Rel_Specialization_Left(from, to, label) from -left-|> to
+!define Rel_Specialization_Right(from, to, label) from -right-|> to
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Triggering_Up(from, to, label) from -up-> to
+!define Rel_Triggering_Down(from, to, label) from -down-> to
+!define Rel_Triggering_Left(from, to, label) from -left-> to
+!define Rel_Triggering_Right(from, to, label) from -right-> to
+skinparam rectangle<<BusinessGrouping>> {
+  BackgroundColor #F7EDC3
+  BorderColor #474124
+}
+skinparam rectangle<<CommonGrouping>> {
+  BackgroundColor #F3F1EB
+  BorderColor #45433F
+}
+skinparam rectangle<<business_object>> {
+  BackgroundColor #EDD779
+  BorderColor #474124
+}
+skinparam rectangle<<event>> {
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
+}
+skinparam rectangle<<function>> {
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
+}
+skinparam rectangle<<process>> {
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
+}
+skinparam rectangle<<service>> {
+  BackgroundColor #E5DFD3
+  BorderColor #45433F
+  RoundCorner 14
+}
+sprite $archimate_business_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.90 4.20h10.20v1.30H2.90z" fill="#252327"/><path d="M2.90 10.50h10.20v1.30H2.90z" fill="#252327"/><path d="M2.90 5.50v5.00h1.30V5.50z" fill="#252327"/><path d="M11.80 5.50v5.00h1.30V5.50z" fill="#252327"/><path d="M2.90 5.65h10.20v1.30H2.90z" fill="#252327"/></svg>
+sprite $archimate_event <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.1 4h5.6a3.8 3.8 0 0 1 0 8H3.1l2.1-4z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_function <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.9 11.7V5.4L8 3.1l5.1 2.3v6.3L8 9.2z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_process <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2.6 4.1h6.3V2.8l4.5 5.2-4.5 5.2v-1.3H2.6z"  fill="#252327" stroke="none"/></svg>
+sprite $archimate_service <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.2 4.1h7.2a2.8 2.8 0 0 1 0 7.8H3.2a2.8 2.8 0 0 1 0-7.8z"  fill="#252327" stroke="none"/></svg>
+skinparam wrapWidth 240
+skinparam maxMessageSize 240
+
+title Proposing a Change to Enterprise-Owned Content
+
+rectangle "Business" <<BusinessGrouping>> as DOM_business {
+  rectangle "<$archimate_business_object{scale=1.2}> Proposed Change" <<business_object>> as BOB_6x8cR_3
+  rectangle "<$archimate_business_object{scale=1.2}> Enterprise Repository" <<business_object>> as BOB_6Uok0b
+  BOB_6x8cR_3 -[hidden]down- BOB_6Uok0b
+
+}
+
+rectangle "Common" <<CommonGrouping>> as DOM_common {
+  rectangle "<$archimate_function{scale=1.2}> Record a Proposed Change\n«Application Function»" <<function>> as FNC_jffoRU1
+  rectangle "<$archimate_process{scale=1.2}> Submit Proposed Changes for Review" <<process>> as PRC_i3hnRI7
+  FNC_jffoRU1 -[hidden]down- PRC_i3hnRI7
+
+  rectangle "<$archimate_service{scale=1.2}> Repository Promotion Service\n«Application Service»" <<service>> as SRV_Uv9Wx9
+
+  rectangle "<$archimate_event{scale=1.2}> Enterprise Content Moved Under a Pending Change\n«Application Event»" <<event>> as EVT_3t09Jx_
+  SRV_Uv9Wx9 -[hidden]down- EVT_3t09Jx_
+
+  rectangle "<$archimate_function{scale=1.2}> Detect Accepted Changes\n«Application Function»" <<function>> as FNC_wW2yWGx
+
+  rectangle "<$archimate_function{scale=1.2}> Reconcile Proposed Changes with a Moved Enterprise Tier\n«Application Function»" <<function>> as FNC_K03IoKU
+
+}
+
+' Connections
+BOB_6x8cR_3 -- BOB_6Uok0b
+FNC_wW2yWGx -[dotted]up-> BOB_6x8cR_3
+FNC_K03IoKU -[dotted]up-> BOB_6x8cR_3
+FNC_jffoRU1 -[dotted]up-> BOB_6x8cR_3
+PRC_i3hnRI7 -[dotted]up-> BOB_6x8cR_3
+EVT_3t09Jx_ --> FNC_wW2yWGx
+FNC_wW2yWGx --> FNC_K03IoKU
+FNC_jffoRU1 --> PRC_i3hnRI7
+SRV_Uv9Wx9 --> PRC_i3hnRI7
+
+@enduml
