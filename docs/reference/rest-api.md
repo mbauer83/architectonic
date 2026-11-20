@@ -120,14 +120,14 @@ answered, how many have not, and the element's worst Action Priority. Each cell 
 (recorded, not-credible, untouched), its Action Priority, each factor with the basis it came from,
 whether an occurrence value is being asked for at all, and the single next action that would advance
 it. **Rows are not sorted by priority**, and deliberately: the order is the candidate order — the
-elements a control structure names first, then the ones the architecture graph nominates — so a
-client can sort as it likes while the response order stays stable between calls.
+elements a control structure names, by element id — so a client can sort as it likes while the
+response order stays stable between calls.
 
-A `PUT` **appends rather than replaces**. What is being set is *the current judgement*, and the
-revision series behind it is how a reader sees that it changed; nothing is overwritten. The body
-requires `node_id`, `factor`, `value`, `justification`, `author` and `basis_digest` — the last naming
-the picture of the model the judgement was made against, so that when the model moves the judgement
-can be recognised as stale and the derived value can take over again.
+The `POST` **appends rather than replaces**. What is being set is *the current judgement*, and the
+revision series behind it is how a reader sees that it changed; nothing is overwritten. The node is
+the path, and the body requires `factor`, `value`, `justification`, `author` and `basis_digest` — the
+last naming the picture of the model the judgement was made against, so that when the model moves the
+judgement can be recognised as stale and the derived value can take over again.
 
 Ordinal values do not sort lexically. `major` precedes `minor` alphabetically and follows it by rank,
 so any ordering over severity, occurrence, detectability or TLP is by declared rank — see

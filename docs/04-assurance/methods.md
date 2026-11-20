@@ -93,11 +93,16 @@ one. The matrix therefore has three cell states, not two: recorded, dismissed as
 never looked at.
 
 **Rows are a nomination, not a census.** Every element against five guidewords is thousands of cells
-nobody completes. The candidates are the elements a control structure already names — the hazard
-analysis has already said those matter — plus the ones the architecture graph shows to be
-load-bearing: a single point of failure, or something a great many typed dependents lean on. Those
-are counted from declared relationship roles and strengths, never from raw edge count, and an element
-with nothing modelled around it yields *absence* rather than zero.
+nobody completes. The candidates are the elements a control structure already names: the hazard
+analysis has already said those matter. An element gets a row when a control-structure node is bound
+to it.
+
+The architecture graph also shows which elements are load-bearing: a single point of failure, or
+something many typed dependents lean on. Those do not get rows. An element of that kind that no
+analysis has reached is reported by the verifier as an informational coverage finding (`W511`), and
+the analyst adds it to a control structure to bring it into the matrix. The finding is counted from
+declared relationship roles and strengths, never from raw edge count, and an element with nothing
+modelled around it yields *absence* rather than zero.
 
 ### The three factors, and where each comes from
 

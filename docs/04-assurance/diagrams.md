@@ -152,8 +152,7 @@ detecting control. The element's own priority is the most urgent band among its 
 never buried under the row nobody has looked at.
 
 The rows are the candidate set described in [Methods](methods.md#fmea-failure-mode-and-effects-analysis):
-the elements a control structure already names, plus the ones the architecture graph shows to be
-load-bearing. Each candidate says which of the two nominated it.
+the elements a control structure already names. Each row says what nominated it.
 
 ![Failure-mode matrix of the assurance access and rendering paths: six nominated elements against the five guidewords, with recorded cells showing each factor and a glyph for whether it was derived or asserted, dismissed cells carrying their reason, unexamined cells saying what would advance them, and a priority roll-up per element](../media/assurance-fmea-matrix.png)
 
