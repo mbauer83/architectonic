@@ -130,10 +130,7 @@ class YamlScratchpadRepository:
         existing = self._path_for(scratchpad.artifact_id)
         on_disk = existing.read_text(encoding="utf-8") if existing is not None else None
         stored_version = _version_of(on_disk)
-        if stored_version is not None and expected_version != stored_version:
-            raise ScratchpadVersionConflictError(
-                scratchpad.artifact_id, expected_version or "(none)", stored_version
-            )
+        _refuse_stale(scratchpad.artifact_id, expected_version, stored_version)
         current = replace(
             scratchpad,
             version=stored_version or _UNSTORED_VERSION,
@@ -153,6 +150,12 @@ class YamlScratchpadRepository:
             existing.unlink(missing_ok=True)
         _reindex(target, existing)
         return stored
+
+    def require_version(self, artifact_id: str, expected_version: str) -> None:
+        path = self._path_for(artifact_id)
+        if path is None:
+            raise ScratchpadNotFoundError(f"no scratchpad {artifact_id!r} under {self._root}")
+        _refuse_stale(artifact_id, expected_version, _version_of(path.read_text(encoding="utf-8")))
 
     def delete(self, artifact_id: str) -> None:
         path = self._path_for(artifact_id)
@@ -181,6 +184,15 @@ def _reindex(*paths: Path | None) -> None:
     changed = [path for path in paths if path is not None]
     if changed:
         notify_paths_changed(changed)
+
+
+def _refuse_stale(artifact_id: str, expected_version: str | None, stored_version: str | None) -> None:
+    """The one place a writer's token is compared with the store's. Nothing stored is a create,
+    which no token can be stale against."""
+    if stored_version is not None and expected_version != stored_version:
+        raise ScratchpadVersionConflictError(
+            artifact_id, expected_version or "(none)", stored_version
+        )
 
 
 def _version_of(document_text: str | None) -> str | None:

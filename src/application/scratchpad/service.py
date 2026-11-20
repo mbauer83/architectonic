@@ -27,6 +27,7 @@ from src.application.scratchpad.ports import (
     LiftWriterPort,
     ScratchpadRepositoryPort,
     ScratchpadSummary,
+    ScratchpadVersionConflictError,
 )
 from src.domain.modules.module_registry import ModuleRegistry
 from src.domain.repository.groups import UNCATEGORIZED
@@ -183,6 +184,12 @@ class ScratchpadService:
 
         A blocked plan performs nothing and says why. So does `dry_run`, which is the default —
         every write on this surface plans unless told otherwise.
+
+        **The version is asked for before the model is written, not after.** A lift writes twice —
+        the model, then the scratchpad that records what each note became — and only the second
+        write used to check the token. A stale caller got the content committed, then a conflict,
+        and notes that did not say they had been lifted, so the retry the conflict asks for created
+        everything again.
         """
         scratchpad = self._repository.load(artifact_id)
         plan = plan_lift(
@@ -197,19 +204,45 @@ class ScratchpadService:
         if dry_run or plan.blocks or plan.is_empty:
             return plan, LiftReceipt()
 
+        self._repository.require_version(artifact_id, expected_version)
         receipt = self._lift_writer.execute(
             plan, meta_ontology=scratchpad.meta_ontology, dry_run=False
         )
-        if receipt.committed:
-            # The *scratchpad* records what the lift created; the model is never written back to.
-            # This is the one edge a lift adds to the aggregate, and it is what makes a second lift
-            # skip rather than duplicate.
+        if not receipt.committed:
+            return plan, receipt
+        return plan, self._recorded(scratchpad, receipt, expected_version=expected_version)
+
+    def _recorded(
+        self, scratchpad: Scratchpad, receipt: LiftReceipt, *, expected_version: str
+    ) -> LiftReceipt:
+        """The receipt, once the scratchpad says what the lift created.
+
+        The *scratchpad* records it; the model is never written back to. This is the one edge a
+        lift adds to the aggregate, and it is what makes a second lift skip rather than duplicate.
+
+        The model write has committed by now and cannot be taken back, so a failure here is
+        *reported on the receipt* rather than raised: an exception would tell the caller the lift
+        failed, and the retry that invites is the duplicate. The receipt still says `committed` and
+        still carries every id, which is everything needed to bind the notes by hand.
+        """
+        try:
             self._repository.save(
                 _realized(scratchpad, receipt.realized),
-                group=self._repository.group_of(artifact_id),
+                group=self._repository.group_of(scratchpad.artifact_id),
                 expected_version=expected_version,
             )
-        return plan, receipt
+        except (OSError, ScratchpadVersionConflictError) as exc:
+            return replace(receipt, errors=(*receipt.errors, _unrecorded(exc)))
+        return receipt
+
+
+def _unrecorded(cause: Exception) -> str:
+    return (
+        "The content was written to the model, but the scratchpad could not be updated to record "
+        f"it ({cause}). Do not lift these notes again — that would create the content a second "
+        "time. Reload the scratchpad and set each note's model-ref to the id listed for it under "
+        "`realized`."
+    )
 
 
 

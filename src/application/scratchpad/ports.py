@@ -85,6 +85,18 @@ class ScratchpadRepositoryPort(Protocol):
         """
         ...
 
+    def require_version(self, artifact_id: str, expected_version: str) -> None:
+        """Refuse, exactly as `save` would, unless the store holds the version the writer read.
+
+        For an operation that writes somewhere else *before* it saves here: a lift commits model
+        content and only then records on the notes what they became, so leaving the question to
+        that `save` answers it after the part that cannot be taken back. Raises
+        `ScratchpadVersionConflictError` on a mismatch and `ScratchpadNotFoundError` if there is
+        none. `save` asks the same question the same way; this is that question on its own, not a
+        second rule.
+        """
+        ...
+
     def delete(self, artifact_id: str) -> None:
         ...
 

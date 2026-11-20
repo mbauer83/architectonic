@@ -179,6 +179,35 @@ class TestConcurrency:
                 expected_version=first.version,
             )
 
+    def test_the_version_can_be_required_without_writing_and_answers_as_a_save_would(
+        self, repo: YamlScratchpadRepository
+    ) -> None:
+        """A lift asks before it writes the model; the answer has to be `save`'s own."""
+        first = repo.save(_pad(), group="strategy-and-value")
+        second = repo.save(
+            _renamed(first, "Renamed once"), group="strategy-and-value",
+            expected_version=first.version,
+        )
+        stored = repo._path_for(first.artifact_id).read_text(encoding="utf-8")  # type: ignore[union-attr]
+
+        repo.require_version(first.artifact_id, second.version)
+        with pytest.raises(ScratchpadVersionConflictError, match="has moved on") as asked:
+            repo.require_version(first.artifact_id, first.version)
+        with pytest.raises(ScratchpadVersionConflictError) as saved:
+            repo.save(
+                _renamed(first, "Renamed twice"), group="strategy-and-value",
+                expected_version=first.version,
+            )
+
+        assert str(asked.value) == str(saved.value)
+        assert repo._path_for(first.artifact_id).read_text(encoding="utf-8") == stored  # type: ignore[union-attr]
+
+    def test_requiring_the_version_of_what_is_not_there_is_not_found(
+        self, repo: YamlScratchpadRepository
+    ) -> None:
+        with pytest.raises(ScratchpadNotFoundError):
+            repo.require_version("SCR@9.z.nothing", "0.1.1")
+
     def test_creating_over_an_existing_id_is_refused_rather_than_silently_replacing(
         self, repo: YamlScratchpadRepository
     ) -> None:

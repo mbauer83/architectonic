@@ -10,12 +10,15 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+import pytest
+
 from src.application.scratchpad.lift import (
     LiftPlan,
     LiftReceipt,
     LiftTarget,
     plan_lift,
 )
+from src.application.scratchpad.ports import ScratchpadVersionConflictError
 from src.application.scratchpad.service import ScratchpadService
 from src.domain.scratchpad import Link, LinkVerdict, ModelRef, Note, scratchpad_from_parts
 
@@ -263,9 +266,12 @@ class TestLinksThatReachOutside:
 class _Repository:
     """Enough of `ScratchpadRepositoryPort` to watch what the service writes back."""
 
-    def __init__(self, scratchpad) -> None:  # noqa: ANN001 — the aggregate's own type
+    def __init__(self, scratchpad, journal: list[str] | None = None) -> None:  # noqa: ANN001
         self.stored = scratchpad
         self.saved_with: str | None = None
+        self.stored_version: str | None = None
+        self.save_failure: Exception | None = None
+        self.journal = journal if journal is not None else []
 
     def load(self, _artifact_id: str):  # noqa: ANN202
         return self.stored
@@ -273,7 +279,15 @@ class _Repository:
     def group_of(self, _artifact_id: str) -> str:
         return "strategy-and-value"
 
+    def require_version(self, artifact_id: str, expected_version: str) -> None:
+        self.journal.append("require_version")
+        if self.stored_version is not None and expected_version != self.stored_version:
+            raise ScratchpadVersionConflictError(artifact_id, expected_version, self.stored_version)
+
     def save(self, scratchpad, *, group: str, expected_version: str | None = None):  # noqa: ANN001, ANN202, ARG002
+        self.journal.append("save")
+        if self.save_failure is not None:
+            raise self.save_failure
         self.stored = scratchpad
         self.saved_with = expected_version
         return scratchpad
@@ -282,21 +296,28 @@ class _Repository:
 class _Writer:
     """A `LiftWriterPort` that records rather than writes."""
 
-    def __init__(self, receipt: LiftReceipt | None = None, target: LiftTarget | None = None) -> None:
+    def __init__(
+        self,
+        receipt: LiftReceipt | None = None,
+        target: LiftTarget | None = None,
+        journal: list[str] | None = None,
+    ) -> None:
         self.receipt = receipt or LiftReceipt()
         self.target = target or LiftTarget()
         self.executed: list[LiftPlan] = []
+        self.journal = journal if journal is not None else []
 
     def resolve_target(self, group: str) -> LiftTarget:
         return replace(self.target, group=group or self.target.group)
 
     def execute(self, plan: LiftPlan, *, meta_ontology: str, dry_run: bool) -> LiftReceipt:  # noqa: ARG002
         self.executed.append(plan)
+        self.journal.append("execute")
         return self.receipt
 
 
 def _service(scratchpad, writer: _Writer) -> tuple[ScratchpadService, _Repository]:  # noqa: ANN001
-    repository = _Repository(scratchpad)
+    repository = _Repository(scratchpad, writer.journal)
     # The registry is only reached to build verdicts, and every case here supplies its own links'
     # types explicitly, so `None` is honest: this suite is about what the service does with a plan.
     return ScratchpadService(repository, None, writer), repository  # type: ignore[arg-type]
@@ -344,6 +365,54 @@ class TestPerformingALift:
         assert note.model_ref == ModelRef(artifact_id="ENT@5.q.grow", kind="realized")
         # Written against the version the caller read: a lift is a write like any other.
         assert repository.saved_with == "0.1.4"
+
+    def test_the_version_is_required_before_the_model_is_written(self) -> None:
+        """Order is the property: the scratchpad's save comes last, and it used to be the only
+        thing that asked."""
+        writer = _Writer(LiftReceipt(committed=True, realized={"n1": "ENT@5.q.grow"}))
+        service, repository = _service(self._pad_with_one_liftable_note(), writer)
+
+        service.lift(
+            "SCR@1.a.pad", selection=["n1"], targets={}, expected_version="0.1.4", dry_run=False,
+        )
+
+        assert repository.journal == ["require_version", "execute", "save"]
+
+    def test_a_stale_version_is_refused_and_never_reaches_the_write_path(self) -> None:
+        writer = _Writer(LiftReceipt(committed=True, realized={"n1": "ENT@5.q.grow"}))
+        service, repository = _service(self._pad_with_one_liftable_note(), writer)
+        repository.stored_version = "0.1.5"
+
+        with pytest.raises(ScratchpadVersionConflictError):
+            service.lift(
+                "SCR@1.a.pad", selection=["n1"], targets={}, expected_version="0.1.4",
+                dry_run=False,
+            )
+
+        assert writer.executed == []
+        assert repository.stored.note("n1").model_ref is None
+
+    @pytest.mark.parametrize("failure", [
+        OSError("No space left on device"),
+        ScratchpadVersionConflictError("SCR@1.a.pad", "0.1.4", "0.1.5"),
+    ])
+    def test_a_lift_that_committed_but_could_not_be_recorded_says_both(
+        self, failure: Exception
+    ) -> None:
+        """The model write cannot be taken back, so an exception here would report a failure that
+        did not happen and invite the retry that duplicates it."""
+        writer = _Writer(LiftReceipt(committed=True, realized={"n1": "ENT@5.q.grow"}))
+        service, repository = _service(self._pad_with_one_liftable_note(), writer)
+        repository.save_failure = failure
+
+        _plan, receipt = service.lift(
+            "SCR@1.a.pad", selection=["n1"], targets={}, expected_version="0.1.4", dry_run=False,
+        )
+
+        assert receipt.committed and receipt.realized == {"n1": "ENT@5.q.grow"}
+        assert len(receipt.errors) == 1
+        assert "written to the model" in receipt.errors[0] and str(failure) in receipt.errors[0]
+        assert "Do not lift these notes again" in receipt.errors[0]
 
     def test_nothing_left_to_create_skips_the_write_path_entirely(self) -> None:
         bound = Note(
