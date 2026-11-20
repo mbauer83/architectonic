@@ -15,11 +15,41 @@ export type FrontmatterField = typeof FrontmatterFieldSchema.Type
 
 // ── Document types ────────────────────────────────────────────────────────────
 
+/**
+ * One column of a typed table a section declares.
+ *
+ * Open, mirroring the server's `DocumentTableColumn`: a value column is written as a property of an
+ * attribute schema is, so `enum`, `pattern`, `minimum` and the other JSON Schema keywords arrive
+ * through the index signature, and the column with its `type` is the schema of one cell.
+ */
+export const TableColumnSchema = Schema.Struct(
+  {
+    name: Schema.String,
+    title: Schema.String,
+    required: Schema.Boolean,
+    type: Schema.String,
+    to: Schema.optional(Schema.Array(Schema.String)),
+    table: Schema.optional(Schema.String),
+    many: Schema.optional(Schema.Boolean),
+  },
+  Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+)
+export type TableColumn = typeof TableColumnSchema.Type
+
+export const TableDeclarationSchema = Schema.Struct({
+  name: Schema.String,
+  row_id: Schema.String,
+  row_id_title: Schema.String,
+  columns: Schema.Array(TableColumnSchema),
+})
+export type TableDeclaration = typeof TableDeclarationSchema.Type
+
 export const SectionSpecSchema = Schema.Struct({
   name: Schema.String,
   template: Schema.optional(Schema.String),
   required_connections: Schema.optional(Schema.Array(Schema.String)),
   suggested_connections: Schema.optional(Schema.Array(Schema.String)),
+  tables: Schema.optional(Schema.Array(TableDeclarationSchema)),
 })
 export type SectionSpec = typeof SectionSpecSchema.Type
 

@@ -7,6 +7,7 @@ GET /api/groups (all axes + filtered).
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -18,6 +19,7 @@ from src.infrastructure.rest.routers.documents import router as documents_router
 from src.infrastructure.rest.routers.groups import router as groups_router
 from tests.support.api_app import build_api_app
 from tests.support.identity_resolution_conformance import DetailRoute, assert_conforms
+from tests.support.typed_table_documents import STRESS_ANALYSIS, raw_document_type
 
 httpx = pytest.importorskip("httpx")
 
@@ -160,6 +162,38 @@ class TestDocumentTypes:
             {"name": "Decision"},
             {"name": "Consequences"},
         ]
+
+    def test_a_sections_typed_tables_are_served_as_declared_with_defaults_written_out(
+        self, populated_root: Path, doc_client
+    ) -> None:
+        declared = json.dumps(raw_document_type(STRESS_ANALYSIS))
+        _write(populated_root / ".arch-repo" / "documents" / f"{STRESS_ANALYSIS}.json", declared)
+
+        catalog = doc_client.get("/api/document-types")
+        schemata = doc_client.get("/api/document-schemata")
+
+        assert (catalog.status_code, schemata.status_code) == (200, 200)
+        by_type = {item["doc_type"]: item for item in catalog.json()["document_types"]}
+        incidence = next(s for s in by_type[STRESS_ANALYSIS]["sections"] if s["name"] == "Incidence")
+        assert incidence["tables"] == [
+            {
+                "name": "incidence",
+                "row_id": "I",
+                "row_id_title": "Id",
+                "columns": [
+                    {"name": "stressor", "title": "Stressor", "required": True, "type": "row",
+                     "table": "stressors", "many": False},
+                    {"name": "component", "title": "Component", "required": True, "type": "reference",
+                     "to": ["@active-structure-element"], "many": False},
+                    {"name": "note", "title": "Note", "required": False, "type": "string"},
+                ],
+            }
+        ]
+        assert schemata.json()[STRESS_ANALYSIS]["sections"] == by_type[STRESS_ANALYSIS]["sections"]
+        stressors = next(s for s in by_type[STRESS_ANALYSIS]["sections"] if s["name"] == "Stressors")
+        origin = next(c for c in stressors["tables"][0]["columns"] if c["name"] == "origin")
+        assert origin["enum"] == ["drawn", "elicited", "model-prompted"]
+        assert all("tables" not in section for section in by_type["standard"]["sections"])
 
     def test_schemata_endpoint(self, doc_client) -> None:
         r = doc_client.get("/api/document-schemata")

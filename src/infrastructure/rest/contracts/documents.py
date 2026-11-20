@@ -16,6 +16,7 @@ from typing import Any, Literal
 from pydantic import ConfigDict, RootModel
 
 from src.infrastructure.rest.contracts.baseline_standing import BaselineStandingContract
+from src.infrastructure.rest.contracts.document_tables import DocumentTableDeclaration
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted, mark_nulls_omitted
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
@@ -89,6 +90,8 @@ class DocumentSectionSpecEntry(NullsOmitted):
     template: str | None = None
     required_connections: list[str] | None = None
     suggested_connections: list[str] | None = None
+    #: The typed tables this section holds, absent when it declares none.
+    tables: list[DocumentTableDeclaration] | None = None
 
 
 class DocumentSchemaEntry(NullsOmitted):

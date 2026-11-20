@@ -85,6 +85,10 @@ OPEN_RESPONSE_MODELS: dict[str, OpenReason] = {
     # is the author's. Refusing a key this package does not know would 500 a read of a repository
     # whose schema file simply says more than the loader normalizes.
     "DocumentSchemaEntry": AUTHORED,
+    # A value column of a document type's typed table is written as a property of an attribute schema
+    # is: the keys beside the declared ones are JSON Schema's, and the column with its `type` is the
+    # schema of one cell.
+    "DocumentTableColumn": FOREIGN_VOCABULARY,
 
     # ── The security feeds own these ──────────────────────────────────────────
     "SecurityComponentRecord": FEED_OWNED,

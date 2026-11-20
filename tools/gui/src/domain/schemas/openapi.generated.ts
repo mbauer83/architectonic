@@ -7415,6 +7415,8 @@ export interface components {
             required_connections?: string[];
             /** Suggested Connections */
             suggested_connections?: string[];
+            /** Tables */
+            tables?: components["schemas"]["DocumentTableDeclaration"][];
             /** Template */
             template?: string;
         };
@@ -7430,6 +7432,8 @@ export interface components {
             required_connections?: string[];
             /** Suggested Connections */
             suggested_connections?: string[];
+            /** Tables */
+            tables?: components["schemas"]["DocumentTableDeclaration"][];
             /** Template */
             template?: string;
         };
@@ -7460,6 +7464,46 @@ export interface components {
             status: string;
             /** Title */
             title: string;
+        };
+        /**
+         * DocumentTableColumn
+         * @description One column of a declared table, as the declaration states it with its defaults written out.
+         *
+         *     Open, for one reason: a value column is written as a property of an attribute schema is, so the
+         *     keys beside the ones declared here — `enum`, `pattern`, `minimum`, `format`, `items` — are JSON
+         *     Schema's keywords, and this model with `type` is the schema of one cell.
+         */
+        DocumentTableColumn: {
+            /** Many */
+            many?: boolean;
+            /** Name */
+            name: string;
+            /** Required */
+            required: boolean;
+            /** Table */
+            table?: string;
+            /** Title */
+            title: string;
+            /** To */
+            to?: string[];
+            /** Type */
+            type: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * DocumentTableDeclaration
+         * @description One typed table a section holds: its columns, and the form of its rows' ids.
+         */
+        DocumentTableDeclaration: {
+            /** Columns */
+            columns: components["schemas"]["DocumentTableColumn"][];
+            /** Name */
+            name: string;
+            /** Row Id */
+            row_id: string;
+            /** Row Id Title */
+            row_id_title: string;
         };
         /**
          * DocumentTypeListResponse

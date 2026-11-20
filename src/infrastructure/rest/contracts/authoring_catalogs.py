@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pydantic import ConfigDict, Field
 
+from src.infrastructure.rest.contracts.document_tables import DocumentTableDeclaration
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
@@ -66,6 +67,8 @@ class DocumentSectionSpec(NullsOmitted):
     template: str | None = None
     required_connections: list[str] | None = None
     suggested_connections: list[str] | None = None
+    #: The typed tables this section holds, absent when it declares none.
+    tables: list[DocumentTableDeclaration] | None = None
 
 
 class DocumentTypeResponse(NullsOmitted):
