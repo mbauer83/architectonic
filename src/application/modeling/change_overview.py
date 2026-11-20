@@ -28,7 +28,10 @@ from typing import TYPE_CHECKING, Any
 
 from src.application.modeling.edit_field_catalogue import ArtifactKind
 from src.application.modeling.edit_field_values import comparable
-from src.application.modeling.integration_detection import current_values_of
+from src.application.modeling.integration_detection import (
+    current_values_of,
+    fields_moved_upstream,
+)
 from src.application.modeling.proposal_standing import (
     PendingProposal,
     enterprise_revision,
@@ -56,6 +59,11 @@ class FieldDivergence:
     field: str
     proposed: str | None
     current: str | None
+    #: Whether the artifact changed this field, since the change was written, to something the
+    #: change does not ask for. A rebase reports that as a conflict, and a row that showed only two
+    #: differing values could not say whether the difference is the author's own or someone else's.
+    #: False where the change recorded no base for the field, which is not the same as unmoved.
+    moved_upstream: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,8 +150,14 @@ def _divergence(
     """
     if current is None:
         return ()
+    moved = fields_moved_upstream(proposal.edit, proposal.base_values, current)
     return tuple(
-        FieldDivergence(field=field, proposed=_as_text(proposed), current=_as_text(current[field]))
+        FieldDivergence(
+            field=field,
+            proposed=_as_text(proposed),
+            current=_as_text(current[field]),
+            moved_upstream=field in moved,
+        )
         for field, proposed in sorted(proposal.edit.fields.items())
         if field in current
         and current[field] is not None

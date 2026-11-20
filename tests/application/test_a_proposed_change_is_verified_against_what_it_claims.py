@@ -21,6 +21,7 @@ import pytest
 from src.application.modeling.proposal_edit import ProposalEdit, to_mapping
 from src.application.modeling.proposed_change import (
     BASE_REVISION,
+    BASE_VALUES,
     PROPOSAL_STATE,
     PROPOSED_CHANGE_TYPE,
     PROPOSES_CHANGE_TO,
@@ -172,3 +173,34 @@ class TestTheDispatchSendsEachInternalTypeToItsOwnRule:
         result = VerificationResult(path=Path("/x.md"), file_type="entity")
         check_internal_entity({"artifact-type": "something-else"}, None, result, "loc")
         assert _codes(result) == []
+
+
+class TestTheBaseValues:
+    """Optional, because a change written before they were recorded has none and neither does one
+    written where the enterprise artifact could not be read. What is there must be about the edit."""
+
+    def test_a_change_without_them_is_accepted(self) -> None:
+        assert BASE_VALUES not in _frontmatter()
+        assert _codes(_check(_frontmatter())) == []
+
+    def test_a_base_for_a_field_the_edit_names_is_accepted(self) -> None:
+        assert _codes(_check(_frontmatter(**{BASE_VALUES: {"summary": "as it was"}}))) == []
+
+    def test_a_base_may_be_any_value_the_artifact_held(self) -> None:
+        """Not held to the edit vocabulary: it is what upstream said, not something being asked for."""
+        assert _codes(_check(_frontmatter(**{BASE_VALUES: {"summary": ["not", "prose"]}}))) == []
+
+    @pytest.mark.parametrize("malformed", ["summary", ["summary"], 3])
+    def test_anything_but_a_mapping_is_refused(self, malformed: object) -> None:
+        """It would read as no base at all, and a rebase would replay over an upstream edit."""
+        assert _codes(_check(_frontmatter(**{BASE_VALUES: malformed}))) == ["E150"]
+
+    def test_a_base_for_a_field_the_edit_does_not_change_is_refused(self) -> None:
+        result = _check(_frontmatter(**{BASE_VALUES: {"summary": "as it was", "notes": "stray"}}))
+        assert _codes(result) == ["E150"]
+        assert "notes" in result.issues[0].message
+
+    def test_an_unreadable_edit_is_reported_once(self) -> None:
+        """E147 already says the edit is unreadable; the bases have nothing to be held to."""
+        fm = _frontmatter(**{RECORDED_EDIT: "not a mapping", BASE_VALUES: {"summary": "as it was"}})
+        assert _codes(_check(fm)) == ["E147"]

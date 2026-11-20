@@ -14,14 +14,19 @@ import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
 from src.application.artifacts.query import ArtifactRepository
 from src.application.modeling.enterprise_reference import GLOBAL_ARTIFACT_ID, GLOBAL_ARTIFACT_KIND
 from src.application.modeling.proposal_standing import pending_proposals, standing_reader
-from src.application.modeling.proposed_change import BASE_REVISION, PROPOSED_CHANGE_TYPE
+from src.application.modeling.proposed_change import (
+    BASE_REVISION,
+    BASE_VALUES,
+    PROPOSED_CHANGE_TYPE,
+)
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.domain.baseline_standing import Proposed
-from src.domain.repository.frontmatter import parse_frontmatter
+from src.domain.repository.frontmatter import parse_frontmatter, replace_frontmatter_text
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import combined_artifact_index
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
@@ -35,10 +40,10 @@ TARGET = "REQ@1712870400.rrrrrrr.a-promoted-requirement"
 REFERENCE = "GAR@1780000060.rrrrrrr.a-promoted-requirement"
 
 
-def _entity_md(summary: str) -> str:
+def _entity_md(summary: str, *, version: str = "0.1.0") -> str:
     return (
         f"---\nartifact-id: {TARGET}\nartifact-type: requirement\nname: A promoted requirement\n"
-        "version: 0.1.0\nstatus: active\nlast-updated: '2026-01-01'\n---\n\n<!-- §content -->\n\n"
+        f"version: {version}\nstatus: active\nlast-updated: '2026-01-01'\n---\n\n<!-- §content -->\n\n"
         f"## A promoted requirement\n\n{summary}\n\n"
         "## Properties\n\n| Attribute | Value |\n|---|---|\n| (none) | (none) |\n\n<!-- §display -->\n"
     )
@@ -100,12 +105,17 @@ def _record_a_change(workspace, **fields) -> str:  # noqa: ANN001, ANN003
     return change.proposal_id
 
 
-def _move_upstream(enterprise: Path, summary: str) -> None:
+def _move_upstream(enterprise: Path, summary: str, *, version: str = "0.1.0") -> None:
     (enterprise / "model" / "motivation" / "requirement" / f"{TARGET}.md").write_text(
-        _entity_md(summary), encoding="utf-8"
+        _entity_md(summary, version=version), encoding="utf-8"
     )
     _git(enterprise, "add", "-A")
     _git(enterprise, "commit", "-qm", "upstream moved while the change waited")
+
+
+def _move_elsewhere(enterprise: Path) -> None:
+    """Upstream moves in a field the change does not name, which is what "still applies" means."""
+    _move_upstream(enterprise, "The enterprise wording.", version="0.2.0")
 
 
 def _pending(repo):  # noqa: ANN001, ANN202
@@ -137,7 +147,7 @@ def _rebase(repo, enterprise, proposals=None):  # noqa: ANN001, ANN202
 def test_a_stale_change_that_still_applies_is_reported_clean(workspace) -> None:  # noqa: ANN001
     _root, enterprise, repo = workspace
     _record_a_change(workspace, summary="My wording.")
-    _move_upstream(enterprise, "Someone else's wording.")
+    _move_elsewhere(enterprise)
 
     report = _rebase(repo, enterprise)
 
@@ -149,7 +159,7 @@ def test_a_clean_rebase_restamps_the_revision_it_was_proven_against(workspace) -
     """The remedy itself: afterwards the change is no longer stale."""
     _root, enterprise, repo = workspace
     change_id = _record_a_change(workspace, summary="My wording.")
-    _move_upstream(enterprise, "Someone else's wording.")
+    _move_elsewhere(enterprise)
     assert _stale(repo)
 
     report = _rebase(repo, enterprise)
@@ -163,7 +173,7 @@ def test_the_recorded_edit_itself_is_untouched(workspace) -> None:  # noqa: ANN0
     the intent is what re-applied."""
     _root, enterprise, repo = workspace
     _record_a_change(workspace, summary="My wording.")
-    _move_upstream(enterprise, "Someone else's wording.")
+    _move_elsewhere(enterprise)
 
     _rebase(repo, enterprise)
 
@@ -175,7 +185,7 @@ def test_the_enterprise_checkout_is_left_as_it_was(workspace) -> None:  # noqa: 
     """The replay is a real write, made somewhere disposable."""
     _root, enterprise, repo = workspace
     _record_a_change(workspace, summary="My wording.")
-    _move_upstream(enterprise, "Someone else's wording.")
+    _move_elsewhere(enterprise)
     before = (enterprise / "model" / "motivation" / "requirement" / f"{TARGET}.md").read_text(
         encoding="utf-8"
     )
@@ -229,6 +239,85 @@ def test_a_target_that_is_gone_conflicts_rather_than_crashing(workspace) -> None
     assert "nothing to apply to" in classified.reason
 
 
+# ── the field itself moved upstream ──────────────────────────────────────────
+
+
+def test_a_field_upstream_changed_to_a_third_value_conflicts(workspace) -> None:  # noqa: ANN001
+    """The change asks for one wording, upstream now has another, and neither is what the change was
+    written against. Replaying would overwrite the upstream value, so it is a conflict, and nothing
+    is restamped."""
+    _root, enterprise, repo = workspace
+    _record_a_change(workspace, summary="My wording.")
+    _move_upstream(enterprise, "Someone else's wording.")
+
+    report = _rebase(repo, enterprise)
+
+    (classified,) = report.rehearsed.changes
+    assert classified.outcome == "conflicting"
+    assert TARGET in classified.reason
+    assert "'summary'" in classified.reason
+    assert "upstream" in classified.reason
+    assert not report.rehearsed.can_proceed
+    assert report.restamped == ()
+
+
+def test_recording_a_change_captures_what_the_field_said_upstream(workspace) -> None:  # noqa: ANN001
+    _root, _enterprise, repo = workspace
+    change_id = _record_a_change(workspace, summary="My wording.")
+
+    frontmatter = parse_frontmatter(repo.get_entity(change_id).path.read_text(encoding="utf-8"))
+    assert frontmatter[BASE_VALUES] == {"summary": "The enterprise wording."}
+
+
+def test_a_second_thought_after_upstream_moved_still_conflicts(workspace) -> None:  # noqa: ANN001
+    """Revising the draft must not adopt the moved value as its base: the author changed the field
+    once, against what it said then."""
+    _root, enterprise, repo = workspace
+    _record_a_change(workspace, summary="My wording.")
+    _move_upstream(enterprise, "Someone else's wording.")
+    repo.refresh()
+    _record_a_change(workspace, summary="My better wording.")
+
+    report = _rebase(repo, enterprise)
+
+    (classified,) = report.rehearsed.changes
+    assert classified.outcome == "conflicting"
+
+
+def test_a_change_written_before_bases_were_recorded_replays_as_it_always_did(workspace) -> None:  # noqa: ANN001
+    """An existing change file has no base values, and nothing can say which field moved. It is
+    replayed without the comparison rather than refused for evidence it was never asked to keep."""
+    _root, enterprise, repo = workspace
+    change_id = _record_a_change(workspace, summary="My wording.")
+    path = repo.get_entity(change_id).path
+    frontmatter = parse_frontmatter(path.read_text(encoding="utf-8"))
+    assert BASE_VALUES in frontmatter
+    without = {key: value for key, value in frontmatter.items() if key != BASE_VALUES}
+    path.write_text(
+        replace_frontmatter_text(path.read_text(encoding="utf-8"), yaml.safe_dump(without).strip()),
+        encoding="utf-8",
+    )
+    _move_upstream(enterprise, "Someone else's wording.")
+
+    report = _rebase(repo, enterprise)
+
+    (classified,) = report.rehearsed.changes
+    assert classified.outcome == "clean"
+
+
+def test_a_second_field_that_did_not_move_does_not_rescue_the_one_that_did(workspace) -> None:  # noqa: ANN001
+    _root, enterprise, repo = workspace
+    _record_a_change(workspace, summary="My wording.", name="My name")
+    _move_upstream(enterprise, "Someone else's wording.")
+
+    report = _rebase(repo, enterprise)
+
+    (classified,) = report.rehearsed.changes
+    assert classified.outcome == "conflicting"
+    assert "'summary'" in classified.reason
+    assert "'name'" not in classified.reason
+
+
 # ── where a rebase cannot be attempted at all ────────────────────────────────
 
 
@@ -261,7 +350,7 @@ def test_the_base_revision_on_disk_is_what_moved(workspace) -> None:  # noqa: AN
     _root, enterprise, repo = workspace
     change_id = _record_a_change(workspace, summary="My wording.")
     before = parse_frontmatter(repo.get_entity(change_id).path.read_text(encoding="utf-8"))
-    _move_upstream(enterprise, "Someone else's wording.")
+    _move_elsewhere(enterprise)
 
     _rebase(repo, enterprise)
 

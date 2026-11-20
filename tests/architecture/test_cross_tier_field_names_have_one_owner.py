@@ -65,11 +65,13 @@ VOCABULARIES = (
             "proposes-change-to",
             "recorded-edit",
             "base-revision",
+            "base-values",
             "proposal-state",
         ),
         instead=(
             "`src.application.modeling.proposed_change`: the `PROPOSED_CHANGE_TYPE`, "
-            "`PROPOSES_CHANGE_TO`, `RECORDED_EDIT`, `BASE_REVISION` and `PROPOSAL_STATE` constants"
+            "`PROPOSES_CHANGE_TO`, `RECORDED_EDIT`, `BASE_REVISION`, `BASE_VALUES` and `PROPOSAL_STATE` "
+            "constants"
         ),
     ),
 )

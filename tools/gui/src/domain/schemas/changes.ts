@@ -19,6 +19,8 @@ export const FieldDivergenceSchema = Schema.Struct({
   field: Schema.String,
   proposed: Schema.NullOr(Schema.String),
   current: Schema.NullOr(Schema.String),
+  /** Whether the enterprise artifact changed this field to something else after the change was written. */
+  moved_upstream: Schema.Boolean,
 })
 export type FieldDivergence = typeof FieldDivergenceSchema.Type
 

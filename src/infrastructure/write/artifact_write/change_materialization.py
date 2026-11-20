@@ -18,9 +18,9 @@ retained rather than deleted — it is the evidence that the change existed and 
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from src.application.modeling.change_recording import (
     ChangeOutcome,
@@ -32,6 +32,7 @@ from src.application.modeling.change_recording import (
 from src.application.modeling.proposal_edit import to_mapping
 from src.application.modeling.proposed_change import (
     BASE_REVISION,
+    BASE_VALUES,
     PROPOSAL_STATE,
     PROPOSED_CHANGE_TYPE,
     PROPOSES_CHANGE_TO,
@@ -66,16 +67,17 @@ def materialize(
     current, which is the one thing the whole staleness contract must not do.
     """
     match outcome:
-        case RecordNew(edit=edit):
+        case RecordNew(edit=edit, base_values=bases):
             return _write_change(
                 repo=repo, engagement_root=engagement_root, verifier=verifier,
                 clear_repo_caches=clear_repo_caches, edit=edit, target_name=target_name,
-                reference_id=reference_id, base_revision=base_revision, dry_run=dry_run,
+                reference_id=reference_id, base_revision=base_revision, base_values=bases,
+                dry_run=dry_run,
             )
-        case ReviseDraft(proposal_id=proposal_id, edit=edit):
+        case ReviseDraft(proposal_id=proposal_id, edit=edit, base_values=bases):
             return _rewrite_recorded_edit(
                 repo=repo, verifier=verifier, clear_repo_caches=clear_repo_caches,
-                proposal_id=proposal_id, edit=edit, dry_run=dry_run,
+                proposal_id=proposal_id, edit=edit, base_values=bases, dry_run=dry_run,
             )
         case WithdrawEmptied(superseded_ids=emptied):
             # Nothing is left to propose, so the changes end rather than going on claiming a
@@ -91,11 +93,14 @@ def materialize(
                 ],
                 verification=None,
             )
-        case SupersedeSubmitted(superseded_ids=superseded, base_revision=carried, edit=edit):
+        case SupersedeSubmitted(
+            superseded_ids=superseded, base_revision=carried, edit=edit, base_values=bases
+        ):
             written = _write_change(
                 repo=repo, engagement_root=engagement_root, verifier=verifier,
                 clear_repo_caches=clear_repo_caches, edit=edit, target_name=target_name,
-                reference_id=reference_id, base_revision=carried, dry_run=dry_run,
+                reference_id=reference_id, base_revision=carried, base_values=bases,
+                dry_run=dry_run,
             )
             if written.wrote:
                 # Only after the replacement exists. A failure between the two leaves the author
@@ -114,6 +119,7 @@ def _write_change(
     target_name: str,
     reference_id: str,
     base_revision: str,
+    base_values: Mapping[str, Any],
     dry_run: bool,
 ) -> WriteResult:
     from src.application.identifier_allocator import get_default_allocator  # noqa: PLC0415
@@ -159,6 +165,7 @@ def _write_change(
             PROPOSAL_STATE: "draft",
             BASE_REVISION: base_revision,
             RECORDED_EDIT: recorded,
+            **_recorded_bases(base_values),
         },
     )
     if dry_run:
@@ -193,9 +200,14 @@ def _rewrite_recorded_edit(
     clear_repo_caches: Callable[[Path], None],
     proposal_id: str,
     edit: object,
+    base_values: Mapping[str, Any],
     dry_run: bool,
 ) -> WriteResult:
-    """Replace a draft's recorded edit in place, keeping its identity and everything else about it."""
+    """Replace a draft's recorded edit in place, keeping its identity and everything else about it.
+
+    The base values are replaced with it, because they are stated per field of the edit: a field the
+    revision dropped must not leave its base behind, and one it gained needs the base it was given.
+    """
     import yaml  # type: ignore[import-untyped]  # noqa: PLC0415
 
     from src.domain.repository.frontmatter import (  # noqa: PLC0415
@@ -212,7 +224,8 @@ def _rewrite_recorded_edit(
     if not frontmatter:
         raise ValueError(f"{proposal_id} has no frontmatter to revise")
 
-    updated = {**frontmatter, RECORDED_EDIT: to_mapping(edit)}  # type: ignore[arg-type]
+    kept = {key: value for key, value in frontmatter.items() if key != BASE_VALUES}
+    updated = {**kept, RECORDED_EDIT: to_mapping(edit), **_recorded_bases(base_values)}  # type: ignore[arg-type]
     dumped = yaml.safe_dump(updated, sort_keys=False)
     content = replace_frontmatter_text(source, str(dumped).strip())
     if dry_run:
@@ -236,6 +249,15 @@ def _rewrite_recorded_edit(
     clear_repo_caches(path)
     return WriteResult(wrote=True, path=path, artifact_id=proposal_id, content=None,
                        warnings=[], verification=None)
+
+
+def _recorded_bases(base_values: Mapping[str, Any]) -> dict[str, Any]:
+    """The frontmatter entry for a change's base values, or nothing where it has none.
+
+    Absent rather than empty: a change with no recorded base is the same record a version before
+    this key wrote, and an empty mapping would be a second spelling of that.
+    """
+    return {BASE_VALUES: dict(base_values)} if base_values else {}
 
 
 def _retire(

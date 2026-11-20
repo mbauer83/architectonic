@@ -69,7 +69,10 @@ def artifact_list_changes(*, repo_root: str | None = None) -> dict[str, Any]:
                 "state": change.state,
                 "condition": change.condition,
                 "divergence": [
-                    {"field": d.field, "proposed": d.proposed, "current": d.current}
+                    {
+                        "field": d.field, "proposed": d.proposed, "current": d.current,
+                        "moved_upstream": d.moved_upstream,
+                    }
                     for d in change.divergence
                 ],
             }

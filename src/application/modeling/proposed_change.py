@@ -2,7 +2,7 @@
 
 A proposed change is an artifact in the engagement repository that says: *this promoted artifact
 should say something different*. It is system-managed like a global artifact reference — created by
-the propose operation, never authored directly — and carries four things and no more:
+the propose operation, never authored directly — and carries five things and no more:
 
 * **what it is about** — the global artifact reference standing for the promoted artifact. Not the
   enterprise artifact's own id: a non-admin deployment holds no enterprise content, and the GAR is
@@ -10,6 +10,9 @@ the propose operation, never authored directly — and carries four things and n
 * **the recorded edit** — one `ProposalEdit`, the write call the author would have made.
 * **the base revision** — what the enterprise artifact was when the change was written. A change
   whose base has moved is stale, which is a condition to report and not a broken state.
+* **the base values** — what each field the edit names said on the enterprise artifact when that
+  field was first changed. The revision says *that* the artifact moved; only these say *which field*,
+  and a rebase needs that to tell an unrelated movement from one that a replay would overwrite.
 * **its state** — where it is in its own lifecycle.
 
 **Declared once, here, because both the writer and the verifier need it and they sit on opposite
@@ -47,6 +50,19 @@ RECORDED_EDIT = "recorded-edit"
 
 #: What the enterprise artifact was when the change was written.
 BASE_REVISION = "base-revision"
+
+#: What each field the recorded edit names said on the enterprise artifact when that field was first
+#: changed: a mapping from field name to the value as `edit_field_values` read it. Optional, and
+#: partial where it is present. A change written before the key existed carries none, and a field the
+#: enterprise artifact gave no reading for — an engagement deployment mounting no enterprise content,
+#: a document body — has no entry. A field without an entry is replayed without the comparison, which
+#: is what every field did before; absence must never read as "unchanged".
+#:
+#: The values themselves rather than a digest of them. They are the same size as the proposed values
+#: the recorded edit already stores beside them, they compare through the one normalisation every
+#: other field comparison uses, and a reader of a conflict can be shown what the change was written
+#: against. A digest would need a second, canonical serialisation to hash.
+BASE_VALUES = "base-values"
 
 #: Where the change is in its lifecycle.
 PROPOSAL_STATE = "proposal-state"

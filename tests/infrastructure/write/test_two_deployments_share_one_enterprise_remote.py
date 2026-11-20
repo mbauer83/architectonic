@@ -60,12 +60,13 @@ class Deployment:
         registry = ArtifactRegistry(self.repo._store)  # noqa: SLF001 — the write path is handed one
         return registry, build_artifact_verifier(registry, catalogs=process_runtime_catalogs())
 
-    def record(self, summary: str) -> str:
+    def record(self, summary: str | None = None, **fields: str) -> str:
         registry, verifier = self._deps()
+        asked = fields if summary is None else {"summary": summary, **fields}
         result = edit_entity(
             repo_root=self.engagement, registry=registry, verifier=verifier,
             clear_repo_caches=lambda _p: self.repo.refresh(), artifact_id=ENT_ENTITY_ID,
-            repo=self.repo, dry_run=False, summary=summary,
+            repo=self.repo, dry_run=False, **asked,
         )
         self.repo.refresh()
         assert result.artifact_id is not None
@@ -207,10 +208,13 @@ def test_the_merge_does_close_the_change_it_carried(deployments) -> None:  # noq
 
 def test_the_second_deployment_rebases_onto_the_merged_work(deployments) -> None:  # noqa: ANN001
     """The divergence resolved: B's replacement branch sits on the upstream that now carries A's
-    merge, rather than beside it — which is what stops the reviewer's merge reverting A."""
+    merge, rather than beside it — which is what stops the reviewer's merge reverting A.
+
+    A and B change different fields here. Where they change the same one there is nothing to put on
+    top of A's work without overwriting it, which is the test below."""
     a, b = deployments
     b_change = b.record("B's wording")
-    first = a.submit(a.record("A's wording"))
+    first = a.submit(a.record(name="A's name"))
     b.fetch()
     b.submit(b_change)
     _merge_into_main(a.enterprise, first.branch)
@@ -222,4 +226,25 @@ def test_the_second_deployment_rebases_onto_the_merged_work(deployments) -> None
     path = f"model/motivation/requirement/{ENT_ENTITY_ID}.md"
     published = git(b.enterprise, "show", f"{report.republished.branch}:{path}")
     assert "B's wording" in published, "B's change is on it"
+    assert "A's name" in published, "and A's merged work is still under it"
     assert git(b.enterprise, "merge-base", "--is-ancestor", "origin/main", report.republished.branch) == ""
+
+
+def test_the_second_deployment_is_told_when_the_first_changed_the_same_field(deployments) -> None:  # noqa: ANN001
+    """A's wording was merged while B's waited. Replaying B's would replace it with a value written
+    against the wording before A's, so the rebase reports a conflict and republishes nothing."""
+    a, b = deployments
+    b_change = b.record("B's wording")
+    first = a.submit(a.record("A's wording"))
+    b.fetch()
+    b.submit(b_change)
+    _merge_into_main(a.enterprise, first.branch)
+    b.fetch()
+
+    report = b.rebase(b_change)
+
+    (classified,) = report.rehearsed.changes
+    assert classified.outcome == "conflicting"
+    assert "'summary'" in classified.reason
+    assert report.republished is None
+    assert report.restamped == ()

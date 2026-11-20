@@ -12,7 +12,8 @@ the work, which is why this is an operation rather than a status.
 * **superseded** — the artifact already says what the change asked. Reported, never acted on: closing
   it here would be this operation deciding that a coincidence is an integration, which is the
   judgement `integration_sweep` deliberately reserves for changes that were actually submitted.
-* **conflicting** — the verifier's own refusal, carried verbatim. Nothing is written.
+* **conflicting** — the verifier's own refusal, carried verbatim, or a field the change names that
+  upstream has since changed to something else. Nothing is written.
 
 The rehearsal happens in a throwaway worktree, so a set full of conflicts leaves the enterprise
 checkout exactly as it was — and so that a replay is a real write, judged by the real verifier,
@@ -112,6 +113,7 @@ def rebase_changes(
             [(proposal.proposal_id, proposal.edit) for proposal in proposals],
             read_current=rehearser.read_current,
             apply_edit=rehearser.apply_edit,
+            base_values={proposal.proposal_id: proposal.base_values for proposal in proposals},
         )
 
     report = RebaseReport(rehearsed=rehearsed, restamped=_restamp_clean(rehearsed, proposals, repo))

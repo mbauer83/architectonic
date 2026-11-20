@@ -21,7 +21,11 @@ from src.application.artifacts.query import ArtifactRepository
 from src.application.modeling.change_recording import RecordNew, ReviseDraft, SupersedeSubmitted
 from src.application.modeling.proposal_edit import ProposalEdit
 from src.application.modeling.proposal_standing import pending_proposals
-from src.application.modeling.proposed_change import PROPOSAL_STATE, PROPOSED_CHANGE_TYPE
+from src.application.modeling.proposed_change import (
+    BASE_VALUES,
+    PROPOSAL_STATE,
+    PROPOSED_CHANGE_TYPE,
+)
 from src.domain.repository.frontmatter import parse_frontmatter
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
@@ -355,3 +359,68 @@ def test_a_refused_replacement_does_not_retire_the_original(repo_at) -> None:  #
     )
 
     assert _changes(repo)[EXISTING][PROPOSAL_STATE] == "submitted"
+
+
+# ── the base each field was changed against ──────────────────────────────────
+
+
+def test_the_base_values_reach_disk_and_read_back_as_they_were_given(repo_at) -> None:  # noqa: ANN001
+    """The pair, not either side: what the writer stores is what the reader of changes hands a
+    rebase. Stated over what a base may be, which is any value a field can hold."""
+    root, repo = repo_at()
+    bases = {
+        "name": "Payments Service",
+        "summary": "Two lines,\nand a colon: with \"quotes\".",
+        "keywords": ("payments", "core"),
+        "attribute_types": {"owner": "string"},
+    }
+    edit = _edit(name="Payments Platform", summary="New.", keywords=["x"], attribute_types={})
+    result = _materialize(RecordNew(edit=edit, base_values=bases), root, repo)
+
+    assert result.wrote, result.verification
+    repo.refresh()
+    (change,) = pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE))[TARGET]
+    assert change.base_values == {**bases, "keywords": ["payments", "core"]}
+
+
+def test_a_change_with_no_base_values_stores_no_key(repo_at) -> None:  # noqa: ANN001
+    """The same record a version before the key wrote, rather than a second spelling of it."""
+    root, repo = repo_at()
+    result = _materialize(RecordNew(edit=_edit(name="Payments Platform")), root, repo)
+
+    assert BASE_VALUES not in _changes(repo)[result.artifact_id]
+
+
+def test_an_existing_change_without_base_values_still_reads(repo_at) -> None:  # noqa: ANN001
+    _root, repo = repo_at(existing_state="draft")
+
+    (change,) = pending_proposals(repo.list_entities(artifact_type=PROPOSED_CHANGE_TYPE))[TARGET]
+    assert change.base_values == {}
+
+
+def test_revising_replaces_the_base_values_with_the_edit(repo_at) -> None:  # noqa: ANN001
+    root, repo = repo_at(existing_state="draft")
+    _materialize(
+        ReviseDraft(
+            proposal_id=EXISTING, edit=_edit(name="Revised Name", summary="Added."),
+            base_values={"summary": "A service."},
+        ),
+        root, repo,
+    )
+    assert _changes(repo)[EXISTING][BASE_VALUES] == {"summary": "A service."}
+
+    _materialize(ReviseDraft(proposal_id=EXISTING, edit=_edit(name="Revised Name")), root, repo)
+    assert BASE_VALUES not in _changes(repo)[EXISTING]
+
+
+def test_the_replacement_carries_the_base_values_it_is_given(repo_at) -> None:  # noqa: ANN001
+    root, repo = repo_at(existing_state="submitted")
+    result = _materialize(
+        SupersedeSubmitted(
+            superseded_ids=(EXISTING,), base_revision="abc1234", edit=_edit(name="x"),
+            base_values={"name": "Payments Service"},
+        ),
+        root, repo,
+    )
+
+    assert _changes(repo)[result.artifact_id][BASE_VALUES] == {"name": "Payments Service"}

@@ -74,6 +74,35 @@ def integration_verdict(edit: ProposalEdit, current: Mapping[str, Any] | None) -
     )
 
 
+def fields_moved_upstream(
+    edit: ProposalEdit,
+    base_values: Mapping[str, Any],
+    current: Mapping[str, Any] | None,
+) -> tuple[str, ...]:
+    """The fields the enterprise artifact changed, since the change was written, to something else.
+
+    A field is named when its current value is neither what the change was written against nor what
+    the change asks for. Equal to the base is an artifact that has not moved there; equal to the
+    proposal is one that already agrees. Anything else is a value someone upstream put there after
+    the author last looked, and a replay would overwrite it.
+
+    Decided only where both sides are known. A field with no recorded base — a change written before
+    bases were recorded, or one written where the enterprise artifact could not be read — and a field
+    with no current reading are left out, for the reason `integration_verdict` gives: undecidable is
+    not evidence, and here the safe direction is the behaviour every change had before.
+    """
+    if current is None:
+        return ()
+    return tuple(
+        field
+        for field, proposed in sorted(edit.fields.items())
+        if field in base_values
+        and current.get(field) is not None
+        and comparable(current[field]) != comparable(base_values[field])
+        and comparable(current[field]) != comparable(proposed)
+    )
+
+
 def current_values_of(record: EntityRecord | DocumentRecord | None) -> Mapping[str, Any] | None:
     """The editable fields of whichever kind of artifact this is, or None where there is no reading.
 

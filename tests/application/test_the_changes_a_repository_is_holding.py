@@ -244,8 +244,26 @@ def test_a_field_the_artifact_has_no_reading_for_is_left_out(workspace) -> None:
     assert _divergence(proposal, {}) == ()
     assert _divergence(proposal, None) == ()
     assert _divergence(proposal, {"summary": "Theirs."}) == (
-        FieldDivergence(field="summary", proposed="Mine.", current="Theirs."),
+        FieldDivergence(field="summary", proposed="Mine.", current="Theirs.", moved_upstream=False),
     )
+
+
+def test_a_field_upstream_changed_to_something_else_is_marked(workspace) -> None:
+    """Two differing values cannot say whose difference it is; the base the field was changed
+    against can, and it is what a rebase will report as a conflict."""
+    from src.application.modeling.change_overview import _divergence
+    from src.application.modeling.proposal_edit import ProposalEdit
+    from src.application.modeling.proposal_standing import PendingProposal
+
+    proposal = PendingProposal(
+        proposal_id="PCH@1", target_id=FIRST, reference_id=FIRST_REF,
+        changed_fields=("notes", "summary"), base_revision="r", state="draft",
+        edit=ProposalEdit(kind="entity", artifact_id=FIRST, fields={"summary": "Mine.", "notes": "N."}),
+        base_values={"summary": "As it was.", "notes": "Unmoved."},
+    )
+
+    shown = _divergence(proposal, {"summary": "Theirs.", "notes": "Unmoved."})
+    assert [(d.field, d.moved_upstream) for d in shown] == [("notes", False), ("summary", True)]
 
 
 def test_a_structured_value_names_the_field_without_inventing_a_rendering(workspace) -> None:

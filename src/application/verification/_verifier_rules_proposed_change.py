@@ -5,6 +5,7 @@ E146: the global artifact reference it names is not in the repository.
 E147: `recorded-edit` missing, malformed, or naming something not editable.
 E148: `base-revision` missing or empty.
 E149: `proposal-state` is not one of the four.
+E150: `base-values` is present and is not a mapping of fields the recorded edit names.
 W145: cannot check the reference because the repository index is not loaded.
 
 Staleness is deliberately absent. Whether the enterprise artifact has moved past the base revision
@@ -20,6 +21,7 @@ from typing import TYPE_CHECKING, Any
 from src.application.modeling.proposal_edit import UnproposableEdit, from_mapping
 from src.application.modeling.proposed_change import (
     BASE_REVISION,
+    BASE_VALUES,
     PROPOSAL_STATE,
     PROPOSES_CHANGE_TO,
     RECORDED_EDIT,
@@ -56,6 +58,7 @@ def check_proposed_change(
     _check_reference(fm, registry, result, loc)
     _check_recorded_edit(fm, result, loc)
     _check_base_revision(fm, result, loc)
+    _check_base_values(fm, result, loc)
     _check_state(fm, result, loc)
 
 
@@ -100,6 +103,34 @@ def _check_base_revision(fm: dict, result: VerificationResult, loc: str) -> None
         _issue(result, Severity.ERROR, "E148",
                f"proposed-change is missing required '{BASE_REVISION}' field: without it nothing "
                "can say whether the artifact has moved since the change was written", loc)
+
+
+def _check_base_values(fm: dict, result: VerificationResult, loc: str) -> None:
+    """Optional, and partial where present; what is there must be about the recorded edit.
+
+    A change written before the key existed has none, and one written where the enterprise artifact
+    could not be read has none either, so absence is not an error. A value of the wrong shape is: it
+    reads as no base at all, and a rebase would then replay over an upstream edit without saying so.
+    The values themselves are not checked. They are whatever the artifact said, including things the
+    edit vocabulary would refuse to be asked for.
+    """
+    if BASE_VALUES not in fm:
+        return
+    bases: Any = fm[BASE_VALUES]
+    if not isinstance(bases, dict):
+        _issue(result, Severity.ERROR, "E150",
+               f"'{BASE_VALUES}' is a mapping, not {type(bases).__name__}", loc)
+        return
+    recorded: Any = fm.get(RECORDED_EDIT)
+    try:
+        named = from_mapping(recorded).fields
+    except (UnproposableEdit, AttributeError, KeyError, TypeError, ValueError):
+        return  # E147 has already said the edit is unreadable; there is nothing to hold these to.
+    strangers = sorted(str(name) for name in bases if name not in named)
+    if strangers:
+        _issue(result, Severity.ERROR, "E150",
+               f"'{BASE_VALUES}' names {', '.join(strangers)}, which the recorded edit does not change",
+               loc)
 
 
 def _check_state(fm: dict, result: VerificationResult, loc: str) -> None:

@@ -96,6 +96,121 @@ class TestTheThreePositions:
         assert not rehearsed.can_proceed
 
 
+class TestAFieldThatMovedUpstream:
+    """What the base each field was changed against is recorded for. A replay writes the proposed
+    value over whatever is there and still verifies, so only the base can tell an upstream edit from
+    the value the author started from."""
+
+    def test_a_field_upstream_changed_to_a_third_value_conflicts(self) -> None:
+        rehearsed = rehearse_rebase(
+            [("PCH@1.a", _edit(summary="B"))],
+            target_of=lambda _id: _target(summary="C"),
+            replay=_applies,
+            base_values={"PCH@1.a": {"summary": "A"}},
+        )
+
+        (change,) = rehearsed.changes
+        assert change.outcome == "conflicting"
+        assert TARGET in change.reason
+        assert "'summary'" in change.reason
+        assert "changed upstream" in change.reason
+        assert not rehearsed.can_proceed
+
+    def test_a_conflict_over_a_moved_field_is_never_replayed(self) -> None:
+        attempted: list[str] = []
+
+        rehearse_rebase(
+            [("PCH@1.a", _edit(summary="B"))],
+            target_of=lambda _id: _target(summary="C"),
+            replay=lambda edit: attempted.append(edit.artifact_id),
+            base_values={"PCH@1.a": {"summary": "A"}},
+        )
+
+        assert attempted == []
+
+    def test_a_field_still_reading_as_its_base_replays_clean(self) -> None:
+        rehearsed = rehearse_rebase(
+            [("PCH@1.a", _edit(summary="B"))],
+            target_of=lambda _id: _target(name="Renamed upstream", summary="A"),
+            replay=_applies,
+            base_values={"PCH@1.a": {"summary": "A"}},
+        )
+
+        assert [c.outcome for c in rehearsed.changes] == ["clean"]
+
+    def test_a_field_that_already_says_it_is_superseded_whatever_its_base(self) -> None:
+        rehearsed = rehearse_rebase(
+            [("PCH@1.a", _edit(summary="B"))],
+            target_of=lambda _id: _target(summary="B"),
+            replay=_refuses,
+            base_values={"PCH@1.a": {"summary": "A"}},
+        )
+
+        assert [c.outcome for c in rehearsed.changes] == ["superseded"]
+
+    def test_one_field_already_upstream_and_one_unmoved_replays_clean(self) -> None:
+        rehearsed = rehearse_rebase(
+            [("PCH@1.a", _edit(name="New name", summary="B"))],
+            target_of=lambda _id: _target(name="New name", summary="A"),
+            replay=_applies,
+            base_values={"PCH@1.a": {"name": "Payments", "summary": "A"}},
+        )
+
+        assert [c.outcome for c in rehearsed.changes] == ["clean"]
+
+    def test_every_moved_field_is_named_and_no_other(self) -> None:
+        rehearsed = rehearse_rebase(
+            [("PCH@1.a", _edit(name="Mine", summary="B", status="active"))],
+            target_of=lambda _id: _target(name="Theirs", summary="C", status="draft"),
+            replay=_applies,
+            base_values={"PCH@1.a": {"name": "Payments", "summary": "A", "status": "draft"}},
+        )
+
+        (change,) = rehearsed.changes
+        assert change.outcome == "conflicting"
+        assert "'name' and 'summary'" in change.reason
+        assert "'status'" not in change.reason
+
+    def test_a_change_recording_no_base_replays_as_it_always_did(self) -> None:
+        """Every change written before bases were recorded, and every one written where the
+        enterprise artifact could not be read."""
+        rehearsed = rehearse_rebase(
+            [("PCH@1.a", _edit(summary="B"))],
+            target_of=lambda _id: _target(summary="C"),
+            replay=_applies,
+        )
+
+        assert [c.outcome for c in rehearsed.changes] == ["clean"]
+
+    def test_only_the_fields_with_a_base_are_compared(self) -> None:
+        rehearsed = rehearse_rebase(
+            [("PCH@1.a", _edit(name="Mine", summary="B"))],
+            target_of=lambda _id: _target(name="Theirs", summary="A"),
+            replay=_applies,
+            base_values={"PCH@1.a": {"summary": "A"}},
+        )
+
+        assert [c.outcome for c in rehearsed.changes] == ["clean"]
+
+    def test_a_base_is_compared_as_every_other_field_value_is(self) -> None:
+        """Through the one normalisation: a list read back from YAML is the tuple the record holds."""
+        target = _target()
+        target = EntityRecord(**{**_as_kwargs(target), "keywords": ("a", "b")})
+
+        rehearsed = rehearse_rebase(
+            [("PCH@1.a", ProposalEdit(kind="entity", artifact_id=TARGET, fields={"keywords": ["c"]}))],
+            target_of=lambda _id: target,
+            replay=_applies,
+            base_values={"PCH@1.a": {"keywords": ["a", "b"]}},
+        )
+
+        assert [c.outcome for c in rehearsed.changes] == ["clean"]
+
+
+def _as_kwargs(record: EntityRecord) -> dict:
+    return {name: getattr(record, name) for name in record.__dataclass_fields__}
+
+
 class TestTheEdges:
     def test_a_target_that_is_gone_conflicts_rather_than_replaying(self) -> None:
         rehearsed = rehearse_rebase(

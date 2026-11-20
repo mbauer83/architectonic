@@ -8388,6 +8388,8 @@ export interface components {
             current: string | null;
             /** Field */
             field: string;
+            /** Moved Upstream */
+            moved_upstream: boolean;
             /** Proposed */
             proposed: string | null;
         };

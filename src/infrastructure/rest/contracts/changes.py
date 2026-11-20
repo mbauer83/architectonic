@@ -24,6 +24,9 @@ class FieldDivergence(Closed):
     field: str
     proposed: str | None
     current: str | None
+    #: Whether the artifact changed this field to something else after the change was written,
+    #: which is what a rebase reports as a conflict. False where no base was recorded for the field.
+    moved_upstream: bool
 
 
 class ChangeSummary(Closed):

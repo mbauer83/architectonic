@@ -23,6 +23,12 @@ retracted.
 written against it, and superseding is not an event upstream. Staleness is decided by comparing that
 revision against enterprise HEAD, so moving it here would silently mark a stale change current.
 
+**Each field keeps the base it was first changed against.** A change records what every field it
+names said upstream when the author first changed that field, and a rebase compares against it to see
+whether the field has since moved under them. A second thought about a field is still a thought about
+the value the author started from, so revising or superseding carries that base forward. Only a field
+no live change has claimed yet takes its base from the artifact as it reads now.
+
 **Sequencing is not what this is.** Two changes to one field, ordered, is a different feature — the
 plan refuses it outright, on the ground that an implicit last-writer-wins over model content is not a
 governance workflow. This never produces two live changes to reconcile.
@@ -32,6 +38,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from typing import Any
 
 from src.application.modeling.edit_field_catalogue import ArtifactKind
@@ -52,6 +59,8 @@ class RecordNew:
     """Nothing was pending. The edit becomes the artifact's change."""
 
     edit: ProposalEdit
+    #: What each field said upstream as this change was written; empty where nothing could be read.
+    base_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +69,8 @@ class ReviseDraft:
 
     proposal_id: str
     edit: ProposalEdit
+    #: The draft's own bases for the fields it keeps, and today's reading for the ones it gains.
+    base_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +88,8 @@ class SupersedeSubmitted:
     superseded_ids: tuple[str, ...]
     base_revision: str
     edit: ProposalEdit
+    #: Carried per field for the same reason `base_revision` is carried whole.
+    base_values: Mapping[str, Any] = dataclass_field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -131,12 +144,16 @@ def decide(
                 "every field this edit sets is what the artifact already says, so there is nothing "
                 "to propose"
             )
-        return RecordNew(edit=ProposalEdit(kind=kind, artifact_id=target_id, fields=proposed))
+        return RecordNew(
+            edit=ProposalEdit(kind=kind, artifact_id=target_id, fields=proposed),
+            base_values=_base_values(proposed, live, baseline),
+        )
 
     merged = _differing_from(_merged_fields(live, fields), baseline)
     if not merged:
         return WithdrawEmptied(superseded_ids=tuple(p.proposal_id for p in live))
     edit = ProposalEdit(kind=kind, artifact_id=target_id, fields=merged)
+    base_values = _base_values(merged, live, baseline)
 
     revisable = (
         len(live) == 1
@@ -146,12 +163,13 @@ def decide(
     if revisable:
         # Nobody has been shown it and nothing is carrying it. The change keeps its identity, which
         # is what lets a reader's bookmark and a badge's link stay valid across a second thought.
-        return ReviseDraft(proposal_id=live[0].proposal_id, edit=edit)
+        return ReviseDraft(proposal_id=live[0].proposal_id, edit=edit, base_values=base_values)
 
     return SupersedeSubmitted(
         superseded_ids=tuple(proposal.proposal_id for proposal in live),
         base_revision=_base_of(live),
         edit=edit,
+        base_values=base_values,
     )
 
 
@@ -172,6 +190,33 @@ def _differing_from(fields: dict[str, Any], baseline: Mapping[str, Any] | None) 
         or baseline[name] is None
         or comparable(baseline[name]) != comparable(value)
     }
+
+
+def _base_values(
+    fields: Mapping[str, Any],
+    live: Sequence[PendingProposal],
+    baseline: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """What each of `fields` said upstream when it was first changed, where that is known.
+
+    A field a live change already names keeps the base that change recorded for it, and has none if
+    that change recorded none: the artifact may have moved since it was written, so today's reading
+    is not what the author changed. Where several live changes name one field the earliest wins, as
+    it does for the revision. A field nothing has claimed takes the baseline's reading, and is left
+    out where there is none to take.
+    """
+    carried: dict[str, Any] = {}
+    for proposal in live:
+        for name, value in proposal.base_values.items():
+            carried.setdefault(name, value)
+    claimed = {name for proposal in live for name in proposal.edit.fields}
+    read_now = {
+        name: value
+        for name, value in (baseline or {}).items()
+        if name not in claimed and value is not None
+    }
+    known = read_now | carried
+    return {name: known[name] for name in fields if name in known}
 
 
 def _merged_fields(live: Sequence[PendingProposal], fields: Mapping[str, Any]) -> dict[str, Any]:

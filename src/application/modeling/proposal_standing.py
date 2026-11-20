@@ -21,14 +21,15 @@ word here is how one name comes to mean two things in one system.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypeAlias
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from src.application.derivation.refresh import compute_revision
 from src.application.modeling.enterprise_reference import enterprise_target
 from src.application.modeling.proposal_edit import ProposalEdit, UnproposableEdit, from_mapping
 from src.application.modeling.proposed_change import (
     BASE_REVISION,
+    BASE_VALUES,
     PENDING_STATES,
     PROPOSAL_STATE,
     PROPOSED_CHANGE_TYPE,
@@ -96,6 +97,9 @@ class PendingProposal:
     #: because a reader of the target needs the *values* to be shown their own pending work — the
     #: decode has already read them, and discarding them here only means reading the file twice.
     edit: ProposalEdit
+    #: What each changed field said on the enterprise artifact when it was first changed. Empty for
+    #: a change written before bases were recorded, and missing any field that had no reading.
+    base_values: Mapping[str, Any] = field(default_factory=dict)
 
 
 def pending_proposals(entities: Iterable[EntityRecord]) -> Mapping[str, tuple[PendingProposal, ...]]:
@@ -193,7 +197,20 @@ def _decode(record: EntityRecord) -> PendingProposal | None:
         base_revision=base.strip(),
         state=state,
         edit=recorded,
+        base_values=_recorded_base_values(record.extra.get(BASE_VALUES), recorded),
     )
+
+
+def _recorded_base_values(stored: object, edit: ProposalEdit) -> Mapping[str, Any]:
+    """The recorded bases of the fields the edit names, or none where the key is absent or unusable.
+
+    Unusable reads as absent rather than failing the decode, like every other malformed part of a
+    change: the verifier refuses the file (E150) and says why, and a change with no bases is one a
+    rebase treats as it treated every change before they were recorded.
+    """
+    if not isinstance(stored, Mapping):
+        return {}
+    return {name: stored[name] for name in edit.fields if name in stored}
 
 
 def standing_subject(record: StandingBearer) -> str:

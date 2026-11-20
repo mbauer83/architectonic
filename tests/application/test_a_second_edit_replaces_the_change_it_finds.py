@@ -31,8 +31,15 @@ _TARGET = "REQ@1712870400.aaaaaa.two-tier-repositories"
 _REFERENCE = "GAR@1780000040.aaaaaa.two-tier-repositories"
 
 
-def _pending(proposal_id: str, state: str, base: str = "rev-1", **fields: object) -> PendingProposal:
+def _pending(
+    proposal_id: str,
+    state: str,
+    base: str = "rev-1",
+    base_values: dict[str, object] | None = None,
+    **fields: object,
+) -> PendingProposal:
     return PendingProposal(
+        base_values=base_values or {},
         proposal_id=proposal_id,
         target_id=_TARGET,
         reference_id=_REFERENCE,
@@ -282,3 +289,81 @@ def test_no_baseline_at_all_drops_nothing() -> None:
     )
 
     assert outcome.edit.fields == {"summary": "Mine."}
+
+
+# ── the base each field was first changed against ────────────────────────────
+
+_BASELINE = {"summary": "Upstream.", "notes": "Upstream notes.", "name": "A requirement", "version": None}
+
+
+def _decide_against(fields: dict[str, object], pending: list[PendingProposal], baseline=_BASELINE):  # noqa: ANN001, ANN202
+    return decide(kind="entity", target_id=_TARGET, fields=fields, pending=pending, baseline=baseline)
+
+
+def test_a_first_change_records_what_each_field_said_upstream() -> None:
+    outcome = _decide_against({"summary": "Mine.", "notes": "My notes."}, [])
+    assert isinstance(outcome, RecordNew)
+    assert outcome.base_values == {"summary": "Upstream.", "notes": "Upstream notes."}
+
+
+def test_a_field_with_no_reading_upstream_records_no_base() -> None:
+    """No reading is not a value. A base of nothing would later compare unequal to anything."""
+    outcome = _decide_against({"summary": "Mine.", "version": "0.2.0", "status": "active"}, [])
+    assert outcome.base_values == {"summary": "Upstream."}
+
+
+def test_a_change_written_where_the_artifact_cannot_be_read_records_none() -> None:
+    """An engagement deployment mounting no enterprise content: the ordinary case."""
+    outcome = _decide_against({"summary": "Mine."}, [], baseline=None)
+    assert outcome.base_values == {}
+
+
+def test_revising_a_draft_keeps_the_base_a_field_was_first_changed_against() -> None:
+    """Upstream moved between the two edits. The second thought is still about the value the author
+    started from, so the newer reading must not replace it."""
+    draft = _pending("PC@1", "draft", base_values={"summary": "Upstream before."}, summary="First.")
+    outcome = _decide_against({"summary": "Better."}, [draft])
+    assert isinstance(outcome, ReviseDraft)
+    assert outcome.base_values == {"summary": "Upstream before."}
+
+
+def test_a_field_a_revision_adds_takes_its_base_from_the_artifact_now() -> None:
+    draft = _pending("PC@1", "draft", base_values={"summary": "Upstream before."}, summary="First.")
+    outcome = _decide_against({"notes": "Added."}, [draft])
+    assert outcome.base_values == {"summary": "Upstream before.", "notes": "Upstream notes."}
+
+
+def test_superseding_keeps_the_base_a_field_was_first_changed_against() -> None:
+    submitted = _pending(
+        "PC@1", "submitted", base_values={"summary": "Upstream before."}, summary="First."
+    )
+    outcome = _decide_against({"summary": "Better.", "notes": "Added."}, [submitted])
+    assert isinstance(outcome, SupersedeSubmitted)
+    assert outcome.base_values == {"summary": "Upstream before.", "notes": "Upstream notes."}
+
+
+def test_a_field_an_older_change_named_without_a_base_does_not_gain_one() -> None:
+    """A change written before bases were recorded. Today's reading is not what its author changed,
+    and recording it as though it were would call a later conflict clean."""
+    legacy = _pending("PC@1", "submitted", summary="First.")
+    outcome = _decide_against({"summary": "Better.", "notes": "Added."}, [legacy])
+    assert outcome.base_values == {"notes": "Upstream notes."}
+
+
+def test_a_field_dropped_from_the_change_takes_its_base_with_it() -> None:
+    """Edited back to what the artifact says, so it is no longer part of the change."""
+    draft = _pending(
+        "PC@1", "draft",
+        base_values={"summary": "Upstream before.", "notes": "Upstream notes."},
+        summary="First.", notes="Mine.",
+    )
+    outcome = _decide_against({"summary": "Upstream."}, [draft])
+    assert outcome.edit.fields == {"notes": "Mine."}
+    assert outcome.base_values == {"notes": "Upstream notes."}
+
+
+def test_the_earliest_base_wins_where_several_changes_name_one_field() -> None:
+    first = _pending("PC@1", "submitted", base_values={"summary": "Oldest."}, summary="One.")
+    second = _pending("PC@2", "submitted", base_values={"summary": "Newer."}, summary="Two.")
+    outcome = _decide_against({"notes": "Added."}, [second, first])
+    assert outcome.base_values["summary"] == "Oldest."

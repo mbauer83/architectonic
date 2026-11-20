@@ -18,9 +18,10 @@ leaves the enterprise checkout as it was.
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
 from src.application.modeling.change_rebase import RehearsedRebase, rehearse_rebase
 from src.application.modeling.proposal_edit import ProposalEdit
@@ -43,6 +44,7 @@ def rehearse_against(
     *,
     read_current: Callable[[Path, str], EntityRecord | DocumentRecord | None],
     apply_edit: Callable[[Path, ProposalEdit], str | None],
+    base_values: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> RehearsedRebase:
     """Classify `changes` against the artifacts as they stand in `worktree`.
 
@@ -54,4 +56,5 @@ def rehearse_against(
         changes,
         target_of=lambda artifact_id: read_current(worktree, artifact_id),
         replay=lambda edit: apply_edit(worktree, edit),
+        base_values=base_values,
     )
