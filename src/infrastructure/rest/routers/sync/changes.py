@@ -100,13 +100,11 @@ def _classify(rel: str) -> str:
     Anything the layout gives no kind — configuration, a stray note — is still committed by a save,
     so it is listed as a `file` rather than left out: it is no artifact, and it is not nothing.
     """
-    match artifact_kind_at(rel):
-        case "connection":
-            return "connections"
-        case "entity" | "document" | "diagram" | "icon" | "scratchpad" as kind:
-            return kind
-        case None:
-            return "diagram" if Path(rel).parts[:1] == (DIAGRAM_CATALOG,) else "file"
+    kind = artifact_kind_at(rel)
+    if kind is None:
+        return "diagram" if Path(rel).parts[:1] == (DIAGRAM_CATALOG,) else "file"
+    # An entity's outgoing file is merged into its entity's row, under a heading of its own.
+    return "connections" if kind == "connection" else kind
 
 
 # ─── Content helpers ──────────────────────────────────────────────────────────

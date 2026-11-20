@@ -1,23 +1,43 @@
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
-import yaml  # type: ignore[import-untyped]
-
-from src.application.artifacts.document_schema import get_document_schema, get_document_subdirectory
+from src.application.artifacts.document_part_edits import DocumentEditRefused, PartEdit
+from src.application.artifacts.document_schema import (
+    document_id_prefix,
+    get_document_schema,
+    get_document_subdirectory,
+)
 from src.application.artifacts.query import ArtifactRepository
-from src.application.document_links import relocated_links
+from src.application.document_links import id_links_expanded, relocated_links
 from src.application.identifier_allocator import get_default_allocator
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.config.repo_paths import DOCS
-from src.domain.artifact_id import stable_id
-from src.domain.repository.frontmatter import Frontmatter, FrontmatterProblem, read_frontmatter
 from src.domain.repository.groups import UNCATEGORIZED
-from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.atomic_file import write_atomic
 
 from ._artifact_deduplication import extract_friendly_slug, get_repository, validate_document_unique
 from ._document_group_move import _doc_dir, _resolve_document_group_path, commit_document_move
+from ._document_part_edit import (
+    DocumentPartWriteResult,
+    artifact_paths,
+    edit_part,
+    read_as_stored,
+    with_frontmatter,
+)
 from ._document_placeholder import _build_placeholder_body, _declared_tables, _validate_section_templates
+from ._document_text import (
+    _MANAGED_DOC_FM_KEYS,
+    REFERENCES_HEADING,
+    DocumentNotFoundError,
+    _document_frontmatter_yaml,
+    _dump_yaml_text,
+    _format_document_markdown,
+    _resolve_document_path,
+    _split_document_frontmatter,
+    _verification_to_document_dict,
+    render_references,
+)
 from .boundary import assert_engagement_write_root, modification_stamp
 from .coerce import as_optional_str_list
 from .enterprise_edit_arguments import Interception, document_change
@@ -25,94 +45,8 @@ from .types import WriteResult
 from .verify import document_write_allowed, verify_content_in_temp_path
 
 
-class DocumentNotFoundError(ValueError):
-    """The addressed document does not exist.
-
-    A ``ValueError`` subclass, following ``GroupOpError`` and ``SaveVerificationError``, so every
-    existing ``except ValueError`` caller — the MCP write tools among them — keeps working unchanged
-    while a caller that cares can tell "you named a document that is not there" from "this payload is
-    malformed". The distinction is a status code: the first is 404 and the second 400, and both were
-    a non-disclosing 500 while this was a bare ``ValueError`` that no route caught.
-    """
-
-
-def _dump_yaml_text(data: object) -> str:
-    dumped = yaml.dump(data, default_flow_style=False, allow_unicode=True, sort_keys=False)
-    if not isinstance(dumped, str):
-        raise TypeError("yaml.dump returned non-string output")
-    return dumped.rstrip()
-
-
 def _generate_document_id(abbreviation: str, title: str) -> str:
     return get_default_allocator().allocate(prefix=abbreviation, name_hint=title)
-
-
-def _format_document_markdown(
-    *,
-    artifact_id: str,
-    doc_type: str,
-    title: str,
-    status: str,
-    version: str,
-    last_updated: str,
-    keywords: list[str] | None,
-    extra_frontmatter: dict[str, object] | None,
-    body: str,
-) -> str:
-    fm: dict[str, object] = {
-        "artifact-id": artifact_id,
-        "artifact-type": "document",
-        "doc-type": doc_type,
-        "title": title,
-        "status": status,
-        "version": version,
-        "last-updated": last_updated,
-    }
-    if keywords:
-        fm["keywords"] = keywords
-    if extra_frontmatter:
-        fm.update({k: v for k, v in extra_frontmatter.items() if k not in fm})
-    frontmatter = _dump_yaml_text(fm)
-    return f"---\n{frontmatter}\n---\n\n{body.strip()}\n"
-
-
-def _verification_to_document_dict(path: Path, res) -> dict[str, object]:
-    return {
-        "path": str(path),
-        "file_type": "document",
-        "valid": res.valid,
-        "issues": [
-            {"severity": i.severity, "code": i.code, "message": i.message, "location": i.location} for i in res.issues
-        ],
-    }
-
-
-#: The heading a one-way reference is recorded under. One name, so `references_to_entity` finds the
-#: links and a reader finds the section — a document that referenced the model from wherever the
-#: prose happened to mention it would be a document nobody could audit.
-REFERENCES_HEADING = "References"
-
-
-def render_references(document_path: Path, entity_paths: list[Path]) -> str:
-    """A `## References` section of relative markdown links, or nothing when there are none.
-
-    Relative to the document, because that is how a reference is *read*: `references_to_entity`
-    resolves `document.parent / href`, and the same link works in any markdown viewer without the
-    repository being served from anywhere in particular.
-
-    References run **document → model, one way** (ADR@1783406789). The model is not edited to record
-    that a document mentions it, which is what keeps a document a commentary on the model rather
-    than a second place the model is defined.
-    """
-    if not entity_paths:
-        return ""
-    import os  # noqa: PLC0415 — one relpath, not worth a module-level import for every caller
-
-    rows = [
-        f"- [{path.stem}]({os.path.relpath(path, document_path.parent).replace(os.sep, '/')})"
-        for path in sorted(entity_paths)
-    ]
-    return f"\n\n## {REFERENCES_HEADING}\n\n" + "\n".join(rows) + "\n"
 
 
 def create_document(
@@ -145,7 +79,7 @@ def create_document(
     if schema is None:
         raise ValueError(f"Unknown doc-type: {doc_type!r}. No schema found at .arch-repo/documents/{doc_type}.json")
 
-    abbreviation: str = schema.get("abbreviation") or doc_type.upper()
+    abbreviation = document_id_prefix(schema, doc_type)
     doc_subdirectory = get_document_subdirectory(schema, doc_type)
     required_sections: list[str] = schema.get("required_sections") or []
     sections_raw = schema.get("sections")
@@ -188,7 +122,11 @@ def create_document(
             },
         )
 
-    actual_body = body or _build_placeholder_body(sections, section_templates, _declared_tables(repo_root, doc_type))
+    actual_body = (
+        id_links_expanded(body, written_to=doc_dir, path_of=artifact_paths(repo_root, verifier.registry))
+        if body
+        else _build_placeholder_body(sections, section_templates, _declared_tables(repo_root, doc_type))
+    )
     actual_body = actual_body.rstrip() + render_references(path, references or [])
     content = _format_document_markdown(
         artifact_id=doc_id,
@@ -235,42 +173,21 @@ def create_document(
     )
 
 
-_MANAGED_DOC_FM_KEYS = frozenset(
-    {"artifact-id", "artifact-type", "doc-type", "title", "status", "version", "last-updated", "keywords"}
-)
-
-
-def _split_document_frontmatter(raw: str, path: Path) -> tuple[dict[str, object], str]:
-    """Split a document's raw text into its parsed frontmatter mapping and body."""
-    reading = read_frontmatter(raw)
-    if reading is FrontmatterProblem.NO_OPENING_FENCE:
-        raise ValueError(f"Document at {path} has no YAML frontmatter")
-    if not isinstance(reading, Frontmatter):
-        raise ValueError(f"Document at {path} has malformed YAML frontmatter")
-    parsed = parse_yaml(reading.text)
-    fm: dict[str, object] = parsed if isinstance(parsed, dict) else {}
-    return fm, reading.body.lstrip("\n")
-
-
-def _resolve_document_path(docs_root: Path, artifact_id: str) -> Path | None:
-    """Locate a document by filename stem (the artifact id), group subdirectory included.
-
-    Documents have no registry-backed lookup, so this mirrors
-    ``diagram_delete._find_diagram_file``'s own disk-scan short-id tolerance: an exact
-    filename match wins; otherwise a short (rename-stable) id is accepted if exactly one
-    file matches it (ambiguous short ids report not-found, same fail-safe convention as
-    ``_MemStore.canonical_id``).
-    """
-    if not docs_root.exists():
-        return None
-    short = stable_id(artifact_id)
-    short_matches: list[Path] = []
-    for path in docs_root.rglob("*.md"):
-        if path.stem == artifact_id:
-            return path
-        if stable_id(path.stem) == short:
-            short_matches.append(path)
-    return short_matches[0] if len(short_matches) == 1 else None
+def _assert_a_part_can_be_edited(
+    docs_root: Path, artifact_id: str, *, body: str | None, registry: ArtifactRegistry | None
+) -> None:
+    """A part edit is made on a file this repository stores, and beside no replacement of the whole."""
+    if body is not None:
+        raise DocumentEditRefused(
+            "The edit states a whole body and a part of it. Send the body to replace it whole, or the "
+            "section, text or rows to change it in part."
+        )
+    held_elsewhere = registry is not None and registry.find_file_by_id(artifact_id) is not None
+    if _resolve_document_path(docs_root, artifact_id) is None and held_elsewhere:
+        raise DocumentEditRefused(
+            f"'{artifact_id}' is not a document this repository stores, so there is no file to edit in part. "
+            "A change to enterprise-owned content is recorded from the document's whole body."
+        )
 
 
 def edit_document(
@@ -290,24 +207,39 @@ def edit_document(
     group: str | None = None,
     registry: ArtifactRegistry | None = None,
     repo: ArtifactRepository | None = None,
+    part: PartEdit | None = None,
     dry_run: bool,
 ) -> WriteResult:
-    """Edit a document, or — where it is a reference to a promoted one — record a change to it."""
-    assert_write_root(repo_root)
+    """Edit a document, or — where it is a reference to a promoted one — record a change to it.
 
-    if (recorded := document_change(
+    *part* edits one section, one text or rows of one table of the body and leaves the rest of the
+    stored file byte for byte; *body* replaces the body whole. A call states one or neither.
+    """
+    assert_write_root(repo_root)
+    docs_root = repo_root / DOCS
+    if part is not None:
+        _assert_a_part_can_be_edited(docs_root, artifact_id, body=body, registry=registry)
+
+    if part is None and (recorded := document_change(
         into=Interception(registry, verifier, clear_repo_caches, repo, repo_root, artifact_id, dry_run),
         title=title, body=body, keywords=keywords, extra_frontmatter=extra_frontmatter, status=status,
         version=version, last_updated=last_updated, group=group,
     )) is not None:
         return recorded
 
-    docs_root = repo_root / DOCS
     path = _resolve_document_path(docs_root, artifact_id)
     if path is None:
         raise DocumentNotFoundError(f"Document '{artifact_id}' not found under {docs_root}")
 
     fm, existing_body = _split_document_frontmatter(path.read_text(encoding="utf-8"), path)
+    states_a_field = any(given is not None for given in (title, status, version, keywords)) or bool(extra_frontmatter)
+    path_of = artifact_paths(repo_root, registry)
+    edited = (
+        edit_part(read_as_stored(path), part, repo_root=repo_root, doc_type=str(fm.get("doc-type", "")),
+                  doc_path=path, path_of=path_of)
+        if part is not None
+        else None
+    )
     fm.update({k: v for k, v in {"title": title, "status": status, "version": version, "keywords": keywords}.items()
                if v is not None})
     fm["last-updated"] = last_updated if last_updated is not None else modification_stamp()
@@ -319,23 +251,38 @@ def edit_document(
     )
     moved = target_path != path
 
-    content = _format_document_markdown(
-        artifact_id=str(fm.get("artifact-id", artifact_id)),
-        doc_type=str(fm.get("doc-type", "")),
-        title=str(fm.get("title", "")),
-        status=str(fm.get("status", "draft")),
-        version=str(fm.get("version", "")),
-        last_updated=str(fm.get("last-updated", modification_stamp())),
-        keywords=as_optional_str_list(fm.get("keywords")),
-        extra_frontmatter={k: v for k, v in fm.items() if k not in _MANAGED_DOC_FM_KEYS},
+    frontmatter: dict[str, Any] = {
+        "artifact_id": str(fm.get("artifact-id", artifact_id)),
+        "doc_type": str(fm.get("doc-type", "")),
+        "title": str(fm.get("title", "")),
+        "status": str(fm.get("status", "draft")),
+        "version": str(fm.get("version", "")),
+        "last_updated": str(fm.get("last-updated", modification_stamp())),
+        "keywords": as_optional_str_list(fm.get("keywords")),
+        "extra_frontmatter": {k: v for k, v in fm.items() if k not in _MANAGED_DOC_FM_KEYS},
+    }
+
+    def _relocated(text: str) -> str:
         # A body is read where the document is and written where it is going. A collection sits
         # one directory deeper than the doc-type's own, so carried across unchanged every relative
         # link in it resolved one level short. A body sent with the move is read the same way: it
         # is an edit of the document as it stands, which is what the GUI's save sends.
-        body=relocated_links(
-            body if body is not None else existing_body,
-            read_from=path.parent, written_to=target_path.parent, moves={path: target_path},
-        ),
+        return relocated_links(text, read_from=path.parent, written_to=target_path.parent, moves={path: target_path})
+
+    content = (
+        with_frontmatter(
+            edited.content,
+            stamp_line=_dump_yaml_text({"last-updated": frontmatter["last_updated"]}),
+            whole_block=_document_frontmatter_yaml(**frontmatter) if states_a_field else None,
+            relocated=_relocated,
+        )
+        if edited is not None
+        else _format_document_markdown(
+            **frontmatter,
+            body=_relocated(
+                id_links_expanded(body, written_to=path.parent, path_of=path_of) if body is not None else existing_body
+            ),
+        )
     )
 
     relative_path = target_path.relative_to(repo_root / DOCS).as_posix()
@@ -349,10 +296,11 @@ def edit_document(
     verification = _verification_to_document_dict(target_path, preview_res)
     warnings = [f"Will move document to group '{group}': {target_path}"] if moved and dry_run else []
 
+    added_row_ids = list(edited.added_row_ids) if edited is not None else []
     if dry_run or not document_write_allowed(preview_res):
-        return WriteResult(
+        return DocumentPartWriteResult(
             wrote=False, path=target_path, artifact_id=artifact_id, content=content,
-            warnings=warnings, verification=verification,
+            warnings=warnings, verification=verification, added_row_ids=added_row_ids,
         )
 
     if moved:
@@ -363,9 +311,9 @@ def edit_document(
     else:
         write_atomic(target_path, content)
     clear_repo_caches(target_path)
-    return WriteResult(
+    return DocumentPartWriteResult(
         wrote=True, path=target_path, artifact_id=artifact_id, content=None,
-        warnings=warnings, verification=verification,
+        warnings=warnings, verification=verification, added_row_ids=added_row_ids,
     )
 
 
@@ -400,3 +348,19 @@ def delete_document(
         warnings=[],
         verification={"valid": True, "issues": []},
     )
+
+
+__all__ = [
+    "REFERENCES_HEADING",
+    "DocumentNotFoundError",
+    "_build_placeholder_body",
+    "_doc_dir",
+    "_dump_yaml_text",
+    "_format_document_markdown",
+    "_resolve_document_group_path",
+    "_validate_section_templates",
+    "create_document",
+    "delete_document",
+    "edit_document",
+    "render_references",
+]

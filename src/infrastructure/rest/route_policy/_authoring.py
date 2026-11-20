@@ -34,6 +34,18 @@ DOCUMENT_ROWS: tuple[RouteRow, ...] = (
         "PATCH", "/api/documents/{artifact_id}", "detail", "documents_update_document",
         TYPED, identity_parameters=_ARTIFACT, mutation_domain="repository",
     ),
+    # The typed tables a document holds: read as rows of values, and edited row by row. No ETag on the
+    # read: its body depends on the document type's declaration as well as on the document, and the
+    # conditional-read registry is a reviewed set of templates that are functions of the model alone.
+    RouteRow(
+        "GET", "/api/documents/{artifact_id}/tables", "subresource", "documents_list_document_tables",
+        TYPED, identity_parameters=_ARTIFACT, cache_directive="no-cache",
+    ),
+    RouteRow(
+        "PATCH", "/api/documents/{artifact_id}/tables/{table}", "subresource",
+        "documents_update_document_table", TYPED,
+        identity_parameters=("artifact_id", "table"), mutation_domain="repository",
+    ),
     RouteRow(
         # 204: a committed deletion has nothing to say. The dry-run outcome answers 200 with its
         # plan, declared on the route as an alternative rather than folded into this contract.

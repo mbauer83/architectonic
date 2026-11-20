@@ -4,11 +4,13 @@ from typing import Literal
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.artifacts._search import ALL_SEARCHABLE_KINDS
+from src.application.artifacts.document_table_rows import tables_of_stored_document
 from src.application.modeling.proposal_standing import (
     standing_reader,
     standing_subject_by_id,
 )
 from src.domain.baseline_standing import BASELINE_STANDING
+from src.infrastructure.document_part_wire import tables_as_served
 from src.infrastructure.mcp.artifact_mcp.context import (
     RepoScope,
     expand_artifact_id,
@@ -186,3 +188,44 @@ def register_query_list_read_tools(mcp: MCPServer) -> None:
             standing_reader(repo)(standing_subject_by_id(repo, resolved_id)).to_mapping()
         )
         return result
+
+    @mcp.tool(
+        name="artifact_query_document_tables",
+        title="Artifact Query: Document Tables",
+        description=(
+            "Read the rows of the typed tables a document's type declares. For each declared table: "
+            "its section, whether the document holds it, and its rows as row_id and values — every "
+            "stated cell's typed value by column name (an artifact id for a reference column, a row "
+            "id for a row column, a list where the column takes several). A cell that cannot be read "
+            "as its column's type is given as its text, with the reason under unreadable. "
+            "A row's values are what artifact_edit_document_table takes as based_on when that row is "
+            "changed or removed. Empty for a document whose type declares no table."
+            "\n\nartifact_id: full or short form. repo_scope defaults to both (engagement + enterprise)."
+        ),
+        annotations=READ_ONLY,
+        structured_output=True,
+    )
+    def artifact_query_document_tables(
+        artifact_id: str,
+        *,
+        repo_root: str | None = None,
+        repo_scope: RepoScope = "both",
+    ) -> dict[str, object]:
+        roots = resolve_repo_roots(
+            repo_scope=repo_scope,
+            repo_root=repo_root,
+            repo_preset=None,
+            enterprise_root=None,
+        )
+        repo = repo_cached(roots_key(roots))
+        document = repo.get_document(expand_artifact_id(repo, artifact_id))
+        if document is None:
+            return {
+                "error": f"Document '{artifact_id}' not found (scope {repo_scope})",
+                "repo_roots": [str(p) for p in roots],
+                "repo_scope": repo_scope,
+            }
+        return {
+            "artifact_id": document.artifact_id,
+            **tables_as_served(tables_of_stored_document(document.path, document.doc_type, roots)),
+        }

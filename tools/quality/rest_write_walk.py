@@ -44,6 +44,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.quality.fixture_backend import FixtureBackend, fixture_backend  # noqa: E402
+from tools.quality.fixture_workspace import REGISTER_TABLE  # noqa: E402
 
 _ADR_BODY = (
     "## Context\n\nCreated by the REST write walk.\n\n"
@@ -239,6 +240,13 @@ STEPS: tuple[Step, ...] = (
         "documents_update_document", "PATCH",
         lambda c: f"/api/documents/{_q(c.created['document'])}",
         lambda _c: {"title": "Walk Patched Decision", "dry_run": False},
+    ),
+    Step(
+        # A row added to the fixture's typed table. An addition, because it is the one row edit that
+        # states nothing it was based on and so needs no read before it.
+        "documents_update_document_table", "PATCH",
+        lambda c: f"/api/documents/{_q(c.backend.workspace.tabled_document)}/tables/{REGISTER_TABLE}",
+        lambda _c: {"rows": [{"op": "add", "cells": {"entry": "Added by the write walk."}}], "dry_run": False},
     ),
     Step(
         # 204 as well as 200: a delete that answers "no content" is the correct answer, and my first

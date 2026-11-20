@@ -153,6 +153,14 @@ READ_RESPONSES: dict[int | str, dict[str, Any]] = {404: _err("Artifact not found
 
 #: Attach to write operations. Mirrors the mutation-gate + authorization statuses
 #: (``state._rejection_to_http`` / ``authorized_write``).
+class DocumentTableWriteResponse(WriteResultResponse):
+    """A write of rows of a document's typed table: the write result, and the ids the added rows took."""
+
+    #: The id each added row was given, in the order the request added them. A dry run answers the
+    #: ids the write would give as the table stands.
+    added_row_ids: list[str]
+
+
 WRITE_RESPONSES: dict[int | str, dict[str, Any]] = {
     400: _err("Validation error (bad or ambiguous write)"),
     403: _err("Write forbidden (e.g. admin mode not enabled, or mutation denied)"),

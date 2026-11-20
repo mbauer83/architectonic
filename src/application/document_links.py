@@ -27,6 +27,10 @@ it is written and what it addresses, and a move changes one of them. It is here 
 link is reading it first, and the rewriting that lived beside the rename compared the href whole — so
 a link carrying a `#section` was never found, the defect this module was created to end.
 
+`id_links_expanded` is the reading turned to the write: a link may be *written* with an artifact id
+where its path would go, and is stored as the relative path every reader above resolves. One stored
+form, so none of them learns a second; the id form exists only between an author and the write path.
+
 `resolve_artifact_links` is the step past "what does the prose point at" to "what is the thing it
 points at" — one reading of a linked file's frontmatter, classifying it as an entity, a document or
 a diagram and naming its type. It lives beside `references_from` rather than beside the rule that
@@ -41,13 +45,14 @@ from __future__ import annotations
 import os.path
 import posixpath
 import re
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
 import yaml
 
+from src.domain.artifact_id import is_entity_id
 from src.domain.icons.icon_file import ICON_ARTIFACT_TYPE
 from src.domain.ontology_representation.artifact_types import DocumentRecord, EntityRecord
 from src.domain.repository.frontmatter import parse_frontmatter
@@ -59,6 +64,9 @@ ArtifactLinkKind = Literal["entity", "document", "diagram"]
 
 MARKDOWN_LINK_RE = re.compile(r"(\[([^\]]*)\]\()([^)\s]+)(\))")
 SECTION_HEADING_RE = re.compile(r"^##\s+(.+)$", re.MULTILINE)
+#: A section's heading or one beneath it: its level, then its title. The same reading as the line
+#: above at level two, so what is a section does not depend on which of the two was asked.
+HEADING_RE = re.compile(r"^(#{2,6})\s+(.+)$", re.MULTILINE)
 
 
 @dataclass(frozen=True)
@@ -200,6 +208,65 @@ def relocated_links(
         return f"{match.group(1)}{relocated}{href[len(file_href):]}{match.group(4)}"
 
     return MARKDOWN_LINK_RE.sub(_relocated, content)
+
+
+#: Where an artifact's file is, by its id in full or short form; `None` for an id that names nothing.
+ArtifactPathOf = Callable[[str], Path | None]
+
+
+class UnresolvedArtifactLink(ValueError):
+    """A link written with an artifact id names no artifact, so it has no path to be stored as."""
+
+
+def as_link(reference: str) -> str:
+    """A reference stated as a markdown link or as an artifact id alone, as a link.
+
+    The id alone becomes a link with no label, which `id_links_expanded` labels with the artifact's name.
+    """
+    stated = reference.strip()
+    return stated if iter_markdown_links(stated) else f"[]({stated})"
+
+
+def _named(target: Path, artifact_id: str) -> str:
+    frontmatter = _frontmatter_of(target) or {}
+    return str(frontmatter.get("name") or frontmatter.get("title") or artifact_id)
+
+
+def id_links_expanded(content: str, *, written_to: Path, path_of: ArtifactPathOf) -> str:
+    """*content* with each link whose href is an artifact id stored as the relative path from *written_to*.
+
+    `[the decision](ADR@1783406789.aBcDeF)` becomes `[the decision](../adr/ADR@1783406789.aBcDeF.slug.md)`.
+    Either id form is taken, a `#section` is carried across, and a link with no label is given the
+    artifact's name. Every other link keeps its author's spelling, and so does an href that names a
+    file beside the document — a file is what a path means, whatever it is called.
+
+    Raises `UnresolvedArtifactLink` naming every id that addresses nothing: stored as written, such a
+    link would be a path to no file that no rule recognises as a broken one.
+    """
+    directory = _lexical(written_to)
+    unresolved: list[str] = []
+
+    def _expanded(match: re.Match[str]) -> str:
+        href = match.group(3)
+        artifact_id = strip_anchor(href)
+        if not is_entity_id(artifact_id) or (directory / artifact_id).exists():
+            return match.group(0)
+        target = path_of(artifact_id)
+        if target is None:
+            unresolved.append(artifact_id)
+            return match.group(0)
+        stored = posixpath.relpath(_lexical(target).as_posix(), directory.as_posix())
+        label = match.group(2) or _named(target, artifact_id)
+        return f"[{label}]({stored}{href[len(artifact_id):]}{match.group(4)}"
+
+    expanded = MARKDOWN_LINK_RE.sub(_expanded, content)
+    if unresolved:
+        raise UnresolvedArtifactLink(
+            f"{', '.join(sorted(set(unresolved)))}: no artifact of this repository has "
+            f"{'that id' if len(set(unresolved)) == 1 else 'these ids'}, so the link has no path to be stored "
+            "as. Link an artifact by the id the repository lists it under, or by a relative path."
+        )
+    return expanded
 
 
 @dataclass(frozen=True)

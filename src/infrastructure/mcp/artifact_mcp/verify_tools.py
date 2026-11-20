@@ -7,7 +7,7 @@ from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_types import VerificationFileType, VerificationResult
 from src.application.verification.evaluation import PassCancellation
-from src.domain.repository.artifact_location import artifact_kind_at
+from src.domain.repository.artifact_location import artifact_kind_at, is_verified_kind
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope, resolve_repo_roots, roots_key, verifier_for
 from src.infrastructure.mcp.artifact_mcp.formatting import as_issue_dict, as_verification_result_dict
 from src.infrastructure.mcp.tool_annotations import READ_ONLY
@@ -22,11 +22,8 @@ def _verifiable_kind_at(path: Path, roots: Sequence[Path]) -> VerificationFileTy
     """The kind the repository layout gives *path* under whichever root holds it; None when none does."""
     for root in roots:
         if path.is_relative_to(root):
-            match artifact_kind_at(path.relative_to(root)):
-                case "entity" | "connection" | "diagram" | "document" | "icon" as kind:
-                    return kind
-                case "scratchpad" | None:
-                    return None
+            kind = artifact_kind_at(path.relative_to(root))
+            return kind if kind is not None and is_verified_kind(kind) else None
     return None
 
 

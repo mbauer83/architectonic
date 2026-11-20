@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -194,6 +195,11 @@ def get_document_schema(repo_root: Path, doc_type: str) -> dict[str, Any] | None
 
 def get_document_schema_object(repo_root: Path, doc_type: str) -> DocumentSchema | None:
     return load_document_schema_objects(repo_root).get(doc_type)
+
+
+def document_id_prefix(schema: Mapping[str, Any], doc_type: str) -> str:
+    """The prefix an id of a document of *doc_type* is minted with: its abbreviation, else its name."""
+    return str(schema.get("abbreviation") or doc_type.upper())
 
 
 def get_document_subdirectory(schema: dict, doc_type: str) -> str:

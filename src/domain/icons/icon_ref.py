@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from typing import Literal, get_args
 
 from src.domain.artifact_id import EMITTED_SLUG_PATTERN, is_entity_id, parse_entity_id, stable_id
+from src.domain.repository.artifact_location import own_id_prefix
 
 #: `badge` sits where the type glyph sits, inside the element; `figure` is the element itself, its
 #: label beneath. Which of the two a diagram type can draw is that type's declaration.
@@ -25,7 +26,8 @@ IconStyle = Literal["badge", "figure"]
 
 ICON_STYLES: tuple[IconStyle, ...] = get_args(IconStyle)
 
-ICON_ID_PREFIX = "ICO"
+#: Declared on the icon kind's row; named here for the icon's own readers and writers.
+ICON_ID_PREFIX = own_id_prefix("icon")
 
 LOCAL_PREFIX = "local:"
 #: A key is minted the way a slug is (`slugify` of the icon's name), so it is read by the slug grammar,
