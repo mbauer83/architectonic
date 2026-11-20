@@ -42,7 +42,7 @@ from src.domain.ontology_representation.artifact_types import (
     ScratchpadNoteRecord,
     ScratchpadRecord,
 )
-from src.domain.repository.artifact_location import ArtifactKind, artifact_kind_at
+from src.domain.repository.artifact_location import ArtifactKindName, artifact_kind_at
 from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX
 
 from ._mem_store import _MemStore
@@ -73,7 +73,7 @@ def model_root_for_path(path: Path, mounts: list[RepoMount]) -> Path | None:
     return mount.root / MODEL
 
 
-def artifact_kind_for_path(path: Path, mounts: list[RepoMount]) -> ArtifactKind | None:
+def artifact_kind_for_path(path: Path, mounts: list[RepoMount]) -> ArtifactKindName | None:
     """The kind of artifact *path* holds within the repository mounted over it, or None."""
     mount = mount_for_path(path, mounts)
     if mount is None:

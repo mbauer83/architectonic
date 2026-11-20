@@ -348,7 +348,8 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
         owners=(Path("src/domain/repository/artifact_location.py"),),
         instead=(
             "`src.domain.repository.artifact_location`: `artifact_kind_at` for a path relative to its "
-            "repository, `model_file_kind` for a file already known to sit under a model root"
+            "repository (`artifact_kind_declared_at` for the kind's row and its facts), "
+            "`model_file_kind` for a file already known to sit under a model root"
         ),
         incident=(
             "four readings of one question disagreed: the incremental index made every `.md` it did "
