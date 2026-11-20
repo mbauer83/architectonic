@@ -198,13 +198,6 @@ def check_diagram_artifact_type(fm: dict, result: VerificationResult, loc: str) 
     check_artifact_type(fm, DIAGRAM_ARTIFACT_TYPES, "diagram artifact type", result, loc)
 
 
-_WINDOWS_ABS_PATH_RE = re.compile(r"^[A-Za-z]:[/\\]")
-
-
-def _is_absolute_markdown_link(href: str) -> bool:
-    return href.startswith(("/", "file://")) or bool(_WINDOWS_ABS_PATH_RE.match(href))
-
-
 def check_internal_links(content: str, path: Path, result: VerificationResult, loc: str) -> None:
     """W156 (an internal link must be relative) and W155 (it must resolve to something).
 
@@ -221,13 +214,17 @@ def check_internal_links(content: str, path: Path, result: VerificationResult, l
     notation is markdown, so a rule that watched only `.md` could not see a link to most of the
     diagrams in a repository — and a document type can now *require* one.
     """
-    from src.application.document_links import references_from, strip_anchor  # noqa: PLC0415
+    from src.application.document_links import (  # noqa: PLC0415
+        is_absolute_href,
+        references_from,
+        strip_anchor,
+    )
 
     for reference in references_from(content, directory=path.parent):
         file_href = strip_anchor(reference.href)
         if Path(file_href).suffix not in ARTIFACT_SOURCE_SUFFIXES:
             continue
-        if _is_absolute_markdown_link(file_href):
+        if is_absolute_href(file_href):
             result.issues.append(Issue(
                 Severity.WARNING, "W156",
                 f"Absolute internal link must be relative: '{file_href}'", loc,

@@ -5,6 +5,7 @@ import yaml  # type: ignore[import-untyped]
 
 from src.application.artifacts.document_schema import get_document_schema, get_document_subdirectory
 from src.application.artifacts.query import ArtifactRepository
+from src.application.document_links import relocated_links
 from src.application.identifier_allocator import get_default_allocator
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.config.repo_paths import DOCS
@@ -15,12 +16,11 @@ from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.atomic_file import write_atomic
 
 from ._artifact_deduplication import extract_friendly_slug, get_repository, validate_document_unique
-from ._document_group_move import _doc_dir, _resolve_document_group_path
+from ._document_group_move import _doc_dir, _resolve_document_group_path, commit_document_move
 from ._document_placeholder import _build_placeholder_body, _validate_section_templates
 from .boundary import assert_engagement_write_root, modification_stamp
 from .coerce import as_optional_str_list
 from .enterprise_edit_arguments import Interception, document_change
-from .file_transaction import FileChange, commit_file_changes
 from .types import WriteResult
 from .verify import verify_content_in_temp_path
 
@@ -318,6 +318,11 @@ def edit_document(
     if extra_frontmatter:
         fm.update(extra_frontmatter)
 
+    target_path = _resolve_document_group_path(
+        repo_root=repo_root, current_path=path, doc_type=str(fm.get("doc-type", "")), group=group
+    )
+    moved = target_path != path
+
     content = _format_document_markdown(
         artifact_id=str(fm.get("artifact-id", artifact_id)),
         doc_type=str(fm.get("doc-type", "")),
@@ -327,13 +332,15 @@ def edit_document(
         last_updated=str(fm.get("last-updated", modification_stamp())),
         keywords=as_optional_str_list(fm.get("keywords")),
         extra_frontmatter={k: v for k, v in fm.items() if k not in _MANAGED_DOC_FM_KEYS},
-        body=body if body is not None else existing_body,
+        # A body is read where the document is and written where it is going. A collection sits
+        # one directory deeper than the doc-type's own, so carried across unchanged every relative
+        # link in it resolved one level short. A body sent with the move is read the same way: it
+        # is an edit of the document as it stands, which is what the GUI's save sends.
+        body=relocated_links(
+            body if body is not None else existing_body,
+            read_from=path.parent, written_to=target_path.parent, moves={path: target_path},
+        ),
     )
-
-    target_path = _resolve_document_group_path(
-        repo_root=repo_root, current_path=path, doc_type=str(fm.get("doc-type", "")), group=group
-    )
-    moved = target_path != path
 
     relative_path = target_path.relative_to(repo_root / DOCS).as_posix()
     preview_res = verify_content_in_temp_path(
@@ -353,28 +360,10 @@ def edit_document(
         )
 
     if moved:
-        # Writing the new file and unlinking the old are one change: a crash between them
-        # leaves the document present in both groups, which parses and resolves cleanly and
-        # so is reported by nothing.
-        commit_file_changes(
-            repo_root=repo_root,
-            changes=[
-                FileChange(path=target_path, content=content),
-                FileChange(path=path, content=None),
-            ],
-            rebuild_index=lambda: None,
-            label="document-move",
-        )
-        clear_repo_caches(path)
-        warnings.append(f"Moved document to group '{group}': {target_path}")
-        # Another document may cite this one by path — the same breakage a moved entity causes.
-        from ._entity_rename import rewrite_document_links_for_moved_artifact  # noqa: PLC0415
-
-        for doc_path in rewrite_document_links_for_moved_artifact(
-            repo_root=repo_root, old_path=path, new_path=target_path
-        ):
-            clear_repo_caches(doc_path)
-            warnings.append(f"Updated document link in {doc_path.name}")
+        warnings.extend(commit_document_move(
+            repo_root=repo_root, old_path=path, new_path=target_path, content=content,
+            group=group, clear_repo_caches=clear_repo_caches,
+        ))
     else:
         write_atomic(target_path, content)
     clear_repo_caches(target_path)

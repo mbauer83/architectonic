@@ -2,25 +2,26 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
-from src.application.document_links import MARKDOWN_LINK_RE, is_external_or_anchor_href
-from src.application.repo_path_helpers import (
-    all_model_roots,
-    diagram_source_root,
-    docs_root,
-    rewrite_doc_link,
-)
+from src.application.document_links import relocated_links
+from src.application.repo_path_helpers import all_model_roots, diagram_source_root, docs_root
 from src.domain.artifact_id import full_ids_with_stem, stable_id
 from src.domain.repository.repo_layout import RENDERED
 from src.infrastructure.write.artifact_write.staged_workspace import live_root_for, overlay_paths
 
 
-def _document_sources(repo_root: Path) -> Iterator[Path]:
-    """Every document, listed through the overlay for the same reason the referrers are."""
-    return overlay_paths(docs_root(repo_root), ("*.md",))
+def _sources_linking_by_path(repo_root: Path) -> Iterator[Path]:
+    """Every authored file whose prose addresses other files by relative path.
+
+    Documents, and diagrams whose notation is markdown: a matrix body is a table of links to the
+    elements it relates, which the unresolvable-link rule already reads. Only documents were listed
+    here, so re-homing an entity left every matrix citing it pointing at nothing. Listed through
+    the overlay for the same reason the referrers are.
+    """
+    yield from overlay_paths(docs_root(repo_root), ("*.md",))
+    yield from _diagram_sources(repo_root, ("*.md",))
 
 
 def rewrite_document_links_for_moved_artifact(
@@ -30,34 +31,25 @@ def rewrite_document_links_for_moved_artifact(
 
     Best-effort, mirroring the referrer rewrites for connection sidecars: a move — a rename or a
     group re-home — changes the file's location, and nothing else updates a hand-authored
-    `[label](../../old/path.md)` link elsewhere in the docs tree.
+    `[label](../../old/path.md)` link elsewhere in the repository.
 
-    Keyed on paths, not on ids or artifact kind, so it serves an entity, a diagram and a document
-    alike. It was called only for entities for a while, which is how renaming a diagram came to
-    break every document citing it, silently — a document link resolves or it does not, and nothing
-    reported that it no longer did.
+    Keyed on paths, not on ids or artifact kind, so it serves an entity, a diagram, a document and
+    a rendered image alike. It was called only for entities for a while, which is how renaming a
+    diagram came to break every document citing it, silently — a document link resolves or it does
+    not, and nothing reported that it no longer did.
+
+    The link itself is read by `relocated_links`, the one reading of what a link addresses. The
+    moved artifact's *own* links are the mover's to carry across, through the same function.
     """
     changed: list[Path] = []
-    for doc_path in _document_sources(repo_root):
-        text = doc_path.read_text(encoding="utf-8")
-
-        def _replace(match: re.Match[str]) -> str:
-            prefix, target, suffix = match.group(1), match.group(3), match.group(4)
-            if is_external_or_anchor_href(target):
-                return match.group(0)
-            rewritten = rewrite_doc_link(
-                target,
-                doc_old_dir=doc_path.parent,
-                doc_new_dir=doc_path.parent,
-                target_old_path=old_path,
-                target_new_path=new_path,
-            )
-            return f"{prefix}{rewritten}{suffix}" if rewritten != target else match.group(0)
-
-        new_text = MARKDOWN_LINK_RE.sub(_replace, text)
+    for source_path in _sources_linking_by_path(repo_root):
+        text = source_path.read_text(encoding="utf-8")
+        new_text = relocated_links(
+            text, read_from=source_path.parent, written_to=source_path.parent, moves={old_path: new_path},
+        )
         if new_text != text:
-            doc_path.write_text(new_text, encoding="utf-8")
-            changed.append(doc_path)
+            source_path.write_text(new_text, encoding="utf-8")
+            changed.append(source_path)
     return changed
 
 
@@ -160,9 +152,14 @@ def _referrer_sources(repo_root: Path) -> Iterator[Path]:
     """
     for model_root in _model_roots_for_enumeration(repo_root):
         yield from overlay_paths(model_root, ("*.outgoing.md",))
+    yield from _diagram_sources(repo_root, ("*.puml", "*.md"))
+
+
+def _diagram_sources(repo_root: Path, patterns: tuple[str, ...]) -> Iterator[Path]:
+    """Authored diagram sources matching *patterns*; rendered output is regenerated from them."""
     diagram_root = diagram_source_root(repo_root)
     rendered = (diagram_root.parent / RENDERED).resolve()
-    for path in overlay_paths(diagram_root, ("*.puml", "*.md")):
+    for path in overlay_paths(diagram_root, patterns):
         if not path.resolve().is_relative_to(rendered):
             yield path
 

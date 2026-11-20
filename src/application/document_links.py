@@ -22,6 +22,11 @@ it now answers the whole of it — for a diagram's prose as much as a document's
 The next filter is reference-typed attributes, which would otherwise have been the fourth reading
 of one question.
 
+`relocated_links` is the same reading turned round: a link is a statement about two locations, where
+it is written and what it addresses, and a move changes one of them. It is here because rewriting a
+link is reading it first, and the rewriting that lived beside the rename compared the href whole — so
+a link carrying a `#section` was never found, the defect this module was created to end.
+
 `resolve_artifact_links` is the step past "what does the prose point at" to "what is the thing it
 points at" — one reading of a linked file's frontmatter, classifying it as an entity, a document or
 a diagram and naming its type. It lives beside `references_from` rather than beside the rule that
@@ -33,8 +38,10 @@ contributed the literal type `diagram` to the set an entity term was matched aga
 
 from __future__ import annotations
 
+import os.path
+import posixpath
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -94,6 +101,14 @@ def is_external_or_anchor_href(href: str) -> bool:
     return href.startswith(("http://", "https://", "#", "mailto:"))
 
 
+_WINDOWS_ABSOLUTE_PATH_RE = re.compile(r"^[A-Za-z]:[/\\]")
+
+
+def is_absolute_href(href: str) -> bool:
+    """Whether *href* names a place on one machine rather than a file relative to its document."""
+    return href.startswith(("/", "file://")) or bool(_WINDOWS_ABSOLUTE_PATH_RE.match(href))
+
+
 def strip_anchor(href: str) -> str:
     anchor_index = href.find("#")
     return href[:anchor_index] if anchor_index >= 0 else href
@@ -145,6 +160,46 @@ def references_from(content: str, *, directory: Path) -> list[DocumentReference]
             DocumentReference(label=link.label, href=link.href, start=link.start, target=target)
         )
     return references
+
+
+def _lexical(path: Path) -> Path:
+    """An absolute path with `.`/`..` collapsed textually, following no symlink."""
+    return Path(os.path.normpath(path.absolute()))
+
+
+def relocated_links(
+    content: str, *, read_from: Path, written_to: Path, moves: Mapping[Path, Path]
+) -> str:
+    """*content* with each relative link re-expressed so it addresses, from *written_to*, the file
+    it addressed from *read_from* — or that file's new path, where *moves* says it has one.
+
+    Both halves of a move are this one question. The text that moved is read from its old directory
+    and written to its new one; a text that stayed has `read_from == written_to` and only *moves*
+    says anything. A link neither half touches keeps its author's spelling, and so do external,
+    anchor-only and absolute hrefs, which address nothing relative. A `#section` is carried across.
+
+    Paths are compared **lexically**, not through `Path.resolve()`. A markdown link is a lexical
+    relative path, and following symlinks conflates two different files whenever the repository is
+    reached through one: inside a batch transaction the staging tree symlinks live files in, so a
+    link resolved through the symlink landed on the live file while the moved-from path — deleted
+    by the rename — resolved to itself, and no link in any document was rewritten.
+    """
+    old_directory, new_directory = _lexical(read_from), _lexical(written_to)
+    moved_targets = {_lexical(old): _lexical(new) for old, new in moves.items()}
+
+    def _relocated(match: re.Match[str]) -> str:
+        href = match.group(3)
+        file_href = strip_anchor(href)
+        if not file_href or is_external_or_anchor_href(href) or is_absolute_href(href):
+            return match.group(0)
+        old_target = _lexical(old_directory / file_href)
+        new_target = moved_targets.get(old_target, old_target)
+        if new_target == old_target and new_directory == old_directory:
+            return match.group(0)
+        relocated = posixpath.relpath(new_target.as_posix(), new_directory.as_posix())
+        return f"{match.group(1)}{relocated}{href[len(file_href):]}{match.group(4)}"
+
+    return MARKDOWN_LINK_RE.sub(_relocated, content)
 
 
 @dataclass(frozen=True)

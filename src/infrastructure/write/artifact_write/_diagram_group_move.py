@@ -10,6 +10,7 @@ and rollback semantics from one place.
 from collections.abc import Callable
 from pathlib import Path
 
+from src.application.document_links import relocated_links
 from src.application.repo_path_helpers import (
     RENDERED_SUFFIXES,
     diagram_source_confidential_root,
@@ -79,6 +80,52 @@ def _relocate_rendered_outputs(old_diagram_path: Path, repo_root: Path) -> None:
             stale.unlink()
 
 
+def _carried_to_new_home(content: str, diagram_path: Path, target_path: Path) -> str:
+    """*content* as it must read once an existing diagram has moved to *target_path*.
+
+    Only a diagram whose notation is markdown carries prose links — a matrix body is a table of
+    them — and a collection sits one directory deeper than the catalog root, so the links of a
+    matrix moved between the two resolved one level out. A diagram being created has no old home
+    to have been read from.
+    """
+    if target_path == diagram_path or target_path.suffix != ".md" or not diagram_path.exists():
+        return content
+    return relocated_links(
+        content, read_from=diagram_path.parent, written_to=target_path.parent,
+        moves={diagram_path: target_path},
+    )
+
+
+def _heal_links_to_moved_diagram(
+    old_source: Path, new_source: Path, repo_root: Path, clear_repo_caches: Callable[[Path], None],
+) -> list[str]:
+    """Follow every link to the diagram's source and to its rendered images, and say which moved.
+
+    A document shows a diagram by linking its rendered image and cites it by linking its source;
+    both paths carry the collection, so both move. Only the source was followed, which left the
+    picture missing from every document that showed it.
+    """
+    from ._entity_rename import rewrite_document_links_for_moved_artifact  # noqa: PLC0415
+
+    moved_files = [
+        (old_source, new_source),
+        *(
+            (rendered_path_for(old_source, repo_root, suffix), rendered_path_for(new_source, repo_root, suffix))
+            for suffix in RENDERED_SUFFIXES
+        ),
+    ]
+    healed = {
+        linking_path
+        for old_path, new_path in moved_files
+        for linking_path in rewrite_document_links_for_moved_artifact(
+            repo_root=repo_root, old_path=old_path, new_path=new_path
+        )
+    }
+    for linking_path in healed:
+        clear_repo_caches(linking_path)
+    return [f"Updated document link in {linking_path.name}" for linking_path in sorted(healed)]
+
+
 def commit_diagram_write(
     *,
     repo_root: Path,
@@ -108,6 +155,7 @@ def commit_diagram_write(
         diagram_type=diagram_type, tlp=tlp, group=group,
     )
     moved = target_path != diagram_path
+    content = _carried_to_new_home(content, diagram_path, target_path)
 
     if dry_run:
         res = verify_content_in_temp_path(
@@ -142,12 +190,7 @@ def commit_diagram_write(
         _relocate_rendered_outputs(diagram_path, repo_root)
         # A document citing this diagram links by path; the move breaks the link and nothing
         # else would say so.
-        from ._entity_rename import rewrite_document_links_for_moved_artifact  # noqa: PLC0415
-
-        for doc_path in rewrite_document_links_for_moved_artifact(
-            repo_root=repo_root, old_path=diagram_path, new_path=write_path
-        ):
-            warnings.append(f"Updated document link in {doc_path.name}")
+        warnings.extend(_heal_links_to_moved_diagram(diagram_path, write_path, repo_root, clear_repo_caches))
         clear_repo_caches(diagram_path)
         warnings.append(f"Moved diagram to group '{group}': {write_path}")
 
