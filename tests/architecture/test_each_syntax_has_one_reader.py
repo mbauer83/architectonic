@@ -170,7 +170,35 @@ _RENDERED_SHAPE_NAMING = re.compile(r"data-qualified-name|data-entity-[12]|data-
 #: off prose that merely mentions a domain.
 _COMPUTED_BOX_MARKER = re.compile(r"\A\^?(DOM|GRPT|GRPA)_")
 
+#: The key a section of a document type declares its typed tables under, as something a mapping is
+#: asked for. Anchored to the whole literal: the word is common in prose and in SQL, and only a lookup
+#: of exactly this key is a reading of the declaration.
+_TABLE_DECLARATION_KEY = re.compile(r"\Atables\Z")
+
 SYNTAX_READERS: tuple[SyntaxReader, ...] = (
+    SyntaxReader(
+        syntax="the typed tables a document type's section declares, and the form of a row's id",
+        owners=(Path("src/application/artifacts/document_tables.py"),),
+        instead=(
+            "`src.application.artifacts.document_tables`: `table_declarations` for what a type's "
+            "sections declare — reached as `SectionSpec.tables` — `TableSpec.row_schema` for the JSON "
+            "Schema of a row, `TableSpec.row_id` and `row_number` to write and read an id, "
+            "`format_row_ids` and `row_ids_in` for a cell naming several, `TableSpec.scaffold` for the "
+            "empty table. For a document's rows as typed values, "
+            "`src.application.artifacts.document_table_rows.read_document_tables`"
+        ),
+        incident=(
+            "a row written with the syntax and not after a second reader hurt. The declaration is "
+            "served to a browser, scaffolded by the write path, read by the verifier and will be "
+            "edited row by row — four consumers of a column's type, its title and its row-id form. "
+            "The loader already normalises a schema file, serialises it and normalises it again, so a "
+            "consumer taking the raw `tables` list from that dictionary instead of the specification "
+            "would read a column without its defaults and a row id without its table's prefix, which "
+            "is the same shape as the reference-term prefix that thirteen sites each decided"
+        ),
+        literal_probe=_TABLE_DECLARATION_KEY,
+        also_located_by=_ATTRIBUTE_LOOKUPS,
+    ),
     SyntaxReader(
         syntax="a markdown table — where one is, its rows, and the cells of a row",
         owners=(Path("src/domain/markdown_table.py"),),
