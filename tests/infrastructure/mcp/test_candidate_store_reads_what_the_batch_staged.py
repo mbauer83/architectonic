@@ -176,3 +176,34 @@ class TestADocument:
         batch.delete(Path(str(held["path"])))
 
         assert batch.store().get_document(str(held["artifact_id"])) is None
+
+
+class TestAPathTheOverlayKeepsNoRecordsOf:
+    """What a batch touched and the overlay does not stage is passed over only where the kind table
+    says a bulk write does not verify it. The `match` this replaced had no arm for an icon and fell
+    through it in silence, which no one had decided."""
+
+    def _touch(self, batch: _Batch, relative: str) -> None:
+        path = batch.staged / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+        batch.touched.add(path)
+
+    @pytest.mark.parametrize(
+        "relative", ["scratchpads/core/SCR@1.a.x.scratchpad.yaml", "README.md", ".arch-repo/config.yaml"]
+    )
+    def test_an_unverified_kind_or_no_kind_at_all_is_passed_over(
+        self, repo: Path, batch: _Batch, relative: str
+    ) -> None:
+        held = _entity(repo, "Before")
+        self._touch(batch, relative)
+
+        record = batch.store().get_entity(str(held["artifact_id"]))
+
+        assert record is not None and record.name == "Before"
+
+    def test_a_verified_kind_it_cannot_stage_is_refused_by_name(self, batch: _Batch) -> None:
+        self._touch(batch, "diagram-catalog/icons/ICO@1.a.x.md")
+
+        with pytest.raises(ValueError, match="a file of the icon kind. The staging overlay keeps no icon records"):
+            batch.store()

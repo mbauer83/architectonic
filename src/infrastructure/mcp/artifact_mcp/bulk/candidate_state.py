@@ -76,6 +76,15 @@ class CandidateStore(CandidateListMixin):
                     self._documents[new_doc.artifact_id] = new_doc
             case "entity":
                 self._absorb_entity(path, live_path, domain_names=domain_names)
+            case _:
+                # A kind the verifier takes and this overlay keeps no staged records of — an icon,
+                # today. The match used to have no arm for it and passed over the file in silence,
+                # leaving every lookup of what was written to answer from the live repository.
+                raise ValueError(
+                    f"A staged write touched {rel}, a file of the {kind} kind. The staging overlay keeps no "
+                    f"{kind} records, so the batch could only be verified against the live "
+                    f"repository's; write a {kind} through its own tool, outside a batch."
+                )
 
     def _absorb_entity(self, path: Path, live_path: Path, *, domain_names: frozenset[str]) -> None:
         self._deleted_entities.add(entity_id_from_path(live_path))
