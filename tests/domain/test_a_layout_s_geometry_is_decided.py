@@ -12,15 +12,14 @@ from src.domain.diagrams.authored_groupings import RuleKey
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import Layout, Placed, Port, Route, Side, read_layout
 from src.domain.diagrams.layout.layout_checks import (
-    STUB,
     DiagramIdentities,
     LayoutDefect,
     check_layout_geometry,
     entries_naming_nothing,
     placed_extent,
-    port_point,
     pruned_to,
 )
+from src.domain.diagrams.layout.orthogonal import STUB, port_point
 
 _A, _B, _C = "APP@1.aaaaaa", "APP@2.bbbbbb", "APP@3.cccccc"
 _AB = f"{_A}---{_B}@@archimate-serving"
@@ -75,10 +74,13 @@ class TestLeavingOutward:
 
         assert (LayoutDefect.END_NOT_LEAVING_OUTWARD, (_AB, _A)) in _found(sideways)
 
-    def test_leaving_at_a_slant_is_not_leaving_perpendicular(self) -> None:
-        slanted = _routed(source=Port(Side.RIGHT, 0.5), via=((160, 45),))
+    def test_a_bend_off_the_port_s_line_is_reached_by_an_elbow_and_never_at_a_slant(self) -> None:
+        """A route is drawn completed at right angles, so the run that is judged is the one that is drawn."""
+        far_enough = _routed(source=Port(Side.RIGHT, 0.5), via=((160, 45),))
+        too_near = _routed(source=Port(Side.RIGHT, 0.5), via=((105, 45),))
 
-        assert _found(slanted) == [(LayoutDefect.END_NOT_LEAVING_OUTWARD, (_AB, _A))]
+        assert _found(far_enough) == []
+        assert _found(too_near) == [(LayoutDefect.END_NOT_LEAVING_OUTWARD, (_AB, _A))]
 
     def test_the_target_end_is_asked_the_same_question(self) -> None:
         arriving_from_above = _routed(target=Port(Side.LEFT, 0.5), via=((300, -80),))

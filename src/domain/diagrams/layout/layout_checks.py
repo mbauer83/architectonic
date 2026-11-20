@@ -18,27 +18,15 @@ silence is not evidence.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 
 from src.domain.diagrams.authored_groupings import RuleKey, is_rule_key, read_rule_key
-from src.domain.diagrams.layout.geometry import Extent, Point
-from src.domain.diagrams.layout.layout_block import Layout, Placed, Port, Route, Side
+from src.domain.diagrams.layout.attachment import Breach, breaches_of
+from src.domain.diagrams.layout.geometry import Extent
+from src.domain.diagrams.layout.layout_block import Layout, Placed, Route
 from src.domain.diagrams.layout.picture_checks import are_drawn_over_each_other
-
-#: How far a relation runs straight out of its element before it may turn: the router's margin.
-STUB = 12.0
-
-#: How far inside an end a segment must run before it counts as through it.
-_THROUGH_MARGIN = 2.0
-
-#: How far off the outward normal a first segment may sit and still count as perpendicular.
-_STRAIGHT_TOLERANCE = 0.5
-
-_OUTWARD: Mapping[Side, tuple[int, int]] = {
-    Side.TOP: (0, -1), Side.RIGHT: (1, 0), Side.BOTTOM: (0, 1), Side.LEFT: (-1, 0),
-}
 
 
 @dataclass(frozen=True)
@@ -129,61 +117,20 @@ def placed_extent(placed: Placed, drawn_size: tuple[float, float] | None = None)
     return Extent(placed.x, placed.y, placed.x + size[0], placed.y + size[1])
 
 
-def port_point(extent: Extent, port: Port) -> Point:
-    """Where *port* lies on *extent*'s border: along a side from its top or its left."""
-    along_x = extent.left + port.at * extent.width
-    along_y = extent.top + port.at * extent.height
-    return {
-        Side.TOP: Point(along_x, extent.top),
-        Side.BOTTOM: Point(along_x, extent.bottom),
-        Side.LEFT: Point(extent.left, along_y),
-        Side.RIGHT: Point(extent.right, along_y),
-    }[port.side]
-
-
-def _leaves_outward(port: Port, start: Point, toward: Point) -> bool:
-    """Whether the segment from *start* runs along the side's outward normal for at least one stub."""
-    out_x, out_y = _OUTWARD[port.side]
-    travelled = (toward.x - start.x) * out_x + (toward.y - start.y) * out_y
-    strayed = abs((toward.x - start.x) * out_y) + abs((toward.y - start.y) * out_x)
-    return travelled >= STUB and strayed <= _STRAIGHT_TOLERANCE
-
-
-def _course(route: Route, source: Extent | None, target: Extent | None) -> list[Point]:
-    """The points the route is stated to run through; an end with no port or no extent is left out."""
-    start = [port_point(source, route.source)] if source is not None and route.source is not None else []
-    end = [port_point(target, route.target)] if target is not None and route.target is not None else []
-    return [*start, *(Point(x, y) for x, y in route.via), *end]
-
-
-def _runs_through(course: Sequence[Point], extent: Extent) -> bool:
-    interior = extent.shrunk_by(_THROUGH_MARGIN)
-    return interior is not None and any(
-        interior.is_entered_by(course[index], course[index + 1]) for index in range(len(course) - 1)
-    )
-
-
 def _route_findings(
     key: str, route: Route, ends: tuple[str, str], extents: Mapping[str, Extent]
 ) -> list[LayoutFinding]:
-    source, target = extents.get(ends[0]), extents.get(ends[1])
-    course = _course(route, source, target)
-    findings: list[LayoutFinding] = []
-    leaving = (
-        (ends[0], route.source, source, course[:2]),
-        (ends[1], route.target, target, course[-1:-3:-1]),
-    )
-    for end, port, extent, first_segment in leaving:
-        if port is not None and extent is not None and len(first_segment) == 2 and not _leaves_outward(
-            port, first_segment[0], first_segment[1]
-        ):
-            findings.append(LayoutFinding(LayoutDefect.END_NOT_LEAVING_OUTWARD, (key, end)))
-    findings.extend(
-        LayoutFinding(LayoutDefect.ROUTE_THROUGH_OWN_END, (key, end))
-        for end, extent in zip(ends, (source, target), strict=True)
-        if extent is not None and _runs_through(course, extent)
-    )
-    return findings
+    """I1 and I2 for one stated route, over the course it runs once completed at right angles."""
+    at_end = {
+        Breach.SOURCE_NOT_OUTWARD: (LayoutDefect.END_NOT_LEAVING_OUTWARD, ends[0]),
+        Breach.TARGET_NOT_OUTWARD: (LayoutDefect.END_NOT_LEAVING_OUTWARD, ends[1]),
+        Breach.THROUGH_SOURCE: (LayoutDefect.ROUTE_THROUGH_OWN_END, ends[0]),
+        Breach.THROUGH_TARGET: (LayoutDefect.ROUTE_THROUGH_OWN_END, ends[1]),
+    }
+    return [
+        LayoutFinding(defect, (key, end))
+        for defect, end in (at_end[breach] for breach in breaches_of(route, extents.get(ends[0]), extents.get(ends[1])))
+    ]
 
 
 def _overlap_as_a_conflict(first: Extent, second: Extent) -> bool:
