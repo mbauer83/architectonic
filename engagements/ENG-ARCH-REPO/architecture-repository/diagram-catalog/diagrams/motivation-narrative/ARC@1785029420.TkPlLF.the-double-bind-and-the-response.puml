@@ -25,16 +25,19 @@ connection-ids-used:
 - GOL@1780220699.FCfDuc---GOL@1784845186.7RZp1S@@archimate-aggregation
 - GOL@1780220699.FCfDuc---GOL@1784845186.L4Ceuf@@archimate-aggregation
 authored-groupings:
-- label: The Double Bind
+- id: g-NcwsIq
+  label: The Double Bind
   stereotype: ''
   entity-ids:
   - ASS@1780220699.CK90bp.autonomy-at-agentic-velocity-threatens-unity-of-effort
   - ASS@1776628138.a6vxyj.centralized-governance-cannot-scale-at-agentic-velocity
-- label: One Intent
+- id: g-8fwakA
+  label: One Intent
   stereotype: ''
   entity-ids:
   - GOL@1780220699.FCfDuc.sustain-unity-of-effort-at-agentic-velocity
-- label: Two Means
+- id: g-XcLxP3
+  label: Two Means
   stereotype: ''
   entity-ids:
   - GOL@1784845186.L4Ceuf.preserve-local-autonomy

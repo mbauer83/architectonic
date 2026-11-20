@@ -48,13 +48,15 @@ connection-ids-used:
 - FNC@1777390446.dxb6ru---FNC@1776633708.n_JYA2@@archimate-composition
 - PRC@1777409610.wqtZ0P---PRC@1777399926.gtgYvQ@@archimate-aggregation
 authored-groupings:
-- label: Write Requests
+- id: g-NSNkur
+  label: Write Requests
   stereotype: ''
   entity-ids:
   - EVT@1777390505.tTktu8.artifact-write-requested
   - EVT@1777399928.diAYsj.bulk-write-requested
   - EVT@1777399929.m-E9P1.bulk-delete-requested
-- label: Change Events
+- id: g-nsR4Ct
+  label: Change Events
   stereotype: ''
   entity-ids:
   - EVT@1777390504.hDF1Qz.artifacts-promoted

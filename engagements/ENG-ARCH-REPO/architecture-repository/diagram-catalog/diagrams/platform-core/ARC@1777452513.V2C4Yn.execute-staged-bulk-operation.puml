@@ -45,14 +45,16 @@ connection-ids-used:
 - PRC@1777399926.gtgYvQ---FNC@1777399927.hbgFU3@@archimate-composition
 - PRC@1777399926.gtgYvQ---FNC@1777399928.tRAV0x@@archimate-composition
 authored-groupings:
-- label: Performed By
+- id: g-ItttRB
+  label: Performed By
   stereotype: ''
   entity-ids:
   - APP@1777399925.HOOYAQ.staged-write-transaction-manager
   - APP@1777399924.5n_KQJ.bulk-write-handler
   - APP@1777399925.WK_78v.bulk-delete-handler
   - APP@1777399926.PDJI8F.operation-registry
-- label: State
+- id: g-xcF2X9
+  label: State
   stereotype: ''
   entity-ids:
   - DOB@1777399930.hExrX3.operation-record

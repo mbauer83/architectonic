@@ -32,20 +32,23 @@ connection-ids-used:
 - DRV@1712870400.Rt6Yu2---ASS@1780220699.CK90bp@@archimate-influence
 - DRV@1712870400.Rt6Yu2---ASS@1776628138.a6vxyj@@archimate-influence
 authored-groupings:
-- label: Forces
+- id: g-obcs1i
+  label: Forces
   stereotype: MotivationGrouping
   entity-ids:
   - DRV@1712870400.Ui5Op3.rising-software-complexity-interdependence
   - DRV@1776628131.GR9prv.ai-assisted-and-agentic-development-as-a-dominant-production-mode
   - DRV@1784845186.4NvckD.demand-for-faster-product-and-service-learning-cycles
   - DRV@1712870400.Rt6Yu2.increasing-demand-for-more-autonomy-of-teams-systems
-- label: Immediate Implications
+- id: g-BlVHBK
+  label: Immediate Implications
   stereotype: MotivationGrouping
   entity-ids:
   - ASS@1776628142.9YWsDh.implicit-system-interdependencies-are-unmaintainable-without-explicit-models
   - ASS@1776628134.EI3FpR.ai-generated-change-volume-outpaces-architectural-planning-and-review-capacity
   - ASS@1776628140.s68vVo.llm-based-agents-cannot-effectively-use-unstructured-architectural-knowledge
-- label: The Double Bind
+- id: g-r8mzLJ
+  label: The Double Bind
   stereotype: MotivationGrouping
   entity-ids:
   - ASS@1780220699.CK90bp.autonomy-at-agentic-velocity-threatens-unity-of-effort

@@ -41,30 +41,35 @@ connection-ids-used:
 - GOL@1780655839.kE3Tte---GOL@1780220699.FCfDuc@@archimate-influence
 - PRI@1784845187.E3_ttJ---GOL@1780655839.kE3Tte@@archimate-influence
 authored-groupings:
-- label: Forces
+- id: g-hVg4SG
+  label: Forces
   stereotype: MotivationGrouping
   entity-ids:
   - DRV@1780655839.AcMaI1.expanding-software-ai-assurance-obligations
   - DRV@1780655839.52-qYT.safety-security-grc-capability-gap-for-small-teams
   - DRV@1776628131.GR9prv.ai-assisted-and-agentic-development-as-a-dominant-production-mode
-- label: Implications
+- id: g-NlSL5T
+  label: Implications
   stereotype: MotivationGrouping
   entity-ids:
   - ASS@1780655839.6cIRhr.regulated-teams-need-traceable-assurance-records
   - ASS@1780655839.pZWwv1.assurance-disconnected-from-architecture-loses-traceability
   - ASS@1780655839.Cu2Joe.assurance-cannot-keep-pace-with-agentic-development-velocity
-- label: Assurance Goals
+- id: g-tOYmMR
+  label: Assurance Goals
   stereotype: MotivationGrouping
   entity-ids:
   - GOL@1780655839.AoatzG.provide-first-class-assurance-integrated-with-the-architecture-model
   - GOL@1780655839.kE3Tte.lower-the-barrier-to-rigorous-assurance-work
-- label: Expected Outcomes
+- id: g-q5bmfk
+  label: Expected Outcomes
   stereotype: MotivationGrouping
   entity-ids:
   - OUT@1780655839._FOogJ.assurance-findings-traceable-end-to-end-to-the-architecture-model
   - OUT@1780655839.Vhhne7.assurance-analysis-surfaces-modeling-gaps
   - OUT@1780655839.CiC0ku.assurance-friction-and-guidance-overhead-reduced
-- label: Tie to the Apex Intent
+- id: g-zvwuAy
+  label: Tie to the Apex Intent
   stereotype: MotivationGrouping
   entity-ids:
   - GOL@1780220699.FCfDuc.sustain-unity-of-effort-at-agentic-velocity
