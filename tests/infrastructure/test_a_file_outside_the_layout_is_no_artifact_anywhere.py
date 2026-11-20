@@ -46,14 +46,19 @@ def repo(tmp_path: Path) -> Path:
     return root
 
 
-def test_the_save_dialog_lists_an_entity_under_a_project_and_not_a_readme(repo: Path) -> None:
+def test_the_save_dialog_lists_an_entity_under_a_project_and_a_readme_as_a_file(repo: Path) -> None:
     _write(repo, "projects/core/model/motivation/requirement/REQ@1.aaaa.probe.md", _ENTITY)
     _write(repo, "projects/core/NOTES.md", _ENTITY.replace("REQ@1.aaaa.probe", "REQ@2.bbbb.stray"))
     _write(repo, "README.md", "# readme\n")
 
     listed = {entry["artifact_id"]: entry["record_type"] for entry in list_changes(repo)}
 
-    assert listed == {"REQ@1.aaaa.probe": "entity"}
+    # A save commits all three, so all three are listed — and only one of them as an artifact.
+    assert listed == {
+        "REQ@1.aaaa.probe": "entity",
+        "projects/core/NOTES.md": "file",
+        "README.md": "file",
+    }
 
 
 def test_a_rendered_picture_is_still_saved_with_its_diagram(repo: Path) -> None:

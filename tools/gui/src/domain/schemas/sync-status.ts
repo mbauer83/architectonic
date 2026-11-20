@@ -81,11 +81,15 @@ export type SyncSaveResult = typeof SyncSaveResultSchema.Type
  * Merged deliberately: an entity and its outgoing-connections file are two files and one artifact, so
  * listing them separately would ask the author to reason about a file layout the rest of the product
  * hides. `changes` gains `"connections"` when the outgoing file moved.
+ *
+ * `scratchpad` and `file` are not model artifacts and are listed because a save commits them: a
+ * `file` is content the layout gives no kind, such as repository configuration, and its
+ * `artifact_id` is its path within the repository.
  */
 export const SyncChangedArtifactSchema = Schema.Struct({
   artifact_id: Schema.String,
   name: Schema.String,
-  record_type: Schema.Literal('entity', 'diagram', 'document', 'icon'),
+  record_type: Schema.Literal('entity', 'diagram', 'document', 'icon', 'scratchpad', 'file'),
   // Null for an artifact whose frontmatter names none — a connections-only change is attributed to
   // its source entity, which this code has not read.
   artifact_type: Schema.NullOr(Schema.String),

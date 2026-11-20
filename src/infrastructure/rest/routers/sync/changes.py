@@ -1,8 +1,14 @@
-"""Summarise uncommitted git changes in an artifact repository.
+"""Summarise the uncommitted content of a repository: everything a save would commit.
 
-Returns one record per artifact (entity/document/diagram) describing which
-aspects changed: frontmatter, body, connections, or content.
-Outgoing-connection file changes are merged into their source entity's record.
+One record per artifact (entity, document, diagram, icon, scratchpad) describing which aspects
+changed — frontmatter, body, connections, or content — with an outgoing-connection file merged into
+its source entity's record. Content that is no artifact, such as the repository's configuration,
+is listed as the file it is.
+
+**Every changed content file ends up in a row**, because the list is what the author confirms: it
+left scratchpads out on purpose and everything outside the artifact layout by default, so the
+dialog could read "no tracked changes" over a save that then committed some. Which files are
+content is not decided here — the status is asked the same question the save and the pull ask.
 
 Used exclusively by the GUI save-dialog; not exposed via MCP.
 """
@@ -15,7 +21,9 @@ from pathlib import Path
 from src.config.repo_paths import DIAGRAM_CATALOG
 from src.domain.repository.artifact_location import artifact_kind_at
 from src.domain.repository.frontmatter import Frontmatter, read_frontmatter
+from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX
 from src.domain.yaml_documents import parse_yaml
+from src.infrastructure.git.git_repository_state import UNCOMMITTED_CONTENT_QUERY
 
 
 def list_changes(repo_root: Path) -> list[dict]:
@@ -40,14 +48,9 @@ def list_changes(repo_root: Path) -> list[dict]:
         except ValueError:
             continue  # not under this repo_root
         kind = _classify(rel)
-        if kind is None:
-            continue
         # For git show, we need the git-root-relative path
         git_path = str(prefix / rel) if prefix != Path(".") else rel
-        if kind == "connections":
-            _handle_outgoing(repo, rel, git_path, xy, entries)
-        else:
-            _handle_artifact(repo, rel, git_path, xy, kind, entries)
+        _HANDLERS.get(kind, _handle_artifact)(repo, rel, git_path, xy, kind, entries)
     return list(entries.values())
 
 
@@ -69,7 +72,7 @@ def _run(repo: Path, *args: str) -> tuple[int, str]:
 
 
 def _git_porcelain(repo: Path) -> list[tuple[str, str]]:
-    rc, out = _run(repo, "status", "--porcelain", "-u")
+    rc, out = _run(repo, *UNCOMMITTED_CONTENT_QUERY)
     if rc != 0:
         return []
     result = []
@@ -89,21 +92,21 @@ def _git_show(repo: Path, git_rel: str) -> str | None:
 # ─── Path classification ──────────────────────────────────────────────────────
 
 
-def _classify(rel: str) -> str | None:
-    """The kind of artifact a changed file is saved as part of, or None when it is not one.
+def _classify(rel: str) -> str:
+    """What a changed content file is saved as: the artifact it is part of, or the file it is.
 
     Sources are classified by the layout's one reading. What else changes under the diagram catalog
     (rendered pictures, generated includes) is derived output, saved with the diagrams it belongs to.
+    Anything the layout gives no kind — configuration, a stray note — is still committed by a save,
+    so it is listed as a `file` rather than left out: it is no artifact, and it is not nothing.
     """
     match artifact_kind_at(rel):
         case "connection":
             return "connections"
-        case "entity" | "document" | "diagram" | "icon" as kind:
+        case "entity" | "document" | "diagram" | "icon" | "scratchpad" as kind:
             return kind
-        case "scratchpad":
-            return None
         case None:
-            return "diagram" if Path(rel).parts[:1] == (DIAGRAM_CATALOG,) else None
+            return "diagram" if Path(rel).parts[:1] == (DIAGRAM_CATALOG,) else "file"
 
 
 # ─── Content helpers ──────────────────────────────────────────────────────────
@@ -191,6 +194,7 @@ def _handle_outgoing(
     rel: str,
     git_path: str,
     xy: str,
+    _kind: str,
     entries: dict[str, dict],
 ) -> None:
     path = repo / rel
@@ -216,3 +220,61 @@ def _handle_outgoing(
             "file_status": "modified",
             "changes": ["connections"],
         }
+
+
+def _handle_scratchpad(
+    repo: Path,
+    rel: str,
+    git_path: str,
+    xy: str,
+    kind: str,
+    entries: dict[str, dict],
+) -> None:
+    """A scratchpad is one YAML document with no frontmatter, so it is read as one.
+
+    Its id is its file name — the layout's own statement, which also holds for a pad that was
+    deleted and one whose text does not parse.
+    """
+    file_status = _file_status(xy)
+    path = repo / rel
+    text = path.read_text("utf-8", errors="replace") if path.exists() else _git_show(repo, git_path)
+    artifact_id = Path(rel).name.removesuffix(SCRATCHPAD_SUFFIX)
+    entries[artifact_id] = {
+        "artifact_id": artifact_id,
+        "name": str(_yaml_mapping(text or "").get("name") or artifact_id),
+        "record_type": kind,
+        "artifact_type": None,
+        "file_status": file_status,
+        "changes": ["content"] if file_status == "modified" else [],
+    }
+
+
+def _handle_file(
+    _repo: Path,
+    rel: str,
+    _git_path: str,
+    xy: str,
+    kind: str,
+    entries: dict[str, dict],
+) -> None:
+    """Content the layout gives no kind: identified by where it is, since that is all it has."""
+    file_status = _file_status(xy)
+    entries[rel] = {
+        "artifact_id": rel,
+        "name": Path(rel).name,
+        "record_type": kind,
+        "artifact_type": None,
+        "file_status": file_status,
+        "changes": ["content"] if file_status == "modified" else [],
+    }
+
+
+def _yaml_mapping(text: str) -> dict:
+    try:
+        loaded = parse_yaml(text)
+    except Exception:
+        return {}
+    return loaded if isinstance(loaded, dict) else {}
+
+
+_HANDLERS = {"connections": _handle_outgoing, "scratchpad": _handle_scratchpad, "file": _handle_file}

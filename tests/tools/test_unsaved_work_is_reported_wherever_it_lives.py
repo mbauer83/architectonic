@@ -137,15 +137,21 @@ def test_an_entity_edited_under_projects_is_reported_unsaved(workspace: Workspac
     assert workspace.says_unsaved() is True
 
 
-def test_the_save_dialog_lists_artifacts_and_a_scratchpad_is_not_one(workspace: Workspace) -> None:
-    """What the author sees with only a scratchpad unsaved: Save is offered, because the status is
-    what offers it, and the dialog's list is empty — it lists model artifacts, and whether a
-    scratchpad is shown there as content about to be published is a separate question from whether
-    the work can be saved. The second is what this pins: the list is not what offers the save."""
-    workspace.create_a_scratchpad()
+def test_the_save_dialog_lists_a_scratchpad_the_save_will_commit(workspace: Workspace) -> None:
+    """The list is what the author confirms, so it shows what the save commits — a scratchpad as a
+    row of its own kind, by its own name."""
+    pad_id = workspace.create_a_scratchpad()
 
-    assert workspace.says_unsaved() is True
-    assert workspace.listed_for_saving() == []
+    response = workspace.client.get("/api/sync/changes", params={"repo": "engagement"})
+
+    assert response.json()["artifacts"] == [{
+        "artifact_id": pad_id,
+        "name": "Thinking aloud",
+        "record_type": "scratchpad",
+        "artifact_type": None,
+        "file_status": "added",
+        "changes": [],
+    }]
 
 
 def test_a_save_carries_a_scratchpad(workspace: Workspace) -> None:
@@ -167,12 +173,13 @@ def test_the_status_and_the_pull_agree_on_whether_work_is_unsaved(workspace: Wor
 CONFIGURATION = Path(".arch-repo") / "viewpoint-pins.yaml"
 
 
-def test_configuration_is_content(workspace: Workspace) -> None:
-    """No artifact kind, and still committed by a save — so the status reports it."""
+def test_configuration_is_content_and_is_listed_as_the_file_it_is(workspace: Workspace) -> None:
+    """No artifact kind, and still committed by a save — so it is reported and listed, by its path."""
     (workspace.engagement / CONFIGURATION).parent.mkdir(exist_ok=True)
     (workspace.engagement / CONFIGURATION).write_text("pins: []\n", encoding="utf-8")
 
     assert workspace.says_unsaved() is True
+    assert workspace.listed_for_saving() == [CONFIGURATION.as_posix()]
     assert CONFIGURATION.as_posix() in workspace.save().splitlines()
 
 
@@ -221,6 +228,7 @@ def test_the_readings_agree_for_content_anywhere(workspace: Workspace, content: 
     path.write_text("name: anything\n", encoding="utf-8")
 
     assert workspace.says_unsaved() is True
+    assert workspace.listed_for_saving() != [], "a save dialog that commits a file it does not show"
     assert workspace.pull_would_be_held_back() is True
     rc, _, stderr = run_repo_git(workspace.engagement, *STAGE_ALL_BUT_RUNTIME_STATE)
     assert rc == 0, stderr

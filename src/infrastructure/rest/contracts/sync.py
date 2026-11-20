@@ -100,11 +100,15 @@ class SyncChangedArtifact(Closed):
 
     ``artifact_type`` is null for an artifact whose frontmatter names none — a connections-only change
     is attributed to its source entity, which this code has not read.
+
+    Two kinds are not model artifacts and are listed because a save commits them: a ``scratchpad``,
+    and a ``file`` — content the layout gives no kind, such as the repository's configuration, whose
+    ``artifact_id`` is its path within the repository.
     """
 
     artifact_id: str
     name: str
-    record_type: Literal["entity", "diagram", "document", "icon"]
+    record_type: Literal["entity", "diagram", "document", "icon", "scratchpad", "file"]
     artifact_type: str | None
     file_status: Literal["added", "deleted", "modified"]
     changes: list[str]

@@ -11965,6 +11965,10 @@ export interface components {
          *
          *     ``artifact_type`` is null for an artifact whose frontmatter names none — a connections-only change
          *     is attributed to its source entity, which this code has not read.
+         *
+         *     Two kinds are not model artifacts and are listed because a save commits them: a ``scratchpad``,
+         *     and a ``file`` — content the layout gives no kind, such as the repository's configuration, whose
+         *     ``artifact_id`` is its path within the repository.
          */
         SyncChangedArtifact: {
             /** Artifact Id */
@@ -11984,7 +11988,7 @@ export interface components {
              * Record Type
              * @enum {string}
              */
-            record_type: "entity" | "diagram" | "document" | "icon";
+            record_type: "entity" | "diagram" | "document" | "icon" | "scratchpad" | "file";
         };
         /**
          * SyncChangesResponse
