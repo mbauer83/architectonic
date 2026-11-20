@@ -166,8 +166,14 @@ Two overlays on top of the safety/security model:
   never be a precondition for a constraint, and `accept` is unavailable for safety
   concern-classes — this is where *safety is never subordinate to risk* is enforced.
 - **Obligation** — a compliance instance: "does the system comply with requirement X of
-  standard/regulation Y?" It cites a public framework code (for example `ISO26262:6-8`) while
-  keeping status and evidence confidential in the assurance store.
+  standard/regulation Y?" It names the rule it comes from in two attributes — `source`, the
+  regulation, standard or contract (for example `ISO 26262`), and `provision`, the article,
+  clause or control in it (for example `6-8`) — while keeping status and evidence confidential
+  in the assurance store. The verifier checks the provision where the source has a reference
+  vocabulary and accepts any other source. A store written by an earlier version holds the
+  citation in `scheme` and `code`, or in a single `cites`; the verifier reports those
+  obligations, and `arch-repair upgrade --commit` moves the citation and records each
+  rewrite in the audit archive.
 
 &nbsp;
 

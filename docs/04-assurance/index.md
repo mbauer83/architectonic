@@ -65,7 +65,7 @@ failure-mode ──leads-to──► hazard,  ◄──detects── assurance-c
 
 risk ──assesses──► hazard,  ──treated-by──► assurance-constraint        (GRC evaluation overlay)
 incident ──reconstructs──► control structure as it existed             (CAST, sealed baseline)
-obligation ──cites──► framework code (e.g. ISO26262:6-8)               (compliance instance)
+obligation ── source + provision (e.g. ISO 26262, 6-8)                 (compliance instance)
 assurance-constraint ──evidenced-by──► evidence ──binds to a verification artifact
 ```
 

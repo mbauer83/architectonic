@@ -27,7 +27,7 @@ cross-reference:
   actions, loss scenarios, and derived assurance constraints.
 - **CAST** — incidents (against a sealed baseline), observed UCAs and scenarios, and
   corrective actions.
-- **GRC** — risk evaluations and compliance obligations citing public framework codes.
+- **GRC** — risk evaluations and compliance obligations, each naming its source and provision.
 - **FMEA** — failure modes bound to the elements they belong to and linked to existing hazards,
   plus the human judgements of their factors.
 - **Supply chain** — ingested SBOM / signal data.

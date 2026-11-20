@@ -74,7 +74,7 @@ Status and evidence are assurance-owned and confidential.
 ```
 assurance_create_node(analysis_id=analysis_id, node_type="obligation",
                       name="OBL-1: ISO 26262:6-8 compliance",
-                      attributes={"scheme": "ISO26262", "code": "6-8",
+                      attributes={"source": "ISO 26262", "provision": "6-8",
                                   "status": "in-progress"})
 ```
 
@@ -84,7 +84,8 @@ assurance_add_edge(source_id=constraint_id, target_id=obligation_id,
                    conn_type="complies-with")
 ```
 
-W504 fires for obligations with no complies-with constraint — run `assurance_verify`.
+W504 fires for obligations with no complies-with constraint, and W516 for one that does not state
+its `source` and `provision` — run `assurance_verify`.
 
 ### Step 3 — Add Evidence Links
 
@@ -137,6 +138,9 @@ Create these via the `artifact_create_document` tool on `arch-repo-write`.
   risk is also `treated-by` at least one constraint.
 - **W505 fires for risks without a treatment attribute** — always set treatment.
 - **W504 fires for obligations with no complies-with** — link at least one constraint.
+- **W516 fires for obligations without `source` and `provision`** — name the regulation, standard
+  or contract, and the article, clause or control in it. `scheme`, `code` and `cites` are not read
+  (W517).
 - **GRC is optional** — STPA/CAST constraints are valid and enforced with no risk entity.
   Risk *prioritises* treatment, it never closes a safety constraint.
 - **Ask, don't assume TLP** — before setting TLP:AMBER or TLP:RED, confirm the sensitivity.

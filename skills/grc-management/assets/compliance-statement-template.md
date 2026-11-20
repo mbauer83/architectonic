@@ -24,9 +24,9 @@ What version/configuration is in scope?_
 
 _List the obligations in scope. Each should have an `obligation` entity in the assurance store._
 
-| Obligation ID | Framework Clause | Name | Status |
-|---|---|---|---|
-| OBL@… | [e.g. ISO26262:6-8] | [clause name] | [in-progress / compliant / non-compliant / N/A] |
+| Obligation ID | Source | Provision | Name | Status |
+|---|---|---|---|---|
+| OBL@… | [e.g. ISO 26262] | [e.g. 6-8] | [clause name] | [in-progress / compliant / non-compliant / N/A] |
 
 ## Control Coverage
 

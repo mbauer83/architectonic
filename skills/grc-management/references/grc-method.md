@@ -37,11 +37,15 @@ An `obligation` entity represents a specific compliance instance:
 - "Does our system satisfy clause 6-8 of ISO 26262?"
 - The answer (status + evidence) is assurance-owned and confidential
 
-The public framework catalog is referenced by the obligation's `scheme` and `code` attributes
-(there is no `cites` connection type):
+The obligation says which rule it comes from in two attributes (there is no `cites` connection
+type): `source`, the regulation, standard or contract, and `provision`, the article, clause or
+control in it:
 ```
-scheme: ISO26262, code: 6-8      (likewise GDPR / Art.5, EU-AI-ACT / Art.12)
+source: ISO 26262, provision: 6-8      (likewise GDPR / Art. 5, EU AI Act / Art. 12)
 ```
+`assurance_verify` checks the provision where the source has a reference vocabulary (W518 when it
+is not listed) and accepts any other source, reporting it as unchecked (W519). W516 fires when
+either attribute is missing, and W517 when the citation is still in `scheme`, `code` or `cites`.
 
 The constraint → obligation link:
 ```
