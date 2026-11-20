@@ -193,6 +193,7 @@ class TestARowIsAddressedByItsId:
 
         assert _values(edited.content) == {"N1": {"note": "a"}}
 
+    @pytest.mark.verifies("REQ@1795211662.TUp93X_")
     def test_only_the_changed_rows_line_differs(self) -> None:
         document = _document()
 
@@ -214,6 +215,7 @@ class TestARowIsAddressedByItsId:
 
 
 class TestTwoWritersOnOneTable:
+    @pytest.mark.verifies("REQ@1795211662.TUp93X_")
     def test_different_rows_both_succeed_in_either_order(self) -> None:
         document = _document()
         first = RowChange("N1", _based_on(document, "N1"), {"state": "done"})
@@ -231,6 +233,7 @@ class TestTwoWritersOnOneTable:
 
         assert _edit(changed, RowAddition({"note": "new"})).added_row_ids == ("N4",)
 
+    @pytest.mark.verifies("REQ@1795211662.TUp93X_")
     def test_the_second_change_of_one_row_is_refused_naming_the_row_and_both_values(self) -> None:
         document = _document()
         read_by_both = _based_on(document, "N1")

@@ -40,6 +40,7 @@ def _around(document: str, heading_line: str, following: str | None) -> tuple[st
 
 
 class TestASectionIsReplaced:
+    @pytest.mark.verifies("REQ@1795211662.TUp93X_")
     def test_the_text_under_the_heading_is_the_new_text_and_the_rest_is_byte_identical(self) -> None:
         before, after = _around(_DOCUMENT, "## Context\n", "## Decision")
 
