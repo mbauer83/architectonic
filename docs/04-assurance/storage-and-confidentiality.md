@@ -219,6 +219,10 @@ uv run arch-assurance rotate-key
 uv run arch-assurance export-key
 ```
 
+`rotate-key`, `init --force` and a restore over the store are refused while any process has the
+store open. Stop the backend that serves it (`arch-backend --stop`) or lock the store
+(`arch-assurance lock`) in every workspace that uses it, then run the command again.
+
 Backups are encrypted with the same key as the live database. Keep at least one backup and
 the recovery key in separate, durable locations.
 
