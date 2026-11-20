@@ -47,6 +47,11 @@ _LOCATING_CALLS = frozenset({
     "match", "fullmatch", "search", "sub", "subn", "compile", "split", "findall", "finditer",
 })
 
+#: Asking a parsed element for an attribute. For a syntax read out of a parsed tree this locates as
+#: surely as searching the markup does — but only for such a syntax: a mapping's `get` takes a key,
+#: and added for every row it reported a dictionary lookup of an icon fence's name as a reading of it.
+_ATTRIBUTE_LOOKUPS = frozenset({"get"})
+
 
 @dataclass(frozen=True)
 class SyntaxReader:
@@ -71,6 +76,8 @@ class SyntaxReader:
     reserved_module: str = ""
     #: A pattern that a literal must match to count as spelling this syntax.
     literal_probe: re.Pattern[str] | None = None
+    #: Calls that locate this syntax beyond `_LOCATING_CALLS`, where it is read some other way.
+    also_located_by: frozenset[str] = frozenset()
     #: Modules that legitimately read it anyway, each because of something this rule cannot see.
     exempt: frozenset[Path] = field(default_factory=frozenset)
 
@@ -152,6 +159,16 @@ _TABLE_PIPE = re.compile(r"\A(?:\^|\\A)?(?:\\s\*|\s*)\\?\|")
 #: The prefix of a provisional reference. A literal carrying it, handed to a locating call, is
 #: deciding where an alias begins. JSON Schema's bare `"$ref"` key has no colon and is not this.
 _PROVISIONAL_REFERENCE = re.compile(r"\$ref:")
+
+#: The attributes PlantUML names a drawn shape and a relation's two ends by. Any reading of a
+#: rendered picture's structure has to spell one of them, whether it asks an element for the
+#: attribute or searches the markup for it.
+_RENDERED_SHAPE_NAMING = re.compile(r"data-qualified-name|data-entity-[12]|data-link-type|data-diagram-type")
+
+#: The markers of the three boxes a renderer computes, as a test of what an alias is. Anchored to the
+#: start because that is the only place a marker means anything, and the underscore keeps the probe
+#: off prose that merely mentions a domain.
+_COMPUTED_BOX_MARKER = re.compile(r"\A\^?(DOM|GRPT|GRPA)_")
 
 SYNTAX_READERS: tuple[SyntaxReader, ...] = (
     SyntaxReader(
@@ -482,6 +499,44 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
         ),
         literal_probe=_STEREOTYPE_STYLING_HEAD,
     ),
+    SyntaxReader(
+        syntax="the structure of the SVG PlantUML renders — which group is a shape or a relation, and what names it",
+        owners=(
+            # One reading in two modules, split for length: the picture and its shapes, and a
+            # relation's ends. Both are reached only through `read_rendered_picture`.
+            Path("src/infrastructure/rendering/layout/plantuml_svg_reader.py"),
+            Path("src/infrastructure/rendering/layout/_svg_relations.py"),
+        ),
+        instead=(
+            "`src.infrastructure.rendering.layout.plantuml_svg_reader.read_rendered_picture`, which "
+            "answers a `RenderedPicture` by alias or a `NotReadable` naming what it met; resolve an "
+            "alias to an instance with `archimate_occurrences.instance_by_alias`"
+        ),
+        incident=(
+            "registered with its owner, because the structure is another project's output and not a "
+            "contract it has promised: a layout is harvested from this reading and written back, so a "
+            "second reader that kept going past a group it did not recognise would write a diagram "
+            "with elements silently missing — and the first reading of it here was a throwaway "
+            "harvest that did exactly that, skipping any relation whose end it could not find"
+        ),
+        literal_probe=_RENDERED_SHAPE_NAMING,
+        also_located_by=_ATTRIBUTE_LOOKUPS,
+    ),
+    SyntaxReader(
+        syntax="which kind of box an alias on a picture names — a domain's, a type's, an authored grouping's",
+        owners=(Path("src/domain/diagrams/layout/box_aliases.py"),),
+        instead=(
+            "`src.domain.diagrams.layout.box_aliases`: `domain_box_alias`, `type_box_alias` and "
+            "`authored_grouping_alias` to write one, `box_kind` to read one back"
+        ),
+        incident=(
+            "registered when the first reader arrived: the three markers were spelled in three "
+            "renderer modules and read by nothing, and a picture keeps nothing else of which box is "
+            "which. A reader spelling them a fourth time would have gone on calling a renamed box an "
+            "authored grouping, and a layout keyed by box kind would have filed it under the wrong rule"
+        ),
+        literal_probe=_COMPUTED_BOX_MARKER,
+    ),
 )
 
 #: What each row's exemptions cost today. A ratchet in the spirit of the project's other shrink-only
@@ -534,7 +589,9 @@ def _names_used(path: Path, reserved: frozenset[str], module: str) -> list[str]:
     return sorted(found)
 
 
-def _literals_deciding(path: Path, probe: re.Pattern[str]) -> list[str]:
+def _literals_deciding(
+    path: Path, probe: re.Pattern[str], also_located_by: frozenset[str] = frozenset()
+) -> list[str]:
     """Literals this file hands to a locating call that spell the syntax itself."""
     tree = ast.parse(path.read_text(encoding="utf-8"))
     found: set[str] = set()
@@ -542,7 +599,7 @@ def _literals_deciding(path: Path, probe: re.Pattern[str]) -> list[str]:
         if not isinstance(node, ast.Call):
             continue
         literal = _first_string_argument(node)
-        if literal is None or _called_name(node) not in _LOCATING_CALLS:
+        if literal is None or _called_name(node) not in _LOCATING_CALLS | also_located_by:
             continue
         if probe.search(literal):
             found.add(literal)
@@ -561,7 +618,7 @@ def _second_readers(reader: SyntaxReader) -> dict[str, list[str]]:
             else []
         )
         if reader.literal_probe is not None:
-            found += _literals_deciding(path, reader.literal_probe)
+            found += _literals_deciding(path, reader.literal_probe, reader.also_located_by)
         if found:
             offenders[str(relative)] = found
     return offenders

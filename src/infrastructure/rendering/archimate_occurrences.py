@@ -85,6 +85,20 @@ def instance_labels_by_alias(
     return by_alias
 
 
+def instance_by_alias(
+    diagram_entities: Mapping[str, object] | None, entity_by_id: Mapping[str, EntityRecord]
+) -> dict[str, str]:
+    """Every instance this diagram holds, by the alias it is drawn under: alias → instance id.
+
+    The way back from a picture. A rendered shape knows only the alias its declaration gave it;
+    this is how its geometry is attributed to an entity, or to one further occurrence of one.
+    """
+    return {
+        alias: instance_id
+        for instance_id, alias in _alias_by_instance(diagram_entities, entity_by_id).items()
+    }
+
+
 def _alias_by_instance(
     diagram_entities: Mapping[str, object] | None, entity_by_id: Mapping[str, EntityRecord]
 ) -> dict[str, str]:
