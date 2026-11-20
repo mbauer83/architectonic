@@ -165,6 +165,15 @@ _DESTINATION_NOTE = (
     "scratchpad_lift, one per frame. Any other value is refused."
 )
 
+#: Said on both write tools, because both are compared with the stored scratchpad the same way.
+_TRANSITION_NOTE = (
+    "\n\nThe write is compared with the stored scratchpad, and refused for what it would make a "
+    "note stop being: a note holding a `model-ref` keeps its type, specialization and destination "
+    "(drop the `model-ref` in the same write to free it — that unbinds a bound note and forgets a "
+    "realization); a `realized` note is not pointed at a different artifact; and the "
+    "`meta-ontology` does not change while any stored note is typed."
+)
+
 _REPLACE_DESCRIPTION = (
     "Replace a scratchpad whole. `scratchpad` is the document `scratchpad_read` returned, edited; "
     "`version` is the version you read it at. A mismatch is refused with `version_conflict` — "
@@ -177,7 +186,7 @@ _REPLACE_DESCRIPTION = (
     "Invariants the aggregate enforces: every note has a title; a link's endpoints are notes of "
     "this scratchpad and not the same note; a group's members lie in one area and a note belongs "
     "to at most one group; the meta-ontology may not change while any note is typed. A violation "
-    "is refused with the id at fault named." + _DESTINATION_NOTE
+    "is refused with the id at fault named." + _TRANSITION_NOTE + _DESTINATION_NOTE
 )
 
 _EDIT_DESCRIPTION = (
@@ -190,7 +199,7 @@ _EDIT_DESCRIPTION = (
     "or null to unplace}}.\n\n"
     "Removing a note takes its links, its group memberships and its placement with it. Nothing here "
     "retracts model content: deleting a `realized` note leaves the entity the lift created, and "
-    "clearing `model-ref` is how a note stops claiming one." + _DESTINATION_NOTE
+    "clearing `model-ref` is how a note stops claiming one." + _TRANSITION_NOTE + _DESTINATION_NOTE
 )
 
 _LIFT_DESCRIPTION = (

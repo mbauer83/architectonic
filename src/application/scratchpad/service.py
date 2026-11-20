@@ -38,6 +38,7 @@ from src.domain.scratchpad import (
     Note,
     Rect,
     Scratchpad,
+    refuse_forbidden_transitions,
     scratchpad_from_parts,
 )
 
@@ -133,9 +134,18 @@ class ScratchpadService:
         Whole rather than by part because the root enforces the invariants: a partial update cannot
         be validated without loading everything anyway, and one shape removes the class of bug where
         two partial updates interleave into a state neither writer intended.
+
+        A whole document says what the scratchpad should *be*, and the aggregate also has rules
+        about what it may *stop being* — a realized note is not retyped, the meta-ontology does not
+        change under typed notes. Those are asked here, of the stored scratchpad against the
+        submitted one, so they hold for every write rather than only for a caller of the mutation
+        that states them.
         """
-        scratchpad.validate()
-        return self._repository.save(scratchpad, group=group, expected_version=expected_version)
+        self._repository.require_version(scratchpad.artifact_id, expected_version)
+        return self._written(
+            self._repository.load(scratchpad.artifact_id), scratchpad,
+            group=group, expected_version=expected_version,
+        )
 
     def edit(
         self, artifact_id: str, *, edit: ScratchpadEdit, expected_version: str
@@ -147,12 +157,20 @@ class ScratchpadService:
         second door into storage — the delta becomes an aggregate and takes the identical path, so
         the invariants, the refusals and the version token are the same code, not the same intent.
         """
+        self._repository.require_version(artifact_id, expected_version)
         stored = self._repository.load(artifact_id)
-        return self.replace(
-            apply_edit(stored, edit),
-            group=self._repository.group_of(artifact_id),
-            expected_version=expected_version,
+        return self._written(
+            stored, apply_edit(stored, edit),
+            group=self._repository.group_of(artifact_id), expected_version=expected_version,
         )
+
+    def _written(
+        self, stored: Scratchpad, submitted: Scratchpad, *, group: str, expected_version: str
+    ) -> Scratchpad:
+        """The one write both shapes end in: the transition is permitted, the result holds."""
+        refuse_forbidden_transitions(stored, submitted)
+        submitted.validate()
+        return self._repository.save(submitted, group=group, expected_version=expected_version)
 
     def delete(self, artifact_id: str) -> None:
         self._repository.delete(artifact_id)

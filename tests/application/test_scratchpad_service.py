@@ -249,3 +249,80 @@ class TestListAndDelete:
         service.delete(created.artifact_id)
 
         assert service.list_scratchpads() == []
+
+
+class TestAWriteIsHeldToTheAggregatesTransitions:
+    """`replace` and `edit` rebuilt the aggregate from the submitted document and validated only
+    the result, so a rule about what a note may *stop being* was run by no write at all."""
+
+    def _stored(self, service: ScratchpadService, **note_fields: object):
+        from src.domain.scratchpad import Note
+
+        created = _new(service)
+        note = Note(id="n1", title="A", **note_fields)  # type: ignore[arg-type]
+        # Through the repository, as a lift records a realization — not through `replace`.
+        return service._repository.save(  # noqa: SLF001
+            created.with_note(note), group="strategy-and-value", expected_version=created.version
+        )
+
+    def _realized(self, service: ScratchpadService):
+        from src.domain.scratchpad import ModelRef
+
+        return self._stored(
+            service, destination="element", element_type="requirement",
+            model_ref=ModelRef("REQ@1.a.x", "realized"),
+        )
+
+    def test_a_replace_may_not_change_the_meta_ontology_under_a_typed_note(
+        self, service: ScratchpadService
+    ) -> None:
+        from dataclasses import replace as dataclass_replace
+
+        stored = self._stored(service, destination="element", element_type="requirement")
+
+        with pytest.raises(ScratchpadError, match="cannot change meta-ontology while notes are typed"):
+            service.replace(
+                dataclass_replace(stored, meta_ontology="sysml-v2-min"),
+                group="strategy-and-value", expected_version=stored.version,
+            )
+        assert service.read(stored.artifact_id).meta_ontology == "archimate-4"
+
+    def test_a_replace_may_not_retype_a_realized_note(self, service: ScratchpadService) -> None:
+        from dataclasses import replace as dataclass_replace
+
+        stored = self._realized(service)
+        retyped = dataclass_replace(
+            stored, notes=(dataclass_replace(stored.note("n1"), element_type="goal"),)
+        )
+
+        with pytest.raises(
+            ScratchpadError, match="takes its type from 'REQ@1.a.x'; forget the realization first"
+        ):
+            service.replace(retyped, group="strategy-and-value", expected_version=stored.version)
+        assert service.read(stored.artifact_id).note("n1").element_type == "requirement"
+
+    def test_an_edit_may_not_retype_a_realized_note(self, service: ScratchpadService) -> None:
+        from src.application.scratchpad.edit import ScratchpadEdit
+
+        stored = self._realized(service)
+
+        with pytest.raises(ScratchpadError, match="takes its type from 'REQ@1.a.x'"):
+            service.edit(
+                stored.artifact_id,
+                edit=ScratchpadEdit(upsert={"notes": [{"id": "n1", "element-type": "goal"}]}),
+                expected_version=stored.version,
+            )
+
+    def test_a_stale_writer_is_told_so_before_being_told_anything_else(
+        self, service: ScratchpadService
+    ) -> None:
+        """The comparison is against a state a stale writer has not seen, so the conflict leads."""
+        from dataclasses import replace as dataclass_replace
+
+        stored = self._realized(service)
+        retyped = dataclass_replace(
+            stored, notes=(dataclass_replace(stored.note("n1"), element_type="goal"),)
+        )
+
+        with pytest.raises(ScratchpadVersionConflictError):
+            service.replace(retyped, group="strategy-and-value", expected_version="0.0.1")

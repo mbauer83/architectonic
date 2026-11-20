@@ -21,7 +21,12 @@ from __future__ import annotations
 
 import ast
 import inspect
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
+
+import pytest
+from fastapi.testclient import TestClient
 
 from src.application.scratchpad.service import ScratchpadService
 from src.infrastructure.rest.route_policy import ROUTE_POLICY
@@ -164,3 +169,103 @@ def test_both_surfaces_write_the_whole_aggregate_and_carry_a_version() -> None:
             assert absent not in source, (
                 f"{module.name} offers a per-item write ({absent}); both surfaces read-modify-replace"
             )
+
+
+# ── The two surfaces refuse the same writes, in the same words ───────────────────────────────────
+#
+# The scan above holds the surfaces equal as sets of capabilities. What follows drives both against
+# one repository, because a refusal is the part of a capability an agent and a person most need to
+# agree on: the sentence names the note at fault and says what to do instead, and it is the
+# aggregate's — so neither surface may reword it, and neither may let through what the other stops.
+
+#: (what is attempted, the write shape, what changes) — each a transition the aggregate's own
+#: mutations refuse.
+_REFUSED_WRITES: list[tuple[str, str, dict[str, Any]]] = [
+    ("retype a realized note", "replace", {"notes": {"lifted": {"element-type": "goal"}}}),
+    ("retype a realized note", "edit", {"notes": [{"id": "lifted", "element-type": "goal"}]}),
+    ("untype a bound note", "edit", {"notes": [{"id": "bound", "element-type": None}]}),
+    ("send a realized note to a document", "edit", {"notes": [{
+        "id": "lifted", "destination": "document", "element-type": None, "document-type": "adr",
+    }]}),
+    ("re-bind a realized note", "replace", {"notes": {"lifted": {
+        "model-ref": {"artifact-id": "REQ@1.b.other", "kind": "bound"},
+    }}}),
+    ("change the meta-ontology under typed notes", "replace", {"meta-ontology": "sysml-v2-min"}),
+]
+
+
+@pytest.fixture
+def one_repository(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[tuple[TestClient, str, str]]:
+    """A REST client and a repository root over the same stored scratchpad, which holds a realized
+    note and a bound one — written through the repository, as a lift records them."""
+    from src.domain.scratchpad import ModelRef, Note, scratchpad_from_parts
+    from src.infrastructure.rest.routers import scratchpads as scratchpad_router
+    from src.infrastructure.rest.routers import state as rest_state
+    from src.infrastructure.scratchpad.yaml_repository import YamlScratchpadRepository
+    from tests.support.api_app import build_api_app
+
+    repo_root = tmp_path / "architecture-repository"
+    repo_root.mkdir()
+    stored = YamlScratchpadRepository(repo_root).save(
+        scratchpad_from_parts(artifact_id="SCR@1.a.pad", name="Pad", notes=[
+            Note(id="lifted", title="Lifted", destination="element", element_type="requirement",
+                 model_ref=ModelRef("REQ@1.a.x", "realized")),
+            Note(id="bound", title="Bound", destination="element", element_type="capability",
+                 model_ref=ModelRef("CAP@1.a.x", "bound")),
+        ]),
+        group="thinking",
+    )
+    monkeypatch.setattr(rest_state, "maybe_engagement_root", lambda: repo_root)
+    monkeypatch.setattr(
+        rest_state, "authorized_write", lambda _operation_id, fn, *args, **kwargs: fn(*args, **kwargs)
+    )
+    with TestClient(build_api_app(scratchpad_router.router)) as client:
+        yield client, str(repo_root), stored.artifact_id
+
+
+def _replaced(document: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
+    """The read document with *changes* applied, as a caller editing what it read would send it."""
+    patched = {key: value for key, value in document.items() if key not in ("group", "notes")}
+    patched.update({key: value for key, value in changes.items() if key != "notes"})
+    per_note: dict[str, dict[str, Any]] = changes.get("notes", {})
+    patched["notes"] = [{**note, **per_note.get(note["id"], {})} for note in document["notes"]]
+    return patched
+
+
+@pytest.mark.parametrize(("attempt", "shape", "changes"), _REFUSED_WRITES)
+def test_both_surfaces_refuse_a_forbidden_transition_in_the_same_words(
+    one_repository: tuple[TestClient, str, str], attempt: str, shape: str, changes: dict[str, Any]
+) -> None:
+    from src.infrastructure.mcp.artifact_mcp.scratchpad_tools import (
+        scratchpad_edit,
+        scratchpad_replace,
+    )
+
+    client, repo_root, artifact_id = one_repository
+    address = f"/api/scratchpads/{artifact_id}"
+    read = client.get(address).json()
+
+    if shape == "replace":
+        document = _replaced(read, changes)
+        over_rest = client.put(address, json={
+            "version": read["version"], "group": read["group"], "scratchpad": document,
+        })
+        over_mcp = scratchpad_replace(
+            artifact_id=artifact_id, scratchpad=document, version=read["version"],  # type: ignore[arg-type]
+            repo_root=repo_root,
+        )
+    else:
+        over_rest = client.patch(address, json={"version": read["version"], "upsert": changes})
+        over_mcp = scratchpad_edit(
+            artifact_id=artifact_id, version=read["version"], upsert=changes,  # type: ignore[arg-type]
+            repo_root=repo_root,
+        )
+
+    assert over_rest.status_code == 400, f"REST let through: {attempt} — {over_rest.text}"
+    assert over_mcp["ok"] is False, f"MCP let through: {attempt}"
+    assert over_mcp["error"] == "refused"
+    assert over_rest.json()["detail"]["message"] == over_mcp["message"]
+    # Refused, so nothing moved: the version both were written against is still the store's.
+    assert client.get(address).json()["version"] == read["version"]

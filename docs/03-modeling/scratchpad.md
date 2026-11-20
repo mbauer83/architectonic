@@ -362,6 +362,18 @@ The invariants a write is refused for, each naming the id at fault:
 - a group's members lie in one area, and a note belongs to at most one group;
 - the meta-ontology may not change while any note is typed.
 
+A write is also refused for what it would make a note **stop being**. Both shapes are compared with
+the stored scratchpad, and the refusal names the note and says what to do instead:
+
+- a bound or realized note keeps its type, its specialization and its destination — unbind it, or
+  forget the realization, first;
+- a realized note is not pointed at a different artifact — forget the realization first;
+- a bound note is unbound by dropping `model-ref` together with its type; dropping the type alone is
+  refused.
+
+Dropping `model-ref` and changing the type in the same write is permitted: the note stops claiming
+the model content, and is then free.
+
 &nbsp;
 
 ## Finding a note again

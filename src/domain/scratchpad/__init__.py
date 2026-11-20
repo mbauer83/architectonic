@@ -24,6 +24,7 @@ from src.domain.scratchpad.parts import (
     parse_destination,
 )
 from src.domain.scratchpad.scratchpad import Scratchpad, scratchpad_from_parts
+from src.domain.scratchpad.transitions import refuse_forbidden_transitions
 
 __all__ = [
     "GRID",
@@ -47,6 +48,7 @@ __all__ = [
     "ScratchpadError",
     "TypingOptions",
     "VerdictKind",
+    "refuse_forbidden_transitions",
     "scratchpad_from_parts",
     "snap",
     "snap_point",

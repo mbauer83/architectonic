@@ -39,6 +39,15 @@ from src.domain.scratchpad.parts import (
     Note,
     ScratchpadError,
 )
+from src.domain.scratchpad.transitions import (
+    refuse_binding,
+    refuse_changing_meta_ontology,
+    refuse_documenting,
+    refuse_forgetting,
+    refuse_retyping,
+    refuse_unbinding,
+    refuse_untyping,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -167,11 +176,7 @@ class Scratchpad:
         note = self.note(note_id)
         if note is None:
             raise ScratchpadError(f"no note {note_id!r} in this scratchpad")
-        if note.model_ref is not None:
-            verb = "unbind it" if note.model_ref.kind == "bound" else "forget the realization"
-            raise ScratchpadError(
-                f"note {note_id!r} takes its type from {note.model_ref.artifact_id!r}; {verb} first"
-            )
+        refuse_retyping(note)
         return self.with_note(replace(
             note, destination="element", element_type=element_type, specialization=specialization
         ))
@@ -190,11 +195,7 @@ class Scratchpad:
         note = self.note(note_id)
         if note is None:
             raise ScratchpadError(f"no note {note_id!r} in this scratchpad")
-        if note.model_ref is not None:
-            verb = "unbind it" if note.model_ref.kind == "bound" else "forget the realization"
-            raise ScratchpadError(
-                f"note {note_id!r} takes its type from {note.model_ref.artifact_id!r}; {verb} first"
-            )
+        refuse_retyping(note)
         return self.with_note(replace(
             note,
             destination="element",
@@ -215,12 +216,7 @@ class Scratchpad:
         note = self.note(note_id)
         if note is None:
             raise ScratchpadError(f"no note {note_id!r} in this scratchpad")
-        if note.model_ref is not None:
-            verb = "unbind it" if note.model_ref.kind == "bound" else "forget the realization"
-            raise ScratchpadError(
-                f"note {note_id!r} is tied to {note.model_ref.artifact_id!r}; {verb} before "
-                "sending it to a document"
-            )
+        refuse_documenting(note)
         return self.with_note(replace(
             note,
             destination="document",
@@ -241,11 +237,7 @@ class Scratchpad:
         note = self.note(note_id)
         if note is None:
             raise ScratchpadError(f"no note {note_id!r} in this scratchpad")
-        if note.model_ref is not None:
-            verb = "unbind it" if note.model_ref.kind == "bound" else "forget the realization"
-            raise ScratchpadError(
-                f"note {note_id!r} is tied to {note.model_ref.artifact_id!r}; {verb} before untyping"
-            )
+        refuse_untyping(note)
         # Links touching it lose their type too: a typed link between an untyped end and anything
         # is a claim the aggregate can no longer support.
         return self._validated(replace(
@@ -273,10 +265,7 @@ class Scratchpad:
         note = self.note(note_id)
         if note is None:
             raise ScratchpadError(f"no note {note_id!r} in this scratchpad")
-        if note.model_ref is None or note.model_ref.kind != "realized":
-            raise ScratchpadError(
-                f"note {note_id!r} is not realized; there is no realization to forget"
-            )
+        refuse_forgetting(note)
         return self.with_note(replace(note, model_ref=None))
 
     def bound(self, note_id: str, *, artifact_id: str, element_type: str) -> Scratchpad:
@@ -290,11 +279,7 @@ class Scratchpad:
         note = self.note(note_id)
         if note is None:
             raise ScratchpadError(f"no note {note_id!r} in this scratchpad")
-        if note.model_ref is not None and note.model_ref.kind == "realized":
-            raise ScratchpadError(
-                f"note {note_id!r} was realized as {note.model_ref.artifact_id!r}; forget the "
-                "realization before binding it to something else"
-            )
+        refuse_binding(note)
         return self.with_note(replace(
             note,
             destination="element",
@@ -312,13 +297,7 @@ class Scratchpad:
         note = self.note(note_id)
         if note is None:
             raise ScratchpadError(f"no note {note_id!r} in this scratchpad")
-        if note.model_ref is None:
-            raise ScratchpadError(f"note {note_id!r} is not bound to anything")
-        if note.model_ref.kind == "realized":
-            raise ScratchpadError(
-                f"note {note_id!r} is realized as {note.model_ref.artifact_id!r}, not bound; "
-                "forget the realization instead — unbinding would misdescribe what happened"
-            )
+        refuse_unbinding(note)
         return self.with_note(replace(
             note, destination="undecided", domain=None, element_type=None, specialization=None,
             model_ref=None,
@@ -331,12 +310,9 @@ class Scratchpad:
         The state is reachable rather than a trap: forget realizations, unbind bindings, untype the
         rest (slice 3), and this opens again.
         """
-        typed = [note.id for note in self.notes if note.element_type or note.document_type]
-        if typed and meta_ontology != self.meta_ontology:
-            raise ScratchpadError(
-                f"cannot change meta-ontology while notes are typed: {sorted(typed)}. "
-                "Untype them first — a realized note must be forgotten and a bound note unbound."
-            )
+        refuse_changing_meta_ontology(
+            self.notes, current=self.meta_ontology, proposed=meta_ontology
+        )
         return self._validated(replace(self, meta_ontology=meta_ontology))
 
     def _validated(self, candidate: Scratchpad) -> Scratchpad:
