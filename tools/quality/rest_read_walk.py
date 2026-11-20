@@ -123,6 +123,11 @@ READ_STEPS: tuple[ReadStep, ...] = (
         "a DownloadMenu click no browser spec makes",
     ),
     ReadStep(
+        "documents_list_document_tables",
+        lambda b: f"/api/documents/{_q(b.workspace.tabled_document)}/tables",
+        "a typed table's rows as values, which a row edit is based on; no view edits a row in place yet",
+    ),
+    ReadStep(
         "documents_read_document_schemata",
         lambda _b: "/api/document-schemata",
         "the raw frontmatter_schema; the GUI uses the curated /api/document-types instead",

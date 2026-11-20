@@ -2,22 +2,28 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
+from src.application.artifacts.document_part_edits import RowChangedSinceRead
 from src.application.artifacts.document_schema import (
     REQUIRED_CONNECTIONS_KEY,
     SUGGESTED_CONNECTIONS_KEY,
+    get_document_schema_object,
     get_document_subdirectory,
     load_document_schemata,
 )
+from src.application.artifacts.document_table_rows import DocumentTables, read_document_tables
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING
 from src.infrastructure.rest.contracts.artifact_home import FiledOnCreate, Rehomeable
 from src.infrastructure.rest.contracts.authoring_catalogs import DocumentTypeListResponse
+from src.infrastructure.rest.contracts.document_tables import DocumentTablesResponse
 from src.infrastructure.rest.contracts.documents import (
     DocumentDetailResponse,
     DocumentListResponse,
@@ -25,10 +31,19 @@ from src.infrastructure.rest.contracts.documents import (
 )
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
+from src.infrastructure.rest.routers._document_parts import (
+    EditDocumentTableRequest,
+    SectionEditBody,
+    TextReplacementBody,
+    stated_part,
+    table_row_edits,
+    tables_as_served,
+)
 from src.infrastructure.rest.routers._openapi import (
     READ_RESPONSES,
     TAG_DOCUMENTS,
     WRITE_RESPONSES,
+    DocumentTableWriteResponse,
     WriteResultResponse,
 )
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
@@ -50,7 +65,11 @@ class CreateDocumentRequest(FiledOnCreate):
 
 class EditDocumentRequest(Rehomeable):
     title: str | None = None
+    #: The whole body. To change part of it, send `section` or `replace` instead: the rest of the
+    #: stored file is then left byte for byte.
     body: str | None = None
+    section: SectionEditBody | None = None
+    replace: TextReplacementBody | None = None
     keywords: list[str] | None = None
     extra_frontmatter: dict[str, object] | None = None
     status: str | None = None
@@ -222,22 +241,47 @@ def create_document(req: CreateDocumentRequest, response: Response,
     return s.write_result_to_dict(result)
 
 
+@contextmanager
+def _refusals_as_their_statuses() -> Iterator[None]:
+    """A document write's refusals, each as the status it is. One place, for every document edit.
+
+    The refusals are the caller's, and none was translated: a bare `ValueError` reached the error
+    middleware and became a non-disclosing 500, so "you named a document that is not there" was
+    indistinguishable from "the server broke" — on the one status a client can neither retry nor
+    correct for. The entity edit beside it has always done this; the document edit never did, and
+    nothing noticed because nothing had ever requested the route.
+    """
+    from src.infrastructure.write.artifact_write.document import DocumentNotFoundError
+
+    try:
+        yield
+    except DocumentNotFoundError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except RowChangedSinceRead as exc:
+        # Another writer changed the row first. A conflict and not a bad request: the same edit,
+        # made on what the row holds now, is a good one.
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
 @router.patch("/api/documents/{artifact_id}", tags=[TAG_DOCUMENTS], summary="Edit a document",
     response_model=WriteResultResponse, responses=WRITE_RESPONSES)
 def edit_document(artifact_id: str, req: EditDocumentRequest,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
-    from src.infrastructure.write.artifact_write.document import DocumentNotFoundError
+    """Edit a document's fields, its whole body, or one part of its body.
+
+    `section` replaces what stands under one heading; `replace` replaces an exact text that must
+    occur as often as `expected_matches` says. Either leaves the rest of the stored file byte for
+    byte. A link may be written with an artifact id where its path would go — `[label](ADR@…)` —
+    and is stored as the relative path.
+    """
     from src.infrastructure.write.artifact_write.document import edit_document as _edit
 
     repo_root, registry, verifier = s.get_write_deps(catalogs)
 
-    # Both refusals are the caller's, and neither was translated: a bare `ValueError` reached the
-    # error middleware and became a non-disclosing 500, so "you named a document that is not there"
-    # was indistinguishable from "the server broke" — on the one status a client can neither retry
-    # nor correct for. The entity edit beside it has always done this; the document edit never did,
-    # and nothing noticed because nothing had ever requested the route.
-    try:
+    with _refusals_as_their_statuses():
         result = s.authorized_write(
             "documents_update_document",
             _edit,
@@ -252,6 +296,7 @@ def edit_document(artifact_id: str, req: EditDocumentRequest,
             title=req.title,
             group=req.group,
             body=req.body,
+            part=stated_part(req.section, req.replace),
             keywords=req.keywords,
             extra_frontmatter=req.extra_frontmatter,
             status=req.status,
@@ -259,11 +304,70 @@ def edit_document(artifact_id: str, req: EditDocumentRequest,
             last_updated=req.last_updated,
             dry_run=req.dry_run,
         )
-    except DocumentNotFoundError as exc:
-        raise HTTPException(404, str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(400, str(exc)) from exc
     return s.write_result_to_dict(result)
+
+
+def _tables_of(artifact_id: str) -> DocumentTables:
+    doc = s.get_repo().get_document(artifact_id)
+    if doc is None:
+        raise HTTPException(404, f"Not found: {artifact_id!r}")
+    schema = get_document_schema_object(_get_engagement_root(), doc.doc_type)
+    if schema is None:
+        return DocumentTables()
+    return read_document_tables(doc.path, doc.path.read_text(encoding="utf-8"), schema)
+
+
+@router.get("/api/documents/{artifact_id}/tables", tags=[TAG_DOCUMENTS],
+    summary="Read the rows of a document's typed tables",
+    response_model=DocumentTablesResponse, responses=READ_RESPONSES)
+def list_document_tables(artifact_id: str) -> dict[str, Any]:
+    """Each table the document's type declares, with the rows this document holds of it.
+
+    A row's `values` are what an edit of that row states as `based_on`.
+    """
+    return tables_as_served(_tables_of(artifact_id))
+
+
+@router.patch("/api/documents/{artifact_id}/tables/{table}", tags=[TAG_DOCUMENTS],
+    summary="Add, change and remove rows of a document's typed table",
+    response_model=DocumentTableWriteResponse, responses=WRITE_RESPONSES)
+def edit_document_table(artifact_id: str, table: str, req: EditDocumentTableRequest,
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
+    """Edit rows of one declared table by row id, leaving every other line of the document as it is.
+
+    A change or a removal states the row it was based on. Where the row has since changed, the
+    request is refused with 409 naming the row and both values, and nothing is written; edits of
+    other rows are unaffected by it. An added row takes the next id, answered in `added_row_ids`.
+    """
+    from src.infrastructure.write.artifact_write.document import edit_document as _edit
+
+    repo_root, registry, verifier = s.get_write_deps(catalogs)
+
+    # The same write function as the edit above, stating a part and no field: a row edit is a
+    # document edit, verified and gated as one.
+    with _refusals_as_their_statuses():
+        result = s.authorized_write(
+            "documents_update_document_table",
+            _edit,
+            assert_write_root=assert_engagement_write_root,
+            repo_root=repo_root,
+            verifier=verifier,
+            clear_repo_caches=s.clear_caches,
+            artifact_id=artifact_id,
+            registry=registry,
+            repo=s.maybe_get_repo(),
+            part=table_row_edits(table, req),
+            title=None,
+            body=None,
+            keywords=None,
+            extra_frontmatter=None,
+            status=None,
+            version=None,
+            last_updated=None,
+            dry_run=req.dry_run,
+        )
+    return s.write_result_to_dict(result) | {"added_row_ids": list(getattr(result, "added_row_ids", []))}
 
 
 #: A committed deletion has nothing to report, so 204 is the declared status and there is no

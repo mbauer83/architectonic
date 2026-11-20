@@ -1985,8 +1985,62 @@ export interface paths {
         delete: operations["documents_delete_document"];
         options?: never;
         head?: never;
-        /** Edit a document */
+        /**
+         * Edit a document
+         * @description Edit a document's fields, its whole body, or one part of its body.
+         *
+         *     `section` replaces what stands under one heading; `replace` replaces an exact text that must
+         *     occur as often as `expected_matches` says. Either leaves the rest of the stored file byte for
+         *     byte. A link may be written with an artifact id where its path would go — `[label](ADR@…)` —
+         *     and is stored as the relative path.
+         */
         patch: operations["documents_update_document"];
+        trace?: never;
+    };
+    "/api/documents/{artifact_id}/tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the rows of a document's typed tables
+         * @description Each table the document's type declares, with the rows this document holds of it.
+         *
+         *     A row's `values` are what an edit of that row states as `based_on`.
+         */
+        get: operations["documents_list_document_tables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{artifact_id}/tables/{table}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Add, change and remove rows of a document's typed table
+         * @description Edit rows of one declared table by row id, leaving every other line of the document as it is.
+         *
+         *     A change or a removal states the row it was based on. Where the row has since changed, the
+         *     request is refused with 409 naming the row and both values, and nothing is written; edits of
+         *     other rows are unaffected by it. An added row takes the next id, answered in `added_row_ids`.
+         */
+        patch: operations["documents_update_document_table"];
         trace?: never;
     };
     "/api/entities": {
@@ -3236,6 +3290,18 @@ export interface components {
             source_id: string;
             /** Target Id */
             target_id: string;
+        };
+        /** AddRowBody */
+        AddRowBody: {
+            /** Cells */
+            cells?: {
+                [key: string]: string | boolean | number | (string | boolean | number)[] | null;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "add";
         };
         /** AdminAddConnectionBody */
         AdminAddConnectionBody: {
@@ -5443,6 +5509,24 @@ export interface components {
             /** Summary */
             summary: string;
         };
+        /** ChangeRowBody */
+        ChangeRowBody: {
+            /** Based On */
+            based_on: {
+                [key: string]: string | boolean | number | (string | boolean | number)[] | null;
+            };
+            /** Cells */
+            cells: {
+                [key: string]: string | boolean | number | (string | boolean | number)[] | null;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "change";
+            /** Row Id */
+            row_id: string;
+        };
         /**
          * ChangeSubmitRequest
          * @description The changes to submit, in the order they are to be replayed.
@@ -7551,6 +7635,68 @@ export interface components {
             row_id_title: string;
         };
         /**
+         * DocumentTableRow
+         * @description One row of a typed table as a document holds it.
+         */
+        DocumentTableRow: {
+            /** Row Id */
+            row_id: string;
+            /** Unreadable */
+            unreadable: {
+                [key: string]: string;
+            };
+            /** Values */
+            values: {
+                [key: string]: string | boolean | number | (string | boolean | number)[];
+            };
+        };
+        /**
+         * DocumentTableRows
+         * @description One declared table and the rows this document holds of it.
+         */
+        DocumentTableRows: {
+            /** Found */
+            found: boolean;
+            /** Missing Columns */
+            missing_columns: string[];
+            /** Name */
+            name: string;
+            /** Rows */
+            rows: components["schemas"]["DocumentTableRow"][];
+            /** Section */
+            section: string;
+            /** Undeclared Columns */
+            undeclared_columns: string[];
+        };
+        /**
+         * DocumentTablesResponse
+         * @description Every table the document's type declares, as this document holds it. Empty for a type that
+         *     declares none.
+         */
+        DocumentTablesResponse: {
+            /** Tables */
+            tables: components["schemas"]["DocumentTableRows"][];
+        };
+        /**
+         * DocumentTableWriteResponse
+         * @description A write of rows of a document's typed table: the write result, and the ids the added rows took.
+         */
+        DocumentTableWriteResponse: {
+            /** Added Row Ids */
+            added_row_ids: string[];
+            /** Artifact Id */
+            artifact_id: string;
+            /** Content */
+            content: string | null;
+            /** Path */
+            path: string;
+            verification: components["schemas"]["WriteVerificationResponse"] | null;
+            /** Warnings */
+            warnings: string[];
+            /** Wrote */
+            wrote: boolean;
+        };
+        /**
          * DocumentTypeListResponse
          * @description Every document type this repository declares, in type order.
          *
@@ -7712,12 +7858,24 @@ export interface components {
             keywords?: string[] | null;
             /** Last Updated */
             last_updated?: string | null;
+            replace?: components["schemas"]["TextReplacementBody"] | null;
+            section?: components["schemas"]["SectionEditBody"] | null;
             /** Status */
             status?: string | null;
             /** Title */
             title?: string | null;
             /** Version */
             version?: string | null;
+        };
+        /** EditDocumentTableRequest */
+        EditDocumentTableRequest: {
+            /**
+             * Dry Run
+             * @default true
+             */
+            dry_run: boolean;
+            /** Rows */
+            rows: (components["schemas"]["AddRowBody"] | components["schemas"]["ChangeRowBody"] | components["schemas"]["RemoveRowBody"])[];
         };
         /** EditedInstanceBody */
         EditedInstanceBody: {
@@ -11158,6 +11316,20 @@ export interface components {
             /** Notes */
             notes?: string[];
         };
+        /** RemoveRowBody */
+        RemoveRowBody: {
+            /** Based On */
+            based_on: {
+                [key: string]: string | boolean | number | (string | boolean | number)[] | null;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "remove";
+            /** Row Id */
+            row_id: string;
+        };
         /** RenameGroupBody */
         RenameGroupBody: {
             /** Name */
@@ -11532,6 +11704,16 @@ export interface components {
              * @default
              */
             notes: string;
+        };
+        /**
+         * SectionEditBody
+         * @description Replace what stands under one heading; the rest of the document is left byte for byte.
+         */
+        SectionEditBody: {
+            /** Heading Path */
+            heading_path: string[];
+            /** Text */
+            text: string;
         };
         /** SecurityComponentListResponse */
         SecurityComponentListResponse: {
@@ -12254,6 +12436,21 @@ export interface components {
             root_id: string;
             /** Via Outcome Id */
             via_outcome_id: string | null;
+        };
+        /**
+         * TextReplacementBody
+         * @description Replace an exact text of the body, refused unless it occurs as often as expected.
+         */
+        TextReplacementBody: {
+            /**
+             * Expected Matches
+             * @default 1
+             */
+            expected_matches: number;
+            /** Find */
+            find: string;
+            /** Replacement */
+            replacement: string;
         };
         /**
          * TraceBranchesRefSpec
@@ -19596,6 +19793,145 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WriteResultResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_list_document_tables: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTablesResponse"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_update_document_table: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+                table: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditDocumentTableRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTableWriteResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */

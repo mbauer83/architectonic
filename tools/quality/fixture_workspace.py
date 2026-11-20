@@ -86,6 +86,24 @@ _ADR_BODY = (
 )
 
 
+#: A document type that declares a typed table, and the table it declares. Written into the fixture
+#: because no shipped document type declares one, and a row edit has nothing to address without one:
+#: the two operations on a document's tables would otherwise be reachable by no walk.
+REGISTER_DOC_TYPE = "fixture-register"
+REGISTER_TABLE = "entries"
+_REGISTER_SCHEMA = {
+    "abbreviation": "REG",
+    "name": "Fixture register",
+    "subdirectory": "registers",
+    "sections": [
+        {
+            "name": "Entries",
+            "tables": [{"name": REGISTER_TABLE, "row_id": "R", "columns": [{"name": "entry", "required": True}]}],
+        }
+    ],
+}
+
+
 @dataclass(frozen=True)
 class _AssuranceRoles:
     """What the fixture authored into the confidential store, addressed by role.
@@ -232,6 +250,11 @@ class FixtureWorkspace:
         wanting *this* diagram has to say so.
         """
         return self.authored["application_diagram"][0]
+
+    @property
+    def tabled_document(self) -> str:
+        """A document whose type declares a typed table — what a row edit and a row read address."""
+        return self.authored["tabled_document"][0]
 
     @property
     def assurance(self) -> _AssuranceRoles:
@@ -493,6 +516,9 @@ def _prepare_roots(root: Path) -> tuple[Path, Path]:
     for path in (engagement, enterprise):
         (path / "model").mkdir(parents=True, exist_ok=True)
         ensure_arch_repo_defaults(path)
+    # Declared before anything is written: the document types of a repository are read once.
+    schema = engagement / ".arch-repo" / "documents" / f"{REGISTER_DOC_TYPE}.json"
+    schema.write_text(json.dumps(_REGISTER_SCHEMA, indent=2) + "\n", encoding="utf-8")
     return engagement, enterprise
 
 
@@ -606,6 +632,17 @@ def build_fixture_workspace(root: Path) -> FixtureWorkspace:
         ),
         "sparse document",
     ))
+
+    # ── A document holding a typed table, scaffolded empty, so a row has a table to be added to ──
+    authored["tabled_document"] = [record("document", _wrote(
+        write.artifact_create_document(
+            doc_type=REGISTER_DOC_TYPE,
+            title="Fixture Register",
+            dry_run=False,
+            repo_root=where,
+        ),
+        "document holding a typed table",
+    ))]
 
     # ── A diagram, so diagram reads and the render path have a subject ───────────────────────────
     authored["application_diagram"] = [record("diagram", _wrote(
