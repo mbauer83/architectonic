@@ -14,6 +14,7 @@ from collections.abc import Mapping
 from src.application.repository_upgrade.ports import UpgradeStep
 from src.application.repository_upgrade.steps.connection_metadata_scan import ConnectionMetadataScanStep
 from src.application.repository_upgrade.steps.default_schemata_ensure import DefaultSchemataEnsureStep
+from src.application.repository_upgrade.steps.diagram_identity_keys import DiagramIdentityKeysStep
 from src.application.repository_upgrade.steps.group_meta_ontology_rename import GroupMetaOntologyRenameStep
 from src.application.repository_upgrade.steps.modification_stamp_datetime import (
     ModificationStampDatetimeStep,
@@ -47,8 +48,10 @@ from src.domain.repository.repository_upgrade import StepIdentity
 # `last-updated` stamp on top of "2" (named attribute profiles, multiple specializations,
 # connection metadata, AI-BOM default schemata). "4" adds ranked (`x-scale: ordinal`) attribute
 # enums, which change how an existing repo's severity-like values sort. "5" adds the reference
-# respelling a cascading rename now keeps current, which an older repo never had.
-FORMAT_CONTRACT_VERSION = "5"
+# respelling a cascading rename now keeps current, which an older repo never had. "6" gives every
+# diagram grouping an id of its own and keys an edge label by the relation it labels; a diagram in
+# the earlier form is refused by verification until it is upgraded.
+FORMAT_CONTRACT_VERSION = "6"
 
 
 class StepRegistry:
@@ -73,6 +76,7 @@ def build_registry(selection_resolutions: Mapping[str, SelectionMode] | None = N
     registry = StepRegistry()
     registry.register(MultiplicityRenameStep())
     registry.register(GroupMetaOntologyRenameStep())
+    registry.register(DiagramIdentityKeysStep())
     registry.register(UnrecognizedStructureScanStep())
     registry.register(SpecializationDeclarationScanStep())
     registry.register(ViewpointDeclarationScanStep())

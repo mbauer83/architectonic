@@ -37,6 +37,20 @@ def _build_pre_plan_drift_fixture(root: Path) -> None:
         "connections:\n  - artifact_id: CONN@1.abc.c1\n    include_cardinality: true\n---\n@startuml\n@enduml\n",
     )
 
+    # d12-grouping-ids-and-drawn-relation-keys: a grouping with no id, and an edge label keyed by the
+    # two aliases of the one relation the diagram draws between them.
+    _write(
+        root,
+        "diagram-catalog/diagrams/uncategorized/ARC@1700000000.dddddd.d3.puml",
+        "---\nartifact-id: ARC@1700000000.dddddd.d3\nartifact-type: diagram\nname: D3\n"
+        "diagram-type: archimate-application\n"
+        "entity-ids-used:\n- APP@1700000001.aaaaaa.portal\n- APP@1700000002.bbbbbb.ledger\n"
+        "connection-ids-used:\n- APP@1700000001.aaaaaa---APP@1700000002.bbbbbb@@archimate-serving\n"
+        "edge-labels:\n  APP_aaaaaa:APP_bbbbbb: reads\n"
+        "authored-groupings:\n- label: Front\n  entity-ids:\n  - APP@1700000001.aaaaaa.portal\n"
+        "---\n@startuml\n@enduml\n",
+    )
+
     # viewpoint-application-scan: malformed viewpoint: value (missing slug).
     _write(
         root,
@@ -92,6 +106,7 @@ def test_default_registry_reports_every_applicable_finding(tmp_path: Path) -> No
 
     assert set(report.unapplied_required_steps) == {
         "d9-multiplicity-rename",
+        "d12-grouping-ids-and-drawn-relation-keys",
         "viewpoint-application-scan",
         "unrecognized-structure-scan",
         "connection-metadata-scan",

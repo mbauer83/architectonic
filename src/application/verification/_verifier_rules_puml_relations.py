@@ -12,6 +12,7 @@ import re
 from collections.abc import Mapping
 from typing import Literal
 
+from src.application.artifacts.parsing import standard_alias_of
 from src.application.diagram_occurrences import occurrence_entities
 from src.application.modeling.binding_normalize import restore_diagram_shorthand
 from src.application.puml_relation_parsing import declared_relations
@@ -27,12 +28,7 @@ def _normalize_puml_alias(alias: str) -> str:
     return alias.strip().replace("-", "_")
 
 
-def _normalize_standard_alias(artifact_id: str) -> str:
-    parts = artifact_id.split(".")
-    if len(parts) < 2 or "@" not in parts[0]:
-        return ""
-    prefix = parts[0].split("@", 1)[0]
-    return f"{prefix}_{parts[1]}"
+_normalize_standard_alias = standard_alias_of
 
 
 def _resolve_standard_alias(alias: str, entity_ids: set[str]) -> str | None:

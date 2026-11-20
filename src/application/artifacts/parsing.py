@@ -177,6 +177,18 @@ def normalize_puml_alias(alias: str) -> str:
     return alias.strip().replace("-", "_")
 
 
+def standard_alias_of(artifact_id: str) -> str:
+    """The alias an element is given from its id when it is created — ``PREFIX_random`` — or "" for no id.
+
+    Not normalised: a caller comparing it with an alias a body declares normalises both.
+    """
+    parts = artifact_id.split(".")
+    if len(parts) < 2 or "@" not in parts[0]:
+        return ""
+    prefix = parts[0].split("@", 1)[0]
+    return f"{prefix}_{parts[1]}"
+
+
 def extract_declared_puml_aliases(content: str) -> set[str]:
     """Every alias *content* declares, normalised.
 
