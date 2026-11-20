@@ -1,0 +1,43 @@
+{
+  "abbreviation": "EVAL",
+  "name": "Architecture evaluation",
+  "subdirectory": "evaluations",
+  "frontmatter_schema": {
+    "type": "object",
+    "required": ["title", "status", "method"],
+    "properties": {
+      "title": { "type": "string" },
+      "status": { "type": "string", "enum": ["draft", "accepted", "rejected", "superseded"] },
+      "method": { "type": "string", "enum": ["atam", "lightweight"] }
+    }
+  },
+  "sections": [
+    { "name": "Business Drivers", "suggested_connections": ["driver", "goal"] },
+    { "name": "Utility Tree", "tables": [ { "name": "utility", "row_id": "U", "columns": [
+        { "name": "quality", "required": true },
+        { "name": "refinement" },
+        { "name": "scenario", "type": "reference", "to": ["requirement"], "required": true },
+        { "name": "importance", "enum": ["H", "M", "L"], "required": true },
+        { "name": "difficulty", "enum": ["H", "M", "L"] } ] } ] },
+    { "name": "Approach Analysis", "tables": [ { "name": "analysis", "row_id": "P", "columns": [
+        { "name": "scenario", "type": "row", "table": "utility", "required": true },
+        { "name": "decision", "type": "reference", "to": ["doc:adr", "@all"], "required": true },
+        { "name": "decided", "type": "boolean" },
+        { "name": "effect", "enum": ["+", "-", "0"] },
+        { "name": "sensitivity_point", "type": "integer", "minimum": 1 },
+        { "name": "tradeoff_point", "type": "integer", "minimum": 1 },
+        { "name": "risk", "type": "row", "table": "risks" },
+        { "name": "nonrisk", "title": "Non-risk", "type": "row", "table": "nonrisks" },
+        { "name": "reasoning" } ] } ] },
+    { "name": "Risks", "tables": [ { "name": "risks", "row_id": "R", "columns": [
+        { "name": "risk", "required": true },
+        { "name": "about", "type": "reference", "to": ["@all", "doc:@all", "diagram:@all"], "many": true } ] } ] },
+    { "name": "Non-risks", "tables": [ { "name": "nonrisks", "row_id": "N", "columns": [
+        { "name": "nonrisk", "title": "Non-risk", "required": true },
+        { "name": "assumption", "required": true } ] } ] },
+    { "name": "Risk Themes", "tables": [ { "name": "themes", "row_id": "H", "columns": [
+        { "name": "theme", "required": true },
+        { "name": "risks", "type": "row", "table": "risks", "many": true },
+        { "name": "threatens", "type": "reference", "to": ["driver", "goal"], "many": true } ] } ] }
+  ]
+}

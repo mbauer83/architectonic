@@ -8,6 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from src.application.artifacts.document_tables import TABLES_KEY, TableSpec, table_declarations
 from src.domain.repository.repo_layout import ARCH_DOC_SCHEMATA, ARCH_REPO
 
 #: What a document or a section declares it should reach. One list per severity, holding terms from
@@ -27,6 +28,8 @@ class SectionSpec:
     template: str | None = None
     required_connections: tuple[str, ...] = ()
     suggested_connections: tuple[str, ...] = ()
+    #: The typed tables this section holds — see `src.application.artifacts.document_tables`.
+    tables: tuple[TableSpec, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         result: dict[str, Any] = {"name": self.name}
@@ -36,6 +39,8 @@ class SectionSpec:
             result[REQUIRED_CONNECTIONS_KEY] = list(self.required_connections)
         if self.suggested_connections:
             result[SUGGESTED_CONNECTIONS_KEY] = list(self.suggested_connections)
+        if self.tables:
+            result[TABLES_KEY] = [table.to_dict() for table in self.tables]
         return result
 
 
@@ -108,7 +113,11 @@ def _normalize_sections(doc_type: str, raw: dict[str, Any]) -> tuple[SectionSpec
     if sections_raw is not None:
         if not isinstance(sections_raw, list):
             raise ValueError(f"Doc-type {doc_type!r}: sections must be a list")
-        return tuple(_section_from_raw(doc_type, item) for item in sections_raw if isinstance(item, dict))
+        entries = [item for item in sections_raw if isinstance(item, dict)]
+        return tuple(
+            _section_from_raw(doc_type, entry, tables)
+            for entry, tables in zip(entries, table_declarations(doc_type, entries), strict=True)
+        )
 
     required_sections: list[object] = raw.get("required_sections") or []
     if not isinstance(required_sections, list):
@@ -132,7 +141,7 @@ def _normalize_sections(doc_type: str, raw: dict[str, Any]) -> tuple[SectionSpec
     )
 
 
-def _section_from_raw(doc_type: str, raw: dict[str, Any]) -> SectionSpec:
+def _section_from_raw(doc_type: str, raw: dict[str, Any], tables: tuple[TableSpec, ...]) -> SectionSpec:
     name = str(raw.get("name") or "").strip()
     if not name:
         raise ValueError(f"Doc-type {doc_type!r}: section entries require a non-empty name")
@@ -142,6 +151,7 @@ def _section_from_raw(doc_type: str, raw: dict[str, Any]) -> SectionSpec:
         template=str(template) if template is not None else None,
         required_connections=_connection_terms(raw, REQUIRED_CONNECTIONS_KEY, LEGACY_REQUIRED_CONNECTIONS_KEY),
         suggested_connections=_connection_terms(raw, SUGGESTED_CONNECTIONS_KEY, LEGACY_SUGGESTED_CONNECTIONS_KEY),
+        tables=tables,
     )
 
 
