@@ -20,7 +20,7 @@ from src.domain.ontology_representation.artifact_types import (
     EntityRecord,
     ScratchpadRecord,
 )
-from src.domain.repository.artifact_location import artifact_kind_at, model_file_kind
+from src.domain.repository.artifact_location import artifact_kind_at, is_verified_kind, model_file_kind
 from src.infrastructure.mcp.artifact_mcp.bulk.candidate_lists import CandidateListMixin
 from src.infrastructure.write.artifact_write.staged_workspace import stage_live_path
 
@@ -57,7 +57,10 @@ class CandidateStore(CandidateListMixin):
         if rel is None:
             return
         live_path = self._live_root / rel
-        match artifact_kind_at(rel):
+        kind = artifact_kind_at(rel)
+        if kind is None or not is_verified_kind(kind):
+            return  # not content a bulk write verifies
+        match kind:
             case "connection":
                 self._deleted_connections.update(c.artifact_id for c in parse_outgoing_file(live_path))
                 self._connections.update((c.artifact_id, c) for c in parse_outgoing_file(path))
@@ -73,8 +76,6 @@ class CandidateStore(CandidateListMixin):
                     self._documents[new_doc.artifact_id] = new_doc
             case "entity":
                 self._absorb_entity(path, live_path, domain_names=domain_names)
-            case "scratchpad" | None:
-                return  # not model content a bulk write verifies
 
     def _absorb_entity(self, path: Path, live_path: Path, *, domain_names: frozenset[str]) -> None:
         self._deleted_entities.add(entity_id_from_path(live_path))

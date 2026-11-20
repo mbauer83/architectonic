@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Literal, TypeAlias
 
 from src.domain.artifact_id import PREFIX_PATTERN, RANDOM_KEY_PATTERN
+from src.domain.repository.artifact_location import VerifiedArtifactKindName
 from src.domain.repository.connection_declaration import parse_connection_header
 from src.domain.verification_findings import Issue, Severity, SeverityLiteral
 
@@ -11,7 +12,8 @@ from src.domain.verification_findings import Issue, Severity, SeverityLiteral
 # domain verification port does not have to reach up here for it.
 __all__ = ["Issue", "Severity", "SeverityLiteral"]
 
-VerificationFileType: TypeAlias = Literal["entity", "connection", "diagram", "document", "icon"]
+#: The kinds the verifier takes, which is a fact each kind's row declares.
+VerificationFileType: TypeAlias = VerifiedArtifactKindName
 
 
 @dataclass

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 from pathlib import Path
 
@@ -147,29 +147,28 @@ def parse_scratchpad_for_path(
     return parse_scratchpad(path, group=group_fn_scratchpad(path, mount.root))
 
 
+#: How a changed file of each kind is read. One entry per row of the kind table — a kind with none
+#: would raise on its first change — beside `service._CHANGE_APPLIERS`, which applies what these read.
+CHANGE_READERS: Mapping[ArtifactKindName, Callable[[Path, list[RepoMount], frozenset[str]], object]] = {
+    "connection": lambda path, mounts, _domain_names: parse_outgoing_for_path(path, mounts),
+    "entity": lambda path, mounts, domain_names: parse_entity_for_path(path, mounts, domain_names=domain_names),
+    "diagram": lambda path, mounts, _domain_names: parse_diagram_for_path(path, mounts),
+    "document": lambda path, mounts, _domain_names: parse_document_for_path(path, mounts),
+    "scratchpad": lambda path, mounts, _domain_names: parse_scratchpad_for_path(path, mounts),
+    "icon": lambda path, _mounts, _domain_names: parse_icon(path),
+}
+
+
 def classify_path_change(
     path: Path, mounts: list[RepoMount], *, domain_names: frozenset[str]
-) -> tuple[str, Path, object] | None:
+) -> tuple[ArtifactKindName, Path, object] | None:
     """Return a (kind, path, parsed-data) triple, or None when a full refresh must answer instead.
 
     A path that holds no artifact where it sits is None: a full scan would not index it either, so
     only a refresh keeps the two views in agreement.
     """
-    match artifact_kind_for_path(path, mounts):
-        case "connection":
-            return ("outgoing", path, parse_outgoing_for_path(path, mounts))
-        case "entity":
-            return ("entity", path, parse_entity_for_path(path, mounts, domain_names=domain_names))
-        case "diagram":
-            return ("diagram", path, parse_diagram_for_path(path, mounts))
-        case "document":
-            return ("document", path, parse_document_for_path(path, mounts))
-        case "scratchpad":
-            return ("scratchpad", path, parse_scratchpad_for_path(path, mounts))
-        case "icon":
-            return ("icon", path, parse_icon(path))
-        case None:
-            return None
+    kind = artifact_kind_for_path(path, mounts)
+    return None if kind is None else (kind, path, CHANGE_READERS[kind](path, mounts, domain_names))
 
 
 def _touching_endpoints(entity_id: str, mem: _MemStore) -> set[str]:

@@ -27,6 +27,7 @@ from src.application.scratchpad.edit import ScratchpadEdit
 from src.application.scratchpad.ports import ScratchpadNotFoundError, ScratchpadVersionConflictError
 from src.application.scratchpad.requests import from_request_document
 from src.application.scratchpad.service import ScratchpadService
+from src.domain.repository.artifact_location import own_id_prefix
 from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.scratchpad import ScratchpadError
 from src.infrastructure.mcp.artifact_mcp.context import resolve_repo_roots
@@ -142,7 +143,7 @@ def scratchpad_create(
     service = _service(repo_root)
     try:
         created = service.create(
-            artifact_id=generate_entity_id("SCR", name),
+            artifact_id=generate_entity_id(own_id_prefix("scratchpad"), name),
             name=name,
             group=group,
             description=description,
