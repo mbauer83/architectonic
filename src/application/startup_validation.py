@@ -22,6 +22,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
+from src.application._startup_kind_table_consistency import document_type_prefix_owners, kind_prefix_collisions
+from src.application.artifacts.document_schema import document_id_prefix, load_document_schemata
 from src.application.artifacts.schema import list_schema_files
 
 if TYPE_CHECKING:
@@ -119,6 +121,22 @@ def _schema_inventory_findings(
     return errors, warnings
 
 
+def _document_type_prefix_errors(repo: "ArtifactRepository") -> list[str]:
+    """A document type whose ids would carry a prefix an artifact kind owns, per repository.
+
+    Document types are repository data, so this half of the prefix check cannot run with the product's
+    catalogues: it runs when a repository is loaded. See `_startup_kind_table_consistency`.
+    """
+    return [
+        f"{message} (repository: {repo_root})"
+        for repo_root in repo.repo_roots
+        for message in kind_prefix_collisions(document_type_prefix_owners({
+            doc_type: document_id_prefix(schema, doc_type)
+            for doc_type, schema in load_document_schemata(repo_root).items()
+        }))
+    ]
+
+
 def _element_class_errors(registry: "ModuleRegistry", known_element_classes: set[str]) -> list[str]:
     """Report entity/diagram types referencing element classes that no module declares."""
     errors: list[str] = []
@@ -192,6 +210,7 @@ def _collect_errors(
     )
     errors.extend(inventory_errors)
     warnings.extend(inventory_warnings)
+    errors.extend(_document_type_prefix_errors(repo))
 
     try:
         known_element_classes: set[str] = {str(c) for c in registry.all_element_classes()}
