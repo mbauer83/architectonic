@@ -165,11 +165,11 @@ def _side_facing(route: Route, source: Extent, target: Extent) -> Port | None:
     side = max(_SIDES_IN_ORDER, key=lambda candidate: clear[candidate])
     if clear[side] < STUB:
         return None
-    along = _share(source, toward.y if leaves_level(side) else toward.x, level=leaves_level(side))
+    along = share_along(source, toward.y if leaves_level(side) else toward.x, level=leaves_level(side))
     return Port(side, fraction(max(_FROM_THE_CORNER, min(1 - _FROM_THE_CORNER, along))))
 
 
-def _share(extent: Extent, coordinate: float, *, level: bool) -> float:
+def share_along(extent: Extent, coordinate: float, *, level: bool) -> float:
     """How far along a side *coordinate* lies: down a left or right side, across a top or bottom one."""
     length = extent.height if level else extent.width
     return (coordinate - (extent.top if level else extent.left)) / length if length > 0 else 0.5
@@ -207,8 +207,8 @@ def _candidates_facing(source: Extent, target: Extent) -> list[Route]:
     if shared[1] > shared[0]:
         middle = (shared[0] + shared[1]) / 2
         candidates.append(Route(
-            Port(facing[0], fraction(_share(source, middle, level=level))),
-            Port(facing[1], fraction(_share(target, middle, level=level))),
+            Port(facing[0], fraction(share_along(source, middle, level=level))),
+            Port(facing[1], fraction(share_along(target, middle, level=level))),
         ))
     return [
         *candidates,

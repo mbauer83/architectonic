@@ -20,7 +20,7 @@ from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 
-from src.domain.diagrams.layout.attachment import fraction
+from src.domain.diagrams.layout.attachment import fraction, share_along
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import Port, Route, Side
 from src.domain.diagrams.layout.orthogonal import STUB, half_up, leaves_level
@@ -55,6 +55,24 @@ def _passable(extents: Mapping[str, Extent], obstacles: Mapping[str, Extent], en
     return frozenset(
         key for key, extent in obstacles.items()
         if key not in ends and any(extent.encloses(end) or end.encloses(extent) for end in own)
+    )
+
+
+def _in_line(source: Extent, target: Extent, sides: tuple[Side, Side]) -> tuple[Port, Port] | None:
+    """Two ports on facing sides that meet in one straight run, where the two elements overlap across it."""
+    level = leaves_level(sides[0])
+    if sides[0] == sides[1] or leaves_level(sides[1]) != level:
+        return None
+    low, high = (
+        (max(source.top, target.top), min(source.bottom, target.bottom)) if level
+        else (max(source.left, target.left), min(source.right, target.right))
+    )
+    if high <= low:
+        return None
+    middle = (low + high) / 2
+    return (
+        Port(sides[0], fraction(share_along(source, middle, level=level))),
+        Port(sides[1], fraction(share_along(target, middle, level=level))),
     )
 
 
@@ -120,9 +138,21 @@ class RelationRouting:
                 side, other = sides[relation.key][which], self._extents[there].centre
                 sharing[(here, side)].append((other.y if leaves_level(side) else other.x, relation.key, which))
         spread: dict[tuple[str, int], Port] = {}
+        alone: set[tuple[str, int]] = set()
         for (_element, side), ends in sharing.items():
             for position, (_along, key, which) in enumerate(sorted(ends), start=1):
                 spread[(key, which)] = Port(side, fraction(position / (len(ends) + 1)))
+            if len(ends) == 1:
+                alone.add((ends[0][1], ends[0][2]))
+        # An end with a side to itself has no neighbour to keep clear of: where both ends of a
+        # relation do, and the two elements overlap across the gap, the relation runs straight.
+        for relation in undecided:
+            both_alone = (relation.key, 0) in alone and (relation.key, 1) in alone
+            straight = both_alone and _in_line(
+                self._extents[relation.source], self._extents[relation.target], sides[relation.key]
+            )
+            if straight:
+                spread[(relation.key, 0)], spread[(relation.key, 1)] = straight
         return {
             relation.key: (
                 relation.stated.source or spread[(relation.key, 0)],
@@ -143,8 +173,22 @@ class RelationRouting:
         for relation in sorted(between, key=lambda one: one.key):
             leaving, arriving = ports[relation.key]
             route = Route(leaving, arriving, label=relation.stated.label)
-            decided[relation.key] = self.rerouted(route, relation.source, relation.target) or route
+            decided[relation.key] = (
+                self.rerouted(route, relation.source, relation.target) or self._another_way(relation) or route
+            )
         return decided
+
+    def _another_way(self, relation: Undecided) -> Route | None:
+        """A route from other sides, for a relation whose chosen ports have no way between them."""
+        for leaving in ([relation.stated.source.side] if relation.stated.source else list(Side)):
+            for arriving in ([relation.stated.target.side] if relation.stated.target else list(Side)):
+                route = Route(
+                    relation.stated.source or Port(leaving, 0.5), relation.stated.target or Port(arriving, 0.5),
+                    label=relation.stated.label,
+                )
+                if (found := self.rerouted(route, relation.source, relation.target)) is not None:
+                    return found
+        return None
 
     def rerouted(self, route: Route, source_key: str, target_key: str) -> Route | None:
         """*route* with its bends found again around every element, its ports kept; None where there is no way."""
