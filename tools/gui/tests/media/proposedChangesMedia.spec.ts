@@ -36,6 +36,7 @@ const CHANGES = [
       field: 'summary',
       proposed: 'Every write is verified before it lands, including writes made by an agent.',
       current: 'Every write is verified before it lands.',
+      moved_upstream: false,
     }],
   },
   {
@@ -50,6 +51,7 @@ const CHANGES = [
       field: 'title',
       proposed: 'Naming conventions for shared content',
       current: 'Naming conventions for promoted content',
+      moved_upstream: true,
     }],
   },
 ]

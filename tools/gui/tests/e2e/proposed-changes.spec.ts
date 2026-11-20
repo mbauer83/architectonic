@@ -23,7 +23,7 @@ const CHANGE = {
   changed_fields: ['summary'],
   state: 'draft' as const,
   condition: 'current' as const,
-  divergence: [{ field: 'summary', proposed: 'My wording.', current: 'The enterprise wording.' }],
+  divergence: [{ field: 'summary', proposed: 'My wording.', current: 'The enterprise wording.', moved_upstream: false }],
 }
 
 const serve = async (page: import('@playwright/test').Page, changes: unknown[]) => {
