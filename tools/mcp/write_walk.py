@@ -34,7 +34,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools.mcp._answers import decoded, refusal, rows_of, text_of  # noqa: E402
-from tools.quality.fixture_workspace import FixtureWorkspace  # noqa: E402
+from tools.quality.fixture_workspace import REGISTER_TABLE, FixtureWorkspace  # noqa: E402
 
 #: The repository write mount.
 MOUNT = "write"
@@ -298,6 +298,17 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     WriteCall(
         "artifact_delete_document",
         lambda c: {"artifact_id": c.created["document"], "dry_run": False},
+    ),
+    WriteCall(
+        # A row added to the fixture's typed table. An addition, because it is the one row edit that
+        # states nothing it was based on and so needs no read before it.
+        "artifact_edit_document_table",
+        lambda c: {
+            "artifact_id": c.workspace.tabled_document,
+            "table": REGISTER_TABLE,
+            "rows": [{"op": "add", "cells": {"entry": "Added by the MCP write walk."}}],
+            "dry_run": False,
+        },
     ),
     # ── icons: one added to the library, then shown on the diagram below ─────────────────────────
     WriteCall(

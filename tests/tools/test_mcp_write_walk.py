@@ -118,6 +118,7 @@ def _placeholder_workspace() -> FixtureWorkspace:
             "unreferenced_entity": ["<unreferenced-entity>"],
             "diagram": ["<diagram>"],
             "application_diagram": ["<diagram>"],
+            "tabled_document": ["<tabled-document>"],
             # The assurance roles the confidential mount's recipes address. Present here so the
             # order check covers that mount too; `_AssuranceRoles` raises `LookupError` naming the
             # module that authors them when one is missing, which the caller turns into a failure.
