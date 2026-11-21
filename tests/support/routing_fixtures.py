@@ -1,0 +1,173 @@
+"""The router as cases, for `tests/fixtures/layout_geometry/routing.json`.
+
+Each case is a scene, its connectors and what `route_all` answers — every route's ports and course,
+the unroutable connectors and the pairs nudging could not separate. The TypeScript router is run on
+the same scenes and must answer the same, to the pixel: the two are one algorithm by this file.
+
+The cases are chosen so each stage decides something: a straight run, a way round an element, round
+a title band, into and out of nested boxes, many routes through one channel for nudging, a whole and
+its part, a loop, two elements too close for a stub, an element walled in so no route reaches it, and
+a drag's quick pass over a moved element.
+"""
+
+from __future__ import annotations
+
+import random
+from collections.abc import Mapping, Sequence
+
+from src.domain.diagrams.layout.geometry import Extent, Point
+from src.domain.diagrams.layout.layout_block import Port, Side
+from src.domain.diagrams.layout.routing.router import route_all
+from src.domain.diagrams.layout.routing.scene import Connector, RoutedConnector, RoutingResult, RoutingScene
+
+
+def _extent(extent: Extent) -> dict[str, float]:
+    return {"left": extent.left, "top": extent.top, "right": extent.right, "bottom": extent.bottom}
+
+
+def _points(course: Sequence[Point]) -> list[list[float]]:
+    return [[point.x, point.y] for point in course]
+
+
+def _port(port: Port) -> dict[str, object]:
+    return {"side": port.side.value, "at": port.at}
+
+
+def scene_as_json(scene: RoutingScene) -> dict[str, object]:
+    return {
+        "elements": {key: _extent(extent) for key, extent in scene.elements.items()},
+        "boxes": {key: _extent(extent) for key, extent in scene.boxes.items()},
+        "text": {key: _extent(extent) for key, extent in scene.text.items()},
+        "fixed_lines": [_points(line) for line in scene.fixed_lines],
+    }
+
+
+def connector_as_json(connector: Connector) -> dict[str, object]:
+    written: dict[str, object] = {
+        "key": connector.key, "source": connector.source, "target": connector.target,
+        "decorated": list(connector.decorated),
+    }
+    if connector.source_port is not None:
+        written["source_port"] = _port(connector.source_port)
+    if connector.target_port is not None:
+        written["target_port"] = _port(connector.target_port)
+    return written
+
+
+def routed_as_json(routes: Mapping[str, RoutedConnector]) -> dict[str, object]:
+    return {
+        key: {"source_port": _port(routed.source_port), "target_port": _port(routed.target_port),
+              "course": _points(routed.course)}
+        for key, routed in routes.items()
+    }
+
+
+def result_as_json(result: RoutingResult) -> dict[str, object]:
+    return {
+        "routes": routed_as_json(result.routes),
+        "unroutable": list(result.unroutable),
+        "unseparated": [list(pair) for pair in result.unseparated],
+    }
+
+
+def _box(left: float, top: float, width: float, height: float) -> Extent:
+    return Extent(left, top, left + width, top + height)
+
+
+def _case(name: str, scene: RoutingScene, connectors: Sequence[Connector]) -> dict[str, object]:
+    return {
+        "name": name, "scene": scene_as_json(scene),
+        "connectors": [connector_as_json(connector) for connector in connectors],
+        "result": result_as_json(route_all(scene, connectors)),
+    }
+
+
+def _channel_scene() -> tuple[RoutingScene, list[Connector]]:
+    """Five elements on the left, five on the right, a wall between with one gap: nudging's work."""
+    left = {f"l{index}": _box(0, index * 80, 100, 40) for index in range(5)}
+    right = {f"r{index}": _box(500, index * 80 + 20, 100, 40) for index in range(5)}
+    wall_top, wall_bottom = _box(250, -100, 40, 260), _box(250, 200, 40, 300)
+    elements = {**left, **right, "wall-top": wall_top, "wall-bottom": wall_bottom}
+    connectors = [Connector(f"c{index}", f"l{index}", f"r{4 - index}") for index in range(5)]
+    return RoutingScene(elements=elements), connectors
+
+
+def _nested_scene() -> tuple[RoutingScene, list[Connector]]:
+    """A member deep in two boxes, an element outside, and a box between holding neither end."""
+    elements = {"member": _box(60, 80, 100, 40), "outside": _box(600, 300, 100, 40), "inner": _box(320, 40, 80, 40)}
+    boxes = {
+        "outer": _box(20, 20, 260, 200), "middle": _box(40, 50, 180, 100),
+        "between": _box(300, 20, 140, 120),
+    }
+    text = {"band:outer": Extent(100, 20, 200, 44), "band:between": Extent(330, 20, 410, 36)}
+    connectors = [
+        Connector("out", "member", "outside"),
+        Connector("to-box", "outside", "between", decorated=(False, True)),
+        Connector("whole", "outer", "member", decorated=(True, False)),
+    ]
+    return RoutingScene(elements=elements, boxes=boxes, text=text), connectors
+
+
+def _walled_scene() -> tuple[RoutingScene, list[Connector]]:
+    """An element ringed by four others so close no stub leaves it: unroutable, and said so."""
+    elements = {
+        "walled": _box(100, 100, 60, 30), "north": _box(90, 70, 80, 20), "south": _box(90, 140, 80, 20),
+        "west": _box(60, 90, 30, 50), "east": _box(170, 90, 30, 50), "far": _box(500, 100, 60, 30),
+    }
+    return RoutingScene(elements=elements), [Connector("trapped", "walled", "far")]
+
+
+def synthetic_scene(count: int, relations: int, seed: int = 1) -> tuple[RoutingScene, list[Connector]]:
+    """*count* elements in a grid, slightly jittered, and *relations* connectors, most to neighbours."""
+    chance = random.Random(seed)
+    columns = int(count**0.5) + 1
+    elements: dict[str, Extent] = {}
+    for index in range(count):
+        width, height = chance.choice(((120, 50), (160, 60), (140, 52), (20, 20)))
+        left, top = (index % columns) * 260 + chance.randint(0, 40), (index // columns) * 180 + chance.randint(0, 40)
+        elements[f"e{index}"] = Extent(left, top, left + width, top + height)
+    keys = list(elements)
+    connectors: list[Connector] = []
+    for number in range(relations):
+        first = chance.randrange(count)
+        step = chance.choice((-1, 1, columns, -columns, columns + 1, 2, 2 * columns, chance.randrange(-count, count)))
+        second = min(count - 1, max(0, first + step))
+        if first != second:
+            connectors.append(Connector(f"r{number}", keys[first], keys[second], (False, True)))
+    return RoutingScene(elements=elements), connectors
+
+
+def build_routing() -> dict[str, object]:
+    a, b, c = _box(0, 100, 100, 60), _box(400, 100, 100, 60), _box(220, 60, 60, 140)
+    cases = [
+        _case("facing elements in line run straight", RoutingScene(elements={"a": a, "b": b}),
+              [Connector("ab", "a", "b")]),
+        _case("an element in the way is gone round", RoutingScene(elements={"a": a, "b": b, "c": c}),
+              [Connector("ab", "a", "b")]),
+        _case("a title band in the way is gone round",
+              RoutingScene(elements={"a": a, "b": _box(400, 300, 100, 60)}, text={"band": Extent(150, 60, 350, 400)}),
+              [Connector("ab", "a", "b")]),
+        _case("a stated port is kept", RoutingScene(elements={"a": a, "b": b, "c": c}),
+              [Connector("ab", "a", "b", source_port=Port(Side.BOTTOM, 0.25))]),
+        _case("an element to itself loops round its corner", RoutingScene(elements={"a": a}),
+              [Connector("aa", "a", "a")]),
+        _case("two elements closer than a stub are joined the most direct way",
+              RoutingScene(elements={"a": a, "b": _box(0, 168, 100, 40)}), [Connector("ab", "a", "b")]),
+        _case("into and out of nested boxes, round a box that holds neither end", *_nested_scene()),
+        _case("many routes through one channel are nudged apart", *_channel_scene()),
+        _case("a walled-in element is unroutable", *_walled_scene()),
+        _case("a synthetic arrangement of forty elements", *synthetic_scene(40, 60, seed=3)),
+    ]
+    scene, connectors = _channel_scene()
+    previous = route_all(scene, connectors)
+    moved = dict(scene.elements)
+    moved["l2"] = _box(0, 150, 100, 40)
+    moved_scene = RoutingScene(elements=moved)
+    quick = route_all(moved_scene, connectors, previous=previous.routes, changed=frozenset({"l2"}))
+    return {
+        "cases": cases,
+        "quick": {
+            "scene": scene_as_json(moved_scene), "connectors": [connector_as_json(one) for one in connectors],
+            "previous": routed_as_json(previous.routes), "changed": ["l2"], "result": result_as_json(quick),
+        },
+    }

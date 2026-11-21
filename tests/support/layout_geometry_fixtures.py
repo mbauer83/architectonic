@@ -31,8 +31,10 @@ from src.domain.diagrams.layout.attachment import (
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import LabelAnchor, Port, Route, Side
 from src.domain.diagrams.layout.orthogonal import course_of, fraction_along, point_along, stated_course
-from src.infrastructure.rendering.layout.relation_routing import RelationRouting, Undecided
+from src.domain.diagrams.layout.routing.router import as_route, rerouted, route_all
+from src.domain.diagrams.layout.routing.scene import Connector, RoutingScene
 from tests.support.readability_fixtures import build_readability
+from tests.support.routing_fixtures import build_routing
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "layout_geometry"
 
@@ -255,6 +257,10 @@ def walk_scene() -> tuple[dict[str, Extent], dict[str, tuple[str, str]]]:
     return extents, {f"r{index}": (f"e{a}", f"e{b}") for index, (a, b) in enumerate(pairs)}
 
 
+def _keeping_ports(key: str, ends: tuple[str, str], route: Route) -> Connector:
+    return Connector(key, *ends, source_port=route.source, target_port=route.target)
+
+
 def build_walk() -> dict[str, object]:
     """Four hundred random moves, each with what keeping arrows attached answers and what the router then decides.
 
@@ -263,9 +269,8 @@ def build_walk() -> dict[str, object]:
     again for the arrows that came to cross an element — which a replay adopts before the next step.
     """
     extents, ends = walk_scene()
-    routes = RelationRouting(extents, extents).decide(
-        [Undecided(key, source, target) for key, (source, target) in ends.items()]
-    )
+    first = route_all(RoutingScene(elements=extents), [Connector(key, *pair) for key, pair in ends.items()])
+    routes = {key: as_route(routed) for key, routed in first.routes.items()}
     start = {
         "extents": {key: extent_as_json(extent) for key, extent in extents.items()},
         "ends": {key: list(pair) for key, pair in ends.items()},
@@ -282,18 +287,18 @@ def build_walk() -> dict[str, object]:
         kept = keep_attached(routes, ends=ends, extents=extents, changed=[moved])
         changed = {key: route for key, route in kept.routes.items() if route != routes[key]}
         routes = dict(kept.routes)
-        routing = RelationRouting(extents, extents)
-        rerouted = {
+        found = {
             key: again for key in kept.crossing
-            if (again := routing.rerouted(routes[key], *ends[key])) is not None
+            if (again := rerouted(RoutingScene(elements=extents), _keeping_ports(key, ends[key], routes[key])))
+            is not None
         }
-        routes.update(rerouted)
+        routes.update(found)
         steps.append({
             "move": moved, "to": [left, top],
             "routes": {key: route_as_json(route) for key, route in changed.items()},
             "crossing": {key: list(crossed) for key, crossed in kept.crossing.items()},
             "conflicts": list(kept.conflicts),
-            "rerouted": {key: route_as_json(route) for key, route in rerouted.items()},
+            "rerouted": {key: route_as_json(route) for key, route in found.items()},
         })
     return {**start, "steps": steps}
 
@@ -304,6 +309,7 @@ BUILDERS = {
     "repairs.json": build_repairs,
     "walk.json": build_walk,
     "readability.json": build_readability,
+    "routing.json": build_routing,
 }
 
 

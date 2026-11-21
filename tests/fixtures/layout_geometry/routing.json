@@ -1,0 +1,3905 @@
+{
+ "cases": [
+  {
+   "name": "facing elements in line run straight",
+   "scene": {
+    "elements": {
+     "a": {
+      "left": 0,
+      "top": 100,
+      "right": 100,
+      "bottom": 160
+     },
+     "b": {
+      "left": 400,
+      "top": 100,
+      "right": 500,
+      "bottom": 160
+     }
+    },
+    "boxes": {},
+    "text": {},
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "ab",
+     "source": "a",
+     "target": "b",
+     "decorated": [
+      true,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "ab": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        100,
+        130
+       ],
+       [
+        400,
+        130
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
+  },
+  {
+   "name": "an element in the way is gone round",
+   "scene": {
+    "elements": {
+     "a": {
+      "left": 0,
+      "top": 100,
+      "right": 100,
+      "bottom": 160
+     },
+     "b": {
+      "left": 400,
+      "top": 100,
+      "right": 500,
+      "bottom": 160
+     },
+     "c": {
+      "left": 220,
+      "top": 60,
+      "right": 280,
+      "bottom": 200
+     }
+    },
+    "boxes": {},
+    "text": {},
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "ab",
+     "source": "a",
+     "target": "b",
+     "decorated": [
+      true,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "ab": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "bottom",
+       "at": 0.5
+      },
+      "course": [
+       [
+        100,
+        130
+       ],
+       [
+        212,
+        130
+       ],
+       [
+        212,
+        208
+       ],
+       [
+        450,
+        208
+       ],
+       [
+        450,
+        160
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
+  },
+  {
+   "name": "a title band in the way is gone round",
+   "scene": {
+    "elements": {
+     "a": {
+      "left": 0,
+      "top": 100,
+      "right": 100,
+      "bottom": 160
+     },
+     "b": {
+      "left": 400,
+      "top": 300,
+      "right": 500,
+      "bottom": 360
+     }
+    },
+    "boxes": {},
+    "text": {
+     "band": {
+      "left": 150,
+      "top": 60,
+      "right": 350,
+      "bottom": 400
+     }
+    },
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "ab",
+     "source": "a",
+     "target": "b",
+     "decorated": [
+      true,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "ab": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "bottom",
+       "at": 0.5
+      },
+      "course": [
+       [
+        100,
+        130
+       ],
+       [
+        142,
+        130
+       ],
+       [
+        142,
+        408
+       ],
+       [
+        450,
+        408
+       ],
+       [
+        450,
+        360
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
+  },
+  {
+   "name": "a stated port is kept",
+   "scene": {
+    "elements": {
+     "a": {
+      "left": 0,
+      "top": 100,
+      "right": 100,
+      "bottom": 160
+     },
+     "b": {
+      "left": 400,
+      "top": 100,
+      "right": 500,
+      "bottom": 160
+     },
+     "c": {
+      "left": 220,
+      "top": 60,
+      "right": 280,
+      "bottom": 200
+     }
+    },
+    "boxes": {},
+    "text": {},
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "ab",
+     "source": "a",
+     "target": "b",
+     "decorated": [
+      true,
+      true
+     ],
+     "source_port": {
+      "side": "bottom",
+      "at": 0.25
+     }
+    }
+   ],
+   "result": {
+    "routes": {
+     "ab": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.25
+      },
+      "target_port": {
+       "side": "bottom",
+       "at": 0.5
+      },
+      "course": [
+       [
+        25,
+        160
+       ],
+       [
+        25,
+        208
+       ],
+       [
+        450,
+        208
+       ],
+       [
+        450,
+        160
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
+  },
+  {
+   "name": "an element to itself loops round its corner",
+   "scene": {
+    "elements": {
+     "a": {
+      "left": 0,
+      "top": 100,
+      "right": 100,
+      "bottom": 160
+     }
+    },
+    "boxes": {},
+    "text": {},
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "aa",
+     "source": "a",
+     "target": "a",
+     "decorated": [
+      true,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "aa": {
+      "source_port": {
+       "side": "right",
+       "at": 0.7
+      },
+      "target_port": {
+       "side": "bottom",
+       "at": 0.7
+      },
+      "course": [
+       [
+        100,
+        142
+       ],
+       [
+        130,
+        142
+       ],
+       [
+        130,
+        190
+       ],
+       [
+        70,
+        190
+       ],
+       [
+        70,
+        160
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
+  },
+  {
+   "name": "two elements closer than a stub are joined the most direct way",
+   "scene": {
+    "elements": {
+     "a": {
+      "left": 0,
+      "top": 100,
+      "right": 100,
+      "bottom": 160
+     },
+     "b": {
+      "left": 0,
+      "top": 168,
+      "right": 100,
+      "bottom": 208
+     }
+    },
+    "boxes": {},
+    "text": {},
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "ab",
+     "source": "a",
+     "target": "b",
+     "decorated": [
+      true,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "ab": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "top",
+       "at": 0.5
+      },
+      "course": [
+       [
+        50.0,
+        160
+       ],
+       [
+        50.0,
+        168
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
+  },
+  {
+   "name": "into and out of nested boxes, round a box that holds neither end",
+   "scene": {
+    "elements": {
+     "member": {
+      "left": 60,
+      "top": 80,
+      "right": 160,
+      "bottom": 120
+     },
+     "outside": {
+      "left": 600,
+      "top": 300,
+      "right": 700,
+      "bottom": 340
+     },
+     "inner": {
+      "left": 320,
+      "top": 40,
+      "right": 400,
+      "bottom": 80
+     }
+    },
+    "boxes": {
+     "outer": {
+      "left": 20,
+      "top": 20,
+      "right": 280,
+      "bottom": 220
+     },
+     "middle": {
+      "left": 40,
+      "top": 50,
+      "right": 220,
+      "bottom": 150
+     },
+     "between": {
+      "left": 300,
+      "top": 20,
+      "right": 440,
+      "bottom": 140
+     }
+    },
+    "text": {
+     "band:outer": {
+      "left": 100,
+      "top": 20,
+      "right": 200,
+      "bottom": 44
+     },
+     "band:between": {
+      "left": 330,
+      "top": 20,
+      "right": 410,
+      "bottom": 36
+     }
+    },
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "out",
+     "source": "member",
+     "target": "outside",
+     "decorated": [
+      true,
+      true
+     ]
+    },
+    {
+     "key": "to-box",
+     "source": "outside",
+     "target": "between",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "whole",
+     "source": "outer",
+     "target": "member",
+     "decorated": [
+      true,
+      false
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "out": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.675
+      },
+      "course": [
+       [
+        160,
+        100
+       ],
+       [
+        290,
+        100
+       ],
+       [
+        290,
+        327
+       ],
+       [
+        600,
+        327
+       ]
+      ]
+     },
+     "to-box": {
+      "source_port": {
+       "side": "left",
+       "at": 0.325
+      },
+      "target_port": {
+       "side": "bottom",
+       "at": 0.5
+      },
+      "course": [
+       [
+        600,
+        313
+       ],
+       [
+        370,
+        313
+       ],
+       [
+        370,
+        140
+       ]
+      ]
+     },
+     "whole": {
+      "source_port": {
+       "side": "left",
+       "at": 0.4
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        20,
+        100
+       ],
+       [
+        60,
+        100
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
+  },
+  {
+   "name": "many routes through one channel are nudged apart",
+   "scene": {
+    "elements": {
+     "l0": {
+      "left": 0,
+      "top": 0,
+      "right": 100,
+      "bottom": 40
+     },
+     "l1": {
+      "left": 0,
+      "top": 80,
+      "right": 100,
+      "bottom": 120
+     },
+     "l2": {
+      "left": 0,
+      "top": 160,
+      "right": 100,
+      "bottom": 200
+     },
+     "l3": {
+      "left": 0,
+      "top": 240,
+      "right": 100,
+      "bottom": 280
+     },
+     "l4": {
+      "left": 0,
+      "top": 320,
+      "right": 100,
+      "bottom": 360
+     },
+     "r0": {
+      "left": 500,
+      "top": 20,
+      "right": 600,
+      "bottom": 60
+     },
+     "r1": {
+      "left": 500,
+      "top": 100,
+      "right": 600,
+      "bottom": 140
+     },
+     "r2": {
+      "left": 500,
+      "top": 180,
+      "right": 600,
+      "bottom": 220
+     },
+     "r3": {
+      "left": 500,
+      "top": 260,
+      "right": 600,
+      "bottom": 300
+     },
+     "r4": {
+      "left": 500,
+      "top": 340,
+      "right": 600,
+      "bottom": 380
+     },
+     "wall-top": {
+      "left": 250,
+      "top": -100,
+      "right": 290,
+      "bottom": 160
+     },
+     "wall-bottom": {
+      "left": 250,
+      "top": 200,
+      "right": 290,
+      "bottom": 500
+     }
+    },
+    "boxes": {},
+    "text": {},
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "c0",
+     "source": "l0",
+     "target": "r4",
+     "decorated": [
+      true,
+      true
+     ]
+    },
+    {
+     "key": "c1",
+     "source": "l1",
+     "target": "r3",
+     "decorated": [
+      true,
+      true
+     ]
+    },
+    {
+     "key": "c2",
+     "source": "l2",
+     "target": "r2",
+     "decorated": [
+      true,
+      true
+     ]
+    },
+    {
+     "key": "c3",
+     "source": "l3",
+     "target": "r1",
+     "decorated": [
+      true,
+      true
+     ]
+    },
+    {
+     "key": "c4",
+     "source": "l4",
+     "target": "r0",
+     "decorated": [
+      true,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "c0": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        100,
+        20
+       ],
+       [
+        242,
+        20
+       ],
+       [
+        242,
+        169
+       ],
+       [
+        470,
+        169
+       ],
+       [
+        470,
+        360
+       ],
+       [
+        500,
+        360
+       ]
+      ]
+     },
+     "c1": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        100,
+        100
+       ],
+       [
+        130,
+        100
+       ],
+       [
+        130,
+        181
+       ],
+       [
+        298,
+        181
+       ],
+       [
+        298,
+        280
+       ],
+       [
+        500,
+        280
+       ]
+      ]
+     },
+     "c2": {
+      "source_port": {
+       "side": "right",
+       "at": 0.75
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.25
+      },
+      "course": [
+       [
+        100,
+        190
+       ],
+       [
+        500,
+        190
+       ]
+      ]
+     },
+     "c3": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        100,
+        260
+       ],
+       [
+        242,
+        260
+       ],
+       [
+        242,
+        508
+       ],
+       [
+        492,
+        508
+       ],
+       [
+        492,
+        128
+       ],
+       [
+        470,
+        128
+       ],
+       [
+        470,
+        120
+       ],
+       [
+        500,
+        120
+       ]
+      ]
+     },
+     "c4": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        100,
+        340
+       ],
+       [
+        142,
+        340
+       ],
+       [
+        142,
+        -108
+       ],
+       [
+        470,
+        -108
+       ],
+       [
+        470,
+        40
+       ],
+       [
+        500,
+        40
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
+  },
+  {
+   "name": "a walled-in element is unroutable",
+   "scene": {
+    "elements": {
+     "walled": {
+      "left": 100,
+      "top": 100,
+      "right": 160,
+      "bottom": 130
+     },
+     "north": {
+      "left": 90,
+      "top": 70,
+      "right": 170,
+      "bottom": 90
+     },
+     "south": {
+      "left": 90,
+      "top": 140,
+      "right": 170,
+      "bottom": 160
+     },
+     "west": {
+      "left": 60,
+      "top": 90,
+      "right": 90,
+      "bottom": 140
+     },
+     "east": {
+      "left": 170,
+      "top": 90,
+      "right": 200,
+      "bottom": 140
+     },
+     "far": {
+      "left": 500,
+      "top": 100,
+      "right": 560,
+      "bottom": 130
+     }
+    },
+    "boxes": {},
+    "text": {},
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "trapped",
+     "source": "walled",
+     "target": "far",
+     "decorated": [
+      true,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {},
+    "unroutable": [
+     "trapped"
+    ],
+    "unseparated": []
+   }
+  },
+  {
+   "name": "a synthetic arrangement of forty elements",
+   "scene": {
+    "elements": {
+     "e0": {
+      "left": 37,
+      "top": 34,
+      "right": 197,
+      "bottom": 94
+     },
+     "e1": {
+      "left": 283,
+      "top": 38,
+      "right": 443,
+      "bottom": 98
+     },
+     "e2": {
+      "left": 560,
+      "top": 37,
+      "right": 580,
+      "bottom": 57
+     },
+     "e3": {
+      "left": 818,
+      "top": 0,
+      "right": 938,
+      "bottom": 50
+     },
+     "e4": {
+      "left": 1056,
+      "top": 35,
+      "right": 1076,
+      "bottom": 55
+     },
+     "e5": {
+      "left": 1312,
+      "top": 30,
+      "right": 1472,
+      "bottom": 90
+     },
+     "e6": {
+      "left": 1585,
+      "top": 40,
+      "right": 1605,
+      "bottom": 60
+     },
+     "e7": {
+      "left": 14,
+      "top": 220,
+      "right": 174,
+      "bottom": 280
+     },
+     "e8": {
+      "left": 293,
+      "top": 204,
+      "right": 453,
+      "bottom": 264
+     },
+     "e9": {
+      "left": 524,
+      "top": 190,
+      "right": 644,
+      "bottom": 240
+     },
+     "e10": {
+      "left": 799,
+      "top": 181,
+      "right": 919,
+      "bottom": 231
+     },
+     "e11": {
+      "left": 1070,
+      "top": 218,
+      "right": 1210,
+      "bottom": 270
+     },
+     "e12": {
+      "left": 1327,
+      "top": 205,
+      "right": 1347,
+      "bottom": 225
+     },
+     "e13": {
+      "left": 1568,
+      "top": 203,
+      "right": 1588,
+      "bottom": 223
+     },
+     "e14": {
+      "left": 2,
+      "top": 368,
+      "right": 122,
+      "bottom": 418
+     },
+     "e15": {
+      "left": 273,
+      "top": 376,
+      "right": 293,
+      "bottom": 396
+     },
+     "e16": {
+      "left": 560,
+      "top": 379,
+      "right": 580,
+      "bottom": 399
+     },
+     "e17": {
+      "left": 812,
+      "top": 384,
+      "right": 832,
+      "bottom": 404
+     },
+     "e18": {
+      "left": 1074,
+      "top": 397,
+      "right": 1214,
+      "bottom": 449
+     },
+     "e19": {
+      "left": 1337,
+      "top": 374,
+      "right": 1357,
+      "bottom": 394
+     },
+     "e20": {
+      "left": 1561,
+      "top": 377,
+      "right": 1701,
+      "bottom": 429
+     },
+     "e21": {
+      "left": 20,
+      "top": 574,
+      "right": 180,
+      "bottom": 634
+     },
+     "e22": {
+      "left": 273,
+      "top": 580,
+      "right": 393,
+      "bottom": 630
+     },
+     "e23": {
+      "left": 538,
+      "top": 547,
+      "right": 678,
+      "bottom": 599
+     },
+     "e24": {
+      "left": 810,
+      "top": 580,
+      "right": 930,
+      "bottom": 630
+     },
+     "e25": {
+      "left": 1045,
+      "top": 562,
+      "right": 1065,
+      "bottom": 582
+     },
+     "e26": {
+      "left": 1326,
+      "top": 549,
+      "right": 1446,
+      "bottom": 599
+     },
+     "e27": {
+      "left": 1578,
+      "top": 567,
+      "right": 1698,
+      "bottom": 617
+     },
+     "e28": {
+      "left": 7,
+      "top": 722,
+      "right": 27,
+      "bottom": 742
+     },
+     "e29": {
+      "left": 284,
+      "top": 757,
+      "right": 404,
+      "bottom": 807
+     },
+     "e30": {
+      "left": 555,
+      "top": 737,
+      "right": 695,
+      "bottom": 789
+     },
+     "e31": {
+      "left": 782,
+      "top": 739,
+      "right": 942,
+      "bottom": 799
+     },
+     "e32": {
+      "left": 1044,
+      "top": 726,
+      "right": 1164,
+      "bottom": 776
+     },
+     "e33": {
+      "left": 1312,
+      "top": 746,
+      "right": 1432,
+      "bottom": 796
+     },
+     "e34": {
+      "left": 1599,
+      "top": 736,
+      "right": 1739,
+      "bottom": 788
+     },
+     "e35": {
+      "left": 2,
+      "top": 921,
+      "right": 162,
+      "bottom": 981
+     },
+     "e36": {
+      "left": 283,
+      "top": 908,
+      "right": 423,
+      "bottom": 960
+     },
+     "e37": {
+      "left": 544,
+      "top": 929,
+      "right": 564,
+      "bottom": 949
+     },
+     "e38": {
+      "left": 818,
+      "top": 935,
+      "right": 838,
+      "bottom": 955
+     },
+     "e39": {
+      "left": 1079,
+      "top": 932,
+      "right": 1199,
+      "bottom": 982
+     }
+    },
+    "boxes": {},
+    "text": {},
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "r0",
+     "source": "e17",
+     "target": "e10",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r1",
+     "source": "e19",
+     "target": "e27",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r2",
+     "source": "e33",
+     "target": "e35",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r3",
+     "source": "e0",
+     "target": "e2",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r4",
+     "source": "e1",
+     "target": "e8",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r5",
+     "source": "e3",
+     "target": "e5",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r6",
+     "source": "e22",
+     "target": "e30",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r7",
+     "source": "e31",
+     "target": "e30",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r8",
+     "source": "e1",
+     "target": "e9",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r9",
+     "source": "e29",
+     "target": "e31",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r10",
+     "source": "e11",
+     "target": "e18",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r11",
+     "source": "e20",
+     "target": "e28",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r12",
+     "source": "e19",
+     "target": "e20",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r13",
+     "source": "e1",
+     "target": "e8",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r14",
+     "source": "e19",
+     "target": "e12",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r15",
+     "source": "e17",
+     "target": "e19",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r16",
+     "source": "e11",
+     "target": "e12",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r17",
+     "source": "e6",
+     "target": "e8",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r18",
+     "source": "e21",
+     "target": "e9",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r19",
+     "source": "e10",
+     "target": "e12",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r20",
+     "source": "e13",
+     "target": "e39",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r21",
+     "source": "e17",
+     "target": "e18",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r22",
+     "source": "e2",
+     "target": "e0",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r23",
+     "source": "e20",
+     "target": "e27",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r24",
+     "source": "e17",
+     "target": "e18",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r26",
+     "source": "e26",
+     "target": "e34",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r27",
+     "source": "e29",
+     "target": "e39",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r28",
+     "source": "e18",
+     "target": "e32",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r29",
+     "source": "e2",
+     "target": "e9",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r30",
+     "source": "e12",
+     "target": "e0",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r32",
+     "source": "e35",
+     "target": "e34",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r33",
+     "source": "e29",
+     "target": "e37",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r34",
+     "source": "e34",
+     "target": "e27",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r35",
+     "source": "e4",
+     "target": "e12",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r36",
+     "source": "e7",
+     "target": "e6",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r37",
+     "source": "e2",
+     "target": "e0",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r38",
+     "source": "e27",
+     "target": "e26",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r39",
+     "source": "e0",
+     "target": "e1",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r40",
+     "source": "e10",
+     "target": "e18",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r41",
+     "source": "e15",
+     "target": "e29",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r42",
+     "source": "e3",
+     "target": "e4",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r43",
+     "source": "e21",
+     "target": "e29",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r44",
+     "source": "e34",
+     "target": "e33",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r45",
+     "source": "e22",
+     "target": "e15",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r46",
+     "source": "e7",
+     "target": "e8",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r47",
+     "source": "e10",
+     "target": "e18",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r48",
+     "source": "e8",
+     "target": "e0",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r49",
+     "source": "e36",
+     "target": "e35",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r50",
+     "source": "e17",
+     "target": "e25",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r52",
+     "source": "e3",
+     "target": "e5",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r53",
+     "source": "e0",
+     "target": "e7",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r54",
+     "source": "e2",
+     "target": "e1",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r55",
+     "source": "e4",
+     "target": "e3",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r56",
+     "source": "e5",
+     "target": "e30",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r57",
+     "source": "e20",
+     "target": "e22",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r58",
+     "source": "e4",
+     "target": "e18",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "r59",
+     "source": "e24",
+     "target": "e32",
+     "decorated": [
+      false,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "r0": {
+      "source_port": {
+       "side": "top",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "bottom",
+       "at": 0.1917
+      },
+      "course": [
+       [
+        822,
+        384
+       ],
+       [
+        822,
+        231
+       ]
+      ]
+     },
+     "r1": {
+      "source_port": {
+       "side": "right",
+       "at": 0.65
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.34
+      },
+      "course": [
+       [
+        1357,
+        387
+       ],
+       [
+        1548,
+        387
+       ],
+       [
+        1548,
+        584
+       ],
+       [
+        1578,
+        584
+       ]
+      ]
+     },
+     "r10": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.5143
+      },
+      "target_port": {
+       "side": "top",
+       "at": 0.4857
+      },
+      "course": [
+       [
+        1142,
+        270
+       ],
+       [
+        1142,
+        397
+       ]
+      ]
+     },
+     "r11": {
+      "source_port": {
+       "side": "left",
+       "at": 0.75
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "course": [
+       [
+        1561,
+        416
+       ],
+       [
+        1222,
+        416
+       ],
+       [
+        1222,
+        718
+       ],
+       [
+        57,
+        718
+       ],
+       [
+        57,
+        732
+       ],
+       [
+        27,
+        732
+       ]
+      ]
+     },
+     "r12": {
+      "source_port": {
+       "side": "right",
+       "at": 0.6
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.1731
+      },
+      "course": [
+       [
+        1357,
+        386
+       ],
+       [
+        1561,
+        386
+       ]
+      ]
+     },
+     "r13": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.5313
+      },
+      "target_port": {
+       "side": "top",
+       "at": 0.4688
+      },
+      "course": [
+       [
+        368,
+        98
+       ],
+       [
+        368,
+        204
+       ]
+      ]
+     },
+     "r14": {
+      "source_port": {
+       "side": "top",
+       "at": 0.25
+      },
+      "target_port": {
+       "side": "bottom",
+       "at": 0.75
+      },
+      "course": [
+       [
+        1342,
+        374
+       ],
+       [
+        1342,
+        225
+       ]
+      ]
+     },
+     "r15": {
+      "source_port": {
+       "side": "right",
+       "at": 0.25
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.75
+      },
+      "course": [
+       [
+        832,
+        389
+       ],
+       [
+        1337,
+        389
+       ]
+      ]
+     },
+     "r16": {
+      "source_port": {
+       "side": "right",
+       "at": 0.0769
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.85
+      },
+      "course": [
+       [
+        1210,
+        222
+       ],
+       [
+        1327,
+        222
+       ]
+      ]
+     },
+     "r17": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.65
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "course": [
+       [
+        1598,
+        60
+       ],
+       [
+        1598,
+        234
+       ],
+       [
+        1218,
+        234
+       ],
+       [
+        1218,
+        206
+       ],
+       [
+        958,
+        206
+       ],
+       [
+        958,
+        248
+       ],
+       [
+        483,
+        248
+       ],
+       [
+        483,
+        234
+       ],
+       [
+        453,
+        234
+       ]
+      ]
+     },
+     "r18": {
+      "source_port": {
+       "side": "right",
+       "at": 0.3333
+      },
+      "target_port": {
+       "side": "bottom",
+       "at": 0.5
+      },
+      "course": [
+       [
+        180,
+        594
+       ],
+       [
+        265,
+        594
+       ],
+       [
+        265,
+        272
+       ],
+       [
+        584,
+        272
+       ],
+       [
+        584,
+        240
+       ]
+      ]
+     },
+     "r19": {
+      "source_port": {
+       "side": "right",
+       "at": 0.26
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        919,
+        194
+       ],
+       [
+        1297,
+        194
+       ],
+       [
+        1297,
+        215
+       ],
+       [
+        1327,
+        215
+       ]
+      ]
+     },
+     "r2": {
+      "source_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "course": [
+       [
+        1312,
+        771
+       ],
+       [
+        1172,
+        771
+       ],
+       [
+        1172,
+        924
+       ],
+       [
+        572,
+        924
+       ],
+       [
+        572,
+        968
+       ],
+       [
+        192,
+        968
+       ],
+       [
+        192,
+        951
+       ],
+       [
+        162,
+        951
+       ]
+      ]
+     },
+     "r20": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "course": [
+       [
+        1578,
+        223
+       ],
+       [
+        1578,
+        369
+       ],
+       [
+        1365,
+        369
+       ],
+       [
+        1365,
+        541
+       ],
+       [
+        1304,
+        541
+       ],
+       [
+        1304,
+        957
+       ],
+       [
+        1199,
+        957
+       ]
+      ]
+     },
+     "r21": {
+      "source_port": {
+       "side": "right",
+       "at": 0.85
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.0769
+      },
+      "course": [
+       [
+        832,
+        401
+       ],
+       [
+        1074,
+        401
+       ]
+      ]
+     },
+     "r22": {
+      "source_port": {
+       "side": "left",
+       "at": 0.2
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.15
+      },
+      "course": [
+       [
+        560,
+        41
+       ],
+       [
+        451,
+        41
+       ],
+       [
+        451,
+        30
+       ],
+       [
+        227,
+        30
+       ],
+       [
+        227,
+        43
+       ],
+       [
+        197,
+        43
+       ]
+      ]
+     },
+     "r23": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.55
+      },
+      "target_port": {
+       "side": "top",
+       "at": 0.5
+      },
+      "course": [
+       [
+        1638,
+        429
+       ],
+       [
+        1638,
+        567
+       ]
+      ]
+     },
+     "r24": {
+      "source_port": {
+       "side": "right",
+       "at": 0.85
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.0769
+      },
+      "course": [
+       [
+        832,
+        401
+       ],
+       [
+        1074,
+        401
+       ]
+      ]
+     },
+     "r26": {
+      "source_port": {
+       "side": "right",
+       "at": 0.66
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.25
+      },
+      "course": [
+       [
+        1446,
+        582
+       ],
+       [
+        1480,
+        582
+       ],
+       [
+        1480,
+        749
+       ],
+       [
+        1599,
+        749
+       ]
+      ]
+     },
+     "r27": {
+      "source_port": {
+       "side": "right",
+       "at": 0.76
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        404,
+        795
+       ],
+       [
+        547,
+        795
+       ],
+       [
+        547,
+        900
+       ],
+       [
+        1049,
+        900
+       ],
+       [
+        1049,
+        957
+       ],
+       [
+        1079,
+        957
+       ]
+      ]
+     },
+     "r28": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.3214
+      },
+      "target_port": {
+       "side": "top",
+       "at": 0.625
+      },
+      "course": [
+       [
+        1119,
+        449
+       ],
+       [
+        1119,
+        726
+       ]
+      ]
+     },
+     "r29": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "top",
+       "at": 0.3833
+      },
+      "course": [
+       [
+        570,
+        57
+       ],
+       [
+        570,
+        190
+       ]
+      ]
+     },
+     "r3": {
+      "source_port": {
+       "side": "right",
+       "at": 0.2833
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.4
+      },
+      "course": [
+       [
+        197,
+        51
+       ],
+       [
+        209,
+        51
+       ],
+       [
+        209,
+        -8
+       ],
+       [
+        530,
+        -8
+       ],
+       [
+        530,
+        45
+       ],
+       [
+        560,
+        45
+       ]
+      ]
+     },
+     "r30": {
+      "source_port": {
+       "side": "top",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.7167
+      },
+      "course": [
+       [
+        1337,
+        205
+       ],
+       [
+        1337,
+        98
+       ],
+       [
+        451,
+        98
+       ],
+       [
+        451,
+        106
+       ],
+       [
+        227,
+        106
+       ],
+       [
+        227,
+        77
+       ],
+       [
+        197,
+        77
+       ]
+      ]
+     },
+     "r32": {
+      "source_port": {
+       "side": "right",
+       "at": 0.25
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.75
+      },
+      "course": [
+       [
+        162,
+        936
+       ],
+       [
+        275,
+        936
+       ],
+       [
+        275,
+        815
+       ],
+       [
+        1569,
+        815
+       ],
+       [
+        1569,
+        775
+       ],
+       [
+        1599,
+        775
+       ]
+      ]
+     },
+     "r33": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        404,
+        782
+       ],
+       [
+        514,
+        782
+       ],
+       [
+        514,
+        939
+       ],
+       [
+        544,
+        939
+       ]
+      ]
+     },
+     "r34": {
+      "source_port": {
+       "side": "top",
+       "at": 0.3571
+      },
+      "target_port": {
+       "side": "bottom",
+       "at": 0.5917
+      },
+      "course": [
+       [
+        1649,
+        736
+       ],
+       [
+        1649,
+        617
+       ]
+      ]
+     },
+     "r35": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.25
+      },
+      "course": [
+       [
+        1076,
+        45
+       ],
+       [
+        1297,
+        45
+       ],
+       [
+        1297,
+        210
+       ],
+       [
+        1327,
+        210
+       ]
+      ]
+     },
+     "r36": {
+      "source_port": {
+       "side": "right",
+       "at": 0.3333
+      },
+      "target_port": {
+       "side": "bottom",
+       "at": 0.35
+      },
+      "course": [
+       [
+        174,
+        240
+       ],
+       [
+        285,
+        240
+       ],
+       [
+        285,
+        173
+       ],
+       [
+        1577,
+        173
+       ],
+       [
+        1577,
+        90
+       ],
+       [
+        1592,
+        90
+       ],
+       [
+        1592,
+        60
+       ]
+      ]
+     },
+     "r37": {
+      "source_port": {
+       "side": "left",
+       "at": 0.6
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.4333
+      },
+      "course": [
+       [
+        560,
+        49
+       ],
+       [
+        547,
+        49
+       ],
+       [
+        547,
+        29
+       ],
+       [
+        275,
+        29
+       ],
+       [
+        275,
+        60
+       ],
+       [
+        197,
+        60
+       ]
+      ]
+     },
+     "r38": {
+      "source_port": {
+       "side": "left",
+       "at": 0.32
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.68
+      },
+      "course": [
+       [
+        1578,
+        583
+       ],
+       [
+        1446,
+        583
+       ]
+      ]
+     },
+     "r39": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5333
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.4667
+      },
+      "course": [
+       [
+        197,
+        66
+       ],
+       [
+        283,
+        66
+       ]
+      ]
+     },
+     "r4": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.5313
+      },
+      "target_port": {
+       "side": "top",
+       "at": 0.4688
+      },
+      "course": [
+       [
+        368,
+        98
+       ],
+       [
+        368,
+        204
+       ]
+      ]
+     },
+     "r40": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.3269
+      },
+      "course": [
+       [
+        919,
+        206
+       ],
+       [
+        946,
+        206
+       ],
+       [
+        946,
+        414
+       ],
+       [
+        1074,
+        414
+       ]
+      ]
+     },
+     "r41": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.65
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.34
+      },
+      "course": [
+       [
+        286,
+        396
+       ],
+       [
+        286,
+        572
+       ],
+       [
+        254,
+        572
+       ],
+       [
+        254,
+        774
+       ],
+       [
+        284,
+        774
+       ]
+      ]
+     },
+     "r42": {
+      "source_port": {
+       "side": "right",
+       "at": 0.86
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.4
+      },
+      "course": [
+       [
+        938,
+        43
+       ],
+       [
+        1056,
+        43
+       ]
+      ]
+     },
+     "r43": {
+      "source_port": {
+       "side": "right",
+       "at": 0.6667
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.66
+      },
+      "course": [
+       [
+        180,
+        614
+       ],
+       [
+        205,
+        614
+       ],
+       [
+        205,
+        790
+       ],
+       [
+        284,
+        790
+       ]
+      ]
+     },
+     "r44": {
+      "source_port": {
+       "side": "left",
+       "at": 0.5962
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.42
+      },
+      "course": [
+       [
+        1599,
+        767
+       ],
+       [
+        1432,
+        767
+       ]
+      ]
+     },
+     "r45": {
+      "source_port": {
+       "side": "top",
+       "at": 0.0833
+      },
+      "target_port": {
+       "side": "bottom",
+       "at": 0.5
+      },
+      "course": [
+       [
+        283,
+        580
+       ],
+       [
+        283,
+        396
+       ]
+      ]
+     },
+     "r46": {
+      "source_port": {
+       "side": "right",
+       "at": 0.3667
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.6333
+      },
+      "course": [
+       [
+        174,
+        242
+       ],
+       [
+        293,
+        242
+       ]
+      ]
+     },
+     "r47": {
+      "source_port": {
+       "side": "right",
+       "at": 0.76
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        919,
+        219
+       ],
+       [
+        931,
+        219
+       ],
+       [
+        931,
+        376
+       ],
+       [
+        1044,
+        376
+       ],
+       [
+        1044,
+        423
+       ],
+       [
+        1074,
+        423
+       ]
+      ]
+     },
+     "r48": {
+      "source_port": {
+       "side": "left",
+       "at": 0.3333
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.85
+      },
+      "course": [
+       [
+        293,
+        224
+       ],
+       [
+        265,
+        224
+       ],
+       [
+        265,
+        85
+       ],
+       [
+        197,
+        85
+       ]
+      ]
+     },
+     "r49": {
+      "source_port": {
+       "side": "left",
+       "at": 0.6346
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.3333
+      },
+      "course": [
+       [
+        283,
+        941
+       ],
+       [
+        162,
+        941
+       ]
+      ]
+     },
+     "r5": {
+      "source_port": {
+       "side": "right",
+       "at": 0.6
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.25
+      },
+      "course": [
+       [
+        938,
+        30
+       ],
+       [
+        1048,
+        30
+       ],
+       [
+        1048,
+        27
+       ],
+       [
+        1282,
+        27
+       ],
+       [
+        1282,
+        45
+       ],
+       [
+        1312,
+        45
+       ]
+      ]
+     },
+     "r50": {
+      "source_port": {
+       "side": "right",
+       "at": 0.8
+      },
+      "target_port": {
+       "side": "top",
+       "at": 0.5
+      },
+      "course": [
+       [
+        832,
+        400
+       ],
+       [
+        844,
+        400
+       ],
+       [
+        844,
+        532
+       ],
+       [
+        1055,
+        532
+       ],
+       [
+        1055,
+        562
+       ]
+      ]
+     },
+     "r52": {
+      "source_port": {
+       "side": "right",
+       "at": 0.8
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        938,
+        40
+       ],
+       [
+        950,
+        40
+       ],
+       [
+        950,
+        63
+       ],
+       [
+        1282,
+        63
+       ],
+       [
+        1282,
+        60
+       ],
+       [
+        1312,
+        60
+       ]
+      ]
+     },
+     "r53": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.4313
+      },
+      "target_port": {
+       "side": "top",
+       "at": 0.575
+      },
+      "course": [
+       [
+        106,
+        94
+       ],
+       [
+        106,
+        220
+       ]
+      ]
+     },
+     "r54": {
+      "source_port": {
+       "side": "left",
+       "at": 0.55
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.1667
+      },
+      "course": [
+       [
+        560,
+        48
+       ],
+       [
+        443,
+        48
+       ]
+      ]
+     },
+     "r55": {
+      "source_port": {
+       "side": "left",
+       "at": 0.4
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.86
+      },
+      "course": [
+       [
+        1056,
+        43
+       ],
+       [
+        938,
+        43
+       ]
+      ]
+     },
+     "r56": {
+      "source_port": {
+       "side": "left",
+       "at": 0.75
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.3269
+      },
+      "course": [
+       [
+        1312,
+        75
+       ],
+       [
+        725,
+        75
+       ],
+       [
+        725,
+        754
+       ],
+       [
+        695,
+        754
+       ]
+      ]
+     },
+     "r57": {
+      "source_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.34
+      },
+      "course": [
+       [
+        1561,
+        403
+       ],
+       [
+        1304,
+        403
+       ],
+       [
+        1304,
+        541
+       ],
+       [
+        1036,
+        541
+       ],
+       [
+        1036,
+        572
+       ],
+       [
+        686,
+        572
+       ],
+       [
+        686,
+        607
+       ],
+       [
+        423,
+        607
+       ],
+       [
+        423,
+        597
+       ],
+       [
+        393,
+        597
+       ]
+      ]
+     },
+     "r58": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.1731
+      },
+      "course": [
+       [
+        1066,
+        55
+       ],
+       [
+        1066,
+        210
+       ],
+       [
+        1044,
+        210
+       ],
+       [
+        1044,
+        406
+       ],
+       [
+        1074,
+        406
+       ]
+      ]
+     },
+     "r59": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        930,
+        605
+       ],
+       [
+        1014,
+        605
+       ],
+       [
+        1014,
+        751
+       ],
+       [
+        1044,
+        751
+       ]
+      ]
+     },
+     "r6": {
+      "source_port": {
+       "side": "right",
+       "at": 0.66
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        393,
+        613
+       ],
+       [
+        412,
+        613
+       ],
+       [
+        412,
+        763
+       ],
+       [
+        555,
+        763
+       ]
+      ]
+     },
+     "r7": {
+      "source_port": {
+       "side": "left",
+       "at": 0.4167
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.5192
+      },
+      "course": [
+       [
+        782,
+        764
+       ],
+       [
+        695,
+        764
+       ]
+      ]
+     },
+     "r8": {
+      "source_port": {
+       "side": "right",
+       "at": 0.6667
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        443,
+        78
+       ],
+       [
+        494,
+        78
+       ],
+       [
+        494,
+        215
+       ],
+       [
+        524,
+        215
+       ]
+      ]
+     },
+     "r9": {
+      "source_port": {
+       "side": "right",
+       "at": 0.26
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.6667
+      },
+      "course": [
+       [
+        404,
+        770
+       ],
+       [
+        431,
+        770
+       ],
+       [
+        431,
+        750
+       ],
+       [
+        535,
+        750
+       ],
+       [
+        535,
+        807
+       ],
+       [
+        752,
+        807
+       ],
+       [
+        752,
+        779
+       ],
+       [
+        782,
+        779
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": [
+     [
+      "r22",
+      "r37"
+     ],
+     [
+      "r42",
+      "r52"
+     ],
+     [
+      "r42",
+      "r55"
+     ],
+     [
+      "r22",
+      "r3"
+     ],
+     [
+      "r3",
+      "r54"
+     ],
+     [
+      "r37",
+      "r54"
+     ],
+     [
+      "r37",
+      "r39"
+     ],
+     [
+      "r35",
+      "r5"
+     ],
+     [
+      "r17",
+      "r58"
+     ],
+     [
+      "r19",
+      "r35"
+     ],
+     [
+      "r36",
+      "r46"
+     ],
+     [
+      "r1",
+      "r12"
+     ],
+     [
+      "r21",
+      "r50"
+     ],
+     [
+      "r21",
+      "r24"
+     ],
+     [
+      "r24",
+      "r58"
+     ],
+     [
+      "r26",
+      "r38"
+     ],
+     [
+      "r1",
+      "r38"
+     ],
+     [
+      "r32",
+      "r49"
+     ],
+     [
+      "r41",
+      "r45"
+     ],
+     [
+      "r13",
+      "r4"
+     ],
+     [
+      "r47",
+      "r58"
+     ],
+     [
+      "r19",
+      "r35"
+     ],
+     [
+      "r17",
+      "r36"
+     ]
+    ]
+   }
+  }
+ ],
+ "quick": {
+  "scene": {
+   "elements": {
+    "l0": {
+     "left": 0,
+     "top": 0,
+     "right": 100,
+     "bottom": 40
+    },
+    "l1": {
+     "left": 0,
+     "top": 80,
+     "right": 100,
+     "bottom": 120
+    },
+    "l2": {
+     "left": 0,
+     "top": 150,
+     "right": 100,
+     "bottom": 190
+    },
+    "l3": {
+     "left": 0,
+     "top": 240,
+     "right": 100,
+     "bottom": 280
+    },
+    "l4": {
+     "left": 0,
+     "top": 320,
+     "right": 100,
+     "bottom": 360
+    },
+    "r0": {
+     "left": 500,
+     "top": 20,
+     "right": 600,
+     "bottom": 60
+    },
+    "r1": {
+     "left": 500,
+     "top": 100,
+     "right": 600,
+     "bottom": 140
+    },
+    "r2": {
+     "left": 500,
+     "top": 180,
+     "right": 600,
+     "bottom": 220
+    },
+    "r3": {
+     "left": 500,
+     "top": 260,
+     "right": 600,
+     "bottom": 300
+    },
+    "r4": {
+     "left": 500,
+     "top": 340,
+     "right": 600,
+     "bottom": 380
+    },
+    "wall-top": {
+     "left": 250,
+     "top": -100,
+     "right": 290,
+     "bottom": 160
+    },
+    "wall-bottom": {
+     "left": 250,
+     "top": 200,
+     "right": 290,
+     "bottom": 500
+    }
+   },
+   "boxes": {},
+   "text": {},
+   "fixed_lines": []
+  },
+  "connectors": [
+   {
+    "key": "c0",
+    "source": "l0",
+    "target": "r4",
+    "decorated": [
+     true,
+     true
+    ]
+   },
+   {
+    "key": "c1",
+    "source": "l1",
+    "target": "r3",
+    "decorated": [
+     true,
+     true
+    ]
+   },
+   {
+    "key": "c2",
+    "source": "l2",
+    "target": "r2",
+    "decorated": [
+     true,
+     true
+    ]
+   },
+   {
+    "key": "c3",
+    "source": "l3",
+    "target": "r1",
+    "decorated": [
+     true,
+     true
+    ]
+   },
+   {
+    "key": "c4",
+    "source": "l4",
+    "target": "r0",
+    "decorated": [
+     true,
+     true
+    ]
+   }
+  ],
+  "previous": {
+   "c0": {
+    "source_port": {
+     "side": "right",
+     "at": 0.5
+    },
+    "target_port": {
+     "side": "left",
+     "at": 0.5
+    },
+    "course": [
+     [
+      100,
+      20
+     ],
+     [
+      242,
+      20
+     ],
+     [
+      242,
+      169
+     ],
+     [
+      470,
+      169
+     ],
+     [
+      470,
+      360
+     ],
+     [
+      500,
+      360
+     ]
+    ]
+   },
+   "c1": {
+    "source_port": {
+     "side": "right",
+     "at": 0.5
+    },
+    "target_port": {
+     "side": "left",
+     "at": 0.5
+    },
+    "course": [
+     [
+      100,
+      100
+     ],
+     [
+      130,
+      100
+     ],
+     [
+      130,
+      181
+     ],
+     [
+      298,
+      181
+     ],
+     [
+      298,
+      280
+     ],
+     [
+      500,
+      280
+     ]
+    ]
+   },
+   "c2": {
+    "source_port": {
+     "side": "right",
+     "at": 0.75
+    },
+    "target_port": {
+     "side": "left",
+     "at": 0.25
+    },
+    "course": [
+     [
+      100,
+      190
+     ],
+     [
+      500,
+      190
+     ]
+    ]
+   },
+   "c3": {
+    "source_port": {
+     "side": "right",
+     "at": 0.5
+    },
+    "target_port": {
+     "side": "left",
+     "at": 0.5
+    },
+    "course": [
+     [
+      100,
+      260
+     ],
+     [
+      242,
+      260
+     ],
+     [
+      242,
+      508
+     ],
+     [
+      492,
+      508
+     ],
+     [
+      492,
+      128
+     ],
+     [
+      470,
+      128
+     ],
+     [
+      470,
+      120
+     ],
+     [
+      500,
+      120
+     ]
+    ]
+   },
+   "c4": {
+    "source_port": {
+     "side": "right",
+     "at": 0.5
+    },
+    "target_port": {
+     "side": "left",
+     "at": 0.5
+    },
+    "course": [
+     [
+      100,
+      340
+     ],
+     [
+      142,
+      340
+     ],
+     [
+      142,
+      -108
+     ],
+     [
+      470,
+      -108
+     ],
+     [
+      470,
+      40
+     ],
+     [
+      500,
+      40
+     ]
+    ]
+   }
+  },
+  "changed": [
+   "l2"
+  ],
+  "result": {
+   "routes": {
+    "c0": {
+     "source_port": {
+      "side": "right",
+      "at": 0.5
+     },
+     "target_port": {
+      "side": "left",
+      "at": 0.5
+     },
+     "course": [
+      [
+       100,
+       20
+      ],
+      [
+       242,
+       20
+      ],
+      [
+       242,
+       169
+      ],
+      [
+       470,
+       169
+      ],
+      [
+       470,
+       360
+      ],
+      [
+       500,
+       360
+      ]
+     ]
+    },
+    "c1": {
+     "source_port": {
+      "side": "right",
+      "at": 0.5
+     },
+     "target_port": {
+      "side": "left",
+      "at": 0.5
+     },
+     "course": [
+      [
+       100,
+       100
+      ],
+      [
+       130,
+       100
+      ],
+      [
+       130,
+       181
+      ],
+      [
+       298,
+       181
+      ],
+      [
+       298,
+       280
+      ],
+      [
+       500,
+       280
+      ]
+     ]
+    },
+    "c2": {
+     "source_port": {
+      "side": "right",
+      "at": 0.875
+     },
+     "target_port": {
+      "side": "left",
+      "at": 0.125
+     },
+     "course": [
+      [
+       100,
+       185
+      ],
+      [
+       500,
+       185
+      ]
+     ]
+    },
+    "c3": {
+     "source_port": {
+      "side": "right",
+      "at": 0.5
+     },
+     "target_port": {
+      "side": "left",
+      "at": 0.5
+     },
+     "course": [
+      [
+       100,
+       260
+      ],
+      [
+       242,
+       260
+      ],
+      [
+       242,
+       508
+      ],
+      [
+       492,
+       508
+      ],
+      [
+       492,
+       128
+      ],
+      [
+       470,
+       128
+      ],
+      [
+       470,
+       120
+      ],
+      [
+       500,
+       120
+      ]
+     ]
+    },
+    "c4": {
+     "source_port": {
+      "side": "right",
+      "at": 0.5
+     },
+     "target_port": {
+      "side": "left",
+      "at": 0.5
+     },
+     "course": [
+      [
+       100,
+       340
+      ],
+      [
+       142,
+       340
+      ],
+      [
+       142,
+       -108
+      ],
+      [
+       470,
+       -108
+      ],
+      [
+       470,
+       40
+      ],
+      [
+       500,
+       40
+      ]
+     ]
+    }
+   },
+   "unroutable": [],
+   "unseparated": [
+    [
+     "c1",
+     "c2"
+    ]
+   ]
+  }
+ }
+}
