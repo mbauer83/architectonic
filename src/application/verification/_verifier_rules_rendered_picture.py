@@ -1,4 +1,4 @@
-"""What a diagram's rendered picture gets wrong that its body cannot show (W370–W374, W380–W384).
+"""What a diagram's rendered picture gets wrong that its body cannot show (W370–W374, W380–W385).
 
 The syntax check already renders every diagram to find out whether PlantUML accepts it, and threw
 the picture away. This reads that picture before it goes, so the checks cost a parse and no render:
@@ -23,6 +23,9 @@ the picture away. This reads that picture before it goes, so the checks cost a p
   two boxes and how much wider the gap needs to be. A first layout is written down with its gaps
   widened to fit; this reports a gap a later arrangement narrowed, or one the widening could not
   settle. Only of a picture drawn from a stated layout, like W380–W382;
+* **W385** — a relation drawn outside the smallest box holding both its ends. The router keeps two
+  members of a box inside it and leaves only where no route inside exists; this reports that, and a
+  stated route that leaves;
 * **W370** — the picture stated the kind this project reads and could not be read, so none of the
   four were decided. Reported rather than passed over, because a check that silently stopped
   examining pictures looks exactly like a repository of clean ones.
@@ -78,6 +81,7 @@ _CODE_OF: Mapping[PictureDefect, str] = {
     PictureDefect.BEND_AT_AN_END: "W381",
     PictureDefect.RUNS_ALONG: "W382",
     PictureDefect.NARROW_CHANNEL: "W384",
+    PictureDefect.LEAVES_ITS_BOX: "W385",
 }
 
 
@@ -131,6 +135,8 @@ def _place(picture: RenderedPicture, finding: PictureFinding) -> str:
             else f"the text of {names[2]}"
         )
         return f"the relation between {names[0]} and {names[1]} through {whose}"
+    if finding.defect is PictureDefect.LEAVES_ITS_BOX:
+        return f"the relation between {names[0]} and {names[1]}, drawn outside {names[2]}"
     if finding.defect is PictureDefect.NARROW_CHANNEL:
         return (
             f"the gap between {names[0]} and {names[1]}, which {finding.lines} line(s) run along "

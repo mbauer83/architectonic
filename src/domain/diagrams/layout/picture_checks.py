@@ -13,7 +13,9 @@ looking; four things are not, and they are decided here:
 * a relation that **bends at an end**, or **runs along** another line or a border — the hard rules
   of `route_quality` a reader needs to follow a line from one end to the other;
 * a gap between two boxes **too narrow** for the lines that run along it (`channels`): where the
-  room is the arrangement's, which no router can make.
+  room is the arrangement's, which no router can make;
+* a relation that **leaves the smallest box holding both its ends** — a hard rule: two members of a
+  box are joined inside it.
 
 Its soft rules — a jog, two decorations together — are counted beside the findings, like crossings.
 
@@ -66,6 +68,7 @@ class PictureDefect(StrEnum):
     BEND_AT_AN_END = "a relation that bends inside or right behind the decoration at one of its ends"
     RUNS_ALONG = "a relation running along another line or a border"
     NARROW_CHANNEL = "a gap between two boxes too narrow for the lines that run along it"
+    LEAVES_ITS_BOX = "a relation that leaves the smallest box holding both its ends"
 
 
 #: The defects only a router answers for: the hard rules of `route_quality` and `text_clearance`.
@@ -73,7 +76,7 @@ class PictureDefect(StrEnum):
 #: into cluster title bands as a matter of course, which no author can repair.
 KEPT_BY_THE_ROUTER = frozenset({
     PictureDefect.RELATION_THROUGH_TEXT, PictureDefect.BEND_AT_AN_END, PictureDefect.RUNS_ALONG,
-    PictureDefect.NARROW_CHANNEL,
+    PictureDefect.NARROW_CHANNEL, PictureDefect.LEAVES_ITS_BOX,
 })
 
 
@@ -84,7 +87,8 @@ class PictureFinding:
     For a relation drawn through an element, *shapes* is the relation's two ends and then the
     element; through text, its two ends and then what the text is of — a box or an element, the two
     ends of the relation it labels, or nothing for the diagram's title or legend. For a narrow gap,
-    the two boxes, the one with the lower coordinate first. For the others it is the shapes
+    the two boxes, the one with the lower coordinate first. For a relation leaving its box, its two
+    ends and then the box. For the others it is the shapes
     themselves, the box first where one is a box.
     """
 
@@ -240,6 +244,31 @@ def _hard_to_follow(picture: RenderedPicture) -> list[PictureFinding]:
     return findings
 
 
+def _holding_both(picture: RenderedPicture, ends: tuple[str, str]) -> str | None:
+    """The smallest box holding both *ends*, neither of them itself, or None."""
+    extents = [extent for end in ends if (extent := picture.extent_of(end)) is not None]
+    if len(extents) < len(ends):
+        return None
+    both = [
+        (box.extent.width * box.extent.height, alias) for alias, box in picture.boxes.items()
+        if alias not in ends and all(box.extent.encloses(extent) and box.extent != extent for extent in extents)
+    ]
+    return min(both)[1] if both else None
+
+
+def _leaving_their_box(picture: RenderedPicture) -> list[PictureFinding]:
+    """Each relation drawn outside the smallest box holding both its ends."""
+    findings: list[PictureFinding] = []
+    for relation in picture.relations:
+        if (box := _holding_both(picture, relation.ends)) is None:
+            continue
+        inside = picture.boxes[box].extent
+        if any(not inside.encloses(Extent(point.x, point.y, point.x, point.y), slack=_OVERLAP_MARGIN)
+               for point in _course_to_borders(relation, picture)):
+            findings.append(PictureFinding(PictureDefect.LEAVES_ITS_BOX, (*relation.ends, box)))
+    return findings
+
+
 def _narrow_channels(picture: RenderedPicture) -> list[PictureFinding]:
     """Each gap between two boxes too narrow for the lines drawn along it."""
     others = [
@@ -290,6 +319,7 @@ def check_picture(picture: RenderedPicture) -> PictureReport:
             *_relations_through_text(picture),
             *_hard_to_follow(picture),
             *_narrow_channels(picture),
+            *_leaving_their_box(picture),
         ),
         crossings=sum(
             courses_cross(first.course, second.course)

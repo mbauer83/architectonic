@@ -3,14 +3,16 @@
 I1–I5 (`attachment`) say a route belongs to its two elements. These say a reader can follow it, in
 two tiers, stated once as data in `RULE_TIERS` and read by both languages through the shared fixtures:
 
-**Hard** — the router keeps them; a laid-out picture that breaks one is reported (W380–W382):
+**Hard** — the router keeps them; a laid-out picture that breaks one is reported (W380–W382, W385):
 
 * *text* — no line runs through text (`text_clearance`);
 * *A, a straight run into each decorated end* — where a route bends at all, its first and last
   segments are at least `END_RUN` long where a decoration is drawn: the decoration and a clear run
   behind it;
 * *C, no shared runs* — no segment runs along another relation's segment, or along the border of an
-  element or a box, closer than `LINE_CLEARANCE`. Lines cross at right angles; they never merge.
+  element or a box, closer than `LINE_CLEARANCE`. Lines cross at right angles; they never merge;
+* *its box* — a relation between two members of a box stays inside the smallest box holding both
+  (W385; the router's bounds, `routing.visibility.Bounds`).
 
 A line that keeps these three can be traced from one end to the other.
 
@@ -70,6 +72,7 @@ RULE_TIERS: Mapping[str, Tier] = {
     "text": Tier.HARD,
     "bend-at-an-end": Tier.HARD,
     "runs-along": Tier.HARD,
+    "leaves-common-box": Tier.HARD,
     "jog": Tier.SOFT,
     "heads-together": Tier.SOFT,
     "label-obscured": Tier.SOFT,

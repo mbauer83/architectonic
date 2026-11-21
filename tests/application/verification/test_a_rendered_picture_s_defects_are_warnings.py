@@ -177,12 +177,12 @@ class TestAPictureThatCannotBeRead:
         assert _only(RenderedPictureRule(read=lambda _svg: _THROUGH).check("<svg/>", _LOC)).code == "W371"
 
     def test_the_codes_are_their_own(self) -> None:
-        """W370–W374, and W380–W382 and W384 for what a router answers for; W375–W379 and E37x are a
+        """W370–W374, and W380–W382, W384 and W385 for what a router answers for; W375–W379 and E37x are a
         stated layout's, and W383 says no route was found."""
         from src.application.verification._verifier_rules_rendered_picture import _CODE_OF
 
         assert sorted([UNREAD_PICTURE_CODE, *_CODE_OF.values()]) == [
-            "W370", "W371", "W372", "W373", "W374", "W380", "W381", "W382", "W384",
+            "W370", "W371", "W372", "W373", "W374", "W380", "W381", "W382", "W384", "W385",
         ]
 
 
@@ -336,6 +336,31 @@ class TestANarrowGap:
 
     def test_it_is_asked_only_of_a_picture_a_router_drew(self) -> None:
         assert "W384" not in {issue.code for issue in picture_issues(self._GAP, _LOC)}
+
+
+class TestARelationLeavingItsBox:
+    """W385: two members of a box are joined inside it."""
+
+    _BOX = DrawnBox(
+        alias="G", extent=Extent(0, 0, 600, 200), inside=None, words=(MeasuredWord("Team", Point(280, 16), 40),),
+    )
+
+    def _with(self, *points: tuple[float, float]) -> RenderedPicture:
+        return _picture(
+            self._BOX, _named("A", "Orders", 40, 80, inside="G"), _named("B", "Billing", 440, 80, inside="G"),
+            relations=(_line("A", "B", *points),),
+        )
+
+    def test_a_line_between_two_members_drawn_outside_their_box_is_w385(self) -> None:
+        outside = self._with((90, 120), (90, 240), (490, 240), (490, 120))
+        issue = next(issue for issue in picture_issues(outside, _LOC, laid_out=True) if issue.code == "W385")
+
+        assert "«Orders» and «Billing», drawn outside «Team»" in issue.message
+
+    def test_one_drawn_inside_it_is_not(self) -> None:
+        inside = self._with((140, 100), (440, 100))
+
+        assert "W385" not in {issue.code for issue in picture_issues(inside, _LOC, laid_out=True)}
 
 
 def test_a_layout_that_leaves_a_relation_no_route_is_w383() -> None:
