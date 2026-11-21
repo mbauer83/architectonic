@@ -28,7 +28,7 @@ from src.domain.diagrams.layout.geometry import Extent
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.domain.diagrams.layout.rendered_picture import NotReadable
 from src.infrastructure.rendering.layout._svg_drawing import SVG_NAMESPACE, Unreadable
-from src.infrastructure.rendering.layout.arrangement import KEEP_UNMOVED_LINES, Arrangement, arrange, label_extent
+from src.infrastructure.rendering.layout.arrangement import Arrangement, arrange, label_extent
 from src.infrastructure.rendering.layout.plantuml_svg_reader import RenderedDrawing, read_rendered_drawing
 from src.infrastructure.rendering.layout.relation_drawing import drawn_relation
 from src.infrastructure.rendering.layout.shape_drawing import fitted_box, placed_shape, resized_element
@@ -119,9 +119,9 @@ class _NoRoute(Exception):
         self.relations = relations
 
 
-def _composed(drawing: RenderedDrawing, diagram: LaidOutDiagram, keep_unmoved_lines: bool) -> Element:
+def _composed(drawing: RenderedDrawing, diagram: LaidOutDiagram) -> Element:
     picture = drawing.picture
-    arrangement = arrange(picture, diagram, keep_unmoved_lines=keep_unmoved_lines)
+    arrangement = arrange(picture, diagram)
     if arrangement.unroutable:
         raise _NoRoute(arrangement.unroutable)
     was, now = _diagram_extent_drawn(drawing), _diagram_extent_now(drawing, arrangement)
@@ -159,15 +159,13 @@ def _composed(drawing: RenderedDrawing, diagram: LaidOutDiagram, keep_unmoved_li
     return root
 
 
-def compose(
-    plantuml_svg: str, diagram: LaidOutDiagram, *, keep_unmoved_lines: bool = KEEP_UNMOVED_LINES,
-) -> str | NotComposed:
+def compose(plantuml_svg: str, diagram: LaidOutDiagram) -> str | NotComposed:
     """The picture in *plantuml_svg* drawn again from *diagram*'s layout, or `NotComposed` saying why not."""
     drawing = read_rendered_drawing(plantuml_svg)
     if isinstance(drawing, NotReadable):
         return NotComposed(drawing.met)
     try:
-        root = _composed(drawing, diagram, keep_unmoved_lines)
+        root = _composed(drawing, diagram)
     except Unreadable as unreadable:
         return NotComposed(unreadable.met)
     except _NoRoute as no_route:

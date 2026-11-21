@@ -9,22 +9,20 @@
  * With `previous` and `changed`, only the connectors of what moved are routed and nudged: a drag's
  * quick pass.
  */
-import { endsConflict, formedAfresh, fraction } from '../attachment'
 import type { Extent, Point } from '../geometry'
-import { centreOf, encloses, heightOf, widthOf } from '../geometry'
-import type { Port, Side } from '../orthogonal'
-import { STUB, courseOf, leavesLevel } from '../orthogonal'
+import type { Port } from '../orthogonal'
+import { STUB } from '../orthogonal'
 import { nudged } from './nudging'
-import type { EndOnSide, Stub } from './ports'
-import { OUTWARD_INDEX, inLine, spread, stubOf } from './ports'
-import type { Connector, RoutedConnector, RoutingResult, RoutingScene } from './scene'
+import type { Stub } from './ports'
+import { OUTWARD_INDEX, inLine, stubOf } from './ports'
+import type { Choice, Connector, RoutedConnector, RoutingResult, RoutingScene } from './scene'
 import { SIDES, byText, extentOf, runFor } from './scene'
 import type { Found } from './search'
 import { DIRECTIONS, REVERSE, search } from './search'
 import type { Passage } from './visibility'
 import { FULL, Lines, Visibility } from './visibility'
-
-type Choice = readonly [Side, number]
+import { special } from './special'
+import { portsSpread } from './spreading'
 
 const sidesOf = (port: Port | undefined): Choice[] =>
   port ? [[port.side, port.at]] : SIDES.map((side): Choice => [side, 0.5])
@@ -66,11 +64,6 @@ const straightened = (points: readonly Point[]): Point[] => {
   return [...kept, points[points.length - 1]]
 }
 
-const shareAlong = (extent: Extent, coordinate: number, level: boolean): number => {
-  const length = level ? heightOf(extent) : widthOf(extent)
-  return length > 0 ? (coordinate - (level ? extent.top : extent.left)) / length : 0.5
-}
-
 class Routing {
   readonly visibility: Visibility
   readonly crowd = new Lines()
@@ -84,7 +77,7 @@ class Routing {
     routed.course.slice(1).forEach((b, index) => this.crowd.add(routed.course[index], b))
   }
 
-  private own(connector: Connector): Extent[] {
+  own(connector: Connector): Extent[] {
     return [connector.source, connector.target].flatMap((end) => {
       const grown = this.visibility.grown.get(end)
       return grown ? [grown] : []
@@ -98,11 +91,21 @@ class Routing {
     return choices.map(([side, at]) => stubOf(extent, side, at, run)).filter((stub) => usable(stub, passage, own))
   }
 
-  searched(connector: Connector, sources: readonly Choice[], targets: readonly Choice[]): RoutedConnector | null {
+  /**
+   * The cheapest route between the choices of ports, or null. With *liningUp*, ports on facing sides
+   * are also tried lined up for a straight run; without, the ports are as chosen — spread along a side
+   * another end shares, which a straight run lined up elsewhere would undo.
+   */
+  searched(
+    connector: Connector,
+    sources: readonly Choice[],
+    targets: readonly Choice[],
+    liningUp = true,
+  ): RoutedConnector | null {
     let passage = this.visibility.passage([connector.source, connector.target])
     const starts = this.stubs(connector, 0, sources, passage)
     const goals = this.stubs(connector, 1, targets, passage)
-    const [linedStarts, linedGoals] = this.linedUp(connector, sources, targets)
+    const [linedStarts, linedGoals] = liningUp ? this.linedUp(connector, sources, targets) : [[], []]
     const crowded = passage.adding([], this.crowd)
     const straight = this.straight(connector, [...linedStarts, ...starts], [...linedGoals, ...goals], crowded)
     if (straight) return straight
@@ -160,52 +163,6 @@ class Routing {
     return { key: connector.key, sourcePort: best[0].port, targetPort: best[1].port, course: [best[0].at, best[1].at] }
   }
 
-  special(connector: Connector): RoutedConnector | null | true {
-    const source = extentOf(this.scene, connector.source)
-    const target = extentOf(this.scene, connector.target)
-    if (connector.source === connector.target) return aroundItself(connector, source)
-    if (encloses(source, target) || encloses(target, source)) return this.wholeToPart(connector, source, target)
-    if (endsConflict(source, target)) {
-      const made = formedAfresh({}, source, target)
-      const course = courseOf(made, source, target)
-      if (made.from && made.to && course) {
-        return { key: connector.key, sourcePort: made.from, targetPort: made.to, course }
-      }
-    }
-    return true
-  }
-
-  private wholeToPart(connector: Connector, source: Extent, target: Extent): RoutedConnector | null {
-    const wholeIsSource = encloses(source, target)
-    const whole = wholeIsSource ? source : target
-    const part = wholeIsSource ? target : source
-    const partKey = wholeIsSource ? connector.target : connector.source
-    const passage = this.visibility.passage([partKey, partKey])
-    const gaps: Record<Side, number> = {
-      top: part.top - whole.top,
-      bottom: whole.bottom - part.bottom,
-      left: part.left - whole.left,
-      right: whole.right - part.right,
-    }
-    const order = [...SIDES].sort((one, other) => gaps[one] - gaps[other] || SIDES.indexOf(one) - SIDES.indexOf(other))
-    for (const side of order) {
-      const stub = stubOf(part, side, 0.5, 0)
-      const borders: Record<Side, Point> = {
-        top: { x: stub.at.x, y: whole.top },
-        bottom: { x: stub.at.x, y: whole.bottom },
-        left: { x: whole.left, y: stub.at.y },
-        right: { x: whole.right, y: stub.at.y },
-      }
-      const border = borders[side]
-      if (passage.stepBlocked(stub.at, border, this.own(connector))) continue
-      const level = leavesLevel(side)
-      const wholePort: Port = { side, at: fraction(shareAlong(whole, level ? border.y : border.x, level)) }
-      return wholeIsSource
-        ? { key: connector.key, sourcePort: wholePort, targetPort: stub.port, course: [border, stub.at] }
-        : { key: connector.key, sourcePort: stub.port, targetPort: wholePort, course: [stub.at, border] }
-    }
-    return null
-  }
 }
 
 const asRouted = (
@@ -222,75 +179,6 @@ const asRouted = (
     targetPort: goal.port,
     course: straightened([start.at, ...found.points, goal.at]),
   }
-}
-
-const aroundItself = (connector: Connector, extent: Extent): RoutedConnector => {
-  const leaving = stubOf(extent, 'right', 0.7, runFor(connector.decorated[0]))
-  const arriving = stubOf(extent, 'bottom', 0.7, runFor(connector.decorated[1]))
-  const corner = { x: leaving.end.x, y: arriving.end.y }
-  return {
-    key: connector.key,
-    sourcePort: leaving.port,
-    targetPort: arriving.port,
-    course: [leaving.at, leaving.end, corner, arriving.end, arriving.at],
-  }
-}
-
-const endsOnSides = (
-  routing: Routing,
-  connectors: readonly Connector[],
-  first: ReadonlyMap<string, RoutedConnector>,
-): EndOnSide[] =>
-  connectors.flatMap((connector) => {
-    const routed = first.get(connector.key)
-    if (!routed) return []
-    const both = [
-      [routed.sourcePort, connector.sourcePort, connector.target, connector.source],
-      [routed.targetPort, connector.targetPort, connector.source, connector.target],
-    ] as const
-    return both.flatMap(([port, stated, other, element], which): EndOnSide[] => {
-      if (stated) return []
-      const centre = centreOf(extentOf(routing.scene, other))
-      const toward = leavesLevel(port.side) ? centre.y : centre.x
-      return [{ connector: connector.key, which, element, side: port.side, toward }]
-    })
-  })
-
-const portsSpread = (
-  routing: Routing,
-  connectors: readonly Connector[],
-  first: ReadonlyMap<string, RoutedConnector>,
-): Map<string, readonly [Choice, Choice]> => {
-  const ends = endsOnSides(routing, connectors, first)
-  const at = spread(ends)
-  const sharing = new Map<string, number>()
-  for (const end of ends) {
-    const key = `${end.element}\u0000${end.side}`
-    sharing.set(key, (sharing.get(key) ?? 0) + 1)
-  }
-  const alone = new Set(
-    ends
-      .filter((end) => sharing.get(`${end.element}\u0000${end.side}`) === 1)
-      .map((end) => `${end.connector}\u0000${end.which}`),
-  )
-  const ports = new Map<string, readonly [Choice, Choice]>()
-  for (const connector of connectors) {
-    const routed = first.get(connector.key)
-    if (!routed) continue
-    let chosen: [Choice, Choice] = [
-      [routed.sourcePort.side, at.get(`${connector.key}\u00000`) ?? routed.sourcePort.at],
-      [routed.targetPort.side, at.get(`${connector.key}\u00001`) ?? routed.targetPort.at],
-    ]
-    if (alone.has(`${connector.key}\u00000`) && alone.has(`${connector.key}\u00001`)) {
-      const lined = inLine(extentOf(routing.scene, connector.source), extentOf(routing.scene, connector.target), [
-        chosen[0][0],
-        chosen[1][0],
-      ])
-      if (lined) chosen = [[chosen[0][0], lined[0]], [chosen[1][0], lined[1]]]
-    }
-    ports.set(connector.key, chosen)
-  }
-  return ports
 }
 
 export interface QuickPass {
@@ -324,7 +212,7 @@ export const routeAll = (
   const searched: Connector[] = []
   const first = new Map<string, RoutedConnector>()
   for (const connector of toRoute) {
-    const made = routing.special(connector)
+    const made = special(scene, routing.visibility, connector, routing.own(connector))
     if (made === true) {
       searched.push(connector)
       const again = quick?.previous.get(connector.key)
@@ -341,11 +229,11 @@ export const routeAll = (
       routing.taken(made)
     }
   }
-  for (const [key, [source, target]] of portsSpread(routing, searched, first)) {
+  for (const [key, [source, target]] of portsSpread(scene, searched, first)) {
     const connector = searched.find((one) => one.key === key)
     const before = first.get(key)
     if (!connector || !before) continue
-    const routed = routing.searched(connector, [source], [target]) ?? before
+    const routed = routing.searched(connector, [source], [target], false) ?? before
     routes.set(key, routed)
     routing.taken(routed)
   }

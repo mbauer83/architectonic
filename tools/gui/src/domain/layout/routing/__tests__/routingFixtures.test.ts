@@ -12,10 +12,12 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { Extent } from '../../geometry'
 import type { Port } from '../../orthogonal'
+import { channels, widerBy } from '../../channels'
 import { EAST, SOUTH } from '../graph'
 import { routeAll } from '../router'
 import type { Connector, RoutedConnector, RoutingResult, RoutingScene } from '../scene'
 import { Visibility } from '../visibility'
+import { widened } from '../widening'
 
 type XY = readonly [number, number]
 
@@ -56,6 +58,12 @@ const routing = JSON.parse(
     level: (number | null)[][]
     upright: (number | null)[][]
     joins: number[][]
+  }
+  widening: {
+    scene: SceneJson
+    connectors: ConnectorJson[]
+    channels: (Record<string, number | string> & { wider_by: number })[]
+    widened: SceneJson
   }
   cases: { name: string; scene: SceneJson; connectors: ConnectorJson[]; result: ResultJson }[]
   quick: { scene: SceneJson; connectors: ConnectorJson[]; previous: Record<string, RoutedJson>; changed: string[]; result: ResultJson }
@@ -124,6 +132,29 @@ describe('the visibility graph is the one the Python router builds', () => {
       }
     }
     expect(answered.sort(byJoin)).toEqual(joins)
+  })
+})
+
+const sceneAsJson = (scene: RoutingScene): SceneJson => ({
+  elements: Object.fromEntries(scene.elements),
+  boxes: Object.fromEntries(scene.boxes),
+  text: Object.fromEntries(scene.text),
+  fixed_lines: scene.fixedLines.map((line) => line.map((point): XY => [point.x, point.y])),
+})
+
+describe('a first layout makes the room the Python one makes', () => {
+  const { scene, connectors, channels: expected, widened: expectedScene } = routing.widening
+  const arranged = sceneOf(scene)
+  const asked = connectors.map(connectorOf)
+
+  it('finds the same channels, with the same lines along each', () => {
+    const courses = [...routeAll(arranged, asked).routes.values()].map((routed) => routed.course)
+    const found = channels(arranged.boxes, [...arranged.elements.values(), ...arranged.text.values()], courses)
+    expect(found.map((channel) => ({ ...channel, wider_by: widerBy(channel) }))).toEqual(expected)
+  })
+
+  it('widens the scene to the same arrangement', () => {
+    expect(sceneAsJson(widened(arranged, asked))).toEqual(expectedScene)
   })
 })
 

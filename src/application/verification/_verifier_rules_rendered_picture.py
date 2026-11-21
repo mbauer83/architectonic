@@ -1,4 +1,4 @@
-"""What a diagram's rendered picture gets wrong that its body cannot show (W370–W374, W380–W382).
+"""What a diagram's rendered picture gets wrong that its body cannot show (W370–W374, W380–W384).
 
 The syntax check already renders every diagram to find out whether PlantUML accepts it, and threw
 the picture away. This reads that picture before it goes, so the checks cost a parse and no render:
@@ -19,6 +19,10 @@ the picture away. This reads that picture before it goes, so the checks cost a p
   With W380 these are the hard rules of `route_quality`, what a reader needs to follow a line end to
   end, and like it are reported only of a picture drawn from a stated layout: GraphViz draws curves,
   which neither describes. Its soft rules — a jog, two decorations together — are advisory counts;
+* **W384** — a gap between two boxes too narrow for the lines the router lays along it, naming the
+  two boxes and how much wider the gap needs to be. A first layout is written down with its gaps
+  widened to fit; this reports a gap a later arrangement narrowed, or one the widening could not
+  settle. Only of a picture drawn from a stated layout, like W380–W382;
 * **W370** — the picture stated the kind this project reads and could not be read, so none of the
   four were decided. Reported rather than passed over, because a check that silently stopped
   examining pictures looks exactly like a repository of clean ones.
@@ -73,6 +77,7 @@ _CODE_OF: Mapping[PictureDefect, str] = {
     PictureDefect.RELATION_THROUGH_TEXT: "W380",
     PictureDefect.BEND_AT_AN_END: "W381",
     PictureDefect.RUNS_ALONG: "W382",
+    PictureDefect.NARROW_CHANNEL: "W384",
 }
 
 
@@ -126,6 +131,11 @@ def _place(picture: RenderedPicture, finding: PictureFinding) -> str:
             else f"the text of {names[2]}"
         )
         return f"the relation between {names[0]} and {names[1]} through {whose}"
+    if finding.defect is PictureDefect.NARROW_CHANNEL:
+        return (
+            f"the gap between {names[0]} and {names[1]}, which {finding.lines} line(s) run along "
+            f"and needs to be {finding.wider_by} px wider"
+        )
     if finding.defect in (PictureDefect.BEND_AT_AN_END, PictureDefect.RUNS_ALONG):
         return f"the relation between {names[0]} and {names[1]}"
     return f"{names[0]} and {names[1]}"
@@ -157,8 +167,11 @@ def _issue(
         + ".",
         loc,
         details={
-            "places": [{"shapes": list(finding.shapes), "described": place}
-                       for finding, place in zip(found, places, strict=True)],
+            "places": [
+                {"shapes": list(finding.shapes), "described": place}
+                | ({"lines": finding.lines, "wider_by": finding.wider_by} if finding.wider_by else {})
+                for finding, place in zip(found, places, strict=True)
+            ],
             "advisory": _advisory(report),
         },
     )

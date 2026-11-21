@@ -66,6 +66,9 @@ export interface RoutingResult {
 
 export const SIDES: readonly Side[] = ['top', 'right', 'bottom', 'left']
 
+/** A side to try a port on, and where along it. */
+export type Choice = readonly [Side, number]
+
 export const sameExtent = (one: Extent, other: Extent): boolean =>
   one.left === other.left && one.top === other.top && one.right === other.right && one.bottom === other.bottom
 

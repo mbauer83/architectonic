@@ -7,9 +7,8 @@
    is searched again between its own ports; where that finds nothing, the first route stands.
 3. **Nudging** separates what the independent searches laid along one line.
 
-Three kinds of connector are not searched. One from an element to itself loops round its corner. One
-between a box and an element inside it runs straight from the part to the whole's border. One between
-two elements closer than a stub, which no route joins keeping I1, is joined the most direct way.
+Three kinds of connector are not searched (`special`): a loop, a whole and its part, and two elements
+closer than a stub. Which port each end takes once the first routes are found is `spreading`'s.
 
 A connector no route reaches is **unroutable**, reported and never drawn through something instead.
 
@@ -20,15 +19,13 @@ are nudged.
 
 from __future__ import annotations
 
-from collections import Counter
 from collections.abc import Mapping, Sequence
 
-from src.domain.diagrams.layout.attachment import ends_conflict, formed_afresh, fraction, share_along
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import Port, Route, Side
-from src.domain.diagrams.layout.orthogonal import STUB, course_of, half_up, leaves_level
+from src.domain.diagrams.layout.orthogonal import STUB, half_up
 from src.domain.diagrams.layout.routing.nudging import nudged
-from src.domain.diagrams.layout.routing.ports import OUTWARD_INDEX, EndOnSide, Stub, in_line, spread, stub_of
+from src.domain.diagrams.layout.routing.ports import OUTWARD_INDEX, Stub, in_line, stub_of
 from src.domain.diagrams.layout.routing.scene import (
     SIDES,
     Connector,
@@ -38,6 +35,8 @@ from src.domain.diagrams.layout.routing.scene import (
     run_for,
 )
 from src.domain.diagrams.layout.routing.search import DIRECTIONS, REVERSE, Found, Terminal, search
+from src.domain.diagrams.layout.routing.special import special
+from src.domain.diagrams.layout.routing.spreading import ports_spread
 from src.domain.diagrams.layout.routing.visibility import FULL, Lines, Passage, Visibility
 
 
@@ -84,7 +83,7 @@ class _Routing:
         for a, b in zip(routed.course, routed.course[1:], strict=False):
             self.crowd.add(a, b)
 
-    def _own(self, connector: Connector) -> list[Extent]:
+    def own(self, connector: Connector) -> list[Extent]:
         grown = self.visibility.grown
         return [grown[end] for end in (connector.source, connector.target) if end in grown]
 
@@ -93,15 +92,19 @@ class _Routing:
     ) -> list[Stub]:
         end = connector.source if which == 0 else connector.target
         extent = self.scene.extent_of(end)
-        run, own = run_for(connector.decorated[which]), self._own(connector)
+        run, own = run_for(connector.decorated[which]), self.own(connector)
         return [stub for side, at in choices if _usable(stub := stub_of(extent, side, at, run), passage, own)]
 
     def searched(
         self, connector: Connector, sources: Sequence[tuple[Side, float]], targets: Sequence[tuple[Side, float]],
+        *, lining_up: bool = True,
     ) -> RoutedConnector | None:
+        """The cheapest route between the choices of ports, or None. With *lining_up*, ports on facing
+        sides are also tried lined up for a straight run; without, the ports are as chosen — spread
+        along a side another end shares, which a straight run lined up elsewhere would undo."""
         passage = self.visibility.passage((connector.source, connector.target))
         starts, goals = self._stubs(connector, 0, sources, passage), self._stubs(connector, 1, targets, passage)
-        lined = self._lined_up(connector, sources, targets)
+        lined = self._lined_up(connector, sources, targets) if lining_up else ([], [])
         crowded = passage.adding([], self.crowd)
         if (straight := self._straight(connector, [*lined[0], *starts], [*lined[1], *goals], crowded)) is not None:
             return straight
@@ -141,7 +144,7 @@ class _Routing:
     ) -> RoutedConnector | None:
         """The one straight run between two facing ports in line, where it is clear: it has no bend to
         need a stub before, and two stubs between ends closer than both would only tangle."""
-        own = self._own(connector)
+        own = self.own(connector)
         straight = [
             (start, goal) for start in starts for goal in goals
             if REVERSE[OUTWARD_INDEX[start.port.side]] == OUTWARD_INDEX[goal.port.side]
@@ -161,43 +164,6 @@ class _Routing:
         course = _straightened([start.at, *found.points, goal.at])
         return RoutedConnector(connector.key, start.port, goal.port, course)
 
-    def special(self, connector: Connector) -> RoutedConnector | None | bool:
-        """The route of a connector that is not searched; True where it is to be searched."""
-        source, target = self.scene.extent_of(connector.source), self.scene.extent_of(connector.target)
-        if connector.source == connector.target:
-            return _around_itself(connector, source)
-        if source.encloses(target) or target.encloses(source):
-            return self._whole_to_part(connector, source, target)
-        if ends_conflict(source, target):
-            made = formed_afresh(Route(), source, target)
-            course = course_of(made, source, target)
-            if made.source is not None and made.target is not None and course is not None:
-                return RoutedConnector(connector.key, made.source, made.target, course)
-        return True
-
-    def _whole_to_part(self, connector: Connector, source: Extent, target: Extent) -> RoutedConnector | None:
-        whole_is_source = source.encloses(target)
-        whole, part = (source, target) if whole_is_source else (target, source)
-        part_key = connector.target if whole_is_source else connector.source
-        passage = self.visibility.passage((part_key, part_key))
-        gaps = {
-            Side.TOP: part.top - whole.top, Side.BOTTOM: whole.bottom - part.bottom,
-            Side.LEFT: part.left - whole.left, Side.RIGHT: whole.right - part.right,
-        }
-        for side in sorted(SIDES, key=lambda one: (gaps[one], SIDES.index(one))):
-            stub = stub_of(part, side, 0.5, 0.0)
-            border = {
-                Side.TOP: Point(stub.at.x, whole.top), Side.BOTTOM: Point(stub.at.x, whole.bottom),
-                Side.LEFT: Point(whole.left, stub.at.y), Side.RIGHT: Point(whole.right, stub.at.y),
-            }[side]
-            if passage.step_blocked(stub.at, border, ignoring=self._own(connector)):
-                continue
-            level = leaves_level(side)
-            whole_port = Port(side, fraction(share_along(whole, border.y if level else border.x, level=level)))
-            if whole_is_source:
-                return RoutedConnector(connector.key, whole_port, stub.port, (border, stub.at))
-            return RoutedConnector(connector.key, stub.port, whole_port, (stub.at, border))
-        return None
 
 
 def _straightened(points: Sequence[Point]) -> tuple[Point, ...]:
@@ -208,62 +174,6 @@ def _straightened(points: Sequence[Point]) -> tuple[Point, ...]:
             continue
         kept.append(here)
     return (*kept, points[-1])
-
-
-def _around_itself(connector: Connector, extent: Extent) -> RoutedConnector:
-    """A connector from an element to itself: out of its right side, round the corner, in at its bottom."""
-    leaving = stub_of(extent, Side.RIGHT, 0.7, run_for(connector.decorated[0]))
-    arriving = stub_of(extent, Side.BOTTOM, 0.7, run_for(connector.decorated[1]))
-    corner = Point(leaving.end.x, arriving.end.y)
-    course = (leaving.at, leaving.end, corner, arriving.end, arriving.at)
-    return RoutedConnector(connector.key, leaving.port, arriving.port, course)
-
-
-def _ends_on_sides(
-    routing: _Routing, connectors: Sequence[Connector], first: Mapping[str, RoutedConnector],
-) -> list[EndOnSide]:
-    ends: list[EndOnSide] = []
-    for connector in connectors:
-        routed = first.get(connector.key)
-        if routed is None:
-            continue
-        for which, (port, stated, other) in enumerate((
-            (routed.source_port, connector.source_port, connector.target),
-            (routed.target_port, connector.target_port, connector.source),
-        )):
-            if stated is None:
-                centre = routing.scene.extent_of(other).centre
-                element = connector.source if which == 0 else connector.target
-                toward = centre.y if leaves_level(port.side) else centre.x
-                ends.append(EndOnSide(connector.key, which, element, port.side, toward))
-    return ends
-
-
-def _ports_spread(
-    routing: _Routing, connectors: Sequence[Connector], first: Mapping[str, RoutedConnector],
-) -> dict[str, tuple[tuple[Side, float], tuple[Side, float]]]:
-    ends = _ends_on_sides(routing, connectors, first)
-    at = spread(ends)
-    sharing = Counter((end.element, end.side) for end in ends)
-    alone = {(end.connector, end.which) for end in ends if sharing[(end.element, end.side)] == 1}
-    ports: dict[str, tuple[tuple[Side, float], tuple[Side, float]]] = {}
-    for connector in connectors:
-        routed = first.get(connector.key)
-        if routed is None:
-            continue
-        chosen = [
-            (routed.source_port.side, at.get((connector.key, 0), routed.source_port.at)),
-            (routed.target_port.side, at.get((connector.key, 1), routed.target_port.at)),
-        ]
-        if (connector.key, 0) in alone and (connector.key, 1) in alone:
-            lined = in_line(
-                routing.scene.extent_of(connector.source), routing.scene.extent_of(connector.target),
-                (chosen[0][0], chosen[1][0]),
-            )
-            if lined is not None:
-                chosen = [(chosen[0][0], lined[0]), (chosen[1][0], lined[1])]
-        ports[connector.key] = (chosen[0], chosen[1])
-    return ports
 
 
 def route_all(
@@ -286,7 +196,7 @@ def route_all(
     searched: list[Connector] = []
     first: dict[str, RoutedConnector] = {}
     for connector in to_route:
-        made = routing.special(connector)
+        made = special(scene, routing.visibility, connector, routing.own(connector))
         if made is True:
             searched.append(connector)
             sides = (_sides_of(connector.source_port), _sides_of(connector.target_port))
@@ -304,9 +214,9 @@ def route_all(
         else:
             routes[connector.key] = made
             routing.taken(made)
-    for key, (source, target) in _ports_spread(routing, searched, first).items():
+    for key, (source, target) in ports_spread(scene, searched, first).items():
         connector = next(one for one in searched if one.key == key)
-        routes[key] = routing.searched(connector, (source,), (target,)) or first[key]
+        routes[key] = routing.searched(connector, (source,), (target,), lining_up=False) or first[key]
         routing.taken(routes[key])
     courses = {key: list(routed.course) for key, routed in {**kept, **routes}.items()}
     obstacles = {

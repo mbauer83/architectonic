@@ -63,7 +63,7 @@ def drawn_relation(
     *drawn* is the relation as PlantUML drew it and *drawn_ends* where its two ends sat then: the
     frames its decorations were drawn in are taken from those.
     """
-    if arranged.as_drawn or len(arranged.course) < _A_RUN:
+    if len(arranged.course) < _A_RUN:
         return copy.deepcopy(markup.group)
     course, backwards = arranged.course, arranged.course[::-1]
     first_as_drawn = frame_as_drawn(drawn.first_marks, drawn.course[::-1], drawn_ends[0])
