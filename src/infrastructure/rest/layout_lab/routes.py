@@ -10,8 +10,9 @@ generated types and every gate are the same whether this module exists or not, a
 the document is still the same, because nothing here is in it.
 
 **Nothing is written.** One read gives the geometry of PlantUML's picture of a diagram; one
-write-shaped call composes a picture from a layout the caller holds. Neither touches the repository:
-the layout arrives in the request and goes nowhere else.
+write-shaped call composes a picture from a layout the caller holds; another draws shapes the caller
+resized, from the drawing that read gave it. None touches the repository: what each needs arrives in
+the request and goes nowhere else.
 """
 
 from __future__ import annotations
@@ -27,8 +28,10 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.config.settings import layout_lab_enabled
 from src.domain.diagrams.layout.layout_block import MalformedLayout, read_layout
 from src.domain.diagrams.layout.rendered_picture import NotReadable
+from src.infrastructure.rendering.layout._svg_drawing import Unreadable
 from src.infrastructure.rendering.layout.composer import NotComposed, compose
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
+from src.infrastructure.rest.layout_lab.drawing import reshaped
 from src.infrastructure.rest.layout_lab.geometry import diagram_geometry
 from src.infrastructure.rest.routers import state as s
 
@@ -89,6 +92,16 @@ def compose_lab_picture(
     return Response(content=composed, media_type="image/svg+xml", headers=_NOT_KEPT)
 
 
+def reshape_lab_shapes(shapes: Annotated[list[dict[str, object]], Body(embed=True)]) -> JSONResponse:
+    """Each shape's drawing at the size it was given, drawn by the composer. Needs no diagram: the
+    drawing, where it was drawn and where it goes all arrive in the request."""
+    try:
+        drawings = [reshaped(shape) for shape in shapes]
+    except Unreadable as unreadable:
+        raise HTTPException(422, f"The lab cannot draw this shape: {unreadable.met}") from unreadable
+    return JSONResponse({"drawings": drawings}, headers=_NOT_KEPT)
+
+
 def install_layout_lab(app: FastAPI) -> None:
     """Mount the lab's routes on *app* when the lab is switched on; otherwise do nothing at all."""
     if not layout_lab_enabled():
@@ -102,3 +115,4 @@ def install_layout_lab(app: FastAPI) -> None:
         f"{LAB_PREFIX}/diagrams/{{artifact_id}}/picture", compose_lab_picture, methods=["POST"],
         include_in_schema=False,
     )
+    app.add_api_route(f"{LAB_PREFIX}/shapes", reshape_lab_shapes, methods=["POST"], include_in_schema=False)

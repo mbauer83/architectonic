@@ -4,8 +4,9 @@ Nothing is read here that the product does not already read. The picture comes t
 of PlantUML's structure (`plantuml_svg_reader`); which instance, grouping and stated relation each
 shape and line is comes through the joins the composer makes (`diagram_layout_statement`,
 `box_identities`, `relation_identities`); a box's title band and an element's outside label are the
-text regions the router keeps out of (`text_clearance`). This module only writes those answers down
-as plain values a browser can take, so the lab draws exactly what the composer would arrange.
+text regions the router keeps out of (`text_clearance`); what each is drawn with is PlantUML's own
+markup of it (`drawing`). This module only writes those answers down as plain values a browser can
+take, so the lab draws exactly what the composer would arrange, as the composer would draw it.
 """
 
 from __future__ import annotations
@@ -26,9 +27,12 @@ from src.domain.diagrams.layout.rendered_picture import (
 )
 from src.domain.diagrams.layout.route_quality import square_course
 from src.domain.diagrams.layout.text_clearance import padded, text_extent, title_band
+from src.infrastructure.rendering.layout._svg_drawing import Unreadable
+from src.infrastructure.rendering.layout._svg_relations import RelationMarkup
 from src.infrastructure.rendering.layout.box_identities import box_keys_by_alias
-from src.infrastructure.rendering.layout.plantuml_svg_reader import read_rendered_picture
+from src.infrastructure.rendering.layout.plantuml_svg_reader import RenderedDrawing, read_rendered_drawing
 from src.infrastructure.rendering.layout.relation_identities import DrawnAs, relation_keys_by_index
+from src.infrastructure.rest.layout_lab.drawing import node_of, relation_drawing
 
 type Wire = dict[str, object]
 
@@ -47,7 +51,7 @@ def _point(point: Point) -> list[float]:
     return [point.x, point.y]
 
 
-def _element(element: DrawnElement, diagram: LaidOutDiagram) -> Wire:
+def _element(element: DrawnElement, diagram: LaidOutDiagram, drawing: RenderedDrawing) -> Wire:
     label = text_extent(element.words)
     outside = label is not None and not element.extent.encloses(label)
     return {
@@ -59,10 +63,11 @@ def _element(element: DrawnElement, diagram: LaidOutDiagram) -> Wire:
         "words": _words(element.words),
         # A label set outside its outline — an actor's, below it — is text a route keeps out of.
         "outside_label": _extent(padded(label)) if outside and label is not None else None,
+        "drawing": node_of(drawing.shapes[element.alias]),
     }
 
 
-def _box(box: DrawnBox, diagram: LaidOutDiagram, keys: Mapping[str, str]) -> Wire:
+def _box(box: DrawnBox, diagram: LaidOutDiagram, keys: Mapping[str, str], drawing: RenderedDrawing) -> Wire:
     kind = box.kind(element_aliases=diagram.instance_by_alias)
     instance = diagram.instance_by_alias.get(box.alias)
     title = text_extent(box.words)
@@ -77,10 +82,13 @@ def _box(box: DrawnBox, diagram: LaidOutDiagram, keys: Mapping[str, str]) -> Wir
         "inside": box.inside,
         "words": _words(box.words),
         "title_band": _extent(title_band(box.extent, title)) if title is not None else None,
+        "drawing": node_of(drawing.shapes[box.alias]),
     }
 
 
-def _relation(index: int, relation: DrawnRelation, drawn_as: DrawnAs | None) -> Wire:
+def _relation(
+    index: int, relation: DrawnRelation, drawn_as: DrawnAs | None, markup: RelationMarkup, picture: RenderedPicture
+) -> Wire:
     turned = drawn_as is not None and drawn_as.turned
     source, target = relation.ends[::-1] if turned else relation.ends
     marks = (bool(relation.first_marks), bool(relation.second_marks))
@@ -95,19 +103,24 @@ def _relation(index: int, relation: DrawnRelation, drawn_as: DrawnAs | None) -> 
         "course": [_point(point) for point in (course[::-1] if turned else course)],
         "label": relation.label,
         "label_size": [label.width, label.height] if label is not None else None,
+        "drawing": relation_drawing(markup, relation, picture, turned=turned),
     }
 
 
-def geometry_of(picture: RenderedPicture, diagram: LaidOutDiagram) -> Wire:
-    """*picture* as the lab draws it: every shape and line where PlantUML put it, named as a layout names it."""
+def geometry_of(drawing: RenderedDrawing, diagram: LaidOutDiagram) -> Wire:
+    """A picture as the lab draws it: every shape and line where PlantUML put it, named as a layout names it,
+    with PlantUML's own drawing of each — and of the backdrop behind them — to draw it with."""
+    picture = drawing.picture
     keys = box_keys_by_alias(picture, diagram)
     drawn_as = relation_keys_by_index(picture, diagram)
     return {
         "canvas": _extent(picture.canvas),
-        "elements": [_element(element, diagram) for element in picture.elements.values()],
-        "boxes": [_box(box, diagram, keys) for box in picture.boxes.values()],
+        "backdrop": [node_of(part) for part in drawing.backdrop],
+        "elements": [_element(element, diagram, drawing) for element in picture.elements.values()],
+        "boxes": [_box(box, diagram, keys, drawing) for box in picture.boxes.values()],
         "relations": [
-            _relation(index, relation, drawn_as.get(index)) for index, relation in enumerate(picture.relations)
+            _relation(index, relation, drawn_as.get(index), markup, picture)
+            for index, (relation, markup) in enumerate(zip(picture.relations, drawing.relations, strict=True))
         ],
     }
 
@@ -116,7 +129,10 @@ def diagram_geometry(
     plantuml_svg: str, frontmatter: Mapping[str, object], ontology: DeclaresElementKinds
 ) -> Wire | NotReadable:
     """The lab's geometry of the diagram *frontmatter* states, from PlantUML's own picture of it."""
-    picture = read_rendered_picture(plantuml_svg)
-    if isinstance(picture, NotReadable):
-        return picture
-    return geometry_of(picture, joined_to_its_picture(frontmatter, Layout(), ontology))
+    drawing = read_rendered_drawing(plantuml_svg)
+    if isinstance(drawing, NotReadable):
+        return drawing
+    try:
+        return geometry_of(drawing, joined_to_its_picture(frontmatter, Layout(), ontology))
+    except Unreadable as unreadable:
+        return NotReadable(met=unreadable.met)

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from pathlib import Path
+from xml.etree import ElementTree
+from xml.etree.ElementTree import Element
 
 import pytest
 from fastapi.testclient import TestClient
@@ -23,7 +25,13 @@ from src.domain.diagrams.layout.rendered_picture import RenderedPicture
 from src.domain.repository.frontmatter import parse_frontmatter
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.rendering.layout.plantuml_svg_reader import read_rendered_picture
+from src.infrastructure.rendering.layout.plantuml_svg_reader import (
+    RenderedDrawing,
+    read_rendered_drawing,
+    read_rendered_picture,
+)
+from src.infrastructure.rendering.layout.shape_drawing import fitted_box, resized_element
+from src.infrastructure.rest.layout_lab.drawing import element_of, node_of
 from src.infrastructure.rest.layout_lab.geometry import diagram_geometry
 from src.infrastructure.rest.layout_lab.routes import LAB_PREFIX, install_layout_lab
 from src.infrastructure.rest.routers import state as s
@@ -158,6 +166,76 @@ def test_a_layout_sent_to_the_lab_is_drawn_by_the_composer(lab: TestClient, mode
     assert isinstance(composed, RenderedPicture)
     now = composed.elements[model.alias("broker")].extent
     assert abs(now.left - moved["x"]) < 0.01 and abs(now.top - moved["y"]) < 0.01
+
+
+def _markup(element: Element) -> str:
+    return ElementTree.tostring(element, encoding="unicode")
+
+
+def test_every_shape_and_line_is_drawn_with_plantuml_s_own_drawing(model: RenderedModel) -> None:
+    scene = "top-to-bottom"
+    drawing = read_rendered_drawing(model.scenes[scene].svg)
+    assert isinstance(drawing, RenderedDrawing)
+    geometry = _geometry(model, scene)
+
+    for row in (*_rows(geometry, "elements"), *_rows(geometry, "boxes")):
+        assert _markup(element_of(row["drawing"])) == _markup(drawing.shapes[str(row["alias"])]), row["alias"]
+    for row, markup in zip(_rows(geometry, "relations"), drawing.relations, strict=True):
+        line = row["drawing"]
+        assert isinstance(line, dict)
+        assert _markup(element_of(line["group"])) == _markup(markup.group)
+        assert _markup(element_of(line["line"])) == _markup(markup.line)
+    assert geometry["backdrop"] == [node_of(part) for part in drawing.backdrop]
+
+
+def test_a_drawing_reads_back_as_the_markup_it_was_written_from(model: RenderedModel) -> None:
+    """The pair: what the lab is sent and what it sends back are one drawing, over every scene drawn."""
+    for scene in model.scenes.values():
+        drawing = read_rendered_drawing(scene.svg)
+        assert isinstance(drawing, RenderedDrawing)
+        for group in (*drawing.shapes.values(), *(markup.group for markup in drawing.relations)):
+            assert _markup(element_of(node_of(group))) == _markup(group)
+
+
+def test_a_resized_shape_is_drawn_by_the_composer(lab: TestClient, model: RenderedModel) -> None:
+    scene = "groupings"
+    drawing = read_rendered_drawing(model.scenes[scene].svg)
+    assert isinstance(drawing, RenderedDrawing)
+    alias, box = next(iter(drawing.picture.boxes.items()))
+    element_alias, element = next(iter(drawing.picture.elements.items()))
+    grown = Extent(box.extent.left, box.extent.top, box.extent.right + 80, box.extent.bottom + 40)
+    wider = Extent(element.extent.left, element.extent.top, element.extent.right + 60, element.extent.bottom)
+
+    response = lab.post(f"{LAB_PREFIX}/shapes", json={"shapes": [
+        {"drawing": node_of(drawing.shapes[alias]), "box": True, "drawn": _wire(box.extent), "to": _wire(grown)},
+        {"drawing": node_of(drawing.shapes[element_alias]), "box": False, "drawn": _wire(element.extent),
+         "to": _wire(wider)},
+    ]})
+
+    assert response.status_code == 200, response.text
+    assert response.headers["cache-control"] == "no-store"
+    fitted, resized = response.json()["drawings"]
+    assert _markup(element_of(fitted)) == _markup(fitted_box(drawing.shapes[alias], box.extent, grown))
+    assert _markup(element_of(resized)) == _markup(
+        resized_element(drawing.shapes[element_alias], element.extent, wider)
+    )
+
+
+def test_a_drawing_that_is_not_one_is_refused(lab: TestClient) -> None:
+    script = {"tag": "script", "attributes": {}, "text": "alert(1)", "children": []}
+    extent = {"left": 0, "top": 0, "right": 10, "bottom": 10}
+
+    response = lab.post(f"{LAB_PREFIX}/shapes", json={"shapes": [
+        {"drawing": {"tag": "g", "attributes": {}, "text": None, "children": [script]}, "box": True,
+         "drawn": extent, "to": extent},
+    ]})
+
+    assert response.status_code == 422
+    assert "<script>" in response.text
+
+
+def _wire(extent: Extent) -> dict[str, float]:
+    return {"left": extent.left, "top": extent.top, "right": extent.right, "bottom": extent.bottom}
 
 
 def test_a_layout_that_is_not_one_is_refused_with_what_is_wrong(lab: TestClient, model: RenderedModel) -> None:
