@@ -463,9 +463,10 @@ The block is stored, read back and verified, and the diagram is drawn from it: P
 elements, and they are placed and sized where the layout says. A relation whose route the layout
 states follows it, and every other relation is routed, whether or not its ends moved. A routed line
 goes round every element and every title band, enters a grouping only to reach something inside it
-and crosses its border at a right angle, leaves an end that carries an arrowhead or other decoration
-by a straight run, and is kept apart from the other lines and from box borders. Where the layout leaves a relation no such route, the diagram is
-drawn in its automatic arrangement instead.
+and crosses its border once, at a right angle, and stays inside the smallest grouping that holds both
+its ends unless no route exists there. It leaves an end that carries an arrowhead or other decoration
+by a straight run, and is kept apart from the other lines and from box borders. Where the layout
+leaves a relation no such route, the diagram is drawn in its automatic arrangement instead.
 
 A layout is refused when it is malformed, when it names an element, grouping or relation the diagram
 does not hold, and on a `manual-layout` diagram: a diagram keeps a hand-written body verbatim or
@@ -479,9 +480,10 @@ not leave its element straight outward (`W376`) or runs through one of its own e
 connected elements over each other (`W378`), and a box over an element that is not inside it
 (`W379`). On a diagram drawn from a layout it also warns about a relation drawn through text
 (`W380`), one that bends right behind the decoration at one of its ends (`W381`), one that runs
-along another line or a box border (`W382`), a layout that leaves a relation no route (`W383`), and a
-gap between two boxes too narrow for the lines that run along it (`W384`). `W384` names the two boxes
-and how many pixels wider the gap needs to be.
+along another line or a box border (`W382`), a layout that leaves a relation no route (`W383`), a
+gap between two boxes too narrow for the lines that run along it (`W384`), and a relation drawn
+outside the smallest grouping that holds both its ends (`W385`). `W384` names the two boxes and how
+many pixels wider the gap needs to be.
 
 ### Diagrams from an earlier format
 
