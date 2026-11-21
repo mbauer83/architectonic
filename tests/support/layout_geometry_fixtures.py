@@ -33,6 +33,7 @@ from src.domain.diagrams.layout.layout_block import LabelAnchor, Port, Route, Si
 from src.domain.diagrams.layout.orthogonal import course_of, fraction_along, point_along, stated_course
 from src.domain.diagrams.layout.routing.router import as_route, rerouted, route_all
 from src.domain.diagrams.layout.routing.scene import Connector, RoutingScene
+from tests.support.line_drawing_fixtures import build_line_drawing
 from tests.support.readability_fixtures import build_readability
 from tests.support.routing_fixtures import build_routing
 
@@ -310,6 +311,7 @@ BUILDERS = {
     "walk.json": build_walk,
     "readability.json": build_readability,
     "routing.json": build_routing,
+    "line_drawing.json": build_line_drawing,
 }
 
 

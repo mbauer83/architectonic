@@ -6,9 +6,12 @@
  * something is dragged, each frame runs the router's quick pass over the lines of what moved; a drop
  * runs the full pass over every line.
  */
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
-import { labGeometry, labPicture } from '../../adapters/http/HttpLayoutLab'
+import type { ShapeToReshape } from '../../adapters/http/HttpLayoutLab'
+import { labGeometry, labPicture, labReshape } from '../../adapters/http/HttpLayoutLab'
+import type { Reshaped } from '../../domain/layout/lab/labShapeDrawing'
+import { stillToReshape } from '../../domain/layout/lab/labShapeDrawing'
 import type { Point } from '../../domain/layout/geometry'
 import type { Arrangement } from '../../domain/layout/lab/labArrangement'
 import { drawnArrangement, layoutBlock } from '../../domain/layout/lab/labArrangement'
@@ -39,6 +42,50 @@ export function useLayoutLab() {
 
   const placement = computed(() =>
     geometry.value && arrangement.value ? placementOf(geometry.value, arrangement.value) : null)
+
+  /** Each resized shape as the composer drew it at its new size, by alias. */
+  const reshaped = shallowRef<ReadonlyMap<string, Reshaped>>(new Map())
+  const reshapeError = ref<string | null>(null)
+  let reshaping = false
+
+  /**
+   * Ask the composer for every resized shape not yet drawn at its size: one request at a time, and
+   * once it is answered, again for whatever was resized meanwhile. A refusal is shown and not retried.
+   */
+  const reshape = async (): Promise<void> => {
+    const drawn = geometry.value
+    const where = placement.value
+    if (reshaping || !drawn || !where) return
+    const shapes = new Map<string, Omit<ShapeToReshape, 'to'>>([
+      ...drawn.elements.map((one) => [one.alias, { drawing: one.drawing, box: false, drawn: one.extent }] as const),
+      ...drawn.boxes.map((one) => [one.alias, { drawing: one.drawing, box: true, drawn: one.extent }] as const),
+    ])
+    const now = new Map([...where.elements, ...where.boxes])
+    const drawnAt = new Map([...shapes].map(([alias, shape]) => [alias, shape.drawn]))
+    const wanted = stillToReshape(drawnAt, now, reshaped.value).flatMap((alias) => {
+      const shape = shapes.get(alias)
+      const to = now.get(alias)
+      return shape && to ? [{ alias, shape: { ...shape, to } }] : []
+    })
+    if (wanted.length === 0) return
+    reshaping = true
+    try {
+      const drawings = await Effect.runPromise(labReshape(wanted.map(({ shape }) => shape)))
+      if (geometry.value !== drawn) return
+      const next = new Map(reshaped.value)
+      wanted.forEach(({ alias, shape }, index) => next.set(alias, { at: shape.to, drawing: drawings[index] }))
+      reshaped.value = next
+      reshapeError.value = null
+    } catch (failure) {
+      reshapeError.value = failure instanceof Error ? failure.message : String(failure)
+      return
+    } finally {
+      reshaping = false
+    }
+    await reshape()
+  }
+
+  watch(placement, () => { void reshape() })
 
   /** Each relation's course now, by its place on the picture: routed, else as PlantUML drew it. */
   const courses = computed((): ReadonlyMap<number, readonly Point[]> => {
@@ -85,6 +132,8 @@ export function useLayoutLab() {
     serverError.value = null
     try {
       const drawn = await Effect.runPromise(labGeometry(artifactId))
+      reshaped.value = new Map()
+      reshapeError.value = null
       geometry.value = drawn
       arrangement.value = drawnArrangement(drawn)
       history.value = []
@@ -171,7 +220,7 @@ export function useLayoutLab() {
 
   return {
     geometry, arrangement, history, routes, timing, loading, error,
-    placement, courses, breaches, counts, layout,
+    placement, courses, breaches, counts, layout, reshaped, reshapeError,
     serverPicture, serverError, serverLoading,
     load, begin, preview, commit, widen, undo, reset, routeEverything, askServer,
   }

@@ -1,5 +1,5 @@
 /**
- * The layout lab's three routes, which the backend serves only while `ARCH_LAYOUT_LAB` is set.
+ * The layout lab's routes, which the backend serves only while `ARCH_LAYOUT_LAB` is set.
  *
  * Outside `/api` and outside the published document, so not in the generated client: a lab is a
  * developer's bench, and nothing of it belongs in the contract the product's client is held to.
@@ -8,8 +8,9 @@
 import { Effect, Schema } from 'effect'
 import { NetworkError } from '../../domain/errors'
 import { encodeIdentitySegment } from '../../domain/identitySegments'
-import type { LabGeometry } from '../../domain/layout/lab/labGeometry'
-import { LabGeometrySchema } from '../../domain/layout/lab/labGeometry'
+import type { Extent } from '../../domain/layout/geometry'
+import type { DrawingNode, LabGeometry } from '../../domain/layout/lab/labGeometry'
+import { DrawingNodeSchema, LabGeometrySchema } from '../../domain/layout/lab/labGeometry'
 import { fetchWithTimeout } from './httpTransport'
 
 const LAB = '/lab/layout'
@@ -66,6 +67,37 @@ export const labGeometry = (artifactId: string): Effect.Effect<LabGeometry, Netw
     Effect.flatMap(Schema.decodeUnknown(LabGeometrySchema)),
     Effect.mapError((error) =>
       error instanceof NetworkError ? error : new NetworkError({ status: 0, message: String(error) })),
+  )
+
+/** A shape the lab resized: PlantUML's drawing of it, where that was drawn, and where it is to go. */
+export interface ShapeToReshape {
+  readonly drawing: DrawingNode
+  readonly box: boolean
+  readonly drawn: Extent
+  readonly to: Extent
+}
+
+const ReshapedSchema = Schema.Struct({ drawings: Schema.Array(DrawingNodeSchema) })
+
+/** Each shape drawn again at its new size by the composer, in the order asked. Nothing is written. */
+export const labReshape = (
+  shapes: readonly ShapeToReshape[],
+): Effect.Effect<readonly DrawingNode[], NetworkError> =>
+  Effect.tryPromise({
+    try: async () => {
+      const response = await fetchWithTimeout(labUrl('/shapes'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shapes }),
+      })
+      if (!response.ok) throw await refusal(response)
+      return (await response.json()) as unknown
+    },
+    catch: asNetworkError,
+  }).pipe(
+    Effect.flatMap(Schema.decodeUnknown(ReshapedSchema)),
+    Effect.map((answer) => answer.drawings),
+    Effect.mapError(asNetworkError),
   )
 
 /** The server's composed picture of the diagram under *layout*, as SVG markup. Nothing is written. */

@@ -200,6 +200,12 @@ onBeforeUnmount(() => {
       >
         {{ lab.error.value }}
       </p>
+      <p
+        v-if="lab.reshapeError.value"
+        class="lab__error"
+      >
+        A resized shape is drawn at its old size: {{ lab.reshapeError.value }}
+      </p>
 
       <LayoutLabCanvas
         v-if="lab.geometry.value"

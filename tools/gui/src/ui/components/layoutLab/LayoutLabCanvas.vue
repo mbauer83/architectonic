@@ -7,10 +7,12 @@
 import { computed, ref, watch } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
 import { heightOf, widthOf } from '../../../domain/layout/geometry'
-import { pointAlong } from '../../../domain/layout/orthogonal'
+import { drawnLine } from '../../../domain/layout/lab/labLineDrawing'
+import type { PlacedDrawing } from '../../../domain/layout/lab/labShapeDrawing'
+import { shapeDrawing } from '../../../domain/layout/lab/labShapeDrawing'
 import type { LayoutLab } from '../../composables/useLayoutLab'
-import type { PlacedWord } from './labDrawing'
-import { dragRegionOf, elementWords, handlesOf, paintOrder, pointsAttribute, titleWords } from './labDrawing'
+import { dragRegionOf, handlesOf, paintOrder, pointsAttribute } from './labDrawing'
+import LabDrawn from './LabDrawn'
 import { useLabGesture } from './useLabGesture'
 
 const props = defineProps<{ lab: LayoutLab; showBreaches: boolean }>()
@@ -61,45 +63,50 @@ const aspect = computed(() => {
   return extent ? `${widthOf(extent)} / ${heightOf(extent)}` : '1 / 1'
 })
 
+/** PlantUML's background, stretched from the page it drew over the view the lab shows. */
+const backdropTransform = computed((): string => {
+  const drawn = geometry.value
+  const extent = view.value
+  if (!drawn || !extent) return ''
+  const { canvas } = drawn
+  const across = widthOf(extent) / widthOf(canvas)
+  const down = heightOf(extent) / heightOf(canvas)
+  return `translate(${extent.left} ${extent.top}) scale(${across} ${down}) translate(${-canvas.left} ${-canvas.top})`
+})
+
 interface DrawnShape {
   readonly alias: string
   readonly isBox: boolean
-  readonly kind: string
-  readonly now: Extent
   /** Where it is taken to drag it: the whole outline, a grouping's full-width title band included. */
   readonly region: Extent
-  readonly words: PlacedWord[]
+  readonly drawing: PlacedDrawing
 }
 
-/** Every shape back to front, each where it is now with its text. */
+/** Every shape back to front, each where it is now, drawn as PlantUML or the composer drew it. */
 const shapes = computed((): DrawnShape[] => {
   const drawn = geometry.value
   const where = placement.value
   if (!drawn || !where) return []
-  const boxes = new Map(drawn.boxes.map((box) => [box.alias, box]))
-  const elements = new Map(drawn.elements.map((element) => [element.alias, element]))
+  const known = new Map([...drawn.boxes, ...drawn.elements].map((shape) => [shape.alias, shape]))
+  const reshaped = props.lab.reshaped.value
   return paintOrder(drawn, gesture.lifted.value).flatMap(({ alias, isBox }): DrawnShape[] => {
-    const box = boxes.get(alias)
-    const element = elements.get(alias)
+    const shape = known.get(alias)
     const now = isBox ? where.boxes.get(alias) : where.elements.get(alias)
-    if (!now) return []
-    const region = dragRegionOf(now)
-    if (box) return [{ alias, isBox, kind: box.kind, now, region, words: titleWords(box, now) }]
-    if (element) {
-      const words = elementWords(element.words, element.extent, now)
-      return [{ alias, isBox, kind: 'element', now, region, words }]
-    }
-    return []
+    if (!shape || !now) return []
+    const drawing = shapeDrawing(shape.extent, shape.drawing, now, reshaped.get(alias))
+    return [{ alias, isBox, region: dragRegionOf(now), drawing }]
   })
 })
 
+/** Each line: PlantUML's own until the first change, then drawn along the router's course. */
 const lines = computed(() => {
   const drawn = geometry.value
   if (!drawn) return []
+  const asDrawn = props.lab.routes.value === null
   return drawn.relations.flatMap((relation) => {
     const course = props.lab.courses.value.get(relation.index)
     if (!course || course.length < 2) return []
-    return [{ relation, points: pointsAttribute(course), labelAt: pointAlong(course, 0.5) }]
+    return [{ index: relation.index, asDrawn: asDrawn ? relation.drawing.group : null, along: drawnLine(relation.drawing, course) }]
   })
 })
 
@@ -131,63 +138,57 @@ const selectedExtent = computed((): Extent | null => {
     data-testid="layout-lab-canvas"
     @pointerdown="gesture.clear"
   >
-    <defs>
-      <marker
-        id="lab-head"
-        viewBox="0 0 10 10"
-        refX="10"
-        refY="5"
-        markerWidth="8"
-        markerHeight="8"
-        orient="auto-start-reverse"
-      >
-        <path
-          d="M0,0 L10,5 L0,10 z"
-          fill="#334155"
-        />
-      </marker>
-    </defs>
+    <LabDrawn
+      v-if="geometry"
+      class="lab-backdrop"
+      :nodes="geometry.backdrop"
+      :transform="backdropTransform"
+    />
 
     <g
       v-for="shape in shapes"
       :key="shape.alias"
-      :class="shape.isBox ? ['lab-box', `lab-box--${shape.kind}`] : 'lab-element'"
+      :class="shape.isBox ? 'lab-box' : 'lab-element'"
       :data-alias="shape.alias"
       @pointerdown="gesture.press($event, shape.alias)"
     >
+      <LabDrawn
+        :nodes="[shape.drawing.drawing]"
+        :transform="shape.drawing.transform"
+      />
       <rect
+        class="lab-grip"
         :x="shape.region.left"
         :y="shape.region.top"
         :width="widthOf(shape.region)"
         :height="heightOf(shape.region)"
-        :rx="shape.isBox ? 4 : 3"
       />
-      <text
-        v-for="(word, index) in shape.words"
-        :key="index"
-        :x="word.x"
-        :y="word.y"
-        :textLength="word.width"
-        lengthAdjust="spacingAndGlyphs"
-        :class="{ 'lab-box__title': shape.isBox }"
-      >{{ word.text }}</text>
     </g>
 
     <g class="lab-lines">
-      <polyline
-        v-for="{ relation, points } in lines"
-        :key="relation.index"
-        :points="points"
-        :marker-start="relation.decorated[0] ? 'url(#lab-head)' : undefined"
-        :marker-end="relation.decorated[1] ? 'url(#lab-head)' : undefined"
-      />
-      <text
-        v-for="{ relation, labelAt } in lines.filter((line) => line.relation.label)"
-        :key="`label-${relation.index}`"
-        :x="labelAt.x"
-        :y="labelAt.y - 4"
-        class="lab-lines__label"
-      >{{ relation.label }}</text>
+      <template
+        v-for="line in lines"
+        :key="line.index"
+      >
+        <LabDrawn
+          v-if="line.asDrawn"
+          :nodes="[line.asDrawn]"
+        />
+        <g v-else>
+          <LabDrawn :nodes="[line.along.line]" />
+          <LabDrawn
+            v-for="(end, side) in line.along.ends"
+            :key="side"
+            :nodes="end.marks"
+            :transform="end.transform"
+          />
+          <LabDrawn
+            v-if="line.along.label"
+            :nodes="line.along.label.texts"
+            :transform="line.along.label.transform"
+          />
+        </g>
+      </template>
     </g>
 
     <g
@@ -248,17 +249,11 @@ const selectedExtent = computed((): Extent | null => {
 </template>
 
 <style scoped>
-.lab-canvas { display: block; width: 100%; height: auto; max-height: 85vh; background: #fff; }
+/* How the picture looks is PlantUML's drawing; only the lab's own marks — grips, breaches, handles — are styled here. */
+.lab-canvas { display: block; width: 100%; height: auto; max-height: 85vh; }
 .lab-canvas { border: 1px solid #cbd5e1; border-radius: 6px; touch-action: none; user-select: none; }
-.lab-box rect { fill: #f8fafc; stroke: #94a3b8; stroke-width: 1; cursor: move; }
-.lab-box--domain rect { fill: #f1f5f9; }
-.lab-box--authored-grouping rect { fill: #fefce8; stroke-dasharray: 6 3; stroke: #a16207; }
-.lab-box--element rect { fill: #ecfeff; stroke: #0e7490; }
-.lab-box__title { font-size: 12px; font-weight: 600; fill: #334155; pointer-events: none; }
-.lab-element rect { fill: #fffbeb; stroke: #b45309; stroke-width: 1.2; cursor: move; }
-.lab-element text { font-size: 12px; fill: #1f2937; pointer-events: none; }
-.lab-lines polyline { fill: none; stroke: #334155; stroke-width: 1.3; pointer-events: none; }
-.lab-lines__label { font-size: 11px; fill: #475569; text-anchor: middle; pointer-events: none; }
+.lab-backdrop, .lab-lines, .lab-box :deep(g), .lab-element :deep(g) { pointer-events: none; }
+.lab-grip { fill: transparent; stroke: none; pointer-events: all; cursor: move; }
 .lab-breach { fill: none; stroke-width: 7; stroke-linecap: round; opacity: 0.45; pointer-events: stroke; }
 .lab-breach-frame { fill: none; stroke-width: 3; opacity: 0.7; }
 .lab-breach--hard { stroke: #dc2626; }

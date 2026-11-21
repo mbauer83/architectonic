@@ -30,7 +30,8 @@ export const placementOf = (geometry: LabGeometry, arrangement: Arrangement): Pl
 
 const SAME = 0.5
 
-const resizedFromDrawn = (now: Extent, drawn: Extent): boolean =>
+/** Whether *now* is another size than the shape was *drawn* at: resized, not only moved. */
+export const resizedFromDrawn = (now: Extent, drawn: Extent): boolean =>
   Math.abs(now.right - now.left - (drawn.right - drawn.left)) > SAME ||
   Math.abs(now.bottom - now.top - (drawn.bottom - drawn.top)) > SAME
 

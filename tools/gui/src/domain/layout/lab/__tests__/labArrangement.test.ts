@@ -14,6 +14,7 @@ import {
   resized,
   resizedExtent,
 } from '../labArrangement'
+import { LINE_DRAWING, SHAPE_DRAWING } from './labDrawingFixtures'
 import type { LabGeometry } from '../labGeometry'
 import { changedShapes, placementOf, textRegions, widenedArrangement } from '../labRouting'
 
@@ -24,23 +25,24 @@ const geometry: LabGeometry = {
   artifact_id: 'ARC@1.a.test',
   name: 'Test',
   canvas: at(0, 0, 600, 400),
+  backdrop: [],
   elements: [
-    { alias: 'A', key: 'APP@1.a', label: 'A', extent: at(20, 40, 120, 80), inside: 'G', words: [], outside_label: null },
-    { alias: 'B', key: 'APP@2.b', label: 'B', extent: at(140, 40, 240, 80), inside: 'G', words: [], outside_label: null },
-    { alias: 'C', key: 'APP@3.c', label: 'C', extent: at(400, 40, 500, 80), inside: null, words: [], outside_label: null },
+    { alias: 'A', key: 'APP@1.a', label: 'A', extent: at(20, 40, 120, 80), inside: 'G', words: [], outside_label: null, drawing: SHAPE_DRAWING },
+    { alias: 'B', key: 'APP@2.b', label: 'B', extent: at(140, 40, 240, 80), inside: 'G', words: [], outside_label: null, drawing: SHAPE_DRAWING },
+    { alias: 'C', key: 'APP@3.c', label: 'C', extent: at(400, 40, 500, 80), inside: null, words: [], outside_label: null, drawing: SHAPE_DRAWING },
   ],
   boxes: [
     {
       alias: 'G', kind: 'authored-grouping', section: 'boxes', key: 'g-1', label: 'Group',
       extent: at(10, 10, 250, 90), inside: null,
       words: [{ text: 'Group', x: 110, y: 25, width: 30 }],
-      title_band: at(86, 10, 164, 28),
+      title_band: at(86, 10, 164, 28), drawing: SHAPE_DRAWING,
     },
   ],
   relations: [
     {
       index: 0, key: 'r', source: 'B', target: 'C', decorated: [false, true],
-      course: [[240, 60], [400, 60]], label: '', label_size: null,
+      course: [[240, 60], [400, 60]], label: '', label_size: null, drawing: LINE_DRAWING,
     },
   ],
 }

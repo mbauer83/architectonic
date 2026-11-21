@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import type { Extent, Point } from '../../geometry'
 import { RULE_TIERS } from '../../routeQuality'
 import { breachesOf, countByTier, tierOf } from '../labBreaches'
+import { LINE_DRAWING, SHAPE_DRAWING } from './labDrawingFixtures'
 import type { LabGeometry } from '../labGeometry'
 import { fullPass, placementOf, textRegions } from '../labRouting'
 import { drawnArrangement } from '../labArrangement'
@@ -15,14 +16,15 @@ const geometry: LabGeometry = {
   artifact_id: 'ARC@1.a.test',
   name: 'Test',
   canvas: at(0, 0, 600, 400),
+  backdrop: [],
   elements: [
-    { alias: 'S', key: 'APP@1.s', label: 'S', extent: at(0, 100, 80, 140), inside: null, words: [], outside_label: null },
-    { alias: 'T', key: 'APP@2.t', label: 'T', extent: at(400, 100, 480, 140), inside: null, words: [], outside_label: null },
-    { alias: 'X', key: 'APP@3.x', label: 'X', extent: at(200, 90, 260, 150), inside: null, words: [], outside_label: null },
+    { alias: 'S', key: 'APP@1.s', label: 'S', extent: at(0, 100, 80, 140), inside: null, words: [], outside_label: null, drawing: SHAPE_DRAWING },
+    { alias: 'T', key: 'APP@2.t', label: 'T', extent: at(400, 100, 480, 140), inside: null, words: [], outside_label: null, drawing: SHAPE_DRAWING },
+    { alias: 'X', key: 'APP@3.x', label: 'X', extent: at(200, 90, 260, 150), inside: null, words: [], outside_label: null, drawing: SHAPE_DRAWING },
   ],
   boxes: [],
   relations: [
-    { index: 0, key: 'r', source: 'S', target: 'T', decorated: [false, true], course: [], label: '', label_size: null },
+    { index: 0, key: 'r', source: 'S', target: 'T', decorated: [false, true], course: [], label: '', label_size: null, drawing: LINE_DRAWING },
   ],
 }
 

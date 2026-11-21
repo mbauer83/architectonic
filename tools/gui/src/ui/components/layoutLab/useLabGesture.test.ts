@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
 import { drawnArrangement } from '../../../domain/layout/lab/labArrangement'
+import { LINE_DRAWING, SHAPE_DRAWING } from '../../../domain/layout/lab/__tests__/labDrawingFixtures'
 import type { LabGeometry } from '../../../domain/layout/lab/labGeometry'
 import { useLayoutLab } from '../../composables/useLayoutLab'
 import type { Handle } from '../../../domain/layout/lab/labArrangement'
@@ -20,18 +21,19 @@ const geometry: LabGeometry = {
   artifact_id: 'ARC@1.a.test',
   name: 'Test',
   canvas: at(0, 0, 600, 400),
+  backdrop: [],
   elements: [
-    { alias: 'A', key: 'APP@1.a', label: 'A', extent: at(20, 40, 120, 80), inside: 'G', words: [], outside_label: null },
-    { alias: 'B', key: 'APP@2.b', label: 'B', extent: at(140, 40, 240, 80), inside: 'G', words: [], outside_label: null },
-    { alias: 'C', key: 'APP@3.c', label: 'C', extent: at(400, 40, 500, 80), inside: null, words: [], outside_label: null },
+    { alias: 'A', key: 'APP@1.a', label: 'A', extent: at(20, 40, 120, 80), inside: 'G', words: [], outside_label: null, drawing: SHAPE_DRAWING },
+    { alias: 'B', key: 'APP@2.b', label: 'B', extent: at(140, 40, 240, 80), inside: 'G', words: [], outside_label: null, drawing: SHAPE_DRAWING },
+    { alias: 'C', key: 'APP@3.c', label: 'C', extent: at(400, 40, 500, 80), inside: null, words: [], outside_label: null, drawing: SHAPE_DRAWING },
   ],
   boxes: [{
     alias: 'G', kind: 'authored-grouping', section: 'boxes', key: 'g-1', label: 'Group',
-    extent: at(10, 10, 250, 90), inside: null, words: [], title_band: null,
+    extent: at(10, 10, 250, 90), inside: null, words: [], title_band: null, drawing: SHAPE_DRAWING,
   }],
   relations: [{
     index: 0, key: 'r', source: 'B', target: 'C', decorated: [false, true],
-    course: [[240, 60], [400, 60]], label: '', label_size: null,
+    course: [[240, 60], [400, 60]], label: '', label_size: null, drawing: LINE_DRAWING,
   }],
 }
 

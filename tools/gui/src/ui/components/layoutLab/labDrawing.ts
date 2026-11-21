@@ -1,31 +1,13 @@
 /**
- * How the lab draws its picture: where text goes when its shape moves or is resized, the order shapes
- * are painted in, where a shape's handles sit, and a course as SVG points.
- *
- * Text keeps PlantUML's own setting — its words, their measured widths, their lines — carried with the
- * shape and kept central in it when the shape is resized. The server's picture re-wraps a resized
- * label; the lab does not try to.
+ * How the lab draws its picture: the order shapes are painted in, where a shape is taken to drag it,
+ * where its handles sit, and a course as SVG points. What each is drawn *with* is PlantUML's own
+ * drawing (`labShapeDrawing`, `labLineDrawing`).
  */
 import type { Extent, Point } from '../../../domain/layout/geometry'
-import { centreOf, heightOf, widthOf } from '../../../domain/layout/geometry'
+import { centreOf } from '../../../domain/layout/geometry'
 import type { Handle } from '../../../domain/layout/lab/labArrangement'
 import { HANDLES, childrenOf } from '../../../domain/layout/lab/labArrangement'
-import type { LabBox, LabGeometry, LabWord } from '../../../domain/layout/lab/labGeometry'
-
-export interface PlacedWord {
-  readonly text: string
-  readonly x: number
-  readonly y: number
-  /** The width PlantUML measured, which the drawing holds the word to. */
-  readonly width: number
-}
-
-/** An element's words where they go now: carried with it, and kept central where it was resized. */
-export const elementWords = (words: readonly LabWord[], drawn: Extent, now: Extent): PlacedWord[] => {
-  const dx = now.left - drawn.left + (widthOf(now) - widthOf(drawn)) / 2
-  const dy = now.top - drawn.top + (heightOf(now) - heightOf(drawn)) / 2
-  return words.map((word) => ({ text: word.text, x: word.x + dx, y: word.y + dy, width: word.width }))
-}
+import type { LabGeometry } from '../../../domain/layout/lab/labGeometry'
 
 /**
  * Where a shape is taken to drag it: its whole outline — for a grouping, its title band across the box's
@@ -33,13 +15,6 @@ export const elementWords = (words: readonly LabWord[], drawn: Extent, now: Exte
  * (`routingBandOf`): the two are different regions and are kept apart.
  */
 export const dragRegionOf = (now: Extent): Extent => now
-
-/** A box's title where it goes now: across the middle of the box, as far below its top as it was. */
-export const titleWords = (box: LabBox, now: Extent): PlacedWord[] => {
-  const dx = centreOf(now).x - centreOf(box.extent).x
-  const dy = now.top - box.extent.top
-  return box.words.map((word) => ({ text: word.text, x: word.x + dx, y: word.y + dy, width: word.width }))
-}
 
 export interface Painted {
   readonly alias: string
