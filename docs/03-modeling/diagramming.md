@@ -481,9 +481,10 @@ connected elements over each other (`W378`), and a box over an element that is n
 (`W379`). On a diagram drawn from a layout it also warns about a relation drawn through text
 (`W380`), one that bends right behind the decoration at one of its ends (`W381`), one that runs
 along another line or a box border (`W382`), a layout that leaves a relation no route (`W383`), a
-gap between two boxes too narrow for the lines that run along it (`W384`), and a relation drawn
-outside the smallest grouping that holds both its ends (`W385`). `W384` names the two boxes and how
-many pixels wider the gap needs to be.
+gap too narrow for the lines that run along it or for the straight run into an arrowhead (`W384`), a
+relation drawn outside the smallest grouping that holds both its ends (`W385`), and a relation drawn
+with a run that is neither upright nor level (`W386`). `W384` names the two shapes either side of
+the gap and how many pixels wider it needs to be.
 
 ### Diagrams from an earlier format
 
