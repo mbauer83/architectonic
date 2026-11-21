@@ -15,6 +15,7 @@ import {
   RULE_TIERS,
   SHORTEST_SEGMENT,
   TEXT_PADDING,
+  BAND_MARGIN,
   bendsAtEnds,
   kinks,
   runsAlong,
@@ -49,7 +50,7 @@ describe('the rules and their tiers', () => {
   })
 
   it('states each rule in the same constants', () => {
-    expect({ END_RUN, SHORTEST_SEGMENT, LINE_CLEARANCE, TEXT_PADDING }).toEqual(readability.constants)
+    expect({ END_RUN, SHORTEST_SEGMENT, LINE_CLEARANCE, TEXT_PADDING, BAND_MARGIN }).toEqual(readability.constants)
   })
 })
 

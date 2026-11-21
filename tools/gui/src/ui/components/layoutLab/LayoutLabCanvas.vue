@@ -10,7 +10,7 @@ import { heightOf, widthOf } from '../../../domain/layout/geometry'
 import { pointAlong } from '../../../domain/layout/orthogonal'
 import type { LayoutLab } from '../../composables/useLayoutLab'
 import type { PlacedWord } from './labDrawing'
-import { elementWords, handlesOf, paintOrder, pointsAttribute, titleWords } from './labDrawing'
+import { dragRegionOf, elementWords, handlesOf, paintOrder, pointsAttribute, titleWords } from './labDrawing'
 import { useLabGesture } from './useLabGesture'
 
 const props = defineProps<{ lab: LayoutLab; showBreaches: boolean }>()
@@ -66,6 +66,8 @@ interface DrawnShape {
   readonly isBox: boolean
   readonly kind: string
   readonly now: Extent
+  /** Where it is taken to drag it: the whole outline, a grouping's full-width title band included. */
+  readonly region: Extent
   readonly words: PlacedWord[]
 }
 
@@ -81,9 +83,11 @@ const shapes = computed((): DrawnShape[] => {
     const element = elements.get(alias)
     const now = isBox ? where.boxes.get(alias) : where.elements.get(alias)
     if (!now) return []
-    if (box) return [{ alias, isBox, kind: box.kind, now, words: titleWords(box, now) }]
+    const region = dragRegionOf(now)
+    if (box) return [{ alias, isBox, kind: box.kind, now, region, words: titleWords(box, now) }]
     if (element) {
-      return [{ alias, isBox, kind: 'element', now, words: elementWords(element.words, element.extent, now) }]
+      const words = elementWords(element.words, element.extent, now)
+      return [{ alias, isBox, kind: 'element', now, region, words }]
     }
     return []
   })
@@ -152,10 +156,10 @@ const selectedExtent = computed((): Extent | null => {
       @pointerdown="gesture.press($event, shape.alias)"
     >
       <rect
-        :x="shape.now.left"
-        :y="shape.now.top"
-        :width="widthOf(shape.now)"
-        :height="heightOf(shape.now)"
+        :x="shape.region.left"
+        :y="shape.region.top"
+        :width="widthOf(shape.region)"
+        :height="heightOf(shape.region)"
         :rx="shape.isBox ? 4 : 3"
       />
       <text

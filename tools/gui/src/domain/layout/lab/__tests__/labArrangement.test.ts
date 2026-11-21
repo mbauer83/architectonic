@@ -102,9 +102,10 @@ describe('the lab picture as the router sees it', () => {
     expect([...changedShapes(before, after)].sort()).toEqual(['B', 'G'])
   })
 
-  it('carries a box title band with the box top', () => {
+  it('keeps lines out of a box title band only as wide as the title, carried with the box', () => {
     const placement = placementOf(geometry, moved(geometry, drawnArrangement(geometry), 'G', 0, 30))
-    expect(textRegions(geometry, placement).get('band:G')).toEqual(at(10, 40, 250, 58))
+    // The title's words run 110..140; the band reaches BAND_MARGIN either side: a routing obstacle only.
+    expect(textRegions(geometry, placement).get('band:G')).toEqual(at(86, 40, 164, 58))
   })
 
   it('widens as a first layout does, keeping every element and every member inside its box', () => {

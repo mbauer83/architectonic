@@ -37,6 +37,9 @@ export const LINE_CLEARANCE = 6
 /** The room kept round text, which a line keeps out of too. */
 export const TEXT_PADDING = 3
 
+/** How far a title band reaches beyond its title on either side, as a line keeps out of it. */
+export const BAND_MARGIN = 24
+
 const THROUGH_TEXT_MARGIN = 1
 const SHARED_LENGTH = 1
 const SQUARE = 0.5

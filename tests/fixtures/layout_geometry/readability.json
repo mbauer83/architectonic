@@ -13,7 +13,8 @@
   "END_RUN": 30.0,
   "SHORTEST_SEGMENT": 16.0,
   "LINE_CLEARANCE": 6.0,
-  "TEXT_PADDING": 3.0
+  "TEXT_PADDING": 3.0,
+  "BAND_MARGIN": 24.0
  },
  "text": [
   {

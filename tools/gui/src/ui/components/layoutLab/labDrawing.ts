@@ -27,6 +27,13 @@ export const elementWords = (words: readonly LabWord[], drawn: Extent, now: Exte
   return words.map((word) => ({ text: word.text, x: word.x + dx, y: word.y + dy, width: word.width }))
 }
 
+/**
+ * Where a shape is taken to drag it: its whole outline — for a grouping, its title band across the box's
+ * full width included. Not the band a line keeps out of, which is only as wide as the title
+ * (`routingBandOf`): the two are different regions and are kept apart.
+ */
+export const dragRegionOf = (now: Extent): Extent => now
+
 /** A box's title where it goes now: across the middle of the box, as far below its top as it was. */
 export const titleWords = (box: LabBox, now: Extent): PlacedWord[] => {
   const dx = centreOf(now).x - centreOf(box.extent).x

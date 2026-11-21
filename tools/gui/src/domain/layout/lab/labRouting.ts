@@ -2,8 +2,8 @@
  * The lab's picture as the router sees it, and the router's two passes over it.
  *
  * The scene is the one the composer routes (`arrangement.py`): every element, every box, and the text
- * a line keeps out of — each box's title band carried with the box's top, and each label set outside
- * its element carried with the element. A connector is one drawn line, from its stated source to its
+ * a line keeps out of — each box's title band as wide as its title, carried as the title is, and each
+ * label set outside its element carried with the element. A connector is one drawn line, from its stated source to its
  * stated target. Only the router's public passes are called: `routeAll` with no quick pass on a drop,
  * and with one while something is dragged.
  */
@@ -14,7 +14,8 @@ import type { Connector, RoutedConnector, RoutingResult, RoutingScene } from '..
 import { sameExtent } from '../routing/scene'
 import type { Arrangement } from './labArrangement'
 import { fittedBoxes } from './labArrangement'
-import type { LabGeometry } from './labGeometry'
+import { BAND_MARGIN } from '../routeQuality'
+import type { LabBox, LabGeometry } from './labGeometry'
 
 /** Where every shape is now, elements and boxes apart, as the router and the drawing both need. */
 export interface Placement {
@@ -33,15 +34,35 @@ const resizedFromDrawn = (now: Extent, drawn: Extent): boolean =>
   Math.abs(now.right - now.left - (drawn.right - drawn.left)) > SAME ||
   Math.abs(now.bottom - now.top - (drawn.bottom - drawn.top)) > SAME
 
+/**
+ * A box's title band as a line keeps out of it, where the box is now — for routing only. As wide as its
+ * title with BAND_MARGIN either side (`text_clearance.title_band`), carried with the box's top and
+ * middle as the title is drawn, within the box. A band the box's whole width would leave a line from
+ * outside no way in but round the side.
+ *
+ * Not where the box is taken to drag it: that is its whole outline, the title band across its full
+ * width included (`dragRegionOf` in the lab's drawing).
+ */
+export const routingBandOf = (box: LabBox, now: Extent): Extent | null => {
+  if (!box.title_band || box.words.length === 0) return null
+  const dx = (now.left + now.right) / 2 - (box.extent.left + box.extent.right) / 2
+  const left = Math.min(...box.words.map((word) => word.x)) + dx - BAND_MARGIN
+  const right = Math.max(...box.words.map((word) => word.x + word.width)) + dx + BAND_MARGIN
+  return {
+    left: Math.max(now.left, left),
+    top: now.top,
+    right: Math.min(now.right, right),
+    bottom: now.top + (box.title_band.bottom - box.extent.top),
+  }
+}
+
 /** The text a line keeps out of, where it is now. */
 export const textRegions = (geometry: LabGeometry, placement: Placement): ReadonlyMap<string, Extent> => {
   const regions = new Map<string, Extent>()
   for (const box of geometry.boxes) {
     const now = placement.boxes.get(box.alias)
-    if (!box.title_band || !now) continue
-    regions.set(`band:${box.alias}`, {
-      left: now.left, top: now.top, right: now.right, bottom: now.top + (box.title_band.bottom - box.extent.top),
-    })
+    const band = now ? routingBandOf(box, now) : null
+    if (band) regions.set(`band:${box.alias}`, band)
   }
   for (const element of geometry.elements) {
     const now = placement.elements.get(element.alias)

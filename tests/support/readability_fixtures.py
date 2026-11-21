@@ -21,7 +21,7 @@ from src.domain.diagrams.layout.route_quality import (
     runs_along,
     square_course,
 )
-from src.domain.diagrams.layout.text_clearance import TEXT_PADDING, texts_crossed
+from src.domain.diagrams.layout.text_clearance import BAND_MARGIN, TEXT_PADDING, texts_crossed
 
 
 def _points(course: Sequence[Point]) -> list[list[float]]:
@@ -90,7 +90,7 @@ def build_readability() -> dict[str, object]:
         "tiers": dict(RULE_TIERS),
         "constants": {
             "END_RUN": END_RUN, "SHORTEST_SEGMENT": SHORTEST_SEGMENT,
-            "LINE_CLEARANCE": LINE_CLEARANCE, "TEXT_PADDING": TEXT_PADDING,
+            "LINE_CLEARANCE": LINE_CLEARANCE, "TEXT_PADDING": TEXT_PADDING, "BAND_MARGIN": BAND_MARGIN,
         },
         "text": [
             {"name": name, "course": _points(course),
