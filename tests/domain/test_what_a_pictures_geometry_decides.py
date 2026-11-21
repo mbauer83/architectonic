@@ -168,7 +168,8 @@ class TestWhatIsOnlyCounted:
         report = check_picture(picture)
 
         assert report.crossings == 1
-        assert report.findings == ()
+        # Drawn slanted, as GraphViz draws: a router's rule, asked only of a picture a router drew.
+        assert {finding.defect for finding in report.findings} <= {PictureDefect.SLANTED}
 
     def test_two_lines_leaving_one_point_do_not_cross(self) -> None:
         picture = _picture(*self._SHAPES, relations=(

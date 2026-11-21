@@ -320,6 +320,10 @@ export const routeAll = (
     const routed = routing.searched(connector, [source], [target], false, stubs) ?? before
     routes.set(key, routed)
     routing.taken(routed)
+    // Its first and last runs are fixed to nudging as a stub is: no later route goes along them.
+    const course = routed.course
+    stubs.add(course[0], course[1], key)
+    stubs.add(course[course.length - 2], course[course.length - 1], key)
   }
   const every = new Map([...kept, ...routes])
   const courses = new Map([...every].map(([key, routed]) => [key, [...routed.course]]))

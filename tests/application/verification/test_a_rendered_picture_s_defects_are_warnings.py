@@ -177,12 +177,12 @@ class TestAPictureThatCannotBeRead:
         assert _only(RenderedPictureRule(read=lambda _svg: _THROUGH).check("<svg/>", _LOC)).code == "W371"
 
     def test_the_codes_are_their_own(self) -> None:
-        """W370–W374, and W380–W382, W384 and W385 for what a router answers for; W375–W379 and E37x are a
+        """W370–W374, and W380–W382 and W384–W386 for what a router answers for; W375–W379 and E37x are a
         stated layout's, and W383 says no route was found."""
         from src.application.verification._verifier_rules_rendered_picture import _CODE_OF
 
         assert sorted([UNREAD_PICTURE_CODE, *_CODE_OF.values()]) == [
-            "W370", "W371", "W372", "W373", "W374", "W380", "W381", "W382", "W384", "W385",
+            "W370", "W371", "W372", "W373", "W374", "W380", "W381", "W382", "W384", "W385", "W386",
         ]
 
 
@@ -322,8 +322,8 @@ class TestANarrowGap:
 
         assert "«Resources» and «Value Streams»" in issue.message
         assert "3 line(s)" in issue.message
-        assert "28 px wider" in issue.message
-        assert issue.details["places"][0]["wider_by"] == 28  # type: ignore[index]
+        assert "27 px wider" in issue.message  # 48 needed, 20 there, a pixel's rounding allowed
+        assert issue.details["places"][0]["wider_by"] == 27  # type: ignore[index]
 
     def test_lines_crossing_a_gap_do_not_need_its_room(self) -> None:
         crossing = _picture(
@@ -361,6 +361,16 @@ class TestARelationLeavingItsBox:
         inside = self._with((140, 100), (440, 100))
 
         assert "W385" not in {issue.code for issue in picture_issues(inside, _LOC, laid_out=True)}
+
+
+def test_a_relation_drawn_with_a_slanted_run_is_w386_on_a_laid_out_picture() -> None:
+    slanted = _picture(
+        _named("A", "Orders", 0, 0), _named("B", "Billing", 400, 40),
+        relations=(_line("A", "B", (100, 20), (250, 20), (260, 60), (400, 60)),),
+    )
+
+    assert "W386" in {issue.code for issue in picture_issues(slanted, _LOC, laid_out=True)}
+    assert "W386" not in {issue.code for issue in picture_issues(_THROUGH, _LOC, laid_out=True)}
 
 
 def test_a_layout_that_leaves_a_relation_no_route_is_w383() -> None:

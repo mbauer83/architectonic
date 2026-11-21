@@ -22,9 +22,10 @@ from src.domain.diagrams.layout.route_quality import END_RUN, bends_at_ends, kin
 from src.domain.diagrams.layout.routing.graph import EAST, NORTH, SOUTH, WEST
 from src.domain.diagrams.layout.routing.lines import Stubs
 from src.domain.diagrams.layout.routing.router import as_route, rerouted, route_all
-from src.domain.diagrams.layout.routing.scene import Connector, RoutingScene
-from src.domain.diagrams.layout.routing.search import REVERSE
-from src.domain.diagrams.layout.routing.visibility import Visibility
+from src.domain.diagrams.layout.routing.scene import CHANNEL_FULL, CROWDING, Connector, RoutingScene
+from src.domain.diagrams.layout.routing.search import REVERSE, step_cost
+from src.domain.diagrams.layout.routing.spreading import _clear_of_facing
+from src.domain.diagrams.layout.routing.visibility import FULL, Visibility
 from src.domain.diagrams.layout.text_clearance import texts_crossed
 from tests.support.layout_geometry_fixtures import WALK_MOVES, walk_scene
 from tests.support.routing_fixtures import graph_scene, heavy_edit, inside_scene, synthetic_scene
@@ -270,6 +271,29 @@ def test_a_drag_s_quick_pass_answers_what_the_full_pass_answers_about_what_has_n
     assert full.unroutable == ("ab",)
     assert quick.unroutable == full.unroutable
     assert elements_crossed(quick.routes["cd"].course, after.elements, ("c", "d")) == ()
+
+
+def test_a_full_channel_costs_two_bends_not_a_multiple_of_its_length() -> None:
+    """A full channel's cost was its length times two hundred, which bought any detour at all."""
+    assert step_cost(300, FULL) == 300 + CHANNEL_FULL
+    assert step_cost(300, FULL + 2) == 300 * (1 + 2 * CROWDING) + CHANNEL_FULL
+    assert step_cost(300, 0) == 300
+
+
+def test_two_connectors_ports_facing_at_one_height_are_moved_apart() -> None:
+    """Two elements 40 px apart, a port of one connector on each facing side at the same height:
+    their stubs ran into each other, and nudging cannot move a stub."""
+    scene = RoutingScene(elements={
+        "a": Extent(0, 100, 100, 140), "b": Extent(140, 100, 240, 140),
+        "c": Extent(0, 400, 100, 440), "d": Extent(140, 400, 240, 440),
+    })
+    connectors = [Connector("ac", "a", "c"), Connector("bd", "b", "d")]
+    ports = {"ac": ((Side.RIGHT, 0.5), (Side.TOP, 0.5)), "bd": ((Side.LEFT, 0.5), (Side.TOP, 0.5))}
+
+    cleared = _clear_of_facing(scene, connectors, dict(ports))
+
+    assert cleared["ac"] == ports["ac"]
+    assert cleared["bd"][0][0] is Side.LEFT and cleared["bd"][0][1] != 0.5
 
 
 def test_a_route_that_weaves_is_counted_as_a_jog_however_long_its_runs() -> None:

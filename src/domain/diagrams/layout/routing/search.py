@@ -21,7 +21,7 @@ from dataclasses import dataclass
 
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.routing.graph import Graph, Joined
-from src.domain.diagrams.layout.routing.scene import BEND_PENALTY, CROWDING
+from src.domain.diagrams.layout.routing.scene import BEND_PENALTY, CHANNEL_FULL, CROWDING
 from src.domain.diagrams.layout.routing.visibility import FULL, Passage
 
 #: The four directions a route travels in, as steps: east, west, south, north.
@@ -55,6 +55,15 @@ class Found:
     start: int
     goal: int
     cost: float
+
+
+def step_cost(length: float, crowding: int) -> float:
+    """What a step costs: its length, a share more for each route already alongside, and a fixed sum
+    where its channel is full. Bounded so: a crowded way costs a fraction of its length more and a
+    full one two bends more, so neither buys a detour longer than that."""
+    full = crowding >= FULL
+    alongside = crowding - FULL if full else crowding
+    return length * (1 + CROWDING * alongside) + (CHANNEL_FULL if full else 0.0)
 
 
 def _windows(terminals: Sequence[Terminal]) -> list[Extent | None]:
@@ -104,9 +113,8 @@ def _search_within(
                 inside = window is None or (window.left <= x <= window.right and window.top <= y <= window.bottom)
                 here, there = Point(graph.x(node), graph.y(node)), Point(x, y)
                 if inside and not passage.step_blocked(here, there):
-                    # A run another route already takes costs more: later routes spread over the channels.
                     length = abs(x - here.x) + abs(y - here.y)
-                    steps[key] = (reached, length * (1 + CROWDING * passage.crowding(here, there)))
+                    steps[key] = (reached, step_cost(length, passage.crowding(here, there)))
         return steps[key]
 
     best: dict[int, float] = {}

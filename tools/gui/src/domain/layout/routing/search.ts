@@ -8,7 +8,7 @@
  */
 import type { Extent, Point } from '../geometry'
 import type { Graph, Joined } from './graph'
-import { BEND_PENALTY, CROWDING } from './scene'
+import { BEND_PENALTY, CHANNEL_FULL, CROWDING } from './scene'
 import type { Passage } from './visibility'
 import { FULL } from './visibility'
 
@@ -89,6 +89,16 @@ class Frontier {
   }
 }
 
+/**
+ * What a step costs: its length, a share more for each route already alongside, and a fixed sum where
+ * its channel is full — so neither buys a detour longer than that.
+ */
+export const stepCost = (length: number, crowding: number): number => {
+  const full = crowding >= FULL
+  const alongside = full ? crowding - FULL : crowding
+  return length * (1 + CROWDING * alongside) + (full ? CHANNEL_FULL : 0)
+}
+
 const windowsOf = (terminals: readonly Terminal[]): (Extent | null)[] => {
   const left = Math.min(...terminals.map((terminal) => terminal.point.x))
   const top = Math.min(...terminals.map((terminal) => terminal.point.y))
@@ -154,7 +164,7 @@ const searchWithin = (
       const there = { x, y }
       if (inside && !passage.stepBlocked(here, there)) {
         const length = Math.abs(x - here.x) + Math.abs(y - here.y)
-        answer = [reached, length * (1 + CROWDING * passage.crowding(here, there))]
+        answer = [reached, stepCost(length, passage.crowding(here, there))]
       }
     }
     steps.set(key, answer)

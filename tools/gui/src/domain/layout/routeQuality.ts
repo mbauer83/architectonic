@@ -19,6 +19,7 @@ export const RULE_TIERS: Readonly<Record<string, Tier>> = {
   'bend-at-an-end': 'hard',
   'runs-along': 'hard',
   'leaves-common-box': 'hard',
+  orthogonal: 'hard',
   jog: 'soft',
   'heads-together': 'soft',
   'label-obscured': 'soft',

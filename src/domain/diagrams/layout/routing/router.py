@@ -302,6 +302,10 @@ def route_all(
         connector = next(one for one in searched if one.key == key)
         routes[key] = routing.searched(connector, (source,), (target,), lining_up=False, stubs=stubs) or first[key]
         routing.taken(routes[key])
+        # Its first and last runs are fixed to nudging as a stub is: no later route goes along them.
+        course = routes[key].course
+        stubs.add(course[0], course[1], key)
+        stubs.add(course[-2], course[-1], key)
     courses = {key: list(routed.course) for key, routed in {**kept, **routes}.items()}
     obstacles = {
         connector.key: [*routing.visibility.grown.values(), *scene.text.values(),

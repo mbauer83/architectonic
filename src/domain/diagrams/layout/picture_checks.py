@@ -15,7 +15,9 @@ looking; four things are not, and they are decided here:
 * a gap between two boxes **too narrow** for the lines that run along it (`channels`): where the
   room is the arrangement's, which no router can make;
 * a relation that **leaves the smallest box holding both its ends** — a hard rule: two members of a
-  box are joined inside it.
+  box are joined inside it;
+* a relation drawn with a **slanted** run: a router draws upright and level runs only, so a slant is
+  a drawing that does not read back as the course it was drawn along.
 
 Its soft rules — a jog, two decorations together — are counted beside the findings, like crossings.
 
@@ -42,6 +44,7 @@ from src.domain.diagrams.layout.rendered_picture import (
     extent_across,
 )
 from src.domain.diagrams.layout.route_quality import Unreadable, kinks, square_course, unreadable
+from src.domain.diagrams.layout.routing.scene import run_for
 from src.domain.diagrams.layout.text_clearance import runs_through_text, text_regions
 
 #: How far inside an element a line must run before it counts as drawn through it. A line arriving
@@ -69,6 +72,7 @@ class PictureDefect(StrEnum):
     RUNS_ALONG = "a relation running along another line or a border"
     NARROW_CHANNEL = "a gap between two boxes too narrow for the lines that run along it"
     LEAVES_ITS_BOX = "a relation that leaves the smallest box holding both its ends"
+    SLANTED = "a relation drawn with a run neither upright nor level"
 
 
 #: The defects only a router answers for: the hard rules of `route_quality` and `text_clearance`.
@@ -76,7 +80,7 @@ class PictureDefect(StrEnum):
 #: into cluster title bands as a matter of course, which no author can repair.
 KEPT_BY_THE_ROUTER = frozenset({
     PictureDefect.RELATION_THROUGH_TEXT, PictureDefect.BEND_AT_AN_END, PictureDefect.RUNS_ALONG,
-    PictureDefect.NARROW_CHANNEL, PictureDefect.LEAVES_ITS_BOX,
+    PictureDefect.NARROW_CHANNEL, PictureDefect.LEAVES_ITS_BOX, PictureDefect.SLANTED,
 })
 
 
@@ -269,17 +273,41 @@ def _leaving_their_box(picture: RenderedPicture) -> list[PictureFinding]:
     return findings
 
 
+#: How far off upright or level a run may be and still be drawn square: rounding of the written numbers.
+_SQUARE = 0.5
+
+
+def _is_slanted(course: tuple[Point, ...]) -> bool:
+    return any(
+        abs(a.x - b.x) > _SQUARE and abs(a.y - b.y) > _SQUARE for a, b in zip(course, course[1:], strict=False)
+    )
+
+
+def _slanted(picture: RenderedPicture) -> list[PictureFinding]:
+    """Each relation whose line, read back, has a run neither upright nor level."""
+    return [
+        PictureFinding(PictureDefect.SLANTED, relation.ends)
+        for relation in picture.relations if _is_slanted(square_course(relation.path))
+    ]
+
+
 def _narrow_channels(picture: RenderedPicture) -> list[PictureFinding]:
     """Each gap between two boxes too narrow for the lines drawn along it."""
     others = [
         *(element.extent for element in picture.elements.values()),
         *(region.extent for region in text_regions(picture, picture.surrounding)),
     ]
+    courses = [_course_to_borders(relation, picture) for relation in picture.relations]
+    ends = [
+        (course[at], run_for(bool(marks)))
+        for relation, course in zip(picture.relations, courses, strict=True) if len(course) > 1
+        for at, marks in ((0, relation.first_marks), (-1, relation.second_marks))
+    ]
     return [
         PictureFinding(PictureDefect.NARROW_CHANNEL, (channel.low, channel.high), channel.lines, channel.wider_by)
         for channel in too_narrow(
-            {alias: box.extent for alias, box in picture.boxes.items()}, others,
-            [square_course(relation.path) for relation in picture.relations],
+            {alias: box.extent for alias, box in picture.boxes.items()}, others, courses,
+            {alias: element.extent for alias, element in picture.elements.items()}, ends,
         )
     ]
 
@@ -320,6 +348,7 @@ def check_picture(picture: RenderedPicture) -> PictureReport:
             *_hard_to_follow(picture),
             *_narrow_channels(picture),
             *_leaving_their_box(picture),
+            *_slanted(picture),
         ),
         crossings=sum(
             courses_cross(first.course, second.course)

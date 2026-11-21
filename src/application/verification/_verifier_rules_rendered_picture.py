@@ -1,4 +1,4 @@
-"""What a diagram's rendered picture gets wrong that its body cannot show (W370–W374, W380–W385).
+"""What a diagram's rendered picture gets wrong that its body cannot show (W370–W374, W380–W386).
 
 The syntax check already renders every diagram to find out whether PlantUML accepts it, and threw
 the picture away. This reads that picture before it goes, so the checks cost a parse and no render:
@@ -26,6 +26,8 @@ the picture away. This reads that picture before it goes, so the checks cost a p
 * **W385** — a relation drawn outside the smallest box holding both its ends. The router keeps two
   members of a box inside it and leaves only where no route inside exists; this reports that, and a
   stated route that leaves;
+* **W386** — a relation drawn with a slanted run. The router draws upright and level runs only, so
+  this is a drawing that does not read back as its course;
 * **W370** — the picture stated the kind this project reads and could not be read, so none of the
   four were decided. Reported rather than passed over, because a check that silently stopped
   examining pictures looks exactly like a repository of clean ones.
@@ -82,6 +84,7 @@ _CODE_OF: Mapping[PictureDefect, str] = {
     PictureDefect.RUNS_ALONG: "W382",
     PictureDefect.NARROW_CHANNEL: "W384",
     PictureDefect.LEAVES_ITS_BOX: "W385",
+    PictureDefect.SLANTED: "W386",
 }
 
 
@@ -142,7 +145,7 @@ def _place(picture: RenderedPicture, finding: PictureFinding) -> str:
             f"the gap between {names[0]} and {names[1]}, which {finding.lines} line(s) run along "
             f"and needs to be {finding.wider_by} px wider"
         )
-    if finding.defect in (PictureDefect.BEND_AT_AN_END, PictureDefect.RUNS_ALONG):
+    if finding.defect in (PictureDefect.BEND_AT_AN_END, PictureDefect.RUNS_ALONG, PictureDefect.SLANTED):
         return f"the relation between {names[0]} and {names[1]}"
     return f"{names[0]} and {names[1]}"
 

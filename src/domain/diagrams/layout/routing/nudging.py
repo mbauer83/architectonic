@@ -31,6 +31,10 @@ _UNBOUNDED = 1.0e9
 #: How many times an axis is gone over, at most, for runs a placement brought near another cluster.
 _ROUNDS = 4
 
+#: How near two members sharing a stretch must lie to be placed together: twice the ideal separation,
+#: so a run placed apart from one is placed knowing the next, rather than onto it.
+_REACH = 2 * IDEAL_SEPARATION
+
 #: How many times both axes are gone over in turn.
 _SWEEPS = 2
 
@@ -143,7 +147,7 @@ def _clusters(members: list[Member]) -> list[list[Member]]:
     order = sorted(range(len(members)), key=lambda index: (members[index].at, index))
     for position, first in enumerate(order):
         for second in order[position + 1 :]:
-            if members[second].at - members[first].at >= IDEAL_SEPARATION:
+            if members[second].at - members[first].at >= _REACH:
                 break
             one, other = members[first], members[second]
             if share(one, other):

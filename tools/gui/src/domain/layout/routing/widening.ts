@@ -8,9 +8,10 @@
  */
 import type { Channel } from '../channels'
 import { tooNarrow, widerBy } from '../channels'
-import type { Extent } from '../geometry'
+import type { Extent, Point } from '../geometry'
 import { routeAll } from './router'
 import type { Connector, RoutingScene } from './scene'
+import { runFor } from './scene'
 
 /** How many times the routes are found again and the channels widened again. */
 export const ROUNDS = 4
@@ -62,7 +63,15 @@ const spread = (scene: RoutingScene, narrow: readonly Channel[]): RoutingScene =
 export const narrowChannels = (scene: RoutingScene, connectors: readonly Connector[]): Channel[] => {
   const result = routeAll(scene, connectors)
   const courses = [...[...result.routes.values()].map((routed) => routed.course), ...scene.fixedLines]
-  return tooNarrow(scene.boxes, [...scene.elements.values(), ...scene.text.values()], courses)
+  const decorated = new Map(connectors.map((connector) => [connector.key, connector.decorated]))
+  const ends = [...result.routes].flatMap(([key, routed]): (readonly [Point, number])[] => {
+    const [source, target] = decorated.get(key) as readonly [boolean, boolean]
+    return [
+      [routed.course[0], runFor(source)],
+      [routed.course[routed.course.length - 1], runFor(target)],
+    ]
+  })
+  return tooNarrow(scene.boxes, [...scene.elements.values(), ...scene.text.values()], courses, scene.elements, ends)
 }
 
 /** *scene* with every channel too narrow for its lines opened until they fit, or ROUNDS tried. */

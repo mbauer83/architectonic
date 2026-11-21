@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from src.domain.diagrams.layout.channels import Channel, channels, parents_of, too_narrow
 from src.domain.diagrams.layout.geometry import Extent, Point
+from src.domain.diagrams.layout.route_quality import END_RUN
 from src.domain.diagrams.layout.routing.router import route_all
 from src.domain.diagrams.layout.routing.scene import IDEAL_SEPARATION, Connector, RoutingScene
 from src.domain.diagrams.layout.routing.widening import narrow_channels, widened
@@ -34,7 +35,7 @@ def test_a_gap_is_measured_by_the_lines_that_run_along_it_not_those_crossing_it(
 def test_a_gap_holds_its_lines_at_nudging_s_spacing_from_each_border_and_each_other() -> None:
     gap = Channel("left", "right", "x", 200, 220, 0, 300, lines=2)
 
-    assert gap.wider_by == 3 * IDEAL_SEPARATION - 20
+    assert gap.wider_by == 3 * IDEAL_SEPARATION - 20 - 1  # a pixel of a layout's rounding allowed
     assert Channel("left", "right", "x", 200, 236, 0, 300, lines=2).wider_by == 0
     assert Channel("left", "right", "x", 200, 201, 0, 300, lines=0).wider_by == 0
 
@@ -71,6 +72,23 @@ def test_widening_opens_every_narrow_gap_and_keeps_order_nesting_and_sizes() -> 
             assert (box.bottom <= other_box.top) == (room.boxes[key].bottom <= room.boxes[other].top), (key, other)
         for element, extent in scene.elements.items():
             assert box.encloses(extent) == room.boxes[key].encloses(room.elements[element]), (key, element)
+
+
+def test_a_box_s_padding_grows_until_the_run_into_an_arrowhead_starts_inside_it() -> None:
+    """Value Stream: arrows into Model & Validate began their straight run outside the Deliver box,
+    whose padding was narrower than the run. The run is the arrowhead's readability (rule A), so the
+    room is made, not the run shortened."""
+    scene = RoutingScene(
+        elements={"member": Extent(124, 100, 224, 140), "outside": Extent(-300, 100, -200, 140)},
+        boxes={"box": Extent(100, 60, 400, 300)},
+    )
+    connectors = [Connector("in", "outside", "member")]
+    assert narrow_channels(scene, connectors)
+
+    room = widened(scene, connectors)
+
+    assert room.elements["member"].left - room.boxes["box"].left >= END_RUN + IDEAL_SEPARATION - 1
+    assert narrow_channels(room, connectors) == []
 
 
 def test_an_arrangement_with_room_enough_is_not_moved() -> None:

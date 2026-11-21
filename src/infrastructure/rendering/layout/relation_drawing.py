@@ -30,6 +30,10 @@ _BEND_RADIUS = 6.0
 #: Below this a bend is drawn sharp: there is no room for a curve worth drawing.
 _SHARP_BELOW = 0.5
 
+#: How much of each run is left straight between two rounded bends, so the line reads back as runs
+#: and bends (`route_quality.square_course`): two curves meeting would read back as a slant.
+_STRAIGHT_LEFT = 1.0
+
 _A_RUN = 2
 
 
@@ -46,7 +50,8 @@ def rounded_path(course: Sequence[Point]) -> str:
     """The path data of a line through *course* with each bend rounded as far as its two runs allow."""
     written = [f"M{_at(course[0])}"]
     for before, bend, after in zip(course, course[1:], course[2:], strict=False):
-        radius = min(_BEND_RADIUS, before.distance_to(bend) / 2, bend.distance_to(after) / 2)
+        into, out_of = before.distance_to(bend), bend.distance_to(after)
+        radius = min(_BEND_RADIUS, (into - _STRAIGHT_LEFT) / 2, (out_of - _STRAIGHT_LEFT) / 2)
         if radius < _SHARP_BELOW:
             written.append(f"L{_at(bend)}")
             continue

@@ -13,8 +13,10 @@ import pytest
 
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.rendered_picture import EndMark, MarkShape
+from src.domain.diagrams.layout.route_quality import square_course
 from src.infrastructure.rendering.layout._svg_drawing import SVG_NAMESPACE, outline_extent
 from src.infrastructure.rendering.layout.relation_decorations import frame_as_drawn
+from src.infrastructure.rendering.layout.relation_drawing import rounded_path
 from src.infrastructure.rendering.layout.svg_markup import Motion, drawn_extent, fitted, moved
 from src.infrastructure.rendering.layout.svg_path_data import moved_path, read_path
 
@@ -39,6 +41,23 @@ def test_every_point_of_a_moved_path_is_where_the_move_put_it(d: str) -> None:
     shifted = read_path(moved_path(d, lambda x, y: (x + 7.5, y - 3)))
 
     assert shifted.through == tuple(Point(point.x + 7.5, point.y - 3) for point in read_path(d).through)
+
+
+@pytest.mark.parametrize(
+    "course",
+    [
+        ((0, 0), (100, 0), (100, 7), (300, 7)),
+        ((0, 0), (100, 0), (100, 2), (300, 2), (300, 80)),
+        ((0, 0), (0, 50), (12, 50), (12, 90)),
+        ((0, 0), (40, 0)),
+    ],
+)
+def test_a_rounded_line_reads_back_as_the_runs_it_was_drawn_along(course: tuple[tuple[float, float], ...]) -> None:
+    """A 7 px jog was drawn as two curves meeting, and read back as a slanted run: the writer and the
+    reader of a relation's line, held to each other over short runs between bends."""
+    points = tuple(Point(x, y) for x, y in course)
+
+    assert square_course(read_path(rounded_path(points)).through) == points
 
 
 def _svg(tag: str, **attributes: str) -> Element:

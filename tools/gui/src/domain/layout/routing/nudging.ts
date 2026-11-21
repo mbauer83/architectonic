@@ -13,6 +13,8 @@ import { IDEAL_SEPARATION, byText } from './scene'
 const UNBOUNDED = 1.0e9
 const ROUNDS = 4
 const SWEEPS = 2
+/** How near two members sharing a stretch must lie to be placed together: twice the ideal separation. */
+const REACH = 2 * IDEAL_SEPARATION
 
 /** The connectors whose runs share a stretch closer than the least separation. */
 const pairsOf = (cluster: readonly Member[]): [string, string][] => {
@@ -171,7 +173,7 @@ const clustersOf = (members: readonly Member[]): Member[][] => {
     .sort((one, other) => members[one].at - members[other].at || one - other)
   order.forEach((first, position) => {
     for (const second of order.slice(position + 1)) {
-      if (members[second].at - members[first].at >= IDEAL_SEPARATION) break
+      if (members[second].at - members[first].at >= REACH) break
       const one = members[first]
       const other = members[second]
       if (share(one, other)) parent[root(second)] = root(first)

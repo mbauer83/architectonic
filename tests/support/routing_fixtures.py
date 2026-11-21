@@ -211,7 +211,7 @@ def build_widening() -> dict[str, object]:
         "channels": [
             {"low": channel.low, "high": channel.high, "across": channel.across, "start": channel.start,
              "end": channel.end, "first": channel.first, "last": channel.last, "lines": channel.lines,
-             "wider_by": channel.wider_by}
+             "run": channel.run, "wider_by": channel.wider_by}
             for channel in channels(scene.boxes, [*scene.elements.values(), *scene.text.values()], courses)
         ],
         "widened": scene_as_json(widened(scene, connectors)),

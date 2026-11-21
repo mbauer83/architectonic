@@ -27,6 +27,10 @@ BEND_PENALTY: Final = 50.0
 #: routes spread over the channels there are, rather than all queueing for one nudging cannot widen.
 CROWDING: Final = 2.0
 
+#: What a step through a channel already full costs besides: two bends. Fixed rather than a multiple
+#: of the length, so going round a full channel is worth at most that much more length.
+CHANNEL_FULL: Final = 2 * BEND_PENALTY
+
 #: How far either side of a box's border a candidate line runs, so a route may pass the border at
 #: a distance a reader sees as two lines, or cross it.
 BORDER_OFFSET: Final = LINE_CLEARANCE + 4.0

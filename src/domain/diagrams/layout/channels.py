@@ -1,10 +1,13 @@
 """The gaps between boxes that lines run along, and whether each is wide enough for the lines in it.
 
 A **channel** is the clear gap between two boxes facing each other: two boxes side by side in one
-parent, or a box and the border of the box it sits in. The lines a router lays *along* a channel —
-not those crossing it — must fit in it at the spacing nudging places them at: `IDEAL_SEPARATION` from
-each border and from each other. A channel narrower than that is where lines end up running
-along each other or along a border, and no router can repair it: the room is the arrangement's.
+parent, or a box — or an element — and the border of the box it sits in. The lines a router lays
+*along* a channel — not those crossing it — must fit in it at the spacing nudging places them at:
+`IDEAL_SEPARATION` from each border and from each other. And a line that ends on a shape facing the
+gap leaves it by its straight run — `END_RUN` behind an arrowhead — which must end inside the gap
+with room to turn: otherwise the run into an arrowhead starts outside the box holding its target.
+A channel narrower than that is where lines end up running along each other or along a border, and
+no router can repair it: the room is the arrangement's.
 
 One reading of channels, for two askers: the widening that gives a first layout its room
 (`routing.widening`), and the picture check that reports a channel still too narrow (W384).
@@ -22,6 +25,9 @@ from src.domain.diagrams.layout.routing.scene import IDEAL_SEPARATION
 #: How much of a channel's length a run must share to count as running along it, and how far two
 #: shapes must overlap to stand in a channel's way.
 _SHARED = 1.0
+
+#: How far a gap may fall short and still fit: the rounding of a layout to whole pixels.
+_ROUNDING = 1.0
 
 
 @dataclass(frozen=True)
@@ -43,6 +49,8 @@ class Channel:
     last: float
     #: How many lines run along it.
     lines: int = 0
+    #: The longest straight run out of a shape facing it, of a line ending there; 0 for none.
+    run: float = 0.0
 
     @property
     def width(self) -> float:
@@ -50,11 +58,11 @@ class Channel:
 
     @property
     def wider_by(self) -> int:
-        """How much wider the channel needs to be for its lines, in whole pixels; 0 where they fit."""
-        if self.lines == 0:
-            return 0
-        needed = (self.lines + 1) * IDEAL_SEPARATION
-        return max(0, math.ceil(needed - self.width))
+        """How much wider the channel needs to be for its lines and the runs out of it, in whole pixels;
+        0 where they fit. A pixel's rounding is allowed, as a layout states whole pixels."""
+        along = (self.lines + 1) * IDEAL_SEPARATION if self.lines else 0.0
+        out_of = self.run + IDEAL_SEPARATION if self.run else 0.0
+        return max(0, math.ceil(max(along, out_of) - self.width - _ROUNDING))
 
 
 def parents_of(boxes: Mapping[str, Extent]) -> dict[str, str | None]:
@@ -119,16 +127,47 @@ def _runs_along(channel: Channel, course: Sequence[Point]) -> bool:
     return False
 
 
+def _run_out_of(channel: Channel, shapes: Mapping[str, Extent], ends: Sequence[tuple[Point, float]]) -> float:
+    """The longest run of a line ending on a shape that faces *channel*: its edge on the gap, not one
+    round it (a box's border around a member faces away from the gap)."""
+    region = _region(channel)
+    edges = [
+        edge for key, edge in ((channel.low, channel.start), (channel.high, channel.end))
+        if not shapes[key].encloses(region)
+    ]
+    runs = [
+        run for point, run in ends for edge in edges
+        if abs((point.x if channel.across == "x" else point.y) - edge) <= _SHARED
+        and channel.first <= (point.y if channel.across == "x" else point.x) <= channel.last
+    ]
+    return max(runs, default=0.0)
+
+
+def _members(boxes: Mapping[str, Extent], members: Mapping[str, Extent]) -> list[Channel]:
+    """The channels between each element and the border of the smallest box holding it."""
+    found: list[Channel] = []
+    for key in sorted(members):
+        holding = [(box.width * box.height, box_key) for box_key, box in boxes.items()
+                   if box.encloses(members[key]) and box != members[key]]
+        if holding:
+            parent = min(holding)[1]
+            found += _inside(key, parent, members[key], boxes[parent])
+    return found
+
+
 def channels(
     boxes: Mapping[str, Extent], others: Sequence[Extent], courses: Sequence[Sequence[Point]],
+    members: Mapping[str, Extent] | None = None, ends: Sequence[tuple[Point, float]] = (),
 ) -> list[Channel]:
-    """Every clear channel between *boxes*, with how many of *courses* run along each.
+    """Every clear channel between *boxes*, and between *members* and their boxes, with how many of
+    *courses* run along each and the longest of *ends* — a line's end and its straight run — out of it.
 
     *others* are the shapes that stand in a channel's way: elements and text.
     """
+    members = members or {}
     parents = parents_of(boxes)
     keys = sorted(boxes)
-    found: list[Channel] = []
+    found: list[Channel] = _members(boxes, members)
     for index, one in enumerate(keys):
         if (parent := parents[one]) is not None:
             found += _inside(one, parent, boxes[one], boxes[parent])
@@ -139,16 +178,19 @@ def channels(
                 for low, high in ((one, other), (other, one)):
                     if (channel := _between(low, high, boxes[low], boxes[high], across)) is not None:
                         found.append(channel)
+    shapes = {**members, **boxes}
     return [
         Channel(channel.low, channel.high, channel.across, channel.start, channel.end, channel.first, channel.last,
-                sum(1 for course in courses if _runs_along(channel, course)))
+                sum(1 for course in courses if _runs_along(channel, course)), _run_out_of(channel, shapes, ends))
         for channel in found
-        if _clear(_region(channel), (channel.low, channel.high), boxes, others)
+        if _clear(_region(channel), (channel.low, channel.high), boxes,
+                  [other for other in others if other not in (shapes[channel.low], shapes[channel.high])])
     ]
 
 
 def too_narrow(
     boxes: Mapping[str, Extent], others: Sequence[Extent], courses: Sequence[Sequence[Point]],
+    members: Mapping[str, Extent] | None = None, ends: Sequence[tuple[Point, float]] = (),
 ) -> list[Channel]:
-    """The channels too narrow for the lines that run along them."""
-    return [channel for channel in channels(boxes, others, courses) if channel.wider_by > 0]
+    """The channels too narrow for the lines that run along them, or the runs out of them."""
+    return [channel for channel in channels(boxes, others, courses, members, ends) if channel.wider_by > 0]

@@ -22,7 +22,7 @@ from collections.abc import Mapping, Sequence
 from src.domain.diagrams.layout.channels import Channel, too_narrow
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.routing.router import route_all
-from src.domain.diagrams.layout.routing.scene import Connector, RoutingScene
+from src.domain.diagrams.layout.routing.scene import Connector, RoutingScene, run_for
 
 #: How many times the routes are found again and the channels widened again.
 ROUNDS = 4
@@ -75,7 +75,15 @@ def narrow_channels(scene: RoutingScene, connectors: Sequence[Connector]) -> lis
     """The channels of *scene* too narrow for the lines its connectors are routed along."""
     result = route_all(scene, connectors)
     courses = [routed.course for routed in result.routes.values()] + [list(line) for line in scene.fixed_lines]
-    return too_narrow(scene.boxes, [*scene.elements.values(), *scene.text.values()], courses)
+    decorated = {connector.key: connector.decorated for connector in connectors}
+    ends = [
+        (point, run_for(decorated[key][which]))
+        for key, routed in result.routes.items()
+        for which, point in ((0, routed.course[0]), (1, routed.course[-1]))
+    ]
+    return too_narrow(
+        scene.boxes, [*scene.elements.values(), *scene.text.values()], courses, scene.elements, ends,
+    )
 
 
 def widened(scene: RoutingScene, connectors: Sequence[Connector]) -> RoutingScene:

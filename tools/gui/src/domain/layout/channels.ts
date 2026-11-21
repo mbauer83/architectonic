@@ -28,6 +28,8 @@ export interface Channel {
   readonly last: number
   /** How many lines run along it. */
   readonly lines: number
+  /** The longest straight run out of a shape facing it, of a line ending there; 0 for none. */
+  readonly run: number
 }
 
 const channelOf = (
@@ -38,15 +40,18 @@ const channelOf = (
   end: number,
   first: number,
   last: number,
-): Channel => ({ low, high, across, start, end, first, last, lines: 0 })
+): Channel => ({ low, high, across, start, end, first, last, lines: 0, run: 0 })
+
+/** How far a gap may fall short and still fit: the rounding of a layout to whole pixels. */
+const ROUNDING = 1
 
 export const widthOf = (channel: Channel): number => channel.end - channel.start
 
 /** How much wider the channel needs to be for its lines, in whole pixels; 0 where they fit. */
 export const widerBy = (channel: Channel): number => {
-  if (channel.lines === 0) return 0
-  const needed = (channel.lines + 1) * IDEAL_SEPARATION
-  return Math.max(0, Math.ceil(needed - widthOf(channel)))
+  const along = channel.lines ? (channel.lines + 1) * IDEAL_SEPARATION : 0
+  const outOf = channel.run ? channel.run + IDEAL_SEPARATION : 0
+  return Math.max(0, Math.ceil(Math.max(along, outOf) - widthOf(channel) - ROUNDING))
 }
 
 /** Each box's parent: the smallest other box that encloses it, or null at the top. */
@@ -123,16 +128,58 @@ const runsAlong = (channel: Channel, course: readonly Point[]): boolean => {
   return false
 }
 
-/** Every clear channel between *boxes*, with how many of *courses* run along each. */
+/** The longest run of a line ending on a shape that faces *channel* (not one enclosing the gap). */
+const runOutOf = (
+  channel: Channel,
+  shapes: ReadonlyMap<string, Extent>,
+  ends: readonly (readonly [Point, number])[],
+): number => {
+  const region = regionOf(channel)
+  const edges = [
+    [channel.low, channel.start],
+    [channel.high, channel.end],
+  ]
+    .filter(([key]) => !encloses(shapes.get(key as string) as Extent, region))
+    .map(([, edge]) => edge as number)
+  let longest = 0
+  for (const [point, run] of ends) {
+    const across = channel.across === 'x' ? point.x : point.y
+    const along = channel.across === 'x' ? point.y : point.x
+    if (edges.some((edge) => Math.abs(across - edge) <= SHARED) && channel.first <= along && along <= channel.last) {
+      longest = Math.max(longest, run)
+    }
+  }
+  return longest
+}
+
+/** The channels between each element and the border of the smallest box holding it. */
+const memberChannels = (boxes: ReadonlyMap<string, Extent>, members: ReadonlyMap<string, Extent>): Channel[] =>
+  [...members.keys()].sort(byText).flatMap((key) => {
+    const member = members.get(key) as Extent
+    let best: [number, string] | null = null
+    for (const [boxKey, box] of boxes) {
+      if (!encloses(box, member) || sameExtent(box, member)) continue
+      const area = (box.right - box.left) * (box.bottom - box.top)
+      if (best === null || area < best[0] || (area === best[0] && byText(boxKey, best[1]) < 0)) best = [area, boxKey]
+    }
+    return best ? inside(key, best[1], member, boxes.get(best[1]) as Extent) : []
+  })
+
+/**
+ * Every clear channel between *boxes*, and between *members* and their boxes, with how many of
+ * *courses* run along each and the longest of *ends* — a line's end and its straight run — out of it.
+ */
 export const channels = (
   boxes: ReadonlyMap<string, Extent>,
   others: readonly Extent[],
   courses: readonly (readonly Point[])[],
+  members: ReadonlyMap<string, Extent> = new Map(),
+  ends: readonly (readonly [Point, number])[] = [],
 ): Channel[] => {
   const parents = parentsOf(boxes)
   const keys = [...boxes.keys()].sort(byText)
   const box = (key: string): Extent => boxes.get(key) as Extent
-  const found: Channel[] = []
+  const found: Channel[] = memberChannels(boxes, members)
   keys.forEach((one, index) => {
     const parent = parents.get(one) ?? null
     if (parent !== null) found.push(...inside(one, parent, box(one), box(parent)))
@@ -149,14 +196,25 @@ export const channels = (
       }
     }
   })
+  const shapes = new Map([...members, ...boxes])
   return found
-    .filter((channel) => clear(regionOf(channel), [channel.low, channel.high], boxes, others))
-    .map((channel) => ({ ...channel, lines: courses.filter((course) => runsAlong(channel, course)).length }))
+    .filter((channel) => {
+      const own = [shapes.get(channel.low) as Extent, shapes.get(channel.high) as Extent]
+      const standing = others.filter((other) => !own.some((shape) => sameExtent(shape, other)))
+      return clear(regionOf(channel), [channel.low, channel.high], boxes, standing)
+    })
+    .map((channel) => ({
+      ...channel,
+      lines: courses.filter((course) => runsAlong(channel, course)).length,
+      run: runOutOf(channel, shapes, ends),
+    }))
 }
 
-/** The channels too narrow for the lines that run along them. */
+/** The channels too narrow for the lines that run along them, or the runs out of them. */
 export const tooNarrow = (
   boxes: ReadonlyMap<string, Extent>,
   others: readonly Extent[],
   courses: readonly (readonly Point[])[],
-): Channel[] => channels(boxes, others, courses).filter((channel) => widerBy(channel) > 0)
+  members: ReadonlyMap<string, Extent> = new Map(),
+  ends: readonly (readonly [Point, number])[] = [],
+): Channel[] => channels(boxes, others, courses, members, ends).filter((channel) => widerBy(channel) > 0)

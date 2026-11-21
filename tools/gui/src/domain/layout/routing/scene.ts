@@ -20,6 +20,9 @@ export const BEND_PENALTY = 50
 /** How much more a pixel of run costs for each route already running alongside it. */
 export const CROWDING = 2
 
+/** What a step through a channel already full costs besides: two bends. */
+export const CHANNEL_FULL = 2 * BEND_PENALTY
+
 /** How far either side of a box's border a candidate line runs. */
 export const BORDER_OFFSET = LINE_CLEARANCE + 4
 
