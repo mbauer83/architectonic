@@ -462,8 +462,11 @@ resized. Pass the whole block as `layout` to `artifact_create_diagram` or `artif
 The block is stored, read back and verified, and the diagram is drawn from it: PlantUML draws the
 elements, and they are placed and sized where the layout says. A relation whose route the layout
 states follows it; any other relation keeps the line PlantUML drew while its ends stay where they
-were, and is routed again otherwise. A routed line never passes through text, does not bend right
-behind an arrowhead or other end decoration, and never runs along another line or a box border.
+were, and is routed again otherwise. A routed line goes round every element and every title band,
+enters a grouping only to reach something inside it and crosses its border at a right angle, leaves
+an end that carries an arrowhead or other decoration by a straight run, and is kept apart from the
+other lines and from box borders. Where the layout leaves a relation no such route, the diagram is
+drawn in its automatic arrangement instead.
 
 A layout is refused when it is malformed, when it names an element, grouping or relation the diagram
 does not hold, and on a `manual-layout` diagram: a diagram keeps a hand-written body verbatim or
@@ -476,8 +479,9 @@ its geometry decides as a warning: a rule key no element satisfies (`W375`), a r
 not leave its element straight outward (`W376`) or runs through one of its own ends (`W377`), two
 connected elements over each other (`W378`), and a box over an element that is not inside it
 (`W379`). On a diagram drawn from a layout it also warns about a relation drawn through text
-(`W380`), one that bends right behind the decoration at one of its ends (`W381`), and one that runs
-along another line or a box border (`W382`).
+(`W380`), one that bends right behind the decoration at one of its ends (`W381`), one that runs
+along another line or a box border (`W382`), and a layout that leaves a relation no route (`W383`).
+A line kept as PlantUML drew it is checked like the others.
 
 ### Diagrams from an earlier format
 
