@@ -98,10 +98,14 @@ class _Routing:
 
     def searched(
         self, connector: Connector, sources: Sequence[tuple[Side, float]], targets: Sequence[tuple[Side, float]],
+        *, lining_up: bool = True,
     ) -> RoutedConnector | None:
+        """The cheapest route between the choices of ports, or None. With *lining_up*, ports on facing
+        sides are also tried lined up for a straight run; without, the ports are as chosen — spread
+        along a side another end shares, which a straight run lined up elsewhere would undo."""
         passage = self.visibility.passage((connector.source, connector.target))
         starts, goals = self._stubs(connector, 0, sources, passage), self._stubs(connector, 1, targets, passage)
-        lined = self._lined_up(connector, sources, targets)
+        lined = self._lined_up(connector, sources, targets) if lining_up else ([], [])
         crowded = passage.adding([], self.crowd)
         if (straight := self._straight(connector, [*lined[0], *starts], [*lined[1], *goals], crowded)) is not None:
             return straight
@@ -306,7 +310,7 @@ def route_all(
             routing.taken(made)
     for key, (source, target) in _ports_spread(routing, searched, first).items():
         connector = next(one for one in searched if one.key == key)
-        routes[key] = routing.searched(connector, (source,), (target,)) or first[key]
+        routes[key] = routing.searched(connector, (source,), (target,), lining_up=False) or first[key]
         routing.taken(routes[key])
     courses = {key: list(routed.course) for key, routed in {**kept, **routes}.items()}
     obstacles = {

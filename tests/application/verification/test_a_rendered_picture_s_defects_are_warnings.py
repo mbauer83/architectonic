@@ -177,11 +177,12 @@ class TestAPictureThatCannotBeRead:
         assert _only(RenderedPictureRule(read=lambda _svg: _THROUGH).check("<svg/>", _LOC)).code == "W371"
 
     def test_the_codes_are_their_own(self) -> None:
-        """W370–W374, and W380–W382 for what a router answers for; W375–W379 and E37x are a stated layout's."""
+        """W370–W374, and W380–W382 and W384 for what a router answers for; W375–W379 and E37x are a
+        stated layout's, and W383 says no route was found."""
         from src.application.verification._verifier_rules_rendered_picture import _CODE_OF
 
         assert sorted([UNREAD_PICTURE_CODE, *_CODE_OF.values()]) == [
-            "W370", "W371", "W372", "W373", "W374", "W380", "W381", "W382",
+            "W370", "W371", "W372", "W373", "W374", "W380", "W381", "W382", "W384",
         ]
 
 
@@ -294,6 +295,47 @@ class TestWhatARouterAnswersFor:
 
         assert read == ["composed plantuml"]
         assert "W382" in codes
+
+
+class TestANarrowGap:
+    """W384: a gap between two boxes too narrow for the lines laid along it, by its boxes and its shortfall."""
+
+    @staticmethod
+    def _box(alias: str, name: str, left: float) -> DrawnBox:
+        return DrawnBox(
+            alias=alias, extent=Extent(left, 0, left + 200, 300), inside=None,
+            words=(MeasuredWord(name, Point(left + 80, 16), 40),),
+        )
+
+    # Three lines run upright along the 20 px between two boxes: they need (3 + 1) × 12 = 48.
+    _GAP = _picture(
+        _box("L", "Resources", 0), _box("R", "Value Streams", 220),
+        _named("A", "Orders", 40, 400), _named("B", "Billing", 260, 400),
+        relations=tuple(
+            _line("A", "B", (90, 400), (90, 380), (x, 380), (x, -20), (310, -20), (310, 0))
+            for x in (205, 210, 215)
+        ),
+    )
+
+    def test_it_names_both_boxes_the_lines_and_how_much_wider_the_gap_must_be(self) -> None:
+        issue = next(issue for issue in picture_issues(self._GAP, _LOC, laid_out=True) if issue.code == "W384")
+
+        assert "«Resources» and «Value Streams»" in issue.message
+        assert "3 line(s)" in issue.message
+        assert "28 px wider" in issue.message
+        assert issue.details["places"][0]["wider_by"] == 28  # type: ignore[index]
+
+    def test_lines_crossing_a_gap_do_not_need_its_room(self) -> None:
+        crossing = _picture(
+            self._box("L", "Resources", 0), self._box("R", "Value Streams", 220),
+            _named("A", "Orders", 40, 400), _named("B", "Billing", 260, 400),
+            relations=(_line("A", "B", (90, 400), (90, 350), (310, 350), (310, 400)),),
+        )
+
+        assert "W384" not in {issue.code for issue in picture_issues(crossing, _LOC, laid_out=True)}
+
+    def test_it_is_asked_only_of_a_picture_a_router_drew(self) -> None:
+        assert "W384" not in {issue.code for issue in picture_issues(self._GAP, _LOC)}
 
 
 def test_a_layout_that_leaves_a_relation_no_route_is_w383() -> None:

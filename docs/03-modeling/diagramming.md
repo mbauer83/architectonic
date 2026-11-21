@@ -461,11 +461,10 @@ resized. Pass the whole block as `layout` to `artifact_create_diagram` or `artif
 
 The block is stored, read back and verified, and the diagram is drawn from it: PlantUML draws the
 elements, and they are placed and sized where the layout says. A relation whose route the layout
-states follows it; any other relation keeps the line PlantUML drew while its ends stay where they
-were, and is routed again otherwise. A routed line goes round every element and every title band,
-enters a grouping only to reach something inside it and crosses its border at a right angle, leaves
-an end that carries an arrowhead or other decoration by a straight run, and is kept apart from the
-other lines and from box borders. Where the layout leaves a relation no such route, the diagram is
+states follows it, and every other relation is routed, whether or not its ends moved. A routed line
+goes round every element and every title band, enters a grouping only to reach something inside it
+and crosses its border at a right angle, leaves an end that carries an arrowhead or other decoration
+by a straight run, and is kept apart from the other lines and from box borders. Where the layout leaves a relation no such route, the diagram is
 drawn in its automatic arrangement instead.
 
 A layout is refused when it is malformed, when it names an element, grouping or relation the diagram
@@ -480,8 +479,9 @@ not leave its element straight outward (`W376`) or runs through one of its own e
 connected elements over each other (`W378`), and a box over an element that is not inside it
 (`W379`). On a diagram drawn from a layout it also warns about a relation drawn through text
 (`W380`), one that bends right behind the decoration at one of its ends (`W381`), one that runs
-along another line or a box border (`W382`), and a layout that leaves a relation no route (`W383`).
-A line kept as PlantUML drew it is checked like the others.
+along another line or a box border (`W382`), a layout that leaves a relation no route (`W383`), and a
+gap between two boxes too narrow for the lines that run along it (`W384`). `W384` names the two boxes
+and how many pixels wider the gap needs to be.
 
 ### Diagrams from an earlier format
 

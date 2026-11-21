@@ -98,11 +98,21 @@ class Routing {
     return choices.map(([side, at]) => stubOf(extent, side, at, run)).filter((stub) => usable(stub, passage, own))
   }
 
-  searched(connector: Connector, sources: readonly Choice[], targets: readonly Choice[]): RoutedConnector | null {
+  /**
+   * The cheapest route between the choices of ports, or null. With *liningUp*, ports on facing sides
+   * are also tried lined up for a straight run; without, the ports are as chosen — spread along a side
+   * another end shares, which a straight run lined up elsewhere would undo.
+   */
+  searched(
+    connector: Connector,
+    sources: readonly Choice[],
+    targets: readonly Choice[],
+    liningUp = true,
+  ): RoutedConnector | null {
     let passage = this.visibility.passage([connector.source, connector.target])
     const starts = this.stubs(connector, 0, sources, passage)
     const goals = this.stubs(connector, 1, targets, passage)
-    const [linedStarts, linedGoals] = this.linedUp(connector, sources, targets)
+    const [linedStarts, linedGoals] = liningUp ? this.linedUp(connector, sources, targets) : [[], []]
     const crowded = passage.adding([], this.crowd)
     const straight = this.straight(connector, [...linedStarts, ...starts], [...linedGoals, ...goals], crowded)
     if (straight) return straight
@@ -345,7 +355,7 @@ export const routeAll = (
     const connector = searched.find((one) => one.key === key)
     const before = first.get(key)
     if (!connector || !before) continue
-    const routed = routing.searched(connector, [source], [target]) ?? before
+    const routed = routing.searched(connector, [source], [target], false) ?? before
     routes.set(key, routed)
     routing.taken(routed)
   }

@@ -19,13 +19,17 @@ from src.application.modeling.diagram_layout_statement import laid_out_diagram, 
 from src.domain.artifact_id import stable_id
 from src.domain.diagrams.layout.geometry import Extent
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
+from src.domain.diagrams.layout.layout_block import layout_as_written
 from src.domain.diagrams.layout.picture_checks import PictureDefect, check_picture
 from src.domain.diagrams.layout.rendered_picture import RenderedPicture
+from src.domain.diagrams.layout.routing.router import route_all
 from src.domain.repository.frontmatter import parse_frontmatter
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 from src.infrastructure.rendering.laid_out_rendering import drawn_from_layout
+from src.infrastructure.rendering.layout.arrangement import arrange, routing_input
 from src.infrastructure.rendering.layout.composer import NotComposed, compose
+from src.infrastructure.rendering.layout.first_layout import first_layout
 from src.infrastructure.rendering.layout.plantuml_svg_reader import read_rendered_picture
 from src.infrastructure.write.artifact_write.diagram_render import render_diagram_outputs
 from tests.support.rendered_pictures import RenderedModel, build_rendered_model, plantuml_available
@@ -125,6 +129,36 @@ def test_a_picture_harvested_and_composed_with_nothing_moved_is_the_same_picture
         assert _near(after.boxes[alias].extent, box.extent, 0.5), alias
     assert [relation.ends for relation in after.relations] == [relation.ends for relation in before.relations]
     assert [relation.label for relation in after.relations] == [relation.label for relation in before.relations]
+
+
+@pytest.mark.parametrize("scene", _SCENES)
+def test_every_relation_of_a_laid_out_diagram_is_routed_even_where_nothing_moved(
+    model: RenderedModel, scene: str
+) -> None:
+    """One behaviour: no relation keeps the renderer's line because its ends stayed where they were."""
+    picture, diagram = _picture(model.scenes[scene].svg), _laid_out(_harvested(model, scene))
+    asked = routing_input(picture, diagram)
+    routed = route_all(asked.scene, asked.connectors)
+    arranged = arrange(picture, diagram)
+
+    assert len(asked.connectors) == len(picture.relations)
+    for key, route in routed.routes.items():
+        assert arranged.relations[int(key)].course in (route.course, route.course[::-1]), key
+
+
+@pytest.mark.parametrize("scene", _SCENES)
+def test_a_first_layout_writes_every_shape_down_with_room_for_its_lines(model: RenderedModel, scene: str) -> None:
+    frontmatter, picture = _frontmatter(model, scene), _picture(model.scenes[scene].svg)
+    diagram = _laid_out(_harvested(model, scene))
+    layout = first_layout(picture, diagram)
+    after = _composed(model, scene, {**frontmatter, "layout": layout_as_written(layout)})
+
+    drawn = {*picture.elements, *picture.boxes}
+    assert set(layout.elements) == {instance for alias, instance in diagram.instance_by_alias.items() if alias in drawn}
+    assert not check_picture(after).of(PictureDefect.NARROW_CHANNEL)
+    for alias, element in picture.elements.items():
+        moved = after.elements[alias].extent
+        assert (moved.width, moved.height) == pytest.approx((element.extent.width, element.extent.height), abs=1)
 
 
 def test_what_the_viewer_s_element_map_reads_is_kept(model: RenderedModel) -> None:

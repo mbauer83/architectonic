@@ -11,7 +11,9 @@ looking; four things are not, and they are decided here:
 * a box drawn **over** a shape that is not inside it;
 * a relation drawn **through text**: a label, a box's title band, the diagram's title or legend;
 * a relation that **bends at an end**, or **runs along** another line or a border — the hard rules
-  of `route_quality` a reader needs to follow a line from one end to the other.
+  of `route_quality` a reader needs to follow a line from one end to the other;
+* a gap between two boxes **too narrow** for the lines that run along it (`channels`): where the
+  room is the arrangement's, which no router can make.
 
 Its soft rules — a jog, two decorations together — are counted beside the findings, like crossings.
 
@@ -28,6 +30,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from itertools import combinations
 
+from src.domain.diagrams.layout.channels import too_narrow
 from src.domain.diagrams.layout.geometry import Extent, Point, course_length, courses_cross
 from src.domain.diagrams.layout.rendered_picture import (
     DrawnBox,
@@ -62,6 +65,7 @@ class PictureDefect(StrEnum):
     RELATION_THROUGH_TEXT = "a relation drawn through text"
     BEND_AT_AN_END = "a relation that bends inside or right behind the decoration at one of its ends"
     RUNS_ALONG = "a relation running along another line or a border"
+    NARROW_CHANNEL = "a gap between two boxes too narrow for the lines that run along it"
 
 
 #: The defects only a router answers for: the hard rules of `route_quality` and `text_clearance`.
@@ -69,6 +73,7 @@ class PictureDefect(StrEnum):
 #: into cluster title bands as a matter of course, which no author can repair.
 KEPT_BY_THE_ROUTER = frozenset({
     PictureDefect.RELATION_THROUGH_TEXT, PictureDefect.BEND_AT_AN_END, PictureDefect.RUNS_ALONG,
+    PictureDefect.NARROW_CHANNEL,
 })
 
 
@@ -78,12 +83,16 @@ class PictureFinding:
 
     For a relation drawn through an element, *shapes* is the relation's two ends and then the
     element; through text, its two ends and then what the text is of — a box or an element, the two
-    ends of the relation it labels, or nothing for the diagram's title or legend. For the others it
-    is the shapes themselves, the box first where one is a box.
+    ends of the relation it labels, or nothing for the diagram's title or legend. For a narrow gap,
+    the two boxes, the one with the lower coordinate first. For the others it is the shapes
+    themselves, the box first where one is a box.
     """
 
     defect: PictureDefect
     shapes: tuple[str, ...]
+    #: For a narrow gap: how many lines run along it, and how many pixels wider it needs to be.
+    lines: int = 0
+    wider_by: int = 0
 
 
 @dataclass(frozen=True)
@@ -231,6 +240,21 @@ def _hard_to_follow(picture: RenderedPicture) -> list[PictureFinding]:
     return findings
 
 
+def _narrow_channels(picture: RenderedPicture) -> list[PictureFinding]:
+    """Each gap between two boxes too narrow for the lines drawn along it."""
+    others = [
+        *(element.extent for element in picture.elements.values()),
+        *(region.extent for region in text_regions(picture, picture.surrounding)),
+    ]
+    return [
+        PictureFinding(PictureDefect.NARROW_CHANNEL, (channel.low, channel.high), channel.lines, channel.wider_by)
+        for channel in too_narrow(
+            {alias: box.extent for alias, box in picture.boxes.items()}, others,
+            [square_course(relation.path) for relation in picture.relations],
+        )
+    ]
+
+
 def _heads_together(picture: RenderedPicture) -> int:
     """How many pairs of end decorations, of different relations, are drawn over each other."""
     heads = [
@@ -265,6 +289,7 @@ def check_picture(picture: RenderedPicture) -> PictureReport:
             *_boxes_over_non_members(picture),
             *_relations_through_text(picture),
             *_hard_to_follow(picture),
+            *_narrow_channels(picture),
         ),
         crossings=sum(
             courses_cross(first.course, second.course)

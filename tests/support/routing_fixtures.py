@@ -9,6 +9,9 @@ a title band, into and out of nested boxes, many routes through one channel for 
 its part, a loop, two elements too close for a stub, an element walled in so no route reaches it, and
 a drag's quick pass over a moved element.
 
+`widening` pins the room a first layout makes: one scene's channels, how many lines run along each
+and how much wider each needs to be, and the scene widened.
+
 `graph` pins the visibility graph itself for one scene: its segments, each stopping at the first
 obstacle, and every join once a search's terminals are joined to it. The routes rest on it, so the two
 languages building one graph is what the cases above rely on.
@@ -20,12 +23,14 @@ import math
 import random
 from collections.abc import Mapping, Sequence
 
+from src.domain.diagrams.layout.channels import channels
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import Port, Side
 from src.domain.diagrams.layout.routing.graph import EAST, SOUTH
 from src.domain.diagrams.layout.routing.router import route_all
 from src.domain.diagrams.layout.routing.scene import Connector, RoutedConnector, RoutingResult, RoutingScene
 from src.domain.diagrams.layout.routing.visibility import Visibility
+from src.domain.diagrams.layout.routing.widening import widened
 
 
 def _extent(extent: Extent) -> dict[str, float]:
@@ -178,6 +183,41 @@ def build_graph() -> dict[str, object]:
     }
 
 
+def widening_scene() -> tuple[RoutingScene, list[Connector]]:
+    """A box over two boxes side by side, all three in a fourth, 20 px apart, and lines between the
+    upper box's elements and the lower ones' that must run along those gaps."""
+    elements = {
+        "a1": _box(40, 60, 100, 40), "a2": _box(240, 60, 100, 40), "a3": _box(500, 60, 100, 40),
+        "a4": _box(720, 60, 100, 40), "b1": _box(40, 260, 100, 40), "b2": _box(260, 260, 100, 40),
+        "c1": _box(480, 260, 100, 40), "c2": _box(720, 260, 100, 40),
+    }
+    boxes = {
+        "whole": _box(0, 0, 900, 360), "upper": _box(20, 20, 860, 120),
+        "left": _box(20, 160, 400, 180), "right": _box(440, 160, 440, 180),
+    }
+    text = {"band:whole": Extent(0, 0, 900, 16), "band:upper": Extent(20, 20, 880, 36)}
+    pairs = (
+        ("a1", "c2"), ("a2", "c1"), ("a4", "b1"), ("a3", "b2"), ("a1", "c1"), ("a4", "b2"), ("b1", "c2"), ("b2", "c1"),
+    )
+    connectors = [Connector(f"r{number}", source, target) for number, (source, target) in enumerate(pairs, 1)]
+    return RoutingScene(elements=elements, boxes=boxes, text=text), connectors
+
+
+def build_widening() -> dict[str, object]:
+    scene, connectors = widening_scene()
+    courses = [routed.course for routed in route_all(scene, connectors).routes.values()]
+    return {
+        "scene": scene_as_json(scene), "connectors": [connector_as_json(connector) for connector in connectors],
+        "channels": [
+            {"low": channel.low, "high": channel.high, "across": channel.across, "start": channel.start,
+             "end": channel.end, "first": channel.first, "last": channel.last, "lines": channel.lines,
+             "wider_by": channel.wider_by}
+            for channel in channels(scene.boxes, [*scene.elements.values(), *scene.text.values()], courses)
+        ],
+        "widened": scene_as_json(widened(scene, connectors)),
+    }
+
+
 def build_routing() -> dict[str, object]:
     a, b, c = _box(0, 100, 100, 60), _box(400, 100, 100, 60), _box(220, 60, 60, 140)
     cases = [
@@ -207,6 +247,7 @@ def build_routing() -> dict[str, object]:
     quick = route_all(moved_scene, connectors, previous=previous.routes, changed=frozenset({"l2"}))
     return {
         "graph": build_graph(),
+        "widening": build_widening(),
         "cases": cases,
         "quick": {
             "scene": scene_as_json(moved_scene), "connectors": [connector_as_json(one) for one in connectors],
