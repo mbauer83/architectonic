@@ -84,4 +84,7 @@ export const modelRoutes: RouteRecordRaw[] = [
   { path: '/promote', component: PromoteView },
   // Guided modeling wizard
   { path: '/model/wizard', component: () => import('../views/ModelWizardView.vue') },
+  // A development bench, shown in the menu only while the backend serves it.
+  { path: ROUTE_TEMPLATES.layoutLab, component: () => import('../views/LayoutLabView.vue') },
+  { path: ROUTE_TEMPLATES.layoutLabDiagram, component: () => import('../views/LayoutLabView.vue') },
 ]
