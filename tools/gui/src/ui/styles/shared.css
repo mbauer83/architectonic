@@ -5,6 +5,8 @@
   --domain-business: #f4de7f;
   --domain-application: #b6d7e1;
   --domain-technology: #c3e1b4;
+  /* The interface's accent: what is selected, what acts, the frame of a canvas being edited. */
+  --accent: #2563eb;
 }
 
 .domain-badge,

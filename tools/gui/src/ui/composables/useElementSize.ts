@@ -12,7 +12,7 @@ import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
  * derived from the size rather than merely read it.
  */
 export function useElementSize(
-  target: () => HTMLElement | null | undefined,
+  target: () => Element | null | undefined,
   onResize?: () => void,
 ): { width: Ref<number>; height: Ref<number> } {
   const width = ref(0)

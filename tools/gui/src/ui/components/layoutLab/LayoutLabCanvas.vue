@@ -10,6 +10,7 @@ import { heightOf, widthOf } from '../../../domain/layout/geometry'
 import { drawnLine } from '../../../domain/layout/lab/labLineDrawing'
 import type { PlacedDrawing } from '../../../domain/layout/lab/labShapeDrawing'
 import { shapeDrawing } from '../../../domain/layout/lab/labShapeDrawing'
+import { useElementSize } from '../../composables/useElementSize'
 import type { LayoutLab } from '../../composables/useLayoutLab'
 import { dragRegionOf, handlesOf, paintOrder, pointsAttribute } from './labDrawing'
 import LabDrawn from './LabDrawn'
@@ -56,6 +57,16 @@ watch(() => gesture.dragging.value, (dragging) => { if (!dragging) view.value = 
 const viewBox = computed(() => {
   const extent = view.value
   return extent ? `${extent.left} ${extent.top} ${widthOf(extent)} ${heightOf(extent)}` : '0 0 100 100'
+})
+
+/** How wide the picture is shown on screen, in pixels: what a handle's size on screen is reckoned from. */
+const { width: shownWidth } = useElementSize(() => svg.value)
+
+/** A handle is the same size on screen however far the picture is zoomed out to fit. */
+const HANDLE_PIXELS = 9
+const handleSide = computed((): number => {
+  const extent = view.value
+  return extent && shownWidth.value > 0 ? HANDLE_PIXELS * widthOf(extent) / shownWidth.value : HANDLE_PIXELS
 })
 
 const aspect = computed(() => {
@@ -106,7 +117,8 @@ const lines = computed(() => {
   return drawn.relations.flatMap((relation) => {
     const course = props.lab.courses.value.get(relation.index)
     if (!course || course.length < 2) return []
-    return [{ index: relation.index, asDrawn: asDrawn ? relation.drawing.group : null, along: drawnLine(relation.drawing, course) }]
+    const along = drawnLine(relation.drawing, course)
+    return [{ index: relation.index, asDrawn: asDrawn ? relation.drawing.group : null, along }]
   })
 })
 
@@ -236,10 +248,10 @@ const selectedExtent = computed((): Extent | null => {
       <rect
         v-for="{ handle, at } in handlesOf(selectedExtent)"
         :key="handle"
-        :x="at.x - 4"
-        :y="at.y - 4"
-        width="8"
-        height="8"
+        :x="at.x - handleSide / 2"
+        :y="at.y - handleSide / 2"
+        :width="handleSide"
+        :height="handleSide"
         :class="`lab-handles__handle lab-handles__handle--${handle}`"
         :data-handle="handle"
         @pointerdown="gesture.press($event, gesture.selected.value ?? '', handle)"
@@ -249,17 +261,20 @@ const selectedExtent = computed((): Extent | null => {
 </template>
 
 <style scoped>
-/* How the picture looks is PlantUML's drawing; only the lab's own marks — grips, breaches, handles — are styled here. */
+/* How the picture looks is PlantUML's drawing; only the lab's own marks — grips, breaches, handles —
+   are styled here. */
 .lab-canvas { display: block; width: 100%; height: auto; max-height: 85vh; }
-.lab-canvas { border: 1px solid #cbd5e1; border-radius: 6px; touch-action: none; user-select: none; }
+/* Always being edited, so framed as a canvas in edit mode is. */
+.lab-canvas { border: 2px solid var(--accent); border-radius: 6px; touch-action: none; user-select: none; }
 .lab-backdrop, .lab-lines, .lab-box :deep(g), .lab-element :deep(g) { pointer-events: none; }
 .lab-grip { fill: transparent; stroke: none; pointer-events: all; cursor: move; }
 .lab-breach { fill: none; stroke-width: 7; stroke-linecap: round; opacity: 0.45; pointer-events: stroke; }
 .lab-breach-frame { fill: none; stroke-width: 3; opacity: 0.7; }
 .lab-breach--hard { stroke: #dc2626; }
 .lab-breach--soft { stroke: #f59e0b; }
-.lab-handles__frame { fill: none; stroke: #2563eb; stroke-dasharray: 4 2; pointer-events: none; }
-.lab-handles__handle { fill: #fff; stroke: #2563eb; stroke-width: 1.5; }
+.lab-handles__frame { fill: none; stroke: var(--accent); stroke-width: 1.5px; pointer-events: none; }
+.lab-handles__frame, .lab-handles__handle { vector-effect: non-scaling-stroke; }
+.lab-handles__handle { fill: #fff; stroke: var(--accent); stroke-width: 1.5px; }
 .lab-handles__handle--n, .lab-handles__handle--s { cursor: ns-resize; }
 .lab-handles__handle--e, .lab-handles__handle--w { cursor: ew-resize; }
 .lab-handles__handle--ne, .lab-handles__handle--sw { cursor: nesw-resize; }
