@@ -94,6 +94,8 @@ def test_unknown_api_path_is_not_rewritten(tmp_path: Path) -> None:
     client = TestClient(_app(tmp_path))
     # api/ paths must 404 rather than fall back to the SPA shell.
     assert client.get("/api/does-not-exist").status_code == 404
+    # So must lab/ paths: a 404 there is how the GUI learns the layout lab is switched off.
+    assert client.get("/lab/layout").status_code == 404
 
 
 def test_the_shell_is_always_revalidated_and_the_bundle_is_not_touched(tmp_path: Path) -> None:

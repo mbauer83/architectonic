@@ -312,6 +312,19 @@ def plantuml_limit_size() -> int:
         return 16384
 
 
+#: Turns the layout lab on: a development page for trying layout edits on real diagrams, with two
+#: routes of its own. Off unless set, and never a settings-document key, because the lab is not a
+#: deployment's configuration — it is a developer's, for one run of the backend.
+ENV_LAYOUT_LAB = "ARCH_LAYOUT_LAB"
+
+_SWITCHED_ON = frozenset({"1", "true", "yes", "on"})
+
+
+def layout_lab_enabled() -> bool:
+    """Whether this process serves the layout lab — its routes and its menu entry."""
+    return os.environ.get(ENV_LAYOUT_LAB, "").strip().lower() in _SWITCHED_ON
+
+
 def datatype_type_references_blocking() -> bool:
     """Whether E332/E334/E335/E336 reject writes instead of remaining advisory."""
     value = load_settings()["validation"].get("datatype_type_references_blocking", True)
