@@ -11,9 +11,10 @@ attribute of the one it was composed from, in absolute coordinates, so it reads 
 reader as what it shows: the viewer's element map, the rendered-picture checks and a later harvest
 all work on it unchanged.
 
-**Fail-closed.** A picture this project cannot read, or one holding a drawing it cannot place again,
-is not composed in part: `compose` answers `NotComposed` saying what it met, and the caller keeps
-PlantUML's own picture — a diagram drawn as before rather than one drawn wrongly.
+**Fail-closed.** A picture this project cannot read, one holding a drawing it cannot place again, or
+one whose layout leaves a relation no route that keeps the hard rules, is not composed in part:
+`compose` answers `NotComposed` saying what it met, and the caller keeps PlantUML's own picture — a
+diagram drawn as before rather than one drawn wrongly.
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ from src.domain.diagrams.layout.geometry import Extent
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.domain.diagrams.layout.rendered_picture import NotReadable
 from src.infrastructure.rendering.layout._svg_drawing import SVG_NAMESPACE, Unreadable
-from src.infrastructure.rendering.layout.arrangement import Arrangement, arrange, label_extent
+from src.infrastructure.rendering.layout.arrangement import KEEP_UNMOVED_LINES, Arrangement, arrange, label_extent
 from src.infrastructure.rendering.layout.plantuml_svg_reader import RenderedDrawing, read_rendered_drawing
 from src.infrastructure.rendering.layout.relation_drawing import drawn_relation
 from src.infrastructure.rendering.layout.shape_drawing import fitted_box, placed_shape, resized_element
@@ -42,6 +43,8 @@ class NotComposed:
     """A picture that was not composed from its layout, and what stood in the way."""
 
     met: str
+    #: The relations the layout leaves no route for, where that is why; by what their ends are called.
+    relations_unroutable: tuple[str, ...] = ()
 
 
 def _around(extents: list[Extent]) -> Extent:
@@ -110,9 +113,17 @@ def _sized(root: Element, canvas: Extent) -> Element:
     return sized
 
 
-def _composed(drawing: RenderedDrawing, diagram: LaidOutDiagram) -> Element:
+class _NoRoute(Exception):
+    def __init__(self, relations: tuple[str, ...]) -> None:
+        super().__init__(relations)
+        self.relations = relations
+
+
+def _composed(drawing: RenderedDrawing, diagram: LaidOutDiagram, keep_unmoved_lines: bool) -> Element:
     picture = drawing.picture
-    arrangement = arrange(picture, diagram)
+    arrangement = arrange(picture, diagram, keep_unmoved_lines=keep_unmoved_lines)
+    if arrangement.unroutable:
+        raise _NoRoute(arrangement.unroutable)
     was, now = _diagram_extent_drawn(drawing), _diagram_extent_now(drawing, arrangement)
 
     chrome = [
@@ -148,15 +159,22 @@ def _composed(drawing: RenderedDrawing, diagram: LaidOutDiagram) -> Element:
     return root
 
 
-def compose(plantuml_svg: str, diagram: LaidOutDiagram) -> str | NotComposed:
+def compose(
+    plantuml_svg: str, diagram: LaidOutDiagram, *, keep_unmoved_lines: bool = KEEP_UNMOVED_LINES,
+) -> str | NotComposed:
     """The picture in *plantuml_svg* drawn again from *diagram*'s layout, or `NotComposed` saying why not."""
     drawing = read_rendered_drawing(plantuml_svg)
     if isinstance(drawing, NotReadable):
         return NotComposed(drawing.met)
     try:
-        root = _composed(drawing, diagram)
+        root = _composed(drawing, diagram, keep_unmoved_lines)
     except Unreadable as unreadable:
         return NotComposed(unreadable.met)
+    except _NoRoute as no_route:
+        return NotComposed(
+            "no route keeps every rule for the relation between " + "; between ".join(no_route.relations),
+            relations_unroutable=no_route.relations,
+        )
     ElementTree.register_namespace("", SVG_NAMESPACE)
     ElementTree.register_namespace("xlink", _XLINK_NAMESPACE)
     return ElementTree.tostring(root, encoding="unicode")

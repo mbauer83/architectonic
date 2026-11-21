@@ -15,6 +15,7 @@ import pytest
 from src.application.verification._verifier_rules_rendered_picture import (
     PICTURE_BESIDE_ITS_SOURCE,
     UNREAD_PICTURE_CODE,
+    DrawnForSource,
     RenderedPictureRule,
     add_picture_issues,
     issues_for_picture_in,
@@ -288,8 +289,18 @@ class TestWhatARouterAnswersFor:
             read.append(svg)
             return self._ALONG_A_BORDER
 
-        rule = RenderedPictureRule(read=reader, drawn=lambda svg, loc: (f"composed {svg}", True))
+        rule = RenderedPictureRule(read=reader, drawn=lambda svg, loc: DrawnForSource(f"composed {svg}", laid_out=True))
         codes = {issue.code for issue in rule.check("plantuml", _LOC)}
 
         assert read == ["composed plantuml"]
         assert "W382" in codes
+
+
+def test_a_layout_that_leaves_a_relation_no_route_is_w383() -> None:
+    rule = RenderedPictureRule(
+        read=lambda svg: _THROUGH, drawn=lambda svg, loc: DrawnForSource(svg, unroutable=("«Orders» and «Billing»",)),
+    )
+    issues = rule.check("plantuml", _LOC)
+
+    assert issues[0].code == "W383"
+    assert "«Orders» and «Billing»" in issues[0].message

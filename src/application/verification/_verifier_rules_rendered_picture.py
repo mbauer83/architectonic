@@ -7,6 +7,8 @@ the picture away. This reads that picture before it goes, so the checks cost a p
 * **W372** — two shapes drawn over each other;
 * **W373** — a label wider than the shape it labels;
 * **W374** — a box drawn over a shape that is not inside it;
+* **W383** — a laid-out diagram whose layout leaves a relation no route that keeps the hard rules;
+  the router never draws one through something instead, and the picture is PlantUML's own;
 * **W380** — a relation drawn through text: a label, a box's title band, the diagram's title or
   legend. Only on a picture drawn from a stated layout, where the router owns every line and keeps
   them out of text. GraphViz does not: measured when the rule was written, 33 of the 45 pictures
@@ -76,11 +78,25 @@ _CODE_OF: Mapping[PictureDefect, str] = {
 
 #: What is drawn for a source, given the picture PlantUML rendered for it and where the source is:
 #: the picture itself, or one composed from the layout the source states — and whether it was.
-DrawnPicture = Callable[[str, str], tuple[str, bool]]
+@dataclass(frozen=True)
+class DrawnForSource:
+    """The picture drawn for a source, whether it is drawn from a layout, and the relations its layout
+    leaves no route for — which is why such a picture is PlantUML's own."""
+
+    svg: str
+    laid_out: bool = False
+    unroutable: tuple[str, ...] = ()
 
 
-def as_plantuml_drew_it(svg: str, _loc: str) -> tuple[str, bool]:
-    return svg, False
+DrawnPicture = Callable[[str, str], DrawnForSource]
+
+
+def as_plantuml_drew_it(svg: str, _loc: str) -> DrawnForSource:
+    return DrawnForSource(svg)
+
+
+#: A laid-out diagram whose layout leaves a relation no route that keeps the hard rules.
+NO_ROUTE_CODE = "W383"
 
 
 class RenderedPictureChecks(Protocol):
@@ -170,10 +186,18 @@ class RenderedPictureRule:
     drawn: DrawnPicture = as_plantuml_drew_it
 
     def check(self, svg: str, loc: str) -> list[Issue]:
-        drawn, laid_out = self.drawn(svg, loc)
-        picture = self.read(drawn)
+        drawn = self.drawn(svg, loc)
+        no_route = [
+            Issue(
+                Severity.WARNING, NO_ROUTE_CODE,
+                "The layout leaves no route that keeps every rule for the relation between "
+                + "; between ".join(drawn.unroutable) + ", so the diagram is drawn in its automatic arrangement.",
+                loc, details={"relations": list(drawn.unroutable)},
+            )
+        ] if drawn.unroutable else []
+        picture = self.read(drawn.svg)
         if isinstance(picture, RenderedPicture):
-            return picture_issues(picture, loc, laid_out=laid_out)
+            return [*no_route, *picture_issues(picture, loc, laid_out=drawn.laid_out)]
         if not picture.stated_the_kind_read:
             return []
         return [

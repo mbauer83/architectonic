@@ -20,6 +20,7 @@ from pathlib import Path
 from defusedxml.ElementTree import fromstring
 
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds, laid_out_diagram
+from src.application.verification._verifier_rules_rendered_picture import DrawnForSource
 from src.config.settings import plantuml_limit_size, render_dpi
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.infrastructure.rendering.layout.composer import NotComposed, compose
@@ -69,7 +70,7 @@ def png_like_plantuml(svg: str) -> bytes:
     return draw_svg_to_png(svg, width=width, height=height, background=PNG_BACKGROUND)
 
 
-def drawn_for_source(plantuml_svg: str, loc: str) -> tuple[str, bool]:
+def drawn_for_source(plantuml_svg: str, loc: str) -> DrawnForSource:
     """What is drawn for the diagram stored at *loc*, given PlantUML's picture of it, and whether it is laid out.
 
     For the verifier, which judges the picture a reader sees: a laid-out diagram's is the composed one.
@@ -80,8 +81,10 @@ def drawn_for_source(plantuml_svg: str, loc: str) -> tuple[str, bool]:
     try:
         laid_out = stored_layout(Path(loc), process_runtime_catalogs().ontology)
     except (OSError, UnicodeDecodeError, ValueError):
-        return plantuml_svg, False
+        return DrawnForSource(plantuml_svg)
     if laid_out is None:
-        return plantuml_svg, False
+        return DrawnForSource(plantuml_svg)
     composed = compose(plantuml_svg, laid_out)
-    return (plantuml_svg, False) if isinstance(composed, NotComposed) else (composed, True)
+    if isinstance(composed, NotComposed):
+        return DrawnForSource(plantuml_svg, unroutable=composed.relations_unroutable)
+    return DrawnForSource(composed, laid_out=True)
