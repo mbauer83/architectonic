@@ -67,12 +67,38 @@ export const bendsAtEnds = (
   return ends.filter(([, run, marked]) => marked && run < END_RUN - SQUARE).map(([breach]) => breach)
 }
 
-/** B: the index of each segment between two bends shorter than SHORTEST_SEGMENT. */
-export const kinks = (course: readonly Point[]): number[] =>
-  segments(course)
-    .map(([start, end], index) => ({ index, length: distanceBetween(start, end) }))
-    .filter(({ index, length }) => index >= 1 && index <= course.length - 3 && length < SHORTEST_SEGMENT)
-    .map(({ index }) => index)
+/** The index of each run that turns back along its axis a second time or more. */
+const weaving = (course: readonly Point[]): Set<number> => {
+  const found = new Set<number>()
+  for (const level of [true, false]) {
+    let heading = 0
+    let turned = 0
+    segments(course).forEach(([a, b], index) => {
+      const step = level ? b.x - a.x : b.y - a.y
+      if (Math.abs(step) <= SQUARE) return
+      const way = step > 0 ? 1 : -1
+      if (heading !== 0 && way !== heading) {
+        turned += 1
+        if (turned >= 2) found.add(index)
+      }
+      heading = way
+    })
+  }
+  return found
+}
+
+/**
+ * B: the index of each segment between two bends shorter than SHORTEST_SEGMENT, and of each run that
+ * turns back along its axis a second time — a route going round something turns back once; one that
+ * weaves turns back twice.
+ */
+export const kinks = (course: readonly Point[]): number[] => {
+  const found = weaving(course)
+  segments(course).forEach(([start, end], index) => {
+    if (index >= 1 && index <= course.length - 3 && distanceBetween(start, end) < SHORTEST_SEGMENT) found.add(index)
+  })
+  return [...found].sort((one, other) => one - other)
+}
 
 interface Span {
   readonly level: boolean

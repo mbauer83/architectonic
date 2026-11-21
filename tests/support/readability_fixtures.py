@@ -61,6 +61,10 @@ _KINK_CASES = (
     ("a jog of ten", _course((0, 0), (40, 0), (40, 10), (80, 10), (80, 60))),
     ("a jog exactly a readable segment", _course((0, 0), (40, 0), (40, SHORTEST_SEGMENT), (80, SHORTEST_SEGMENT))),
     ("short first and last runs are not jogs", _course((0, 0), (5, 0), (5, 100), (10, 100))),
+    ("going round something turns back once", _course((0, 0), (60, 0), (60, 80), (-20, 80), (-20, 160))),
+    ("a weave turns back twice", _course(
+        (694, 268), (694, 378), (635, 378), (635, 460), (663, 460), (663, 596), (623, 596), (623, 630), (665, 630),
+    )),
 )
 
 _BOX = Extent(100, 100, 300, 200)

@@ -17,7 +17,9 @@ A line that keeps these three can be traced from one end to the other.
 **Soft** — the router avoids them at a cost and gives one up only where the hard rules leave no other
 way; a picture is not reported for them, only counted beside its findings:
 
-* *B, a jog* — a segment between two bends shorter than `SHORTEST_SEGMENT`;
+* *B, a jog* — a segment between two bends shorter than `SHORTEST_SEGMENT`, or a run that turns back
+  along an axis a second time: left, then right, then left again, however long each run. A route
+  that goes round something turns back once; one that weaves turns back twice;
 * *heads together* — two decorations drawn at one point, or over each other;
 * *a label obscured* — a relation's label under a shape or another label.
 
@@ -93,12 +95,33 @@ def bends_at_ends(course: Sequence[Point], decorated: tuple[bool, bool] = (True,
     )
 
 
+def _weaving(course: Sequence[Point]) -> set[int]:
+    """The index of each run that turns back along its axis a second time or more."""
+    found: set[int] = set()
+    for level in (True, False):
+        heading, turned = 0, 0
+        for index in range(len(course) - 1):
+            a, b = course[index], course[index + 1]
+            step = (b.x - a.x) if level else (b.y - a.y)
+            if abs(step) <= _SQUARE:
+                continue
+            way = 1 if step > 0 else -1
+            if heading and way != heading:
+                turned += 1
+                if turned >= 2:  # noqa: PLR2004 — once is going round something; twice is weaving
+                    found.add(index)
+            heading = way
+    return found
+
+
 def kinks(course: Sequence[Point]) -> tuple[int, ...]:
-    """B: the index of each segment between two bends shorter than `SHORTEST_SEGMENT`."""
-    return tuple(
+    """B: the index of each segment between two bends shorter than `SHORTEST_SEGMENT`, and of each run
+    that turns back along its axis a second time."""
+    short = {
         index for index in range(1, len(course) - 2)
         if _length(course[index], course[index + 1]) < SHORTEST_SEGMENT
-    )
+    }
+    return tuple(sorted(short | _weaving(course)))
 
 
 def _span(start: Point, end: Point) -> tuple[bool, float, float, float] | None:

@@ -18,7 +18,7 @@ from src.domain.diagrams.layout.attachment import breaches_of, elements_crossed,
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import Port, Side
 from src.domain.diagrams.layout.orthogonal import course_of
-from src.domain.diagrams.layout.route_quality import END_RUN, bends_at_ends, runs_along
+from src.domain.diagrams.layout.route_quality import END_RUN, bends_at_ends, kinks, runs_along
 from src.domain.diagrams.layout.routing.graph import EAST, NORTH, SOUTH, WEST
 from src.domain.diagrams.layout.routing.router import as_route, rerouted, route_all
 from src.domain.diagrams.layout.routing.scene import Connector, RoutingScene
@@ -211,6 +211,18 @@ def test_a_full_pass_over_a_large_view_finishes(count: int, relations: int, budg
     route_all(scene, connectors)
 
     assert time.perf_counter() - started < budget
+
+
+def test_a_route_that_weaves_is_counted_as_a_jog_however_long_its_runs() -> None:
+    """A line into a member was drawn down, left, down, right, down, left, down — every run longer than
+    a readable segment — and the picture reported no jog. Going round something turns back once."""
+    weave = [Point(x, y) for x, y in (
+        (694, 268), (694, 378), (635, 378), (635, 460), (663, 460), (663, 596), (623, 596), (623, 630), (665, 630),
+    )]
+    going_round = [Point(x, y) for x, y in ((0, 0), (60, 0), (60, 80), (-20, 80), (-20, 160))]
+
+    assert kinks(weave) == (5, 7)
+    assert kinks(going_round) == ()
 
 
 def test_course_of_the_route_form_matches_the_course_drawn() -> None:
