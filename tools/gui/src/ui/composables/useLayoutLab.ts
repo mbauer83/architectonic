@@ -15,7 +15,7 @@ import { drawnArrangement, layoutBlock } from '../../domain/layout/lab/labArrang
 import { breachesOf, countByTier } from '../../domain/layout/lab/labBreaches'
 import type { LabGeometry } from '../../domain/layout/lab/labGeometry'
 import { pointsOf } from '../../domain/layout/lab/labGeometry'
-import { fullPass, placementOf, quickPass, textRegions } from '../../domain/layout/lab/labRouting'
+import { fullPass, placementOf, quickPass, textRegions, widenedArrangement } from '../../domain/layout/lab/labRouting'
 import type { RoutingResult } from '../../domain/layout/routing/scene'
 
 /** How long the last pass took, to show beside the picture: the budget is a drag frame. */
@@ -126,6 +126,16 @@ export function useLayoutLab() {
     routeEverything()
   }
 
+  /** Open every channel too narrow for its lines, as a first layout is written down: one undoable step. */
+  const widen = () => {
+    const drawn = geometry.value
+    const now = arrangement.value
+    if (!drawn || !now) return
+    begin()
+    arrangement.value = widenedArrangement(drawn, now)
+    commit()
+  }
+
   const undo = () => {
     const earlier = history.value.at(-1)
     if (!earlier) return
@@ -141,6 +151,7 @@ export function useLayoutLab() {
     history.value = []
     routes.value = null
     serverPicture.value = null
+    serverError.value = null
   }
 
   const askServer = async () => {
@@ -162,7 +173,7 @@ export function useLayoutLab() {
     geometry, arrangement, history, routes, timing, loading, error,
     placement, courses, breaches, counts, layout,
     serverPicture, serverError, serverLoading,
-    load, begin, preview, commit, undo, reset, routeEverything, askServer,
+    load, begin, preview, commit, widen, undo, reset, routeEverything, askServer,
   }
 }
 

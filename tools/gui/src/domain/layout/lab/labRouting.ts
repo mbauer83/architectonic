@@ -9,7 +9,9 @@
  */
 import type { Extent } from '../geometry'
 import { routeAll } from '../routing/router'
+import { widened } from '../routing/widening'
 import type { Connector, RoutedConnector, RoutingResult, RoutingScene } from '../routing/scene'
+import { sameExtent } from '../routing/scene'
 import type { Arrangement } from './labArrangement'
 import { fittedBoxes } from './labArrangement'
 import type { LabGeometry } from './labGeometry'
@@ -80,6 +82,27 @@ export const changedShapes = (before: Placement, after: Placement): Set<string> 
       .filter(([alias, extent]) => differs(before.elements.get(alias) ?? before.boxes.get(alias), extent))
       .map(([alias]) => alias),
   )
+}
+
+/**
+ * *arrangement* with every channel too narrow for its lines opened (`routing/widening`), as the first
+ * layout a diagram writes down is: elements where the widening put them, and each box it grew stated
+ * at the size it grew to.
+ */
+export const widenedArrangement = (geometry: LabGeometry, arrangement: Arrangement): Arrangement => {
+  const placement = placementOf(geometry, arrangement)
+  const opened = widened(sceneOf(geometry, placement), connectorsOf(geometry))
+  const before = placement.boxes
+  return {
+    elements: new Map(opened.elements),
+    stated: new Map([
+      ...arrangement.stated,
+      ...[...opened.boxes].filter(([alias, extent]) => {
+        const was = before.get(alias)
+        return !was || !sameExtent(was, extent)
+      }),
+    ]),
+  }
 }
 
 /** Every line routed afresh: what a drop asks for. */

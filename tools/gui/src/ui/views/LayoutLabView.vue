@@ -140,6 +140,15 @@ onBeforeUnmount(() => {
         >
           Route all lines
         </button>
+        <button
+          type="button"
+          :disabled="!lab.geometry.value"
+          title="Open every gap too narrow for its lines, as a first layout is written down"
+          data-testid="layout-lab-widen"
+          @click="lab.widen()"
+        >
+          Widen narrow gaps
+        </button>
         <label class="lab__toggle">
           <input
             v-model="showBreaches"
