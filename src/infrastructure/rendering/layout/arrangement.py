@@ -8,9 +8,9 @@ picture's own terms — aliases, extents, courses — so it can be checked witho
 * a **box** — a grouping of either kind, or an element holding its parts — is what its contents need
   with the renderer's own padding and never narrower than its title, widened to what the layout
   states for it and never narrowed;
-* a **relation** runs the course its stated route completes to; one whose ends did not move keeps
-  the renderer's line (`KEEP_UNMOVED_LINES`); every other one is routed by `routing`, which keeps the
-  hard readability rules, and one no route reaches is named, never drawn through something;
+* a **relation** runs the course its stated route completes to; every other one is routed by
+  `routing`, which keeps the hard readability rules, and one no route reaches is named, never drawn
+  through something;
 * a **label** sits where its route's anchor says, or beside its route clear of every element, every
   text and every line;
 * **painting** follows containment: a box and everything in it are one unit, siblings in `z` order
@@ -22,7 +22,6 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Final
 
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
@@ -30,17 +29,11 @@ from src.domain.diagrams.layout.layout_block import Placed, Route
 from src.domain.diagrams.layout.layout_checks import placed_extent
 from src.domain.diagrams.layout.orthogonal import course_of
 from src.domain.diagrams.layout.rendered_picture import DrawnBox, MeasuredWord, RenderedPicture, extent_across
-from src.domain.diagrams.layout.route_quality import square_course
 from src.domain.diagrams.layout.routing.router import route_all
 from src.domain.diagrams.layout.routing.scene import Connector, RoutingScene
 from src.domain.diagrams.layout.text_clearance import padded, text_extent, title_band
 from src.infrastructure.rendering.layout.box_identities import box_keys_by_alias
 from src.infrastructure.rendering.layout.label_placement import label_box, placed_label
-
-#: Whether a relation whose two ends did not move keeps the line the renderer drew, rather than being
-#: routed with the rest. The one switch for it: on, a picture changes only where something moved, and
-#: the verifier reports any hard rule a kept line breaks; off, every line follows the rules.
-KEEP_UNMOVED_LINES: Final = True
 
 #: How far a size may differ from the one the renderer drew and still be the same size.
 _SAME_SIZE = 0.5
@@ -57,8 +50,6 @@ class ArrangedRelation:
     course: tuple[Point, ...]
     #: Where the middle of its label goes, or None for a relation that carries none.
     label_centre: Point | None = None
-    #: Drawn exactly as the renderer drew it: nothing about it, its ends or what it passes changed.
-    as_drawn: bool = False
 
 
 @dataclass(frozen=True)
@@ -108,6 +99,18 @@ def _wide_enough_for_its_title(needed: Extent, box: DrawnBox) -> Extent:
         return needed
     grow = (least - needed.width) / 2
     return Extent(needed.left - grow, needed.top, needed.right + grow, needed.bottom)
+
+
+@dataclass(frozen=True)
+class RoutingInput:
+    """What a picture's arrangement asks of the router, and what it keeps to draw the answer."""
+
+    scene: RoutingScene
+    connectors: tuple[Connector, ...]
+    #: The courses the layout states whole, by the index of the picture's relation.
+    stated: Mapping[int, tuple[Point, ...]]
+    routes: Mapping[int, Route]
+    keyed: Mapping[int, tuple[str, bool]]
 
 
 class _Arranging:
@@ -215,27 +218,22 @@ class _Arranging:
             **{f"label:{alias}": label for alias, label in self._labels_outside().items()},
         }
 
-    def relations(self, keep_unmoved_lines: bool) -> tuple[tuple[ArrangedRelation, ...], tuple[str, ...]]:
-        """Every relation's course and label, and the relations no route reaches.
+    def routing(self) -> RoutingInput:
+        """What the router is asked: the scene as arranged, and every relation no stated route decides.
 
-        A relation whose whole route the layout states runs it. With *keep_unmoved_lines*, one whose two
-        ends did not move keeps the renderer's line, and what it breaks is the verifier's to report.
-        Every other one is routed (`routing`), and all of them together are nudged apart.
+        A relation whose whole route the layout states runs it, and is a fixed line to the others.
         """
         extents: dict[str, Extent] = {**self.boxes, **self.elements}
         keyed = self._keyed()
         courses: dict[int, tuple[Point, ...]] = {}
         routes: dict[int, Route] = {}
-        kept: dict[int, tuple[Point, ...]] = {}
         connectors: list[Connector] = []
         for index, relation in enumerate(self._picture.relations):
             key, turned = keyed.get(index, ("", False))
             source, target = relation.ends[::-1] if turned else relation.ends
             routes[index] = self._layout.relations.get(key, Route())
             stated = course_of(routes[index], extents[source], extents[target])
-            if keep_unmoved_lines and key not in self._layout.relations and all(map(self._unchanged, relation.ends)):
-                kept[index] = relation.course
-            elif stated is not None:
+            if stated is not None:
                 courses[index] = stated[::-1] if turned else stated
             else:
                 marks = (bool(relation.first_marks), bool(relation.second_marks))
@@ -244,45 +242,36 @@ class _Arranging:
                     routes[index].source, routes[index].target,
                 ))
         scene = RoutingScene(
-            elements=self.elements, boxes=self.boxes, text=self.text(),
-            fixed_lines=[*courses.values(), *(square_course(self._picture.relations[index].path) for index in kept)],
+            elements=self.elements, boxes=self.boxes, text=self.text(), fixed_lines=list(courses.values()),
         )
-        result = route_all(scene, connectors)
+        return RoutingInput(scene, tuple(connectors), courses, routes, keyed)
+
+    def relations(self) -> tuple[tuple[ArrangedRelation, ...], tuple[str, ...]]:
+        """Every relation's course and label, and the relations no route reaches.
+
+        Every relation the layout states no whole route for is routed (`routing`), all of them
+        together, and nudged apart.
+        """
+        asked = self.routing()
+        courses = dict(asked.stated)
+        result = route_all(asked.scene, asked.connectors)
         for key, routed in result.routes.items():
             index = int(key)
-            courses[index] = routed.course[::-1] if keyed.get(index, ("", False))[1] else routed.course
+            courses[index] = routed.course[::-1] if asked.keyed.get(index, ("", False))[1] else routed.course
         unroutable = tuple(
             " and ".join(self._picture.label_of(end) or end for end in self._picture.relations[int(key)].ends)
             for key in result.unroutable
         )
-        return self._labelled(courses, routes, keyed, kept), unroutable
-
-    def _unchanged(self, alias: str) -> bool:
-        drawn = self._picture.extent_of(alias)
-        now = self.elements.get(alias) or self.boxes.get(alias)
-        return drawn is not None and now is not None and all(
-            abs(was - is_now) <= _SAME_SIZE
-            for was, is_now in zip(
-                (drawn.left, drawn.top, drawn.right, drawn.bottom), (now.left, now.top, now.right, now.bottom),
-                strict=True,
-            )
-        )
+        return self._labelled(courses, asked.routes, asked.keyed), unroutable
 
     def _labelled(
         self, courses: Mapping[int, tuple[Point, ...]], routes: Mapping[int, Route],
-        keyed: Mapping[int, tuple[str, bool]], kept: Mapping[int, tuple[Point, ...]],
+        keyed: Mapping[int, tuple[str, bool]],
     ) -> tuple[ArrangedRelation, ...]:
-        kept_labels = [
-            label for index in kept if (label := label_extent(self._picture.relations[index].words)) is not None
-        ]
-        taken = [*self.elements.values(), *self.text().values(), *kept_labels]
-        lines = [*courses.values(), *kept.values()]
+        taken = [*self.elements.values(), *self.text().values()]
+        lines = list(courses.values())
         arranged: list[ArrangedRelation] = []
         for index, relation in enumerate(self._picture.relations):
-            if index in kept:
-                label = label_extent(relation.words)
-                arranged.append(ArrangedRelation(kept[index], label.centre if label else None, as_drawn=True))
-                continue
             course, text = courses[index], label_extent(relation.words)
             if text is None:
                 arranged.append(ArrangedRelation(course))
@@ -297,17 +286,20 @@ class _Arranging:
         return tuple(arranged)
 
 
-def arrange(
-    picture: RenderedPicture, diagram: LaidOutDiagram, *, keep_unmoved_lines: bool = KEEP_UNMOVED_LINES,
-) -> Arrangement:
+def routing_input(picture: RenderedPicture, diagram: LaidOutDiagram) -> RoutingInput:
+    """What the router is asked once *diagram*'s layout places *picture*'s shapes."""
+    return _Arranging(picture, diagram).routing()
+
+
+def arrange(picture: RenderedPicture, diagram: LaidOutDiagram) -> Arrangement:
     """Where everything *picture* draws goes once *diagram*'s layout is applied to it."""
-    arranging = _Arranging(picture, diagram)
-    relations, unroutable = arranging.relations(keep_unmoved_lines)
+    arranged = _Arranging(picture, diagram)
+    relations, unroutable = arranged.relations()
     return Arrangement(
-        elements=arranging.elements,
-        resized=frozenset(arranging.resized),
-        boxes=arranging.boxes,
+        elements=arranged.elements,
+        resized=frozenset(arranged.resized),
+        boxes=arranged.boxes,
         relations=relations,
-        paint_order=tuple(arranging.paint_order()),
+        paint_order=tuple(arranged.paint_order()),
         unroutable=unroutable,
     )
