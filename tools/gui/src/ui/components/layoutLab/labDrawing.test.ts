@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Extent } from '../../../domain/layout/geometry'
 import type { LabGeometry } from '../../../domain/layout/lab/labGeometry'
-import { elementWords, handlesOf, paintOrder } from './labDrawing'
+import { elementWords, handlesOf, paintOrder, pointsAttribute, titleWords } from './labDrawing'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 
@@ -45,5 +45,14 @@ describe('the lab drawing', () => {
     expect(handles.find((one) => one.handle === 'se')?.at).toEqual({ x: 100, y: 50 })
     expect(handles.find((one) => one.handle === 'n')?.at).toEqual({ x: 50, y: 0 })
     expect(handles).toHaveLength(8)
+  })
+
+  it('keeps a box title across its middle and as far below its top as PlantUML set it', () => {
+    const titled = { ...box('One', null), extent: at(0, 0, 100, 60), words: [{ text: 'Title', x: 40, y: 14, width: 20 }] }
+    expect(titleWords(titled, at(50, 100, 250, 200))).toEqual([{ text: 'Title', x: 140, y: 114, width: 20 }])
+  })
+
+  it('writes a course as SVG points', () => {
+    expect(pointsAttribute([{ x: 1, y: 2 }, { x: 3, y: 4 }])).toBe('1,2 3,4')
   })
 })
