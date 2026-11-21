@@ -7,10 +7,12 @@ whether the line runs target-first, matched in order where a pair is drawn twice
 
 from __future__ import annotations
 
+from src.application.modeling.diagram_layout_statement import joined_to_its_picture, laid_out_diagram, stated_layout
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.domain.diagrams.layout.layout_block import Layout
 from src.domain.diagrams.layout.rendered_picture import DrawnElement, DrawnRelation, RenderedPicture
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.rendering.layout.relation_identities import DrawnAs, relation_keys_by_index
 
 
@@ -46,3 +48,16 @@ def test_a_line_the_diagram_does_not_state_is_absent() -> None:
 
     assert relation_keys_by_index(picture, diagram) == {0: DrawnAs("r1", False)}
 
+
+def test_a_stored_layout_is_its_join_to_the_picture() -> None:
+    frontmatter: dict[str, object] = {
+        "entity-ids-used": ["APP@1712870400.xVrBYD.order-system"],
+        "layout": {"elements": {"APP@1712870400.xVrBYD": {"x": 10, "y": 20}}},
+    }
+    ontology = process_runtime_catalogs().ontology
+    stated = stated_layout(frontmatter)
+    assert stated is not None
+
+    assert laid_out_diagram(frontmatter, ontology) == joined_to_its_picture(frontmatter, stated, ontology)
+    # The join alone does not consult the frontmatter's own layout: the one it is handed is the one it holds.
+    assert joined_to_its_picture(frontmatter, Layout(), ontology).layout == Layout()
