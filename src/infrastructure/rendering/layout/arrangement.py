@@ -182,14 +182,17 @@ class _Arranging:
         }
 
     def bands(self) -> dict[str, Extent]:
-        """Each box's title band where it is drawn now: the band it had, carried with the box's top."""
+        """Each box's title band where it is drawn now: the band it had, carried as its title is — with
+        the box's top and its middle (`shape_drawing.fitted_box`). As wide as the title, not the box: a
+        band the box's whole width would leave a line from outside no way in but round the side."""
         bands: dict[str, Extent] = {}
         for alias, box in self._picture.boxes.items():
             title = text_extent(box.words)
             if title is not None:
                 drawn, now = box.extent, self.boxes[alias]
-                band = title_band(drawn, title)
-                bands[alias] = Extent(now.left, now.top, now.right, now.top + (band.bottom - drawn.top))
+                dx, dy = now.centre.x - drawn.centre.x, now.top - drawn.top
+                carried = Extent(title.left + dx, title.top + dy, title.right + dx, title.bottom + dy)
+                bands[alias] = title_band(now, carried)
         return bands
 
     def _labels_outside(self) -> dict[str, Extent]:
