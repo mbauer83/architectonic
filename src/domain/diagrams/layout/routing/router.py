@@ -112,7 +112,7 @@ class _Routing:
         found = search(
             [Terminal(stub.end, OUTWARD_INDEX[stub.port.side], tag) for tag, stub in enumerate(starts)],
             [Terminal(stub.end, REVERSE[OUTWARD_INDEX[stub.port.side]], tag) for tag, stub in enumerate(goals)],
-            passage, self.visibility.xs, self.visibility.ys,
+            passage, self.visibility.graph,
         )
         return None if found is None else self._as_routed(connector, found, starts, goals)
 

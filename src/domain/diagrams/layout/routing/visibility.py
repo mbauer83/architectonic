@@ -1,11 +1,10 @@
-"""The orthogonal visibility graph's lines, and what blocks a step along one of them.
+"""The orthogonal visibility graph's interesting points, and what blocks a step along it.
 
 The paper's interesting points are the corners of every obstacle and every connector's points; its
-graph is the horizontal and vertical lines through them, joined where they cross and nothing
-intervenes. Here the lines are: each element's edges moved out by `BUFFER`, each text region's edges
-moved out by the same, each box border moved `BORDER_OFFSET` to either side, and the connector's own
-stub ends. All of them whole numbers, rounded outward, so every bend a route takes is one and the two
-languages place it on the same pixel.
+graph (`graph`) is the segments of visibility through them. Here the points are the corners of each
+element moved out by `BUFFER`, of each text region moved out by the same, of each box border moved
+`BORDER_OFFSET` to either side, and the connector's own stub ends. All of them whole numbers, rounded
+outward, so every bend a route takes is one and the two languages place it on the same pixel.
 
 What blocks, for one connector (`Passage`):
 
@@ -26,6 +25,7 @@ from collections.abc import Iterable, Sequence
 
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.route_quality import LINE_CLEARANCE
+from src.domain.diagrams.layout.routing.graph import Graph
 from src.domain.diagrams.layout.routing.scene import BORDER_OFFSET, BUFFER, IDEAL_SEPARATION, RoutingScene
 
 #: The side of one cell of the index that answers which rectangles are near a place.
@@ -66,14 +66,17 @@ class _Index:
                 for row in range(math.floor(rect.top / _CELL), math.floor(rect.bottom / _CELL) + 1):
                     self._cells[(column, row)].append(rect)
 
-    def near(self, left: float, top: float, right: float, bottom: float) -> Iterable[Extent]:
-        seen: set[int] = set()
-        for column in range(math.floor(left / _CELL), math.floor(right / _CELL) + 1):
-            for row in range(math.floor(top / _CELL), math.floor(bottom / _CELL) + 1):
+    def near(self, left: float, top: float, right: float, bottom: float) -> list[Extent]:
+        first_column, last_column = math.floor(left / _CELL), math.floor(right / _CELL)
+        first_row, last_row = math.floor(top / _CELL), math.floor(bottom / _CELL)
+        if first_column == last_column and first_row == last_row:
+            return self._cells.get((first_column, first_row), [])
+        found: dict[int, Extent] = {}
+        for column in range(first_column, last_column + 1):
+            for row in range(first_row, last_row + 1):
                 for rect in self._cells.get((column, row), ()):
-                    if id(rect) not in seen:
-                        seen.add(id(rect))
-                        yield rect
+                    found[id(rect)] = rect
+        return list(found.values())
 
 
 class Lines:
@@ -98,28 +101,28 @@ class Lines:
     def near(self, a: Point, b: Point, within: float) -> int:
         """How many spans run along the run a–b closer than *within*, sharing some of its stretch."""
         level = a.y == b.y
-        at, low, high = (a.y, min(a.x, b.x), max(a.x, b.x)) if level else (a.x, min(a.y, b.y), max(a.y, b.y))
-        positions, spans = (self._level_at, self.level) if level else (self._upright_at, self.upright)
+        at = a.y if level else a.x
+        positions = self._level_at if level else self._upright_at
         first = bisect_left(positions, at - within + 1e-9)
         last = bisect_right(positions, at + within - 1e-9)
-        return sum(
-            1
-            for position in positions[first:last]
-            for span_low, span_high in spans[position]
-            if min(high, span_high) - max(low, span_low) > _SHARED
-        )
+        return self._sharing(a, b, positions[first:last])
 
     def between(self, a: Point, b: Point, least: float, most: float) -> int:
         """How many spans lie across the run a–b's line from *least* to *most*, sharing its stretch."""
+        positions = self._level_at if a.y == b.y else self._upright_at
+        return self._sharing(a, b, positions[bisect_left(positions, least) : bisect_right(positions, most)])
+
+    def _sharing(self, a: Point, b: Point, positions: Sequence[float]) -> int:
+        """How many spans on the lines at *positions* share more than `_SHARED` of the run a–b's stretch."""
         level = a.y == b.y
         low, high = (min(a.x, b.x), max(a.x, b.x)) if level else (min(a.y, b.y), max(a.y, b.y))
-        positions, spans = (self._level_at, self.level) if level else (self._upright_at, self.upright)
-        return sum(
-            1
-            for position in positions[bisect_left(positions, least) : bisect_right(positions, most)]
-            for span_low, span_high in spans[position]
-            if min(high, span_high) - max(low, span_low) > _SHARED
-        )
+        spans = self.level if level else self.upright
+        count = 0
+        for position in positions:
+            for span_low, span_high in spans[position]:
+                if (high if high < span_high else span_high) - (low if low > span_low else span_low) > _SHARED:
+                    count += 1
+        return count
 
     def along(self, a: Point, b: Point) -> bool:
         """Whether the run a–b runs along a span closer than the clearance."""
@@ -136,6 +139,25 @@ def _borders(boxes: Iterable[Extent]) -> Lines:
     return lines
 
 
+def _corners(rect: Extent) -> tuple[Point, ...]:
+    return (Point(rect.left, rect.top), Point(rect.right, rect.top), Point(rect.left, rect.bottom),
+            Point(rect.right, rect.bottom))
+
+
+def _interesting(scene: RoutingScene, grown: Iterable[Extent]) -> list[Point]:
+    """The graph's interesting points: the corners of every element and text region moved out by
+    `BUFFER`, and of every box border moved `BORDER_OFFSET` to either side."""
+    points = [corner for rect in grown for corner in _corners(rect)]
+    points += [corner for text in scene.text.values() for corner in _corners(grown_outward(text, BUFFER))]
+    for box in scene.boxes.values():
+        xs = (math.floor(box.left - BORDER_OFFSET), math.ceil(box.left + BORDER_OFFSET),
+              math.floor(box.right - BORDER_OFFSET), math.ceil(box.right + BORDER_OFFSET))
+        ys = (math.floor(box.top - BORDER_OFFSET), math.ceil(box.top + BORDER_OFFSET),
+              math.floor(box.bottom - BORDER_OFFSET), math.ceil(box.bottom + BORDER_OFFSET))
+        points += [Point(x, y) for x in xs for y in ys]
+    return points
+
+
 class Visibility:
     """Everything about a scene a connector's search asks, built once for the scene."""
 
@@ -144,17 +166,7 @@ class Visibility:
         self.grown = {key: grown_outward(extent, BUFFER) for key, extent in scene.elements.items()}
         self.blocking = _Index([*self.grown.values(), *scene.text.values()])
         self.borders = _borders(scene.boxes.values())
-        xs: set[float] = set()
-        ys: set[float] = set()
-        for rect in (*self.grown.values(), *(grown_outward(text, BUFFER) for text in scene.text.values())):
-            xs.update((rect.left, rect.right))
-            ys.update((rect.top, rect.bottom))
-        for box in scene.boxes.values():
-            xs.update((math.floor(box.left - BORDER_OFFSET), math.ceil(box.left + BORDER_OFFSET),
-                       math.floor(box.right - BORDER_OFFSET), math.ceil(box.right + BORDER_OFFSET)))
-            ys.update((math.floor(box.top - BORDER_OFFSET), math.ceil(box.top + BORDER_OFFSET),
-                       math.floor(box.bottom - BORDER_OFFSET), math.ceil(box.bottom + BORDER_OFFSET)))
-        self.xs, self.ys = sorted(xs), sorted(ys)
+        self.graph = Graph([*self.grown.values(), *scene.text.values()], _interesting(scene, self.grown.values()))
 
     def passage(self, ends: tuple[str, str]) -> Passage:
         """What blocks the connector between *ends*."""
@@ -229,7 +241,3 @@ class Passage:
         near = self._near(min(a.x, b.x), min(a.y, b.y), max(a.x, b.x), max(a.y, b.y))
         return any(_enters(rect, a, b) for rect in near if rect not in ignoring) or self._visibility.borders.along(a, b)
 
-
-def lines_within(lines: Sequence[float], low: float, high: float, extra: Iterable[float]) -> list[float]:
-    """The candidate lines between *low* and *high*, with *extra* added."""
-    return sorted({*lines[bisect_left(lines, low) : bisect_right(lines, high)], *extra})

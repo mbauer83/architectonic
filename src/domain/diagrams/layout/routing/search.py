@@ -15,14 +15,16 @@ one through a channel already full.
 from __future__ import annotations
 
 import heapq
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
 from src.domain.diagrams.layout.geometry import Extent, Point
+from src.domain.diagrams.layout.routing.graph import Graph, Joined
 from src.domain.diagrams.layout.routing.scene import BEND_PENALTY, CROWDING
-from src.domain.diagrams.layout.routing.visibility import FULL, Passage, lines_within
+from src.domain.diagrams.layout.routing.visibility import FULL, Passage
 
-#: The four directions a route travels in, as steps along the grid: east, west, south, north.
+#: The four directions a route travels in, as steps: east, west, south, north.
 DIRECTIONS: tuple[tuple[int, int], ...] = ((1, 0), (-1, 0), (0, 1), (0, -1))
 
 #: The direction opposite each direction.
@@ -75,109 +77,97 @@ def _without_straight_points(points: Sequence[Point]) -> tuple[Point, ...]:
 
 
 def _search_within(
-    starts: Sequence[Terminal], goals: Sequence[Terminal], passage: Passage,
-    xs: list[float], ys: list[float],
+    starts: Sequence[Terminal], goals: Sequence[Terminal], passage: Passage, graph: Joined, window: Extent | None,
 ) -> Found | None:
-    column = {x: index for index, x in enumerate(xs)}
-    row = {y: index for index, y in enumerate(ys)}
-    goals_at: dict[tuple[int, int], list[int]] = {}
+    goals_at: dict[int, list[int]] = {}
     for index, goal in enumerate(goals):
-        goals_at.setdefault((column[goal.point.x], row[goal.point.y]), []).append(index)
+        goals_at.setdefault(graph.node_at(goal.point), []).append(index)
+    goal_points = [(goal.point.x, goal.point.y) for goal in goals]
 
     def estimate(x: float, y: float) -> float:
-        return min(abs(goal.point.x - x) + abs(goal.point.y - y) for goal in goals)
+        least = math.inf
+        for goal_x, goal_y in goal_points:
+            least = min(least, abs(goal_x - x) + abs(goal_y - y))
+        return least
 
-    steps: dict[tuple[int, int, int], float | None] = {}
+    steps: dict[int, tuple[int, float] | None] = {}
 
-    def step_cost(i: int, j: int, turn: int) -> float | None:
-        """What the step from node (i, j) in direction *turn* costs, or None where it is blocked: asked
-        once per step, however many states reach its node."""
-        key = (i, j, turn)
+    def step(node: int, turn: int) -> tuple[int, float] | None:
+        """Where the step from *node* in direction *turn* leads and what it costs, or None where it is
+        blocked or leaves the window: asked once per step, however many states reach its node."""
+        key = 4 * node + turn
         if key not in steps:
-            next_i, next_j = i + DIRECTIONS[turn][0], j + DIRECTIONS[turn][1]
-            if not (0 <= next_i < len(xs) and 0 <= next_j < len(ys)):
-                steps[key] = None
-            else:
-                here, there = Point(xs[i], ys[j]), Point(xs[next_i], ys[next_j])
-                if passage.point_blocked(there) or passage.step_blocked(here, there):
-                    steps[key] = None
-                else:
+            steps[key] = None
+            reached = graph.next(node, turn)
+            if reached >= 0:
+                x, y = graph.x(reached), graph.y(reached)
+                inside = window is None or (window.left <= x <= window.right and window.top <= y <= window.bottom)
+                here, there = Point(graph.x(node), graph.y(node)), Point(x, y)
+                if inside and not passage.step_blocked(here, there):
                     # A run another route already takes costs more: later routes spread over the channels.
-                    length = abs(there.x - here.x) + abs(there.y - here.y)
-                    steps[key] = length * (1 + CROWDING * passage.crowding(here, there))
+                    length = abs(x - here.x) + abs(y - here.y)
+                    steps[key] = (reached, length * (1 + CROWDING * passage.crowding(here, there)))
         return steps[key]
 
-    best: dict[tuple[int, int, int], float] = {}
-    came: dict[tuple[int, int, int], tuple[int, int, int] | None] = {}
-    began: dict[tuple[int, int, int], int] = {}
-    # f, order, i, j, direction, goal index (-1: an ordinary state; else: finishing at that goal)
-    frontier: list[tuple[float, int, int, int, int, int]] = []
+    best: dict[int, float] = {}
+    came: dict[int, int] = {}
+    began: dict[int, int] = {}
+    # f, order, node, direction, goal index (-1: an ordinary state; else: finishing at that goal)
+    frontier: list[tuple[float, int, int, int, int]] = []
     order = 0
     for start in starts:
-        state = (column[start.point.x], row[start.point.y], start.direction)
+        node = graph.node_at(start.point)
+        state = 4 * node + start.direction
         if state not in best:
-            best[state], came[state], began[state] = 0.0, None, start.tag
-            heapq.heappush(frontier, (EAGERNESS * estimate(start.point.x, start.point.y), order, *state, -1))
+            best[state], came[state], began[state] = 0.0, -1, start.tag
+            f_start = EAGERNESS * estimate(start.point.x, start.point.y)
+            heapq.heappush(frontier, (f_start, order, node, start.direction, -1))
             order += 1
     while frontier:
-        f, _order, i, j, last, finishing = heapq.heappop(frontier)
-        state = (i, j, last)
+        f, _order, node, last, finishing = heapq.heappop(frontier)
+        state = 4 * node + last
         if finishing >= 0:
-            return Found(_walked_back(state, came, xs, ys), began[state], goals[finishing].tag, f)
+            return Found(_walked_back(state, came, graph), began[state], goals[finishing].tag, f)
         g = best[state]
-        if f > g + EAGERNESS * estimate(xs[i], ys[j]):
+        if f > g + EAGERNESS * estimate(graph.x(node), graph.y(node)):
             continue  # reached again more cheaply since this entry was made
-        for index in goals_at.get((i, j), ()):
+        for index in goals_at.get(node, ()):
             if last == REVERSE[goals[index].direction]:
                 continue  # turning back into the stub would run along it
             finish = g + (BEND_PENALTY if last != goals[index].direction else 0.0)
-            heapq.heappush(frontier, (finish, order, i, j, last, index))
+            heapq.heappush(frontier, (finish, order, node, last, index))
             order += 1
         for turn in range(4):
-            if turn == REVERSE[last]:
+            if turn == REVERSE[last] or (taken := step(node, turn)) is None:
                 continue
-            length = step_cost(i, j, turn)
-            if length is None:
-                continue
-            next_i, next_j = i + DIRECTIONS[turn][0], j + DIRECTIONS[turn][1]
-            there = Point(xs[next_i], ys[next_j])
-            reached = (next_i, next_j, turn)
+            reached, length = taken
+            then = 4 * reached + turn
             cost = g + length + (BEND_PENALTY if turn != last else 0.0)
-            if cost < best.get(reached, float("inf")):
-                best[reached], came[reached], began[reached] = cost, state, began[state]
-                heapq.heappush(frontier, (cost + EAGERNESS * estimate(there.x, there.y), order, *reached, -1))
+            if cost < best.get(then, math.inf):
+                best[then], came[then], began[then] = cost, state, began[state]
+                f_then = cost + EAGERNESS * estimate(graph.x(reached), graph.y(reached))
+                heapq.heappush(frontier, (f_then, order, reached, turn, -1))
                 order += 1
     return None
 
 
-def _walked_back(
-    state: tuple[int, int, int] | None, came: dict[tuple[int, int, int], tuple[int, int, int] | None],
-    xs: list[float], ys: list[float],
-) -> tuple[Point, ...]:
+def _walked_back(state: int, came: dict[int, int], graph: Joined) -> tuple[Point, ...]:
     points: list[Point] = []
-    while state is not None:
-        points.append(Point(xs[state[0]], ys[state[1]]))
+    while state >= 0:
+        points.append(Point(graph.x(state // 4), graph.y(state // 4)))
         state = came[state]
     return _without_straight_points(points[::-1])
 
 
-def search(
-    starts: Sequence[Terminal], goals: Sequence[Terminal], passage: Passage,
-    xs: Sequence[float], ys: Sequence[float],
-) -> Found | None:
-    """The cheapest route from any start to any goal over the lines *xs* and *ys*, or None."""
+def search(starts: Sequence[Terminal], goals: Sequence[Terminal], passage: Passage, graph: Graph) -> Found | None:
+    """The cheapest route from any start to any goal over *graph*, or None."""
     terminals = [*starts, *goals]
+    joined = graph.joined(terminal.point for terminal in terminals)
     best: Found | None = None
     for window in _windows(terminals):
         if window is None and best is not None:
             break  # the whole diagram is searched only where no window held any way at all
-        low_x, high_x = (window.left, window.right) if window else (float("-inf"), float("inf"))
-        low_y, high_y = (window.top, window.bottom) if window else (float("-inf"), float("inf"))
-        found = _search_within(
-            starts, goals, passage,
-            lines_within(xs, low_x, high_x, (terminal.point.x for terminal in terminals)),
-            lines_within(ys, low_y, high_y, (terminal.point.y for terminal in terminals)),
-        )
+        found = _search_within(starts, goals, passage, joined, window)
         if found is not None and (best is None or found.cost < best.cost):
             best = found
         # A way through a full channel is the window's last resort, not the diagram's: look further.

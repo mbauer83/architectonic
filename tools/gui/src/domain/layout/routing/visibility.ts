@@ -10,6 +10,7 @@
 import type { Extent, Point } from '../geometry'
 import { encloses } from '../geometry'
 import { LINE_CLEARANCE } from '../routeQuality'
+import { Graph } from './graph'
 import type { RoutingScene } from './scene'
 import { BORDER_OFFSET, BUFFER, IDEAL_SEPARATION, extentOf, sameExtent } from './scene'
 
@@ -50,10 +51,15 @@ class RectIndex {
     }
   }
 
-  near(left: number, top: number, right: number, bottom: number): Extent[] {
+  near(left: number, top: number, right: number, bottom: number): readonly Extent[] {
+    const firstColumn = Math.floor(left / CELL)
+    const lastColumn = Math.floor(right / CELL)
+    const firstRow = Math.floor(top / CELL)
+    const lastRow = Math.floor(bottom / CELL)
+    if (firstColumn === lastColumn && firstRow === lastRow) return this.cells.get(`${firstColumn},${firstRow}`) ?? []
     const seen = new Set<Extent>()
-    for (let column = Math.floor(left / CELL); column <= Math.floor(right / CELL); column += 1) {
-      for (let row = Math.floor(top / CELL); row <= Math.floor(bottom / CELL); row += 1) {
+    for (let column = firstColumn; column <= lastColumn; column += 1) {
+      for (let row = firstRow; row <= lastRow; row += 1) {
         for (const rect of this.cells.get(`${column},${row}`) ?? []) seen.add(rect)
       }
     }
@@ -113,31 +119,25 @@ export class Lines {
   near(a: Point, b: Point, within: number): number {
     const isLevel = a.y === b.y
     const at = isLevel ? a.y : a.x
-    const low = isLevel ? Math.min(a.x, b.x) : Math.min(a.y, b.y)
-    const high = isLevel ? Math.max(a.x, b.x) : Math.max(a.y, b.y)
     const positions = isLevel ? this.levelAt : this.uprightAt
-    const spans = isLevel ? this.level : this.upright
-    const first = lowerBound(positions, at - within + 1e-9)
-    const last = upperBound(positions, at + within - 1e-9)
-    let count = 0
-    for (const position of positions.slice(first, last)) {
-      for (const [spanLow, spanHigh] of spans.get(position) ?? []) {
-        if (Math.min(high, spanHigh) - Math.max(low, spanLow) > SHARED) count += 1
-      }
-    }
-    return count
+    return this.sharing(a, b, positions, lowerBound(positions, at - within + 1e-9), upperBound(positions, at + within - 1e-9))
   }
 
   between(a: Point, b: Point, least: number, most: number): number {
+    const positions = a.y === b.y ? this.levelAt : this.uprightAt
+    return this.sharing(a, b, positions, lowerBound(positions, least), upperBound(positions, most))
+  }
+
+  /** How many spans on the lines at positions[first..last) share more than SHARED of the run a–b's stretch. */
+  private sharing(a: Point, b: Point, positions: readonly number[], first: number, last: number): number {
     const isLevel = a.y === b.y
     const low = isLevel ? Math.min(a.x, b.x) : Math.min(a.y, b.y)
     const high = isLevel ? Math.max(a.x, b.x) : Math.max(a.y, b.y)
-    const positions = isLevel ? this.levelAt : this.uprightAt
     const spans = isLevel ? this.level : this.upright
     let count = 0
-    for (const position of positions.slice(lowerBound(positions, least), upperBound(positions, most))) {
-      for (const [spanLow, spanHigh] of spans.get(position) ?? []) {
-        if (Math.min(high, spanHigh) - Math.max(low, spanLow) > SHARED) count += 1
+    for (let position = first; position < last; position += 1) {
+      for (const [spanLow, spanHigh] of spans.get(positions[position]) ?? []) {
+        if ((high < spanHigh ? high : spanHigh) - (low > spanLow ? low : spanLow) > SHARED) count += 1
       }
     }
     return count
@@ -162,31 +162,47 @@ const bordersOf = (boxes: Iterable<Extent>): Lines => {
   return lines
 }
 
+const cornersOf = (rect: Extent): Point[] => [
+  { x: rect.left, y: rect.top },
+  { x: rect.right, y: rect.top },
+  { x: rect.left, y: rect.bottom },
+  { x: rect.right, y: rect.bottom },
+]
+
+/** The graph's interesting points: the corners of every element and text region moved out by
+ * BUFFER, and of every box border moved BORDER_OFFSET to either side. */
+const interestingPoints = (scene: RoutingScene, grown: Iterable<Extent>): Point[] => {
+  const points = [...grown].flatMap(cornersOf)
+  for (const text of scene.text.values()) points.push(...cornersOf(grownOutward(text, BUFFER)))
+  for (const box of scene.boxes.values()) {
+    const xs = [
+      Math.floor(box.left - BORDER_OFFSET),
+      Math.ceil(box.left + BORDER_OFFSET),
+      Math.floor(box.right - BORDER_OFFSET),
+      Math.ceil(box.right + BORDER_OFFSET),
+    ]
+    const ys = [
+      Math.floor(box.top - BORDER_OFFSET),
+      Math.ceil(box.top + BORDER_OFFSET),
+      Math.floor(box.bottom - BORDER_OFFSET),
+      Math.ceil(box.bottom + BORDER_OFFSET),
+    ]
+    for (const x of xs) for (const y of ys) points.push({ x, y })
+  }
+  return points
+}
+
 export class Visibility {
   readonly grown: ReadonlyMap<string, Extent>
   readonly blocking: RectIndex
   readonly borders: Lines
-  readonly xs: number[]
-  readonly ys: number[]
+  readonly graph: Graph
 
   constructor(readonly scene: RoutingScene) {
     this.grown = new Map([...scene.elements].map(([key, extent]) => [key, grownOutward(extent, BUFFER)]))
     this.blocking = new RectIndex([...this.grown.values(), ...scene.text.values()])
     this.borders = bordersOf(scene.boxes.values())
-    const xs = new Set<number>()
-    const ys = new Set<number>()
-    for (const rect of [...this.grown.values(), ...[...scene.text.values()].map((text) => grownOutward(text, BUFFER))]) {
-      xs.add(rect.left).add(rect.right)
-      ys.add(rect.top).add(rect.bottom)
-    }
-    for (const box of scene.boxes.values()) {
-      xs.add(Math.floor(box.left - BORDER_OFFSET)).add(Math.ceil(box.left + BORDER_OFFSET))
-      xs.add(Math.floor(box.right - BORDER_OFFSET)).add(Math.ceil(box.right + BORDER_OFFSET))
-      ys.add(Math.floor(box.top - BORDER_OFFSET)).add(Math.ceil(box.top + BORDER_OFFSET))
-      ys.add(Math.floor(box.bottom - BORDER_OFFSET)).add(Math.ceil(box.bottom + BORDER_OFFSET))
-    }
-    this.xs = [...xs].sort((one, other) => one - other)
-    this.ys = [...ys].sort((one, other) => one - other)
+    this.graph = new Graph([...this.grown.values(), ...scene.text.values()], interestingPoints(scene, this.grown.values()))
   }
 
   passage(ends: readonly [string, string]): Passage {
@@ -246,7 +262,7 @@ export class Passage {
     return [least, most]
   }
 
-  private nearRects(left: number, top: number, right: number, bottom: number): Extent[] {
+  private nearRects(left: number, top: number, right: number, bottom: number): readonly Extent[] {
     return [...this.visibility.blocking.near(left, top, right, bottom), ...this.wallIndex.near(left, top, right, bottom)]
   }
 
@@ -264,9 +280,3 @@ export class Passage {
     )
   }
 }
-
-/** The candidate lines between *low* and *high*, with *extra* added. */
-export const linesWithin = (lines: readonly number[], low: number, high: number, extra: Iterable<number>): number[] =>
-  [...new Set([...lines.slice(lowerBound(lines, low), upperBound(lines, high)), ...extra])].sort(
-    (one, other) => one - other,
-  )

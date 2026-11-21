@@ -112,8 +112,7 @@ class Routing {
       starts.map((stub, tag) => ({ point: stub.end, direction: OUTWARD_INDEX[stub.port.side], tag })),
       goals.map((stub, tag) => ({ point: stub.end, direction: REVERSE[OUTWARD_INDEX[stub.port.side]], tag })),
       passage,
-      this.visibility.xs,
-      this.visibility.ys,
+      this.visibility.graph,
     )
     return found ? asRouted(connector, found, starts, goals) : null
   }

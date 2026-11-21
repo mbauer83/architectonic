@@ -8,6 +8,7 @@ TypeScript router to the file).
 
 from __future__ import annotations
 
+import math
 import random
 import time
 
@@ -18,11 +19,14 @@ from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import Port, Side
 from src.domain.diagrams.layout.orthogonal import course_of
 from src.domain.diagrams.layout.route_quality import END_RUN, bends_at_ends, runs_along
+from src.domain.diagrams.layout.routing.graph import EAST, NORTH, SOUTH, WEST
 from src.domain.diagrams.layout.routing.router import as_route, rerouted, route_all
 from src.domain.diagrams.layout.routing.scene import Connector, RoutingScene
+from src.domain.diagrams.layout.routing.search import REVERSE
+from src.domain.diagrams.layout.routing.visibility import Visibility
 from src.domain.diagrams.layout.text_clearance import texts_crossed
 from tests.support.layout_geometry_fixtures import WALK_MOVES, walk_scene
-from tests.support.routing_fixtures import synthetic_scene
+from tests.support.routing_fixtures import graph_scene, synthetic_scene
 
 _A, _B = Extent(0, 100, 100, 160), Extent(400, 100, 500, 160)
 
@@ -31,6 +35,35 @@ def _only(scene: RoutingScene, *connectors: Connector) -> tuple[Point, ...]:
     result = route_all(scene, connectors)
     assert result.unroutable == ()
     return result.routes[connectors[0].key].course
+
+
+def test_a_segment_of_visibility_stops_at_the_first_element_in_its_way() -> None:
+    """The graph is the paper's, not a grid of every line: a line through the short element's top
+    stops at the tall one beside it, so it meets no line on the tall one's far side."""
+    scene, _terminals = graph_scene()
+    graph = Visibility(scene).graph
+    tall = Visibility(scene).grown["b"]
+
+    on_short_top = [(low, high) for at, low, high in graph.level.segments if at == -8]
+    assert on_short_top == [(-math.inf, tall.left), (tall.right, math.inf)]
+    for x, y in zip(graph.xs, graph.ys, strict=True):
+        assert not any(rect.left < x < rect.right and rect.top < y < rect.bottom for rect in graph.obstacles)
+
+
+def test_a_search_s_terminals_are_joined_to_the_graph_and_the_scene_s_graph_is_left_as_it_was() -> None:
+    scene, terminals = graph_scene()
+    graph = Visibility(scene).graph
+    before = list(graph.next)
+
+    joined = graph.joined(terminals)
+
+    assert graph.next == before
+    for terminal in terminals:
+        node = joined.node_at(terminal)
+        assert any(joined.next(node, direction) >= 0 for direction in (EAST, WEST, SOUTH, NORTH))
+        for direction in (EAST, WEST, SOUTH, NORTH):
+            if (other := joined.next(node, direction)) >= 0:
+                assert joined.next(other, REVERSE[direction]) == node
 
 
 def test_facing_elements_in_line_are_joined_by_one_straight_run() -> None:

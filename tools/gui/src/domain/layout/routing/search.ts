@@ -7,11 +7,12 @@
  * were made, which is what makes the route found the same in both languages.
  */
 import type { Extent, Point } from '../geometry'
+import type { Graph, Joined } from './graph'
 import { BEND_PENALTY, CROWDING } from './scene'
 import type { Passage } from './visibility'
-import { FULL, linesWithin } from './visibility'
+import { FULL } from './visibility'
 
-/** East, west, south, north, as steps along the grid. */
+/** East, west, south, north, as steps. */
 export const DIRECTIONS: readonly (readonly [number, number])[] = [
   [1, 0],
   [-1, 0],
@@ -39,7 +40,8 @@ export interface Found {
   readonly cost: number
 }
 
-type Entry = readonly [number, number, number, number, number, number]
+/** f, order, node, direction, goal index (-1: an ordinary state; else finishing at that goal). */
+type Entry = readonly [number, number, number, number, number]
 
 /** A binary heap of entries ordered by estimate, then by the order they were made. */
 class Frontier {
@@ -116,97 +118,91 @@ export const withoutStraightPoints = (points: readonly Point[]): Point[] => {
   return points.length > 1 ? [...kept, points[points.length - 1]] : kept
 }
 
-const stateKey = (i: number, j: number, direction: number): string => `${i},${j},${direction}`
-
 const searchWithin = (
   starts: readonly Terminal[],
   goals: readonly Terminal[],
   passage: Passage,
-  xs: readonly number[],
-  ys: readonly number[],
+  graph: Joined,
+  window: Extent | null,
 ): Found | null => {
-  const column = new Map(xs.map((x, index) => [x, index]))
-  const row = new Map(ys.map((y, index) => [y, index]))
-  const indexOf = (map: ReadonlyMap<number, number>, value: number): number => {
-    const found = map.get(value)
-    if (found === undefined) throw new Error(`no line at ${value}`)
-    return found
-  }
-  const goalsAt = new Map<string, number[]>()
+  const goalsAt = new Map<number, number[]>()
   goals.forEach((goal, index) => {
-    const key = `${indexOf(column, goal.point.x)},${indexOf(row, goal.point.y)}`
-    const list = goalsAt.get(key)
+    const node = graph.nodeAt(goal.point)
+    const list = goalsAt.get(node)
     if (list) list.push(index)
-    else goalsAt.set(key, [index])
+    else goalsAt.set(node, [index])
   })
-  const estimate = (x: number, y: number): number =>
-    Math.min(...goals.map((goal) => Math.abs(goal.point.x - x) + Math.abs(goal.point.y - y)))
+  const estimate = (x: number, y: number): number => {
+    let least = Number.POSITIVE_INFINITY
+    for (const goal of goals) least = Math.min(least, Math.abs(goal.point.x - x) + Math.abs(goal.point.y - y))
+    return least
+  }
 
-  const steps = new Map<string, number | null>()
-  const stepCost = (i: number, j: number, turn: number): number | null => {
-    const key = stateKey(i, j, turn)
+  // Where each step leads and what it costs; null where it is blocked or leaves the window.
+  const steps = new Map<number, readonly [number, number] | null>()
+  const step = (node: number, turn: number): readonly [number, number] | null => {
+    const key = 4 * node + turn
     const known = steps.get(key)
     if (known !== undefined) return known
-    const nextI = i + DIRECTIONS[turn][0]
-    const nextJ = j + DIRECTIONS[turn][1]
-    let answer: number | null = null
-    if (nextI >= 0 && nextI < xs.length && nextJ >= 0 && nextJ < ys.length) {
-      const here = { x: xs[i], y: ys[j] }
-      const there = { x: xs[nextI], y: ys[nextJ] }
-      if (!passage.pointBlocked(there) && !passage.stepBlocked(here, there)) {
-        const length = Math.abs(there.x - here.x) + Math.abs(there.y - here.y)
-        answer = length * (1 + CROWDING * passage.crowding(here, there))
+    let answer: readonly [number, number] | null = null
+    const reached = graph.next(node, turn)
+    if (reached >= 0) {
+      const x = graph.x(reached)
+      const y = graph.y(reached)
+      const inside = window === null || (window.left <= x && x <= window.right && window.top <= y && y <= window.bottom)
+      const here = { x: graph.x(node), y: graph.y(node) }
+      const there = { x, y }
+      if (inside && !passage.stepBlocked(here, there)) {
+        const length = Math.abs(x - here.x) + Math.abs(y - here.y)
+        answer = [reached, length * (1 + CROWDING * passage.crowding(here, there))]
       }
     }
     steps.set(key, answer)
     return answer
   }
 
-  const best = new Map<string, number>()
-  const came = new Map<string, readonly [number, number, number] | null>()
-  const began = new Map<string, number>()
+  const best = new Map<number, number>()
+  const came = new Map<number, number>()
+  const began = new Map<number, number>()
   const frontier = new Frontier()
   let order = 0
   for (const start of starts) {
-    const i = indexOf(column, start.point.x)
-    const j = indexOf(row, start.point.y)
-    const key = stateKey(i, j, start.direction)
-    if (!best.has(key)) {
-      best.set(key, 0)
-      came.set(key, null)
-      began.set(key, start.tag)
-      frontier.push([EAGERNESS * estimate(start.point.x, start.point.y), order, i, j, start.direction, -1])
+    const node = graph.nodeAt(start.point)
+    const state = 4 * node + start.direction
+    if (!best.has(state)) {
+      best.set(state, 0)
+      came.set(state, -1)
+      began.set(state, start.tag)
+      frontier.push([EAGERNESS * estimate(start.point.x, start.point.y), order, node, start.direction, -1])
       order += 1
     }
   }
   while (frontier.size > 0) {
-    const [f, , i, j, last, finishing] = frontier.pop()
-    const key = stateKey(i, j, last)
+    const [f, , node, last, finishing] = frontier.pop()
+    const state = 4 * node + last
     if (finishing >= 0) {
-      return { points: walkedBack([i, j, last], came, xs, ys), start: began.get(key) ?? 0, goal: goals[finishing].tag, cost: f }
+      return { points: walkedBack(state, came, graph), start: began.get(state) ?? 0, goal: goals[finishing].tag, cost: f }
     }
-    const g = best.get(key) ?? Number.POSITIVE_INFINITY
-    if (f > g + EAGERNESS * estimate(xs[i], ys[j])) continue
-    for (const index of goalsAt.get(`${i},${j}`) ?? []) {
+    const g = best.get(state) ?? Number.POSITIVE_INFINITY
+    if (f > g + EAGERNESS * estimate(graph.x(node), graph.y(node))) continue
+    for (const index of goalsAt.get(node) ?? []) {
       if (last === REVERSE[goals[index].direction]) continue
       const finish = g + (last !== goals[index].direction ? BEND_PENALTY : 0)
-      frontier.push([finish, order, i, j, last, index])
+      frontier.push([finish, order, node, last, index])
       order += 1
     }
     for (let turn = 0; turn < 4; turn += 1) {
       if (turn === REVERSE[last]) continue
-      const length = stepCost(i, j, turn)
-      if (length === null) continue
-      const nextI = i + DIRECTIONS[turn][0]
-      const nextJ = j + DIRECTIONS[turn][1]
-      const there = { x: xs[nextI], y: ys[nextJ] }
-      const reachedKey = stateKey(nextI, nextJ, turn)
+      const taken = step(node, turn)
+      if (taken === null) continue
+      const [reached, length] = taken
+      const then = 4 * reached + turn
       const cost = g + length + (turn !== last ? BEND_PENALTY : 0)
-      if (cost < (best.get(reachedKey) ?? Number.POSITIVE_INFINITY)) {
-        best.set(reachedKey, cost)
-        came.set(reachedKey, [i, j, last])
-        began.set(reachedKey, began.get(key) ?? 0)
-        frontier.push([cost + EAGERNESS * estimate(there.x, there.y), order, nextI, nextJ, turn, -1])
+      if (cost < (best.get(then) ?? Number.POSITIVE_INFINITY)) {
+        best.set(then, cost)
+        came.set(then, state)
+        began.set(then, began.get(state) ?? 0)
+        frontier.push([cost + EAGERNESS * estimate(graph.x(reached), graph.y(reached)), order, reached, turn, -1])
         order += 1
       }
     }
@@ -214,40 +210,30 @@ const searchWithin = (
   return null
 }
 
-const walkedBack = (
-  end: readonly [number, number, number],
-  came: ReadonlyMap<string, readonly [number, number, number] | null>,
-  xs: readonly number[],
-  ys: readonly number[],
-): Point[] => {
+const walkedBack = (end: number, came: ReadonlyMap<number, number>, graph: Joined): Point[] => {
   const points: Point[] = []
-  let state: readonly [number, number, number] | null = end
-  while (state !== null) {
-    points.push({ x: xs[state[0]], y: ys[state[1]] })
-    state = came.get(stateKey(state[0], state[1], state[2])) ?? null
+  let state = end
+  while (state >= 0) {
+    const node = Math.floor(state / 4)
+    points.push({ x: graph.x(node), y: graph.y(node) })
+    state = came.get(state) ?? -1
   }
   return withoutStraightPoints(points.reverse())
 }
 
-/** The cheapest route from any start to any goal over the lines *xs* and *ys*, or null. */
+/** The cheapest route from any start to any goal over *graph*, or null. */
 export const search = (
   starts: readonly Terminal[],
   goals: readonly Terminal[],
   passage: Passage,
-  xs: readonly number[],
-  ys: readonly number[],
+  graph: Graph,
 ): Found | null => {
   const terminals = [...starts, ...goals]
+  const joined = graph.joined(terminals.map((terminal) => terminal.point))
   let best: Found | null = null
   for (const window of windowsOf(terminals)) {
     if (window === null && best !== null) break
-    const found = searchWithin(
-      starts,
-      goals,
-      passage,
-      linesWithin(xs, window ? window.left : Number.NEGATIVE_INFINITY, window ? window.right : Number.POSITIVE_INFINITY, terminals.map((terminal) => terminal.point.x)),
-      linesWithin(ys, window ? window.top : Number.NEGATIVE_INFINITY, window ? window.bottom : Number.POSITIVE_INFINITY, terminals.map((terminal) => terminal.point.y)),
-    )
+    const found = searchWithin(starts, goals, passage, joined, window)
     if (found && (best === null || found.cost < best.cost)) best = found
     if (best && !throughAFullChannel(best.points, passage)) return best
   }

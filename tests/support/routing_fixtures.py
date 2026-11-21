@@ -8,17 +8,24 @@ The cases are chosen so each stage decides something: a straight run, a way roun
 a title band, into and out of nested boxes, many routes through one channel for nudging, a whole and
 its part, a loop, two elements too close for a stub, an element walled in so no route reaches it, and
 a drag's quick pass over a moved element.
+
+`graph` pins the visibility graph itself for one scene: its segments, each stopping at the first
+obstacle, and every join once a search's terminals are joined to it. The routes rest on it, so the two
+languages building one graph is what the cases above rely on.
 """
 
 from __future__ import annotations
 
+import math
 import random
 from collections.abc import Mapping, Sequence
 
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import Port, Side
+from src.domain.diagrams.layout.routing.graph import EAST, SOUTH
 from src.domain.diagrams.layout.routing.router import route_all
 from src.domain.diagrams.layout.routing.scene import Connector, RoutedConnector, RoutingResult, RoutingScene
+from src.domain.diagrams.layout.routing.visibility import Visibility
 
 
 def _extent(extent: Extent) -> dict[str, float]:
@@ -137,6 +144,40 @@ def synthetic_scene(count: int, relations: int, seed: int = 1) -> tuple[RoutingS
     return RoutingScene(elements=elements), connectors
 
 
+def _end(value: float) -> float | None:
+    """A segment's end, None where nothing stops it (JSON has no infinity)."""
+    return None if math.isinf(value) else value
+
+
+def graph_scene() -> tuple[RoutingScene, list[Point]]:
+    """Three elements in a row, the middle one taller, one below it, a box round two of them and a
+    title band: the segments through the short elements' corners stop at the tall one, and two
+    terminals join the graph."""
+    elements = {
+        "a": _box(0, 0, 80, 40), "b": _box(160, -20, 80, 100), "c": _box(320, 0, 80, 40), "d": _box(160, 160, 80, 40),
+    }
+    boxes = {"group": _box(140, -50, 300, 150)}
+    text = {"band:group": Extent(150, -50, 260, -30)}
+    return RoutingScene(elements=elements, boxes=boxes, text=text), [Point(40, -30), Point(200, 220)]
+
+
+def build_graph() -> dict[str, object]:
+    scene, terminals = graph_scene()
+    graph = Visibility(scene).graph
+    joined = graph.joined(terminals)
+    joins = sorted(
+        [joined.x(node), joined.y(node), joined.x(other), joined.y(other)]
+        for node in range(joined.size) for direction in (EAST, SOUTH)
+        if (other := joined.next(node, direction)) >= 0
+    )
+    return {
+        "scene": scene_as_json(scene), "terminals": _points(terminals),
+        "level": [[at, _end(low), _end(high)] for at, low, high in graph.level.segments],
+        "upright": [[at, _end(low), _end(high)] for at, low, high in graph.upright.segments],
+        "joins": joins,
+    }
+
+
 def build_routing() -> dict[str, object]:
     a, b, c = _box(0, 100, 100, 60), _box(400, 100, 100, 60), _box(220, 60, 60, 140)
     cases = [
@@ -165,6 +206,7 @@ def build_routing() -> dict[str, object]:
     moved_scene = RoutingScene(elements=moved)
     quick = route_all(moved_scene, connectors, previous=previous.routes, changed=frozenset({"l2"}))
     return {
+        "graph": build_graph(),
         "cases": cases,
         "quick": {
             "scene": scene_as_json(moved_scene), "connectors": [connector_as_json(one) for one in connectors],
