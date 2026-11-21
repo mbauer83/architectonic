@@ -106,8 +106,17 @@ def _groupings(
 def laid_out_diagram(frontmatter: Mapping[str, object], ontology: DeclaresElementKinds) -> LaidOutDiagram | None:
     """*frontmatter*'s layout with its joins to a picture made, or None where the diagram is drawn without one."""
     layout = stated_layout(frontmatter)
-    if layout is None:
-        return None
+    return None if layout is None else joined_to_its_picture(frontmatter, layout, ontology)
+
+
+def joined_to_its_picture(
+    frontmatter: Mapping[str, object], layout: Layout, ontology: DeclaresElementKinds
+) -> LaidOutDiagram:
+    """*layout* over the diagram *frontmatter* states, with the joins to a picture of it made.
+
+    Whatever the frontmatter itself says about a layout is not consulted: this is the join alone, for
+    a layout that is not (or not yet) the stored one — the stored one goes through `laid_out_diagram`.
+    """
     aliases = alias_by_instance(frontmatter)
     kinds = _kinds(frontmatter, aliases, ontology)
     ends = drawn_relation_ends(

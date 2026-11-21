@@ -9,6 +9,7 @@ import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import SyncStatusCluster from './SyncStatusCluster.vue'
 import type { EnterpriseSyncStatus, SearchHit, SyncAuthority } from '../../domain'
 import { readErrorMessage } from '../lib/errors'
+import { layoutLabIsOn } from '../../adapters/http/HttpLayoutLab'
 
 type SaveMode = 'engagement-save' | 'enterprise-save' | 'enterprise-submit' | 'enterprise-withdraw'
 
@@ -115,6 +116,10 @@ onMounted(async () => {
     }
   } catch { /* assurance store unavailable — suppress */ }
 })
+
+// The lab's own status route answers only while the backend serves the lab.
+const layoutLabOn = ref(false)
+onMounted(async () => { layoutLabOn.value = await layoutLabIsOn() })
 </script>
 
 <template>
@@ -159,6 +164,13 @@ onMounted(async () => {
         :title="assuranceStatus === 'unlocked' ? 'Assurance store unlocked' : 'Assurance store locked'"
       >
         {{ assuranceStatus === 'unlocked' ? '🔓' : '🔒' }} Assurance
+      </RouterLink>
+      <RouterLink
+        v-if="layoutLabOn"
+        to="/layout-lab"
+        title="A development bench for trying layout edits; nothing is saved"
+      >
+        Layout lab
       </RouterLink>
     </nav>
     <div

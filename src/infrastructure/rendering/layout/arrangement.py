@@ -34,6 +34,7 @@ from src.domain.diagrams.layout.routing.scene import Connector, RoutingScene
 from src.domain.diagrams.layout.text_clearance import padded, text_extent, title_band
 from src.infrastructure.rendering.layout.box_identities import box_keys_by_alias
 from src.infrastructure.rendering.layout.label_placement import label_box, placed_label
+from src.infrastructure.rendering.layout.relation_identities import relation_keys_by_index
 
 #: How far a size may differ from the one the renderer drew and still be the same size.
 _SAME_SIZE = 0.5
@@ -60,7 +61,7 @@ class Arrangement:
     #: The elements drawn at a stated size that is not the size the renderer drew them.
     resized: frozenset[str]
     boxes: Mapping[str, Extent]
-    #: In the order of the picture's relations.
+    #: In the order of the picture's relations; none at all where one is unroutable, since nothing is drawn.
     relations: tuple[ArrangedRelation, ...]
     #: Every box and element, back to front.
     paint_order: tuple[str, ...]
@@ -174,19 +175,11 @@ class _Arranging:
         return [painted for alias in ordered for painted in (alias, *self.paint_order(alias))]
 
     def _keyed(self) -> dict[int, tuple[str, bool]]:
-        """Which stated relation each relation of the picture is, and whether it is drawn target-first.
-
-        Several relations between one pair are matched in order: the picture's and the diagram's.
-        """
-        waiting: dict[frozenset[str], list[int]] = defaultdict(list)
-        for index, relation in enumerate(self._picture.relations):
-            waiting[frozenset(relation.ends)].append(index)
-        keyed: dict[int, tuple[str, bool]] = {}
-        for key, (source, target) in self._diagram.relations.items():
-            if between := waiting.get(frozenset((source, target))):
-                index = between.pop(0)
-                keyed[index] = (key, self._picture.relations[index].ends[0] != source)
-        return keyed
+        """Which stated relation each relation of the picture is, and whether it is drawn target-first."""
+        return {
+            index: (drawn.key, drawn.turned)
+            for index, drawn in relation_keys_by_index(self._picture, self._diagram).items()
+        }
 
     def bands(self) -> dict[str, Extent]:
         """Each box's title band where it is drawn now: the band it had, carried with the box's top."""
@@ -262,6 +255,9 @@ class _Arranging:
             " and ".join(self._picture.label_of(end) or end for end in self._picture.relations[int(key)].ends)
             for key in result.unroutable
         )
+        if unroutable:
+            # A relation no route reaches has no course to label, and the picture is not drawn at all.
+            return (), unroutable
         return self._labelled(courses, asked.routes, asked.keyed), unroutable
 
     def _labelled(

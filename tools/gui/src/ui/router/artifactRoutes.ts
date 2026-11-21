@@ -104,6 +104,9 @@ export const ROUTE_TEMPLATES = {
   assuranceBaselines: '/assurance/baselines',
   assuranceDiagramList: '/assurance/diagrams',
   assuranceSupplyChain: '/assurance/supply-chain',
+  /** The layout lab, a development bench the backend serves only while `ARCH_LAYOUT_LAB` is set. */
+  layoutLab: '/layout-lab',
+  layoutLabDiagram: '/layout-lab/:artifactId',
 } as const
 
 export type RouteTemplateName = keyof typeof ROUTE_TEMPLATES
@@ -137,6 +140,8 @@ export const documentCreateRoute = (): string => ROUTE_TEMPLATES.documentCreate
 export const documentDetailRoute = (artifactId: string): string => `/documents/${seg(artifactId)}`
 
 export const diagramListRoute = (): string => ROUTE_TEMPLATES.diagramList
+export const layoutLabRoute = (artifactId = ''): string =>
+  artifactId ? `/layout-lab/${seg(artifactId)}` : ROUTE_TEMPLATES.layoutLab
 export const diagramCreateRoute = (): string => ROUTE_TEMPLATES.diagramCreate
 export const diagramDetailRoute = (artifactId: string): string => `/diagrams/${seg(artifactId)}`
 export const scratchpadListRoute = (): string => ROUTE_TEMPLATES.scratchpadList
