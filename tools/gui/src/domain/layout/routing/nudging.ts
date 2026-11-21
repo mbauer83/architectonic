@@ -5,47 +5,38 @@
  */
 import type { Extent, Point } from '../geometry'
 import { halfUp } from '../orthogonal'
-import { LINE_CLEARANCE } from '../routeQuality'
+import { END_RUN, LINE_CLEARANCE } from '../routeQuality'
+import type { Member } from './placement'
+import { firstThatFits, movableOf, share } from './placement'
 import { IDEAL_SEPARATION, byText } from './scene'
 
-const SHARED = 1
-const PASSES = 50
 const UNBOUNDED = 1.0e9
-const FAR = 500
 const ROUNDS = 4
 const SWEEPS = 2
 
+/** The connectors whose runs share a stretch closer than the least separation. */
 const pairsOf = (cluster: readonly Member[]): [string, string][] => {
   const ordered = [...cluster].sort(
     (one, other) => one.at - other.at || byText(one.owner, other.owner) || one.index - other.index,
   )
-  return ordered.slice(1).flatMap((second, index): [string, string][] => {
-    const first = ordered[index]
-    if (!(second.at - first.at < LINE_CLEARANCE + 1)) return []
-    if (!(first.owner || second.owner) || first.owner === second.owner) return []
-    const one = first.owner || second.owner
-    const other = second.owner || first.owner
-    return [[byText(one, other) <= 0 ? one : other, byText(one, other) <= 0 ? other : one]]
-  })
+  return ordered.flatMap((first, position) =>
+    ordered.slice(position + 1).flatMap((second): [string, string][] => {
+      if (!(second.at - first.at < LINE_CLEARANCE + 1) || !share(first, second)) return []
+      if (!(first.owner || second.owner) || first.owner === second.owner) return []
+      const one = first.owner || second.owner
+      const other = second.owner || first.owner
+      return [[byText(one, other) <= 0 ? one : other, byText(one, other) <= 0 ? other : one]]
+    }),
+  )
 }
 
-const apart = (cluster: readonly Member[]): boolean => {
-  const ats = cluster.map((member) => member.at).sort((one, other) => one - other)
-  return ats.every((at, index) => index === 0 || at - ats[index - 1] >= LINE_CLEARANCE + 1)
-}
-
-interface Member {
-  readonly at: number
-  readonly low: number
-  readonly high: number
-  readonly least: number
-  readonly most: number
-  readonly turns: number
-  readonly owner: string
-  readonly index: number
-}
-
-const movableOf = (member: Member): boolean => member.least < member.most
+/** Whether each two members of a cluster that share a stretch lie at least the least separation apart. */
+const apart = (cluster: readonly Member[]): boolean =>
+  cluster.every((first, position) =>
+    cluster
+      .slice(position + 1)
+      .every((second) => !share(first, second) || Math.abs(second.at - first.at) >= LINE_CLEARANCE + 1),
+  )
 
 const across = (point: Point, level: boolean): number => (level ? point.y : point.x)
 const along = (point: Point, level: boolean): number => (level ? point.x : point.y)
@@ -55,7 +46,7 @@ const freeSpace = (
   index: number,
   level: boolean,
   obstacles: readonly Extent[],
-  outward: readonly number[],
+  outward: readonly (readonly [number, number])[],
 ): [number, number] => {
   const a = course[index]
   const b = course[index + 1]
@@ -79,9 +70,9 @@ const freeSpace = (
       else if (rNear >= at) most = Math.min(most, rNear)
     }
   }
-  for (const sign of outward) {
-    if (sign < 0) most = Math.min(most, at)
-    else least = Math.max(least, at)
+  for (const [sign, nearest] of outward) {
+    if (sign < 0) most = Math.min(most, nearest)
+    else least = Math.max(least, nearest)
   }
   return [least, most]
 }
@@ -128,11 +119,38 @@ const membersOf = (
         members.push({ at, low, high, least: at, most: at, turns: 0, owner: key, index })
         continue
       }
-      const outward: number[] = []
-      if (index === 1) outward.push(across(course[1], level) > across(course[0], level) ? 1 : -1)
-      if (index === last - 1) outward.push(across(course[last], level) > across(course[last + 1], level) ? 1 : -1)
+      // The run next to an end keeps the end's run at least END_RUN long, or as long as it is.
+      const outward: [number, number][] = []
+      const ends: readonly (readonly [boolean, Point, Point])[] = [
+        [index === 1, course[0], course[1]],
+        [index === last - 1, course[last + 1], course[last]],
+      ]
+      for (const [nextToEnd, port, beside] of ends) {
+        if (!nextToEnd) continue
+        const sign = across(beside, level) > across(port, level) ? 1 : -1
+        const reach = across(port, level) + sign * END_RUN
+        outward.push([sign, sign > 0 ? Math.min(at, reach) : Math.max(at, reach)])
+      }
       const [least, most] = freeSpace(course, index, level, obstacles.get(key) ?? [], outward)
       members.push({ at, low, high, least, most, turns: turnsOf(course, index, level), owner: key, index })
+    }
+  }
+  return clearOfTheFixed(members)
+}
+
+/** Each run's free space kept the least separation clear of every box border and line drawn already. */
+const clearOfTheFixed = (members: Member[]): Member[] => {
+  const fixed = members.filter((member) => !member.owner)
+  for (const member of members) {
+    if (!movableOf(member)) continue
+    for (const line of fixed) {
+      if (!share(member, line)) continue
+      if (line.at > member.at) member.most = Math.min(member.most, line.at - (LINE_CLEARANCE + 1))
+      else if (line.at < member.at) member.least = Math.max(member.least, line.at + (LINE_CLEARANCE + 1))
+    }
+    if (member.least > member.most) {
+      member.least = member.at
+      member.most = member.at
     }
   }
   return members
@@ -156,7 +174,7 @@ const clustersOf = (members: readonly Member[]): Member[][] => {
       if (members[second].at - members[first].at >= IDEAL_SEPARATION) break
       const one = members[first]
       const other = members[second]
-      if (Math.min(one.high, other.high) - Math.max(one.low, other.low) > SHARED) parent[root(second)] = root(first)
+      if (share(one, other)) parent[root(second)] = root(first)
     }
   })
   const groups = new Map<number, Member[]>()
@@ -167,64 +185,6 @@ const clustersOf = (members: readonly Member[]): Member[][] => {
     else groups.set(key, [members[index]])
   }
   return [...groups.values()].filter((group) => group.length > 1)
-}
-
-const placed = (ordered: readonly Member[], separation: number): number[] | null => {
-  const movable = ordered.filter(movableOf)
-  let total = 0
-  for (const member of movable) total += member.at
-  const centre = total / movable.length
-  const rank = new Map(movable.map((member, position) => [member, position]))
-  const places = ordered.map((member) =>
-    movableOf(member) ? centre + ((rank.get(member) ?? 0) - (movable.length - 1) / 2) * separation : member.at,
-  )
-  for (let pass = 0; pass < PASSES; pass += 1) {
-    ordered.forEach((member, index) => {
-      places[index] = Math.min(Math.max(places[index], member.least), member.most)
-    })
-    for (let index = 1; index < ordered.length; index += 1) {
-      if (places[index] < places[index - 1] + separation) {
-        if (movableOf(ordered[index])) places[index] = places[index - 1] + separation
-        else if (movableOf(ordered[index - 1])) places[index - 1] = places[index] - separation
-      }
-    }
-    for (let index = ordered.length - 2; index >= 0; index -= 1) {
-      if (places[index] > places[index + 1] - separation) {
-        if (movableOf(ordered[index])) places[index] = places[index + 1] - separation
-        else if (movableOf(ordered[index + 1])) places[index + 1] = places[index] + separation
-      }
-    }
-    const fits =
-      ordered.every((member, index) => member.least <= places[index] && places[index] <= member.most) &&
-      places.every((place, index) => index === 0 || place - places[index - 1] >= separation - 1e-9)
-    if (fits) return places
-  }
-  return null
-}
-
-const middleOf = (member: Member): number =>
-  (Math.max(member.least, member.at - FAR) + Math.min(member.most, member.at + FAR)) / 2
-
-const firstThatFits = (cluster: readonly Member[]): [Member[], number[] | null] => {
-  const orders = [
-    [...cluster].sort(
-      (one, other) =>
-        one.turns - other.turns ||
-        middleOf(one) - middleOf(other) ||
-        byText(one.owner, other.owner) ||
-        one.index - other.index,
-    ),
-    [...cluster].sort(
-      (one, other) => middleOf(one) - middleOf(other) || byText(one.owner, other.owner) || one.index - other.index,
-    ),
-  ]
-  for (const separation of [IDEAL_SEPARATION, LINE_CLEARANCE + 1]) {
-    for (const ordered of orders) {
-      const places = placed(ordered, separation)
-      if (places) return [ordered, places]
-    }
-  }
-  return [orders[0], null]
 }
 
 const fixedLinesOf = (

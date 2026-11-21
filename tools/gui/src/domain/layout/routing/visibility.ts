@@ -5,17 +5,19 @@
  * every element's edges moved out by BUFFER, every text region's likewise, every box border moved
  * BORDER_OFFSET either side, all whole numbers. For one connector, an element (grown), a text region
  * and a wall — a box holding neither of its ends, or one that is an end — block; a run along any
- * box border closer than the clearance blocks too.
+ * box border closer than the clearance blocks too, and a step out of the connector's bounds: the
+ * smallest box holding both ends, crossed into a box holding the target once, out of one holding the
+ * source once.
  */
 import type { Extent, Point } from '../geometry'
 import { encloses } from '../geometry'
-import { LINE_CLEARANCE } from '../routeQuality'
 import { Graph } from './graph'
+import type { Stubs } from './lines'
+import { Lines } from './lines'
 import type { RoutingScene } from './scene'
-import { BORDER_OFFSET, BUFFER, IDEAL_SEPARATION, extentOf, sameExtent } from './scene'
+import { BORDER_OFFSET, BUFFER, IDEAL_SEPARATION, byText, extentOf, sameExtent } from './scene'
 
 const CELL = 128
-const SHARED = 1
 const ROOM_LOOKED_FOR = 60
 
 /** What a run in a channel already full counts as, in routes alongside. */
@@ -67,86 +69,28 @@ class RectIndex {
   }
 }
 
-const lowerBound = (sorted: readonly number[], value: number): number => {
-  let low = 0
-  let high = sorted.length
-  while (low < high) {
-    const middle = (low + high) >> 1
-    if (sorted[middle] < value) low = middle + 1
-    else high = middle
-  }
-  return low
+const holds = (extent: Extent, point: Point): boolean =>
+  extent.left <= point.x && point.x <= extent.right && extent.top <= point.y && point.y <= extent.bottom
+
+/** Where one connector's route may go: a box it stays inside, boxes it crosses only one way. */
+export interface Bounds {
+  /** The smallest box holding both ends: the route stays inside it. */
+  readonly within: Extent | null
+  /** Boxes holding the target and not the source: once inside one, the route does not leave it. */
+  readonly staysIn: readonly Extent[]
+  /** Boxes holding the source and not the target: once outside one, the route does not come back. */
+  readonly staysOut: readonly Extent[]
 }
 
-const upperBound = (sorted: readonly number[], value: number): number => {
-  let low = 0
-  let high = sorted.length
-  while (low < high) {
-    const middle = (low + high) >> 1
-    if (sorted[middle] <= value) low = middle + 1
-    else high = middle
-  }
-  return low
-}
+const UNBOUNDED: Bounds = { within: null, staysIn: [], staysOut: [] }
 
-const insertSorted = (sorted: number[], value: number): void => {
-  sorted.splice(upperBound(sorted, value), 0, value)
-}
-
-/** Spans along lines, level ones by their y and upright ones by their x. */
-export class Lines {
-  private readonly level = new Map<number, [number, number][]>()
-  private readonly upright = new Map<number, [number, number][]>()
-  private readonly levelAt: number[] = []
-  private readonly uprightAt: number[] = []
-
-  add(a: Point, b: Point): void {
-    if (a.y === b.y && a.x !== b.x) {
-      if (!this.level.has(a.y)) {
-        insertSorted(this.levelAt, a.y)
-        this.level.set(a.y, [])
-      }
-      this.level.get(a.y)?.push([Math.min(a.x, b.x), Math.max(a.x, b.x)])
-    } else if (a.x === b.x && a.y !== b.y) {
-      if (!this.upright.has(a.x)) {
-        insertSorted(this.uprightAt, a.x)
-        this.upright.set(a.x, [])
-      }
-      this.upright.get(a.x)?.push([Math.min(a.y, b.y), Math.max(a.y, b.y)])
-    }
-  }
-
-  near(a: Point, b: Point, within: number): number {
-    const isLevel = a.y === b.y
-    const at = isLevel ? a.y : a.x
-    const positions = isLevel ? this.levelAt : this.uprightAt
-    const [low, high] = [lowerBound(positions, at - within + 1e-9), upperBound(positions, at + within - 1e-9)]
-    return this.sharing(a, b, positions, low, high)
-  }
-
-  between(a: Point, b: Point, least: number, most: number): number {
-    const positions = a.y === b.y ? this.levelAt : this.uprightAt
-    return this.sharing(a, b, positions, lowerBound(positions, least), upperBound(positions, most))
-  }
-
-  /** How many spans on the lines at positions[first..last) share more than SHARED of the run a–b's stretch. */
-  private sharing(a: Point, b: Point, positions: readonly number[], first: number, last: number): number {
-    const isLevel = a.y === b.y
-    const low = isLevel ? Math.min(a.x, b.x) : Math.min(a.y, b.y)
-    const high = isLevel ? Math.max(a.x, b.x) : Math.max(a.y, b.y)
-    const spans = isLevel ? this.level : this.upright
-    let count = 0
-    for (let position = first; position < last; position += 1) {
-      for (const [spanLow, spanHigh] of spans.get(positions[position]) ?? []) {
-        if ((high < spanHigh ? high : spanHigh) - (low > spanLow ? low : spanLow) > SHARED) count += 1
-      }
-    }
-    return count
-  }
-
-  along(a: Point, b: Point): boolean {
-    return this.near(a, b, LINE_CLEARANCE) > 0
-  }
+/** Whether the step from *a* to *b* leaves the route's bounds. */
+const brokenBy = (bounds: Bounds, a: Point, b: Point): boolean => {
+  if (bounds.within && !(holds(bounds.within, a) && holds(bounds.within, b))) return true
+  return (
+    bounds.staysIn.some((box) => holds(box, a) && !holds(box, b)) ||
+    bounds.staysOut.some((box) => !holds(box, a) && holds(box, b))
+  )
 }
 
 const bordersOf = (boxes: Iterable<Extent>): Lines => {
@@ -207,12 +151,35 @@ export class Visibility {
     this.graph = new Graph(obstacles, interestingPoints(scene, this.grown.values()))
   }
 
-  passage(ends: readonly [string, string]): Passage {
+  /** What blocks the connector from ends[0] to ends[1]; with *bounded*, its bounds too. */
+  passage(ends: readonly [string, string], bounded = true): Passage {
     const own = ends.map((end) => extentOf(this.scene, end))
     const walls = [...this.scene.boxes]
       .filter(([key, box]) => ends.includes(key) || !own.some((end) => encloses(box, end) && !sameExtent(box, end)))
       .map(([, box]) => box)
-    return new Passage(this, walls)
+    return new Passage(this, walls, [], null, bounded ? this.bounds(ends) : UNBOUNDED)
+  }
+
+  /** The boxes the connector from ends[0] to ends[1] keeps to, and crosses once. */
+  bounds(ends: readonly [string, string]): Bounds {
+    const source = extentOf(this.scene, ends[0])
+    const target = extentOf(this.scene, ends[1])
+    const holding = [...this.scene.boxes].filter(
+      ([key, box]) => !ends.includes(key) && !sameExtent(box, source) && !sameExtent(box, target),
+    )
+    let within: [number, string, Extent] | null = null
+    for (const [key, box] of holding) {
+      if (!encloses(box, source) || !encloses(box, target)) continue
+      const area = (box.right - box.left) * (box.bottom - box.top)
+      if (within === null || area < within[0] || (area === within[0] && byText(key, within[1]) < 0)) {
+        within = [area, key, box]
+      }
+    }
+    return {
+      within: within === null ? null : within[2],
+      staysIn: holding.filter(([, box]) => encloses(box, target) && !encloses(box, source)).map(([, box]) => box),
+      staysOut: holding.filter(([, box]) => encloses(box, source) && !encloses(box, target)).map(([, box]) => box),
+    }
   }
 }
 
@@ -224,12 +191,28 @@ export class Passage {
     readonly walls: readonly Extent[],
     private readonly also: readonly Extent[] = [],
     private readonly crowd: Lines | null = null,
+    readonly bounds: Bounds = UNBOUNDED,
+    private readonly stubs: readonly [Stubs, string] | null = null,
   ) {
     this.wallIndex = new RectIndex([...walls, ...also])
   }
 
-  adding(rects: readonly Extent[], crowd: Lines | null = null): Passage {
-    return new Passage(this.visibility, this.walls, [...this.also, ...rects], crowd ?? this.crowd)
+  /** This passage with *rects* blocking as well, *crowd* the routes found before it, and *stubs*
+   * the stubs no run goes along but those of the connector named with them. */
+  adding(rects: readonly Extent[], crowd: Lines | null = null, stubs: readonly [Stubs, string] | null = null): Passage {
+    return new Passage(
+      this.visibility,
+      this.walls,
+      [...this.also, ...rects],
+      crowd ?? this.crowd,
+      this.bounds,
+      stubs ?? this.stubs,
+    )
+  }
+
+  /** This passage without its bounds: for a connector no route within them reaches. */
+  unbounded(): Passage {
+    return new Passage(this.visibility, this.walls, this.also, this.crowd, UNBOUNDED, this.stubs)
   }
 
   crowding(a: Point, b: Point): number {
@@ -279,7 +262,9 @@ export class Passage {
     const near = this.nearRects(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.max(a.x, b.x), Math.max(a.y, b.y))
     return (
       near.some((rect) => !ignoring.some((ignored) => sameExtent(ignored, rect)) && enters(rect, a, b)) ||
-      this.visibility.borders.along(a, b)
+      this.visibility.borders.along(a, b) ||
+      brokenBy(this.bounds, a, b) ||
+      (this.stubs !== null && this.stubs[0].along(a, b, this.stubs[1]))
     )
   }
 }

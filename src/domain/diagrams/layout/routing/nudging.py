@@ -4,30 +4,27 @@ Routes are found independently, so two of them may run along one grid line. Per 
 first, then upright ones — every run is a **member** of the line it lies on: a run between two bends
 may move across its line, within its free space; a stub, a box border and a line drawn already may
 not. Members closer than `IDEAL_SEPARATION` that share a stretch form a cluster; a cluster is ordered
-so runs that turn the same way keep together and do not cross where they part, then placed
-`IDEAL_SEPARATION` apart round where they were, never closer than `LINE_CLEARANCE`, inside each run's
-free space. Where a cluster does not fit, it is left as found and its pairs are reported.
+so runs that turn the same way keep together and do not cross where they part, then each two members
+that share a stretch are placed `IDEAL_SEPARATION` apart, never closer than `LINE_CLEARANCE`, inside
+each run's free space. Two members of one cluster that share no stretch are not held apart: a cluster
+chains along a line, and a border at one end of it says nothing of a run at the other. Where a cluster
+does not fit, it is left as found and its pairs are reported.
 
 A run's free space is what it can sweep without its stretch entering an obstacle, without turning
-either neighbouring run round, and — for the run next to a stub — only outward, so the stub only
-lengthens.
+either neighbouring run round, and — for the run next to an end — never so near the port that the
+end's run falls short of `END_RUN`, or shorter than it is already. The first and last segments of a
+course hold a stub and whatever straight run follows it; the run beside one may shorten it to that.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
 
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.orthogonal import half_up
-from src.domain.diagrams.layout.route_quality import LINE_CLEARANCE
+from src.domain.diagrams.layout.route_quality import END_RUN, LINE_CLEARANCE
+from src.domain.diagrams.layout.routing.placement import Member, first_that_fits, share
 from src.domain.diagrams.layout.routing.scene import IDEAL_SEPARATION
-
-#: How much two runs must share along their stretch to need separating.
-_SHARED = 1.0
-
-#: How many passes the placement makes before it gives up on a cluster.
-_PASSES = 50
 
 _UNBOUNDED = 1.0e9
 
@@ -36,27 +33,6 @@ _ROUNDS = 4
 
 #: How many times both axes are gone over in turn.
 _SWEEPS = 2
-
-#: How far off an unbounded side of a run's free space is taken to be, when runs are ordered by it.
-_FAR = 500.0
-
-
-@dataclass
-class _Member:
-    at: float
-    low: float
-    high: float
-    #: The range it may be moved within; equal ends for a member that may not move.
-    least: float
-    most: float
-    #: Which way its route turns at its two ends, summed: -2 both towards smaller, +2 both larger.
-    turns: int
-    owner: str
-    index: int
-
-    @property
-    def movable(self) -> bool:
-        return self.least < self.most
 
 
 def _runs_level(a: Point, b: Point) -> bool:
@@ -72,10 +48,12 @@ def _along(point: Point, level: bool) -> float:
 
 
 def _free_space(
-    course: Sequence[Point], index: int, level: bool, obstacles: Sequence[Extent], outward: Sequence[int],
+    course: Sequence[Point], index: int, level: bool, obstacles: Sequence[Extent],
+    outward: Sequence[tuple[int, float]],
 ) -> tuple[float, float]:
     """How far across its line run *index* of *course* may move: between its neighbours' far ends and
-    the obstacles its stretch would sweep, and only outward where a neighbour is a stub."""
+    the obstacles its stretch would sweep, and no nearer a port than *outward* allows: for each end
+    beside it, which way is away from the port and the nearest it may come."""
     a, b = course[index], course[index + 1]
     at, low, high = _across(a, level), min(_along(a, level), _along(b, level)), max(_along(a, level), _along(b, level))
     least, most = -_UNBOUNDED, _UNBOUNDED
@@ -90,8 +68,8 @@ def _free_space(
                 least = max(least, r_far)
             elif r_near >= at:
                 most = min(most, r_near)
-    for sign in outward:
-        least, most = (least, min(most, at)) if sign < 0 else (max(least, at), most)
+    for sign, nearest in outward:
+        least, most = (least, min(most, nearest)) if sign < 0 else (max(least, nearest), most)
     return least, most
 
 
@@ -107,8 +85,8 @@ def _turns(course: Sequence[Point], index: int, level: bool) -> int:
 def _members(
     courses: Mapping[str, list[Point]], level: bool, movable: frozenset[str] | None,
     obstacles: Mapping[str, Sequence[Extent]], fixed: Sequence[tuple[float, float, float]],
-) -> list[_Member]:
-    members = [_Member(at, low, high, at, at, 0, "", -1) for at, low, high in fixed]
+) -> list[Member]:
+    members = [Member(at, low, high, at, at, 0, "", -1) for at, low, high in fixed]
     for key in sorted(courses):
         course = courses[key]
         last = len(course) - 2
@@ -119,20 +97,41 @@ def _members(
             at = _across(a, level)
             low, high = sorted((_along(a, level), _along(b, level)))
             if index in (0, last) or (movable is not None and key not in movable):
-                members.append(_Member(at, low, high, at, at, 0, key, index))
+                members.append(Member(at, low, high, at, at, 0, key, index))
                 continue
-            # The run next to a stub may only move outward: away from the port, lengthening the stub.
-            outward: list[int] = []
-            if index == 1:
-                outward.append(1 if _across(course[1], level) > _across(course[0], level) else -1)
-            if index == last - 1:
-                outward.append(1 if _across(course[last], level) > _across(course[last + 1], level) else -1)
+            # The run next to an end keeps the end's run at least END_RUN long, or as long as it is.
+            outward: list[tuple[int, float]] = []
+            for next_to_end, port, beside in ((index == 1, course[0], course[1]),
+                                              (index == last - 1, course[last + 1], course[last])):
+                if next_to_end:
+                    sign = 1 if _across(beside, level) > _across(port, level) else -1
+                    reach = _across(port, level) + sign * END_RUN
+                    outward.append((sign, min(at, reach) if sign > 0 else max(at, reach)))
             least, most = _free_space(course, index, level, obstacles[key], outward)
-            members.append(_Member(at, low, high, least, most, _turns(course, index, level), key, index))
+            members.append(Member(at, low, high, least, most, _turns(course, index, level), key, index))
+    return _clear_of_the_fixed(members)
+
+
+def _clear_of_the_fixed(members: list[Member]) -> list[Member]:
+    """Each run's free space kept the least separation clear of every box border and line drawn already
+    across its stretch: a run placed onto one, by a cluster that did not hold it, would only be moved
+    back by the next."""
+    fixed = [member for member in members if not member.owner]
+    for member in members:
+        if not member.movable:
+            continue
+        for line in fixed:
+            if share(member, line):
+                if line.at > member.at:
+                    member.most = min(member.most, line.at - (LINE_CLEARANCE + 1.0))
+                elif line.at < member.at:
+                    member.least = max(member.least, line.at + (LINE_CLEARANCE + 1.0))
+        if member.least > member.most:
+            member.least = member.most = member.at
     return members
 
 
-def _clusters(members: list[_Member]) -> list[list[_Member]]:
+def _clusters(members: list[Member]) -> list[list[Member]]:
     parent = list(range(len(members)))
 
     def root(index: int) -> int:
@@ -147,68 +146,12 @@ def _clusters(members: list[_Member]) -> list[list[_Member]]:
             if members[second].at - members[first].at >= IDEAL_SEPARATION:
                 break
             one, other = members[first], members[second]
-            if min(one.high, other.high) - max(one.low, other.low) > _SHARED:
+            if share(one, other):
                 parent[root(second)] = root(first)
-    groups: dict[int, list[_Member]] = {}
+    groups: dict[int, list[Member]] = {}
     for index in order:
         groups.setdefault(root(index), []).append(members[index])
     return [group for group in groups.values() if len(group) > 1]
-
-
-def _placed(ordered: list[_Member], separation: float) -> list[float] | None:
-    movable = [member for member in ordered if member.movable]
-    total = 0.0
-    for member in movable:  # added in order, as the browser adds: `sum` compensates, and would differ
-        total += member.at
-    centre = total / len(movable)
-    rank = {id(member): position for position, member in enumerate(movable)}
-    places = [
-        centre + (rank[id(member)] - (len(movable) - 1) / 2) * separation if member.movable else member.at
-        for member in ordered
-    ]
-    for _ in range(_PASSES):
-        for index, member in enumerate(ordered):
-            places[index] = min(max(places[index], member.least), member.most)
-        for index in range(1, len(ordered)):
-            if places[index] < places[index - 1] + separation:
-                if ordered[index].movable:
-                    places[index] = places[index - 1] + separation
-                elif ordered[index - 1].movable:
-                    places[index - 1] = places[index] - separation
-        for index in range(len(ordered) - 2, -1, -1):
-            if places[index] > places[index + 1] - separation:
-                if ordered[index].movable:
-                    places[index] = places[index + 1] - separation
-                elif ordered[index + 1].movable:
-                    places[index + 1] = places[index] + separation
-        fits = all(
-            member.least <= place <= member.most for member, place in zip(ordered, places, strict=True)
-        ) and all(places[index] - places[index - 1] >= separation - 1e-9 for index in range(1, len(ordered)))
-        if fits:
-            return places
-    return None
-
-
-def _middle(member: _Member) -> float:
-    """The middle of where a member may go, an unbounded side taken as a long way off."""
-    return (max(member.least, member.at - _FAR) + min(member.most, member.at + _FAR)) / 2
-
-
-def _first_that_fits(cluster: list[_Member]) -> tuple[list[_Member], list[float] | None]:
-    """An order of the cluster and places for it, at the ideal separation if any order allows, else the least.
-
-    Runs that turn the same way keep together first; where that order leaves no room — a run that may
-    only move one way, next to its stub — they are ordered by where each has room instead.
-    """
-    orders = (
-        sorted(cluster, key=lambda member: (member.turns, _middle(member), member.owner, member.index)),
-        sorted(cluster, key=lambda member: (_middle(member), member.owner, member.index)),
-    )
-    for separation in (IDEAL_SEPARATION, LINE_CLEARANCE + 1.0):
-        for ordered in orders:
-            if (places := _placed(ordered, separation)) is not None:
-                return ordered, places
-    return orders[0], None
 
 
 def nudged(
@@ -266,7 +209,7 @@ def _separated(
         for cluster in _clusters(_members(moved, level, movable, obstacles, fixed)):
             if _apart(cluster) or not any(member.movable for member in cluster):
                 continue
-            ordered, places = _first_that_fits(cluster)
+            ordered, places = first_that_fits(cluster)
             if places is None:
                 continue
             for member, place in zip(ordered, places, strict=True):
@@ -280,8 +223,8 @@ def _separated(
             return
 
 
-def _pairs(cluster: list[_Member]) -> list[tuple[str, str]]:
-    """The connectors whose runs lie closer than the least separation, next to each other across the line.
+def _pairs(cluster: list[Member]) -> list[tuple[str, str]]:
+    """The connectors whose runs share a stretch closer than the least separation.
 
     A border or a line drawn already is no connector, so a run too close to one names its own connector
     twice.
@@ -290,13 +233,16 @@ def _pairs(cluster: list[_Member]) -> list[tuple[str, str]]:
     return [
         (min(first.owner or second.owner, second.owner or first.owner),
          max(first.owner or second.owner, second.owner or first.owner))
-        for first, second in zip(ordered, ordered[1:], strict=False)
-        if second.at - first.at < LINE_CLEARANCE + 1.0 and (first.owner or second.owner)
-        and first.owner != second.owner
+        for position, first in enumerate(ordered) for second in ordered[position + 1 :]
+        if second.at - first.at < LINE_CLEARANCE + 1.0 and share(first, second)
+        and (first.owner or second.owner) and first.owner != second.owner
     ]
 
 
-def _apart(cluster: list[_Member]) -> bool:
-    """Whether a cluster's members already lie at least the least separation apart, every pair."""
-    ats = sorted(member.at for member in cluster)
-    return all(second - first >= LINE_CLEARANCE + 1.0 for first, second in zip(ats, ats[1:], strict=False))
+def _apart(cluster: list[Member]) -> bool:
+    """Whether each two members of a cluster that share a stretch lie at least the least separation apart."""
+    return all(
+        abs(second.at - first.at) >= LINE_CLEARANCE + 1.0
+        for position, first in enumerate(cluster) for second in cluster[position + 1 :]
+        if share(first, second)
+    )

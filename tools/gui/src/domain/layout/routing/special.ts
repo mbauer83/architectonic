@@ -43,7 +43,7 @@ const wholeToPart = (
   const whole = wholeIsSource ? source : target
   const part = wholeIsSource ? target : source
   const partKey = wholeIsSource ? connector.target : connector.source
-  const passage = visibility.passage([partKey, partKey])
+  const passage = visibility.passage([partKey, partKey], false)
   const gaps: Record<Side, number> = {
     top: part.top - whole.top,
     bottom: whole.bottom - part.bottom,

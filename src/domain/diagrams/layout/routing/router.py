@@ -24,9 +24,11 @@ from collections.abc import Mapping, Sequence
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import Port, Route, Side
 from src.domain.diagrams.layout.orthogonal import STUB, half_up
+from src.domain.diagrams.layout.routing.lines import Lines, Stubs
 from src.domain.diagrams.layout.routing.nudging import nudged
 from src.domain.diagrams.layout.routing.ports import OUTWARD_INDEX, Stub, in_line, stub_of
 from src.domain.diagrams.layout.routing.scene import (
+    IDEAL_SEPARATION,
     SIDES,
     Connector,
     RoutedConnector,
@@ -37,7 +39,7 @@ from src.domain.diagrams.layout.routing.scene import (
 from src.domain.diagrams.layout.routing.search import DIRECTIONS, REVERSE, Found, Terminal, search
 from src.domain.diagrams.layout.routing.special import special
 from src.domain.diagrams.layout.routing.spreading import ports_spread
-from src.domain.diagrams.layout.routing.visibility import FULL, Lines, Passage, Visibility
+from src.domain.diagrams.layout.routing.visibility import FULL, Passage, Visibility
 
 
 def _sides_of(port: Port | None) -> tuple[tuple[Side, float], ...]:
@@ -65,8 +67,10 @@ def _across_stub(stub: Stub) -> Extent:
     return Extent(left, a.y - 1.0, right, a.y + 1.0)
 
 
-def _usable(stub: Stub, passage: Passage, own: Sequence[Extent]) -> bool:
-    return not passage.point_blocked(stub.end) and not passage.step_blocked(stub.at, stub.end, ignoring=own)
+def _usable(stub: Stub, passage: Passage, own: Sequence[Extent], *, arriving: bool) -> bool:
+    """Whether *stub* is clear, walked the way the route walks it: out of a source, into a target."""
+    a, b = (stub.end, stub.at) if arriving else (stub.at, stub.end)
+    return not passage.point_blocked(stub.end) and not passage.step_blocked(a, b, ignoring=own)
 
 
 class _Routing:
@@ -93,16 +97,34 @@ class _Routing:
         end = connector.source if which == 0 else connector.target
         extent = self.scene.extent_of(end)
         run, own = run_for(connector.decorated[which]), self.own(connector)
-        return [stub for side, at in choices if _usable(stub := stub_of(extent, side, at, run), passage, own)]
+        return [
+            stub for side, at in choices
+            if _usable(stub := stub_of(extent, side, at, run), passage, own, arriving=which == 1)
+        ]
 
     def searched(
         self, connector: Connector, sources: Sequence[tuple[Side, float]], targets: Sequence[tuple[Side, float]],
-        *, lining_up: bool = True,
+        *, lining_up: bool = True, stubs: Stubs | None = None,
     ) -> RoutedConnector | None:
-        """The cheapest route between the choices of ports, or None. With *lining_up*, ports on facing
-        sides are also tried lined up for a straight run; without, the ports are as chosen — spread
-        along a side another end shares, which a straight run lined up elsewhere would undo."""
-        passage = self.visibility.passage((connector.source, connector.target))
+        """The cheapest route between the choices of ports, or None: within the connector's bounds, and
+        without them only where no route keeps them.
+
+        With *lining_up*, ports on facing sides are also tried lined up for a straight run; without, the
+        ports are as chosen — spread along a side another end shares, which a straight run lined up
+        elsewhere would undo. *stubs* are the other connectors' stubs, which no run goes along: nudging
+        cannot move a stub, so a run beside one would stay there.
+        """
+        bounded = self.visibility.passage((connector.source, connector.target))
+        for passage in (bounded, bounded.unbounded()):
+            found = self._searched_in(connector, sources, targets, passage, lining_up=lining_up, stubs=stubs)
+            if found is not None:
+                return found
+        return None
+
+    def _searched_in(
+        self, connector: Connector, sources: Sequence[tuple[Side, float]], targets: Sequence[tuple[Side, float]],
+        passage: Passage, *, lining_up: bool, stubs: Stubs | None,
+    ) -> RoutedConnector | None:
         starts, goals = self._stubs(connector, 0, sources, passage), self._stubs(connector, 1, targets, passage)
         lined = self._lined_up(connector, sources, targets) if lining_up else ([], [])
         crowded = passage.adding([], self.crowd)
@@ -111,7 +133,10 @@ class _Routing:
         if not starts or not goals:
             return None
         # A route never crosses its own stubs, nor any other candidate stub of its ends.
-        passage = passage.adding([_across_stub(stub) for stub in (*starts, *goals)], self.crowd)
+        passage = passage.adding(
+            [_across_stub(stub) for stub in (*starts, *goals)], self.crowd,
+            None if stubs is None else (stubs, connector.key),
+        )
         found = search(
             [Terminal(stub.end, OUTWARD_INDEX[stub.port.side], tag) for tag, stub in enumerate(starts)],
             [Terminal(stub.end, REVERSE[OUTWARD_INDEX[stub.port.side]], tag) for tag, stub in enumerate(goals)],
@@ -176,6 +201,43 @@ def _straightened(points: Sequence[Point]) -> tuple[Point, ...]:
     return (*kept, points[-1])
 
 
+#: Far enough to stand for everywhere outside a box.
+_FAR = 1.0e7
+
+
+def _outside(box: Extent | None) -> list[Extent]:
+    """Everything outside *box*, as four rectangles: what nudging keeps a route inside its box by."""
+    if box is None:
+        return []
+    return [
+        Extent(-_FAR, -_FAR, box.left, _FAR), Extent(box.right, -_FAR, _FAR, _FAR),
+        Extent(-_FAR, -_FAR, _FAR, box.top), Extent(-_FAR, box.bottom, _FAR, _FAR),
+    ]
+
+
+def _stub_lines(
+    routing: _Routing, connectors: Sequence[Connector],
+    ports: Mapping[str, tuple[tuple[Side, float], tuple[Side, float]]], drawn: Sequence[RoutedConnector],
+) -> Stubs:
+    """Every stub the routes will leave and arrive by: those of the ports chosen, and the first and last
+    runs of the routes drawn already. A chosen stub reaches on by the ideal separation, as far as
+    nudging may lengthen it."""
+    lines = Stubs()
+    for connector in connectors:
+        if connector.key not in ports:
+            continue
+        for which, (end, (side, at)) in enumerate(zip((connector.source, connector.target), ports[connector.key],
+                                                      strict=True)):
+            stub = stub_of(
+                routing.scene.extent_of(end), side, at, run_for(connector.decorated[which]) + IDEAL_SEPARATION,
+            )
+            lines.add(stub.at, stub.end, connector.key)
+    for routed in drawn:
+        lines.add(routed.course[0], routed.course[1], routed.key)
+        lines.add(routed.course[-2], routed.course[-1], routed.key)
+    return lines
+
+
 def route_all(
     scene: RoutingScene, connectors: Sequence[Connector], *,
     previous: Mapping[str, RoutedConnector] | None = None, changed: frozenset[str] | None = None,
@@ -214,14 +276,17 @@ def route_all(
         else:
             routes[connector.key] = made
             routing.taken(made)
-    for key, (source, target) in ports_spread(scene, searched, first).items():
+    spread_ports = ports_spread(scene, searched, first)
+    stubs = _stub_lines(routing, searched, spread_ports, [*kept.values(), *routes.values()])
+    for key, (source, target) in spread_ports.items():
         connector = next(one for one in searched if one.key == key)
-        routes[key] = routing.searched(connector, (source,), (target,), lining_up=False) or first[key]
+        routes[key] = routing.searched(connector, (source,), (target,), lining_up=False, stubs=stubs) or first[key]
         routing.taken(routes[key])
     courses = {key: list(routed.course) for key, routed in {**kept, **routes}.items()}
     obstacles = {
         connector.key: [*routing.visibility.grown.values(), *scene.text.values(),
-                        *routing.visibility.passage((connector.source, connector.target)).walls]
+                        *routing.visibility.passage((connector.source, connector.target)).walls,
+                        *_outside(routing.visibility.bounds((connector.source, connector.target)).within)]
         for connector in ordered if connector.key in courses
     }
     moved, unseparated = nudged(

@@ -42,7 +42,7 @@ def _whole_to_part(
     whole_is_source = source.encloses(target)
     whole, part = (source, target) if whole_is_source else (target, source)
     part_key = connector.target if whole_is_source else connector.source
-    passage = visibility.passage((part_key, part_key))
+    passage = visibility.passage((part_key, part_key), bounded=False)
     gaps = {
         Side.TOP: part.top - whole.top, Side.BOTTOM: whole.bottom - part.bottom,
         Side.LEFT: part.left - whole.left, Side.RIGHT: whole.right - part.right,

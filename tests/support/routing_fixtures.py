@@ -218,6 +218,14 @@ def build_widening() -> dict[str, object]:
     }
 
 
+def inside_scene(*, room_below: bool = True) -> tuple[RoutingScene, list[Connector]]:
+    """Two members near the top of their box with a third between them: over the top, outside the box,
+    is the short way; under the third, inside, is the way the bounds allow — where there is room."""
+    middle = _box(250, 10, 100, 150) if room_below else _box(250, 10, 100, 185)
+    elements = {"a": _box(40, 30, 100, 40), "b": _box(460, 30, 100, 40), "c": middle}
+    return RoutingScene(elements=elements, boxes={"g": _box(0, 0, 600, 200)}), [Connector("ab", "a", "b")]
+
+
 def build_routing() -> dict[str, object]:
     a, b, c = _box(0, 100, 100, 60), _box(400, 100, 100, 60), _box(220, 60, 60, 140)
     cases = [
@@ -237,6 +245,8 @@ def build_routing() -> dict[str, object]:
         _case("into and out of nested boxes, round a box that holds neither end", *_nested_scene()),
         _case("many routes through one channel are nudged apart", *_channel_scene()),
         _case("a walled-in element is unroutable", *_walled_scene()),
+        _case("two members of a box are joined inside it", *inside_scene()),
+        _case("and outside it only where no way inside exists", *inside_scene(room_below=False)),
         _case("a synthetic arrangement of forty elements", *synthetic_scene(40, 60, seed=3)),
     ]
     scene, connectors = _channel_scene()

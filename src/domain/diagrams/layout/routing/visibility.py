@@ -13,19 +13,23 @@ What blocks, for one connector (`Passage`):
 * a text region, as given (it is padded already);
 * a **wall**: a box that holds neither of the connector's ends, or a box that is one of its ends.
   A box that holds an end is crossed, at right angles, which is how a route reaches a member;
-* a run **along** any box's border closer than `LINE_CLEARANCE` — crossing is fine, following never.
+* a run **along** any box's border closer than `LINE_CLEARANCE` — crossing is fine, following never;
+* the connector's **bounds** (`Bounds`): it stays inside the smallest box holding both its ends, it
+  never leaves a box holding its target once inside, and never enters again a box holding its source
+  once outside. So a box's border is crossed once, the way the route is going. Where no route keeps
+  its bounds, the router searches again without them.
 """
 
 from __future__ import annotations
 
 import math
-from bisect import bisect_left, bisect_right, insort
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
 
 from src.domain.diagrams.layout.geometry import Extent, Point
-from src.domain.diagrams.layout.route_quality import LINE_CLEARANCE
 from src.domain.diagrams.layout.routing.graph import Graph
+from src.domain.diagrams.layout.routing.lines import Lines, Stubs
 from src.domain.diagrams.layout.routing.scene import BORDER_OFFSET, BUFFER, IDEAL_SEPARATION, RoutingScene
 
 #: The side of one cell of the index that answers which rectangles are near a place.
@@ -79,56 +83,6 @@ class _Index:
         return list(found.values())
 
 
-class Lines:
-    """Spans along lines, level ones by their y and upright ones by their x, asked what lies near a run."""
-
-    def __init__(self) -> None:
-        self.level: dict[float, list[tuple[float, float]]] = defaultdict(list)
-        self.upright: dict[float, list[tuple[float, float]]] = defaultdict(list)
-        self._level_at: list[float] = []
-        self._upright_at: list[float] = []
-
-    def add(self, a: Point, b: Point) -> None:
-        if a.y == b.y and a.x != b.x:
-            if a.y not in self.level:
-                insort(self._level_at, a.y)
-            self.level[a.y].append((min(a.x, b.x), max(a.x, b.x)))
-        elif a.x == b.x and a.y != b.y:
-            if a.x not in self.upright:
-                insort(self._upright_at, a.x)
-            self.upright[a.x].append((min(a.y, b.y), max(a.y, b.y)))
-
-    def near(self, a: Point, b: Point, within: float) -> int:
-        """How many spans run along the run a–b closer than *within*, sharing some of its stretch."""
-        level = a.y == b.y
-        at = a.y if level else a.x
-        positions = self._level_at if level else self._upright_at
-        first = bisect_left(positions, at - within + 1e-9)
-        last = bisect_right(positions, at + within - 1e-9)
-        return self._sharing(a, b, positions[first:last])
-
-    def between(self, a: Point, b: Point, least: float, most: float) -> int:
-        """How many spans lie across the run a–b's line from *least* to *most*, sharing its stretch."""
-        positions = self._level_at if a.y == b.y else self._upright_at
-        return self._sharing(a, b, positions[bisect_left(positions, least) : bisect_right(positions, most)])
-
-    def _sharing(self, a: Point, b: Point, positions: Sequence[float]) -> int:
-        """How many spans on the lines at *positions* share more than `_SHARED` of the run a–b's stretch."""
-        level = a.y == b.y
-        low, high = (min(a.x, b.x), max(a.x, b.x)) if level else (min(a.y, b.y), max(a.y, b.y))
-        spans = self.level if level else self.upright
-        count = 0
-        for position in positions:
-            for span_low, span_high in spans[position]:
-                if (high if high < span_high else span_high) - (low if low > span_low else span_low) > _SHARED:
-                    count += 1
-        return count
-
-    def along(self, a: Point, b: Point) -> bool:
-        """Whether the run a–b runs along a span closer than the clearance."""
-        return self.near(a, b, LINE_CLEARANCE) > 0
-
-
 def _borders(boxes: Iterable[Extent]) -> Lines:
     lines = Lines()
     for box in boxes:
@@ -168,14 +122,50 @@ class Visibility:
         self.borders = _borders(scene.boxes.values())
         self.graph = Graph([*self.grown.values(), *scene.text.values()], _interesting(scene, self.grown.values()))
 
-    def passage(self, ends: tuple[str, str]) -> Passage:
-        """What blocks the connector between *ends*."""
+    def passage(self, ends: tuple[str, str], *, bounded: bool = True) -> Passage:
+        """What blocks the connector from *ends[0]* to *ends[1]*; with *bounded*, its bounds too."""
         own = [self.scene.extent_of(end) for end in ends]
         walls = [
             box for key, box in self.scene.boxes.items()
             if key in ends or not any(box.encloses(end) and box != end for end in own)
         ]
-        return Passage(self, walls)
+        return Passage(self, walls, bounds=self.bounds(ends) if bounded else Bounds())
+
+    def bounds(self, ends: tuple[str, str]) -> Bounds:
+        """The boxes the connector from *ends[0]* to *ends[1]* keeps to, and crosses once."""
+        source, target = (self.scene.extent_of(end) for end in ends)
+        holding = [
+            (key, box) for key, box in self.scene.boxes.items()
+            if key not in ends and box not in (source, target)
+        ]
+        both = [
+            (box.width * box.height, key, box) for key, box in holding if box.encloses(source) and box.encloses(target)
+        ]
+        return Bounds(
+            within=min(both)[2] if both else None,
+            stays_in=tuple(box for _key, box in holding if box.encloses(target) and not box.encloses(source)),
+            stays_out=tuple(box for _key, box in holding if box.encloses(source) and not box.encloses(target)),
+        )
+
+
+@dataclass(frozen=True)
+class Bounds:
+    """Where one connector's route may go, as boxes: one it stays inside, ones it crosses only one way."""
+
+    #: The smallest box holding both ends: the route stays inside it.
+    within: Extent | None = None
+    #: Boxes holding the target and not the source: once inside one, the route does not leave it.
+    stays_in: tuple[Extent, ...] = ()
+    #: Boxes holding the source and not the target: once outside one, the route does not come back.
+    stays_out: tuple[Extent, ...] = ()
+
+    def broken_by(self, a: Point, b: Point) -> bool:
+        """Whether the step from *a* to *b* leaves the route's bounds."""
+        if self.within is not None and not (self.within.holds(a) and self.within.holds(b)):
+            return True
+        return any(box.holds(a) and not box.holds(b) for box in self.stays_in) or any(
+            not box.holds(a) and box.holds(b) for box in self.stays_out
+        )
 
 
 class Passage:
@@ -183,16 +173,29 @@ class Passage:
 
     def __init__(
         self, visibility: Visibility, walls: Sequence[Extent], also: Sequence[Extent] = (), crowd: Lines | None = None,
+        bounds: Bounds | None = None, stubs: tuple[Stubs, str] | None = None,
     ) -> None:
         self._visibility = visibility
         self.walls = walls
         self._also = also
         self._walls = _Index([*walls, *also])
         self._crowd = crowd
+        self.bounds = bounds or Bounds()
+        self._stubs = stubs
 
-    def adding(self, rects: Sequence[Extent], crowd: Lines | None = None) -> Passage:
-        """This passage with *rects* blocking as well, and *crowd* the routes found before it."""
-        return Passage(self._visibility, self.walls, [*self._also, *rects], crowd or self._crowd)
+    def adding(
+        self, rects: Sequence[Extent], crowd: Lines | None = None, stubs: tuple[Stubs, str] | None = None,
+    ) -> Passage:
+        """This passage with *rects* blocking as well, *crowd* the routes found before it, and *stubs*
+        the stubs no run goes along but those of the connector named with them."""
+        return Passage(
+            self._visibility, self.walls, [*self._also, *rects], crowd or self._crowd, self.bounds,
+            stubs or self._stubs,
+        )
+
+    def unbounded(self) -> Passage:
+        """This passage without its bounds: for a connector no route within them reaches."""
+        return Passage(self._visibility, self.walls, self._also, self._crowd, None, self._stubs)
 
     def crowding(self, a: Point, b: Point) -> int:
         """How crowded the run a–b is: the routes found before that run alongside it within the ideal
@@ -239,5 +242,10 @@ class Passage:
     def step_blocked(self, a: Point, b: Point, *, ignoring: Sequence[Extent] = ()) -> bool:
         """Whether the axis-aligned step a–b enters an obstacle or a wall, or runs along a border."""
         near = self._near(min(a.x, b.x), min(a.y, b.y), max(a.x, b.x), max(a.y, b.y))
-        return any(_enters(rect, a, b) for rect in near if rect not in ignoring) or self._visibility.borders.along(a, b)
+        return (
+            any(_enters(rect, a, b) for rect in near if rect not in ignoring)
+            or self._visibility.borders.along(a, b)
+            or self.bounds.broken_by(a, b)
+            or (self._stubs is not None and self._stubs[0].along(a, b, self._stubs[1]))
+        )
 

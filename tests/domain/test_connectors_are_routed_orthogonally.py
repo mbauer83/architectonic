@@ -20,13 +20,14 @@ from src.domain.diagrams.layout.layout_block import Port, Side
 from src.domain.diagrams.layout.orthogonal import course_of
 from src.domain.diagrams.layout.route_quality import END_RUN, bends_at_ends, kinks, runs_along
 from src.domain.diagrams.layout.routing.graph import EAST, NORTH, SOUTH, WEST
+from src.domain.diagrams.layout.routing.lines import Stubs
 from src.domain.diagrams.layout.routing.router import as_route, rerouted, route_all
 from src.domain.diagrams.layout.routing.scene import Connector, RoutingScene
 from src.domain.diagrams.layout.routing.search import REVERSE
 from src.domain.diagrams.layout.routing.visibility import Visibility
 from src.domain.diagrams.layout.text_clearance import texts_crossed
 from tests.support.layout_geometry_fixtures import WALK_MOVES, walk_scene
-from tests.support.routing_fixtures import graph_scene, synthetic_scene
+from tests.support.routing_fixtures import graph_scene, inside_scene, synthetic_scene
 
 _A, _B = Extent(0, 100, 100, 160), Extent(400, 100, 500, 160)
 
@@ -211,6 +212,49 @@ def test_a_full_pass_over_a_large_view_finishes(count: int, relations: int, budg
     route_all(scene, connectors)
 
     assert time.perf_counter() - started < budget
+
+
+def test_two_members_of_a_box_are_joined_inside_it_though_outside_is_shorter() -> None:
+    scene, connectors = inside_scene()
+    box = scene.boxes["g"]
+
+    course = _only(scene, *connectors)
+
+    assert all(box.holds(point) for point in course), course
+
+
+def test_a_route_leaves_its_box_only_where_no_way_inside_exists() -> None:
+    scene, connectors = inside_scene(room_below=False)
+    box = scene.boxes["g"]
+
+    course = _only(scene, *connectors)
+
+    assert not all(box.holds(point) for point in course)
+
+
+def test_a_box_holding_the_target_is_entered_once_and_one_holding_the_source_left_once() -> None:
+    scene = RoutingScene(
+        elements={"a": Extent(0, 100, 100, 140), "b": Extent(500, 100, 600, 140)},
+        boxes={"from": Extent(-20, 60, 160, 180), "to": Extent(440, 60, 620, 180)},
+    )
+    bounds = Visibility(scene).bounds(("a", "b"))
+
+    assert bounds.within is None
+    assert bounds.stays_out == (scene.boxes["from"],) and bounds.stays_in == (scene.boxes["to"],)
+    assert bounds.broken_by(Point(450, 120), Point(400, 120))  # out of the target's box again
+    assert bounds.broken_by(Point(200, 120), Point(150, 120))  # back into the source's box
+    assert not bounds.broken_by(Point(400, 120), Point(450, 120))
+
+
+def test_a_run_never_lies_along_another_connector_s_stub() -> None:
+    """Two facing ports at one height, of two connectors: the first route out of one ran on along
+    the line of the other's stub, and nudging could not part them, since a stub does not move."""
+    stubs = Stubs()
+    stubs.add(Point(1257, 594), Point(1233, 594), "theirs")
+
+    assert stubs.along(Point(1116, 594), Point(1249, 594), "mine")
+    assert not stubs.along(Point(1116, 594), Point(1249, 594), "theirs")
+    assert not stubs.along(Point(1116, 580), Point(1249, 580), "mine")
 
 
 def test_a_route_that_weaves_is_counted_as_a_jog_however_long_its_runs() -> None:

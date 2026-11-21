@@ -16,13 +16,56 @@ import { nudged } from './nudging'
 import type { Stub } from './ports'
 import { OUTWARD_INDEX, inLine, stubOf } from './ports'
 import type { Choice, Connector, RoutedConnector, RoutingResult, RoutingScene } from './scene'
-import { SIDES, byText, extentOf, runFor } from './scene'
+import { IDEAL_SEPARATION, SIDES, byText, extentOf, runFor } from './scene'
 import type { Found } from './search'
 import { DIRECTIONS, REVERSE, search } from './search'
 import type { Passage } from './visibility'
-import { FULL, Lines, Visibility } from './visibility'
+import { Lines, Stubs } from './lines'
+import { FULL, Visibility } from './visibility'
 import { special } from './special'
 import { portsSpread } from './spreading'
+
+/** Far enough to stand for everywhere outside a box. */
+const FAR_OUT = 1.0e7
+
+/** Everything outside *box*, as four rectangles: what nudging keeps a route inside its box by. */
+const outside = (box: Extent | null): Extent[] =>
+  box
+    ? [
+        { left: -FAR_OUT, top: -FAR_OUT, right: box.left, bottom: FAR_OUT },
+        { left: box.right, top: -FAR_OUT, right: FAR_OUT, bottom: FAR_OUT },
+        { left: -FAR_OUT, top: -FAR_OUT, right: FAR_OUT, bottom: box.top },
+        { left: -FAR_OUT, top: box.bottom, right: FAR_OUT, bottom: FAR_OUT },
+      ]
+    : []
+
+/**
+ * Every stub the routes will leave and arrive by: those of the ports chosen, reaching on by the ideal
+ * separation as nudging may lengthen them, and the first and last runs of the routes drawn already.
+ */
+const stubLines = (
+  scene: RoutingScene,
+  connectors: readonly Connector[],
+  ports: ReadonlyMap<string, readonly [Choice, Choice]>,
+  drawn: readonly RoutedConnector[],
+): Stubs => {
+  const lines = new Stubs()
+  for (const connector of connectors) {
+    const chosen = ports.get(connector.key)
+    if (!chosen) continue
+    ;[connector.source, connector.target].forEach((end, which) => {
+      const [side, at] = chosen[which]
+      const stub = stubOf(extentOf(scene, end), side, at, runFor(connector.decorated[which]) + IDEAL_SEPARATION)
+      lines.add(stub.at, stub.end, connector.key)
+    })
+  }
+  for (const routed of drawn) {
+    const course = routed.course
+    lines.add(course[0], course[1], routed.key)
+    lines.add(course[course.length - 2], course[course.length - 1], routed.key)
+  }
+  return lines
+}
 
 const sidesOf = (port: Port | undefined): Choice[] =>
   port ? [[port.side, port.at]] : SIDES.map((side): Choice => [side, 0.5])
@@ -47,8 +90,10 @@ const acrossStub = (stub: Stub): Extent => {
   return { left, top: a.y - 1, right, bottom: a.y + 1 }
 }
 
-const usable = (stub: Stub, passage: Passage, own: readonly Extent[]): boolean =>
-  !passage.pointBlocked(stub.end) && !passage.stepBlocked(stub.at, stub.end, own)
+/** Whether *stub* is clear, walked the way the route walks it: out of a source, into a target. */
+const usable = (stub: Stub, passage: Passage, own: readonly Extent[], arriving: boolean): boolean =>
+  !passage.pointBlocked(stub.end) &&
+  !(arriving ? passage.stepBlocked(stub.end, stub.at, own) : passage.stepBlocked(stub.at, stub.end, own))
 
 const straightened = (points: readonly Point[]): Point[] => {
   const kept = [points[0]]
@@ -88,21 +133,41 @@ class Routing {
     const extent = extentOf(this.scene, which === 0 ? connector.source : connector.target)
     const run = runFor(connector.decorated[which])
     const own = this.own(connector)
-    return choices.map(([side, at]) => stubOf(extent, side, at, run)).filter((stub) => usable(stub, passage, own))
+    return choices
+      .map(([side, at]) => stubOf(extent, side, at, run))
+      .filter((stub) => usable(stub, passage, own, which === 1))
   }
 
   /**
-   * The cheapest route between the choices of ports, or null. With *liningUp*, ports on facing sides
-   * are also tried lined up for a straight run; without, the ports are as chosen — spread along a side
-   * another end shares, which a straight run lined up elsewhere would undo.
+   * The cheapest route between the choices of ports, or null: within the connector's bounds, and
+   * without them only where no route keeps them. With *liningUp*, ports on facing sides are also tried
+   * lined up for a straight run; without, the ports are as chosen. *stubs* are the other connectors'
+   * stubs, which no run goes along.
    */
   searched(
     connector: Connector,
     sources: readonly Choice[],
     targets: readonly Choice[],
     liningUp = true,
+    stubs: Stubs | null = null,
   ): RoutedConnector | null {
-    let passage = this.visibility.passage([connector.source, connector.target])
+    const bounded = this.visibility.passage([connector.source, connector.target])
+    for (const passage of [bounded, bounded.unbounded()]) {
+      const found = this.searchedIn(connector, sources, targets, passage, liningUp, stubs)
+      if (found) return found
+    }
+    return null
+  }
+
+  private searchedIn(
+    connector: Connector,
+    sources: readonly Choice[],
+    targets: readonly Choice[],
+    bounded: Passage,
+    liningUp: boolean,
+    stubs: Stubs | null,
+  ): RoutedConnector | null {
+    let passage = bounded
     const starts = this.stubs(connector, 0, sources, passage)
     const goals = this.stubs(connector, 1, targets, passage)
     const [linedStarts, linedGoals] = liningUp ? this.linedUp(connector, sources, targets) : [[], []]
@@ -110,7 +175,7 @@ class Routing {
     const straight = this.straight(connector, [...linedStarts, ...starts], [...linedGoals, ...goals], crowded)
     if (straight) return straight
     if (starts.length === 0 || goals.length === 0) return null
-    passage = passage.adding([...starts, ...goals].map(acrossStub), this.crowd)
+    passage = passage.adding([...starts, ...goals].map(acrossStub), this.crowd, stubs ? [stubs, connector.key] : null)
     const found = search(
       starts.map((stub, tag) => ({ point: stub.end, direction: OUTWARD_INDEX[stub.port.side], tag })),
       goals.map((stub, tag) => ({ point: stub.end, direction: REVERSE[OUTWARD_INDEX[stub.port.side]], tag })),
@@ -229,11 +294,13 @@ export const routeAll = (
       routing.taken(made)
     }
   }
-  for (const [key, [source, target]] of portsSpread(scene, searched, first)) {
+  const spreadPorts = portsSpread(scene, searched, first)
+  const stubs = stubLines(scene, searched, spreadPorts, [...kept.values(), ...routes.values()])
+  for (const [key, [source, target]] of spreadPorts) {
     const connector = searched.find((one) => one.key === key)
     const before = first.get(key)
     if (!connector || !before) continue
-    const routed = routing.searched(connector, [source], [target], false) ?? before
+    const routed = routing.searched(connector, [source], [target], false, stubs) ?? before
     routes.set(key, routed)
     routing.taken(routed)
   }
@@ -248,6 +315,7 @@ export const routeAll = (
           ...routing.visibility.grown.values(),
           ...scene.text.values(),
           ...routing.visibility.passage([connector.source, connector.target]).walls,
+          ...outside(routing.visibility.bounds([connector.source, connector.target]).within),
         ],
       ]),
   )
