@@ -13,8 +13,8 @@ closer than a stub. Which port each end takes once the first routes are found is
 A connector no route reaches is **unroutable**, reported and never drawn through something instead.
 
 `route_all` with *previous* and *changed* is the quick pass a drag takes: only the connectors of
-what moved are searched again — between their ports where those still serve — and only their runs
-are nudged.
+what moved, and those whose route what moved now lies across, are searched again — between their
+ports where those still serve — and only their runs are nudged.
 """
 
 from __future__ import annotations
@@ -42,8 +42,12 @@ from src.domain.diagrams.layout.routing.spreading import ports_spread
 from src.domain.diagrams.layout.routing.visibility import FULL, Passage, Visibility
 
 
-def _sides_of(port: Port | None) -> tuple[tuple[Side, float], ...]:
-    return ((port.side, port.at),) if port is not None else tuple((side, 0.5) for side in SIDES)
+def _sides_of(port: Port | None, side: Side | None = None) -> tuple[tuple[Side, float], ...]:
+    """The ports to try for an end: the stated one; else the middle of *side*, the side its route took
+    before; else the middle of every side."""
+    if port is not None:
+        return ((port.side, port.at),)
+    return ((side, 0.5),) if side is not None else tuple((one, 0.5) for one in SIDES)
 
 
 def _length(a: Point, b: Point) -> float:
@@ -90,6 +94,15 @@ class _Routing:
     def own(self, connector: Connector) -> list[Extent]:
         grown = self.visibility.grown
         return [grown[end] for end in (connector.source, connector.target) if end in grown]
+
+    def still_clear(self, connector: Connector, routed: RoutedConnector) -> bool:
+        """Whether a route found before still goes through nothing: what moved may have moved onto it,
+        and a route kept through it would be one the full pass does not draw."""
+        passage = self.visibility.passage((connector.source, connector.target), bounded=False)
+        own = self.own(connector)
+        return not any(
+            passage.step_blocked(a, b, ignoring=own) for a, b in zip(routed.course, routed.course[1:], strict=False)
+        )
 
     def _stubs(
         self, connector: Connector, which: int, choices: Sequence[tuple[Side, float]], passage: Passage,
@@ -248,7 +261,11 @@ def route_all(
     kept: dict[str, RoutedConnector] = {}
     to_route = ordered
     if previous is not None and changed is not None:
-        touched = [one for one in ordered if one.source in changed or one.target in changed or one.key not in previous]
+        touched = [
+            one for one in ordered
+            if one.source in changed or one.target in changed or one.key not in previous
+            or not routing.still_clear(one, previous[one.key])
+        ]
         kept = {one.key: previous[one.key] for one in ordered if one not in touched and one.key in previous}
         to_route = touched
     for routed in kept.values():
@@ -264,7 +281,10 @@ def route_all(
             sides = (_sides_of(connector.source_port), _sides_of(connector.target_port))
             again = previous.get(connector.key) if previous is not None else None
             found = (
-                routing.searched(connector, ((again.source_port.side, 0.5),), ((again.target_port.side, 0.5),))
+                routing.searched(
+                    connector, _sides_of(connector.source_port, again.source_port.side),
+                    _sides_of(connector.target_port, again.target_port.side),
+                )
                 if again is not None else None
             ) or routing.searched(connector, *sides)
             if found is None:

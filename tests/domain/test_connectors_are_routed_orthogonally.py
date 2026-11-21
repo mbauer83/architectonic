@@ -27,7 +27,7 @@ from src.domain.diagrams.layout.routing.search import REVERSE
 from src.domain.diagrams.layout.routing.visibility import Visibility
 from src.domain.diagrams.layout.text_clearance import texts_crossed
 from tests.support.layout_geometry_fixtures import WALK_MOVES, walk_scene
-from tests.support.routing_fixtures import graph_scene, inside_scene, synthetic_scene
+from tests.support.routing_fixtures import graph_scene, heavy_edit, inside_scene, synthetic_scene
 
 _A, _B = Extent(0, 100, 100, 160), Extent(400, 100, 500, 160)
 
@@ -255,6 +255,21 @@ def test_a_run_never_lies_along_another_connector_s_stub() -> None:
     assert stubs.along(Point(1116, 594), Point(1249, 594), "mine")
     assert not stubs.along(Point(1116, 594), Point(1249, 594), "theirs")
     assert not stubs.along(Point(1116, 580), Point(1249, 580), "mine")
+
+
+def test_a_drag_s_quick_pass_answers_what_the_full_pass_answers_about_what_has_no_route() -> None:
+    """The browser's quick pass and the server's full pass disagreed after heavy edits: the quick pass
+    searched a connector again at the middle of its stated port's side, and kept routes that a moved
+    element now lay across."""
+    before, after, connectors, changed = heavy_edit()
+    previous = route_all(before, connectors)
+
+    quick = route_all(after, connectors, previous=previous.routes, changed=changed)
+    full = route_all(after, connectors)
+
+    assert full.unroutable == ("ab",)
+    assert quick.unroutable == full.unroutable
+    assert elements_crossed(quick.routes["cd"].course, after.elements, ("c", "d")) == ()
 
 
 def test_a_route_that_weaves_is_counted_as_a_jog_however_long_its_runs() -> None:

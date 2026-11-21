@@ -6688,5 +6688,220 @@
     ]
    ]
   }
+ },
+ "heavy_edit": {
+  "scene": {
+   "elements": {
+    "a": {
+     "left": 100,
+     "top": 100,
+     "right": 200,
+     "bottom": 160
+    },
+    "b": {
+     "left": 400,
+     "top": 100,
+     "right": 500,
+     "bottom": 160
+    },
+    "c": {
+     "left": 100,
+     "top": 300,
+     "right": 200,
+     "bottom": 340
+    },
+    "d": {
+     "left": 400,
+     "top": 300,
+     "right": 500,
+     "bottom": 340
+    },
+    "w": {
+     "left": 50,
+     "top": 138,
+     "right": 90,
+     "bottom": 152
+    },
+    "e": {
+     "left": 270,
+     "top": 280,
+     "right": 330,
+     "bottom": 360
+    }
+   },
+   "boxes": {},
+   "text": {},
+   "fixed_lines": []
+  },
+  "connectors": [
+   {
+    "key": "ab",
+    "source": "a",
+    "target": "b",
+    "decorated": [
+     true,
+     true
+    ],
+    "source_port": {
+     "side": "left",
+     "at": 0.75
+    }
+   },
+   {
+    "key": "cd",
+    "source": "c",
+    "target": "d",
+    "decorated": [
+     true,
+     true
+    ]
+   }
+  ],
+  "previous": {
+   "ab": {
+    "source_port": {
+     "side": "left",
+     "at": 0.75
+    },
+    "target_port": {
+     "side": "left",
+     "at": 0.5
+    },
+    "course": [
+     [
+      100,
+      145
+     ],
+     [
+      70,
+      145
+     ],
+     [
+      70,
+      168
+     ],
+     [
+      370,
+      168
+     ],
+     [
+      370,
+      130
+     ],
+     [
+      400,
+      130
+     ]
+    ]
+   },
+   "cd": {
+    "source_port": {
+     "side": "right",
+     "at": 0.5
+    },
+    "target_port": {
+     "side": "left",
+     "at": 0.5
+    },
+    "course": [
+     [
+      200,
+      320
+     ],
+     [
+      400,
+      320
+     ]
+    ]
+   }
+  },
+  "changed": [
+   "e",
+   "w"
+  ],
+  "result": {
+   "routes": {
+    "cd": {
+     "source_port": {
+      "side": "right",
+      "at": 0.5
+     },
+     "target_port": {
+      "side": "left",
+      "at": 0.5
+     },
+     "course": [
+      [
+       200,
+       320
+      ],
+      [
+       262,
+       320
+      ],
+      [
+       262,
+       368
+      ],
+      [
+       370,
+       368
+      ],
+      [
+       370,
+       320
+      ],
+      [
+       400,
+       320
+      ]
+     ]
+    }
+   },
+   "unroutable": [
+    "ab"
+   ],
+   "unseparated": []
+  },
+  "full": {
+   "routes": {
+    "cd": {
+     "source_port": {
+      "side": "right",
+      "at": 0.5
+     },
+     "target_port": {
+      "side": "bottom",
+      "at": 0.5
+     },
+     "course": [
+      [
+       200,
+       320
+      ],
+      [
+       262,
+       320
+      ],
+      [
+       262,
+       370
+      ],
+      [
+       450,
+       370
+      ],
+      [
+       450,
+       340
+      ]
+     ]
+    }
+   },
+   "unroutable": [
+    "ab"
+   ],
+   "unseparated": []
+  }
  }
 }

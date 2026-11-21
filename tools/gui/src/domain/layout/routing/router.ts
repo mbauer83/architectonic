@@ -10,7 +10,7 @@
  * quick pass.
  */
 import type { Extent, Point } from '../geometry'
-import type { Port } from '../orthogonal'
+import type { Port, Side } from '../orthogonal'
 import { STUB } from '../orthogonal'
 import { nudged } from './nudging'
 import type { Stub } from './ports'
@@ -67,8 +67,12 @@ const stubLines = (
   return lines
 }
 
-const sidesOf = (port: Port | undefined): Choice[] =>
-  port ? [[port.side, port.at]] : SIDES.map((side): Choice => [side, 0.5])
+/**
+ * The ports to try for an end: the stated one; else the middle of the side its route took before;
+ * else the middle of every side.
+ */
+const sidesOf = (port: Port | undefined, side: Side | null = null): Choice[] =>
+  port ? [[port.side, port.at]] : side ? [[side, 0.5]] : SIDES.map((one): Choice => [one, 0.5])
 
 const lengthBetween = (a: Point, b: Point): number => Math.abs(b.x - a.x) + Math.abs(b.y - a.y)
 
@@ -127,6 +131,13 @@ class Routing {
       const grown = this.visibility.grown.get(end)
       return grown ? [grown] : []
     })
+  }
+
+  /** Whether a route found before still goes through nothing: what moved may have moved onto it. */
+  stillClear(connector: Connector, routed: RoutedConnector): boolean {
+    const passage = this.visibility.passage([connector.source, connector.target], false)
+    const own = this.own(connector)
+    return !routed.course.slice(1).some((b, index) => passage.stepBlocked(routed.course[index], b, own))
   }
 
   private stubs(connector: Connector, which: number, choices: readonly Choice[], passage: Passage): Stub[] {
@@ -262,9 +273,11 @@ export const routeAll = (
   const kept = new Map<string, RoutedConnector>()
   let toRoute = ordered
   if (quick) {
-    const touched = ordered.filter(
-      (one) => quick.changed.has(one.source) || quick.changed.has(one.target) || !quick.previous.has(one.key),
-    )
+    const touched = ordered.filter((one) => {
+      const before = quick.previous.get(one.key)
+      const moved = quick.changed.has(one.source) || quick.changed.has(one.target)
+      return moved || !before || !routing.stillClear(one, before)
+    })
     for (const one of ordered) {
       const before = quick.previous.get(one.key)
       if (!touched.includes(one) && before) kept.set(one.key, before)
@@ -283,7 +296,11 @@ export const routeAll = (
       const again = quick?.previous.get(connector.key)
       const found =
         (again
-          ? routing.searched(connector, [[again.sourcePort.side, 0.5]], [[again.targetPort.side, 0.5]])
+          ? routing.searched(
+              connector,
+              sidesOf(connector.sourcePort, again.sourcePort.side),
+              sidesOf(connector.targetPort, again.targetPort.side),
+            )
           : null) ?? routing.searched(connector, sidesOf(connector.sourcePort), sidesOf(connector.targetPort))
       if (found) first.set(connector.key, found)
       else unroutable.push(connector.key)

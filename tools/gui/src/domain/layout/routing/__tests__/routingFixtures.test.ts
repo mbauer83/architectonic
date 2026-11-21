@@ -67,6 +67,14 @@ const routing = JSON.parse(
   }
   cases: { name: string; scene: SceneJson; connectors: ConnectorJson[]; result: ResultJson }[]
   quick: { scene: SceneJson; connectors: ConnectorJson[]; previous: Record<string, RoutedJson>; changed: string[]; result: ResultJson }
+  heavy_edit: {
+    scene: SceneJson
+    connectors: ConnectorJson[]
+    previous: Record<string, RoutedJson>
+    changed: string[]
+    result: ResultJson
+    full: ResultJson
+  }
 }
 
 const sceneOf = (json: SceneJson): RoutingScene => ({
@@ -165,6 +173,17 @@ describe('the router answers what the Python router answers', () => {
 
   it.each(routing.cases)('$name', ({ scene, connectors, result }) => {
     expect(asJson(routeAll(sceneOf(scene), connectors.map(connectorOf)))).toEqual(result)
+  })
+
+  it("after a heavy edit the quick pass answers what both full passes answer about what has no route", () => {
+    const { scene, connectors, previous, changed, result, full } = routing.heavy_edit
+    const answered = routeAll(sceneOf(scene), connectors.map(connectorOf), {
+      previous: new Map(Object.entries(previous).map(([key, json]) => [key, routedOf(key, json)])),
+      changed: new Set(changed),
+    })
+    expect(asJson(answered)).toEqual(result)
+    expect(asJson(routeAll(sceneOf(scene), connectors.map(connectorOf)))).toEqual(full)
+    expect(answered.unroutable).toEqual(full.unroutable)
   })
 
   it("a drag's quick pass routes only what moved", () => {

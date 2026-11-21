@@ -226,6 +226,34 @@ def inside_scene(*, room_below: bool = True) -> tuple[RoutingScene, list[Connect
     return RoutingScene(elements=elements, boxes={"g": _box(0, 0, 600, 200)}), [Connector("ab", "a", "b")]
 
 
+def heavy_edit() -> tuple[RoutingScene, RoutingScene, list[Connector], frozenset[str]]:
+    """Before and after a drag that moves two elements: one onto the stub of a port stated at 0.75 of
+    its side, so that connector has no route, and one across the route of a connector neither of whose
+    ends moved. The quick pass must answer what the full pass answers about both."""
+    before = {
+        "a": _box(100, 100, 100, 60), "b": _box(400, 100, 100, 60),
+        "c": _box(100, 300, 100, 40), "d": _box(400, 300, 100, 40),
+        "w": _box(-200, 400, 40, 14), "e": _box(-200, 500, 60, 40),
+    }
+    after = {**before, "w": _box(50, 138, 40, 14), "e": _box(270, 280, 60, 80)}
+    connectors = [
+        Connector("ab", "a", "b", source_port=Port(Side.LEFT, 0.75)),
+        Connector("cd", "c", "d"),
+    ]
+    return RoutingScene(elements=before), RoutingScene(elements=after), connectors, frozenset({"w", "e"})
+
+
+def _quick_case(before: RoutingScene, after: RoutingScene, connectors: Sequence[Connector],
+                changed: frozenset[str]) -> dict[str, object]:
+    previous = route_all(before, connectors)
+    quick = route_all(after, connectors, previous=previous.routes, changed=changed)
+    return {
+        "scene": scene_as_json(after), "connectors": [connector_as_json(one) for one in connectors],
+        "previous": routed_as_json(previous.routes), "changed": sorted(changed), "result": result_as_json(quick),
+        "full": result_as_json(route_all(after, connectors)),
+    }
+
+
 def build_routing() -> dict[str, object]:
     a, b, c = _box(0, 100, 100, 60), _box(400, 100, 100, 60), _box(220, 60, 60, 140)
     cases = [
@@ -263,4 +291,5 @@ def build_routing() -> dict[str, object]:
             "scene": scene_as_json(moved_scene), "connectors": [connector_as_json(one) for one in connectors],
             "previous": routed_as_json(previous.routes), "changed": ["l2"], "result": result_as_json(quick),
         },
+        "heavy_edit": _quick_case(*heavy_edit()),
     }
