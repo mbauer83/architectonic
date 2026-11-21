@@ -156,7 +156,8 @@ class Routing {
         }
       }
     }
-    return best ? { key: connector.key, sourcePort: best[0].port, targetPort: best[1].port, course: [best[0].at, best[1].at] } : null
+    if (!best) return null
+    return { key: connector.key, sourcePort: best[0].port, targetPort: best[1].port, course: [best[0].at, best[1].at] }
   }
 
   special(connector: Connector): RoutedConnector | null | true {
@@ -167,7 +168,9 @@ class Routing {
     if (endsConflict(source, target)) {
       const made = formedAfresh({}, source, target)
       const course = courseOf(made, source, target)
-      if (made.from && made.to && course) return { key: connector.key, sourcePort: made.from, targetPort: made.to, course }
+      if (made.from && made.to && course) {
+        return { key: connector.key, sourcePort: made.from, targetPort: made.to, course }
+      }
     }
     return true
   }
@@ -205,7 +208,12 @@ class Routing {
   }
 }
 
-const asRouted = (connector: Connector, found: Found, starts: readonly Stub[], goals: readonly Stub[]): RoutedConnector => {
+const asRouted = (
+  connector: Connector,
+  found: Found,
+  starts: readonly Stub[],
+  goals: readonly Stub[],
+): RoutedConnector => {
   const start = starts[found.start]
   const goal = goals[found.goal]
   return {
@@ -243,7 +251,8 @@ const endsOnSides = (
     return both.flatMap(([port, stated, other, element], which): EndOnSide[] => {
       if (stated) return []
       const centre = centreOf(extentOf(routing.scene, other))
-      return [{ connector: connector.key, which, element, side: port.side, toward: leavesLevel(port.side) ? centre.y : centre.x }]
+      const toward = leavesLevel(port.side) ? centre.y : centre.x
+      return [{ connector: connector.key, which, element, side: port.side, toward }]
     })
   })
 
@@ -260,7 +269,9 @@ const portsSpread = (
     sharing.set(key, (sharing.get(key) ?? 0) + 1)
   }
   const alone = new Set(
-    ends.filter((end) => sharing.get(`${end.element}\u0000${end.side}`) === 1).map((end) => `${end.connector}\u0000${end.which}`),
+    ends
+      .filter((end) => sharing.get(`${end.element}\u0000${end.side}`) === 1)
+      .map((end) => `${end.connector}\u0000${end.which}`),
   )
   const ports = new Map<string, readonly [Choice, Choice]>()
   for (const connector of connectors) {
@@ -288,7 +299,11 @@ export interface QuickPass {
 }
 
 /** Every connector's route, the unroutable ones, and what nudging could not separate. */
-export const routeAll = (scene: RoutingScene, connectors: readonly Connector[], quick: QuickPass | null = null): RoutingResult => {
+export const routeAll = (
+  scene: RoutingScene,
+  connectors: readonly Connector[],
+  quick: QuickPass | null = null,
+): RoutingResult => {
   const routing = new Routing(scene)
   const ordered = [...connectors].sort((one, other) => byText(one.key, other.key))
   const kept = new Map<string, RoutedConnector>()

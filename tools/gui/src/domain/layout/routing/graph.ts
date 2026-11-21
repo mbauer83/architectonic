@@ -234,11 +234,25 @@ export class Joined {
     }
     for (const [index, pointsOn] of [...onLevel].sort(([one], [other]) => one - other)) {
       const scene = index < graph.levelNodes.length
-      this.link(scene ? graph.levelNodes[index] : [], scene ? graph.levelAlong[index] : [], pointsOn.values(), EAST, WEST, true)
+      this.link(
+        scene ? graph.levelNodes[index] : [],
+        scene ? graph.levelAlong[index] : [],
+        pointsOn.values(),
+        EAST,
+        WEST,
+        true,
+      )
     }
     for (const [index, pointsOn] of [...onUpright].sort(([one], [other]) => one - other)) {
       const scene = index < graph.uprightNodes.length
-      this.link(scene ? graph.uprightNodes[index] : [], scene ? graph.uprightAlong[index] : [], pointsOn.values(), SOUTH, NORTH, false)
+      this.link(
+        scene ? graph.uprightNodes[index] : [],
+        scene ? graph.uprightAlong[index] : [],
+        pointsOn.values(),
+        SOUTH,
+        NORTH,
+        false,
+      )
     }
   }
 

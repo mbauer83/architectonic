@@ -16,10 +16,13 @@ const ROUNDS = 4
 const SWEEPS = 2
 
 const pairsOf = (cluster: readonly Member[]): [string, string][] => {
-  const ordered = [...cluster].sort((one, other) => one.at - other.at || byText(one.owner, other.owner) || one.index - other.index)
+  const ordered = [...cluster].sort(
+    (one, other) => one.at - other.at || byText(one.owner, other.owner) || one.index - other.index,
+  )
   return ordered.slice(1).flatMap((second, index): [string, string][] => {
     const first = ordered[index]
-    if (!(second.at - first.at < LINE_CLEARANCE + 1) || !(first.owner || second.owner) || first.owner === second.owner) return []
+    if (!(second.at - first.at < LINE_CLEARANCE + 1)) return []
+    if (!(first.owner || second.owner) || first.owner === second.owner) return []
     const one = first.owner || second.owner
     const other = second.owner || first.owner
     return [[byText(one, other) <= 0 ? one : other, byText(one, other) <= 0 ? other : one]]
@@ -145,7 +148,9 @@ const clustersOf = (members: readonly Member[]): Member[][] => {
     }
     return index
   }
-  const order = members.map((_, index) => index).sort((one, other) => members[one].at - members[other].at || one - other)
+  const order = members
+    .map((_, index) => index)
+    .sort((one, other) => members[one].at - members[other].at || one - other)
   order.forEach((first, position) => {
     for (const second of order.slice(position + 1)) {
       if (members[second].at - members[first].at >= IDEAL_SEPARATION) break
@@ -204,7 +209,10 @@ const firstThatFits = (cluster: readonly Member[]): [Member[], number[] | null] 
   const orders = [
     [...cluster].sort(
       (one, other) =>
-        one.turns - other.turns || middleOf(one) - middleOf(other) || byText(one.owner, other.owner) || one.index - other.index,
+        one.turns - other.turns ||
+        middleOf(one) - middleOf(other) ||
+        byText(one.owner, other.owner) ||
+        one.index - other.index,
     ),
     [...cluster].sort(
       (one, other) => middleOf(one) - middleOf(other) || byText(one.owner, other.owner) || one.index - other.index,
@@ -240,7 +248,8 @@ const fixedLinesOf = (
       const a = line[index]
       const sameLine = level ? a.y === b.y : a.x === b.x
       if (!sameLine || (a.x === b.x && a.y === b.y)) return []
-      return [[across(a, level), Math.min(along(a, level), along(b, level)), Math.max(along(a, level), along(b, level))]]
+      const [from, to] = [along(a, level), along(b, level)]
+      return [[across(a, level), Math.min(from, to), Math.max(from, to)]]
     }),
   ),
 ]
@@ -283,7 +292,9 @@ export const nudged = (
 ): [Map<string, Point[]>, [string, string][]] => {
   const moved = new Map([...courses].map(([key, course]) => [key, [...course]]))
   for (let sweep = 0; sweep < SWEEPS; sweep += 1) {
-    for (const level of [true, false]) separated(moved, level, movable, obstacles, fixedLinesOf(borders, fixedLines, level))
+    for (const level of [true, false]) {
+      separated(moved, level, movable, obstacles, fixedLinesOf(borders, fixedLines, level))
+    }
   }
   const unseparated = [true, false].flatMap((level) =>
     clustersOf(membersOf(moved, level, movable, obstacles, fixedLinesOf(borders, fixedLines, level)))

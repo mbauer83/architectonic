@@ -120,7 +120,8 @@ export class Lines {
     const isLevel = a.y === b.y
     const at = isLevel ? a.y : a.x
     const positions = isLevel ? this.levelAt : this.uprightAt
-    return this.sharing(a, b, positions, lowerBound(positions, at - within + 1e-9), upperBound(positions, at + within - 1e-9))
+    const [low, high] = [lowerBound(positions, at - within + 1e-9), upperBound(positions, at + within - 1e-9)]
+    return this.sharing(a, b, positions, low, high)
   }
 
   between(a: Point, b: Point, least: number, most: number): number {
@@ -202,7 +203,8 @@ export class Visibility {
     this.grown = new Map([...scene.elements].map(([key, extent]) => [key, grownOutward(extent, BUFFER)]))
     this.blocking = new RectIndex([...this.grown.values(), ...scene.text.values()])
     this.borders = bordersOf(scene.boxes.values())
-    this.graph = new Graph([...this.grown.values(), ...scene.text.values()], interestingPoints(scene, this.grown.values()))
+    const obstacles = [...this.grown.values(), ...scene.text.values()]
+    this.graph = new Graph(obstacles, interestingPoints(scene, this.grown.values()))
   }
 
   passage(ends: readonly [string, string]): Passage {
@@ -263,7 +265,8 @@ export class Passage {
   }
 
   private nearRects(left: number, top: number, right: number, bottom: number): readonly Extent[] {
-    return [...this.visibility.blocking.near(left, top, right, bottom), ...this.wallIndex.near(left, top, right, bottom)]
+    const blocking = this.visibility.blocking.near(left, top, right, bottom)
+    return [...blocking, ...this.wallIndex.near(left, top, right, bottom)]
   }
 
   pointBlocked(point: Point): boolean {

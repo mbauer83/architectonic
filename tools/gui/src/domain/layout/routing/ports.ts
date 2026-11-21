@@ -70,7 +70,9 @@ export const spread = (ends: readonly EndOnSide[]): Map<string, number> => {
     const ordered = [...group].sort(
       (one, other) => one.toward - other.toward || byText(one.connector, other.connector) || one.which - other.which,
     )
-    ordered.forEach((end, position) => spreadAt.set(`${end.connector}\u0000${end.which}`, (position + 1) / (ordered.length + 1)))
+    ordered.forEach((end, position) =>
+      spreadAt.set(`${end.connector}\u0000${end.which}`, (position + 1) / (ordered.length + 1)),
+    )
   }
   return spreadAt
 }

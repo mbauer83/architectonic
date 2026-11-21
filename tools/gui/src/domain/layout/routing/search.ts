@@ -181,7 +181,8 @@ const searchWithin = (
     const [f, , node, last, finishing] = frontier.pop()
     const state = 4 * node + last
     if (finishing >= 0) {
-      return { points: walkedBack(state, came, graph), start: began.get(state) ?? 0, goal: goals[finishing].tag, cost: f }
+      const points = walkedBack(state, came, graph)
+      return { points, start: began.get(state) ?? 0, goal: goals[finishing].tag, cost: f }
     }
     const g = best.get(state) ?? Number.POSITIVE_INFINITY
     if (f > g + EAGERNESS * estimate(graph.x(node), graph.y(node))) continue
