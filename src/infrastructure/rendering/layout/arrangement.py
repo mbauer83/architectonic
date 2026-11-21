@@ -70,7 +70,7 @@ class Arrangement:
     #: The elements drawn at a stated size that is not the size the renderer drew them.
     resized: frozenset[str]
     boxes: Mapping[str, Extent]
-    #: In the order of the picture's relations.
+    #: In the order of the picture's relations; none at all where one is unroutable, since nothing is drawn.
     relations: tuple[ArrangedRelation, ...]
     #: Every box and element, back to front.
     paint_order: tuple[str, ...]
@@ -248,6 +248,9 @@ class _Arranging:
             " and ".join(self._picture.label_of(end) or end for end in self._picture.relations[int(key)].ends)
             for key in result.unroutable
         )
+        if unroutable:
+            # A relation no route reaches has no course to label, and the picture is not drawn at all.
+            return (), unroutable
         return self._labelled(courses, routes, keyed, kept), unroutable
 
     def _unchanged(self, alias: str) -> bool:
