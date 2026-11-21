@@ -52,7 +52,10 @@ export const paintOrder = (geometry: LabGeometry, lifted: string | null): Painte
   for (let alias = lifted; alias !== null && !raised.has(alias); alias = inside.get(alias) ?? null) raised.add(alias)
   const walk = (parent: string | null): Painted[] => {
     const siblings = children.get(parent) ?? []
-    const ordered = [...siblings.filter((alias) => !raised.has(alias)), ...siblings.filter((alias) => raised.has(alias))]
+    const ordered = [
+      ...siblings.filter((alias) => !raised.has(alias)),
+      ...siblings.filter((alias) => raised.has(alias)),
+    ]
     return ordered.flatMap((alias) => [{ alias, isBox: boxes.has(alias) }, ...walk(alias)])
   }
   return walk(null)

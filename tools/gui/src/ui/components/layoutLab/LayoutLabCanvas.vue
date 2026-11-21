@@ -244,7 +244,8 @@ const selectedExtent = computed((): Extent | null => {
 </template>
 
 <style scoped>
-.lab-canvas { display: block; width: 100%; height: auto; max-height: 85vh; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; touch-action: none; user-select: none; }
+.lab-canvas { display: block; width: 100%; height: auto; max-height: 85vh; background: #fff; }
+.lab-canvas { border: 1px solid #cbd5e1; border-radius: 6px; touch-action: none; user-select: none; }
 .lab-box rect { fill: #f8fafc; stroke: #94a3b8; stroke-width: 1; cursor: move; }
 .lab-box--domain rect { fill: #f1f5f9; }
 .lab-box--authored-grouping rect { fill: #fefce8; stroke-dasharray: 6 3; stroke: #a16207; }

@@ -73,7 +73,8 @@ export const breachesOf = (
       ...textsCrossed(course, text).map(() => breach(relation.index, 'text', course)),
       ...bendsAtEnds(course, relation.decorated).map((end) =>
         breach(relation.index, 'bend-at-an-end', end === 'A:source' ? course.slice(0, 2) : course.slice(-2))),
-      ...runsAlong(course, others, borders).map((index) => breach(relation.index, 'runs-along', segment(course, index))),
+      ...runsAlong(course, others, borders).map((index) =>
+        breach(relation.index, 'runs-along', segment(course, index))),
       ...kinks(course).map((index) => breach(relation.index, 'jog', segment(course, index))),
       ...elementsCrossed(course, placement.elements, [relation.source, relation.target]).map(() =>
         breach(relation.index, 'crosses-an-element', course)),

@@ -75,7 +75,9 @@ onMounted(async () => {
   if (!labIsOn.value) return
   window.addEventListener('keydown', onKey)
   const listed = await Effect.runPromise(svc.listDiagrams()).catch(() => null)
-  diagrams.value = [...(listed?.items ?? [])].filter(isArchimate).sort((one, other) => one.name.localeCompare(other.name))
+  diagrams.value = [...(listed?.items ?? [])]
+    .filter(isArchimate)
+    .sort((one, other) => one.name.localeCompare(other.name))
   if (chosen.value) void lab.load(chosen.value)
 })
 
@@ -253,7 +255,8 @@ onBeforeUnmount(() => {
 .lab__off { padding: 12px 16px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; }
 .lab__toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
 .lab__toolbar select { margin-left: 6px; max-width: 360px; }
-.lab__toolbar button { padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; }
+.lab__toolbar button { padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 4px; }
+.lab__toolbar button { background: #fff; cursor: pointer; }
 .lab__toolbar button:disabled { opacity: 0.5; cursor: default; }
 .lab__counts { display: inline-flex; gap: 6px; color: #475569; }
 .lab__count { padding: 1px 8px; border-radius: 10px; font-weight: 600; }
