@@ -219,7 +219,8 @@ kbd {
 .pop h3 { font-size: 13px; margin: 0 0 6px; }
 .pop .group { font-weight: 600; margin: 0 0 4px; }
 .pop .tag {
-  background: var(--soft); color: var(--text-2); border-radius: 3px; padding: 1px 6px; font-size: 11px; margin-right: 4px;
+  background: var(--soft); color: var(--text-2); border-radius: 3px; padding: 1px 6px; font-size: 11px;
+  margin-right: 4px;
 }
 .pop ul { margin: 0 0 6px 16px; padding: 0; }
 .pop li { margin-bottom: 3px; }

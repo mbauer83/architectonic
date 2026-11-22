@@ -57,7 +57,8 @@ const drilldownByEntityId = computed(() => buildDrilldownByEntityId(c4Nav.value)
 const diagramEntities = computed(() =>
   (contextQuery.data.value?.entities ?? [])
     .slice()
-    .sort((a, b) => a.domain.localeCompare(b.domain) || a.artifact_type.localeCompare(b.artifact_type) || a.name.localeCompare(b.name))
+    .sort((a, b) => a.domain.localeCompare(b.domain) || a.artifact_type.localeCompare(b.artifact_type)
+      || a.name.localeCompare(b.name))
 )
 const diagramConnections = computed(() => contextQuery.data.value?.connections ?? [])
 

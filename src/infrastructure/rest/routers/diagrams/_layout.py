@@ -137,7 +137,9 @@ def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs) -> dict[s
     "/api/diagrams/{artifact_id}/layout/preview", tags=[TAG_DIAGRAMS],
     summary="Draw resized shapes of a diagram, writing nothing", response_model=ShapeDrawingsResponse,
     response_model_exclude_none=True,
-    responses=READ_RESPONSES,
+    # As the diagram preview declares them: a write-shaped operation that mutates nothing still passes
+    # through the workspace gate and authorization every POST does, and can be refused by either.
+    responses={**READ_RESPONSES, **WRITE_RESPONSES},
 )
 def preview_diagram_layout_shapes(artifact_id: str, body: DrawShapesBody) -> dict[str, object]:
     """Each shape drawn by the composer at its new size. Needs nothing of the diagram but its address:

@@ -166,7 +166,6 @@ LINE_LENGTH_BASELINE: dict[str, int] = {
     "tools/gui/src/ui/views/AssuranceView.vue": 1,
     "tools/gui/src/ui/views/CreateDiagramView.vue": 12,
     "tools/gui/src/ui/views/CreateMatrixView.vue": 5,
-    "tools/gui/src/ui/views/DiagramDetailView.vue": 7,
     "tools/gui/src/ui/views/DocumentCreateView.vue": 1,
     "tools/gui/src/ui/views/DocumentDetailView.vue": 2,
     "tools/gui/src/ui/views/DocumentsView.vue": 1,

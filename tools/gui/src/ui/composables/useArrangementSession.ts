@@ -183,7 +183,8 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
       const drawn = geometry.value
       const where = placement.value
       const previous = routes.value
-      if (drawn && where && previous) routes.value = timed('quick', () => quickPass(drawn, where, previous.routes, changed))
+      if (!drawn || !where || !previous) return
+      routes.value = timed('quick', () => quickPass(drawn, where, previous.routes, changed))
     })
   }
 

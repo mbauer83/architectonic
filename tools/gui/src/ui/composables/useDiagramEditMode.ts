@@ -38,7 +38,8 @@ export interface EditBarHandle {
 type Toast = (message: string, type?: 'info' | 'warn' | 'error', durationMs?: number) => void
 
 const isTyping = (target: EventTarget | null): boolean =>
-  target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+  target instanceof HTMLElement
+  && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
 
 export function useDiagramEditMode(
   svc: ModelService,
@@ -57,7 +58,10 @@ export function useDiagramEditMode(
   const enter = async () => {
     leaving.value = false
     if (await editing.open()) active.value = true
-    else toast(`This diagram cannot be arranged here: ${editing.error.value ?? 'its picture could not be read'}`, 'error')
+    else {
+      const why = editing.error.value ?? 'its picture could not be read'
+      toast(`This diagram cannot be arranged here: ${why}`, 'error')
+    }
   }
 
   const exit = () => {
@@ -142,7 +146,10 @@ export function useDiagramEditMode(
     if (!active.value || !byHand || was !== false || told.has(diagramId.value)) return
     if (session.history.value.length === 0) return
     told.add(diagramId.value)
-    toast('Arranged by hand from here on. Undo, or “Return to automatic”, gives the automatic layout back.', 'info', 6000)
+    toast(
+      'Arranged by hand from here on. Undo, or “Return to automatic”, gives the automatic layout back.',
+      'info', 6000,
+    )
   })
 
   // Leaving the page with the session open leaves nothing behind.

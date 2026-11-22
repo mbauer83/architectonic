@@ -15,7 +15,7 @@ import { paintOrder } from './labPaintOrder'
 import type { DrawnRelation, DrawnShape, Piece } from './labPieces'
 import { drawnRelations, drawnShapes, pieceOf } from './labPieces'
 import LabDrawn from './LabDrawn'
-import { hiddenElements, overlappingEnds } from './canvasMarks'
+import CanvasMarks from './CanvasMarks.vue'
 import { useLabGesture } from './useLabGesture'
 
 const props = defineProps<{ session: ArrangementSession; showBreaches?: boolean }>()
@@ -65,7 +65,9 @@ const grown = (now: Extent | null): Extent | null => {
   return now && before ? union(before, now) : (now ?? before)
 }
 watch(geometry, () => { view.value = null })
-watch(drawnExtent, (now) => { if (!gesture.dragging.value || !view.value) view.value = grown(now) }, { immediate: true })
+watch(drawnExtent, (now) => {
+  if (!gesture.dragging.value || !view.value) view.value = grown(now)
+}, { immediate: true })
 watch(() => gesture.dragging.value, (dragging) => { if (!dragging) view.value = grown(drawnExtent.value) })
 
 defineExpose({
@@ -153,17 +155,8 @@ const ends = (relationIndex: number): Extent[] => {
 const marks = computed((): BreachMark[] =>
   (props.showBreaches ? breachMarksOf(props.session.breaches.value, ends, tagSize.value) : []))
 
-/** Elements a shape painted after them covers, and connected elements over each other (`canvasMarks`). */
-const hidden = computed((): Extent[] => {
-  const drawn = geometry.value
-  const where = placement.value
-  if (!drawn || !where) return []
-  const order = pieces.value.flatMap((piece) => (piece.kind === 'shape' ? [piece.shape.alias] : []))
-  const insideOf = new Map([...drawn.boxes, ...drawn.elements].map((shape) => [shape.alias, shape.inside]))
-  return hiddenElements(order, where, insideOf).flatMap((alias) => where.elements.get(alias) ?? [])
-})
-const overlapping = computed((): Extent[] =>
-  [...overlappingEnds(props.session.breaches.value)].flatMap((relation) => ends(relation)))
+/** The shapes back to front, as painted: what the marks read what covers what from. */
+const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind === 'shape' ? [piece.shape.alias] : [])))
 
 const selectedExtent = computed((): Extent | null => {
   const alias = gesture.selected.value
@@ -304,33 +297,10 @@ const selectedExtent = computed((): Extent | null => {
       </g>
     </g>
 
-    <g
-      class="canvas-marks"
-      data-testid="canvas-marks"
-    >
-      <rect
-        v-for="(extent, index) in hidden"
-        :key="`hidden:${index}`"
-        class="mark-hidden"
-        :x="extent.left - 3"
-        :y="extent.top - 3"
-        :width="widthOf(extent) + 6"
-        :height="heightOf(extent) + 6"
-      >
-        <title>Hidden: a box or element covers it here. Move it, or bring it forward.</title>
-      </rect>
-      <rect
-        v-for="(extent, index) in overlapping"
-        :key="`overlap:${index}`"
-        class="mark-overlap"
-        :x="extent.left"
-        :y="extent.top"
-        :width="widthOf(extent)"
-        :height="heightOf(extent)"
-      >
-        <title>Connected elements overlap: no line can join them. Save still works; the verifier reports it.</title>
-      </rect>
-    </g>
+    <CanvasMarks
+      :session="session"
+      :order="shapeOrder"
+    />
 
     <g
       v-if="selectedExtent"
@@ -388,10 +358,6 @@ const selectedExtent = computed((): Extent | null => {
 .lab-breach-tag {
   fill: var(--breach); text-anchor: middle; font-family: system-ui, sans-serif; font-weight: 600; pointer-events: none;
 }
-/* The canvas marks what an arrangement left wrong, and refuses nothing (D6, Q12). */
-.canvas-marks rect { vector-effect: non-scaling-stroke; pointer-events: none; }
-.mark-hidden { fill: none; stroke: #d97706; stroke-width: 1.5px; stroke-dasharray: 4 3; }
-.mark-overlap { fill: #dc2626; fill-opacity: 0.08; stroke: #dc2626; stroke-width: 1.5px; stroke-dasharray: 2 2; }
 .lab-handles__frame { fill: none; stroke: var(--accent); stroke-width: 1.5px; pointer-events: none; }
 .lab-handles__frame, .lab-handles__handle { vector-effect: non-scaling-stroke; }
 .lab-handles__handle { fill: #fff; stroke: var(--accent); stroke-width: 1.5px; }
