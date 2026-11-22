@@ -10,7 +10,6 @@ from src.application.verification.artifact_verifier_rules import unresolvable_id
 from src.application.verification.artifact_verifier_types import Issue, Severity, SeverityLiteral, VerificationResult
 from src.infrastructure.write.artifact_write.verify import (
     document_write_allowed,
-    document_write_refusals,
     refuses_a_document_write,
 )
 
@@ -37,10 +36,9 @@ def test_an_unresolvable_link_refuses() -> None:
 def test_a_link_written_with_an_id_that_names_nothing_refuses_and_names_the_link() -> None:
     found = unresolvable_id_link_issues(["REQ@1.gone", "GOL@2.gone"], "doc.md")
 
-    refusals = document_write_refusals(_verified(*found))
-
-    assert [issue.code for issue in refusals] == ["W155", "W155"]
-    assert ["'REQ@1.gone'" in refusals[0].message, "'GOL@2.gone'" in refusals[1].message] == [True, True]
+    assert [issue.code for issue in found] == ["W155", "W155"]
+    assert ["'REQ@1.gone'" in found[0].message, "'GOL@2.gone'" in found[1].message] == [True, True]
+    assert not document_write_allowed(_verified(*found))
 
 
 @pytest.mark.parametrize("code", _TABLE_IN_PROGRESS)
@@ -53,10 +51,9 @@ def test_every_other_warning_still_refuses(code: str) -> None:
     assert refuses_a_document_write(_issue(Severity.WARNING, code))
 
 
-def test_the_refusals_are_the_refusing_findings_in_the_order_found() -> None:
+def test_a_document_is_written_only_when_no_finding_refuses() -> None:
     linked, in_progress = _issue(Severity.WARNING, "W155"), _issue(Severity.WARNING, "W165")
-    error = _issue(Severity.ERROR, "E162")
 
-    assert document_write_refusals(_verified(linked, in_progress, error)) == [linked, error]
     assert not document_write_allowed(_verified(linked, in_progress))
+    assert not document_write_allowed(_verified(in_progress, _issue(Severity.ERROR, "E162")))
     assert document_write_allowed(_verified(in_progress)) and document_write_allowed(_verified())

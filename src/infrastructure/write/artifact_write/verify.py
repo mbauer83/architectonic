@@ -32,14 +32,9 @@ def refuses_a_document_write(issue: Issue) -> bool:
             return not is_about_a_table_in_progress(issue)
 
 
-def document_write_refusals(res: VerificationResult) -> list[Issue]:
-    """The findings that keep a document verifying as *res* from being written, in the order found."""
-    return [issue for issue in res.issues if refuses_a_document_write(issue)]
-
-
 def document_write_allowed(res: VerificationResult) -> bool:
     """Whether a document that verifies as *res* may be written. The one decision every document write asks."""
-    return not document_write_refusals(res)
+    return not any(refuses_a_document_write(issue) for issue in res.issues)
 
 
 def verify_document_write(
