@@ -36,7 +36,14 @@ from src.domain.diagrams.layout.routing.scene import (
     RoutingScene,
     run_for,
 )
-from src.domain.diagrams.layout.routing.search import DIRECTIONS, REVERSE, Found, Terminal, search
+from src.domain.diagrams.layout.routing.search import (
+    DIRECTIONS,
+    REVERSE,
+    Found,
+    Terminal,
+    search,
+    without_straight_points,
+)
 from src.domain.diagrams.layout.routing.shortcuts import improves_detour, shorten
 from src.domain.diagrams.layout.routing.special import special
 from src.domain.diagrams.layout.routing.spreading import ports_spread
@@ -200,19 +207,9 @@ class _Routing:
         connector: Connector, found: Found, starts: Sequence[Stub], goals: Sequence[Stub],
     ) -> RoutedConnector:
         start, goal = starts[found.start], goals[found.goal]
-        course = _straightened([start.at, *found.points, goal.at])
+        course = without_straight_points([start.at, *found.points, goal.at])
         return RoutedConnector(connector.key, start.port, goal.port, course)
 
-
-
-def _straightened(points: Sequence[Point]) -> tuple[Point, ...]:
-    kept = [points[0]]
-    for index in range(1, len(points) - 1):
-        before, here, after = kept[-1], points[index], points[index + 1]
-        if here == before or (before.x == here.x == after.x) or (before.y == here.y == after.y):
-            continue
-        kept.append(here)
-    return (*kept, points[-1])
 
 
 #: Far enough to stand for everywhere outside a box.

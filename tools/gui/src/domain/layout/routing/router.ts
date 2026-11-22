@@ -18,7 +18,7 @@ import { OUTWARD_INDEX, facingSide, inLine, stubOf } from './ports'
 import type { Choice, Connector, RoutedConnector, RoutingResult, RoutingScene } from './scene'
 import { IDEAL_SEPARATION, SIDES, byText, extentOf, runFor } from './scene'
 import type { Found } from './search'
-import { DIRECTIONS, REVERSE, search } from './search'
+import { DIRECTIONS, REVERSE, search, withoutStraightPoints } from './search'
 import type { Passage } from './visibility'
 import { Lines, Stubs } from './lines'
 import { FULL, Visibility } from './visibility'
@@ -99,20 +99,6 @@ const acrossStub = (stub: Stub): Extent => {
 const usable = (stub: Stub, passage: Passage, own: readonly Extent[], arriving: boolean): boolean =>
   !passage.pointBlocked(stub.end) &&
   !(arriving ? passage.stepBlocked(stub.end, stub.at, own) : passage.stepBlocked(stub.at, stub.end, own))
-
-const straightened = (points: readonly Point[]): Point[] => {
-  const kept = [points[0]]
-  for (let index = 1; index < points.length - 1; index += 1) {
-    const before = kept[kept.length - 1]
-    const here = points[index]
-    const after = points[index + 1]
-    const repeat = here.x === before.x && here.y === before.y
-    const upright = before.x === here.x && here.x === after.x
-    const level = before.y === here.y && here.y === after.y
-    if (!repeat && !upright && !level) kept.push(here)
-  }
-  return [...kept, points[points.length - 1]]
-}
 
 class Routing {
   readonly visibility: Visibility
@@ -254,7 +240,7 @@ const asRouted = (
     key: connector.key,
     sourcePort: start.port,
     targetPort: goal.port,
-    course: straightened([start.at, ...found.points, goal.at]),
+    course: withoutStraightPoints([start.at, ...found.points, goal.at]),
   }
 }
 
