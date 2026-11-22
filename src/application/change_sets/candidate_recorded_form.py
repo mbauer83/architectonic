@@ -26,10 +26,11 @@ _STATE = "state"
 _PARENT = "parent"
 _ANSWERS = "answers"
 _SATISFIES = "satisfies"
+_SCOPE = "scope"
 _CHANGES = "changes"
 
 _REQUIRED = (_ID, _NAME, _STATE, _CHANGES)
-_OPTIONAL = (_RATIONALE, _PARENT, _ANSWERS, _SATISFIES)
+_OPTIONAL = (_RATIONALE, _PARENT, _ANSWERS, _SATISFIES, _SCOPE)
 
 
 def to_mapping(candidate: CandidateArchitecture) -> dict[str, Any]:
@@ -42,6 +43,7 @@ def to_mapping(candidate: CandidateArchitecture) -> dict[str, Any]:
         _PARENT: candidate.parent_id,
         _ANSWERS: list(candidate.answers),
         _SATISFIES: list(candidate.satisfies),
+        _SCOPE: list(candidate.scope),
         _CHANGES: recorded_form.to_mapping(candidate.changes),
     }
     return {key: value for key, value in recorded.items() if key in _REQUIRED or value}
@@ -64,5 +66,6 @@ def from_mapping(recorded: Mapping[str, Any]) -> CandidateArchitecture:
         parent_id=recorded.get(_PARENT),
         answers=tuple(recorded.get(_ANSWERS, ())),
         satisfies=tuple(recorded.get(_SATISFIES, ())),
+        scope=tuple(recorded.get(_SCOPE, ())),
     )
 

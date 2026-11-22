@@ -89,16 +89,16 @@ class TestWhatHasNoOrder:
         upper = change_set(AddConnection(joins(_A, "$ref:cache"), {}))
 
         with pytest.raises(MalformedChangeSet, match=r"\$ref:cache, which neither"):
-            application_order(upper, beneath=lower)
+            application_order(upper, beneath=(lower,))
 
     def test_a_reference_the_set_beneath_creates_resolves(self) -> None:
         lower = change_set(create("queue"))
         link = AddConnection(joins(_A, "$ref:queue"), {})
         upper = change_set(link, edit("$ref:queue", "name", "Queue 2"))
 
-        assert link in application_order(upper, beneath=lower)
+        assert link in application_order(upper, beneath=(lower,))
 
     def test_the_lower_sets_operations_are_not_in_the_upper_sets_order(self) -> None:
         lower = change_set(create("queue"))
         upper = change_set(AddConnection(joins(_A, "$ref:queue"), {}))
-        assert len(application_order(upper, beneath=lower)) == 1
+        assert len(application_order(upper, beneath=(lower,))) == 1
