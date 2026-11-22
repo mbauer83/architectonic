@@ -110,6 +110,24 @@ DIAGRAM_ROWS: tuple[RouteRow, ...] = (
         "diagrams_set_diagram_edge_label", TYPED,
         identity_parameters=("artifact_id", "edge_key"), mutation_domain="repository",
     ),
+    # Arranging a diagram: the picture an editor arranges (PlantUML's, read, with the stored layout),
+    # resized shapes drawn by the composer, and a patch of the layout block. The read and the drawing
+    # run PlantUML or the composer, hence `derived-graph`; the patch may take a first layout over from
+    # PlantUML's picture, which renders it.
+    RouteRow(
+        "GET", "/api/diagrams/{artifact_id}/layout/geometry", "subresource",
+        "diagrams_read_diagram_layout_geometry", TYPED,
+        identity_parameters=_ID, cache_directive="no-store", timeout_class="derived-graph",
+    ),
+    RouteRow(
+        "POST", "/api/diagrams/{artifact_id}/layout/preview", "operation",
+        "diagrams_preview_diagram_layout_shapes", TYPED,
+        identity_parameters=_ID, cache_directive="no-store", timeout_class="derived-graph",
+    ),
+    RouteRow(
+        "PATCH", "/api/diagrams/{artifact_id}/layout", "subresource", "diagrams_patch_diagram_layout", TYPED,
+        identity_parameters=_ID, mutation_domain="repository", timeout_class="derived-graph",
+    ),
     RouteRow(
         "POST", "/api/diagrams/preview", "operation", "diagrams_preview_diagram", TYPED,
         timeout_class="derived-graph",

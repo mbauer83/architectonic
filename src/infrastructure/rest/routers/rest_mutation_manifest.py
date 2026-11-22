@@ -42,6 +42,7 @@ _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "connections_update_connection_associations",
     "diagrams_create_diagram",
     "diagrams_delete_diagram",
+    "diagrams_patch_diagram_layout",
     "diagrams_replace_diagram",
     "diagrams_set_diagram_edge_label",
     "diagrams_sync_diagram_to_model",
@@ -109,6 +110,7 @@ REST_MUTATION_MANIFEST: dict[str, MutationIntent] = {
 #: execution/exports, and non-persistent identifier minting.
 NON_MUTATING_REST_OPERATIONS: frozenset[str] = frozenset({
     "diagrams_preview_diagram",
+    "diagrams_preview_diagram_layout_shapes",
     "entities_allocate_identifiers",
     "icons_preview_shown_icons",
     "matrices_preview_matrix",

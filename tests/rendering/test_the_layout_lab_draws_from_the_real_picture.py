@@ -31,10 +31,11 @@ from src.infrastructure.rendering.layout.plantuml_svg_reader import (
     read_rendered_picture,
 )
 from src.infrastructure.rendering.layout.shape_drawing import fitted_box, resized_element
-from src.infrastructure.rest.layout_lab.drawing import element_of, node_of
-from src.infrastructure.rest.layout_lab.geometry import diagram_geometry
 from src.infrastructure.rest.layout_lab.routes import LAB_PREFIX, install_layout_lab
 from src.infrastructure.rest.routers import state as s
+from src.infrastructure.rest.routers.diagrams._layout_drawing import element_of, node_of
+from src.infrastructure.rest.routers.diagrams._layout_geometry import diagram_geometry
+from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
 from tests.support.api_app import build_api_app
 from tests.support.rendered_pictures import RenderedModel, build_rendered_model, plantuml_available
 from tests.support.rest_state import reset_state_for_test
@@ -111,7 +112,7 @@ def test_a_grouping_box_is_addressed_by_its_grouping_id(model: RenderedModel) ->
 def lab(model: RenderedModel, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     monkeypatch.setenv("ARCH_LAYOUT_LAB", "1")
     s.init_state(ArtifactRepository(shared_artifact_index([model.repo])), model.repo, None)
-    app = build_api_app()
+    app = build_api_app(diagrams_router)
     install_layout_lab(app)
     try:
         with TestClient(app) as client:
@@ -138,13 +139,13 @@ def test_the_lab_is_absent_unless_switched_on(monkeypatch: pytest.MonkeyPatch) -
     assert on.openapi() == off.openapi()
 
 
-def test_the_lab_serves_the_geometry_and_keeps_none_of_it(lab: TestClient, model: RenderedModel) -> None:
-    response = lab.get(f"{LAB_PREFIX}/diagrams/{_diagram_id(model, 'top-to-bottom')}/geometry")
+def test_the_geometry_is_served_and_kept_by_no_one(lab: TestClient, model: RenderedModel) -> None:
+    response = lab.get(f"/api/diagrams/{_diagram_id(model, 'top-to-bottom')}/layout/geometry")
 
     assert response.status_code == 200, response.text
     assert response.headers["cache-control"] == "no-store"
     assert response.json()["name"] == "Order handling" and response.json()["elements"]
-    assert lab.get(f"{LAB_PREFIX}/diagrams/ARC@1790000000.nowhere/geometry").status_code == 404
+    assert lab.get("/api/diagrams/ARC@1790000000.nowhere/layout/geometry").status_code == 404
 
 
 def test_a_layout_sent_to_the_lab_is_drawn_by_the_composer(lab: TestClient, model: RenderedModel) -> None:
@@ -206,7 +207,7 @@ def test_a_resized_shape_is_drawn_by_the_composer(lab: TestClient, model: Render
     grown = Extent(box.extent.left, box.extent.top, box.extent.right + 80, box.extent.bottom + 40)
     wider = Extent(element.extent.left, element.extent.top, element.extent.right + 60, element.extent.bottom)
 
-    response = lab.post(f"{LAB_PREFIX}/shapes", json={"shapes": [
+    response = lab.post(f"/api/diagrams/{_diagram_id(model, scene)}/layout/preview", json={"shapes": [
         {"drawing": node_of(drawing.shapes[alias]), "box": True, "drawn": _wire(box.extent), "to": _wire(grown)},
         {"drawing": node_of(drawing.shapes[element_alias]), "box": False, "drawn": _wire(element.extent),
          "to": _wire(wider)},
@@ -221,11 +222,11 @@ def test_a_resized_shape_is_drawn_by_the_composer(lab: TestClient, model: Render
     )
 
 
-def test_a_drawing_that_is_not_one_is_refused(lab: TestClient) -> None:
+def test_a_drawing_that_is_not_one_is_refused(lab: TestClient, model: RenderedModel) -> None:
     script = {"tag": "script", "attributes": {}, "text": "alert(1)", "children": []}
     extent = {"left": 0, "top": 0, "right": 10, "bottom": 10}
 
-    response = lab.post(f"{LAB_PREFIX}/shapes", json={"shapes": [
+    response = lab.post(f"/api/diagrams/{_diagram_id(model, 'groupings')}/layout/preview", json={"shapes": [
         {"drawing": {"tag": "g", "attributes": {}, "text": None, "children": [script]}, "box": True,
          "drawn": extent, "to": extent},
     ]})

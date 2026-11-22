@@ -33,6 +33,7 @@ from src.infrastructure.rest.routers.diagrams._context import (
     puml_contains,
 )
 from src.infrastructure.rest.routers.diagrams._edge_label import router as _edge_label_router
+from src.infrastructure.rest.routers.diagrams._layout import router as _layout_router
 from src.infrastructure.rest.routers.diagrams._matrix_write import router as _matrix_write_router
 from src.infrastructure.rest.routers.diagrams._palette import router as _palette_router
 from src.infrastructure.rest.routers.diagrams._serving import _rendered_path
@@ -45,6 +46,7 @@ router.include_router(_write_router)
 router.include_router(_matrix_write_router)
 router.include_router(_palette_router)
 router.include_router(_edge_label_router)
+router.include_router(_layout_router)
 router.include_router(_serving_router)
 router.include_router(_sub_entity_router)
 

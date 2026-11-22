@@ -32,7 +32,7 @@ from src.infrastructure.rendering.layout._svg_relations import RelationMarkup
 from src.infrastructure.rendering.layout.box_identities import box_keys_by_alias
 from src.infrastructure.rendering.layout.plantuml_svg_reader import RenderedDrawing, read_rendered_drawing
 from src.infrastructure.rendering.layout.relation_identities import DrawnAs, relation_keys_by_index
-from src.infrastructure.rest.layout_lab.drawing import node_of, relation_drawing
+from src.infrastructure.rest.routers.diagrams._layout_drawing import node_of, relation_drawing
 
 type Wire = dict[str, object]
 

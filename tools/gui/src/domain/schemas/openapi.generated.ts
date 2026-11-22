@@ -1841,6 +1841,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diagrams/{artifact_id}/layout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change entries of a diagram's layout */
+        patch: operations["diagrams_patch_diagram_layout"];
+        trace?: never;
+    };
+    "/api/diagrams/{artifact_id}/layout/geometry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the picture a diagram is arranged on */
+        get: operations["diagrams_read_diagram_layout_geometry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diagrams/{artifact_id}/layout/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draw resized shapes of a diagram, writing nothing
+         * @description Each shape drawn by the composer at its new size. Needs nothing of the diagram but its address:
+         *     the drawing, where it was drawn and where it goes all arrive in the request.
+         */
+        post: operations["diagrams_preview_diagram_layout_shapes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diagrams/{artifact_id}/svg": {
         parameters: {
             query?: never;
@@ -6949,6 +7004,42 @@ export interface components {
             };
         };
         /**
+         * DiagramLayoutGeometryResponse
+         * @description PlantUML's own picture of a diagram as an editor arranges it, and the layout the diagram states.
+         */
+        DiagramLayoutGeometryResponse: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Backdrop */
+            backdrop: components["schemas"]["DrawingNodeContract"][];
+            /** Boxes */
+            boxes: components["schemas"]["GeometryBoxContract"][];
+            canvas: components["schemas"]["ExtentContract"];
+            /** Elements */
+            elements: components["schemas"]["GeometryElementContract"][];
+            layout?: components["schemas"]["DiagramLayoutContract"];
+            /** Name */
+            name: string;
+            /** Relations */
+            relations: components["schemas"]["GeometryRelationContract"][];
+        };
+        /**
+         * DiagramLayoutPatchResponse
+         * @description What a layout patch did: whether it wrote, what the write warned or refused, and the layout block
+         *     the diagram holds after it — empty where it holds none.
+         */
+        DiagramLayoutPatchResponse: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Errors */
+            errors: string[];
+            layout: components["schemas"]["DiagramLayoutContract"];
+            /** Warnings */
+            warnings: string[];
+            /** Wrote */
+            wrote: boolean;
+        };
+        /**
          * DiagramListResponse
          * @description A page of diagrams, with the count of the *filtered* population.
          */
@@ -7736,6 +7827,46 @@ export interface components {
             subdirectory: string;
             /** Suggested Connections */
             suggested_connections: string[];
+        };
+        /**
+         * DrawingNodeBody
+         * @description A piece of PlantUML's drawing as the geometry read handed it over, sent back to be drawn anew.
+         */
+        DrawingNodeBody: {
+            /** Attributes */
+            attributes: {
+                [key: string]: string;
+            };
+            /**
+             * Children
+             * @default []
+             */
+            children: components["schemas"]["DrawingNodeBody"][];
+            /** Tag */
+            tag: string;
+            /** Text */
+            text?: string | null;
+        };
+        /**
+         * DrawingNodeContract
+         * @description A piece of PlantUML's own drawing — an outline, a glyph, a word, a line, a decoration — as a tree.
+         */
+        DrawingNodeContract: {
+            /** Attributes */
+            attributes: {
+                [key: string]: string;
+            };
+            /** Children */
+            children: components["schemas"]["DrawingNodeContract"][];
+            /** Tag */
+            tag: string;
+            /** Text */
+            text?: string;
+        };
+        /** DrawShapesBody */
+        DrawShapesBody: {
+            /** Shapes */
+            shapes: components["schemas"]["ShapeToDraw"][];
         };
         /**
          * DuplicateEdgeDetails
@@ -8637,6 +8768,28 @@ export interface components {
         ErrorEnvelope: {
             detail: components["schemas"]["ErrorBody"];
         };
+        /** ExtentBody */
+        ExtentBody: {
+            /** Bottom */
+            bottom: number;
+            /** Left */
+            left: number;
+            /** Right */
+            right: number;
+            /** Top */
+            top: number;
+        };
+        /** ExtentContract */
+        ExtentContract: {
+            /** Bottom */
+            bottom: number;
+            /** Left */
+            left: number;
+            /** Right */
+            right: number;
+            /** Top */
+            top: number;
+        };
         /**
          * FailureModeRollUpResponse
          * @description One architecture element's FMEA row, rolled up to what a badge needs.
@@ -8883,6 +9036,77 @@ export interface components {
             slug: string;
             /** Version */
             version: number;
+        };
+        /** GeometryBoxContract */
+        GeometryBoxContract: {
+            /** Alias */
+            alias: string;
+            drawing: components["schemas"]["DrawingNodeContract"];
+            extent: components["schemas"]["ExtentContract"];
+            /** Inside */
+            inside?: string;
+            /** Key */
+            key?: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "domain" | "type" | "authored-grouping" | "element";
+            /** Label */
+            label: string;
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "elements" | "boxes";
+            title_band?: components["schemas"]["ExtentContract"];
+            /** Words */
+            words: components["schemas"]["MeasuredWordContract"][];
+        };
+        /** GeometryElementContract */
+        GeometryElementContract: {
+            /** Alias */
+            alias: string;
+            drawing: components["schemas"]["DrawingNodeContract"];
+            extent: components["schemas"]["ExtentContract"];
+            /** Inside */
+            inside?: string;
+            /** Key */
+            key?: string;
+            /** Label */
+            label: string;
+            outside_label?: components["schemas"]["ExtentContract"];
+            /** Words */
+            words: components["schemas"]["MeasuredWordContract"][];
+        };
+        /** GeometryRelationContract */
+        GeometryRelationContract: {
+            /** Course */
+            course: [
+                number,
+                number
+            ][];
+            /** Decorated */
+            decorated: [
+                boolean,
+                boolean
+            ];
+            drawing: components["schemas"]["LineDrawingContract"];
+            /** Index */
+            index: number;
+            /** Key */
+            key?: string;
+            /** Label */
+            label: string;
+            /** Label Size */
+            label_size?: [
+                number,
+                number
+            ];
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
         };
         /**
          * GroupEntryResponse
@@ -9757,6 +9981,50 @@ export interface components {
              */
             "meta-ontology": string;
         };
+        /**
+         * LineDrawingContract
+         * @description PlantUML's whole drawing of a line, and its parts for drawing it along a new course.
+         */
+        LineDrawingContract: {
+            /** Ends */
+            ends: [
+                components["schemas"]["LineEndContract"],
+                components["schemas"]["LineEndContract"]
+            ];
+            group: components["schemas"]["DrawingNodeContract"];
+            label?: components["schemas"]["LineLabelContract"];
+            line: components["schemas"]["DrawingNodeContract"];
+        };
+        /**
+         * LineEndContract
+         * @description One end of a line: its decorations, and the frame they were drawn in.
+         */
+        LineEndContract: {
+            /** At */
+            at: [
+                number,
+                number
+            ];
+            /** Gap */
+            gap: number;
+            /** Heading */
+            heading: [
+                number,
+                number
+            ];
+            /** Marks */
+            marks: components["schemas"]["DrawingNodeContract"][];
+        };
+        /** LineLabelContract */
+        LineLabelContract: {
+            /** Centre */
+            centre: [
+                number,
+                number
+            ];
+            /** Texts */
+            texts: components["schemas"]["DrawingNodeContract"][];
+        };
         /** LinkPatchWire */
         LinkPatchWire: {
             /** Connection-Type */
@@ -9974,6 +10242,17 @@ export interface components {
         MatrixPreviewResponse: {
             /** Markdown */
             markdown: string;
+        };
+        /** MeasuredWordContract */
+        MeasuredWordContract: {
+            /** Text */
+            text: string;
+            /** Width */
+            width: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
         };
         /**
          * MetadataSchemaBlock
@@ -10549,6 +10828,27 @@ export interface components {
             /** Patch */
             patch: {
                 [key: string]: unknown;
+            };
+        };
+        /**
+         * PatchLayoutBody
+         * @description Entries of the layout block by section (``elements``, ``boxes``, ``relations``, ``z``) and key.
+         *
+         *     Each entry is ``null`` to remove it, or ``{value, based_on?}``: what it becomes (``null`` removes
+         *     it) and what the caller read it as (``null`` for absent). A ``based_on`` that no longer holds is
+         *     a conflict, and nothing is written.
+         */
+        PatchLayoutBody: {
+            /**
+             * Dry Run
+             * @default true
+             */
+            dry_run: boolean;
+            /** Patch */
+            patch: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
             };
         };
         /**
@@ -11926,6 +12226,25 @@ export interface components {
             justification: string;
             /** Value */
             value: string;
+        };
+        /**
+         * ShapeDrawingsResponse
+         * @description Each shape asked for, drawn by the composer at its new size, in the order asked.
+         */
+        ShapeDrawingsResponse: {
+            /** Drawings */
+            drawings: components["schemas"]["DrawingNodeContract"][];
+        };
+        /**
+         * ShapeToDraw
+         * @description A shape an editor resized: PlantUML's drawing of it, where that was drawn, and where it is to go.
+         */
+        ShapeToDraw: {
+            /** Box */
+            box: boolean;
+            drawing: components["schemas"]["DrawingNodeBody"];
+            drawn: components["schemas"]["ExtentBody"];
+            to: components["schemas"]["ExtentBody"];
         };
         /**
          * SharedAttributeOfferResponse
@@ -19104,6 +19423,197 @@ export interface operations {
             };
             /** @description Write temporarily rejected by the workspace gate (retryable) */
             423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    diagrams_patch_diagram_layout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchLayoutBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagramLayoutPatchResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    diagrams_read_diagram_layout_geometry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagramLayoutGeometryResponse"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    diagrams_preview_diagram_layout_shapes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DrawShapesBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShapeDrawingsResponse"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
