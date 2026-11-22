@@ -1875,6 +1875,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diagrams/{artifact_id}/layout/geometry/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draw an unsaved diagram composition with layout keys */
+        post: operations["diagrams_preview_diagram_layout_geometry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diagrams/{artifact_id}/layout/preview": {
         parameters: {
             query?: never;
@@ -9085,6 +9102,29 @@ export interface components {
             /** Words */
             words: components["schemas"]["MeasuredWordContract"][];
         };
+        /** GeometryPreviewBody */
+        GeometryPreviewBody: {
+            /** Authored Groupings */
+            authored_groupings?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Connection Ids */
+            connection_ids: string[];
+            /** Diagram Entities */
+            diagram_entities?: {
+                [key: string]: unknown;
+            } | null;
+            /** Diagram Type */
+            diagram_type: string;
+            /** Entity Ids */
+            entity_ids: string[];
+            /** Name */
+            name: string;
+            /** Proposed Elements */
+            proposed_elements?: components["schemas"]["ProposedElement"][];
+            /** Proposed Relations */
+            proposed_relations?: components["schemas"]["ProposedRelation"][];
+        };
         /** GeometryRelationContract */
         GeometryRelationContract: {
             /** Course */
@@ -11340,6 +11380,26 @@ export interface components {
             target_id: string;
             /** Target Kind */
             target_kind: string;
+        };
+        /** ProposedElement */
+        ProposedElement: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            };
+            /** Name */
+            name: string;
+        };
+        /** ProposedRelation */
+        ProposedRelation: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            };
         };
         /**
          * ProposedStanding
@@ -19567,6 +19627,104 @@ export interface operations {
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    diagrams_preview_diagram_layout_geometry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GeometryPreviewBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagramLayoutGeometryResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };

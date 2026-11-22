@@ -152,3 +152,22 @@ def test_a_member_removed_with_a_layout_patch_is_written_once_and_the_layout_mat
     assert keys[1] not in stored["elements"]
     assert set(stored["elements"]) >= set(keys[2:])
 
+
+
+def test_preview_draws_proposed_members_under_layout_keys_without_writing(model: RenderedModel, client: TestClient):
+    artifact_id, path = _diagram(model, "top-to-bottom")
+    before = path.read_bytes()
+    existing = model.ids["clerk"]
+    proposed = "ROL@1790000000.abc12"
+    relation = f"{existing}---{proposed}@@archimate-association"
+    answer = client.post(f"/api/diagrams/{artifact_id}/layout/geometry/preview", json={
+        "diagram_type": "archimate-layered", "name": "Preview", "entity_ids": [existing], "connection_ids": [],
+        "proposed_elements": [{"artifact_id": proposed, "name": "Draft clerk"}],
+        "proposed_relations": [{"artifact_id": relation}],
+    })
+    assert answer.status_code == 200, answer.text
+    picture = answer.json()
+    assert any(row["key"] == proposed for row in picture["elements"])
+    assert len(picture["relations"]) == 1 and picture["relations"][0]["key"]
+    assert path.read_bytes() == before
+    assert s.get_repo().get_entity(proposed) is None

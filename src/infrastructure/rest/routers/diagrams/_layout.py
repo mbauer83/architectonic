@@ -32,6 +32,8 @@ from src.infrastructure.rest.routers._openapi import (
     TAG_DIAGRAMS,
     WRITE_RESPONSES,
 )
+from src.infrastructure.rest.routers.diagrams._composition import render_composition
+from src.infrastructure.rest.routers.diagrams._geometry_proposals import GeometryPreviewBody
 from src.infrastructure.rest.routers.diagrams._layout_drawing import reshaped
 from src.infrastructure.rest.routers.diagrams._layout_geometry import diagram_geometry
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
@@ -116,9 +118,15 @@ def _repo_root() -> Path:
 def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs) -> dict[str, object]:
     parsed = _stored_diagram(artifact_id)
     frontmatter = dict(parsed.frontmatter)
+    return _geometry_response(parsed.puml_body, artifact_id, frontmatter, catalogs)
+
+
+def _geometry_response(
+    puml: str, artifact_id: str, frontmatter: dict[str, Any], catalogs: RuntimeCatalogs,
+) -> dict[str, object]:
     diagram_type = str(frontmatter.get("diagram-type", "archimate"))
     try:
-        svg = plantuml_svg(parsed.puml_body, _repo_root(), diagram_type)
+        svg = plantuml_svg(puml, _repo_root(), diagram_type)
     except NotDrawn as refusal:
         raise HTTPException(422, str(refusal)) from refusal
     geometry = diagram_geometry(svg, frontmatter, catalogs.ontology)
@@ -131,6 +139,31 @@ def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs) -> dict[s
         **geometry,
         **({"layout": stored} if isinstance(stored, dict) and stored else {}),
     }
+
+
+@router.post(
+    "/api/diagrams/{artifact_id}/layout/geometry/preview", tags=[TAG_DIAGRAMS],
+    summary="Draw an unsaved diagram composition with layout keys", response_model=DiagramLayoutGeometryResponse,
+    response_model_exclude_none=True, responses={**READ_RESPONSES, **WRITE_RESPONSES},
+)
+def preview_diagram_layout_geometry(
+    artifact_id: str, body: GeometryPreviewBody, catalogs: Catalogs,
+) -> dict[str, object]:
+    parsed = _stored_diagram(artifact_id)
+    repo = s.get_repo()
+    try:
+        elements, relations = body.proposals(catalogs, repo)
+        composed = render_composition(
+            body, repo=repo, repo_root=_repo_root(), proposed_entities=elements, proposed_connections=relations,
+        )
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return _geometry_response(composed.puml, artifact_id, {
+        **parsed.frontmatter, "name": body.name, "diagram-type": body.diagram_type,
+        "entity-ids-used": composed.entity_ids_used, "connection-ids-used": composed.connection_ids_used,
+        "diagram-entities": composed.diagram_entities, "connections": composed.diagram_connections,
+        "authored-groupings": body.authored_groupings, "bindings": composed.conn_bindings,
+    }, catalogs)
 
 
 @router.post(
