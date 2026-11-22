@@ -9,7 +9,6 @@ import {
   descendantsOf,
   drawnArrangement,
   fittedBoxes,
-  layoutBlock,
   moved,
   resized,
   resizedExtent,
@@ -82,19 +81,6 @@ describe('the lab arrangement', () => {
     expect(resizedExtent(at(0, 0, 100, 50), 'nw', 200, 200, 24)).toEqual(at(76, 26, 100, 50))
   })
 
-  it('states nothing for PlantUML own picture', () => {
-    expect(layoutBlock(geometry, drawnArrangement(geometry))).toEqual({})
-  })
-
-  it('states a moved element by position, a resized one by size, and a sized box by its key', () => {
-    let arrangement = moved(geometry, drawnArrangement(geometry), 'A', 10.4, 5)
-    arrangement = resized(geometry, arrangement, 'C', at(400, 40, 560, 100))
-    arrangement = resized(geometry, arrangement, 'G', at(10, 10, 300, 120))
-    expect(layoutBlock(geometry, arrangement)).toEqual({
-      elements: { 'APP@1.a': { x: 30, y: 45 }, 'APP@3.c': { x: 400, y: 40, w: 160, h: 60 } },
-      boxes: { 'g-1': { x: 10, y: 10, w: 290, h: 110 } },
-    })
-  })
 })
 
 describe('the lab picture as the router sees it', () => {

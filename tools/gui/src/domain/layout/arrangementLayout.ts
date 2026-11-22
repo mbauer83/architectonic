@@ -13,6 +13,7 @@
  */
 import type { Extent } from './geometry'
 import { heightOf, widthOf } from './geometry'
+import type { DiagramLayoutSchema } from '../schemas/diagramLayout'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 import type { Arrangement } from './lab/labArrangement'
 import { drawnArrangement } from './lab/labArrangement'
@@ -32,11 +33,8 @@ export interface ArrangedLayout {
   readonly boxes: Readonly<Record<string, Placed>>
 }
 
-/** The sections a stored block may hold that an arrangement reads and writes. */
-export interface StoredLayout {
-  readonly elements?: Readonly<Record<string, Placed>>
-  readonly boxes?: Readonly<Record<string, Placed>>
-}
+/** The sections of a stored block an arrangement reads and writes: the layout contract's own. */
+export type StoredLayout = Pick<typeof DiagramLayoutSchema.Type, 'elements' | 'boxes'>
 
 const SAME = 0.5
 

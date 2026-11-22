@@ -75,7 +75,7 @@ describe('the layout lab gesture', () => {
     expect(gesture.selected.value).toBe('C')
     expect(lab.history.value).toHaveLength(0)
     expect(lab.routes.value).toBeNull()
-    expect(lab.layout.value).toEqual({})
+    expect(lab.layout.value?.elements['APP@3.c']).toEqual({ x: 400, y: 40 })
   })
 
   it('moves an element by the pointer travel, routing live and again on the drop', () => {
@@ -90,7 +90,7 @@ describe('the layout lab gesture', () => {
     expect(gesture.dragging.value).toBe(false)
     expect(lab.timing.value?.kind).toBe('full')
     expect(lab.arrangement.value?.elements.get('C')).toEqual(at(420, 80, 520, 120))
-    expect(lab.layout.value).toEqual({ elements: { 'APP@3.c': { x: 420, y: 80 } } })
+    expect(lab.layout.value).toMatchObject({ elements: { 'APP@3.c': { x: 420, y: 80 } } })
     const course = lab.courses.value.get(0)
     expect(course?.at(-1)?.x).toBe(420)
 
@@ -105,7 +105,7 @@ describe('the layout lab gesture', () => {
     pointer('pointermove', 15, 65)
     pointer('pointerup', 15, 65)
 
-    expect(lab.layout.value).toEqual({ elements: { 'APP@1.a': { x: 20, y: 90 }, 'APP@2.b': { x: 140, y: 90 } } })
+    expect(lab.layout.value).toMatchObject({ elements: { 'APP@1.a': { x: 20, y: 90 }, 'APP@2.b': { x: 140, y: 90 } } })
     expect(lab.placement.value?.boxes.get('G')).toEqual(at(10, 60, 250, 140))
   })
 
@@ -114,7 +114,7 @@ describe('the layout lab gesture', () => {
     press(gesture, 'C', 500, 80, 'se')
     pointer('pointermove', 560, 100)
     pointer('pointerup', 560, 100)
-    expect(lab.layout.value).toEqual({ elements: { 'APP@3.c': { x: 400, y: 40, w: 160, h: 60 } } })
+    expect(lab.layout.value).toMatchObject({ elements: { 'APP@3.c': { x: 400, y: 40, w: 160, h: 60 } } })
 
     press(gesture, 'C', 560, 100, 'se')
     pointer('pointermove', 300, 0)
@@ -133,7 +133,7 @@ describe('the layout lab gesture', () => {
     lab.reset()
     expect(lab.history.value).toHaveLength(0)
     expect(lab.routes.value).toBeNull()
-    expect(lab.layout.value).toEqual({})
+    expect(lab.layout.value?.elements['APP@3.c']).toEqual({ x: 400, y: 40 })
     expect(lab.courses.value.get(0)).toEqual([{ x: 240, y: 60 }, { x: 400, y: 60 }])
   })
 })

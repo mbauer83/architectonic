@@ -9,13 +9,11 @@
 import { computed, ref } from 'vue'
 import { Effect } from 'effect'
 import { labPicture } from '../../adapters/http/HttpLayoutLab'
-import { layoutBlock } from '../../domain/layout/lab/labArrangement'
+import { layoutOf } from '../../domain/layout/arrangementLayout'
 import { countByTier } from '../../domain/layout/lab/labBreaches'
 import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import type { ModelService } from '../../application/ModelService'
 import { useArrangementSession } from './useArrangementSession'
-
-export type { PassTiming } from './useArrangementSession'
 
 export function useLayoutLab(svc: ModelService) {
   const session = useArrangementSession(
@@ -33,7 +31,7 @@ export function useLayoutLab(svc: ModelService) {
   const layout = computed(() => {
     const drawn = session.geometry.value
     const now = session.arrangement.value
-    return drawn && now ? layoutBlock(drawn, now) : {}
+    return drawn && now ? layoutOf(drawn, now) : null
   })
 
   const load = async (artifactId: string) => {
@@ -73,7 +71,7 @@ export function useLayoutLab(svc: ModelService) {
     serverLoading.value = true
     serverError.value = null
     try {
-      serverPicture.value = await Effect.runPromise(labPicture(drawn.artifact_id, layout.value))
+      serverPicture.value = await Effect.runPromise(labPicture(drawn.artifact_id, { ...layout.value }))
     } catch (failure) {
       serverPicture.value = null
       serverError.value = failure instanceof Error ? failure.message : String(failure)

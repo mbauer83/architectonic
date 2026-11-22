@@ -1,6 +1,6 @@
 /**
- * Where everything on the lab's picture is after the moves and resizes made so far, and the layout
- * block that states it.
+ * Where everything on a picture being arranged is after the moves and resizes made so far. The layout
+ * block that states it is `arrangementLayout`'s to write.
  *
  * The box rule is the composer's (`src/infrastructure/rendering/layout/arrangement.py`): a box is what
  * its contents need with the padding PlantUML gave it, never narrower than its title, widened to what
@@ -9,7 +9,7 @@
  * is the diagram's to say, not a drag's.
  */
 import type { Extent } from '../geometry'
-import { heightOf, widthOf } from '../geometry'
+import { widthOf } from '../geometry'
 import type { GeometryBox, LayoutGeometry, MeasuredWord } from '../../schemas/diagramLayoutGeometry'
 
 /** What has been moved or resized: every element where it is now, and each box stated by size. */
@@ -20,9 +20,6 @@ export interface Arrangement {
 
 /** The least room kept either side of a box's title. */
 const TITLE_MARGIN = 8
-
-/** How far a size may differ from the one the renderer drew and still be the same size. */
-const SAME_SIZE = 0.5
 
 /** The smallest an element may be resized to, either way. */
 export const SMALLEST_ELEMENT = 24
@@ -149,41 +146,3 @@ export const resizedExtent = (start: Extent, handle: Handle, dx: number, dy: num
   return { left, top, right, bottom }
 }
 
-const sameSize = (one: Extent, other: Extent): boolean =>
-  Math.abs(widthOf(one) - widthOf(other)) <= SAME_SIZE && Math.abs(heightOf(one) - heightOf(other)) <= SAME_SIZE
-
-const sameExtent = (one: Extent, other: Extent): boolean =>
-  sameSize(one, other) && Math.abs(one.left - other.left) <= SAME_SIZE && Math.abs(one.top - other.top) <= SAME_SIZE
-
-interface Placed {
-  readonly x: number
-  readonly y: number
-  readonly w?: number
-  readonly h?: number
-}
-
-const placed = (extent: Extent, sized: boolean): Placed => ({
-  x: Math.round(extent.left),
-  y: Math.round(extent.top),
-  ...(sized ? { w: Math.max(1, Math.round(widthOf(extent))), h: Math.max(1, Math.round(heightOf(extent))) } : {}),
-})
-
-/** The layout block a diagram would state for *arrangement*: only what differs from PlantUML's picture. */
-export const layoutBlock = (geometry: LayoutGeometry, arrangement: Arrangement): Record<string, unknown> => {
-  const elements: Record<string, Placed> = {}
-  const boxes: Record<string, Placed> = {}
-  for (const element of geometry.elements) {
-    const now = arrangement.elements.get(element.alias)
-    if (!element.key || !now || sameExtent(now, element.extent)) continue
-    elements[element.key] = placed(now, !sameSize(now, element.extent))
-  }
-  for (const box of geometry.boxes) {
-    const stated = arrangement.stated.get(box.alias)
-    if (!box.key || !stated) continue
-    ;(box.section === 'elements' ? elements : boxes)[box.key] = placed(stated, true)
-  }
-  return {
-    ...(Object.keys(elements).length > 0 ? { elements } : {}),
-    ...(Object.keys(boxes).length > 0 ? { boxes } : {}),
-  }
-}
