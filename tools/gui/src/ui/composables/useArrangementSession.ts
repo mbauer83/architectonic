@@ -29,6 +29,8 @@ export interface ArrangementState {
   readonly byHand: boolean
   /** Elements removed from the diagram in this session, by alias: drawn no more, with their lines. */
   readonly removed?: ReadonlySet<string>
+  /** Where arranging by hand began, the picture taken over: what an edit is counted against. */
+  readonly takenOver?: Arrangement
 }
 
 /** How long the last pass took: the budget is a drag frame. */
@@ -164,7 +166,9 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
     if (!drawn || !now) return
     history.value = [...history.value, now]
     future.value = []
-    if (!now.byHand) show({ ...now, arrangement: takeOver(drawn, now.arrangement), byHand: true })
+    if (now.byHand) return
+    const taken = takeOver(drawn, now.arrangement)
+    show({ ...now, arrangement: taken, byHand: true, takenOver: taken })
   }
 
   /** Make *next* the state, as one undoable step. */

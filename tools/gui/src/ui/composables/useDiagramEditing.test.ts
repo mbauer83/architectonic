@@ -40,7 +40,7 @@ const service = {
   drawResizedShapes: () => Effect.succeed([]),
   editDiagram: (_id: string, body: DiagramWriteBody) => {
     written.push(body)
-    return Effect.succeed({ wrote: true })
+    return Effect.succeed({ wrote: true, warnings: [] })
   },
   patchLayout: (_id: string, patch: LayoutPatch) => {
     sent.push(patch)

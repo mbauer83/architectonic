@@ -20,6 +20,7 @@ import { drawnArrangement } from '../../domain/layout/lab/labArrangement'
 import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import type { Membership } from '../../domain/layout/diagramMembership'
 import { membershipWithout } from '../../domain/layout/diagramMembership'
+import { stableEntityId } from '../../domain/artifactId'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { ArrangementState } from './useArrangementSession'
 import { useArrangementSession } from './useArrangementSession'
@@ -97,7 +98,8 @@ export function useDiagramEditing(
     if (!now.byHand) {
       return [...(before.byHand ? [{ key: 'automatic', text: 'Returned to automatic layout' }] : []), ...removed]
     }
-    const reference = before.byHand ? before.arrangement : widenedArrangement(geometry, before.arrangement)
+    const reference = before.byHand ? before.arrangement
+      : (now.takenOver ?? widenedArrangement(geometry, before.arrangement))
     const takenOver: PendingChange[] = before.byHand ? []
       : [{ key: 'by-hand', text: 'Arranged by hand: new elements will be placed beside their neighbours' }]
     return [
@@ -131,13 +133,16 @@ export function useDiagramEditing(
     const drawn = membership()
     if (!drawn) throw new Error('The diagram has not been read; reload the page.')
     const kept = membershipWithout(drawn, removed)
-    await Effect.runPromise(svc.editDiagram(diagramId(), {
+    const written = await Effect.runPromise(svc.editDiagram(diagramId(), {
       diagram_type: drawn.diagram_type, name: drawn.name,
       entity_ids: [...kept.entity_ids], connection_ids: [...kept.connection_ids],
       ...(drawn.diagram_entities ? { diagram_entities: { ...drawn.diagram_entities } } : {}),
       ...(kept.authored_groupings ? { authored_groupings: kept.authored_groupings } : {}),
       dry_run: false,
     }))
+    if (!written.wrote) {
+      throw new Error(`The diagram was not written: ${written.warnings.join(' ') || 'it was refused'}`)
+    }
     await reopen(arranged)
   }
 
@@ -191,8 +196,17 @@ export function useDiagramEditing(
   /** Remove *alias* from the diagram, never from the model, as one undoable step. */
   const remove = (alias: string) => {
     const now = session.state.value
-    const element = session.geometry.value?.elements.some((one) => one.alias === alias)
-    if (now && element) session.step({ ...now, removed: new Set([...now.removed ?? [], alias]) })
+    const key = session.geometry.value?.elements.find((one) => one.alias === alias)?.key
+    if (!now || key === undefined) return
+    // A further occurrence of an entity is held by the diagram's own records, which this write does not
+    // edit yet: refused with a sentence rather than removed on the canvas and quietly kept by Save.
+    const member = membership()?.entity_ids.some((id) => stableEntityId(id) === stableEntityId(key)) ?? false
+    if (!member) {
+      error.value = `${nameOf(alias)} is a further occurrence; removing one is not possible here yet.`
+      return
+    }
+    error.value = null
+    session.step({ ...now, removed: new Set([...now.removed ?? [], alias]) })
   }
 
   return { session, changes, loading, saving, error, open, save, discard, returnToAutomatic, remove }
