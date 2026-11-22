@@ -8,7 +8,7 @@
  */
 import { Effect } from 'effect'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { labGeometry, labPicture, labReshape, layoutLabIsOn } from './HttpLayoutLab'
+import { labPicture, layoutLabIsOn } from './HttpLayoutLab'
 
 const answering = (body: string, status = 200, type = 'application/json') =>
   vi.fn<typeof fetch>(async () => new Response(body, { status, headers: { 'Content-Type': type } }))
@@ -39,28 +39,7 @@ describe('whether the lab is on, which decides the menu entry', () => {
   })
 })
 
-const geometry = {
-  artifact_id: 'ARC@1.a.test', name: 'Test', canvas: { left: 0, top: 0, right: 10, bottom: 10 },
-  backdrop: [], elements: [], boxes: [], relations: [],
-}
-
 describe('the lab reads', () => {
-  it('decodes the geometry of a diagram addressed by its encoded id', async () => {
-    const fetch = answering(JSON.stringify(geometry))
-    vi.stubGlobal('fetch', fetch)
-    const read = await Effect.runPromise(labGeometry('ARC@1.a.test#x'))
-    expect(read.name).toBe('Test')
-    expect(String(fetch.mock.calls[0][0])).toContain('/lab/layout/diagrams/ARC%401.a.test%23x/geometry')
-  })
-
-  it('carries the sentence of an error envelope, not the envelope', async () => {
-    const envelope = { detail: { code: 'validation_error', message: 'The lab cannot read this diagram.' } }
-    vi.stubGlobal('fetch', answering(JSON.stringify(envelope), 422))
-    const failed = await Effect.runPromise(Effect.flip(labGeometry('ARC@1.a.test')))
-    expect(failed.message).toBe('The lab cannot read this diagram.')
-    expect(failed.status).toBe(422)
-  })
-
   it('posts the layout and answers the composed picture', async () => {
     const fetch = answering('<svg/>', 200, 'image/svg+xml')
     vi.stubGlobal('fetch', fetch)
@@ -78,21 +57,4 @@ describe('the lab reads', () => {
     expect((await Effect.runPromise(Effect.flip(labPicture('ARC@1.a.test', {})))).message).toBe('upstream broke')
   })
 
-  it('posts resized shapes with their drawings and answers the composer\'s drawings in order', async () => {
-    const drawing = { tag: 'rect', attributes: { fill: '#B5FFFF' }, text: null, children: [] }
-    const fetch = answering(JSON.stringify({ drawings: [drawing] }))
-    vi.stubGlobal('fetch', fetch)
-    const extent = { left: 0, top: 0, right: 10, bottom: 10 }
-    const shapes = [{ drawing, box: true, drawn: extent, to: { ...extent, right: 20 } }]
-    expect(await Effect.runPromise(labReshape(shapes))).toEqual([drawing])
-    expect(String(fetch.mock.calls[0][0])).toContain('/lab/layout/shapes')
-    expect(JSON.parse(String(fetch.mock.calls[0][1]?.body))).toEqual({ shapes })
-  })
-
-  it('refuses an answer that is not drawings', async () => {
-    vi.stubGlobal('fetch', answering(JSON.stringify({ drawings: [{ tag: 1 }] })))
-    expect((await Effect.runPromise(Effect.flip(labReshape([])))).status).toBe(0)
-    vi.stubGlobal('fetch', answering('{"detail": "a <script> in a drawing"}', 422))
-    expect((await Effect.runPromise(Effect.flip(labReshape([])))).message).toBe('a <script> in a drawing')
-  })
 })

@@ -2,7 +2,7 @@
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Effect, Exit } from 'effect'
-import { modelServiceKey } from '../keys'
+import { modelServiceKey, toastKey } from '../keys'
 import type { DiagramContext, EditableMetadataSpec } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import type { NotFoundError } from '../../domain'
@@ -11,7 +11,7 @@ import { useDiagramTypeUiConfig } from '../composables/useDiagramTypeUiConfig'
 import { renderMatrixMarkdown } from '../lib/matrixMarkdown'
 import type { C4Navigation } from '../../domain'
 import {
-  buildDrilldownByEntityId, c4NavigationOf, diagramNeedsSvg, editRouteFor,
+  buildDrilldownByEntityId, c4NavigationOf, diagramNeedsSvg, editRouteFor, editsOnCanvas,
   editableMetadataByEntityType, isADifferentDiagram, matrixHtmlOf,
 } from './DiagramDetailView.helpers'
 import DrilldownMenu from '../components/DrilldownMenu.vue'
@@ -31,8 +31,13 @@ import DiagramDeletePanel from '../components/DiagramDeletePanel.vue'
 import DiagramOwnIcons from '../components/DiagramOwnIcons.vue'
 import DiagramMatrixView from '../components/DiagramMatrixView.vue'
 import { diagramEditRoute, matrixEditRoute } from '../router/artifactRoutes'
+import DiagramEditBar from '../components/DiagramEditBar.vue'
+import LayoutLabCanvas from '../components/layoutLab/LayoutLabCanvas.vue'
+import type { CanvasHandle, EditBarHandle } from '../composables/useDiagramEditMode'
+import { useDiagramEditMode } from '../composables/useDiagramEditMode'
 
 const svc = inject(modelServiceKey)!
+const toast = inject(toastKey, () => undefined)
 const route = useRoute()
 const router = useRouter()
 const adminMode = ref(false)
@@ -116,6 +121,15 @@ const uiConfig = useDiagramTypeUiConfig(svc, computed(() => detail.value?.diagra
 const editableMetadataByType = computed<Record<string, EditableMetadataSpec>>(() =>
   editableMetadataByEntityType(uiConfig.value))
 
+// Edit mode: the same page, the canvas in place of the picture (D15). Leaving reloads the picture,
+// which the server has drawn again from whatever was saved.
+const editCanvas = ref<CanvasHandle | null>(null)
+const editBar = ref<EditBarHandle | null>(null)
+const edit = useDiagramEditMode(svc, diagramId, { canvas: editCanvas, bar: editBar }, load, toast)
+const editing = computed(() => edit.active.value)
+watch(editing, () => { void panZoom.fitDiagramToViewport() })
+watch(() => edit.session.geometry.value, () => { if (editing.value) void panZoom.fitDiagramToViewport() })
+
 const executeDelete = () => {
   void router.push(isGlobalDiagram.value ? { path: '/diagrams', query: { tier: 'enterprise' } } : '/diagrams')
 }
@@ -149,8 +163,12 @@ const executeDelete = () => {
       :is-global-diagram="isGlobalDiagram"
       :admin-mode="adminMode"
       :lens="lens"
+      :edits-on-canvas="editsOnCanvas(detail)"
+      :editing="editing"
       @sync="syncPanel?.requestSync()"
       @delete="deletePanel?.requestDelete()"
+      @edit="edit.enter()"
+      @done="edit.done()"
     />
 
     <!-- Only while there is nothing to show. A refresh keeps the rendered canvas mounted, because
@@ -176,7 +194,32 @@ const executeDelete = () => {
           :class="`status--${detail.status}`"
         >{{ detail.status }}</span>
         <span class="mono faded">v{{ detail.version }} · {{ detail.artifact_id }}</span>
+        <span
+          v-if="editing"
+          class="editing-note"
+          data-testid="editing-note"
+        >Editing — nothing is saved until you press Save · <em>Done</em> or <kbd>Esc</kbd> leaves</span>
       </div>
+
+      <DiagramEditBar
+        v-if="editing"
+        ref="editBar"
+        :by-hand="edit.session.state.value?.byHand ?? false"
+        :can-undo="edit.canUndo.value"
+        :can-redo="edit.canRedo.value"
+        :changes="edit.editing.changes.value"
+        :saving="edit.editing.saving.value"
+        :leaving="edit.leaving.value"
+        :error="edit.editing.error.value"
+        @undo="edit.session.undo()"
+        @redo="edit.session.redo()"
+        @automatic="edit.editing.returnToAutomatic()"
+        @discard="edit.editing.discard()"
+        @save="edit.editing.save()"
+        @save-and-exit="edit.saveAndExit()"
+        @discard-and-exit="edit.discardAndExit()"
+        @keep-editing="edit.keepEditing()"
+      />
 
       <DiagramC4Navigation
         v-if="c4Nav"
@@ -184,7 +227,7 @@ const executeDelete = () => {
       />
 
       <DiagramReadingPanel
-        v-if="diagramNeedsSvg(detail.diagram_type) && reading.offersAnything.value"
+        v-if="!editing && diagramNeedsSvg(detail.diagram_type) && reading.offersAnything.value"
         class="reading-panel"
         :panel="reading.panel.value"
         :lens="lens"
@@ -202,15 +245,28 @@ const executeDelete = () => {
             v-else
             ref="containerRef"
             class="img-container viewport-host"
-            @mousedown="panZoom.onMouseDown"
-            @dblclick="panZoom.resetView"
+            :class="{ editing, panning: edit.spaceHeld.value }"
+            :data-mode="editing ? 'edit' : 'view'"
+            data-testid="diagram-canvas-host"
+            @mousedown="editing ? edit.panPress($event, panZoom.onMouseDown) : panZoom.onMouseDown($event)"
+            @dblclick="editing || panZoom.resetView()"
           >
             <div
               class="pan-canvas"
               :style="panZoom.canvasStyle.value"
             >
               <div
-                v-if="reading.loading.value"
+                v-if="editing"
+                ref="svgContainer"
+                class="svg-wrap"
+              >
+                <LayoutLabCanvas
+                  ref="editCanvas"
+                  :session="edit.session"
+                />
+              </div>
+              <div
+                v-else-if="reading.loading.value"
                 class="no-img"
               >
                 Rendering SVG…
@@ -238,7 +294,9 @@ const executeDelete = () => {
               :is-transformed="panZoom.isTransformed.value"
               :is-fullscreen="fullscreen.isFullscreen.value"
               :can-fullscreen="fullscreen.isSupported"
-              hint="Scroll to zoom · Drag to pan · Click entity to inspect · Double-click to reset"
+              :hint="editing
+                ? 'Drag an element or a box by its title to move it · drag a handle to resize · Space+drag pans'
+                : 'Scroll to zoom · Drag to pan · Click entity to inspect · Double-click to reset'"
               @reset="panZoom.resetView"
               @toggle-fullscreen="fullscreen.toggle"
             />
@@ -333,6 +391,15 @@ const executeDelete = () => {
 }
 @media (max-width: 800px) { .img-container { height: clamp(360px, 68vh, 820px); } }
 .img-container:active { cursor: grabbing; }
+/* Edit mode: the frame in the accent with a top edge, a press is the canvas's, and Space+drag pans. */
+.img-container.editing { cursor: default; border-color: var(--accent); box-shadow: inset 0 2px 0 var(--accent); background: var(--paper); }
+.img-container.editing:active { cursor: default; }
+.img-container.editing.panning, .img-container.editing.panning :deep(*) { cursor: grab !important; }
+.editing-note { color: var(--accent-strong); font-weight: 600; }
+.editing-note kbd {
+  font: 10px ui-monospace, monospace; padding: 0 4px; border: 1px solid var(--border-strong);
+  border-bottom-width: 2px; border-radius: 3px; background: var(--surface);
+}
 /* Fullscreen overrides the clamped height, and the browser paints black behind
    anything the element does not cover. */
 .img-container:fullscreen {

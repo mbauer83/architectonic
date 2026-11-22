@@ -11,11 +11,13 @@ import type { Breach } from '../../../domain/layout/lab/labBreaches'
 import { pointAlong } from '../../../domain/layout/orthogonal'
 
 /**
- * Where a shape is taken to drag it: its whole outline — for a grouping, its title band across the box's
- * full width included. Not the band a line keeps out of, which is only as wide as the title
- * (`routingBandOf`): the two are different regions and are kept apart.
+ * Where a shape is taken to drag it. An element: its whole outline. A box with a title: its title band,
+ * *bandDepth* deep, across the box's full width (owner rule) — its body selects rather than drags, so a
+ * box can be pressed without moving everything in it. Not the band a line keeps out of, which is only
+ * as wide as the title (`routingBandOf`): the two are different regions and are kept apart.
  */
-export const dragRegionOf = (now: Extent): Extent => now
+export const dragRegionOf = (now: Extent, bandDepth?: number): Extent =>
+  bandDepth === undefined ? now : { ...now, bottom: Math.min(now.bottom, now.top + bandDepth) }
 
 /** Each resize handle of *extent*, at its corner or the middle of its side. */
 export const handlesOf = (extent: Extent): { handle: Handle; at: Point }[] => {

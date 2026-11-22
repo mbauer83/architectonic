@@ -3,7 +3,7 @@
  * or the composer drew it, and the paint order (`labPaintOrder`) turned into those pieces.
  */
 import type { Extent } from '../../../domain/layout/geometry'
-import type { DrawingNode, LabGeometry } from '../../../domain/layout/lab/labGeometry'
+import type { DrawingNode, LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
 import type { DrawnLine } from '../../../domain/layout/lab/labLineDrawing'
 import { drawnLine } from '../../../domain/layout/lab/labLineDrawing'
 import type { Placement } from '../../../domain/layout/lab/labRouting'
@@ -15,8 +15,10 @@ import type { Painted } from './labPaintOrder'
 export interface DrawnShape {
   readonly alias: string
   readonly isBox: boolean
-  /** Where it is taken to drag it: the whole outline, a grouping's full-width title band included. */
+  /** Where it is taken to drag it: an element's whole outline, a box's full-width title band. */
   readonly region: Extent
+  /** Where it is pressed to select it without moving it: a box's body; null for an element. */
+  readonly body: Extent | null
   readonly drawing: PlacedDrawing
 }
 
@@ -40,23 +42,26 @@ type Courses = ReadonlyMap<number, Parameters<typeof drawnLine>[1]>
 
 /** Every shape, by alias, where it is now, drawn as PlantUML or the composer drew it. */
 export const drawnShapes = (
-  drawn: LabGeometry, where: Placement, reshaped: Reshaped,
+  drawn: LayoutGeometry, where: Placement, reshaped: Reshaped,
 ): ReadonlyMap<string, DrawnShape> => {
   const all = [
-    ...drawn.boxes.map((shape) => ({ shape, isBox: true })),
-    ...drawn.elements.map((shape) => ({ shape, isBox: false })),
+    ...drawn.boxes.map((shape) => ({
+      shape, isBox: true, band: shape.title_band ? shape.title_band.bottom - shape.extent.top : undefined,
+    })),
+    ...drawn.elements.map((shape) => ({ shape, isBox: false, band: undefined })),
   ]
-  return new Map(all.flatMap(({ shape, isBox }): [string, DrawnShape][] => {
+  return new Map(all.flatMap(({ shape, isBox, band }): [string, DrawnShape][] => {
     const now = isBox ? where.boxes.get(shape.alias) : where.elements.get(shape.alias)
     if (!now) return []
     const drawing = shapeDrawing(shape.extent, shape.drawing, now, reshaped.get(shape.alias))
-    return [[shape.alias, { alias: shape.alias, isBox, region: dragRegionOf(now), drawing }]]
+    const region = dragRegionOf(now, band)
+    return [[shape.alias, { alias: shape.alias, isBox, region, body: band === undefined ? null : now, drawing }]]
   }))
 }
 
 /** Each line, by its place: PlantUML's own until the first change, then drawn along the router's course. */
 export const drawnRelations = (
-  drawn: LabGeometry, courses: Courses, asDrawn: boolean,
+  drawn: LayoutGeometry, courses: Courses, asDrawn: boolean,
 ): ReadonlyMap<number, DrawnRelation> =>
   new Map(drawn.relations.flatMap((relation): [number, DrawnRelation][] => {
     const course = courses.get(relation.index)

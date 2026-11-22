@@ -23,7 +23,7 @@
 import type { Extent } from '../../../domain/layout/geometry'
 import { overlaps } from '../../../domain/layout/geometry'
 import { childrenOf, descendantsOf } from '../../../domain/layout/lab/labArrangement'
-import type { LabGeometry } from '../../../domain/layout/lab/labGeometry'
+import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
 import type { Placement } from '../../../domain/layout/lab/labRouting'
 
 /** The shape last pressed, and whether the press moved it or resized it. */
@@ -43,7 +43,7 @@ const extentIn = (placement: Placement, alias: string): Extent | undefined =>
   placement.elements.get(alias) ?? placement.boxes.get(alias)
 
 /** *lifted* and every box holding it. */
-const liftedChain = (geometry: LabGeometry, lifted: string): ReadonlySet<string> => {
+const liftedChain = (geometry: LayoutGeometry, lifted: string): ReadonlySet<string> => {
   const inside = new Map([...geometry.boxes, ...geometry.elements].map((shape) => [shape.alias, shape.inside]))
   const chain = new Set<string>()
   for (let alias: string | null = lifted; alias !== null && !chain.has(alias); alias = inside.get(alias) ?? null) {
@@ -69,7 +69,7 @@ const siblingsInOrder = (
 }
 
 /** Every shape back to front: a box, then everything in it; siblings as drawn, save the lifted one. */
-export const shapeOrder = (geometry: LabGeometry, placement: Placement, lift: Lift | null): PaintedShape[] => {
+export const shapeOrder = (geometry: LayoutGeometry, placement: Placement, lift: Lift | null): PaintedShape[] => {
   const boxes = new Set(geometry.boxes.map((box) => box.alias))
   const children = childrenOf(geometry)
   const chain = lift ? liftedChain(geometry, lift.alias) : new Set<string>()
@@ -86,7 +86,7 @@ export const shapeOrder = (geometry: LabGeometry, placement: Placement, lift: Li
  * covers that end — any shape but one the end holds. A line no shape hides is absent.
  */
 const sunkLines = (
-  geometry: LabGeometry, placement: Placement, shapes: readonly PaintedShape[],
+  geometry: LayoutGeometry, placement: Placement, shapes: readonly PaintedShape[],
 ): Map<number, number> => {
   const place = new Map(shapes.map((shape, index) => [shape.alias, index]))
   const held = new Map<string, ReadonlySet<string>>()
@@ -112,7 +112,7 @@ const sunkLines = (
 }
 
 /** The whole picture back to front: shapes, each hidden line just below what hides it, then the rest. */
-export const paintOrder = (geometry: LabGeometry, placement: Placement, lift: Lift | null): Painted[] => {
+export const paintOrder = (geometry: LayoutGeometry, placement: Placement, lift: Lift | null): Painted[] => {
   const shapes = shapeOrder(geometry, placement, lift)
   const sunk = sunkLines(geometry, placement, shapes)
   const lineAndLabel = (relation: number): Painted[] =>

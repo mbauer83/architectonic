@@ -11,7 +11,7 @@
 import type { Point } from '../geometry'
 import { distanceBetween } from '../geometry'
 import { pointAlong } from '../orthogonal'
-import type { DrawingNode, LabLineDrawing, LabLineEnd } from './labGeometry'
+import type { DrawingNode, LineDrawing, LineEnd } from '../../schemas/diagramLayoutGeometry'
 
 /** How round a bend is drawn. */
 const BEND_RADIUS = 6
@@ -84,7 +84,7 @@ export interface Motion {
  * How an end's decorations are carried from the frame they were drawn in to the end of *course*,
  * facing the way the course arrives there (`Motion.facing`).
  */
-export const decorationMotion = (end: Pick<LabLineEnd, 'at' | 'heading'>, course: readonly Point[]): Motion => {
+export const decorationMotion = (end: Pick<LineEnd, 'at' | 'heading'>, course: readonly Point[]): Motion => {
   const [headingX, headingY] = end.heading
   const wanted = headingAtEnd(course)
   const cos = headingX * wanted.x + headingY * wanted.y
@@ -111,7 +111,7 @@ export interface DrawnLine {
  * A line drawn along *course*, which runs from its source: PlantUML's stroke along it, its decorations
  * carried to its ends, its label to the middle of it.
  */
-export const drawnLine = (drawing: LabLineDrawing, course: readonly Point[]): DrawnLine => {
+export const drawnLine = (drawing: LineDrawing, course: readonly Point[]): DrawnLine => {
   const [atSource, atTarget] = drawing.ends
   const labelAt = pointAlong(course, 0.5)
   const labelShift = (centre: readonly [number, number]): string =>
@@ -123,9 +123,9 @@ export const drawnLine = (drawing: LabLineDrawing, course: readonly Point[]): Dr
       { marks: atSource.marks, transform: transformOf(decorationMotion(atSource, [...course].reverse())) },
       { marks: atTarget.marks, transform: transformOf(decorationMotion(atTarget, course)) },
     ],
-    label: drawing.label && {
+    label: drawing.label ? {
       texts: drawing.label.texts,
       transform: labelShift(drawing.label.centre),
-    },
+    } : null,
   }
 }

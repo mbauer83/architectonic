@@ -15,26 +15,26 @@ import {
   resizedExtent,
 } from '../labArrangement'
 import { LINE_DRAWING, SHAPE_DRAWING } from './labDrawingFixtures'
-import type { LabGeometry } from '../labGeometry'
+import type { LayoutGeometry } from '../../../schemas/diagramLayoutGeometry'
 import { changedShapes, placementOf, textRegions, widenedArrangement } from '../labRouting'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 
 /** A grouping holding two elements, one element outside it, and a relation between the outer two. */
-const geometry: LabGeometry = {
+const geometry: LayoutGeometry = {
   artifact_id: 'ARC@1.a.test',
   name: 'Test',
   canvas: at(0, 0, 600, 400),
   backdrop: [],
   elements: [
-    { alias: 'A', key: 'APP@1.a', label: 'A', extent: at(20, 40, 120, 80), inside: 'G', words: [], outside_label: null, drawing: SHAPE_DRAWING },
-    { alias: 'B', key: 'APP@2.b', label: 'B', extent: at(140, 40, 240, 80), inside: 'G', words: [], outside_label: null, drawing: SHAPE_DRAWING },
-    { alias: 'C', key: 'APP@3.c', label: 'C', extent: at(400, 40, 500, 80), inside: null, words: [], outside_label: null, drawing: SHAPE_DRAWING },
+    { alias: 'A', key: 'APP@1.a', label: 'A', extent: at(20, 40, 120, 80), inside: 'G', words: [], outside_label: undefined, drawing: SHAPE_DRAWING },
+    { alias: 'B', key: 'APP@2.b', label: 'B', extent: at(140, 40, 240, 80), inside: 'G', words: [], outside_label: undefined, drawing: SHAPE_DRAWING },
+    { alias: 'C', key: 'APP@3.c', label: 'C', extent: at(400, 40, 500, 80), inside: undefined, words: [], outside_label: undefined, drawing: SHAPE_DRAWING },
   ],
   boxes: [
     {
       alias: 'G', kind: 'authored-grouping', section: 'boxes', key: 'g-1', label: 'Group',
-      extent: at(10, 10, 250, 90), inside: null,
+      extent: at(10, 10, 250, 90), inside: undefined,
       words: [{ text: 'Group', x: 110, y: 25, width: 30 }],
       title_band: at(86, 10, 164, 28), drawing: SHAPE_DRAWING,
     },
@@ -42,7 +42,7 @@ const geometry: LabGeometry = {
   relations: [
     {
       index: 0, key: 'r', source: 'B', target: 'C', decorated: [false, true],
-      course: [[240, 60], [400, 60]], label: '', label_size: null, drawing: LINE_DRAWING,
+      course: [[240, 60], [400, 60]], label: '', label_size: undefined, drawing: LINE_DRAWING,
     },
   ],
 }

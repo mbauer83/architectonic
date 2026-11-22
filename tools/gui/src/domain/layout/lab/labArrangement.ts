@@ -10,7 +10,7 @@
  */
 import type { Extent } from '../geometry'
 import { heightOf, widthOf } from '../geometry'
-import type { LabBox, LabGeometry, LabWord } from './labGeometry'
+import type { GeometryBox, LayoutGeometry, MeasuredWord } from '../../schemas/diagramLayoutGeometry'
 
 /** What has been moved or resized: every element where it is now, and each box stated by size. */
 export interface Arrangement {
@@ -42,26 +42,27 @@ export const unionOf = (extents: readonly Extent[]): Extent => ({
 })
 
 /** PlantUML's arrangement: every element where it drew it, nothing stated. */
-export const drawnArrangement = (geometry: LabGeometry): Arrangement => ({
+export const drawnArrangement = (geometry: LayoutGeometry): Arrangement => ({
   elements: new Map(geometry.elements.map((element) => [element.alias, element.extent])),
   stated: new Map(),
 })
 
 /** Every shape's alias under the box it is drawn directly inside; `null` for the canvas. */
-export const childrenOf = (geometry: LabGeometry): ReadonlyMap<string | null, readonly string[]> => {
+export const childrenOf = (geometry: LayoutGeometry): ReadonlyMap<string | null, readonly string[]> => {
   const children = new Map<string | null, string[]>()
   for (const shape of [...geometry.boxes, ...geometry.elements]) {
-    children.set(shape.inside, [...(children.get(shape.inside) ?? []), shape.alias])
+    const parent = shape.inside ?? null
+    children.set(parent, [...(children.get(parent) ?? []), shape.alias])
   }
   return children
 }
 
-const acrossWords = (words: readonly LabWord[]): readonly [number, number] | null =>
+const acrossWords = (words: readonly MeasuredWord[]): readonly [number, number] | null =>
   words.length === 0
     ? null
     : [Math.min(...words.map((word) => word.x)), Math.max(...words.map((word) => word.x + word.width))]
 
-const wideEnoughForItsTitle = (needed: Extent, box: LabBox): Extent => {
+const wideEnoughForItsTitle = (needed: Extent, box: GeometryBox): Extent => {
   const across = acrossWords(box.words)
   if (!across) return needed
   const drawn = box.extent
@@ -73,7 +74,7 @@ const wideEnoughForItsTitle = (needed: Extent, box: LabBox): Extent => {
 }
 
 /** Every box where it is drawn now, given where the elements are and what is stated for boxes. */
-export const fittedBoxes = (geometry: LabGeometry, arrangement: Arrangement): ReadonlyMap<string, Extent> => {
+export const fittedBoxes = (geometry: LayoutGeometry, arrangement: Arrangement): ReadonlyMap<string, Extent> => {
   const children = childrenOf(geometry)
   const boxes = new Map(geometry.boxes.map((box) => [box.alias, box]))
   const drawn = new Map(
@@ -110,7 +111,7 @@ export const fittedBoxes = (geometry: LabGeometry, arrangement: Arrangement): Re
 }
 
 /** Every shape drawn inside *alias*, at any depth. */
-export const descendantsOf = (geometry: LabGeometry, alias: string): readonly string[] => {
+export const descendantsOf = (geometry: LayoutGeometry, alias: string): readonly string[] => {
   const children = childrenOf(geometry)
   const walk = (parent: string): string[] =>
     (children.get(parent) ?? []).flatMap((child) => [child, ...walk(child)])
@@ -119,7 +120,7 @@ export const descendantsOf = (geometry: LabGeometry, alias: string): readonly st
 
 /** *arrangement* with the shape *alias* moved by (dx, dy): a box carries everything it holds. */
 export const moved = (
-  geometry: LabGeometry, arrangement: Arrangement, alias: string, dx: number, dy: number,
+  geometry: LayoutGeometry, arrangement: Arrangement, alias: string, dx: number, dy: number,
 ): Arrangement => {
   const carried = new Set([alias, ...descendantsOf(geometry, alias)])
   const shift = (entries: ReadonlyMap<string, Extent>): Map<string, Extent> =>
@@ -129,7 +130,7 @@ export const moved = (
 
 /** *arrangement* with the shape *alias* given *extent*: an element's own size, a box's stated size. */
 export const resized = (
-  geometry: LabGeometry, arrangement: Arrangement, alias: string, extent: Extent,
+  geometry: LayoutGeometry, arrangement: Arrangement, alias: string, extent: Extent,
 ): Arrangement =>
   geometry.boxes.some((box) => box.alias === alias)
     ? { ...arrangement, stated: new Map([...arrangement.stated, [alias, extent]]) }
@@ -168,7 +169,7 @@ const placed = (extent: Extent, sized: boolean): Placed => ({
 })
 
 /** The layout block a diagram would state for *arrangement*: only what differs from PlantUML's picture. */
-export const layoutBlock = (geometry: LabGeometry, arrangement: Arrangement): Record<string, unknown> => {
+export const layoutBlock = (geometry: LayoutGeometry, arrangement: Arrangement): Record<string, unknown> => {
   const elements: Record<string, Placed> = {}
   const boxes: Record<string, Placed> = {}
   for (const element of geometry.elements) {

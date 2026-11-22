@@ -8,7 +8,7 @@ import { computed, ref, watch } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
 import { heightOf, widthOf } from '../../../domain/layout/geometry'
 import { useElementSize } from '../../composables/useElementSize'
-import type { LayoutLab } from '../../composables/useLayoutLab'
+import type { ArrangementSession } from '../../composables/useArrangementSession'
 import type { BreachMark } from './labDrawing'
 import { breachMarksOf, handlesOf, pointsAttribute } from './labDrawing'
 import { paintOrder } from './labPaintOrder'
@@ -17,22 +17,22 @@ import { drawnRelations, drawnShapes, pieceOf } from './labPieces'
 import LabDrawn from './LabDrawn'
 import { useLabGesture } from './useLabGesture'
 
-const props = defineProps<{ lab: LayoutLab; showBreaches: boolean }>()
+const props = defineProps<{ session: ArrangementSession; showBreaches?: boolean }>()
 
 const svg = ref<SVGSVGElement | null>(null)
-const gesture = useLabGesture(props.lab, svg)
+const gesture = useLabGesture(props.session, svg)
 
 /** Room round the drawing, so a shape dragged out of it stays in reach. */
 const MARGIN = 40
 
-const geometry = computed(() => props.lab.geometry.value)
-const placement = computed(() => props.lab.placement.value)
+const geometry = computed(() => props.session.geometry.value)
+const placement = computed(() => props.session.placement.value)
 
 /** What is drawn now, shapes and lines: the view fits it, not PlantUML's page with its title. */
 const drawnExtent = computed((): Extent | null => {
   const where = placement.value
   if (!where) return null
-  const points = [...props.lab.courses.value.values()].flat()
+  const points = [...props.session.courses.value.values()].flat()
   const all: Extent[] = [
     ...where.elements.values(),
     ...where.boxes.values(),
@@ -47,13 +47,31 @@ const drawnExtent = computed((): Extent | null => {
   }
 })
 
+const union = (one: Extent, other: Extent): Extent => ({
+  left: Math.min(one.left, other.left), top: Math.min(one.top, other.top),
+  right: Math.max(one.right, other.right), bottom: Math.max(one.bottom, other.bottom),
+})
+
 /**
- * The view: what is drawn, refitted after every change but held still while something is dragged, so
- * the point under the pointer keeps meaning the same place on the picture.
+ * The view: PlantUML's page, grown to take in whatever is drawn beyond it and never shrunk, so the
+ * picture keeps its scale while it is arranged. Held still while something is dragged, so the point
+ * under the pointer keeps meaning the same place on the picture.
  */
 const view = ref<Extent | null>(null)
-watch(drawnExtent, (now) => { if (!gesture.dragging.value || !view.value) view.value = now }, { immediate: true })
-watch(() => gesture.dragging.value, (dragging) => { if (!dragging) view.value = drawnExtent.value })
+const grown = (now: Extent | null): Extent | null => {
+  const page = geometry.value?.canvas ?? null
+  const before = view.value ?? page
+  return now && before ? union(before, now) : (now ?? before)
+}
+watch(geometry, () => { view.value = null })
+watch(drawnExtent, (now) => { if (!gesture.dragging.value || !view.value) view.value = grown(now) }, { immediate: true })
+watch(() => gesture.dragging.value, (dragging) => { if (!dragging) view.value = grown(drawnExtent.value) })
+
+defineExpose({
+  /** Whether a shape is selected; and clearing it, as Escape's first step does. */
+  hasSelection: computed(() => gesture.selected.value !== null),
+  clearSelection: () => gesture.clear(),
+})
 
 const viewBox = computed(() => {
   const extent = view.value
@@ -95,11 +113,11 @@ const backdropTransform = computed((): string => {
 const shapes = computed((): ReadonlyMap<string, DrawnShape> => {
   const drawn = geometry.value
   const where = placement.value
-  return drawn && where ? drawnShapes(drawn, where, props.lab.reshaped.value) : new Map()
+  return drawn && where ? drawnShapes(drawn, where, props.session.reshaped.value) : new Map()
 })
 const lines = computed((): ReadonlyMap<number, DrawnRelation> => {
   const drawn = geometry.value
-  return drawn ? drawnRelations(drawn, props.lab.courses.value, props.lab.routes.value === null) : new Map()
+  return drawn ? drawnRelations(drawn, props.session.courses.value, props.session.routes.value === null) : new Map()
 })
 
 /** The picture back to front (`labPaintOrder`): shapes by nesting, then lines, then labels. */
@@ -131,7 +149,7 @@ const ends = (relationIndex: number): Extent[] => {
 }
 
 const marks = computed((): BreachMark[] =>
-  (props.showBreaches ? breachMarksOf(props.lab.breaches.value, ends, tagSize.value) : []))
+  (props.showBreaches ? breachMarksOf(props.session.breaches.value, ends, tagSize.value) : []))
 
 const selectedExtent = computed((): Extent | null => {
   const alias = gesture.selected.value
@@ -170,6 +188,15 @@ const selectedExtent = computed((): Extent | null => {
         <LabDrawn
           :nodes="[piece.shape.drawing.drawing]"
           :transform="piece.shape.drawing.transform"
+        />
+        <rect
+          v-if="piece.shape.body"
+          class="lab-body"
+          :x="piece.shape.body.left"
+          :y="piece.shape.body.top"
+          :width="widthOf(piece.shape.body)"
+          :height="heightOf(piece.shape.body)"
+          @pointerdown="gesture.select($event, piece.shape.alias)"
         />
         <rect
           class="lab-grip"
@@ -293,10 +320,13 @@ const selectedExtent = computed((): Extent | null => {
 /* How the picture looks is PlantUML's drawing; only the lab's own marks — grips, breaches, handles —
    are styled here. */
 .lab-canvas { display: block; width: 100%; height: auto; max-height: 85vh; }
-/* Always being edited, so framed as a canvas in edit mode is. */
-.lab-canvas { border: 2px solid var(--accent); border-radius: 6px; touch-action: none; user-select: none; }
+/* The picture is the canvas: no frame of its own, which is the page's to draw for its mode. */
+.lab-canvas { touch-action: none; user-select: none; }
 .lab-backdrop, .lab-line, .lab-line-label, .lab-box :deep(g), .lab-element :deep(g) { pointer-events: none; }
 .lab-grip { fill: transparent; stroke: none; pointer-events: all; cursor: move; }
+/* A box moves by its title band, which shows its whole width under the pointer; its body selects. */
+.lab-box > .lab-grip:hover { fill: rgba(37, 99, 235, 0.09); }
+.lab-body { fill: transparent; stroke: none; pointer-events: all; cursor: default; }
 /* While a shape is dragged, it is drawn see-through, so what it is passing over — and the lines into
    what it covers — stay in sight until it is dropped. */
 .lab-carried { opacity: 0.55; }

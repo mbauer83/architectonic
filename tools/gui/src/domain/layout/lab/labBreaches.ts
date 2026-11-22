@@ -11,7 +11,7 @@ import type { Extent, Point } from '../geometry'
 import { elementsCrossed, endsConflict } from '../attachment'
 import { RULE_TIERS, bendsAtEnds, kinks, runsAlong, textsCrossed } from '../routeQuality'
 import type { Tier } from '../routeQuality'
-import type { LabGeometry } from './labGeometry'
+import type { LayoutGeometry } from '../../schemas/diagramLayoutGeometry'
 import type { Placement } from './labRouting'
 
 export type Rule =
@@ -51,7 +51,7 @@ const segment = (course: readonly Point[], index: number): Point[] => [course[in
 
 /** Every breach of every relation, given each relation's course now (by its place) and where shapes are. */
 export const breachesOf = (
-  geometry: LabGeometry,
+  geometry: LayoutGeometry,
   placement: Placement,
   courses: ReadonlyMap<number, readonly Point[]>,
   text: ReadonlyMap<string, Extent>,

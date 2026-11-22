@@ -15,7 +15,7 @@ import { sameExtent } from '../routing/scene'
 import type { Arrangement } from './labArrangement'
 import { fittedBoxes } from './labArrangement'
 import { BAND_MARGIN } from '../routeQuality'
-import type { LabBox, LabGeometry } from './labGeometry'
+import type { GeometryBox, LayoutGeometry } from '../../schemas/diagramLayoutGeometry'
 
 /** Where every shape is now, elements and boxes apart, as the router and the drawing both need. */
 export interface Placement {
@@ -23,7 +23,7 @@ export interface Placement {
   readonly boxes: ReadonlyMap<string, Extent>
 }
 
-export const placementOf = (geometry: LabGeometry, arrangement: Arrangement): Placement => ({
+export const placementOf = (geometry: LayoutGeometry, arrangement: Arrangement): Placement => ({
   elements: arrangement.elements,
   boxes: fittedBoxes(geometry, arrangement),
 })
@@ -44,7 +44,7 @@ export const resizedFromDrawn = (now: Extent, drawn: Extent): boolean =>
  * Not where the box is taken to drag it: that is its whole outline, the title band across its full
  * width included (`dragRegionOf` in the lab's drawing).
  */
-export const routingBandOf = (box: LabBox, now: Extent): Extent | null => {
+export const routingBandOf = (box: GeometryBox, now: Extent): Extent | null => {
   if (!box.title_band || box.words.length === 0) return null
   const dx = (now.left + now.right) / 2 - (box.extent.left + box.extent.right) / 2
   const left = Math.min(...box.words.map((word) => word.x)) + dx - BAND_MARGIN
@@ -58,7 +58,7 @@ export const routingBandOf = (box: LabBox, now: Extent): Extent | null => {
 }
 
 /** The text a line keeps out of, where it is now. */
-export const textRegions = (geometry: LabGeometry, placement: Placement): ReadonlyMap<string, Extent> => {
+export const textRegions = (geometry: LayoutGeometry, placement: Placement): ReadonlyMap<string, Extent> => {
   const regions = new Map<string, Extent>()
   for (const box of geometry.boxes) {
     const now = placement.boxes.get(box.alias)
@@ -78,7 +78,7 @@ export const textRegions = (geometry: LabGeometry, placement: Placement): Readon
   return regions
 }
 
-export const sceneOf = (geometry: LabGeometry, placement: Placement): RoutingScene => ({
+export const sceneOf = (geometry: LayoutGeometry, placement: Placement): RoutingScene => ({
   elements: placement.elements,
   boxes: placement.boxes,
   text: textRegions(geometry, placement),
@@ -86,7 +86,7 @@ export const sceneOf = (geometry: LabGeometry, placement: Placement): RoutingSce
 })
 
 /** Every drawn line as a connector, keyed by its place on the picture as the composer keys it. */
-export const connectorsOf = (geometry: LabGeometry): Connector[] =>
+export const connectorsOf = (geometry: LayoutGeometry): Connector[] =>
   geometry.relations.map((relation) => ({
     key: String(relation.index),
     source: relation.source,
@@ -111,7 +111,7 @@ export const changedShapes = (before: Placement, after: Placement): Set<string> 
  * layout a diagram writes down is: elements where the widening put them, and each box it grew stated
  * at the size it grew to.
  */
-export const widenedArrangement = (geometry: LabGeometry, arrangement: Arrangement): Arrangement => {
+export const widenedArrangement = (geometry: LayoutGeometry, arrangement: Arrangement): Arrangement => {
   const placement = placementOf(geometry, arrangement)
   const opened = widened(sceneOf(geometry, placement), connectorsOf(geometry))
   const before = placement.boxes
@@ -128,12 +128,12 @@ export const widenedArrangement = (geometry: LabGeometry, arrangement: Arrangeme
 }
 
 /** Every line routed afresh: what a drop asks for. */
-export const fullPass = (geometry: LabGeometry, placement: Placement): RoutingResult =>
+export const fullPass = (geometry: LayoutGeometry, placement: Placement): RoutingResult =>
   routeAll(sceneOf(geometry, placement), connectorsOf(geometry))
 
 /** Only the lines of the shapes in *changed* routed again, the rest kept from *previous*: a drag frame. */
 export const quickPass = (
-  geometry: LabGeometry,
+  geometry: LayoutGeometry,
   placement: Placement,
   previous: ReadonlyMap<string, RoutedConnector>,
   changed: ReadonlySet<string>,

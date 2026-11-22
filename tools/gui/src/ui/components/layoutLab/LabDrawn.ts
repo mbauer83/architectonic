@@ -9,7 +9,7 @@
  */
 import type { FunctionalComponent, VNode } from 'vue'
 import { h } from 'vue'
-import type { DrawingNode } from '../../../domain/layout/lab/labGeometry'
+import type { DrawingNode } from '../../../domain/schemas/diagramLayoutGeometry'
 
 /** What a rendered shape or line is drawn with. */
 const DRAWING_TAGS = new Set(['g', 'rect', 'path', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'image'])
@@ -25,7 +25,7 @@ export const drawnAttributes = (node: DrawingNode): Record<string, string> =>
 export const drawn = (node: DrawingNode): VNode | null => {
   if (!DRAWING_TAGS.has(node.tag)) return null
   const children = node.children.map(drawn).filter((child): child is VNode => child !== null)
-  return h(node.tag, drawnAttributes(node), node.text === null ? children : [node.text, ...children])
+  return h(node.tag, drawnAttributes(node), node.text === undefined ? children : [node.text, ...children])
 }
 
 /** The nodes, drawn in order inside one group that *transform* places. */

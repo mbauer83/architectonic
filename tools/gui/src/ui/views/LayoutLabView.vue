@@ -19,7 +19,7 @@ const svc = inject(modelServiceKey)!
 const toast = inject(toastKey, () => undefined)
 const route = useRoute()
 const router = useRouter()
-const lab = useLayoutLab()
+const lab = useLayoutLab(svc)
 
 const labIsOn = ref<boolean | null>(null)
 const diagrams = ref<readonly DiagramSummary[]>([])
@@ -213,7 +213,8 @@ onBeforeUnmount(() => {
 
       <LayoutLabCanvas
         v-if="lab.geometry.value"
-        :lab="lab"
+        class="lab__canvas"
+        :session="lab"
         :show-breaches="showBreaches"
       />
 
@@ -275,6 +276,8 @@ onBeforeUnmount(() => {
 .lab__count--soft { background: #fef3c7; color: #92400e; }
 .lab__timing { color: #64748b; font-size: 12px; }
 .lab__error { color: #b91c1c; }
+/* Always being edited, so framed as a canvas in edit mode is. */
+.lab__canvas { border: 2px solid var(--accent); border-radius: 6px; }
 .lab__panels { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 12px; }
 .lab__panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; min-width: 0; }
 .lab__panel h2 { font-size: 14px; margin: 4px 0 8px; }

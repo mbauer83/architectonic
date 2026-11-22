@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { Point } from '../../geometry'
-import type { DrawingNode, LabLineDrawing } from '../labGeometry'
+import type { DrawingNode, LineDrawing } from '../../../schemas/diagramLayoutGeometry'
 import { decorationMotion, drawnLine, headingAtEnd, roundedPath, stoppingShort, transformOf } from '../labLineDrawing'
 
 type XY = readonly [number, number]
@@ -58,12 +58,12 @@ describe.each(cases)('a line drawn along $name', (one) => {
 })
 
 const node = (tag: string, attributes: Record<string, string> = {}): DrawingNode =>
-  ({ tag, attributes, text: null, children: [] })
+  ({ tag, attributes, text: undefined, children: [] })
 
 describe('a line drawn with PlantUML\'s drawing', () => {
   const stroke = node('path', { d: 'M0,0 L1,1', fill: 'none', style: 'stroke:#181818;stroke-width:1;stroke-dasharray:7,7;' })
   const head = node('polygon', { points: '0,0 4,10 8,0', fill: '#181818' })
-  const drawing: LabLineDrawing = {
+  const drawing: LineDrawing = {
     group: node('g'),
     line: stroke,
     ends: [

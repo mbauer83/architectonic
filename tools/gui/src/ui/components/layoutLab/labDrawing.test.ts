@@ -12,14 +12,14 @@ import { breachMarksOf, dragRegionOf, handlesOf, pointsAttribute } from './labDr
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 
-const box = (alias: string, inside: string | null) => ({
-  alias, kind: 'domain' as const, section: 'boxes' as const, key: null, label: alias,
-  extent: at(0, 0, 10, 10), inside, words: [], title_band: null, drawing: SHAPE_DRAWING,
+const box = (alias: string, inside?: string) => ({
+  alias, kind: 'domain' as const, section: 'boxes' as const, key: undefined, label: alias,
+  extent: at(0, 0, 10, 10), inside, words: [], title_band: undefined, drawing: SHAPE_DRAWING,
 })
 
 describe('a grouping title band', () => {
   const titled = {
-    ...box('G', null),
+    ...box('G', undefined),
     extent: at(10, 10, 250, 90),
     words: [{ text: 'Group', x: 110, y: 25, width: 30 }],
     title_band: at(86, 10, 164, 28), drawing: SHAPE_DRAWING,
@@ -32,9 +32,14 @@ describe('a grouping title band', () => {
   it('is dragged by across the box full width', () => {
     const now = at(10, 40, 250, 120)
     const band = routingBandOf(titled, now) as Extent
-    expect(dragRegionOf(now)).toEqual(now)
-    expect(dragRegionOf(now).left).toBeLessThan(band.left)
-    expect(dragRegionOf(now).right).toBeGreaterThan(band.right)
+    const region = dragRegionOf(now, 18)
+    expect(region).toEqual(at(10, 40, 250, 58))
+    expect(region.left).toBeLessThan(band.left)
+    expect(region.right).toBeGreaterThan(band.right)
+  })
+
+  it('leaves an element its whole outline to drag by', () => {
+    expect(dragRegionOf(at(0, 0, 40, 20))).toEqual(at(0, 0, 40, 20))
   })
 })
 

@@ -7,6 +7,29 @@
   --domain-technology: #c3e1b4;
   /* The interface's accent: what is selected, what acts, the frame of a canvas being edited. */
   --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --accent-soft: #eff6ff;
+  --accent-border: #bfdbfe;
+  --on-accent: #fff;
+  /* The interface's surfaces, text and lines, as the diagram editor's chrome uses them. Light only for
+     now: the dark interface follows the system setting once every surface reads these. */
+  --surface: #fff;
+  --canvas: #f8fafc;
+  --paper: #fafafa;
+  --text: #1a1a1a;
+  --text-2: #374151;
+  --muted: #6b7280;
+  --faint: #9ca3af;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --hover: #f9fafb;
+  --soft: #f3f4f6;
+  --danger-strong: #b91c1c;
+  --danger-border: #fecaca;
+  --warn-soft: #fef3c7;
+  --warn-text: #92400e;
+  --warn-border: #fde68a;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .domain-badge,

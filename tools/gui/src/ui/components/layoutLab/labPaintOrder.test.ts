@@ -7,41 +7,41 @@ import { describe, expect, it } from 'vitest'
 import type { Extent } from '../../../domain/layout/geometry'
 import { overlaps } from '../../../domain/layout/geometry'
 import { LINE_DRAWING, SHAPE_DRAWING } from '../../../domain/layout/lab/__tests__/labDrawingFixtures'
-import type { LabGeometry } from '../../../domain/layout/lab/labGeometry'
+import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
 import type { Placement } from '../../../domain/layout/lab/labRouting'
 import type { Lift, Painted } from './labPaintOrder'
 import { paintOrder, shapeOrder } from './labPaintOrder'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 
-const box = (alias: string, inside: string | null, extent: Extent) => ({
-  alias, kind: 'domain' as const, section: 'boxes' as const, key: null, label: alias,
-  extent, inside, words: [], title_band: null, drawing: SHAPE_DRAWING,
+const box = (alias: string, inside: string | undefined, extent: Extent) => ({
+  alias, kind: 'domain' as const, section: 'boxes' as const, key: undefined, label: alias,
+  extent, inside, words: [], title_band: undefined, drawing: SHAPE_DRAWING,
 })
-const element = (alias: string, inside: string | null, extent: Extent) => ({
-  alias, key: null, label: alias, extent, inside, words: [], outside_label: null, drawing: SHAPE_DRAWING,
+const element = (alias: string, inside: string | undefined, extent: Extent) => ({
+  alias, key: undefined, label: alias, extent, inside, words: [], outside_label: undefined, drawing: SHAPE_DRAWING,
 })
 const relation = (index: number, source: string, target: string) => ({
   index, key: `r${index}`, source, target, decorated: [false, true] as [boolean, boolean],
-  course: [], label: '', label_size: null, drawing: LINE_DRAWING,
+  course: [], label: '', label_size: undefined, drawing: LINE_DRAWING,
 })
 
 /**
  * One (holding Inner, holding a) and Two (holding b) side by side, c and d loose below them; a line
  * from b to c, from c to d, and from the box Two to d.
  */
-const geometry: LabGeometry = {
+const geometry: LayoutGeometry = {
   artifact_id: 'ARC@1.a.test', name: 'Test', canvas: at(0, 0, 600, 400), backdrop: [],
   boxes: [
-    box('One', null, at(0, 0, 200, 150)),
-    box('Two', null, at(250, 0, 450, 150)),
+    box('One', undefined, at(0, 0, 200, 150)),
+    box('Two', undefined, at(250, 0, 450, 150)),
     box('Inner', 'One', at(10, 30, 190, 140)),
   ],
   elements: [
     element('a', 'Inner', at(20, 60, 120, 100)),
     element('b', 'Two', at(270, 40, 370, 80)),
-    element('c', null, at(20, 250, 120, 290)),
-    element('d', null, at(300, 250, 400, 290)),
+    element('c', undefined, at(20, 250, 120, 290)),
+    element('d', undefined, at(300, 250, 400, 290)),
   ],
   relations: [relation(0, 'b', 'c'), relation(1, 'c', 'd'), relation(2, 'Two', 'd')],
 }
@@ -84,7 +84,7 @@ describe('the lab paint order', () => {
     for (const lift of everyLift) {
       const order = shapesOf(placedWith({ One: at(0, 0, 400, 300) }), lift)
       for (const [alias, holder] of inside) {
-        if (holder !== null) expect(order.indexOf(holder), `${holder} before ${alias}`).toBeLessThan(order.indexOf(alias))
+        if (holder !== undefined && holder !== null) expect(order.indexOf(holder), `${holder} before ${alias}`).toBeLessThan(order.indexOf(alias))
       }
     }
   })
@@ -100,7 +100,7 @@ describe('the lab paint order', () => {
   })
 
   it('paints a widened inner box under the siblings it overlaps, inside its own box', () => {
-    const geometryWithSibling: LabGeometry = {
+    const geometryWithSibling: LayoutGeometry = {
       ...geometry,
       elements: [...geometry.elements, element('e', 'One', at(150, 100, 190, 140))],
     }
@@ -136,7 +136,7 @@ describe('the lab paint order', () => {
   it('sinks a line under a box two levels above its other end, over its far end two levels deep', () => {
     // As Strategy (holding Course of Actions, holding Dogfood) dragged up over Motivation (holding
     // Outcomes, holding the outcome Dogfood's line ends at).
-    const nested: LabGeometry = {
+    const nested: LayoutGeometry = {
       ...geometry,
       boxes: [...geometry.boxes, box('Middle', 'Two', at(260, 20, 440, 140))],
       elements: geometry.elements.map((one) => (one.alias === 'b' ? { ...one, inside: 'Middle' } : one)),

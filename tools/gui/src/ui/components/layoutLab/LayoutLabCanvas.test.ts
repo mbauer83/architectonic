@@ -11,39 +11,39 @@ import type { App } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
 import { drawnArrangement } from '../../../domain/layout/lab/labArrangement'
 import { LINE_DRAWING, SHAPE_DRAWING } from '../../../domain/layout/lab/__tests__/labDrawingFixtures'
-import type { LabGeometry } from '../../../domain/layout/lab/labGeometry'
-import { useLayoutLab } from '../../composables/useLayoutLab'
+import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
+import { Effect } from 'effect'
+import { useArrangementSession } from '../../composables/useArrangementSession'
 import LayoutLabCanvas from './LayoutLabCanvas.vue'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 
 /** A grouping G holding A, C beside it; a line from A to C. */
-const geometry: LabGeometry = {
+const geometry: LayoutGeometry = {
   artifact_id: 'ARC@1.a.test', name: 'Test', canvas: at(0, 0, 600, 400), backdrop: [],
   elements: [
-    { alias: 'A', key: 'APP@1.a', label: 'A', extent: at(20, 40, 120, 80), inside: 'G', words: [], outside_label: null, drawing: SHAPE_DRAWING },
-    { alias: 'C', key: 'APP@3.c', label: 'C', extent: at(400, 40, 500, 80), inside: null, words: [], outside_label: null, drawing: SHAPE_DRAWING },
+    { alias: 'A', key: 'APP@1.a', label: 'A', extent: at(20, 40, 120, 80), inside: 'G', words: [], outside_label: undefined, drawing: SHAPE_DRAWING },
+    { alias: 'C', key: 'APP@3.c', label: 'C', extent: at(400, 40, 500, 80), inside: undefined, words: [], outside_label: undefined, drawing: SHAPE_DRAWING },
   ],
   boxes: [{
     alias: 'G', kind: 'authored-grouping', section: 'boxes', key: 'g-1', label: 'Group',
-    extent: at(10, 10, 250, 90), inside: null, words: [], title_band: null, drawing: SHAPE_DRAWING,
+    extent: at(10, 10, 250, 90), inside: undefined, words: [], title_band: undefined, drawing: SHAPE_DRAWING,
   }],
   relations: [{
     index: 0, key: 'r', source: 'A', target: 'C', decorated: [false, true],
-    course: [[120, 60], [400, 60]], label: '', label_size: null, drawing: LINE_DRAWING,
+    course: [[120, 60], [400, 60]], label: '', label_size: undefined, drawing: LINE_DRAWING,
   }],
 }
 
 let app: App | null = null
 
 const mounted = async () => {
-  const lab = useLayoutLab()
-  lab.geometry.value = geometry
-  lab.arrangement.value = drawnArrangement(geometry)
+  const lab = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
+  lab.open(geometry)
   const shown = reactive({ breaches: true })
   const host = document.createElement('div')
   document.body.appendChild(host)
-  app = createApp({ render: () => h(LayoutLabCanvas, { lab, showBreaches: shown.breaches }) })
+  app = createApp({ render: () => h(LayoutLabCanvas, { session: lab, showBreaches: shown.breaches }) })
   app.mount(host)
   await nextTick()
   return { lab, host, shown }
@@ -114,7 +114,7 @@ describe('the layout lab canvas', () => {
     const { lab, host, shown } = await mounted()
     const drawn = drawnArrangement(geometry)
     // C put over A: two connected elements over each other, which no route can satisfy.
-    lab.arrangement.value = { ...drawn, elements: new Map([...drawn.elements, ['C', at(60, 50, 160, 90)]]) }
+    lab.state.value = { byHand: true, arrangement: { ...drawn, elements: new Map([...drawn.elements, ['C', at(60, 50, 160, 90)]]) } }
     lab.routeEverything()
     await nextTick()
     expect([...host.querySelectorAll('.lab-breach-tag')].map((tag) => tag.textContent)).toContain('ends overlap')

@@ -1,0 +1,99 @@
+/**
+ * What Save would write is read off the state, never counted: a move adds a change and its undo takes
+ * it away, returning to automatic leaves no arranging change, and a save is the new starting point.
+ */
+import { Effect } from 'effect'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ModelService } from '../../application/ModelService'
+import type { Extent } from '../../domain/layout/geometry'
+import { moved } from '../../domain/layout/lab/labArrangement'
+import { LINE_DRAWING, SHAPE_DRAWING } from '../../domain/layout/lab/__tests__/labDrawingFixtures'
+import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
+import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
+import { useDiagramEditing } from './useDiagramEditing'
+
+const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
+
+const element = (alias: string, key: string, extent: Extent) => ({
+  alias, key, label: alias, extent, inside: undefined, words: [], outside_label: undefined, drawing: SHAPE_DRAWING,
+})
+
+const geometry: LayoutGeometry = {
+  artifact_id: 'ARC@1.a.test', name: 'Test', canvas: at(0, 0, 600, 400), backdrop: [],
+  elements: [element('A', 'APP@1.a', at(20, 40, 120, 80)), element('C', 'APP@3.c', at(400, 40, 500, 80))],
+  boxes: [],
+  relations: [{
+    index: 0, key: 'r', source: 'A', target: 'C', decorated: [false, true],
+    course: [[120, 60], [400, 60]], label: '', label_size: undefined, drawing: LINE_DRAWING,
+  }],
+}
+
+const sent: LayoutPatch[] = []
+const service = {
+  readLayoutGeometry: () => Effect.succeed(geometry),
+  drawResizedShapes: () => Effect.succeed([]),
+  patchLayout: (_id: string, patch: LayoutPatch) => {
+    sent.push(patch)
+    return Effect.succeed({ artifact_id: 'ARC@1.a.test', wrote: true, warnings: [], errors: [], layout: {
+      elements: { 'APP@1.a': { x: 20, y: 40 }, 'APP@3.c': { x: 430, y: 40 } },
+    } })
+  },
+} as unknown as ModelService
+
+const opened = async () => {
+  const editing = useDiagramEditing(service, () => 'ARC@1.a.test')
+  await editing.open()
+  return editing
+}
+
+/** Move *alias* by (dx, dy) as one step, the way a drag begins and ends. */
+const move = (editing: Awaited<ReturnType<typeof opened>>, alias: string, dx: number) => {
+  const { session } = editing
+  session.begin()
+  const from = session.arrangement.value
+  if (from) session.preview(moved(geometry, from, alias, dx, 0), new Set([alias]))
+  session.commit()
+}
+
+beforeEach(() => {
+  sent.length = 0
+  vi.stubGlobal('requestAnimationFrame', (frame: FrameRequestCallback) => { frame(0); return 1 })
+  vi.stubGlobal('cancelAnimationFrame', () => undefined)
+})
+
+describe('the changes a session would save', () => {
+  it('starts with none, and a first move takes the picture over and moves one element', async () => {
+    const editing = await opened()
+    expect(editing.changes.value).toEqual([])
+    move(editing, 'C', 30)
+    expect(editing.changes.value.map((change) => change.key)).toEqual(['by-hand', 'C'])
+  })
+
+  it('follows undo and redo, and returning to automatic leaves nothing to save', async () => {
+    const editing = await opened()
+    move(editing, 'C', 30)
+    editing.session.undo()
+    expect(editing.changes.value).toEqual([])
+    editing.session.redo()
+    expect(editing.changes.value).toHaveLength(2)
+    editing.returnToAutomatic()
+    expect(editing.changes.value).toEqual([])
+  })
+
+  it('saves the arrangement as a patch read against nothing stored, and starts again from it', async () => {
+    const editing = await opened()
+    move(editing, 'C', 30)
+    expect(await editing.save()).toBe(true)
+    expect(sent).toHaveLength(1)
+    expect(sent[0].elements['APP@3.c']).toEqual({ value: { x: 430, y: 40 }, based_on: null })
+    expect(editing.changes.value).toEqual([])
+  })
+
+  it('discards back to the last save', async () => {
+    const editing = await opened()
+    move(editing, 'C', 30)
+    editing.discard()
+    expect(editing.changes.value).toEqual([])
+    expect(editing.session.state.value?.byHand).toBe(false)
+  })
+})

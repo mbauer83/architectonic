@@ -163,6 +163,21 @@ export const matrixHtmlOf = (
 }
 
 /** Where "Edit" goes: a matrix is edited in its own view, everything else in the diagram editor. */
+/**
+ * Whether a diagram is edited on its canvas, on its own page: an ArchiMate diagram drawn from the
+ * model (not one whose hand-written body is kept verbatim), in this engagement. Every other diagram
+ * keeps its editor's own page until its sprint.
+ */
+export const editsOnCanvas = (
+  detail: {
+    readonly diagram_type: string
+    readonly is_global: boolean
+    readonly extra?: Readonly<Record<string, unknown>>
+  } | null,
+): boolean =>
+  detail !== null && detail.diagram_type.startsWith('archimate') && !detail.is_global
+  && detail.extra?.['manual-layout'] !== true
+
 export const editRouteFor = <T>(
   diagramType: string | undefined,
   diagramId: string,

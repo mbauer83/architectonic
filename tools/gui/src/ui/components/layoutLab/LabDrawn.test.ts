@@ -5,10 +5,10 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { createApp, h, type App } from 'vue'
-import type { DrawingNode } from '../../../domain/layout/lab/labGeometry'
+import type { DrawingNode } from '../../../domain/schemas/diagramLayoutGeometry'
 import LabDrawn, { drawnAttributes } from './LabDrawn'
 
-const node = (tag: string, attributes: Record<string, string>, text: string | null = null, children: DrawingNode[] = []) =>
+const node = (tag: string, attributes: Record<string, string>, text: string | undefined = undefined, children: DrawingNode[] = []) =>
   ({ tag, attributes, text, children })
 
 let app: App | null = null
@@ -31,7 +31,7 @@ describe('a drawing in the lab', () => {
   it('keeps PlantUML\'s fill, stroke and font, in SVG', () => {
     const outline = node('path', { d: 'M0,0 L10,0', fill: '#D1BADC', style: 'stroke:#3F3842;stroke-width:0.5;' })
     const word = node('text', { 'font-family': 'sans-serif', 'font-size': '12', textLength: '58.6641', x: '1', y: '2' }, 'Increased')
-    const svg = drawn([node('g', { class: 'entity' }, null, [outline, word])], 'translate(3 4)')
+    const svg = drawn([node('g', { class: 'entity' }, undefined, [outline, word])], 'translate(3 4)')
 
     expect(svg.querySelector('g')?.getAttribute('transform')).toBe('translate(3 4)')
     const path = svg.querySelector('path')

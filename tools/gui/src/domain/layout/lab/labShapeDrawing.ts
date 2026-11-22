@@ -8,7 +8,7 @@
  * until that answer arrives, the last one there is — or PlantUML's own — stands in.
  */
 import type { Extent } from '../geometry'
-import type { DrawingNode } from './labGeometry'
+import type { DrawingNode } from '../../schemas/diagramLayoutGeometry'
 import { resizedFromDrawn } from './labRouting'
 
 /** A shape as the composer drew it at a size other than PlantUML's, and the extent it drew it for. */
