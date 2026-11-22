@@ -15,6 +15,7 @@ import pytest
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -975,7 +976,7 @@ class TestVerifyAll:
             _entity(eid),
         )
         registry = ArtifactRegistry(shared_artifact_index(repo))
-        results = ArtifactVerifier(registry, catalogs=_catalogs()).verify_all(repo, include_diagrams=False)
+        results = build_artifact_verifier(registry, catalogs=_catalogs()).verify_all(repo, include_diagrams=False)
         assert all(r.valid for r in results), [
             f"{r.path.name}: {[i.message for i in r.issues]}" for r in results if not r.valid
         ]
@@ -985,7 +986,7 @@ class TestVerifyAll:
         path = repo / "model" / "motivation" / "requirement" / f"{eid}.md"
         _write(path, _entity(eid, no_content_section=True))
         registry = ArtifactRegistry(shared_artifact_index(repo))
-        results = ArtifactVerifier(registry, catalogs=_catalogs()).verify_all(repo, include_diagrams=False)
+        results = build_artifact_verifier(registry, catalogs=_catalogs()).verify_all(repo, include_diagrams=False)
         assert any(not r.valid for r in results)
 
     def test_verify_all_two_repos(self, tmp_path: Path) -> None:
@@ -1002,7 +1003,7 @@ class TestVerifyAll:
         registry = ArtifactRegistry(shared_artifact_index([eng_root, ent_root]))
         # verify_all for each root independently
         for root in (eng_root, ent_root):
-            results = ArtifactVerifier(registry, catalogs=_catalogs()).verify_all(root, include_diagrams=False)
+            results = build_artifact_verifier(registry, catalogs=_catalogs()).verify_all(root, include_diagrams=False)
             assert all(r.valid for r in results), [
                 i.message for r in results for i in r.issues if i.severity == "error"
             ]
@@ -1019,7 +1020,7 @@ class TestVerifyAll:
             _entity(proj_id),
         )
         registry = ArtifactRegistry(shared_artifact_index(repo))
-        results = ArtifactVerifier(registry, catalogs=_catalogs()).verify_all(repo, include_diagrams=False)
+        results = build_artifact_verifier(registry, catalogs=_catalogs()).verify_all(repo, include_diagrams=False)
         verified = {r.path.name for r in results}
         assert f"{proj_id}.md" in verified, "project-scoped entity must be verified, not silently excluded"
         assert f"{legacy_id}.md" in verified

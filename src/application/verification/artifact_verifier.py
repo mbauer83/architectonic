@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import functools
 from dataclasses import replace
 from pathlib import Path
@@ -185,11 +186,6 @@ class ArtifactVerifier(_VerifierAdapters):
             path, self._diagram_rules, run_syntax_check=self.check_puml_syntax, snapshot=snapshot
         )
 
-    def _verify_diagram_file(
-        self, path: Path, *, run_syntax_check: bool, snapshot: RepositorySnapshot | None = None
-    ) -> VerificationResult:
-        return verify_diagram(path, self._diagram_rules, run_syntax_check=run_syntax_check, snapshot=snapshot)
-
     def verify_matrix_diagram_file(
         self, path: Path, *, snapshot: RepositorySnapshot | None = None
     ) -> VerificationResult:
@@ -271,8 +267,6 @@ class ArtifactVerifier(_VerifierAdapters):
 
         inv = self._inventory.build(repo_path, include_diagrams=include_diagrams)
         relpaths = {inv.path_to_rel[path.resolve()] for path in changed_paths if path.resolve() in inv.path_to_rel}
-        if not relpaths:
-            return []
 
         selected = relpaths if verification_scope == "changed" else expand_impacted_paths(inv, relpaths)
         results = self._verify_inventory_subset(inv, selected)
@@ -360,31 +354,23 @@ class ArtifactVerifier(_VerifierAdapters):
         if self.registry is not None:
             _ = self.registry.entity_ids()
             _ = self.registry.connection_ids()
-        entity_files = [inv.rel_to_path[r] for r in inv.entity_relpaths if r in relpaths]
-        connection_files = [inv.rel_to_path[r] for r in inv.connection_relpaths if r in relpaths]
-        diagram_files = [inv.rel_to_path[r] for r in inv.diagram_puml_relpaths if r in relpaths]
-        matrix_files = [inv.rel_to_path[r] for r in inv.diagram_matrix_relpaths if r in relpaths]
+        paths = [inv.rel_to_path[r] for r in inv.ordered_paths if r in relpaths]
+        # Defer syntax to one PlantUML batch. A verifier is shared by concurrent requests.
+        host = copy.copy(self)
+        host.check_puml_syntax = False
 
-        out: list[VerificationResult] = []
-        out.extend(self._scheduler.run(evaluation.per_file(self.verify_entity_file), entity_files))
-        out.extend(self._scheduler.run(evaluation.per_file(self.verify_connection_file), connection_files))
+        def verify(path: Path, *, snapshot: RepositorySnapshot | None = None) -> VerificationResult:
+            return host.verify_as(inv.file_type_by_relpath[inv.path_to_rel[path]], path, snapshot=snapshot)
 
-        diagram_results = self._scheduler.run(
-            evaluation.per_file(functools.partial(self._verify_diagram_file, run_syntax_check=False)),
-            diagram_files,
-            max_workers=4,
-        )
-        if self.check_puml_syntax and diagram_results:
-            issues_by_path = self._puml_syntax.check_batch([r.path for r in diagram_results])
-            for d in diagram_results:
-                d.issues.extend(issues_by_path.get(d.path, []))
-        out.extend(diagram_results)
-        out.extend(self._scheduler.run(evaluation.per_file(self.verify_matrix_diagram_file), matrix_files))
-
-        by_path = {r.path: r for r in out}
-        return [
-            by_path[inv.rel_to_path[r]] for r in inv.ordered_paths if r in relpaths and inv.rel_to_path[r] in by_path
-        ]
+        results = self._scheduler.run(evaluation.per_file(verify), paths)
+        if self.check_puml_syntax:
+            diagrams = {inv.rel_to_path[r] for r in inv.diagram_puml_relpaths}
+            checked = [r for r in results if r.path in diagrams and r.outcome == "verified" and not r.errors]
+            if checked:
+                issues = self._puml_syntax.check_batch([r.path for r in checked])
+                for result in checked:
+                    result.issues.extend(issues.get(result.path, []))
+        return results
 
     def verify_document_file(
         self, path: Path, *, snapshot: "RepositorySnapshot | None" = None
