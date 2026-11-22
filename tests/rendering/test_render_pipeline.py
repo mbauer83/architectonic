@@ -50,7 +50,7 @@ def _captured_puml(tmp_path: Path, puml: str, diagram_type: str | None) -> str:
 
     def _fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
         puml_arg = cmd[-1]
-        written.append((diag_dir / puml_arg).read_text(encoding="utf-8"))
+        written.append((Path(str(kwargs["cwd"])) / puml_arg).read_text(encoding="utf-8"))
         out_dir = Path(cmd[cmd.index("-o") + 1])
         (out_dir / "out.png").write_bytes(b"\x89PNG")
         result = MagicMock()
@@ -101,7 +101,7 @@ skinparam rectangle<<business_actor>> {
 
     def _fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
         puml_arg = cmd[-1]
-        written.append((diag_dir / puml_arg).read_text(encoding="utf-8"))
+        written.append((Path(str(kwargs["cwd"])) / puml_arg).read_text(encoding="utf-8"))
         out_dir = Path(cmd[cmd.index("-o") + 1])
         (out_dir / "out.png").write_bytes(b"\x89PNG")
         r = MagicMock()

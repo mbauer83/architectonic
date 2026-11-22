@@ -237,6 +237,24 @@ def check_internal_links(content: str, path: Path, result: VerificationResult, l
             ))
 
 
+def unresolvable_id_link_issues(artifact_ids: list[str], loc: str) -> list[Issue]:
+    """W155 for each link written with an artifact id that names no artifact.
+
+    The same fact as a path to no file, so the same code. It is not found by `check_internal_links`
+    because the verifier is not given the repository's ids: the write that expands id-form links is,
+    and it asks `unresolved_id_links` and reports what that answers through here.
+    """
+    return [
+        Issue(
+            Severity.WARNING, "W155",
+            f"Unresolvable internal link: '{artifact_id}' — no artifact of this repository has that id. "
+            "Link an artifact by the id the repository lists it under, or by a relative path.",
+            loc,
+        )
+        for artifact_id in artifact_ids
+    ]
+
+
 def check_matrix_markdown_shape(fm: dict, content: str, result: VerificationResult, loc: str) -> None:
     """W321 (should declare diagram-type: matrix) and W322 (no table markup found)."""
     if "diagram-type" in fm and str(fm.get("diagram-type")) != "matrix":

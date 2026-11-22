@@ -1,9 +1,8 @@
-"""A killed render's scratch file does not survive the next one.
+"""A scratch file an earlier version's killed render left does not survive the next render.
 
-`_render` writes its PlantUML input into the diagram catalog — PlantUML resolves the injected
-`!include`s against the including file's directory, so it cannot live elsewhere — and unlinks it in a
-`finally`. That covers returning and raising, not being killed: a SIGKILL or an OOM kill orphans the
-file where a later `git add -A` can commit it as a diagram, which is how `tmpa6lr5tr0.puml` reached a
+Earlier versions wrote the PlantUML input into the diagram catalog and unlinked it in a `finally`.
+That covers returning and raising, not being killed: a SIGKILL or an OOM kill orphaned the file where a
+later `git add -A` could commit it as a diagram, which is how `tmpa6lr5tr0.puml` reached a
 commit and surfaced two commits later as an unknown-diagram-type render failure.
 
 `test_no_render_temp_file_is_committed.py` still guards the commit. This guards the accumulation, so

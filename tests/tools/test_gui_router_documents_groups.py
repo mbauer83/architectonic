@@ -302,6 +302,35 @@ class TestCreateDocument:
         r = doc_client.post("/api/documents", json=payload)
         assert r.status_code == 200
 
+    @pytest.mark.parametrize("dry_run", [True, False])
+    def test_a_link_to_an_id_that_names_nothing_is_refused_naming_it(
+        self, doc_client, populated_root: Path, dry_run: bool
+    ) -> None:
+        """Regression: the refusal was an exception the create route did not translate — a 500."""
+        payload = {
+            "doc_type": "adr",
+            "title": "Links To Nothing",
+            "body": "## Context\n\nSee [it](REQ@1.gone).\n\n## Decision\n\nD.\n\n## Consequences\n\nC.\n",
+            "dry_run": dry_run,
+        }
+
+        r = doc_client.post("/api/documents", json=payload)
+
+        assert r.status_code == 200 and r.json()["wrote"] is False
+        named = [issue["message"] for issue in r.json()["verification"]["issues"] if issue["code"] == "W155"]
+        assert len(named) == 1 and "'REQ@1.gone'" in named[0]
+        assert not list((populated_root / "docs").rglob("*links-to-nothing*"))
+
+    def test_an_edit_leaving_a_link_to_an_id_that_names_nothing_is_refused_naming_it(self, doc_client) -> None:
+        r = doc_client.patch(
+            f"/api/documents/{DOC_ID}",
+            json={"replace": {"find": "body text", "replacement": "[body](GOL@1.gone) text"}, "dry_run": False},
+        )
+
+        assert r.status_code == 200 and r.json()["wrote"] is False
+        named = [issue["message"] for issue in r.json()["verification"]["issues"] if issue["code"] == "W155"]
+        assert len(named) == 1 and "'GOL@1.gone'" in named[0]
+
 
 # ── groups ────────────────────────────────────────────────────────────────────
 

@@ -95,6 +95,20 @@ class TestAFormerSpellingIsMoved:
 
         assert _attributes(handle, "OBL@1.a.b") == {"source": "ISO26262", "provision": "6-8", "status": "x"}
 
+    def test_the_hand_written_pair_becomes_source_and_provision(self, tmp_path: Path) -> None:
+        handle = _handle(
+            tmp_path, [("OBL@1.a.b", "obligation", {"framework": "EU AI Act", "clause": "Art. 12", "status": "x"})]
+        )
+
+        assert _run(handle) == ["framework -> source, clause -> provision"]
+        assert _attributes(handle, "OBL@1.a.b") == {"source": "EU AI Act", "provision": "Art. 12", "status": "x"}
+        assert ObligationCitationFormStep().detect(handle.view()) == []
+
+    def test_a_hand_written_pair_on_another_node_type_is_not_touched(self, tmp_path: Path) -> None:
+        handle = _handle(tmp_path, [("REQ@1.a.b", "requirement", {"framework": "NIST", "clause": "AC-2"})])
+
+        assert ObligationCitationFormStep().detect(handle.view()) == []
+
     def test_a_combined_citation_is_split(self, tmp_path: Path) -> None:
         handle = _handle(tmp_path, [("OBL@1.a.b", "obligation", {"cites": "EU-AI-Act:Art-12"})])
 

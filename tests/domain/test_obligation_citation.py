@@ -41,6 +41,31 @@ class TestBringingAFormerSpellingToIt:
         assert rewrite.moved == (("scheme", "source"), ("code", "provision"))
         assert rewrite.left_in_place == ()
 
+    def test_the_hand_written_pair_is_renamed(self) -> None:
+        rewrite = rewrite_superseded({"framework": "EU AI Act", "clause": "Art. 12", "status": "open"})
+
+        assert rewrite.attributes == {"source": "EU AI Act", "provision": "Art. 12", "status": "open"}
+        assert rewrite.moved == (("framework", "source"), ("clause", "provision"))
+        assert rewrite.left_in_place == ()
+
+    def test_both_former_pairs_agreeing_become_one_citation(self) -> None:
+        rewrite = rewrite_superseded({"scheme": "GDPR", "code": "Art. 5", "framework": "GDPR", "clause": "Art. 5"})
+
+        assert rewrite.attributes == {"source": "GDPR", "provision": "Art. 5"}
+        assert rewrite.left_in_place == ()
+
+    def test_of_two_former_pairs_that_disagree_the_second_stays(self) -> None:
+        rewrite = rewrite_superseded({"scheme": "GDPR", "code": "Art. 5", "framework": "ISO 27001", "clause": "A.5"})
+
+        assert rewrite.attributes == {
+            "source": "GDPR", "provision": "Art. 5", "framework": "ISO 27001", "clause": "A.5",
+        }
+        assert [former for former, _ in rewrite.left_in_place] == ["framework", "clause"]
+
+    @pytest.mark.parametrize("former", [{"framework": "ISO26262"}, {"clause": "6-8"}])
+    def test_a_hand_written_attribute_is_recognised_as_former(self, former: dict[str, object]) -> None:
+        assert superseded_attributes_in(former) == tuple(former)
+
     def test_a_combined_citation_is_split_at_the_first_colon(self) -> None:
         """A provision may hold a colon of its own; a source cannot be told from one that does."""
         rewrite = rewrite_superseded({"cites": "ISO26262: 6-8:2018"})

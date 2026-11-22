@@ -14,11 +14,11 @@ from pathlib import Path
 import pytest
 
 from src.application.document_links import (
-    UnresolvedArtifactLink,
     as_link,
     id_links_expanded,
     references_from,
     resolve_artifact_links,
+    unresolved_id_links,
 )
 
 _REQUIREMENT = "REQ@1777135513.nn_s-a.write-composable-code"
@@ -110,14 +110,29 @@ def test_a_file_beside_the_document_is_a_path_whatever_it_is_called(repo: Path) 
     assert id_links_expanded("[a](ADR@1.x.md)", written_to=beside.parent, path_of=lambda _: None) == "[a](ADR@1.x.md)"
 
 
-def test_every_id_that_names_nothing_is_named_in_one_refusal(repo: Path) -> None:
-    with pytest.raises(UnresolvedArtifactLink) as refused:
-        id_links_expanded(
-            f"[a](REQ@1.gone) [b]({_ADR}) [c](GOL@2.also-gone.slug#x) [d](REQ@1.gone)",
-            written_to=repo / "docs/standard", path_of=_path_of(repo),
-        )
+_NAMING_NOTHING = f"[a](REQ@1.gone) [b]({_ADR}) [c](GOL@2.also-gone.slug#x) [d](REQ@1.gone)"
 
-    assert str(refused.value).startswith("GOL@2.also-gone.slug, REQ@1.gone: no artifact of this repository has these")
+
+def test_an_id_that_names_nothing_keeps_its_spelling_and_the_rest_are_expanded(repo: Path) -> None:
+    expanded = id_links_expanded(_NAMING_NOTHING, written_to=repo / "docs/standard", path_of=_path_of(repo))
+
+    assert expanded.startswith("[a](REQ@1.gone) [b](../adr/platform/")
+    assert expanded.endswith("[c](GOL@2.also-gone.slug#x) [d](REQ@1.gone)")
+
+
+def test_every_id_that_names_nothing_is_named_once_in_order(repo: Path) -> None:
+    found = unresolved_id_links(_NAMING_NOTHING, written_to=repo / "docs/standard", path_of=_path_of(repo))
+
+    assert found == ["REQ@1.gone", "GOL@2.also-gone.slug"]
+
+
+def test_an_id_that_names_an_artifact_and_a_file_beside_the_document_are_not_unresolved(repo: Path) -> None:
+    beside = repo / "docs/standard/ADR@1.x.md"
+    beside.parent.mkdir(parents=True, exist_ok=True)
+    beside.write_text("---\nartifact-id: ADR@1.x\n---\n", encoding="utf-8")
+    content = f"[a]({_REQUIREMENT}) [b](ADR@1.x.md) [c](https://REQ@1.gone) [d](notes.md)"
+
+    assert unresolved_id_links(content, written_to=beside.parent, path_of=_path_of(repo)) == []
 
 
 @pytest.mark.parametrize(

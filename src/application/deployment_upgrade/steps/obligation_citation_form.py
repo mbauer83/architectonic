@@ -1,8 +1,9 @@
 """Bring a store's obligation citations to `source` and `provision`.
 
 An obligation says which rule it comes from in two attributes. Stores written before hold the
-citation as the wizard used to write it (`scheme`, `code`) or as the ontology text used to ask for
-it (`cites`, a single `source:provision`), and nothing reads either — so the citation is on the
+citation as the wizard used to write it (`scheme`, `code`), as obligations were written by hand
+(`framework`, `clause`), or as the ontology text used to ask for it (`cites`, a single
+`source:provision`), and nothing reads any of them — so the citation is on the
 record and invisible to every check. What moves, and what cannot, is decided by the domain module
 that names the attributes; this step finds the obligations and writes the result.
 
@@ -56,7 +57,7 @@ class ObligationCitationFormStep:
     id = "assurance-obligation-citation-form"
     version = 1
     kind: TargetKind = "assurance_sqlcipher"
-    description = "Move obligation citations from scheme/code/cites to source and provision"
+    description = "Move obligation citations from scheme/code, framework/clause or cites to source and provision"
 
     def _rewrites(self, view: OperationalTargetView) -> dict[str, CitationRewrite]:
         """Obligation id → what bringing it to the current form does, for each one it concerns."""

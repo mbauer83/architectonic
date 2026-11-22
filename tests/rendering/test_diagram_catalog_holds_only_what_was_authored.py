@@ -2,9 +2,10 @@
 
 Two ways something else gets in, both of which happened here.
 
-The renderer writes a `tmp*.puml` beside the diagram it is rendering, so PlantUML's `!include`s
-resolve against the catalog, and removes it in a `finally`. A hard kill — SIGKILL, an OOM kill — skips
-that cleanup and orphans the file. `test_all_committed_diagrams_render` already tolerates one, by
+The renderer used to write a `tmp*.puml` beside the diagram it was rendering and remove it in a
+`finally`. A hard kill — SIGKILL, an OOM kill — skipped that cleanup and orphaned the file. Renders now
+write their input outside every repository (`plantuml_scratch`), but a catalog an earlier version
+rendered in can still hold one. `test_all_committed_diagrams_render` already tolerates one, by
 collecting through `git ls-files` so an *untracked* stray is not mistaken for a diagram.
 
 That defence stops at the word "untracked", and this is the case that walks past it: a `git add -A`
