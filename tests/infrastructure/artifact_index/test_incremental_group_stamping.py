@@ -22,13 +22,13 @@ from typing import Any, cast
 
 import pytest
 
-from src.domain.ontology_representation.artifact_types import infer_mount
-from src.infrastructure.artifact_index._service_incremental import (
+from src.application.artifacts.mounted_readers import (
     parse_diagram_for_path,
     parse_document_for_path,
     parse_entity_for_path,
     parse_outgoing_for_path,
 )
+from src.domain.ontology_representation.artifact_types import infer_mount
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 from src.infrastructure.mcp.artifact_mcp import context as ctx
 

@@ -18,6 +18,14 @@ from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from src.application.artifacts.icon_parsing import parse_icon
+from src.application.artifacts.mounted_readers import (
+    parse_diagram_for_path,
+    parse_document_for_path,
+    parse_entity_for_path,
+    parse_outgoing_for_path,
+    parse_scratchpad_for_path,
+)
 from src.application.verification import (
     _verifier_diagram,
     _verifier_document,
@@ -45,36 +53,44 @@ def _diagram(
 
 KIND_BINDINGS: Mapping[ArtifactKindName, KindBinding] = {
     "entity": KindBinding(
+        reader=lambda path, mounts, domain_names: parse_entity_for_path(path, mounts, domain_names=domain_names),
         verifier=KindVerifier(
             verify=lambda host, path, snapshot: host.verify_entity_file(path, snapshot=snapshot),
             rule_codes=_verifier_entity.RULE_CODES,
         ),
     ),
     "connection": KindBinding(
+        reader=lambda path, mounts, _domain_names: parse_outgoing_for_path(path, mounts),
         verifier=KindVerifier(
             verify=lambda host, path, snapshot: host.verify_connection_file(path, snapshot=snapshot),
             rule_codes=_verifier_outgoing.RULE_CODES,
         ),
     ),
     "diagram": KindBinding(
+        reader=lambda path, mounts, _domain_names: parse_diagram_for_path(path, mounts),
         verifier=KindVerifier(
             verify=_diagram, rule_codes=_verifier_diagram.RULE_CODES | artifact_verifier_syntax.RULE_CODES
         ),
     ),
     "document": KindBinding(
+        reader=lambda path, mounts, _domain_names: parse_document_for_path(path, mounts),
         verifier=KindVerifier(
             verify=lambda host, path, snapshot: host.verify_document_file(path, snapshot=snapshot),
             rule_codes=_verifier_document.RULE_CODES,
         ),
     ),
     "icon": KindBinding(
+        reader=lambda path, _mounts, _domain_names: parse_icon(path),
         verifier=KindVerifier(
             verify=lambda host, path, snapshot: host.verify_icon_file(path, snapshot=snapshot),
             rule_codes=_verifier_icon.RULE_CODES,
         ),
     ),
     # Its link verdicts are about the ontology, not about the file, and nothing verifies the file.
-    "scratchpad": KindBinding(verifier=None),
+    "scratchpad": KindBinding(
+        reader=lambda path, mounts, _domain_names: parse_scratchpad_for_path(path, mounts),
+        verifier=None,
+    ),
 }
 
 
@@ -94,6 +110,8 @@ def _row_contradictions(kind: KindDeclaration, binding: KindBinding | None) -> I
     match binding, kind.verification:
         case None, _:
             yield f"The {kind.name} kind has no binding. Bind its verifier, or None if it is unverified, in {where}."
+        case KindBinding(reader=reader), _ if not callable(reader):
+            yield f"The {kind.name} kind has no reader. Bind its file reader in {where}."
         case KindBinding(verifier=None), "with-the-model" | "standalone":
             yield (
                 f"The {kind.name} kind is verified ({kind.verification}) and has no verifier bound. Bind one "

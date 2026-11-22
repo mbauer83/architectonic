@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, TypeAlias
 
 from src.application.verification.artifact_verifier_types import VerificationResult
+from src.domain.ontology_representation.artifact_types import RepoMount
 from src.domain.repository.artifact_location import ArtifactKindName
 
 if TYPE_CHECKING:
@@ -46,6 +47,7 @@ class KindVerifier:
 class KindBinding:
     """What one kind of artifact is bound to. `verifier` is None for a kind its row declares unverified."""
 
+    reader: Callable[[Path, list[RepoMount], frozenset[str]], object]
     verifier: KindVerifier | None
 
 

@@ -22,7 +22,7 @@ import pytest
 
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
-from src.application.verification.kind_verification import KindBinding, KindVerifier
+from src.application.verification.kind_verification import KindVerifier
 from src.domain.repository.artifact_location import ARTIFACT_KIND_NAMES, ARTIFACT_KINDS, artifact_kind
 from src.infrastructure.app_bootstrap import build_module_registry, build_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.verify_tools import artifact_verify
@@ -85,13 +85,14 @@ _SOME_VERIFIER = KindVerifier(verify=lambda host, path, snapshot: VerificationRe
     [
         pytest.param({k: v for k, v in KIND_BINDINGS.items() if k != "icon"}, "icon kind has no binding",
                      id="a-kind-left-unbound"),
-        pytest.param({**KIND_BINDINGS, "icon": KindBinding(verifier=None)}, "icon kind is verified",
+        pytest.param({**KIND_BINDINGS, "icon": replace(KIND_BINDINGS["icon"], verifier=None)}, "icon kind is verified",
                      id="a-verified-kind-with-no-verifier"),
-        pytest.param({**KIND_BINDINGS, "scratchpad": KindBinding(verifier=_SOME_VERIFIER)},
+        pytest.param({**KIND_BINDINGS, "scratchpad": replace(KIND_BINDINGS["scratchpad"], verifier=_SOME_VERIFIER)},
                      "scratchpad kind is declared unverified", id="an-unverified-kind-with-a-verifier"),
-        pytest.param({**KIND_BINDINGS, "icon": KindBinding(verifier=replace(_SOME_VERIFIER, rule_codes=frozenset()))},
+        pytest.param({**KIND_BINDINGS, "icon": replace(
+            KIND_BINDINGS["icon"], verifier=replace(_SOME_VERIFIER, rule_codes=frozenset()))},
                      "declares no rule codes", id="a-verifier-that-checks-nothing"),
-        pytest.param({**KIND_BINDINGS, "matrix": KindBinding(verifier=None)}, "does not declare",
+        pytest.param({**KIND_BINDINGS, "matrix": replace(KIND_BINDINGS["icon"], verifier=None)}, "does not declare",
                      id="a-binding-for-no-kind"),
     ],
 )
@@ -129,7 +130,7 @@ def test_a_file_is_sent_to_the_verifier_of_its_own_kind(catalogs, repo: Path) ->
 def test_a_kind_left_unbound_is_unverified_rather_than_verified_as_another(catalogs, repo: Path) -> None:
     """The regression: an icon with no verifier of its own used to be verified as a document."""
     icon = write_icon(repo)
-    without_icons = {**KIND_BINDINGS, "icon": KindBinding(verifier=None)}
+    without_icons = {**KIND_BINDINGS, "icon": replace(KIND_BINDINGS["icon"], verifier=None)}
 
     [result] = _verifier(catalogs, without_icons)._verify_standalone_artifacts(repo)
 
