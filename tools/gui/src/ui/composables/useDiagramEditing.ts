@@ -43,6 +43,7 @@ export function useDiagramEditing(
   const stored = shallowRef<StoredLayout | null>(null)
   /** Where the session started from, and where Discard returns to. */
   const saved = shallowRef<ArrangementState | null>(null)
+  const savedMembers = shallowRef<DrawnMembership | null>(null)
   const loading = ref(false)
   const saving = ref(false)
   const error = ref<string | null>(null)
@@ -56,7 +57,7 @@ export function useDiagramEditing(
     const geometry = await Effect.runPromise(svc.readLayoutGeometry(diagramId()))
     const layout = geometry.layout && (geometry.layout.elements || geometry.layout.boxes) ? geometry.layout : null
     stored.value = layout
-    saved.value = savedState(geometry, layout)
+    saved.value = { ...savedState(geometry, layout), picture: geometry }
     session.open(geometry, carried ? { arrangement: arrangedBy(geometry, carried), byHand: true } : saved.value)
   }
 
@@ -64,6 +65,7 @@ export function useDiagramEditing(
     loading.value = true
     error.value = null
     try {
+      savedMembers.value = membership()
       await reopen()
       return true
     } catch (failure) {
@@ -86,18 +88,20 @@ export function useDiagramEditing(
     const now = session.state.value
     const before = saved.value
     if (!geometry || !now || !before) return []
-    const removed = [...now.removed ?? []].map((alias) => ({
+    const added = [...now.additions ?? []].map(([id, name]) => ({ key: id, text: `Added to diagram: ${name}` }))
+    const originalAliases = new Set(before.picture?.elements.map(e => e.alias))
+    const removed = [...now.removed ?? []].filter(alias => originalAliases.has(alias)).map((alias) => ({
       key: `removed:${alias}`, text: `Removed from the diagram: ${nameOf(alias)} — it stays in the model`,
     }))
     if (!now.byHand) {
-      return [...(before.byHand ? [{ key: 'automatic', text: 'Returned to automatic layout' }] : []), ...removed]
+      return [...(before.byHand ? [{ key: 'automatic', text: 'Returned to automatic layout' }] : []), ...added, ...removed]
     }
     const reference = before.byHand ? before.arrangement
       : (now.takenOver ?? widenedArrangement(geometry, before.arrangement))
     const takenOver: PendingChange[] = before.byHand ? []
       : [{ key: 'by-hand', text: 'Arranged by hand: new elements will be placed beside their neighbours' }]
     return [
-      ...removed,
+      ...added, ...removed,
       ...takenOver,
       ...arrangedUnits(geometry, reference, now.arrangement).map((alias) => ({
         key: alias, text: `Arranged: ${nameOf(alias)}`,
@@ -124,9 +128,11 @@ export function useDiagramEditing(
    * it draws now, keeping the arrangement of everything still on it.
    */
   const writeMembership = async (removed: ReadonlySet<string>, layoutPatch: LayoutPatch): Promise<void> => {
-    const drawn = membership()
+    const drawn = savedMembers.value
     if (!drawn) throw new Error('The diagram has not been read; reload the page.')
-    const kept = membershipWithout(drawn, removed)
+    const kept = membershipWithout({
+      ...drawn, entity_ids: [...drawn.entity_ids, ...(session.state.value?.additions?.keys() ?? [])],
+    }, removed)
     const written = await Effect.runPromise(svc.editDiagram(diagramId(), {
       diagram_type: drawn.diagram_type, name: drawn.name,
       entity_ids: [...kept.entity_ids], connection_ids: [...kept.connection_ids],
@@ -138,6 +144,7 @@ export function useDiagramEditing(
     if (!written.wrote) {
       throw new Error(`The diagram was not written: ${written.warnings.join(' ') || 'it was refused'}`)
     }
+    savedMembers.value = { ...drawn, ...kept }
     await reopen()
   }
 
@@ -154,7 +161,7 @@ export function useDiagramEditing(
       const patch = layoutPatchBetween(stored.value ?? {}, wanted())
       // One write when what the diagram holds changes: membership and layout together, so the stored
       // layout always matches the body that write generates (D12).
-      if (removed.size > 0) {
+      if (removed.size > 0 || now.additions?.size) {
         await writeMembership(removed, patch)
         return true
       }
@@ -181,7 +188,7 @@ export function useDiagramEditing(
 
   /** Back to the last save, with nothing to undo. */
   const discard = () => {
-    const geometry = session.drawnPicture.value
+    const geometry = saved.value?.picture
     if (geometry && saved.value) session.open(geometry, saved.value)
   }
 
@@ -199,7 +206,14 @@ export function useDiagramEditing(
     if (!now || key === undefined) return
     // A further occurrence of an entity is held by the diagram's own records, which this write does not
     // edit yet: refused with a sentence rather than removed on the canvas and quietly kept by Save.
-    const member = membership()?.entity_ids.some((id) => stableEntityId(id) === stableEntityId(key)) ?? false
+    const added = [...now.additions ?? []].find(([id]) => stableEntityId(id) === stableEntityId(key))
+    if (added) {
+      const additions = new Map(now.additions)
+      additions.delete(added[0])
+      session.step({ ...now, additions, removed: new Set([...now.removed ?? [], alias]) })
+      return
+    }
+    const member = savedMembers.value?.entity_ids.some((id) => stableEntityId(id) === stableEntityId(key)) ?? false
     if (!member) {
       error.value = `${nameOf(alias)} is a further occurrence; removing one is not possible here yet.`
       return
@@ -208,7 +222,38 @@ export function useDiagramEditing(
     session.step({ ...now, removed: new Set([...now.removed ?? [], alias]) })
   }
 
-  return { session, changes, loading, saving, error, open, save, discard, returnToAutomatic, remove }
+  const add = async (id: string, name: string) => {
+    const drawn = savedMembers.value
+    const now = session.state.value
+    if (!drawn || !now || loading.value || saving.value) return
+    const existing = session.drawnPicture.value?.elements.find(e => e.key === stableEntityId(id))
+    if (existing && now.removed?.has(existing.alias)) {
+      const removed = new Set(now.removed)
+      removed.delete(existing.alias)
+      session.step({ ...now, removed })
+      return
+    }
+    if (drawn.entity_ids.some(key => stableEntityId(key) === stableEntityId(id)) || now.additions?.has(id)) return
+    const additions = new Map(now.additions).set(id, name)
+    loading.value = true
+    error.value = null
+    try {
+      const picture = await Effect.runPromise(svc.previewLayoutGeometry(diagramId(), {
+        ...drawn, entity_ids: [...drawn.entity_ids, ...additions.keys()], connection_ids: [...drawn.connection_ids],
+      }))
+      if (session.state.value !== now) return
+      const carried = wanted()
+      session.step({ ...now, picture, additions,
+        arrangement: carried ? arrangedBy(picture, carried) : drawnArrangement(picture),
+      })
+    } catch (failure) {
+      error.value = failure instanceof Error ? failure.message : String(failure)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { add, session, changes, loading, saving, error, open, save, discard, returnToAutomatic, remove }
 }
 
 export type DiagramEditing = ReturnType<typeof useDiagramEditing>

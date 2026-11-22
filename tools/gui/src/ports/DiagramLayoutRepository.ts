@@ -1,4 +1,5 @@
 import type { Effect } from 'effect'
+import type { DiagramComposition } from './diagramWriteBodies'
 import type { Extent } from '../domain/layout/geometry'
 import type {
   DiagramLayoutPatchResult, DrawingNode, LayoutGeometry,
@@ -27,6 +28,7 @@ export type LayoutPatch = Readonly<Record<string, Readonly<Record<string, Layout
 
 /** Arranging a diagram: the picture it is arranged on, resized shapes drawn anew, and the layout write. */
 export interface DiagramLayoutRepository {
+  readonly previewLayoutGeometry: (diagramId: string, composition: DiagramComposition) => Effect.Effect<LayoutGeometry, RepoError>
   readonly readLayoutGeometry: (diagramId: string) => Effect.Effect<LayoutGeometry, RepoError>
   readonly drawResizedShapes: (
     diagramId: string, shapes: readonly ShapeToDraw[],

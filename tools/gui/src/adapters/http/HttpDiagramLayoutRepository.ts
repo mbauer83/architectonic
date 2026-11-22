@@ -11,6 +11,8 @@ const layoutUrl = (diagramId: string, part = ''): string =>
 
 /** The arranging half of the HTTP adapter, over a diagram's layout routes. */
 export const diagramLayoutMethods = (): DiagramLayoutRepository => ({
+  previewLayoutGeometry: (diagramId, body) =>
+    postJson(layoutUrl(diagramId, '/geometry/preview'), body, DiagramLayoutGeometrySchema),
   readLayoutGeometry: (diagramId) => fetchJson(layoutUrl(diagramId, '/geometry'), DiagramLayoutGeometrySchema),
   drawResizedShapes: (diagramId, shapes) =>
     postJson(layoutUrl(diagramId, '/preview'), { shapes }, ShapeDrawingsSchema).pipe(

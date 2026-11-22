@@ -24,6 +24,7 @@ import { useDiagramSvgSelection } from '../composables/useDiagramSvgSelection'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import DiagramDetailHeader from '../components/DiagramDetailHeader.vue'
 import DiagramC4Navigation from '../components/DiagramC4Navigation.vue'
+import DiagramMemberPicker from '../components/DiagramMemberPicker.vue'
 import DiagramEntitySidebar from '../components/DiagramEntitySidebar.vue'
 import FullscreenDock from '../components/FullscreenDock.vue'
 import DiagramSyncPanel from '../components/DiagramSyncPanel.vue'
@@ -129,6 +130,11 @@ const editBar = ref<EditBarHandle | null>(null)
 const edit = useDiagramEditMode(
   svc, diagramId, { canvas: editCanvas, bar: editBar, membership: () => membershipOf(detail.value) }, load, toast,
 )
+const dropMember = (event: DragEvent) => {
+  const id = event.dataTransfer?.getData('application/x-architectonic-entity')
+  const member = contextQuery.data.value?.suggested_entities.flatMap(group => group.items).find(item => item.artifact_id === id)
+  if (member) void edit.editing.add(member.artifact_id, member.name)
+}
 const editing = computed(() => edit.active.value)
 watch(editing, () => { void panZoom.fitDiagramToViewport() })
 watch(() => edit.session.geometry.value, () => { if (editing.value) void panZoom.fitDiagramToViewport() })
@@ -248,6 +254,8 @@ const executeDelete = () => {
                 v-if="editing"
                 ref="svgContainer"
                 class="svg-wrap"
+                @dragover.prevent
+                @drop.prevent="dropMember"
               >
                 <LayoutLabCanvas
                   ref="editCanvas"
@@ -298,6 +306,13 @@ const executeDelete = () => {
             :is-fullscreen="fullscreen.isFullscreen.value"
             :revealed="selection.hasSelection.value"
           >
+            <div>
+            <DiagramMemberPicker
+              v-if="editing && contextQuery.data.value"
+              :context="contextQuery.data.value"
+              :busy="edit.editing.loading.value || edit.editing.saving.value"
+              @add="edit.editing.add"
+            />
             <DiagramEntitySidebar
               :entities="diagramEntities"
               :viewer-extension="selection.viewerExtension.value"
@@ -320,6 +335,7 @@ const executeDelete = () => {
               @entity-meta-save="selection.patchEntityMetadata($event)"
               @entity-edited="selection.entityEdited()"
             />
+            </div>
           </FullscreenDock>
         </template>
       </DiagramSplitLayout>

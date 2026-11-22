@@ -172,6 +172,8 @@ export const makeModelService = (repo: ModelRepository) =>
     deleteIcon: (iconId: string) => repo.deleteIcon(iconId),
     shareIcon: (diagramId: string, iconKey: string, body: Parameters<ModelRepository['shareIcon']>[2]) =>
       repo.shareIcon(diagramId, iconKey, body),
+    previewLayoutGeometry: (diagramId: string, body: Parameters<ModelRepository['previewLayoutGeometry']>[1]) =>
+      repo.previewLayoutGeometry(diagramId, body),
     readLayoutGeometry: (diagramId: string) => repo.readLayoutGeometry(diagramId),
     drawResizedShapes: (diagramId: string, shapes: Parameters<ModelRepository['drawResizedShapes']>[1]) =>
       repo.drawResizedShapes(diagramId, shapes),
