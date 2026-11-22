@@ -30,6 +30,7 @@ measured, so it keeps its own call sites rather than being changed on speculatio
 
 from __future__ import annotations
 
+from collections.abc import Hashable
 from typing import IO, Any
 
 import yaml
@@ -61,3 +62,48 @@ def parse_yaml(source: str | bytes | IO[str] | IO[bytes]) -> Any:
     Narrowing belongs with the caller that knows the shape it asked for.
     """
     return yaml.load(source, Loader=_SafeLoader)
+
+
+class RepeatedKeyError(yaml.constructor.ConstructorError):
+    """A mapping in the document names one key more than once.
+
+    A `yaml.YAMLError`, so a caller that already catches parse errors catches this too. The plain
+    reading keeps the *last* value and says nothing, which is YAML's permissive default and the reason
+    this mode exists: a header that sets `artifact-id` twice has two answers to what the file is, and
+    which one a reader sees is an accident of where it was written.
+    """
+
+    def __init__(self, key: object, mark: yaml.Mark | None) -> None:
+        super().__init__(None, None, f"the key {key!r} appears more than once in one mapping", mark)
+        self.key = key
+
+
+class _UniqueKeyLoader(_SafeLoader):
+    """The same loader, refusing a mapping that names a key twice.
+
+    A merge key (`<<`) is not a repetition: it is how YAML spells inheritance, and the keys it brings
+    in are the merged mapping's own, already checked where that mapping was read.
+    """
+
+    def construct_mapping(self, node: yaml.MappingNode, deep: bool = False) -> dict[Hashable, Any]:
+        seen: set[object] = set()
+        for key_node, _value in node.value:
+            if key_node.tag == "tag:yaml.org,2002:merge":
+                continue
+            key = self.construct_object(key_node, deep=True)
+            if isinstance(key, list | dict | set):
+                continue  # unhashable: the base reading refuses it with its own message
+            if key in seen:
+                raise RepeatedKeyError(key, key_node.start_mark)
+            seen.add(key)
+        return super().construct_mapping(node, deep=deep)
+
+
+def parse_yaml_with_unique_keys(source: str | bytes | IO[str] | IO[bytes]) -> Any:
+    """`parse_yaml`, refusing with `RepeatedKeyError` a mapping that names one key twice.
+
+    The strict mode of the one loader, for the reading that has to know a file means one thing: the
+    verifier's check of a file's identity. Every other reader keeps the permissive default, so a file
+    that has always loaded still loads, and the repetition is reported rather than refused at read.
+    """
+    return yaml.load(source, Loader=_UniqueKeyLoader)

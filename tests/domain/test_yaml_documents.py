@@ -20,7 +20,7 @@ from typing import Any
 import pytest
 import yaml
 
-from src.domain.yaml_documents import USES_LIBYAML, parse_yaml
+from src.domain.yaml_documents import USES_LIBYAML, RepeatedKeyError, parse_yaml, parse_yaml_with_unique_keys
 from src.infrastructure.rendering.puml_runtime import is_render_scratch
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -165,3 +165,46 @@ def test_parse_yaml_agrees_with_the_loader_it_replaced() -> None:
     ]
 
     assert differing == [], f"{len(differing)} document(s) differ from `safe_load`: {differing[:3]}"
+
+
+class TestTheUniqueKeyMode:
+    """The strict mode of the same loader: one key, one value, or a refusal naming the key."""
+
+    @pytest.mark.parametrize(
+        ("text", "key"),
+        [
+            pytest.param("a: 1\nb: 2\na: 3\n", "a", id="top-level"),
+            pytest.param("outer:\n  k: 1\n  k: 2\n", "k", id="nested"),
+            pytest.param("rows:\n  - {k: 1, k: 2}\n", "k", id="flow-mapping-in-a-sequence"),
+            pytest.param("1: a\n1: b\n", 1, id="a-non-string-key"),
+        ],
+    )
+    def test_a_repeated_key_is_refused_and_named(self, text: str, key: object) -> None:
+        with pytest.raises(RepeatedKeyError) as refused:
+            parse_yaml_with_unique_keys(text)
+
+        assert refused.value.key == key
+        assert isinstance(refused.value, yaml.YAMLError), "callers catching parse errors must catch this too"
+
+    def test_a_merge_key_is_not_a_repetition(self) -> None:
+        text = "base: &b {x: 1}\nderived:\n  <<: *b\n  y: 2\n"
+
+        assert parse_yaml_with_unique_keys(text) == {"base": {"x": 1}, "derived": {"x": 1, "y": 2}}
+
+    def test_the_permissive_reading_keeps_the_last_value_as_it_always_has(self) -> None:
+        assert parse_yaml("a: 1\na: 2\n") == {"a": 2}
+
+
+def test_the_unique_key_mode_agrees_with_parse_yaml_wherever_no_key_repeats() -> None:
+    """Over the stored corpus, the strict mode is the plain reading or a refusal, never a third value."""
+    documents = _repository_yaml_documents()
+    assert documents
+
+    differing = [
+        text[:120]
+        for text in documents
+        if (strict := _outcome(lambda t=text: parse_yaml_with_unique_keys(t))) != _outcome(lambda t=text: parse_yaml(t))
+        and strict != "error:RepeatedKeyError"
+    ]
+
+    assert differing == [], f"{len(differing)} document(s) read differently in the strict mode: {differing[:3]}"
