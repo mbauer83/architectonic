@@ -49,7 +49,7 @@ def _extract_conn_bindings(
 
 
 @dataclass(frozen=True)
-class _RenderedComposition:
+class RenderedComposition:
     """One composition, resolved and rendered — the same way for every surface that shows it."""
 
     entities: list[Any]
@@ -61,11 +61,20 @@ class _RenderedComposition:
     conn_bindings: list[dict[str, Any]]
     puml: str
 
+    def statements(self, body: DiagramComposition) -> dict[str, Any]:
+        """The membership and grouping declarations that key the rendered picture."""
+        return {
+            "name": body.name, "diagram-type": body.diagram_type,
+            "entity-ids-used": self.entity_ids_used, "connection-ids-used": self.connection_ids_used,
+            "diagram-entities": self.diagram_entities, "connections": self.diagram_connections,
+            "authored-groupings": body.authored_groupings, "bindings": self.conn_bindings,
+        }
+
 
 def render_composition(
     body: DiagramComposition, *, repo: Any, repo_root: Path,
     proposed_entities: tuple[EntityRecord, ...] = (), proposed_connections: tuple[ConnectionRecord, ...] = (),
-) -> _RenderedComposition:
+) -> RenderedComposition:
     """Resolve a composition and render it, once, for preview and for both writes.
 
     The three surfaces used to assemble this themselves, and drifted twice over: preview never passed
@@ -103,7 +112,7 @@ def render_composition(
         # The diagram's own icons first, uploads not yet saved included, so a preview draws what the save will.
         icon_source=DiagramIconSource(de, LibraryIconSource(repo)),
     )
-    return _RenderedComposition(
+    return RenderedComposition(
         entities=entities, connections=connections,
         entity_ids_used=entity_ids_used, connection_ids_used=connection_ids_used,
         diagram_entities=de, diagram_connections=dc, conn_bindings=conn_bindings, puml=puml,

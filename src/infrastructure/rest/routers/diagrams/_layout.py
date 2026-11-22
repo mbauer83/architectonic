@@ -159,10 +159,7 @@ def preview_diagram_layout_geometry(
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     return _geometry_response(composed.puml, artifact_id, {
-        **parsed.frontmatter, "name": body.name, "diagram-type": body.diagram_type,
-        "entity-ids-used": composed.entity_ids_used, "connection-ids-used": composed.connection_ids_used,
-        "diagram-entities": composed.diagram_entities, "connections": composed.diagram_connections,
-        "authored-groupings": body.authored_groupings, "bindings": composed.conn_bindings,
+        **parsed.frontmatter, **composed.statements(body),
     }, catalogs)
 
 
