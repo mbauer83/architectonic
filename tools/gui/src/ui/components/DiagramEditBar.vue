@@ -3,33 +3,27 @@
  * The bar over a diagram in edit mode: how it is arranged, Undo and Redo, what Save would write, and
  * Discard and Save — or, while leaving with unsaved changes, the choice of how to leave.
  *
- * Display and clicks only: the session (`useDiagramEditing`) decides, the page wires the keys.
+ * Display and clicks only: the edit mode (`useDiagramEditMode`) decides and wires the keys.
  */
-import { nextTick, ref, watch } from 'vue'
-import type { PendingChange } from '../composables/useDiagramEditing'
+import { computed, nextTick, ref, watch } from 'vue'
+import type { DiagramEditMode } from '../composables/useDiagramEditMode'
 
-const props = defineProps<{
-  byHand: boolean
-  canUndo: boolean
-  canRedo: boolean
-  changes: readonly PendingChange[]
-  saving: boolean
-  /** Asking how to leave: shown in place of Discard and Save. */
-  leaving: boolean
-  error: string | null
-}>()
+const props = defineProps<{ edit: DiagramEditMode }>()
 
-const emit = defineEmits<{
-  undo: []; redo: []; automatic: []; discard: []; save: []
-  'save-and-exit': []; 'discard-and-exit': []; 'keep-editing': []
-}>()
+const session = computed(() => props.edit.session)
+const editing = computed(() => props.edit.editing)
+const byHand = computed(() => session.value.state.value?.byHand ?? false)
+const changes = computed(() => editing.value.changes.value)
+const saving = computed(() => editing.value.saving.value)
+const leaving = computed(() => props.edit.leaving.value)
+const error = computed(() => editing.value.error.value)
 
 const listOpen = ref(false)
 const saveAndExit = ref<HTMLButtonElement | null>(null)
 
 /** The choice takes the focus on its first, safest answer, so Enter saves and Escape keeps editing. */
-watch(() => props.leaving, async (leaving) => {
-  if (!leaving) return
+watch(leaving, async (asked) => {
+  if (!asked) return
   await nextTick()
   saveAndExit.value?.focus()
 })
@@ -61,7 +55,7 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
         <button
           type="button"
           data-testid="return-to-automatic"
-          @click="emit('automatic')"
+          @click="editing.returnToAutomatic()"
         >Return to automatic</button>
       </template>
       <template v-else>Automatic layout</template>
@@ -70,20 +64,20 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
     <button
       type="button"
       class="btn btn-plain btn-sm"
-      :disabled="!canUndo"
+      :disabled="!edit.canUndo.value"
       title="Undo (Ctrl+Z)"
       data-testid="edit-undo"
-      @click="emit('undo')"
+      @click="session.undo()"
     >
       Undo
     </button>
     <button
       type="button"
       class="btn btn-plain btn-sm"
-      :disabled="!canRedo"
+      :disabled="!edit.canRedo.value"
       title="Redo (Ctrl+Shift+Z)"
       data-testid="edit-redo"
-      @click="emit('redo')"
+      @click="session.redo()"
     >
       Redo
     </button>
@@ -107,19 +101,19 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
           class="btn btn-primary btn-sm"
           :disabled="saving"
           data-testid="save-and-exit"
-          @click="emit('save-and-exit')"
+          @click="void edit.saveAndExit()"
         >Save and exit</button>
         <button
           type="button"
           class="btn btn-danger btn-sm"
           data-testid="discard-and-exit"
-          @click="emit('discard-and-exit')"
+          @click="edit.discardAndExit()"
         >Discard and exit</button>
         <button
           type="button"
           class="btn btn-plain btn-sm"
           data-testid="keep-editing"
-          @click="emit('keep-editing')"
+          @click="edit.keepEditing()"
         >Keep editing <kbd>Esc</kbd></button>
       </span>
     </template>
@@ -162,7 +156,7 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
         class="btn btn-plain btn-sm"
         :disabled="changes.length === 0 || saving"
         data-testid="edit-discard"
-        @click="emit('discard')"
+        @click="editing.discard()"
       >
         Discard
       </button>
@@ -171,7 +165,7 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
         class="btn btn-primary btn-sm"
         :disabled="changes.length === 0 || saving"
         data-testid="edit-save"
-        @click="emit('save')"
+        @click="void editing.save()"
       >
         {{ saving ? 'Saving…' : 'Save' }}
       </button>

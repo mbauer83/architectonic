@@ -1,0 +1,74 @@
+.page { max-width: 100%; }
+.meta { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 12px; }
+.faded { color: #9ca3af; } .mono { font-family: monospace; }
+.state { color: #6b7280; } .err { color: #dc2626; }
+.type-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; background: #dbeafe; color: #1e40af; font-weight: 500; }
+
+.img-container {
+  position: relative; overflow: hidden; background: #f8fafc;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  min-height: 400px; height: clamp(420px, 78vh, 980px);
+  cursor: grab; user-select: none;
+}
+@media (max-width: 800px) { .img-container { height: clamp(360px, 68vh, 820px); } }
+.img-container:active { cursor: grabbing; }
+/* Edit mode: the frame in the accent with a top edge, a press is the canvas's, and Space+drag pans. */
+.img-container.editing { cursor: default; border-color: var(--accent); box-shadow: inset 0 2px 0 var(--accent); background: var(--paper); }
+.img-container.editing:active { cursor: default; }
+.img-container.editing.panning, .img-container.editing.panning :deep(*) { cursor: grab !important; }
+.editing-note { color: var(--accent-strong); font-weight: 600; }
+.editing-note kbd {
+  font: 10px ui-monospace, monospace; padding: 0 4px; border: 1px solid var(--border-strong);
+  border-bottom-width: 2px; border-radius: 3px; background: var(--surface);
+}
+/* Fullscreen overrides the clamped height, and the browser paints black behind
+   anything the element does not cover. */
+.img-container:fullscreen {
+  width: 100vw; height: 100vh; max-height: none;
+  border: none; border-radius: 0; background: #f8fafc;
+}
+.no-img { padding: 60px 40px; text-align: center; color: #9ca3af; font-size: 13px; }
+.err-txt { color: #dc2626; }
+.reading-panel { margin: 0 0 0.5rem; }
+.svg-wrap :deep(svg) { display: block; max-width: none; }
+.svg-wrap :deep([data-entity-id]) { cursor: pointer; }
+/* `.svg-hovered` is set by the viewer on EVERY element the artifact maps to, not by `:hover`
+   on the one under the pointer: a wrapped label arrives as one <a> per text run, so a CSS
+   hover lit up a single word of a step. See `useDiagramSvgSelection`. */
+.svg-wrap :deep(.svg-hovered) > :not(title) { opacity: 0.85; }
+.svg-wrap :deep(.svg-hovered) polygon,
+.svg-wrap :deep(.svg-hovered) rect,
+.svg-wrap :deep(.svg-hovered) polyline,
+.svg-wrap :deep(.svg-hovered) ellipse { stroke: #2563eb !important; stroke-width: 2 !important; }
+.svg-wrap :deep(.svg-selected) polygon,
+.svg-wrap :deep(.svg-selected) rect,
+.svg-wrap :deep(.svg-selected) polyline,
+.svg-wrap :deep(.svg-selected) ellipse { stroke: #2563eb !important; stroke-width: 2.5 !important; }
+/* Sentinel-link representatives (activity diagrams) wrap only a <text> node, with no
+   polygon/rect/polyline/ellipse child for the rules above to match. */
+.svg-wrap :deep(a.svg-hovered) text { fill: #2563eb !important; }
+.svg-wrap :deep(a.svg-selected) text { fill: #2563eb !important; font-weight: 700; }
+/* Bare-shape representatives (an activity step's own rect/polygon) — the descendant rules
+   above can't match the element itself. */
+.svg-wrap :deep(rect.svg-hovered),
+.svg-wrap :deep(polygon.svg-hovered) { stroke: #2563eb !important; stroke-width: 2 !important; }
+.svg-wrap :deep(rect.svg-selected),
+.svg-wrap :deep(polygon.svg-selected) { stroke: #2563eb !important; stroke-width: 2.5 !important; }
+.svg-wrap :deep([data-subpart]) { cursor: pointer; }
+.svg-wrap :deep(text[data-subpart]:hover) { fill: #2563eb !important; }
+.svg-wrap :deep(g[data-subpart]:hover) ellipse { stroke: #2563eb !important; }
+.svg-wrap :deep(text.svg-subpart-selected) { fill: #2563eb !important; font-weight: 700; }
+.svg-wrap :deep(.svg-subpart-selected) ellipse { stroke: #2563eb !important; stroke-width: 2 !important; }
+.svg-wrap :deep([data-conn-id]) { cursor: pointer; }
+.svg-wrap :deep([data-conn-id]:hover) path,
+.svg-wrap :deep([data-conn-id]:hover) polygon,
+.svg-wrap :deep([data-conn-id]:hover) line,
+.svg-wrap :deep([data-conn-id]:hover) polyline { stroke: #2563eb !important; stroke-width: 2 !important; }
+.svg-wrap :deep(.svg-conn-selected) path,
+.svg-wrap :deep(.svg-conn-selected) polygon,
+.svg-wrap :deep(.svg-conn-selected) line,
+.svg-wrap :deep(.svg-conn-selected) polyline { stroke: #2563eb !important; stroke-width: 2.5 !important; }
+
+.src-row { margin-top: 16px; }
+.toggle-btn { padding: 5px 14px; border-radius: 6px; border: 1px solid #d1d5db; background: white; font-size: 13px; cursor: pointer; color: #374151; margin-bottom: 8px; } .toggle-btn:hover { background: #f9fafb; }
+.puml-src { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre; }
