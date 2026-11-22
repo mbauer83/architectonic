@@ -5,9 +5,10 @@ regulation, standard, framework or contract ("EU AI Act", "ISO 26262"), and `pro
 article, clause or control in it ("Art. 12", "6-8"). Those are the words the people who own such
 duties use.
 
-Three spellings existed before this one, and no code read any of them: the wizard wrote `scheme` and
-`code`, the ontology text asked for a single `cites` of the form `scheme:code`, and neither was
-checked against anything. Every reader and writer of the citation takes the names from here, so the
+Four spellings existed before this one, and no code read any of them: the wizard wrote `scheme` and
+`code`, obligations authored by hand or by an agent named the same two parts `framework` and `clause`,
+the ontology text asked for a single `cites` of the form `scheme:code`, and none was checked against
+anything. Every reader and writer of the citation takes the names from here, so the
 next spelling cannot arrive unannounced; the superseded names are kept only so a store written
 before can be recognised and rewritten.
 """
@@ -25,8 +26,12 @@ PROVISION = "provision"
 SOURCE_LABEL = "Regulation, standard or contract"
 PROVISION_LABEL = "Article, clause or control"
 
-#: The wizard's former pair, each renamed one for one.
-SUPERSEDED_PAIR: Mapping[str, str] = {"scheme": SOURCE, "code": PROVISION}
+#: The former pairs, each attribute renamed one for one: the wizard's `scheme`/`code`, and the
+#: `framework`/`clause` obligations were written with by hand. Where an obligation holds both pairs
+#: and they disagree, the first to arrive is moved and the other stays, as any conflict does.
+SUPERSEDED_PAIR: Mapping[str, str] = {
+    "scheme": SOURCE, "code": PROVISION, "framework": SOURCE, "clause": PROVISION,
+}
 #: The ontology's former single attribute, `source:provision`.
 SUPERSEDED_COMBINED = "cites"
 _COMBINED_SEPARATOR = ":"
