@@ -118,6 +118,8 @@ def test_the_generated_workspace_verifies_clean(workspace: FixtureWorkspace) -> 
         index.close()
 
     assert results, "the verifier found nothing to verify, so this assertion proves nothing"
+    assert any((workspace.engagement_root / "diagram-catalog/rendered").rglob("*.svg"))
+    assert [r.path for r in results if any(i.code == "W015" for i in r.issues)] == []
     invalid = [
         f"{r.path.name}: {[i.message for i in r.issues if i.severity == 'error']}"
         for r in results

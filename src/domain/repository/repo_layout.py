@@ -11,6 +11,14 @@ PROJECTS = "projects"  # model-project group containers: PROJECTS/<slug>/MODEL/.
 DIAGRAM_CATALOG = "diagram-catalog"
 DIAGRAMS = "diagrams"  # subdirectory within DIAGRAM_CATALOG/
 RENDERED = "rendered"  # subdirectory within DIAGRAM_CATALOG/ — derived output, excluded from indexing
+RENDERED_SUFFIXES: tuple[str, ...] = (".png", ".svg")
+MANAGED_INCLUDE_BASENAMES = frozenset({
+    "_archimate-stereotypes.puml",
+    "_archimate-glyphs.puml",
+    "_archimate-relations.puml",
+    "_macros.puml",
+})
+
 ICONS = "icons"  # subdirectory within DIAGRAM_CATALOG/ — the shared icon library, ICO@….md
 ARCH_REPO = ".arch-repo"
 ARCH_DOC_SCHEMATA = "documents"  # subdirectory within ARCH_REPO/ — document type JSON schemas
