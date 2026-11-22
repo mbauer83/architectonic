@@ -8,14 +8,17 @@
  * - **Lifting.** The shape last pressed, with everything it holds and every box holding it, is painted
  *   after its siblings, so what is being dragged is brought into view and stays there once dropped. A
  *   box is still painted before its contents: lifting never reorders a nesting.
- * - **Widening.** A shape lifted by resizing it is painted after the siblings it does not overlap but
- *   *before* the ones it does, so a widened box never covers a sibling's content.
+ * - **Widening.** A shape resized by its own handles is painted after the siblings it does not overlap
+ *   but *before* the ones it does, so a widened box never covers a sibling's content. The boxes
+ *   holding it are lifted as for a move: resizing what a box holds never sends the box behind a
+ *   sibling it was already in front of.
  *
  * A line is painted in the top layer, over every shape, as the composed picture draws it — unless a
  * shape painted after one of its ends covers that end. Then the line is painted just before that
  * shape, so whatever hides an element hides the lines into it too, and a line is never left lying on
- * top of a box with its element out of sight underneath. A line crossing a box that hides neither end
- * stays on top.
+ * top of a box with its element out of sight underneath. That holds whatever the hiding shape is: a
+ * box holding the line's other end, or the other end itself. Only a shape the end itself holds does
+ * not hide it. A line crossing a box that hides neither end stays on top.
  */
 import type { Extent } from '../../../domain/layout/geometry'
 import { overlaps } from '../../../domain/layout/geometry'
@@ -56,7 +59,7 @@ const siblingsInOrder = (
   const lifted = siblings.find((alias) => chain.has(alias))
   if (lifted === undefined) return siblings
   const others = siblings.filter((alias) => alias !== lifted)
-  if (lift.how === 'moved') return [...others, lifted]
+  if (lift.how === 'moved' || lifted !== lift.alias) return [...others, lifted]
   const widened = extentIn(placement, lifted)
   const covered = (alias: string): boolean => {
     const sibling = extentIn(placement, alias)
@@ -80,7 +83,7 @@ export const shapeOrder = (geometry: LabGeometry, placement: Placement, lift: Li
 
 /**
  * Where in *shapes* each line is sunk: the place of the first shape painted after one of its ends that
- * covers that end — not the other end, and not a shape the end holds. A line no shape hides is absent.
+ * covers that end — any shape but one the end holds. A line no shape hides is absent.
  */
 const sunkLines = (geometry: LabGeometry, placement: Placement, shapes: readonly PaintedShape[]): Map<number, number> => {
   const place = new Map(shapes.map((shape, index) => [shape.alias, index]))
@@ -90,20 +93,18 @@ const sunkLines = (geometry: LabGeometry, placement: Placement, shapes: readonly
     held.set(alias, known)
     return known
   }
-  const hiderOf = (end: string, ends: ReadonlySet<string>): number | null => {
+  const hiderOf = (end: string): number | null => {
     const from = place.get(end)
     const extent = extentIn(placement, end)
     if (from === undefined || extent === undefined) return null
     const hider = shapes.findIndex((shape, index) => {
       const over = extentIn(placement, shape.alias)
-      return index > from && !ends.has(shape.alias) && !heldBy(end).has(shape.alias)
-        && over !== undefined && overlaps(over, extent)
+      return index > from && !heldBy(end).has(shape.alias) && over !== undefined && overlaps(over, extent)
     })
     return hider < 0 ? null : hider
   }
   return new Map(geometry.relations.flatMap((relation): [number, number][] => {
-    const ends = new Set([relation.source, relation.target])
-    const hiders = [...ends].map((end) => hiderOf(end, ends)).filter((at): at is number => at !== null)
+    const hiders = [relation.source, relation.target].map(hiderOf).filter((at): at is number => at !== null)
     return hiders.length > 0 ? [[relation.index, Math.min(...hiders)]] : []
   }))
 }

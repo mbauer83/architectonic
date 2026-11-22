@@ -133,6 +133,41 @@ describe('the lab paint order', () => {
     expect(placeOf(order, 'line:0')).toBeGreaterThan(lastShape)
   })
 
+  it('sinks a line under a box two levels above its other end, over its far end two levels deep', () => {
+    // As Strategy (holding Course of Actions, holding Dogfood) dragged up over Motivation (holding
+    // Outcomes, holding the outcome Dogfood's line ends at).
+    const nested: LabGeometry = {
+      ...geometry,
+      boxes: [...geometry.boxes, box('Middle', 'Two', at(260, 20, 440, 140))],
+      elements: geometry.elements.map((one) => (one.alias === 'b' ? { ...one, inside: 'Middle' } : one)),
+      relations: [relation(0, 'b', 'a')],
+    }
+    const placement: Placement = {
+      boxes: new Map([...drawn.boxes, ['Middle', at(260, 20, 440, 140)], ['Two', at(0, 50, 450, 200)]]),
+      elements: drawn.elements,
+    }
+    for (const lift of [{ alias: 'Two', how: 'moved' }, { alias: 'b', how: 'moved' }, { alias: 'b', how: 'resized' }] as const) {
+      const order = paintOrder(nested, placement, lift)
+      expect(placeOf(order, 'a'), `${lift.alias} ${lift.how}`).toBeLessThan(placeOf(order, 'Two'))
+      expect(placeOf(order, 'line:0'), `${lift.alias} ${lift.how}`).toBeGreaterThan(placeOf(order, 'a'))
+      expect(placeOf(order, 'line:0'), `${lift.alias} ${lift.how}`).toBeLessThan(placeOf(order, 'Two'))
+    }
+  })
+
+  it('sinks a line under its own other end where that end is dragged over its far end', () => {
+    // c dragged onto d: d is out of sight under c, and so is the line between them.
+    const order = paintOrder(geometry, placedWith({ c: at(310, 255, 410, 295) }), { alias: 'c', how: 'moved' })
+    expect(placeOf(order, 'line:1')).toBeGreaterThan(placeOf(order, 'd'))
+    expect(placeOf(order, 'line:1')).toBeLessThan(placeOf(order, 'c'))
+  })
+
+  it('keeps the boxes holding a resized shape in front of the siblings they were in front of', () => {
+    // Two was dragged over One; resizing b, which Two holds, leaves Two in front.
+    const placement = placedWith({ Two: at(100, 0, 300, 150), b: at(120, 40, 230, 80) })
+    const order = shapesOf(placement, { alias: 'b', how: 'resized' })
+    expect(order.indexOf('Two')).toBeGreaterThan(order.indexOf('a'))
+  })
+
   it('does not sink a line into a box under the shapes that box holds', () => {
     const order = paintOrder(geometry, drawn, { alias: 'b', how: 'moved' })
     const lastShape = Math.max(...['One', 'Inner', 'a', 'Two', 'b', 'c', 'd'].map((alias) => placeOf(order, alias)))

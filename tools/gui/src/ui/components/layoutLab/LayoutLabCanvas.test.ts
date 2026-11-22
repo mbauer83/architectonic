@@ -93,6 +93,23 @@ describe('the layout lab canvas', () => {
     expect(drawnOrder(host)).toEqual(['C', 'line:0', 'G', 'A'])
   })
 
+  it('draws the shape being dragged see-through until it is dropped, and nothing else', async () => {
+    const { host } = await mounted()
+    const grip = host.querySelector('[data-alias="G"] > .lab-grip')
+    if (grip === null) throw new Error('the grouping is drawn without a grip')
+    pointer(grip, 'pointerdown', 15, 15)
+    await nextTick()
+    expect(host.querySelectorAll('.lab-carried')).toHaveLength(0)
+
+    pointer(window, 'pointermove', 300, 15)
+    await nextTick()
+    expect([...host.querySelectorAll('.lab-carried')].map((piece) => piece.getAttribute('data-alias'))).toEqual(['G'])
+
+    pointer(window, 'pointerup', 300, 15)
+    await nextTick()
+    expect(host.querySelectorAll('.lab-carried')).toHaveLength(0)
+  })
+
   it('marks a breach with the rule it breaks while breaches are shown, and not otherwise', async () => {
     const { lab, host, shown } = await mounted()
     const drawn = drawnArrangement(geometry)

@@ -166,6 +166,16 @@ const pieces = computed((): Piece[] => {
   return drawn && where ? paintOrder(drawn, where, gesture.lifted.value).flatMap(pieceOf) : []
 })
 
+/**
+ * The shape being dragged to move it, drawn see-through until it is dropped so the user sees what it
+ * covers; null when nothing is. Only the shape pressed — what it holds is drawn as ever — and not one
+ * being resized, which is painted under the siblings it grows over and so covers nothing.
+ */
+const carried = computed((): string | null => {
+  const lift = gesture.lifted.value
+  return gesture.dragging.value && lift?.how === 'moved' ? lift.alias : null
+})
+
 const ends = (relationIndex: number): Extent[] => {
   const relation = geometry.value?.relations.find((one) => one.index === relationIndex)
   const where = placement.value
@@ -208,7 +218,7 @@ const selectedExtent = computed((): Extent | null => {
     >
       <g
         v-if="piece.kind === 'shape'"
-        :class="piece.shape.isBox ? 'lab-box' : 'lab-element'"
+        :class="[piece.shape.isBox ? 'lab-box' : 'lab-element', { 'lab-carried': piece.shape.alias === carried }]"
         :data-alias="piece.shape.alias"
         data-painted="shape"
         @pointerdown="gesture.press($event, piece.shape.alias)"
@@ -328,6 +338,9 @@ const selectedExtent = computed((): Extent | null => {
 .lab-canvas { border: 2px solid var(--accent); border-radius: 6px; touch-action: none; user-select: none; }
 .lab-backdrop, .lab-line, .lab-line-label, .lab-box :deep(g), .lab-element :deep(g) { pointer-events: none; }
 .lab-grip { fill: transparent; stroke: none; pointer-events: all; cursor: move; }
+/* While a shape is dragged, it is drawn see-through, so what it is passing over — and the lines into
+   what it covers — stay in sight until it is dropped. */
+.lab-carried { opacity: 0.55; }
 /* A breach is marked in its tier's colour along exactly the stretch that breaks the rule — square
    ends, so the mark stops where the stretch does and never spills round a bend — and tagged with the
    rule's name. */
