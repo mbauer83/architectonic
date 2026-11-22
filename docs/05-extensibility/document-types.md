@@ -150,6 +150,10 @@ is reported and does not refuse the write.
 
 A `to` term that does not expand is **W157**, as for a section's own terms.
 
+Every other finding refuses the write. A link that resolves to nothing is **W155** and names the link:
+a path to no file, or a link written with an artifact id that no artifact of the repository has. A
+document is not written while it holds one, in any part of it.
+
 Creating a document without a body writes each declared table's header in its section.
 
 ## arc42

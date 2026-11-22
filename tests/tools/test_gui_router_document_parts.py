@@ -119,6 +119,18 @@ class TestTheRowsOfADocumentsTablesAreServedAsValues:
         assert first["values"]["plausible"] == "likely"
         assert "Cannot decode 'likely' as boolean" in first["unreadable"]["plausible"]
 
+    def test_a_reference_to_an_id_that_names_nothing_is_not_written_and_the_finding_names_it(
+        self, served: _Served
+    ) -> None:
+        before = served.stored()
+
+        response = served.edit_rows("end-states", {"op": "add", "cells": {"required_behaviour": "REQ@1.gone"}})
+
+        assert response.status_code == 200, response.text
+        assert response.json()["wrote"] is False and served.stored() == before
+        named = [issue["message"] for issue in response.json()["verification"]["issues"] if issue["code"] == "W155"]
+        assert len(named) == 1 and "'REQ@1.gone'" in named[0]
+
     def test_a_document_that_is_not_there_is_a_404(self, served: _Served) -> None:
         assert served.client.get("/api/documents/STRESS@1.none.none/tables").status_code == 404
 
@@ -216,12 +228,6 @@ class TestWhatIsRefusedAndWithWhichStatus:
             ("stressors", {"op": "remove", "row_id": "S9", "based_on": {}}, 400, "holds no row 'S9'"),
             ("nope", {"op": "add", "cells": {}}, 400, "declares no table 'nope'"),
             ("stressors", {"op": "add", "cells": {"nope": "x"}}, 400, "declares no column 'nope'"),
-            (
-                "end-states",
-                {"op": "add", "cells": {"required_behaviour": "REQ@1.gone"}},
-                400,
-                "REQ@1.gone: no artifact",
-            ),
             ("stressors", {"op": "rename", "row_id": "S1"}, 422, ""),
             ("stressors", {"op": "change", "row_id": "S1", "cells": {}}, 422, ""),
         ],

@@ -27,7 +27,6 @@ from src.application.artifacts.document_part_edits import (
 from src.application.artifacts.document_schema import DocumentSchema
 from src.application.artifacts.document_table_edits import row_values
 from src.application.artifacts.document_table_rows import read_document_tables
-from src.application.document_links import UnresolvedArtifactLink
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.write.artifact_write import document as document_write
@@ -115,6 +114,15 @@ def _changed_lines(before: str, after: str) -> list[tuple[str, str]]:
     was, now = before.split("\n"), after.split("\n")
     assert len(was) == len(now)
     return [(old, new) for old, new in zip(was, now, strict=True) if old != new]
+
+
+def _link_findings(result: WriteResult) -> list[tuple[str, str]]:
+    """Each W155 a write reported, with the link it names."""
+    assert result.verification is not None
+    return [
+        (str(issue["code"]), str(issue["message"]).split("'")[1])
+        for issue in result.verification["issues"] if issue["code"] == "W155"
+    ]
 
 
 _STAMPED = (
@@ -313,13 +321,40 @@ class TestALinkWrittenWithAnIdIsStoredAsAPath:
         assert created.content is not None
         assert f"[The shop]({link_to(repo.goal, written_in=repo.doc)[5:-1]})" in created.content
 
-    def test_an_id_that_names_nothing_is_refused_and_nothing_is_written(self, repo: _Repository) -> None:
+    def test_an_id_that_names_nothing_is_refused_naming_it_and_nothing_is_written(self, repo: _Repository) -> None:
         before = repo.stored()
 
-        with pytest.raises(UnresolvedArtifactLink, match=r"REQ@1\.gone: no artifact of this repository has that id"):
-            repo.edit(SectionReplacement(("Naive Architecture",), "See [it](REQ@1.gone)."))
+        refused = repo.edit(SectionReplacement(("Naive Architecture",), "See [it](REQ@1.gone)."))
 
-        assert repo.stored() == before
+        assert not refused.wrote and repo.stored() == before
+        assert _link_findings(refused) == [("W155", "REQ@1.gone")]
+
+    def test_an_id_that_names_nothing_in_a_part_the_edit_does_not_address_is_refused(
+        self, repo: _Repository
+    ) -> None:
+        """The write *leaves* the link, though it was not sent it: a row edit refuses the stored one."""
+        repo.doc.write_bytes(repo.stored().replace("The shop calls", "[The shop](GOL@1.gone) calls").encode("utf-8"))
+        before = repo.stored()
+
+        refused = repo.edit(repo.rows("stressors", RowRemoval("S2", repo.row("stressors", "S2"))))
+
+        assert not refused.wrote and repo.stored() == before
+        assert _link_findings(refused) == [("W155", "GOL@1.gone")]
+
+    def test_a_created_document_leaving_an_id_that_names_nothing_is_refused_naming_it(
+        self, repo: _Repository
+    ) -> None:
+        body = repo.stored().split("\n---\n", 1)[1].replace("The shop", "[The shop](REQ@1.gone) [x](GOL@2.gone)")
+
+        created = create_document(
+            repo_root=repo.root, verifier=ArtifactVerifier(repo.registry, catalogs=runtime_catalogs()),
+            clear_repo_caches=lambda _: None, doc_type=STRESS_ANALYSIS, title="Another", body=body, keywords=None,
+            extra_frontmatter=None, artifact_id=None, version="0.1.0", status="draft", last_updated=_STAMP,
+            dry_run=False,
+        )
+
+        assert not created.wrote and not created.path.exists()
+        assert _link_findings(created) == [("W155", "REQ@1.gone"), ("W155", "GOL@2.gone")]
 
     def test_a_link_in_a_part_the_edit_does_not_address_keeps_its_spelling(self, repo: _Repository) -> None:
         by_hand = repo.stored().replace("The shop calls", f"[The shop]({repo.goal.stem}) calls")

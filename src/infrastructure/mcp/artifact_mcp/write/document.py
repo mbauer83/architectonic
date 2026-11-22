@@ -233,7 +233,7 @@ def register(mcp: MCPServer) -> None:
             "refused unless it occurs exactly expected_matches times. "
             "A link may be written with an artifact id where its path would go — [label](ADR@…), or "
             "[](ADR@…) to take the artifact's name as the label — and is stored as the relative path; "
-            "an id that names no artifact is refused. "
+            "a write that would leave a link to no artifact is refused, and its W155 finding names the link. "
             "For rows of a typed table use artifact_edit_document_table. "
             "group (str|None): re-home to a different document-collection slug, moving the file. "
             "Set dry_run=false to write the file. "

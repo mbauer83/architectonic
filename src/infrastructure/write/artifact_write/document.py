@@ -42,7 +42,7 @@ from .boundary import assert_engagement_write_root, modification_stamp
 from .coerce import as_optional_str_list
 from .enterprise_edit_arguments import Interception, document_change
 from .types import WriteResult
-from .verify import document_write_allowed, verify_content_in_temp_path
+from .verify import document_write_allowed, verify_document_write
 
 
 def _generate_document_id(abbreviation: str, title: str) -> str:
@@ -122,8 +122,9 @@ def create_document(
             },
         )
 
+    path_of = artifact_paths(repo_root, verifier.registry)
     actual_body = (
-        id_links_expanded(body, written_to=doc_dir, path_of=artifact_paths(repo_root, verifier.registry))
+        id_links_expanded(body, written_to=doc_dir, path_of=path_of)
         if body
         else _build_placeholder_body(sections, section_templates, _declared_tables(repo_root, doc_type))
     )
@@ -140,12 +141,9 @@ def create_document(
         body=actual_body,
     )
 
-    preview_res = verify_content_in_temp_path(
-        verifier=verifier,
-        file_type="document",
-        desired_name=path.relative_to(repo_root / DOCS).as_posix(),
-        content=content,
-        support_repo_root=repo_root,
+    preview_res = verify_document_write(
+        verifier=verifier, desired_name=path.relative_to(repo_root / DOCS).as_posix(), content=content,
+        repo_root=repo_root, written_to=doc_dir, path_of=path_of,
     )
     verification = _verification_to_document_dict(path, preview_res)
 
@@ -286,12 +284,9 @@ def edit_document(
     )
 
     relative_path = target_path.relative_to(repo_root / DOCS).as_posix()
-    preview_res = verify_content_in_temp_path(
-        verifier=verifier,
-        file_type="document",
-        desired_name=relative_path,
-        content=content,
-        support_repo_root=repo_root,
+    preview_res = verify_document_write(
+        verifier=verifier, desired_name=relative_path, content=content,
+        repo_root=repo_root, written_to=target_path.parent, path_of=path_of,
     )
     verification = _verification_to_document_dict(target_path, preview_res)
     warnings = [f"Will move document to group '{group}': {target_path}"] if moved and dry_run else []

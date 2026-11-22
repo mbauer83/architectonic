@@ -30,6 +30,8 @@ a link carrying a `#section` was never found, the defect this module was created
 `id_links_expanded` is the reading turned to the write: a link may be *written* with an artifact id
 where its path would go, and is stored as the relative path every reader above resolves. One stored
 form, so none of them learns a second; the id form exists only between an author and the write path.
+An id that names nothing has no path and is left as written; `unresolved_id_links` names each one, so
+the write that would leave it can refuse it.
 
 `resolve_artifact_links` is the step past "what does the prose point at" to "what is the thing it
 points at" — one reading of a linked file's frontmatter, classifying it as an entity, a document or
@@ -214,10 +216,6 @@ def relocated_links(
 ArtifactPathOf = Callable[[str], Path | None]
 
 
-class UnresolvedArtifactLink(ValueError):
-    """A link written with an artifact id names no artifact, so it has no path to be stored as."""
-
-
 def as_link(reference: str) -> str:
     """A reference stated as a markdown link or as an artifact id alone, as a link.
 
@@ -232,6 +230,16 @@ def _named(target: Path, artifact_id: str) -> str:
     return str(frontmatter.get("name") or frontmatter.get("title") or artifact_id)
 
 
+def _written_by_id(href: str, directory: Path) -> str | None:
+    """The artifact id *href* is written with, or `None` where it is a path.
+
+    An href that names a file beside the document is a path whatever it is called: `ADR@1.x.md` is
+    spelled like a short id with the slug `md`.
+    """
+    artifact_id = strip_anchor(href)
+    return artifact_id if is_entity_id(artifact_id) and not (directory / artifact_id).exists() else None
+
+
 def id_links_expanded(content: str, *, written_to: Path, path_of: ArtifactPathOf) -> str:
     """*content* with each link whose href is an artifact id stored as the relative path from *written_to*.
 
@@ -240,33 +248,36 @@ def id_links_expanded(content: str, *, written_to: Path, path_of: ArtifactPathOf
     artifact's name. Every other link keeps its author's spelling, and so does an href that names a
     file beside the document — a file is what a path means, whatever it is called.
 
-    Raises `UnresolvedArtifactLink` naming every id that addresses nothing: stored as written, such a
-    link would be a path to no file that no rule recognises as a broken one.
+    An id that names nothing keeps its spelling too: it has no path to be stored as. Whether a write
+    may leave it is the write's question, and `unresolved_id_links` is how it is asked.
     """
     directory = _lexical(written_to)
-    unresolved: list[str] = []
 
     def _expanded(match: re.Match[str]) -> str:
         href = match.group(3)
-        artifact_id = strip_anchor(href)
-        if not is_entity_id(artifact_id) or (directory / artifact_id).exists():
-            return match.group(0)
-        target = path_of(artifact_id)
-        if target is None:
-            unresolved.append(artifact_id)
+        artifact_id = _written_by_id(href, directory)
+        target = path_of(artifact_id) if artifact_id is not None else None
+        if artifact_id is None or target is None:
             return match.group(0)
         stored = posixpath.relpath(_lexical(target).as_posix(), directory.as_posix())
         label = match.group(2) or _named(target, artifact_id)
         return f"[{label}]({stored}{href[len(artifact_id):]}{match.group(4)}"
 
-    expanded = MARKDOWN_LINK_RE.sub(_expanded, content)
-    if unresolved:
-        raise UnresolvedArtifactLink(
-            f"{', '.join(sorted(set(unresolved)))}: no artifact of this repository has "
-            f"{'that id' if len(set(unresolved)) == 1 else 'these ids'}, so the link has no path to be stored "
-            "as. Link an artifact by the id the repository lists it under, or by a relative path."
-        )
-    return expanded
+    return MARKDOWN_LINK_RE.sub(_expanded, content)
+
+
+def unresolved_id_links(content: str, *, written_to: Path, path_of: ArtifactPathOf) -> list[str]:
+    """Each artifact id a link in *content* is written with that names no artifact, once, in order.
+
+    Stored as written such a link is a path to no file, with a suffix the unresolvable-link rule does
+    not watch, so nothing would ever report it. The text asked is the whole of what a write leaves —
+    a part edit leaves the parts it does not address as they were, and a link in one of them is left
+    by the write as surely as one it was sent.
+    """
+    directory = _lexical(written_to)
+    stated = (_written_by_id(link.href, directory) for link in iter_markdown_links(content))
+    named_by_nothing = (artifact_id for artifact_id in stated if artifact_id and path_of(artifact_id) is None)
+    return list(dict.fromkeys(named_by_nothing))
 
 
 @dataclass(frozen=True)

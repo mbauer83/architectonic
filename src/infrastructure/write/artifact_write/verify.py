@@ -3,22 +3,67 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
+from src.application.document_links import ArtifactPathOf, unresolved_id_links
 from src.application.verification._verifier_document_tables import is_about_a_table_in_progress
 from src.application.verification.artifact_verifier import ArtifactVerifier, VerificationResult
-from src.application.verification.artifact_verifier_types import VerificationFileType
+from src.application.verification.artifact_verifier_rules import unresolvable_id_link_issues
+from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationFileType
 from src.config.repo_paths import ARCH_REPO, DIAGRAM_CATALOG, DIAGRAMS, DOCS, MODEL, PROJECTS
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 
 
-def document_write_allowed(res: VerificationResult) -> bool:
-    """Whether a document that verifies as *res* may be written.
+def refuses_a_document_write(issue: Issue) -> bool:
+    """Whether *issue*, found in a document about to be written, keeps it from being written.
 
-    A document write is refused by any finding, a warning included: a dangling link is a warning, and
-    a document is not written with one. The one thing a document may be written with is a typed table
-    still being filled in, which is the state every such table is in until its last row is complete.
+    * an error always refuses;
+    * an unresolvable link (W155) always refuses — a path to no file, or a link written with an
+      artifact id that names no artifact. The owner decided the second: a document is not written
+      leaving a link to nothing, and the finding names the link;
+    * a typed table still being filled in does not refuse, which is the state every such table is in
+      until its last row is complete;
+    * every other warning refuses, as it did before any of the above was stated. Which of them a
+      document may be written with has not been decided, so none is let through by default.
     """
-    return res.valid and all(is_about_a_table_in_progress(issue) for issue in res.issues)
+    match issue:
+        case Issue(severity=Severity.ERROR) | Issue(code="W155"):
+            return True
+        case _:
+            return not is_about_a_table_in_progress(issue)
+
+
+def document_write_refusals(res: VerificationResult) -> list[Issue]:
+    """The findings that keep a document verifying as *res* from being written, in the order found."""
+    return [issue for issue in res.issues if refuses_a_document_write(issue)]
+
+
+def document_write_allowed(res: VerificationResult) -> bool:
+    """Whether a document that verifies as *res* may be written. The one decision every document write asks."""
+    return not document_write_refusals(res)
+
+
+def verify_document_write(
+    *,
+    verifier: ArtifactVerifier,
+    desired_name: str,
+    content: str,
+    repo_root: Path,
+    written_to: Path,
+    path_of: ArtifactPathOf,
+) -> VerificationResult:
+    """Verify *content* as the document a write would leave at *desired_name* under `docs/`.
+
+    The verifier is not given the repository's ids, so a link written with one that names nothing is
+    asked of the write's own resolver over the whole content — a part the write did not address is
+    left by it all the same — and reported as the verifier reports a path to no file.
+    """
+    res = verify_content_in_temp_path(
+        verifier=verifier, file_type="document", desired_name=desired_name, content=content,
+        support_repo_root=repo_root,
+    )
+    unresolved = unresolved_id_links(content, written_to=written_to, path_of=path_of)
+    res.issues.extend(unresolvable_id_link_issues(unresolved, str(res.path)))
+    return res
 
 
 def _diagram_temp_path(tmp_root: Path, desired_name: str, support_repo_root: Path | None) -> Path:
