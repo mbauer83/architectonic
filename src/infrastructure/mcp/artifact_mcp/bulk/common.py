@@ -302,12 +302,7 @@ def _preexisting_invalid_paths(
         if file_type is None:
             # Not tracked (e.g. a docs/ file); cannot determine — skip.
             continue
-        if file_type == "entity":
-            live_result = live_verifier.verify_entity_file(live_path)
-        elif file_type == "connection":
-            live_result = live_verifier.verify_connection_file(live_path)
-        else:
-            live_result = live_verifier.verify_diagram_file(live_path)
+        live_result = live_verifier.verify_as(file_type, live_path)
 
         if not live_result.valid:
             # Already broken in live repo → pre-existing.

@@ -20,6 +20,7 @@ from src.application.artifacts.document_table_rows import read_document_tables
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.application.verification.artifact_verifier_types import VerificationResult
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 from src.infrastructure.write.artifact_write.document import create_document
 from src.infrastructure.write.artifact_write.types import WriteResult
 from tests.support.typed_table_documents import (
@@ -46,7 +47,9 @@ Stress = tuple[Path, DocumentSchema, Path, Rows]
 
 
 def _verifier(repo: Path) -> ArtifactVerifier:
-    return ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=runtime_catalogs())
+    return ArtifactVerifier(
+        ArtifactRegistry(shared_artifact_index(repo)), catalogs=runtime_catalogs(), kind_bindings=KIND_BINDINGS
+    )
 
 
 def _complete_stress_analysis(repo: Path, doc: Path) -> Rows:

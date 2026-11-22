@@ -10,7 +10,7 @@ from src.application.assurance.edge_catalog import EdgeCatalogSource
 from src.application.derivation.strategy_registry import DerivationStrategyCatalogBuilder
 from src.application.guidance_composition import ComposedContext, GuidanceContextView
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.application.startup_validation import validate_registry_consistency
+from src.application.startup_validation import RegistryConsistencyError, validate_registry_consistency
 from src.config.settings import datatype_type_references_blocking, viewpoint_enforcement_setting
 from src.config.workspace_paths import resolve_workspace_repo_roots
 from src.diagram_types import register_default_diagram_types
@@ -33,6 +33,7 @@ from src.infrastructure.assurance.capability import capability_for_deployment
 from src.infrastructure.guidance_cache import load_guidance_overlay, load_workspace_guidance
 from src.infrastructure.rendering._svg_sprite_convert import browser_markup_to_plantuml_svg as _svg_convert
 from src.infrastructure.specialization_declarations import load_specialization_catalog_for_repos
+from src.infrastructure.verification.kind_bindings import kind_binding_contradictions
 from src.infrastructure.viewpoint_declarations import (
     load_module_viewpoint_catalog,
     load_viewpoint_catalog_for_repos,
@@ -154,6 +155,9 @@ def build_module_registry(*, complete_vocabulary: bool = False) -> ModuleRegistr
     else:
         register_default_diagram_types(registry, overrides=overrides, registered_names=registered_names)
     validate_registry_consistency(registry)
+    # The kind table against what each kind is bound to, which only this layer can see.
+    if contradictions := list(kind_binding_contradictions()):
+        raise RegistryConsistencyError(contradictions)
     return registry
 
 

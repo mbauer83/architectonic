@@ -7,7 +7,7 @@ from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_types import VerificationFileType, VerificationResult
 from src.application.verification.evaluation import PassCancellation
-from src.domain.repository.artifact_location import artifact_kind_at, is_verified_kind
+from src.domain.repository.artifact_location import ArtifactKindName, artifact_kind_at
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope, resolve_repo_roots, roots_key, verifier_for
 from src.infrastructure.mcp.artifact_mcp.formatting import as_issue_dict, as_verification_result_dict
 from src.infrastructure.mcp.tool_annotations import READ_ONLY
@@ -18,12 +18,11 @@ from src.infrastructure.verification.pass_runner import (
 from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 
 
-def _verifiable_kind_at(path: Path, roots: Sequence[Path]) -> VerificationFileType | None:
+def _kind_at(path: Path, roots: Sequence[Path]) -> ArtifactKindName | None:
     """The kind the repository layout gives *path* under whichever root holds it; None when none does."""
     for root in roots:
         if path.is_relative_to(root):
-            kind = artifact_kind_at(path.relative_to(root))
-            return kind if kind is not None and is_verified_kind(kind) else None
+            return artifact_kind_at(path.relative_to(root))
     return None
 
 
@@ -51,30 +50,20 @@ async def artifact_verify(
         p = Path(path).expanduser()
         if not p.is_absolute():
             p = engagement_root / p
-        inferred = file_type or _verifiable_kind_at(p, roots)
+        inferred = file_type or _kind_at(p, roots)
         if inferred is None:
             return {
                 "ok": False,
                 "error": "not an artifact file",
                 "message": (
-                    f"{p} holds no entity, connection, diagram, document or icon where it sits in the "
-                    "repository layout; pass file_type to verify it as one anyway"
+                    f"{p} holds no artifact where it sits in the repository layout; pass file_type to "
+                    "verify it as one anyway"
                 ),
             }
-        match inferred:
-            case "entity":
-                result = verifier.verify_entity_file(p)
-            case "connection":
-                result = verifier.verify_connection_file(p)
-            case "diagram":
-                result = (
-                    verifier.verify_matrix_diagram_file(p) if p.suffix == ".md" else verifier.verify_diagram_file(p)
-                )
-            case "document":
-                result = verifier.verify_document_file(p)
-            case "icon":
-                result = verifier.verify_icon_file(p)
+        result = verifier.verify_as(inferred, p)
         out = as_verification_result_dict(result)
+        # A kind no verifier is bound to answers `unverified`, which `valid` already counts as not passed.
+        out["outcome"] = result.outcome
         out["repo_roots"] = [str(r) for r in roots]
         out["repo_scope"] = repo_scope
         return out
@@ -133,6 +122,7 @@ async def artifact_verify(
         }
     total = len(results)
     total_valid = sum(1 for r in results if r.valid)
+    total_unverified = sum(1 for r in results if r.outcome == "unverified")
     total_errors = sum(len(r.errors) for r in results)
     total_warnings = sum(len(r.warnings) for r in results)
     files_by_type: dict[str, int] = {}
@@ -166,7 +156,9 @@ async def artifact_verify(
             "files": total,
             "files_by_type": files_by_type,
             "valid_files": total_valid,
-            "invalid_files": total - total_valid,
+            # Verified and found wrong. A file nothing verified is neither valid nor invalid.
+            "invalid_files": total - total_valid - total_unverified,
+            "unverified_files": total_unverified,
             "errors": total_errors,
             "warnings": total_warnings,
         },

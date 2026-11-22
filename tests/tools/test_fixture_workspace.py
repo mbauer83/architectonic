@@ -105,11 +105,13 @@ def test_the_generated_workspace_verifies_clean(workspace: FixtureWorkspace) -> 
     from src.application.verification.artifact_verifier_registry import ArtifactRegistry
     from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
     from src.infrastructure.artifact_index import shared_artifact_index
+    from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 
     index = shared_artifact_index(workspace.engagement_root)
     try:
         verifier = ArtifactVerifier(
-            ArtifactRegistry(index), catalogs=build_runtime_catalogs(get_module_registry())
+            ArtifactRegistry(index), catalogs=build_runtime_catalogs(get_module_registry()),
+            kind_bindings=KIND_BINDINGS,
         )
         results = verifier.verify_all(workspace.engagement_root, include_diagrams=False)
     finally:

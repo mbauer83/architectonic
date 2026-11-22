@@ -30,6 +30,7 @@ from src.infrastructure.icons.raster_codec import StoredPngInspector
 from src.infrastructure.rendering.laid_out_rendering import drawn_for_source
 from src.infrastructure.rendering.layout.plantuml_svg_reader import read_rendered_picture
 from src.infrastructure.verification.adapters import DefaultPumlSyntaxAdapter
+from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 
 
 def _syntax_port() -> DefaultPumlSyntaxAdapter:
@@ -57,7 +58,7 @@ def build_artifact_verifier(
 
     Pass `check_puml_syntax=False` where spawning a subprocess is not acceptable; the port
     is then left unset rather than built, and the verifier skips the check explicitly
-    instead of appearing to run one.
+    instead of appearing to run one. Every kind's verifier is the one `kind_bindings` binds it to.
     """
     return ArtifactVerifier(
         registry,
@@ -68,4 +69,5 @@ def build_artifact_verifier(
         puml_syntax=_syntax_port() if check_puml_syntax else None,
         picture_inspector=StoredPngInspector(),
         icon_library=icon_library,
+        kind_bindings=KIND_BINDINGS,
     )

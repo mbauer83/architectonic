@@ -23,7 +23,7 @@ from src.domain.repository.artifact_location import ARTIFACT_KIND_NAMES, Artifac
 from src.infrastructure.artifact_index._service_incremental import CHANGE_READERS
 from src.infrastructure.artifact_index.service import _CHANGE_APPLIERS
 from src.infrastructure.mcp.artifact_mcp.bulk.candidate_inventory import CandidateInventoryPort
-from src.infrastructure.mcp.artifact_mcp.verify_tools import _verifiable_kind_at
+from src.infrastructure.mcp.artifact_mcp.verify_tools import _kind_at
 from src.infrastructure.rest.routers.sync.changes import _classify
 
 #: kind → (a file of it, what `artifact_verify` infers, what the save dialog lists it as,
@@ -34,7 +34,8 @@ _BEFORE: dict[ArtifactKindName, tuple[str, str | None, str, bool]] = {
     "diagram": ("diagram-catalog/diagrams/core/ARC@1.a.x.puml", "diagram", "diagram", False),
     "document": ("docs/adr/core/ADR@1.a.x.md", "document", "document", True),
     "icon": ("diagram-catalog/icons/ICO@1.a.x.md", "icon", "icon", True),
-    "scratchpad": ("scratchpads/core/SCR@1.a.x.scratchpad.yaml", None, "scratchpad", False),
+    # Inferred since the verifier dispatches by binding: a scratchpad is answered `unverified`.
+    "scratchpad": ("scratchpads/core/SCR@1.a.x.scratchpad.yaml", "scratchpad", "scratchpad", False),
 }
 
 #: Paths the layout gives no kind, and what the save dialog lists each as.
@@ -51,16 +52,16 @@ def test_every_kind_is_accounted_for_here() -> None:
 
 
 @pytest.mark.parametrize("kind", ARTIFACT_KIND_NAMES)
-def test_artifact_verify_infers_the_kinds_the_verifier_takes(kind: ArtifactKindName, tmp_path: Path) -> None:
+def test_artifact_verify_infers_every_kind(kind: ArtifactKindName, tmp_path: Path) -> None:
     relative, inferred, _listed, _standalone = _BEFORE[kind]
 
-    assert _verifiable_kind_at(tmp_path / relative, [tmp_path]) == inferred
+    assert _kind_at(tmp_path / relative, [tmp_path]) == inferred
 
 
 @pytest.mark.parametrize("relative", sorted(_NO_KIND))
 def test_artifact_verify_infers_nothing_outside_the_layout(relative: str, tmp_path: Path) -> None:
-    assert _verifiable_kind_at(tmp_path / relative, [tmp_path]) is None
-    assert _verifiable_kind_at(tmp_path / relative, [tmp_path / "elsewhere"]) is None
+    assert _kind_at(tmp_path / relative, [tmp_path]) is None
+    assert _kind_at(tmp_path / relative, [tmp_path / "elsewhere"]) is None
 
 
 @pytest.mark.parametrize("kind", ARTIFACT_KIND_NAMES)

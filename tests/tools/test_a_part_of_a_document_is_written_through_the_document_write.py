@@ -29,6 +29,7 @@ from src.application.artifacts.document_table_edits import row_values
 from src.application.artifacts.document_table_rows import read_document_tables
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 from src.infrastructure.write.artifact_write import document as document_write
 from src.infrastructure.write.artifact_write.document import create_document, edit_document
 from src.infrastructure.write.artifact_write.types import WriteResult
@@ -84,7 +85,7 @@ class _Repository:
         return edit_document(
             assert_write_root=lambda _: None,
             repo_root=self.root,
-            verifier=ArtifactVerifier(self.registry, catalogs=runtime_catalogs()),
+            verifier=ArtifactVerifier(self.registry, catalogs=runtime_catalogs(), kind_bindings=KIND_BINDINGS),
             clear_repo_caches=lambda _: None,
             artifact_id=self.doc.stem,
             keywords=None,
@@ -312,7 +313,8 @@ class TestALinkWrittenWithAnIdIsStoredAsAPath:
         body = repo.stored().split("\n---\n", 1)[1].replace("The shop", f"[The shop]({repo.goal.stem})")
 
         created = create_document(
-            repo_root=repo.root, verifier=ArtifactVerifier(repo.registry, catalogs=runtime_catalogs()),
+            repo_root=repo.root,
+            verifier=ArtifactVerifier(repo.registry, catalogs=runtime_catalogs(), kind_bindings=KIND_BINDINGS),
             clear_repo_caches=lambda _: None, doc_type=STRESS_ANALYSIS, title="Another", body=body, keywords=None,
             extra_frontmatter=None, artifact_id=None, version="0.1.0", status="draft", last_updated=_STAMP,
             dry_run=True,

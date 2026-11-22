@@ -58,6 +58,7 @@ from src.application.verification.evaluation import (
     EvaluationContext,
     PassCancellation,
 )
+from src.application.verification.kind_verification import KindBindings, verify_by_binding
 from src.application.verification.verifier_ports import (
     FileInventoryPort,
     IconLibrary,
@@ -67,7 +68,7 @@ from src.application.verification.verifier_ports import (
     VerifierScheduler,
 )
 from src.application.viewpoints.registry_snapshot import build_registry_snapshot as registry_snapshot
-from src.domain.repository.artifact_location import artifact_kind_at, model_file_kind
+from src.domain.repository.artifact_location import ArtifactKindName, artifact_kind_at, model_file_kind
 
 
 class ArtifactVerifier(_VerifierAdapters):
@@ -84,8 +85,12 @@ class ArtifactVerifier(_VerifierAdapters):
         incremental_state: IncrementalStatePort | None = None,
         picture_inspector: StoredPictureInspector | None = None,
         icon_library: IconLibrary | None = None,
+        kind_bindings: KindBindings | None = None,
     ) -> None:
         self.registry = registry
+        # Empty unless given: a verifier built without them binds no kind, so every file it is asked to
+        # verify by kind answers `unverified` rather than being verified as some other kind.
+        self._kind_bindings: KindBindings = kind_bindings if kind_bindings is not None else {}
         self.check_puml_syntax = check_puml_syntax
         self._catalogs = catalogs
         self._candidate_repo: object | None = build_candidate_repo(committed_repo, registry)
@@ -273,7 +278,7 @@ class ArtifactVerifier(_VerifierAdapters):
         results = self._verify_inventory_subset(inv, selected)
 
         standalone = self._inventory.filter_standalone_artifacts(repo_path, list(changed_paths))
-        results.extend(self._scheduler.run(self.verify_standalone_artifact, standalone))
+        results.extend(self._verify_each_by_kind(repo_path, standalone))
         return results
 
     def _verify_repository(self, repo_path: Path) -> VerificationResult | None:
@@ -321,16 +326,29 @@ class ArtifactVerifier(_VerifierAdapters):
     def _verify_standalone_artifacts(
         self, repo_path: Path, *, evaluation: EvaluationContext = UNCONDITIONAL
     ) -> list[VerificationResult]:
-        standalone = self._inventory.list_standalone_artifacts(repo_path)
-        return self._scheduler.run(evaluation.per_file(self.verify_standalone_artifact), standalone)
+        return self._verify_each_by_kind(
+            repo_path, self._inventory.list_standalone_artifacts(repo_path), evaluation=evaluation
+        )
 
-    def verify_standalone_artifact(
-        self, path: Path, *, snapshot: "RepositorySnapshot | None" = None
+    def _verify_each_by_kind(
+        self, repo_path: Path, paths: list[Path], *, evaluation: EvaluationContext = UNCONDITIONAL
+    ) -> list[VerificationResult]:
+        """Each file sent to the verifier bound to the kind the layout gives it under *repo_path*."""
+        root = repo_path.resolve()
+        kinds = {path: artifact_kind_at(path.resolve().relative_to(root)) for path in paths}
+
+        def verify_held(path: Path, *, snapshot: "RepositorySnapshot | None" = None) -> VerificationResult:
+            if (kind := kinds[path]) is None:
+                raise ValueError(f"{path} was listed for verification and holds no artifact where it sits")
+            return self.verify_as(kind, path, snapshot=snapshot)
+
+        return self._scheduler.run(evaluation.per_file(verify_held), paths)
+
+    def verify_as(
+        self, kind: ArtifactKindName, path: Path, *, snapshot: "RepositorySnapshot | None" = None
     ) -> VerificationResult:
-        root = self._repo_root_for_path(path)
-        if root is not None and artifact_kind_at(path.resolve().relative_to(root)) == "icon":
-            return self.verify_icon_file(path, snapshot=snapshot)
-        return self.verify_document_file(path, snapshot=snapshot)
+        """Verify *path* as a file of *kind*, with the verifier bound to that kind; `unverified` if none is."""
+        return verify_by_binding(self._kind_bindings, self, kind, path, snapshot)
 
     def verify_icon_file(self, path: Path, *, snapshot: "RepositorySnapshot | None" = None) -> VerificationResult:
         names = icon_applicability_names(self._catalogs) if self._catalogs is not None else None

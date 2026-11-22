@@ -69,10 +69,6 @@ class Remaining:
     until: str
 
 
-_VERIFIER_BINDING = (
-    "stage 2 (verifiers bound by kind at the composition layer): the verifier is then looked up by "
-    "kind, and no caller chooses a `verify_*_file` method by name"
-)
 _MODEL_FILES = (
     "stays: entities and connections keep their own index structures, and a walk of a model root "
     "has to tell an entity's file from the outgoing file beside it; `model_file_kind` is the one "
@@ -81,26 +77,12 @@ _MODEL_FILES = (
 
 _STILL_BRANCHING: dict[Path, Remaining] = {
     Path("src/application/verification/artifact_verifier.py"): Remaining(
-        branches=2,
-        why=(
-            "`verify_standalone_artifact` sends an icon to `verify_icon_file` and everything else to "
-            "`verify_document_file`; and `verify_connection_file` asks whether the file it was given "
-            "is an outgoing file before reading it as one"
-        ),
-        until=_VERIFIER_BINDING + "; the outgoing-file test " + _MODEL_FILES,
-    ),
-    Path("src/infrastructure/mcp/artifact_mcp/verify_tools.py"): Remaining(
         branches=1,
-        why="`artifact_verify` chooses the verifier method for one file by a `match` on its kind",
-        until=_VERIFIER_BINDING,
-    ),
-    Path("src/infrastructure/write/artifact_write/verify.py"): Remaining(
-        branches=3,
         why=(
-            "the dry-run preview chooses a temporary path and a verifier method by the kind being "
-            "written"
+            "`verify_connection_file` asks whether the file it was given is an outgoing file before "
+            "reading it as one"
         ),
-        until=_VERIFIER_BINDING,
+        until=_MODEL_FILES,
     ),
     Path("src/infrastructure/mcp/artifact_mcp/bulk/candidate_inventory.py"): Remaining(
         branches=4,
@@ -110,7 +92,8 @@ _STILL_BRANCHING: dict[Path, Remaining] = {
             "refers to it"
         ),
         until=(
-            _VERIFIER_BINDING + ", which takes the inventory's per-kind lists with it; the entity test " + _MODEL_FILES
+            "stays while the model inventory keeps one list per kind verified with the model, which the "
+            "bulk inventory has to fill as the full one does; the entity test " + _MODEL_FILES
         ),
     ),
     Path("src/infrastructure/mcp/artifact_mcp/bulk/candidate_state.py"): Remaining(
@@ -157,7 +140,7 @@ _STILL_BRANCHING: dict[Path, Remaining] = {
 }
 
 #: The register's total. It may fall and may never rise: lower it when a branch goes.
-_BUDGET = 18
+_BUDGET = 13
 
 
 # ── The detector ──────────────────────────────────────────────────────────────

@@ -37,6 +37,17 @@ if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
 
 
+#: Every finding an entity file can carry, as its rule modules spell them. Declared so that what the
+#: verifier checks is a fact a reader can see; `test_each_verifier_declares_its_rule_codes` holds it
+#: equal to the codes its modules emit.
+RULE_CODES: frozenset[str] = frozenset({
+    "E001", "E011", "E012", "E013", "E014", "E021", "E022", "E031", "E042", "E043", "E045", "E101", "E102",
+    "E104", "E140", "E141", "E142", "E143", "E144", "E145", "E146", "E147", "E148", "E149", "E150", "E170",
+    "E171", "E303", "E304", "E305", "E308", "E309", "E311", "E312", "E313", "W031", "W041", "W042", "W043",
+    "W141", "W143", "W144", "W145", "W155", "W156", "W160", "W321", "W322",
+})
+
+
 def verify_entity(
     path: Path,
     *,

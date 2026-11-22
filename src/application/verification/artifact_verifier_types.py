@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal, TypeAlias
 
 from src.domain.artifact_id import PREFIX_PATTERN, RANDOM_KEY_PATTERN
-from src.domain.repository.artifact_location import VerifiedArtifactKindName
+from src.domain.repository.artifact_location import ArtifactKindName, VerifiedArtifactKindName
 from src.domain.repository.connection_declaration import parse_connection_header
 from src.domain.verification_findings import Issue, Severity, SeverityLiteral
 
@@ -15,16 +15,23 @@ __all__ = ["Issue", "Severity", "SeverityLiteral"]
 #: The kinds the verifier takes, which is a fact each kind's row declares.
 VerificationFileType: TypeAlias = VerifiedArtifactKindName
 
+#: Whether a kind's own verifier looked at the file. `unverified` is the answer for a file of a kind no
+#: verifier is bound to: it may still carry the findings every kind is held to, but nothing has said
+#: the file is right, so it is never counted as passed.
+VerificationOutcome: TypeAlias = Literal["verified", "unverified"]
+
 
 @dataclass
 class VerificationResult:
     path: Path
-    file_type: VerificationFileType
+    file_type: ArtifactKindName
     issues: list[Issue] = field(default_factory=list)
+    outcome: VerificationOutcome = "verified"
 
     @property
     def valid(self) -> bool:
-        return not any(i.severity == Severity.ERROR for i in self.issues)
+        """Whether the file passed: its kind's verifier looked at it and found no error."""
+        return self.outcome == "verified" and not any(i.severity == Severity.ERROR for i in self.issues)
 
     @property
     def errors(self) -> list[Issue]:
@@ -35,7 +42,7 @@ class VerificationResult:
         return [i for i in self.issues if i.severity == Severity.WARNING]
 
     def __repr__(self) -> str:
-        status = "PASS" if self.valid else "FAIL"
+        status = "PASS" if self.valid else "FAIL" if self.outcome == "verified" else "UNVERIFIED"
         return f"VerificationResult({status}, {self.path.name}, {len(self.issues)} issues)"
 
 

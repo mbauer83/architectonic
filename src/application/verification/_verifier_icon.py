@@ -33,6 +33,14 @@ if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
 
 
+#: Every finding an icon file can carry, as its rule modules spell them. Declared so that what the
+#: verifier checks is a fact a reader can see; `test_each_verifier_declares_its_rule_codes` holds it
+#: equal to the codes its modules emit.
+RULE_CODES: frozenset[str] = frozenset({
+    "E001", "E011", "E012", "E013", "E014", "E311", "E360", "E361", "E362", "E363", "W360",
+})
+
+
 def verify_icon(
     path: Path,
     *,
