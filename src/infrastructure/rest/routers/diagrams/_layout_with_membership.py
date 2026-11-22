@@ -12,8 +12,11 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
-from src.application.modeling.diagram_identities import diagram_identities
-from src.domain.diagrams.layout.layout_block import LAYOUT_KEY
+from src.application.modeling.diagram_identities import diagram_identities, drawn_instances, strings_of
+from src.application.modeling.diagram_layout_statement import DeclaresElementKinds, joined_to_its_picture
+from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, Layout
+from src.infrastructure.rendering.layout.diagram_picture import plantuml_drawing
+from src.infrastructure.rendering.layout.membership_placement import with_new_members
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers.diagrams._composition import RenderedComposition
 from src.infrastructure.rest.routers.diagrams._write_bodies import EditDiagramGuiBody
@@ -22,7 +25,8 @@ from src.infrastructure.write.artifact_write.parse_existing import parse_diagram
 
 
 def layout_to_store(
-    artifact_id: str, body: EditDiagramGuiBody, composed: RenderedComposition
+    artifact_id: str, body: EditDiagramGuiBody, composed: RenderedComposition,
+    repo_root: Path, ontology: DeclaresElementKinds,
 ) -> dict[str, object] | None:
     """*body*'s whole layout, or its patch applied to the stored one and pruned to the new membership."""
     if body.layout_patch is None:
@@ -32,10 +36,23 @@ def layout_to_store(
     record = s.get_repo().get_diagram(artifact_id)
     if record is None or not Path(record.path).exists():
         raise HTTPException(404, f"Diagram '{artifact_id}' not found")
-    stored = parse_diagram_file(Path(record.path)).frontmatter.get(LAYOUT_KEY)
+    before = parse_diagram_file(Path(record.path)).frontmatter
     identities = diagram_identities(
         entity_ids_used=composed.entity_ids_used, connection_ids_used=composed.connection_ids_used,
         diagram_entities=composed.diagram_entities, diagram_connections=composed.diagram_connections,
         authored_groupings=body.authored_groupings, bindings=composed.conn_bindings or None,
     )
-    return reconciled_layout(stored=stored, patch=body.layout_patch, identities=identities)
+    previous = drawn_instances(
+        strings_of(before.get("entity-ids-used")), before.get("diagram-entities"), before.get("bindings"),
+    )
+    changed = previous != identities.instances or before.get("authored-groupings") != body.authored_groupings
+
+    def place(layout: Layout) -> Layout:
+        picture = plantuml_drawing(composed.puml, repo_root, body.diagram_type).picture
+        diagram = joined_to_its_picture(composed.statements(body), layout, ontology)
+        return with_new_members(picture, diagram, identities.instances - previous, identities.relations)
+
+    return reconciled_layout(
+        stored=before.get(LAYOUT_KEY), patch=body.layout_patch, identities=identities,
+        place_members=place if changed else None,
+    )

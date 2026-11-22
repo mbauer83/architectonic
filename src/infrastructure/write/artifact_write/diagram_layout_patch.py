@@ -40,7 +40,8 @@ class LayoutPatchResult:
 
 
 def reconciled_layout(
-    *, stored: object, patch: Mapping[str, object], identities: DiagramIdentities
+    *, stored: object, patch: Mapping[str, object], identities: DiagramIdentities,
+    place_members: Callable[[Layout], Layout] | None = None,
 ) -> dict[str, object]:
     """The layout a diagram write stores when what the diagram holds changes in the same write (D12).
 
@@ -51,6 +52,8 @@ def reconciled_layout(
     """
     base = read_layout(stored) if isinstance(stored, Mapping) and stored else Layout()
     kept, _dropped = pruned_to(patched(base, read_layout_patch(patch), stored=base), identities)
+    if place_members is not None and not kept.states_nothing():
+        kept = place_members(kept)
     return layout_as_written(kept)
 
 
