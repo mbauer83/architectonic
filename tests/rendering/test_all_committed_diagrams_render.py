@@ -42,11 +42,11 @@ pytestmark = pytest.mark.skipif(
 def _committed_diagrams() -> list[Path]:
     # Recursive: group collections live in subdirectories of diagrams/.
     all_puml = sorted(_DIAGRAMS_DIR.rglob("*.puml"))
-    # Honour the "committed" contract literally: only git-tracked diagrams. The renderer
-    # writes a `tmp*.puml` into this catalog so `!include`s resolve, then removes it in a
-    # `finally`; if a render process is hard-killed (SIGKILL) mid-run that cleanup is
-    # skipped, orphaning a frontmatter-less temp file here. Rendering that stray would fail
-    # with a spurious unknown-diagram-type error, so untracked files are excluded.
+    # Honour the "committed" contract literally: only git-tracked diagrams. Earlier versions'
+    # renderer wrote a `tmp*.puml` into this catalog and removed it in a `finally`; a render
+    # process hard-killed (SIGKILL) mid-run skipped that cleanup, orphaning a frontmatter-less
+    # temp file here. Rendering that stray would fail with a spurious unknown-diagram-type
+    # error, so untracked files are excluded.
     try:
         listed = subprocess.run(
             ["git", "-C", str(_DIAGRAMS_DIR), "ls-files", "-z", "--", "."],

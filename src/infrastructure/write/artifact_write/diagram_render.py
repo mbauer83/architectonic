@@ -2,7 +2,6 @@
 
 import os
 import subprocess
-import tempfile
 from pathlib import Path
 
 from src.application.puml_directive_policy import find_unsafe_puml_directives
@@ -23,6 +22,7 @@ from src.infrastructure.rendering.laid_out_rendering import (
     stored_layout,
 )
 from src.infrastructure.rendering.native_svg import render_native_svg
+from src.infrastructure.rendering.plantuml_scratch import plantuml_input
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter, strip_startuml_name
 from src.infrastructure.rendering.svg_to_png import RasteriseFailedError
 
@@ -215,67 +215,56 @@ def _render_diagram_png(
             return None
         return _rasterise_svg(composed.read_text(encoding="utf-8"), composed.with_suffix(".png"), warnings, failures)
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".puml", dir=puml_path.parent, delete=False, encoding="utf-8"
-    ) as tmp:
-        tmp.write(puml_body_for_render)
-        tmp_path = Path(tmp.name)
-
     jar = find_plantuml_jar()
     if jar is None:
         warnings.append("plantuml.jar not found; render skipped")
-        tmp_path.unlink(missing_ok=True)
         return None
 
-    try:
-        env = None
-        dot = find_graphviz_dot()
-        if dot is not None:
-            env = {**os.environ, "GRAPHVIZ_DOT": str(dot)}
-        # Run java from the diagrams/ directory (same directory as the temp input file).
-        # PlantUML relativises the -o path against the Java process's initial CWD and
-        # then re-applies that relative form against the input file's directory.  When
-        # both are the same directory the path arithmetic is correct; running from the
-        # project root produces a doubled/wrong path.
-        dpi = render_dpi()
-        result = subprocess.run(
-            plantuml_command(
-                jar.resolve(), "-tpng", f"-Sdpi={dpi}", "-o", str(rendered_dir.resolve()), tmp_path.name,
-                system_properties=(f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
-            ),
-            cwd=str(puml_path.parent),
-            capture_output=True,
-            text=True,
-            timeout=60,
-            env=env,
-        )
-        if result.returncode != 0:
-            _fail(warnings, failures, f"PlantUML render failed: {result.stderr[:200]}")
-            return None
-
-        rendered = rendered_dir / f"{tmp_path.stem}.png"
-        if _is_error_render(result.stderr):
-            rendered.unlink(missing_ok=True)
-            _fail(
-                warnings,
-                failures,
-                f"PlantUML produced an error image (layout failure), previous render kept: {result.stderr[:200]}",
-            )
-            return None
-        if rendered.exists():
-            final = rendered_dir / f"{puml_path.stem}.png"
-            rendered.rename(final)
-            return final
-        return None
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        warnings.append(f"PlantUML render error: {exc}")
-        return None
-    finally:
-        discard_render_byproducts(rendered_dir, tmp_path.stem)
+    with plantuml_input(puml_body_for_render) as tmp_path:
         try:
-            tmp_path.unlink()
-        except OSError:
-            pass
+            env = None
+            dot = find_graphviz_dot()
+            if dot is not None:
+                env = {**os.environ, "GRAPHVIZ_DOT": str(dot)}
+            # Run java from the input file's own directory. PlantUML relativises the -o path
+            # against the Java process's initial CWD and then re-applies that relative form against
+            # the input file's directory. When both are the same directory the path arithmetic is
+            # correct; running from anywhere else produces a doubled/wrong path.
+            dpi = render_dpi()
+            result = subprocess.run(
+                plantuml_command(
+                    jar.resolve(), "-tpng", f"-Sdpi={dpi}", "-o", str(rendered_dir.resolve()), tmp_path.name,
+                    system_properties=(f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
+                ),
+                cwd=str(tmp_path.parent),
+                capture_output=True,
+                text=True,
+                timeout=60,
+                env=env,
+            )
+            if result.returncode != 0:
+                _fail(warnings, failures, f"PlantUML render failed: {result.stderr[:200]}")
+                return None
+
+            rendered = rendered_dir / f"{tmp_path.stem}.png"
+            if _is_error_render(result.stderr):
+                rendered.unlink(missing_ok=True)
+                _fail(
+                    warnings,
+                    failures,
+                    f"PlantUML produced an error image (layout failure), previous render kept: {result.stderr[:200]}",
+                )
+                return None
+            if rendered.exists():
+                final = rendered_dir / f"{puml_path.stem}.png"
+                rendered.rename(final)
+                return final
+            return None
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            warnings.append(f"PlantUML render error: {exc}")
+            return None
+        finally:
+            discard_render_byproducts(rendered_dir, tmp_path.stem)
 
 
 def _rasterise_svg(svg: str, final: Path, warnings: list[str], failures: list[str] | None) -> Path | None:
@@ -327,63 +316,53 @@ def _render_diagram_svg(
         final.write_text(native_svg, encoding="utf-8")
         return final
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".puml", dir=puml_path.parent, delete=False, encoding="utf-8"
-    ) as tmp:
-        tmp.write(puml_body_for_render)
-        tmp_path = Path(tmp.name)
-
     jar = find_plantuml_jar()
     if jar is None:
         warnings.append("plantuml.jar not found; SVG render skipped")
-        tmp_path.unlink(missing_ok=True)
         return None
 
-    try:
-        env = None
-        dot = find_graphviz_dot()
-        if dot is not None:
-            env = {**os.environ, "GRAPHVIZ_DOT": str(dot)}
-        result = subprocess.run(
-            plantuml_command(
-                jar.resolve(), "-tsvg", "-o", str(rendered_dir.resolve()), tmp_path.name,
-                system_properties=(f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
-            ),
-            cwd=str(puml_path.parent),
-            capture_output=True,
-            text=True,
-            timeout=60,
-            env=env,
-        )
-        if result.returncode != 0:
-            _fail(warnings, failures, f"SVG render failed: {result.stderr[:200]}")
-            return None
-
-        rendered = rendered_dir / f"{tmp_path.stem}.svg"
-        if _is_error_render(result.stderr) or _svg_is_error_image(rendered):
-            rendered.unlink(missing_ok=True)
-            _fail(
-                warnings,
-                failures,
-                "PlantUML produced an error image (layout failure), previous render kept: "
-                f"{result.stderr[:200] or 'no stderr; the failure is drawn into the picture'}",
-            )
-            return None
-        if rendered.exists():
-            final = rendered_dir / f"{puml_path.stem}.svg"
-            svg, composing = drawn_from_layout(rendered.read_text(encoding="utf-8"), _laid_out(puml_path))
-            warnings.extend(composing)
-            final.write_text(svg, encoding="utf-8")
-            rendered.unlink()
-            return final
-        warnings.append("SVG render produced no output file")
-        return None
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        warnings.append(f"SVG render error: {exc}")
-        return None
-    finally:
-        discard_render_byproducts(rendered_dir, tmp_path.stem)
+    with plantuml_input(puml_body_for_render) as tmp_path:
         try:
-            tmp_path.unlink()
-        except OSError:
-            pass
+            env = None
+            dot = find_graphviz_dot()
+            if dot is not None:
+                env = {**os.environ, "GRAPHVIZ_DOT": str(dot)}
+            result = subprocess.run(
+                plantuml_command(
+                    jar.resolve(), "-tsvg", "-o", str(rendered_dir.resolve()), tmp_path.name,
+                    system_properties=(f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
+                ),
+                cwd=str(tmp_path.parent),
+                capture_output=True,
+                text=True,
+                timeout=60,
+                env=env,
+            )
+            if result.returncode != 0:
+                _fail(warnings, failures, f"SVG render failed: {result.stderr[:200]}")
+                return None
+
+            rendered = rendered_dir / f"{tmp_path.stem}.svg"
+            if _is_error_render(result.stderr) or _svg_is_error_image(rendered):
+                rendered.unlink(missing_ok=True)
+                _fail(
+                    warnings,
+                    failures,
+                    "PlantUML produced an error image (layout failure), previous render kept: "
+                    f"{result.stderr[:200] or 'no stderr; the failure is drawn into the picture'}",
+                )
+                return None
+            if rendered.exists():
+                final = rendered_dir / f"{puml_path.stem}.svg"
+                svg, composing = drawn_from_layout(rendered.read_text(encoding="utf-8"), _laid_out(puml_path))
+                warnings.extend(composing)
+                final.write_text(svg, encoding="utf-8")
+                rendered.unlink()
+                return final
+            warnings.append("SVG render produced no output file")
+            return None
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            warnings.append(f"SVG render error: {exc}")
+            return None
+        finally:
+            discard_render_byproducts(rendered_dir, tmp_path.stem)

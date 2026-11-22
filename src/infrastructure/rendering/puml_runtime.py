@@ -16,13 +16,14 @@ from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.infrastructure.diagram_type_registry import get_diagram_type
 from src.infrastructure.rendering.laid_out_rendering import NoCanvasSizeError, drawn_from_layout, png_like_plantuml
 from src.infrastructure.rendering.native_svg import render_native_svg
+from src.infrastructure.rendering.plantuml_scratch import plantuml_input
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter, strip_startuml_name
 from src.infrastructure.rendering.svg_to_png import RasteriseFailedError
 
-#: The renderer writes its scratch file *into* the diagram catalog, because PlantUML resolves the
-#: `!include`s that `_prepare_body` injects against the including file's directory. So the naming
-#: convention is stated here once and used by both the creation and the sweep below — a glob that
-#: could drift from the `NamedTemporaryFile` call is a sweep that silently stops finding anything.
+#: How the scratch files earlier versions wrote *into* the diagram catalog were named. A render now
+#: writes its input outside every repository (`plantuml_scratch`), so nothing creates one any more; a
+#: catalog can still hold one a killed render of an earlier version left, and the sweep below and the
+#: walks that skip such a file recognise it by this name.
 _TEMP_PREFIX = tempfile.gettempprefix()
 _TEMP_SUFFIX = ".puml"
 RENDER_TEMP_GLOB = f"{_TEMP_PREFIX}*{_TEMP_SUFFIX}"
@@ -33,8 +34,7 @@ def is_render_scratch(path: Path) -> bool:
 
     Anything walking the catalog's ``*.puml`` has to ask: renders overlap with everything else, so a
     scratch file can exist when a walk lists the directory and be gone by the time the walk reads it.
-    Asked through the same convention the creation and the sweep use, so a walk cannot drift from
-    what is actually written.
+    Asked through the same convention the sweep uses, so a walk cannot drift from what it removes.
     """
     return fnmatch(path.name, RENDER_TEMP_GLOB)
 
@@ -51,11 +51,11 @@ _MEDIA_TYPES = {"svg": "image/svg+xml", "png": "image/png"}
 
 
 def discard_abandoned_render_temp_files(diagram_dir: Path, *, now: float | None = None) -> list[Path]:
-    """Remove scratch files a previous render left behind, and report what was removed.
+    """Remove scratch files a render of an earlier version left behind, and report what was removed.
 
-    `_render` unlinks its own file in a `finally`, which covers returning and raising but not being
-    killed — SIGKILL or an OOM kill skips it and orphans the file in the diagram catalog, where a
-    later `git add -A` can commit it as if it were a diagram. That happened.
+    Those renders wrote their input into the diagram catalog and unlinked it in a `finally`, which
+    covers returning and raising but not being killed — SIGKILL or an OOM kill skipped it and orphaned
+    the file where a later `git add -A` could commit it as if it were a diagram. That happened.
 
     Best-effort by construction: a file that vanishes underneath us, or that this process may not
     remove, is somebody else's business and must not fail the render that called this.
@@ -112,8 +112,8 @@ def render_puml_bytes(
     if not diag_dir.exists():
         return None, _MEDIA_TYPES[fmt], [f"Diagram directory not found: {diag_dir}"]
     # Before anything can return early: a machine that has switched to native SVG, or that has no
-    # PlantUML jar, still carries whatever a previous kill left behind and is still one `git add -A`
-    # away from committing it.
+    # PlantUML jar, still carries whatever an earlier version's killed render left behind and is still
+    # one `git add -A` away from committing it.
     discard_abandoned_render_temp_files(diag_dir)
     render_body = _prepare_body(puml_body, repo_root, diagram_type)
     # Every on-demand render — previews, reading lenses, bodies that arrived through git — is checked
@@ -134,8 +134,8 @@ def render_puml_bytes(
         return native_svg.encode("utf-8"), "image/svg+xml", []
 
     if laid_out is None:
-        return _drawn_by_plantuml(render_body, diag_dir, fmt)
-    plantuml_svg, _media_type, warnings = _drawn_by_plantuml(render_body, diag_dir, "svg")
+        return _drawn_by_plantuml(render_body, fmt)
+    plantuml_svg, _media_type, warnings = _drawn_by_plantuml(render_body, "svg")
     if plantuml_svg is None:
         return None, _MEDIA_TYPES[fmt], warnings
     svg, composing = drawn_from_layout(plantuml_svg.decode("utf-8"), laid_out)
@@ -147,7 +147,7 @@ def render_puml_bytes(
         return None, _MEDIA_TYPES["png"], [f"PNG render failed: {exc}"]
 
 
-def _drawn_by_plantuml(render_body: str, diag_dir: Path, fmt: str) -> tuple[bytes | None, str, list[str]]:
+def _drawn_by_plantuml(render_body: str, fmt: str) -> tuple[bytes | None, str, list[str]]:
     """What PlantUML draws for a prepared body, in *fmt*, with its media type and any warnings."""
     from src.application.verification.artifact_verifier_syntax import (  # noqa: PLC0415
         find_graphviz_dot,
@@ -159,22 +159,16 @@ def _drawn_by_plantuml(render_body: str, diag_dir: Path, fmt: str) -> tuple[byte
     jar = find_plantuml_jar()
     if jar is None:
         return None, _MEDIA_TYPES[fmt], ["plantuml.jar not found; render skipped"]
-    tmp_path: Path | None = None
     try:
-        with tempfile.NamedTemporaryFile(
-            mode="w", prefix=_TEMP_PREFIX, suffix=_TEMP_SUFFIX, dir=diag_dir, delete=False, encoding="utf-8"
-        ) as tmp:
-            tmp.write(render_body)
-            tmp_path = Path(tmp.name)
-        with tempfile.TemporaryDirectory() as out_dir:
+        with plantuml_input(render_body) as scratch, tempfile.TemporaryDirectory() as out_dir:
             env = {**os.environ, "GRAPHVIZ_DOT": str(dot)} if (dot := find_graphviz_dot()) else None
             arguments = [f"-t{fmt}", *([f"-Sdpi={render_dpi()}"] if fmt == "png" else []), "-o", out_dir]
             cmd = plantuml_command(
-                jar.resolve(), *arguments, tmp_path.name,
+                jar.resolve(), *arguments, scratch.name,
                 system_properties=(f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
             )
             proc = subprocess.run(
-                cmd, cwd=str(diag_dir), capture_output=True, text=True, timeout=60, env=env
+                cmd, cwd=str(scratch.parent), capture_output=True, text=True, timeout=60, env=env
             )
             if proc.returncode != 0:
                 return None, _MEDIA_TYPES[fmt], [f"PlantUML render failed: {proc.stderr[:300]}"]
@@ -184,9 +178,6 @@ def _drawn_by_plantuml(render_body: str, diag_dir: Path, fmt: str) -> tuple[byte
             return outputs[0].read_bytes(), _MEDIA_TYPES[fmt], []
     except (OSError, subprocess.TimeoutExpired) as exc:
         return None, _MEDIA_TYPES[fmt], [f"Render error: {exc}"]
-    finally:
-        if tmp_path is not None:
-            tmp_path.unlink(missing_ok=True)
 
 
 def render_puml_preview(
