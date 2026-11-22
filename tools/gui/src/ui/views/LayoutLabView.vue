@@ -24,7 +24,9 @@ const lab = useLayoutLab()
 const labIsOn = ref<boolean | null>(null)
 const diagrams = ref<readonly DiagramSummary[]>([])
 const chosen = ref(typeof route.params.artifactId === 'string' ? route.params.artifactId : '')
-const showBreaches = ref(true)
+/** Breach marks are annotations over the picture, off until asked for: the counter says how many there are. */
+const showBreaches = ref(false)
+const breachCount = computed(() => lab.counts.value.hard + lab.counts.value.soft)
 const serverPictureUrl = ref<string | null>(null)
 
 /** The lab lays out ArchiMate diagrams, the family the layout implementation covers. */
@@ -151,18 +153,20 @@ onBeforeUnmount(() => {
         >
           Widen narrow gaps
         </button>
-        <label class="lab__toggle">
-          <input
-            v-model="showBreaches"
-            type="checkbox"
-          >
-          Show breaches
-        </label>
         <span
           v-if="lab.routes.value"
           class="lab__counts"
           data-testid="layout-lab-counts"
         >
+          <button
+            type="button"
+            class="lab__breach-toggle"
+            :aria-pressed="showBreaches"
+            data-testid="layout-lab-show-breaches"
+            @click="showBreaches = !showBreaches"
+          >
+            {{ breachCount }} {{ breachCount === 1 ? 'breach' : 'breaches' }} · {{ showBreaches ? 'hide' : 'show' }}
+          </button>
           <span class="lab__count lab__count--hard">{{ lab.counts.value.hard }} hard</span>
           <span class="lab__count lab__count--soft">{{ lab.counts.value.soft }} soft</span>
         </span>
@@ -266,6 +270,7 @@ onBeforeUnmount(() => {
 .lab__toolbar button:disabled { opacity: 0.5; cursor: default; }
 .lab__counts { display: inline-flex; gap: 6px; color: #475569; }
 .lab__count { padding: 1px 8px; border-radius: 10px; font-weight: 600; }
+.lab__breach-toggle[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); }
 .lab__count--hard { background: #fee2e2; color: #991b1b; }
 .lab__count--soft { background: #fef3c7; color: #92400e; }
 .lab__timing { color: #64748b; font-size: 12px; }

@@ -118,6 +118,9 @@ describe('the layout lab canvas', () => {
     lab.routeEverything()
     await nextTick()
     expect([...host.querySelectorAll('.lab-breach-tag')].map((tag) => tag.textContent)).toContain('ends overlap')
+    // Set off in a box of its own with a leader, never as a stroke laid along the line.
+    expect(host.querySelectorAll('.lab-breach-tag-box').length).toBe(host.querySelectorAll('.lab-breach-tag').length)
+    expect(host.querySelectorAll('.lab-breach-leader').length).toBe(host.querySelectorAll('.lab-breach-tag').length)
 
     shown.breaches = false
     await nextTick()
