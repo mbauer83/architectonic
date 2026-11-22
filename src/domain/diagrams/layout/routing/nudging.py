@@ -171,17 +171,25 @@ def nudged(
     moved = {key: list(course) for key, course in courses.items()}
     # Moving upright runs lengthens or shortens level ones, and the other way round, so both axes are
     # gone over twice; whatever is still too close afterwards, on either axis, is reported.
+    fixed = {axis: _fixed(borders, fixed_lines, axis) for axis in (True, False)}
+
+    def conflicts(candidate: dict[str, list[Point]]) -> list[tuple[str, str]]:
+        return [pair for axis, lines in fixed.items()
+                for cluster in _clusters(_members(candidate, axis, movable, obstacles, lines))
+                if not _apart(cluster) for pair in _pairs(cluster)]
+
     for _sweep in range(_SWEEPS):
-        for level in (True, False):
-            _separated(moved, level, movable, obstacles, _fixed(borders, fixed_lines, level))
-    unseparated = [
-        pair
-        for level in (True, False)
-        for cluster in _clusters(_members(moved, level, movable, obstacles, _fixed(borders, fixed_lines, level)))
-        if not _apart(cluster)
-        for pair in _pairs(cluster)
-    ]
-    return moved, unseparated
+        for axis, lines in fixed.items():
+            _separated(moved, axis, movable, obstacles, lines)
+    unseparated = conflicts(moved)
+    if unseparated or movable is not None:
+        return moved, unseparated
+
+    # Preserve the feasible drawing until the two axes of the wider drawing agree.
+    wider = {key: list(course) for key, course in moved.items()}
+    for axis, lines in fixed.items():
+        _separated(wider, axis, movable, obstacles, lines, widen=True)
+    return (moved if wider != moved and conflicts(wider) else wider), []
 
 
 def _fixed(
@@ -204,16 +212,16 @@ def _fixed(
 
 def _separated(
     moved: dict[str, list[Point]], level: bool, movable: frozenset[str] | None,
-    obstacles: Mapping[str, Sequence[Extent]], fixed: Sequence[tuple[float, float, float]],
+    obstacles: Mapping[str, Sequence[Extent]], fixed: Sequence[tuple[float, float, float]], *, widen: bool = False,
 ) -> None:
     """One axis's runs pulled apart in place: gone over again, a few times at most, while anything moves,
     since a run moved in one cluster may come near another's."""
-    for _round in range(_ROUNDS):
+    for _round in range(1 if widen else _ROUNDS):
         changed = False
         for cluster in _clusters(_members(moved, level, movable, obstacles, fixed)):
-            if not any(member.movable for member in cluster):
+            if _apart(cluster) != widen or not any(member.movable for member in cluster):
                 continue
-            ordered, places = (cluster, preferred_places(cluster)) if _apart(cluster) else first_that_fits(cluster)
+            ordered, places = (cluster, preferred_places(cluster)) if widen else first_that_fits(cluster)
             if places is None:
                 continue
             for member, place in zip(ordered, places, strict=True):

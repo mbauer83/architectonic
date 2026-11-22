@@ -255,6 +255,12 @@ export const routeAll = (
   connectors: readonly Connector[],
   quick: QuickPass | null = null,
 ): RoutingResult => {
+  return routedScene(scene, connectors, quick, quick === null)
+}
+
+const routedScene = (
+  scene: RoutingScene, connectors: readonly Connector[], quick: QuickPass | null, retryPorts: boolean,
+): RoutingResult => {
   const routing = new Routing(scene)
   const ordered = [...connectors].sort((one, other) => byText(one.key, other.key))
   const kept = new Map<string, RoutedConnector>()
@@ -300,18 +306,22 @@ export const routeAll = (
   }
   const spreadPorts = portsSpread(scene, searched, first)
   const stubs = stubLines(scene, searched, spreadPorts, [...kept.values(), ...routes.values()])
+  let changedPorts = false
   for (const [key, [source, target]] of spreadPorts) {
     const connector = searched.find((one) => one.key === key)
     const before = first.get(key)
     if (!connector || !before) continue
     let routed = routing.searched(connector, [source], [target], false, stubs) ?? before
-    if (!quick && !connector.sourcePort && routed.course.length >= 6) {
+    if (retryPorts && !connector.sourcePort && routed.course.length >= 6) {
       const side = facingSide(extentOf(scene, connector.source), extentOf(scene, connector.target))
       if (side && side !== source[0]) {
         const starts = [0.25, 0.5, 0.75].map((at): Choice => [side, at])
         const goals = connector.targetPort ? [target] : SIDES.flatMap((s) => [0.25, 0.75].map((at): Choice => [s, at]))
         const alternative = routing.searched(connector, starts, goals, false, stubs)
-        if (alternative && improvesDetour(routed, alternative, stubs)) routed = alternative
+        if (alternative && improvesDetour(routed, alternative, stubs)) {
+          changedPorts = true
+          routed = alternative
+        }
       }
     }
     routes.set(key, routed)
@@ -343,6 +353,7 @@ export const routeAll = (
     scene.fixedLines,
     quick ? new Set(routes.keys()) : null,
   )
+  if (changedPorts && unseparated.length) return routedScene(scene, connectors, quick, false)
   shorten(moved, searched, routing.visibility, unseparated)
   const keys = [...every.keys()].sort(byText)
   return {

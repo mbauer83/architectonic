@@ -222,12 +222,13 @@ const separated = (
   movable: ReadonlySet<string> | null,
   obstacles: ReadonlyMap<string, readonly Extent[]>,
   fixed: readonly (readonly [number, number, number])[],
+  widen = false,
 ): void => {
-  for (let round = 0; round < ROUNDS; round += 1) {
+  for (let round = 0; round < (widen ? 1 : ROUNDS); round += 1) {
     let changed = false
     for (const cluster of clustersOf(membersOf(moved, level, movable, obstacles, fixed))) {
-      if (!cluster.some(movableOf)) continue
-      const [ordered, places] = apart(cluster) ? [cluster, preferredPlaces(cluster)] : firstThatFits(cluster)
+      if (apart(cluster) !== widen || !cluster.some(movableOf)) continue
+      const [ordered, places] = widen ? [cluster, preferredPlaces(cluster)] : firstThatFits(cluster)
       if (!places) continue
       ordered.forEach((member, index) => {
         const whole = halfUp(places[index])
@@ -253,15 +254,20 @@ export const nudged = (
   movable: ReadonlySet<string> | null = null,
 ): [Map<string, Point[]>, [string, string][]] => {
   const moved = new Map([...courses].map(([key, course]) => [key, [...course]]))
-  for (let sweep = 0; sweep < SWEEPS; sweep += 1) {
-    for (const level of [true, false]) {
-      separated(moved, level, movable, obstacles, fixedLinesOf(borders, fixedLines, level))
-    }
-  }
-  const unseparated = [true, false].flatMap((level) =>
-    clustersOf(membersOf(moved, level, movable, obstacles, fixedLinesOf(borders, fixedLines, level)))
-      .filter((cluster) => !apart(cluster))
-      .flatMap(pairsOf),
+  const axes = [true, false].map((level) => [level, fixedLinesOf(borders, fixedLines, level)] as const)
+  const conflicts = (candidate: Map<string, Point[]>) => axes.flatMap(([level, fixed]) =>
+    clustersOf(membersOf(candidate, level, movable, obstacles, fixed))
+      .filter((cluster) => !apart(cluster)).flatMap(pairsOf),
   )
-  return [moved, unseparated]
+  for (let sweep = 0; sweep < SWEEPS; sweep += 1) {
+    for (const [level, fixed] of axes) separated(moved, level, movable, obstacles, fixed)
+  }
+  const unseparated = conflicts(moved)
+  if (unseparated.length || movable !== null) return [moved, unseparated]
+
+  // Keep the feasible drawing until the wider drawing has been checked in both axes.
+  const wider = new Map([...moved].map(([key, course]) => [key, [...course]]))
+  for (const [level, fixed] of axes) separated(wider, level, movable, obstacles, fixed, true)
+  const changed = [...wider].some(([key, course]) => course.some((point, i) => point !== moved.get(key)?.[i]))
+  return [changed && conflicts(wider).length ? moved : wider, []]
 }
