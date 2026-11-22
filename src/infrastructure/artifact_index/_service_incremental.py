@@ -188,3 +188,19 @@ def apply_icon_change(path: Path, mem: _MemStore, *, parsed: IconRecord | None) 
     if parsed is not None:
         mem.icons[parsed.artifact_id] = parsed
         mem.icon_by_path[resolved] = parsed.artifact_id
+
+
+#: How what `KIND_BINDINGS` read is applied: one entry per row of the kind table.
+CHANGE_APPLIERS = {
+    "candidate-architecture": lambda s, path, data: apply_candidate_change(path, data, s._mem),
+    "connection": lambda service, path, data: _apply_outgoing_records(path, data, service._mem, service._db),
+    "entity": lambda service, path, data: _apply_entity_record(path, data, service._mem, service._db),
+    "diagram": lambda service, path, data: apply_diagram_change(
+        path, service._mem, service._db, parsed=data,
+        record_scopes=service._get_record_scopes(),
+        attr_type_ref_fn=service._attr_type_ref_extractor,
+    ),
+    "document": lambda service, path, data: apply_document_change(path, service._mem, service._db, parsed=data),
+    "scratchpad": lambda service, path, data: apply_scratchpad_change(path, service._mem, service._db, parsed=data),
+    "icon": lambda service, path, data: apply_icon_change(path, service._mem, parsed=data),
+}

@@ -246,6 +246,8 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "artifact_admin_reindex": (False, True, False, False),
         # One lifecycle tool spans create through edit/delete.
         "artifact_viewpoint": (False, True, False, False),
+        "change_set_create": (False, False, False, False),
+        "change_set_edit": (False, True, False, False),
         "scratchpad_create": (False, False, False, False),
         # The aggregate is replaced whole, so a document that omits a note deletes it.
         "scratchpad_replace": (False, True, False, False),

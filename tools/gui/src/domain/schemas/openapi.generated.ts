@@ -1255,6 +1255,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/change-set-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check candidate architectures for integration conflicts */
+        post: operations["changes_check_candidates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/change-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List candidate architectures */
+        get: operations["changes_list_candidates"];
+        put?: never;
+        /** Create a candidate architecture */
+        post: operations["changes_create_candidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/change-sets/{artifact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a candidate and its version */
+        get: operations["changes_read_candidate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit fields of a versioned candidate */
+        patch: operations["changes_edit_candidate"];
+        trace?: never;
+    };
+    "/api/change-sets/{artifact_id}/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compare a composed candidate against a selected base */
+        get: operations["changes_compare_candidate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/change-sets/{artifact_id}/standing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read how each operation stands against the current model */
+        get: operations["changes_read_standing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/changes": {
         parameters: {
             query?: never;
@@ -2050,6 +2137,40 @@ export interface paths {
          *     and is stored as the relative path.
          */
         patch: operations["documents_update_document"];
+        trace?: never;
+    };
+    "/api/documents/{artifact_id}/incidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read stressor hits and coupling counts */
+        get: operations["documents_analysis_incidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{artifact_id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read unfinished stress analysis and coverage hints */
+        get: operations["documents_analysis_progress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/documents/{artifact_id}/tables": {
@@ -3723,6 +3844,23 @@ export interface components {
                 [key: string]: components["schemas"]["BindingTargetSpec"];
             };
         };
+        /** AnalysisIncidence */
+        AnalysisIncidence: {
+            /** Adaptations */
+            adaptations: components["schemas"]["Fields"][];
+            /** Coupling */
+            coupling: components["schemas"]["CouplingPair"][];
+            /** Document */
+            document: string;
+            /** End States */
+            end_states: components["schemas"]["Fields"][];
+            /** Incidence */
+            incidence: components["schemas"]["Fields"][];
+            /** Naive Candidate */
+            naive_candidate: string;
+            /** Stressors */
+            stressors: components["schemas"]["Fields"][];
+        };
         /**
          * AnalysisNodePageResponse
          * @description One page of the working set, with the role totals of the visible population.
@@ -3763,6 +3901,30 @@ export interface components {
             analysis_id: string;
             /** Authored Node Count */
             authored_node_count: number;
+        };
+        /** AnalysisOutstanding */
+        AnalysisOutstanding: {
+            /** Incomplete Rows */
+            incomplete_rows: components["schemas"]["IncompleteCell"][];
+            /** Unexplained Hits */
+            unexplained_hits: string[];
+            /** Unwalked */
+            unwalked: string[];
+            /** Without Adaptation */
+            without_adaptation: string[];
+            /** Without End State */
+            without_end_state: string[];
+            /** Without Required Behaviour */
+            without_required_behaviour: string[];
+        };
+        /** AnalysisProgress */
+        AnalysisProgress: {
+            coverage: components["schemas"]["CoverageHints"];
+            /** Document */
+            document: string;
+            /** Naive Candidate */
+            naive_candidate: string;
+            progress: components["schemas"]["AnalysisOutstanding"];
         };
         /**
          * AppliedDiagramViewpointResponse
@@ -5523,6 +5685,94 @@ export interface components {
              */
             severity: "ontology" | "entity-id";
         };
+        /** CandidateComparison */
+        CandidateComparison: {
+            /** Base */
+            base: string;
+            /** Candidate */
+            candidate: string;
+            /** Diff */
+            diff: components["schemas"]["ChangeDifference"][];
+            drawing?: components["schemas"]["DiagramLayoutGeometryResponse"] | null;
+            /** Stack */
+            stack: string[];
+            /** Standing */
+            standing: components["schemas"]["OperationStanding"][];
+            view: components["schemas"]["ScopedView"];
+        };
+        /** CandidateCreate */
+        CandidateCreate: {
+            /** Diagram */
+            diagram?: string | null;
+            record: components["schemas"]["Fields"];
+        };
+        /** CandidateEdit */
+        CandidateEdit: {
+            /** Based On */
+            based_on: string;
+            patch: components["schemas"]["Fields"];
+        };
+        /** CandidateList */
+        CandidateList: {
+            /** Candidates */
+            candidates: components["schemas"]["CandidateSummary"][];
+        };
+        /** CandidateOverlap */
+        CandidateOverlap: {
+            /** Kind */
+            kind: string;
+            /** Parties */
+            parties: components["schemas"]["OverlapParty"][];
+            /** Subject */
+            subject: string;
+        };
+        /** CandidateResponse */
+        CandidateResponse: {
+            record: components["schemas"]["Fields"];
+            /** Version */
+            version: string;
+        };
+        /** CandidateSelection */
+        CandidateSelection: {
+            /** Candidates */
+            candidates: string[];
+        };
+        /** CandidateStanding */
+        CandidateStanding: {
+            /** Candidate */
+            candidate: string;
+            /** Standing */
+            standing: components["schemas"]["OperationStanding"][];
+        };
+        /** CandidateSummary */
+        CandidateSummary: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Parent */
+            parent: string | null;
+            /** State */
+            state: string;
+        };
+        /** ChangedField */
+        ChangedField: {
+            after: components["schemas"]["JsonValue"];
+            before: components["schemas"]["JsonValue"];
+        };
+        /** ChangeDifference */
+        ChangeDifference: {
+            /** Change */
+            change: string;
+            /** Fields */
+            fields: {
+                [key: string]: components["schemas"]["ChangedField"];
+            };
+            /** Kind */
+            kind: string;
+            /** Target */
+            target: string | components["schemas"]["ConnectionKey"];
+        };
         /**
          * ChangeDiscardedResponse
          * @description What a discard did.
@@ -5853,6 +6103,15 @@ export interface components {
             /** Witness Steps */
             witness_steps: components["schemas"]["WitnessStepResponse"][];
         };
+        /** ConnectionKey */
+        ConnectionKey: {
+            /** Connection Type */
+            connection_type: string;
+            /** Source Entity */
+            source_entity: string;
+            /** Target Entity */
+            target_entity: string;
+        };
         /**
          * ConnectionListResponse
          * @description Connections matching the filters, as a page-shaped object rather than a bare array.
@@ -6034,6 +6293,28 @@ export interface components {
             tgt_multiplicity: string;
             /** Version */
             version: string;
+        };
+        /** CouplingPair */
+        CouplingPair: {
+            /** Count */
+            count: number;
+            /** Left */
+            left: string;
+            /** Right */
+            right: string;
+        };
+        /** CoverageHints */
+        CoverageHints: {
+            /** By Kind */
+            by_kind: {
+                [key: string]: number;
+            };
+            /** Single Stressor End States */
+            single_stressor_end_states: string[];
+            /** Untouched */
+            untouched: components["schemas"]["UntouchedElement"][];
+            /** Unused Kinds */
+            unused_kinds: string[];
         };
         /** CreateAnalysisBody */
         CreateAnalysisBody: {
@@ -8849,6 +9130,9 @@ export interface components {
             /** Message */
             message: string;
         };
+        Fields: {
+            [key: string]: components["schemas"]["JsonValue"];
+        };
         /**
          * FileAnalysisBody
          * @description `group_id` is None to unfile — an analysis is worth recording before anyone settles where
@@ -9648,6 +9932,15 @@ export interface components {
              */
             traversal: "direct" | "derived" | "both";
         };
+        /** IncompleteCell */
+        IncompleteCell: {
+            /** Column */
+            column: string;
+            /** Row */
+            row: string;
+            /** Table */
+            table: string;
+        };
         /** IngestSignalsBody */
         IngestSignalsBody: {
             /** Bom */
@@ -9672,6 +9965,13 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** IntegrationCheck */
+        IntegrationCheck: {
+            /** Candidates */
+            candidates: string[];
+            /** Overlaps */
+            overlaps: components["schemas"]["CandidateOverlap"][];
+        };
         /**
          * InvalidParticipationDetails
          * @description ``invalid_participation``: a node cannot participate in its own provenance analysis.
@@ -9685,6 +9985,7 @@ export interface components {
             /** Node Id */
             node_id: string;
         };
+        JsonValue: unknown;
         /**
          * KeywordSearchHit
          * @description One artifact matched by keyword, with the display fields its kind actually has.
@@ -10728,6 +11029,14 @@ export interface components {
             /** Target Type */
             target_type: string;
         };
+        /** OperationStanding */
+        OperationStanding: {
+            operation: components["schemas"]["Fields"];
+            /** Reason */
+            reason: string;
+            /** Standing */
+            standing: string;
+        };
         /**
          * OutsideSelectionWire
          * @description A link with one end in the selection and one end out — a decision, not an error.
@@ -10739,6 +11048,12 @@ export interface components {
             "note-id": string;
             /** Note-Title */
             "note-title": string;
+        };
+        /** OverlapParty */
+        OverlapParty: {
+            operation: components["schemas"]["Fields"];
+            /** Set Id */
+            set_id: string;
         };
         /**
          * OwnEntityTypeGuidance
@@ -11790,6 +12105,29 @@ export interface components {
                 string,
                 string
             ];
+        };
+        /** ScopedConnection */
+        ScopedConnection: {
+            /** Connection Type */
+            connection_type: string;
+            fields: components["schemas"]["Fields"];
+            /** Source Entity */
+            source_entity: string;
+            /** Target Entity */
+            target_entity: string;
+        };
+        /** ScopedEntity */
+        ScopedEntity: {
+            fields: components["schemas"]["Fields"];
+            /** Id */
+            id: string;
+        };
+        /** ScopedView */
+        ScopedView: {
+            /** Connections */
+            connections: components["schemas"]["ScopedConnection"][];
+            /** Entities */
+            entities: components["schemas"]["ScopedEntity"][];
         };
         /**
          * ScopeSummaryResponse
@@ -12989,6 +13327,15 @@ export interface components {
             /** Topic */
             topic: string;
         };
+        /** UntouchedElement */
+        UntouchedElement: {
+            /** Fan In */
+            fan_in: number;
+            /** Fan Out */
+            fan_out: number;
+            /** Id */
+            id: string;
+        };
         /** UpdateAnalysisBody */
         UpdateAnalysisBody: {
             /** Architecture Anchor Id */
@@ -13745,7 +14092,7 @@ export interface components {
          */
         WriteVerificationResponse: {
             /** File Type */
-            file_type?: ("entity" | "connection" | "diagram" | "document" | "icon") | null;
+            file_type?: ("entity" | "connection" | "diagram" | "document" | "icon" | "candidate-architecture") | null;
             /**
              * Issues
              * @default []
@@ -17107,6 +17454,434 @@ export interface operations {
             };
         };
     };
+    changes_check_candidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateSelection"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationCheck"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_list_candidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateList"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_create_candidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_read_candidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateResponse"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_edit_candidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateEdit"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_compare_candidate: {
+        parameters: {
+            query?: {
+                /** @description Model, naive or a candidate id. */
+                base?: string;
+                /** @description Stored diagram for canvas geometry. */
+                diagram?: string | null;
+                /** @description Naive candidate id when base is naive. */
+                naive?: string | null;
+            };
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateComparison"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_read_standing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateStanding"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     changes_list_changes: {
         parameters: {
             query?: never;
@@ -20403,6 +21178,107 @@ export interface operations {
             };
             /** @description Write temporarily rejected by the workspace gate (retryable) */
             423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_analysis_incidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisIncidence"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_analysis_progress: {
+        parameters: {
+            query?: {
+                /** @description Stress categories to check for coverage. */
+                kinds?: string[];
+            };
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisProgress"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

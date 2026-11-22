@@ -68,6 +68,8 @@ _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "icons_update_icon",
     "matrices_create_matrix",
     "matrices_replace_matrix",
+    "changes_create_candidate",
+    "changes_edit_candidate",
     "scratchpads_create_scratchpad",
     "scratchpads_delete_scratchpad",
     "scratchpads_edit_scratchpad",
@@ -109,6 +111,7 @@ REST_MUTATION_MANIFEST: dict[str, MutationIntent] = {
 #: Write-shaped operations that mutate no repository state: previews, plans, query
 #: execution/exports, and non-persistent identifier minting.
 NON_MUTATING_REST_OPERATIONS: frozenset[str] = frozenset({
+    "changes_check_candidates",
     "diagrams_preview_diagram",
     "diagrams_preview_diagram_layout_shapes",
     "entities_allocate_identifiers",

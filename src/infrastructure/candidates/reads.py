@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from pydantic_core import to_jsonable_python
+
 from src.application.change_sets.candidate_architecture import CandidateArchitecture
 from src.application.change_sets.candidate_view import CandidateView, difference, view_of
 from src.application.change_sets.operations import ConnectionAddress, entities_used
@@ -12,6 +14,7 @@ from src.application.change_sets.stacking import descendants, sets_beneath, stac
 from src.application.change_sets.standing import standing_of
 from src.application.modeling.edit_field_values import current_entity_values
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
+from src.domain.artifact_id import canonical_entity_key
 from src.infrastructure.candidates.repository import CandidateRepository
 
 
@@ -23,11 +26,11 @@ def live_reading(stack: tuple[CandidateArchitecture, ...], registry: ArtifactReg
     for ref in sorted(refs):
         if (entity := registry.get_entity(ref)) is not None:
             entities[ref] = dict(current_entity_values(entity), artifact_type=entity.artifact_type)
-            aliases[entity.artifact_id] = ref
+            aliases[canonical_entity_key(entity.artifact_id)] = ref
     for ref in entities:
         for conn in registry.find_connections_for(ref):
-            address = ConnectionAddress(aliases.get(conn.source, conn.source), conn.conn_type,
-                                        aliases.get(conn.target, conn.target))
+            address = ConnectionAddress(aliases.get(canonical_entity_key(conn.source), conn.source), conn.conn_type,
+                                        aliases.get(canonical_entity_key(conn.target), conn.target))
             relations[address] = {
                 "description": conn.content_text, "metadata": dict(conn.extra), "specializations": conn.specializations,
                 "src_multiplicity": conn.src_multiplicity, "tgt_multiplicity": conn.tgt_multiplicity,
@@ -50,7 +53,7 @@ def comparison(
     live = live_reading(stack, registry)
     after = view_of(stack, live)
     if base == "model":
-        refs = {ref for layer in stack for ref in layer.scope} | set(after.entities)
+        refs = set(live.entities)
         before = CandidateView(
             {ref: fields for ref, fields in live.entities.items() if ref in refs},
             {a: f for a, f in live.connections.items() if all(end in refs for end in a.endpoints)},
@@ -60,11 +63,11 @@ def comparison(
         if not selected or selected == candidate.id or selected in descendants(candidate.id, store.list()):
             raise ValueError("Select the model or a different candidate outside this candidate's descendants.")
         before = read_view(store.require(selected), store, registry)
-    return {
+    return to_jsonable_python({
         "candidate": candidate.id, "base": base, "stack": [layer.id for layer in stack],
         "view": after.wire(), "diff": difference(before, after),
         "standing": [
             {"operation": operation_to_mapping(item.operation), "standing": item.standing, "reason": item.reason}
             for item in standing_of(candidate.changes, live, beneath=sets_beneath(stack))
         ],
-    }
+    })

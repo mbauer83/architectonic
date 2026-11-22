@@ -29,6 +29,7 @@ from src.infrastructure.rest.route_policy._authoring import (
     GROUP_ROWS,
     VIEWPOINT_ROWS,
 )
+from src.infrastructure.rest.route_policy._candidates import CANDIDATE_ROWS
 from src.infrastructure.rest.route_policy._changes import CHANGE_ROWS
 from src.infrastructure.rest.route_policy._diagrams import (
     DIAGRAM_ROWS,
@@ -72,6 +73,7 @@ ROUTE_POLICY: tuple[RouteRow, ...] = (
     *DIAGRAM_ROWS,
     *MATRIX_ROWS,
     *DIAGRAM_TYPE_ROWS,
+    *CANDIDATE_ROWS,
     *SCRATCHPAD_ROWS,
     *ICON_ROWS,
     *DOCUMENT_ROWS,

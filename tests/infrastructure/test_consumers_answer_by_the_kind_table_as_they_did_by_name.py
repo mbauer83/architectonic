@@ -20,7 +20,7 @@ import pytest
 
 from src.application.verification._verifier_stdlib_adapters import FilesystemInventoryAdapter
 from src.domain.repository.artifact_location import ARTIFACT_KIND_NAMES, ArtifactKindName
-from src.infrastructure.artifact_index.service import _CHANGE_APPLIERS
+from src.infrastructure.artifact_index._service_incremental import CHANGE_APPLIERS
 from src.infrastructure.mcp.artifact_mcp.bulk.candidate_inventory import CandidateInventoryPort
 from src.infrastructure.mcp.artifact_mcp.verify_tools import _kind_at
 from src.infrastructure.rest.routers.sync.changes import _classify
@@ -118,4 +118,4 @@ def test_the_bulk_inventory_keeps_the_same_kinds_for_one_file_at_a_time(tmp_path
 def test_the_index_reads_and_applies_a_change_of_every_kind() -> None:
     """A table keyed by kind has no arm to forget, provided it has an entry per row."""
     assert set(KIND_BINDINGS) == set(ARTIFACT_KIND_NAMES)
-    assert set(_CHANGE_APPLIERS) == set(ARTIFACT_KIND_NAMES)
+    assert set(CHANGE_APPLIERS) == set(ARTIFACT_KIND_NAMES)
