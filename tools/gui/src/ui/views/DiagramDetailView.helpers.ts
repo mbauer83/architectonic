@@ -1,7 +1,7 @@
 import { Option, Schema } from 'effect'
 import { C4NavigationSchema } from '../../domain/schemas/diagrams'
 import type { C4Navigation, DiagramConnection, DiagramContextEntity, DiagramDetail } from '../../domain'
-import type { DrawnMembership } from '../composables/useDiagramEditing'
+import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 
 /** A diagram kind's own region of a read: whatever `read_diagram_extras` or
  * `build_context_extras` returned, which this package cannot know the shape of. A consumer that

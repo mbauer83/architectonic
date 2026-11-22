@@ -18,7 +18,7 @@ import {
 } from '../../domain/layout/arrangementLayout'
 import { drawnArrangement } from '../../domain/layout/lab/labArrangement'
 import { widenedArrangement } from '../../domain/layout/lab/labRouting'
-import type { Membership } from '../../domain/layout/diagramMembership'
+import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { membershipWithout } from '../../domain/layout/diagramMembership'
 import { stableEntityId } from '../../domain/artifactId'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
@@ -29,13 +29,6 @@ import { useArrangementSession } from './useArrangementSession'
 export interface PendingChange {
   readonly key: string
   readonly text: string
-}
-
-/** What a diagram draws, as last read: what a membership write starts from. */
-export interface DrawnMembership extends Membership {
-  readonly diagram_type: string
-  readonly name: string
-  readonly diagram_entities?: Readonly<Record<string, unknown>>
 }
 
 export function useDiagramEditing(

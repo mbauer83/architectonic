@@ -14,7 +14,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { ModelService } from '../../application/ModelService'
 import { SMALLEST_ELEMENT, moved, resized, resizedExtent } from '../../domain/layout/lab/labArrangement'
-import type { DrawnMembership } from './useDiagramEditing'
+import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { useDiagramEditing } from './useDiagramEditing'
 
 /** How far an arrow moves or resizes a shape: the grid, or one pixel with Shift. */

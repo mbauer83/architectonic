@@ -16,7 +16,14 @@ export interface Membership {
   readonly authored_groupings?: readonly AuthoredGrouping[]
 }
 
-const endsOf = (connectionId: string): readonly string[] => {
+/** What a diagram draws, as last read: what a membership write starts from and sends back. */
+export interface DrawnMembership extends Membership {
+  readonly diagram_type: string
+  readonly name: string
+  readonly diagram_entities?: Readonly<Record<string, unknown>>
+}
+
+const endsOf =(connectionId: string): readonly string[] => {
   const [source, rest] = connectionId.split('---')
   return [source, (rest ?? '').split('@@')[0]]
 }
