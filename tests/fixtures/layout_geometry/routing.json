@@ -3565,6 +3565,204 @@
    }
   },
   {
+   "name": "parallel connectors with room to straighten after their ports are spread",
+   "scene": {
+    "elements": {
+     "a": {
+      "left": 400,
+      "top": 490,
+      "right": 470,
+      "bottom": 530
+     },
+     "b": {
+      "left": 200,
+      "top": 490,
+      "right": 270,
+      "bottom": 530
+     },
+     "c": {
+      "left": 100,
+      "top": 0,
+      "right": 170,
+      "bottom": 40
+     },
+     "d": {
+      "left": 0,
+      "top": 0,
+      "right": 70,
+      "bottom": 40
+     }
+    },
+    "boxes": {},
+    "text": {},
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "1",
+     "source": "a",
+     "target": "b",
+     "decorated": [
+      true,
+      true
+     ]
+    },
+    {
+     "key": "3",
+     "source": "d",
+     "target": "a",
+     "decorated": [
+      true,
+      true
+     ]
+    },
+    {
+     "key": "5",
+     "source": "d",
+     "target": "a",
+     "decorated": [
+      true,
+      true
+     ]
+    },
+    {
+     "key": "6",
+     "source": "b",
+     "target": "a",
+     "decorated": [
+      true,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "1": {
+      "source_port": {
+       "side": "left",
+       "at": 0.6
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.325
+      },
+      "course": [
+       [
+        400,
+        514
+       ],
+       [
+        346,
+        514
+       ],
+       [
+        346,
+        503
+       ],
+       [
+        270,
+        503
+       ]
+      ]
+     },
+     "3": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.3286
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.2
+      },
+      "course": [
+       [
+        23,
+        40
+       ],
+       [
+        23,
+        538
+       ],
+       [
+        370,
+        538
+       ],
+       [
+        370,
+        498
+       ],
+       [
+        400,
+        498
+       ]
+      ]
+     },
+     "5": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.6714
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.4
+      },
+      "course": [
+       [
+        47,
+        40
+       ],
+       [
+        47,
+        70
+       ],
+       [
+        358,
+        70
+       ],
+       [
+        358,
+        506
+       ],
+       [
+        400,
+        506
+       ]
+      ]
+     },
+     "6": {
+      "source_port": {
+       "side": "right",
+       "at": 0.675
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.8
+      },
+      "course": [
+       [
+        270,
+        517
+       ],
+       [
+        300,
+        517
+       ],
+       [
+        300,
+        522
+       ],
+       [
+        400,
+        522
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
+  },
+  {
    "name": "a synthetic arrangement of forty elements",
    "scene": {
     "elements": {
@@ -4593,16 +4791,8 @@
         161
        ],
        [
-        946,
-        161
-       ],
-       [
-        946,
-        239
-       ],
-       [
         652,
-        239
+        161
        ],
        [
         652,

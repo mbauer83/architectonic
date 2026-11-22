@@ -37,6 +37,7 @@ from src.domain.diagrams.layout.routing.scene import (
     run_for,
 )
 from src.domain.diagrams.layout.routing.search import DIRECTIONS, REVERSE, Found, Terminal, search
+from src.domain.diagrams.layout.routing.shortcuts import shorten
 from src.domain.diagrams.layout.routing.special import special
 from src.domain.diagrams.layout.routing.spreading import ports_spread
 from src.domain.diagrams.layout.routing.visibility import FULL, Passage, Visibility
@@ -317,6 +318,7 @@ def route_all(
         courses, obstacles, list(scene.boxes.values()), scene.fixed_lines,
         movable=frozenset(routes) if previous is not None and changed is not None else None,
     )
+    shorten(moved, searched, routing.visibility, unseparated)
     every = {**kept, **routes}
     return RoutingResult(
         routes={

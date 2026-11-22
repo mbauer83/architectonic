@@ -22,6 +22,7 @@ import { DIRECTIONS, REVERSE, search } from './search'
 import type { Passage } from './visibility'
 import { Lines, Stubs } from './lines'
 import { FULL, Visibility } from './visibility'
+import { shorten } from './shortcuts'
 import { special } from './special'
 import { portsSpread } from './spreading'
 
@@ -347,6 +348,7 @@ export const routeAll = (
     scene.fixedLines,
     quick ? new Set(routes.keys()) : null,
   )
+  shorten(moved, searched, routing.visibility, unseparated)
   const keys = [...every.keys()].sort(byText)
   return {
     routes: new Map(
