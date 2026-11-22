@@ -1,9 +1,10 @@
 /** Remove two bends when the first and fourth legs can meet without crossing an obstacle. */
 import type { Point } from '../geometry'
-import { distanceBetween } from '../geometry'
+import { courseLength, distanceBetween } from '../geometry'
+import type { Stubs } from './lines'
 import { Lines } from './lines'
-import type { Connector } from './scene'
-import { IDEAL_SEPARATION, runFor } from './scene'
+import type { Connector, RoutedConnector } from './scene'
+import { PARALLEL_SEPARATION, runFor } from './scene'
 import type { Passage, Visibility } from './visibility'
 
 const clearLeg = (
@@ -15,7 +16,7 @@ const clearLeg = (
   if (dx * (corner.x - start.x) + dy * (corner.y - start.y) <= 0 || distance < minimum) return false
   if (distance <= distanceBetween(start, old)) return true
   const [a, b] = arriving ? [corner, old] : [old, corner]
-  return !passage.stepBlocked(a, b) && occupied.near(a, b, IDEAL_SEPARATION * 1.5) === 0
+  return !passage.stepBlocked(a, b) && occupied.near(a, b, PARALLEL_SEPARATION) === 0
 }
 
 export const shorten = (
@@ -46,3 +47,7 @@ export const shorten = (
     }
   }
 }
+
+export const improvesDetour = (before: RoutedConnector, alternative: RoutedConnector, stubs: Stubs): boolean =>
+  alternative.course.length < before.course.length && courseLength(alternative.course) <= courseLength(before.course) &&
+  alternative.course.slice(1).every((b, i) => !stubs.along(alternative.course[i], b, before.key))

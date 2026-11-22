@@ -28,6 +28,7 @@ export const BORDER_OFFSET = LINE_CLEARANCE + 4
 
 /** How far apart nudging places runs that share a line, where there is room. */
 export const IDEAL_SEPARATION = 12
+export const PARALLEL_SEPARATION = IDEAL_SEPARATION + LINE_CLEARANCE
 
 /** How long the straight run out of a port is: a decoration and a clear run, else a stub. */
 export const runFor = (decorated: boolean): number => (decorated ? END_RUN : STUB)

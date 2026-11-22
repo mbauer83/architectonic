@@ -14,7 +14,7 @@ import type { Port, Side } from '../orthogonal'
 import { STUB } from '../orthogonal'
 import { nudged } from './nudging'
 import type { Stub } from './ports'
-import { OUTWARD_INDEX, inLine, stubOf } from './ports'
+import { OUTWARD_INDEX, facingSide, inLine, stubOf } from './ports'
 import type { Choice, Connector, RoutedConnector, RoutingResult, RoutingScene } from './scene'
 import { IDEAL_SEPARATION, SIDES, byText, extentOf, runFor } from './scene'
 import type { Found } from './search'
@@ -22,7 +22,7 @@ import { DIRECTIONS, REVERSE, search } from './search'
 import type { Passage } from './visibility'
 import { Lines, Stubs } from './lines'
 import { FULL, Visibility } from './visibility'
-import { shorten } from './shortcuts'
+import { improvesDetour, shorten } from './shortcuts'
 import { special } from './special'
 import { portsSpread } from './spreading'
 
@@ -318,7 +318,16 @@ export const routeAll = (
     const connector = searched.find((one) => one.key === key)
     const before = first.get(key)
     if (!connector || !before) continue
-    const routed = routing.searched(connector, [source], [target], false, stubs) ?? before
+    let routed = routing.searched(connector, [source], [target], false, stubs) ?? before
+    if (!quick && !connector.sourcePort && routed.course.length >= 6) {
+      const side = facingSide(extentOf(scene, connector.source), extentOf(scene, connector.target))
+      if (side && side !== source[0]) {
+        const starts = [0.25, 0.5, 0.75].map((at): Choice => [side, at])
+        const goals = connector.targetPort ? [target] : SIDES.flatMap((s) => [0.25, 0.75].map((at): Choice => [s, at]))
+        const alternative = routing.searched(connector, starts, goals, false, stubs)
+        if (alternative && improvesDetour(routed, alternative, stubs)) routed = alternative
+      }
+    }
     routes.set(key, routed)
     routing.taken(routed)
     // Its first and last runs are fixed to nudging as a stub is: no later route goes along them.

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from src.domain.diagrams.layout.geometry import Point
-from src.domain.diagrams.layout.routing.lines import Lines
-from src.domain.diagrams.layout.routing.scene import IDEAL_SEPARATION, Connector, run_for
+from src.domain.diagrams.layout.geometry import Point, course_length
+from src.domain.diagrams.layout.routing.lines import Lines, Stubs
+from src.domain.diagrams.layout.routing.scene import PARALLEL_SEPARATION, Connector, RoutedConnector, run_for
 from src.domain.diagrams.layout.routing.visibility import Passage, Visibility
 
 
@@ -20,7 +20,7 @@ def _clear_leg(
     if start.distance_to(corner) <= start.distance_to(old):
         return True
     a, b = (corner, old) if arriving else (old, corner)
-    return not passage.step_blocked(a, b) and not occupied.near(a, b, IDEAL_SEPARATION * 1.5)
+    return not passage.step_blocked(a, b) and not occupied.near(a, b, PARALLEL_SEPARATION)
 
 
 def shorten(
@@ -51,3 +51,9 @@ def shorten(
                 occupied.add(corner, e)
             else:
                 i += 1
+
+def improves_detour(before: RoutedConnector, alternative: RoutedConnector, stubs: Stubs) -> bool:
+    """A different port must save bends, fit the reserved end runs and cost no extra length."""
+    course = alternative.course
+    return (len(course) < len(before.course) and course_length(course) <= course_length(before.course)
+            and not any(stubs.along(a, b, before.key) for a, b in zip(course, course[1:], strict=False)))

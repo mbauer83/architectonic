@@ -7,7 +7,7 @@ import type { Extent, Point } from '../geometry'
 import { halfUp } from '../orthogonal'
 import { END_RUN, LINE_CLEARANCE } from '../routeQuality'
 import type { Member } from './placement'
-import { firstThatFits, movableOf, share } from './placement'
+import { firstThatFits, movableOf, preferredPlaces, share } from './placement'
 import { IDEAL_SEPARATION, byText } from './scene'
 
 const UNBOUNDED = 1.0e9
@@ -226,8 +226,8 @@ const separated = (
   for (let round = 0; round < ROUNDS; round += 1) {
     let changed = false
     for (const cluster of clustersOf(membersOf(moved, level, movable, obstacles, fixed))) {
-      if (apart(cluster) || !cluster.some(movableOf)) continue
-      const [ordered, places] = firstThatFits(cluster)
+      if (!cluster.some(movableOf)) continue
+      const [ordered, places] = apart(cluster) ? [cluster, preferredPlaces(cluster)] : firstThatFits(cluster)
       if (!places) continue
       ordered.forEach((member, index) => {
         const whole = halfUp(places[index])

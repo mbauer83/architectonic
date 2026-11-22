@@ -88,3 +88,16 @@ export const inLine = (source: Extent, target: Extent, sides: readonly [Side, Si
     (middle - (level ? extent.top : extent.left)) / (level ? heightOf(extent) : widthOf(extent))
   return [share(source), share(target)]
 }
+
+/** The side directly across a shared horizontal or vertical span from the target. */
+export const facingSide = (source: Extent, target: Extent): Side | null => {
+  if (Math.min(source.right, target.right) > Math.max(source.left, target.left)) {
+    if (source.bottom < target.top) return 'bottom'
+    if (target.bottom < source.top) return 'top'
+  }
+  if (Math.min(source.bottom, target.bottom) > Math.max(source.top, target.top)) {
+    if (source.right < target.left) return 'right'
+    if (target.right < source.left) return 'left'
+  }
+  return null
+}

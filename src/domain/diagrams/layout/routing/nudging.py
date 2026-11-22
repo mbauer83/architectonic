@@ -23,7 +23,7 @@ from collections.abc import Mapping, Sequence
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.orthogonal import half_up
 from src.domain.diagrams.layout.route_quality import END_RUN, LINE_CLEARANCE
-from src.domain.diagrams.layout.routing.placement import Member, first_that_fits, share
+from src.domain.diagrams.layout.routing.placement import Member, first_that_fits, preferred_places, share
 from src.domain.diagrams.layout.routing.scene import IDEAL_SEPARATION
 
 _UNBOUNDED = 1.0e9
@@ -211,9 +211,9 @@ def _separated(
     for _round in range(_ROUNDS):
         changed = False
         for cluster in _clusters(_members(moved, level, movable, obstacles, fixed)):
-            if _apart(cluster) or not any(member.movable for member in cluster):
+            if not any(member.movable for member in cluster):
                 continue
-            ordered, places = first_that_fits(cluster)
+            ordered, places = (cluster, preferred_places(cluster)) if _apart(cluster) else first_that_fits(cluster)
             if places is None:
                 continue
             for member, place in zip(ordered, places, strict=True):

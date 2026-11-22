@@ -26,7 +26,7 @@ from src.domain.diagrams.layout.layout_block import Port, Route, Side
 from src.domain.diagrams.layout.orthogonal import STUB, half_up
 from src.domain.diagrams.layout.routing.lines import Lines, Stubs
 from src.domain.diagrams.layout.routing.nudging import nudged
-from src.domain.diagrams.layout.routing.ports import OUTWARD_INDEX, Stub, in_line, stub_of
+from src.domain.diagrams.layout.routing.ports import OUTWARD_INDEX, Stub, facing_side, in_line, stub_of
 from src.domain.diagrams.layout.routing.scene import (
     IDEAL_SEPARATION,
     SIDES,
@@ -37,7 +37,7 @@ from src.domain.diagrams.layout.routing.scene import (
     run_for,
 )
 from src.domain.diagrams.layout.routing.search import DIRECTIONS, REVERSE, Found, Terminal, search
-from src.domain.diagrams.layout.routing.shortcuts import shorten
+from src.domain.diagrams.layout.routing.shortcuts import improves_detour, shorten
 from src.domain.diagrams.layout.routing.special import special
 from src.domain.diagrams.layout.routing.spreading import ports_spread
 from src.domain.diagrams.layout.routing.visibility import FULL, Passage, Visibility
@@ -302,6 +302,15 @@ def route_all(
     for key, (source, target) in spread_ports.items():
         connector = next(one for one in searched if one.key == key)
         routes[key] = routing.searched(connector, (source,), (target,), lining_up=False, stubs=stubs) or first[key]
+        before = routes[key]
+        if previous is None and connector.source_port is None and len(before.course) >= 6:
+            side = facing_side(scene.extent_of(connector.source), scene.extent_of(connector.target))
+            if side is not None and side != source[0]:
+                starts = [(side, at) for at in (0.25, 0.5, 0.75)]
+                goals = (target,) if connector.target_port else [(s, at) for s in SIDES for at in (0.25, 0.75)]
+                alternative = routing.searched(connector, starts, goals, lining_up=False, stubs=stubs)
+                if alternative and improves_detour(before, alternative, stubs):
+                    routes[key] = alternative
         routing.taken(routes[key])
         # Its first and last runs are fixed to nudging as a stub is: no later route goes along them.
         course = routes[key].course

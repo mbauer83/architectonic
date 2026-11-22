@@ -91,3 +91,17 @@ def in_line(source: Extent, target: Extent, sides: tuple[Side, Side]) -> tuple[f
         (middle - (extent.top if level else extent.left)) / (extent.height if level else extent.width)
         for extent in (source, target)
     )
+
+def facing_side(source: Extent, target: Extent) -> Side | None:
+    """The side directly across a shared horizontal or vertical span from the target."""
+    if min(source.right, target.right) > max(source.left, target.left):
+        if source.bottom < target.top:
+            return Side.BOTTOM
+        if target.bottom < source.top:
+            return Side.TOP
+    if min(source.bottom, target.bottom) > max(source.top, target.top):
+        if source.right < target.left:
+            return Side.RIGHT
+        if target.right < source.left:
+            return Side.LEFT
+    return None
