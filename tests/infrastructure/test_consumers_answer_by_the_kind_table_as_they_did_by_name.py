@@ -33,6 +33,8 @@ _BEFORE: dict[ArtifactKindName, tuple[str, str | None, str, bool]] = {
     "connection": ("projects/core/model/motivation/goal/GOL@1.a.x.outgoing.md", "connection", "connections", False),
     "diagram": ("diagram-catalog/diagrams/core/ARC@1.a.x.puml", "diagram", "diagram", False),
     "document": ("docs/adr/core/ADR@1.a.x.md", "document", "document", True),
+    "candidate-architecture": ("candidate-architectures/CAND@1.a.x.candidate.yaml",
+                               "candidate-architecture", "candidate-architecture", True),
     "icon": ("diagram-catalog/icons/ICO@1.a.x.md", "icon", "icon", True),
     # Inferred since the verifier dispatches by binding: a scratchpad is answered `unverified`.
     "scratchpad": ("scratchpads/core/SCR@1.a.x.scratchpad.yaml", "scratchpad", "scratchpad", True),

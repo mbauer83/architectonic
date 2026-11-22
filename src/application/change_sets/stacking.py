@@ -33,8 +33,9 @@ FindCandidate = Callable[[str], CandidateArchitecture | None]
 def stack_of(candidate: CandidateArchitecture, find: FindCandidate) -> tuple[CandidateArchitecture, ...]:
     """*candidate* and every candidate beneath it, lowest first. Refuses an unreadable chain."""
     chain = [candidate]
+    seen = {candidate.id}
     while (parent_id := chain[-1].parent_id) is not None:
-        if any(held.id == parent_id for held in chain):
+        if parent_id in seen:
             circle = " → ".join([*(held.id for held in chain), parent_id])
             raise MalformedCandidateArchitecture(
                 f"these candidates are stacked on each other in a circle: {circle}. Give one of them "
@@ -47,6 +48,7 @@ def stack_of(candidate: CandidateArchitecture, find: FindCandidate) -> tuple[Can
                 "candidate cannot be read without the one beneath it: restore it, or re-stack "
                 f"'{chain[-1].id}' on another."
             )
+        seen.add(parent.id)
         chain.append(parent)
     stack = tuple(reversed(chain))
     _refuse_reused_aliases(stack)

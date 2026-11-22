@@ -16,6 +16,7 @@ from src.application._diagram_entity_extraction import (
     extract_diagram_entities as _extract_diagram_entities,
 )
 from src.application.artifacts.mounted_readers import artifact_kind_for_path
+from src.application.change_sets.candidate_architecture import CandidateArchitecture
 from src.domain.icons.icon_record import IconRecord
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
@@ -28,6 +29,7 @@ from src.domain.ontology_representation.artifact_types import (
 )
 from src.domain.repository.artifact_location import ArtifactKindName
 from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX
+from src.infrastructure.candidates.repository import KIND
 from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 
 from ._mem_store import _MemStore
@@ -45,6 +47,12 @@ def classify_path_change(
     """
     kind = artifact_kind_for_path(path, mounts)
     return None if kind is None else (kind, path, KIND_BINDINGS[kind].reader(path, mounts, domain_names))
+
+
+def apply_candidate_change(path: Path, candidate: CandidateArchitecture | None, mem: _MemStore) -> None:
+    mem.candidate_paths.pop(KIND.file_identity(path), None)
+    if candidate is not None:
+        mem.candidate_paths[candidate.id] = path
 
 
 def _touching_endpoints(entity_id: str, mem: _MemStore) -> set[str]:

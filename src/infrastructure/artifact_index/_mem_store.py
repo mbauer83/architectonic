@@ -23,6 +23,7 @@ class _MemStore:
     connections: dict[str, ConnectionRecord] = field(default_factory=dict)
     diagrams: dict[str, DiagramRecord] = field(default_factory=dict)
     documents: dict[str, DocumentRecord] = field(default_factory=dict)
+    candidate_paths: dict[str, Path] = field(default_factory=dict)
     icons: dict[str, IconRecord] = field(default_factory=dict)
     scratchpads: dict[str, ScratchpadRecord] = field(default_factory=dict)
     """scratchpad artifact_id → the pad itself. Held apart from its notes because a pad outlives
@@ -71,7 +72,7 @@ class _MemStore:
         entities collide on the same "stable id" — a real bug this branch exists to
         avoid, not a hypothetical one (caught by WU-F3a's exchange re-import test).
         """
-        stores = (self.entities, self.connections, self.diagrams, self.documents, self.icons)
+        stores = (self.entities, self.connections, self.diagrams, self.documents, self.icons, self.candidate_paths)
         if any(artifact_id in store for store in stores):
             return artifact_id
         if "---" in artifact_id and "@@" in artifact_id:
@@ -123,6 +124,7 @@ class _MemStore:
             "connections",
             "diagrams",
             "documents",
+            "candidate_paths",
             "icons",
             "scratchpads",
             "scratchpad_notes",
@@ -150,7 +152,8 @@ class _MemStore:
         entities by a slug they no longer carry.
         """
         for attr in (
-            "entities", "connections", "diagrams", "documents", "icons", "scratchpads", "scratchpad_notes",
+            "entities", "connections", "diagrams", "documents", "icons", "candidate_paths",
+            "scratchpads", "scratchpad_notes",
             "identity_candidates", "attribute_type_refs",
         ):
             getattr(self, attr).clear()

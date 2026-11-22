@@ -190,6 +190,13 @@ _LAYOUT_BLOCK_WORD = re.compile(r"\A(via|boxes)\Z")
 
 SYNTAX_READERS: tuple[SyntaxReader, ...] = (
     SyntaxReader(
+        syntax="the stored candidate architecture document",
+        owners=(Path("src/application/change_sets/candidate_recorded_form.py"),),
+        instead="load_candidate and dump_candidate, delegating operations to recorded_form",
+        incident="The index, verifier and candidate store must agree on the same recorded architecture.",
+        literal_probe=re.compile(r"^\.candidate\.yaml$"),
+    ),
+    SyntaxReader(
         syntax="the typed tables a document type's section declares, and the form of a row's id",
         owners=(Path("src/application/artifacts/document_tables.py"),),
         instead=(

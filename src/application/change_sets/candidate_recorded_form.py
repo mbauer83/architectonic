@@ -12,12 +12,15 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+import yaml
+
 from src.application.change_sets import recorded_form
 from src.application.change_sets.candidate_architecture import (
     CandidateArchitecture,
     MalformedCandidateArchitecture,
 )
 from src.application.change_sets.operations import MalformedChangeSet
+from src.domain.yaml_documents import parse_yaml_with_unique_keys
 
 _ID = "id"
 _NAME = "name"
@@ -57,6 +60,14 @@ def from_mapping(recorded: Mapping[str, Any]) -> CandidateArchitecture:
         )
     except MalformedChangeSet as refusal:
         raise MalformedCandidateArchitecture(str(refusal)) from refusal
+    for key in (_ID, _NAME, _STATE, _RATIONALE, _PARENT):
+        if key in recorded and not isinstance(recorded[key], str) and not (key == _PARENT and recorded[key] is None):
+            raise MalformedCandidateArchitecture(f"The candidate field {key!r} must be text.")
+    for key in (_ANSWERS, _SATISFIES, _SCOPE):
+        if key in recorded and not (
+            isinstance(recorded[key], list | tuple) and all(isinstance(item, str) for item in recorded[key])
+        ):
+            raise MalformedCandidateArchitecture(f"The candidate field {key!r} must be a list of references.")
     return CandidateArchitecture(
         id=str(recorded[_ID]),
         name=str(recorded[_NAME]),
@@ -69,3 +80,18 @@ def from_mapping(recorded: Mapping[str, Any]) -> CandidateArchitecture:
         scope=tuple(recorded.get(_SCOPE, ())),
     )
 
+
+
+def load_candidate(text: str) -> CandidateArchitecture:
+    """Read a stored candidate using the repository's strict YAML loader."""
+    try:
+        raw = parse_yaml_with_unique_keys(text)
+        if not isinstance(raw, dict):
+            raise MalformedCandidateArchitecture("A candidate file must contain a mapping.")
+        return from_mapping(raw)
+    except (yaml.YAMLError, TypeError, KeyError, AttributeError, MalformedChangeSet) as exc:
+        raise MalformedCandidateArchitecture(f"Cannot read the candidate: {exc}") from exc
+
+
+def dump_candidate(candidate: CandidateArchitecture) -> str:
+    return yaml.safe_dump(to_mapping(candidate), sort_keys=False, allow_unicode=True)

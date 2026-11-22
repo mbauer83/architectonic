@@ -50,6 +50,7 @@ from ._scratchpad_note_queries import _ScratchpadNoteQueries
 from ._service_incremental import (
     _apply_entity_record,
     _apply_outgoing_records,
+    apply_candidate_change,
     apply_diagram_change,
     apply_document_change,
     apply_icon_change,
@@ -66,6 +67,7 @@ _T = TypeVar("_T", EntityRecord, ConnectionRecord, DiagramRecord, DocumentRecord
 
 #: How what `KIND_BINDINGS` read is applied: one entry per row of the kind table.
 _CHANGE_APPLIERS = {
+    "candidate-architecture": lambda s, path, data: apply_candidate_change(path, data, s._mem),
     "connection": lambda service, path, data: _apply_outgoing_records(path, data, service._mem, service._db),
     "entity": lambda service, path, data: _apply_entity_record(path, data, service._mem, service._db),
     "diagram": lambda service, path, data: apply_diagram_change(

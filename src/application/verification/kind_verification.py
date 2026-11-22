@@ -27,10 +27,13 @@ from src.domain.repository.artifact_location import ArtifactKindName, artifact_k
 
 if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
+    from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 
 
 class PerKindVerification(Protocol):
     """The verifier's per-kind entry points, which a binding chooses among."""
+
+    registry: ArtifactRegistry | None
 
     def verify_entity_file(self, path: Path, *, snapshot: RepositorySnapshot | None = None) -> VerificationResult: ...
 
