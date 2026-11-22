@@ -15,11 +15,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, MalformedLayout
+from src.domain.diagrams.layout.layout_block import MalformedLayout
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
-from src.domain.diagrams.layout.rendered_picture import NotReadable
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
-from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, first_layout_of, plantuml_svg
+from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, first_layout_of
 from src.infrastructure.rest.contracts.diagram_layout_editing import (
     DiagramLayoutGeometryResponse,
     DiagramLayoutPatchResponse,
@@ -33,7 +32,7 @@ from src.infrastructure.rest.routers._openapi import (
     WRITE_RESPONSES,
 )
 from src.infrastructure.rest.routers.diagrams._layout_drawing import reshaped
-from src.infrastructure.rest.routers.diagrams._layout_geometry import diagram_geometry
+from src.infrastructure.rest.routers.diagrams._layout_geometry import stored_geometry
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.parse_existing import ParsedDiagram, parse_diagram_file
 
@@ -115,22 +114,11 @@ def _repo_root() -> Path:
 )
 def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs) -> dict[str, object]:
     parsed = _stored_diagram(artifact_id)
-    frontmatter = dict(parsed.frontmatter)
-    diagram_type = str(frontmatter.get("diagram-type", "archimate"))
     try:
-        svg = plantuml_svg(parsed.puml_body, _repo_root(), diagram_type)
-    except NotDrawn as refusal:
+        return stored_geometry(parsed, artifact_id, _repo_root(), catalogs.ontology)
+    except ValueError as refusal:
         raise HTTPException(422, str(refusal)) from refusal
-    geometry = diagram_geometry(svg, frontmatter, catalogs.ontology)
-    if isinstance(geometry, NotReadable):
-        raise HTTPException(422, f"This diagram's picture cannot be arranged: {geometry.met}")
-    stored = frontmatter.get(LAYOUT_KEY)
-    return {
-        "artifact_id": str(frontmatter.get("artifact-id", artifact_id)),
-        "name": str(frontmatter.get("name") or artifact_id),
-        **geometry,
-        **({"layout": stored} if isinstance(stored, dict) and stored else {}),
-    }
+
 
 
 @router.post(

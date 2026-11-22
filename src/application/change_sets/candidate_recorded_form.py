@@ -94,4 +94,4 @@ def load_candidate(text: str) -> CandidateArchitecture:
 
 
 def dump_candidate(candidate: CandidateArchitecture) -> str:
-    return yaml.safe_dump(to_mapping(candidate), sort_keys=False, allow_unicode=True)
+    return str(yaml.safe_dump(to_mapping(candidate), sort_keys=False, allow_unicode=True))

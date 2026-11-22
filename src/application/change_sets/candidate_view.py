@@ -39,22 +39,26 @@ def view_of(stack: tuple[CandidateArchitecture, ...], live: RecordedReading) -> 
 
 
 def difference(before: CandidateView, after: CandidateView) -> list[dict[str, Any]]:
+    return [
+        *_changes("entity", before.entities, after.entities),
+        *_changes("connection", before.connections, after.connections),
+    ]
+
+
+def _changes[K](kind: str, left: dict[K, FieldValues], right: dict[K, FieldValues]) -> list[dict[str, Any]]:
     changes = []
-    for kind, left, right in (
-        ("entity", before.entities, after.entities), ("connection", before.connections, after.connections),
-    ):
-        for key in sorted(left.keys() | right.keys(), key=str):
-            old, new = left.get(key), right.get(key)
-            if old == new:
-                continue
-            original, proposed = old or {}, new or {}
-            fields = {
-                field: {"before": original.get(field), "after": proposed.get(field)}
-                for field in sorted(original.keys() | proposed.keys())
-                if field not in original or field not in proposed or original[field] != proposed[field]
-            }
-            changes.append({
-                "kind": kind, "target": asdict(key) if isinstance(key, ConnectionAddress) else key,
-                "change": "added" if old is None else "removed" if new is None else "edited", "fields": fields,
-            })
+    for key in sorted(left.keys() | right.keys(), key=str):
+        old, new = left.get(key), right.get(key)
+        if old == new:
+            continue
+        original, proposed = old or {}, new or {}
+        fields = {
+            field: {"before": original.get(field), "after": proposed.get(field)}
+            for field in sorted(original.keys() | proposed.keys())
+            if field not in original or field not in proposed or original[field] != proposed[field]
+        }
+        changes.append({
+            "kind": kind, "target": asdict(key) if isinstance(key, ConnectionAddress) else key,
+            "change": "added" if old is None else "removed" if new is None else "edited", "fields": fields,
+        })
     return changes
