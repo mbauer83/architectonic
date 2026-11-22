@@ -50,7 +50,7 @@ def layout_to_store(
     def place(layout: Layout) -> Layout:
         picture = plantuml_drawing(composed.puml, repo_root, body.diagram_type).picture
         diagram = joined_to_its_picture(composed.statements(body), layout, ontology)
-        return with_new_members(picture, diagram, identities.instances - previous, identities.relations)
+        return with_new_members(picture, diagram, identities.instances - previous)
 
     return reconciled_layout(
         stored=before.get(LAYOUT_KEY), patch=body.layout_patch, identities=identities,

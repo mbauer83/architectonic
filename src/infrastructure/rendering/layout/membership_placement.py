@@ -1,6 +1,5 @@
 """Place newly drawn instances beside their neighbours and fit new boxes to the resulting picture."""
 
-from collections.abc import Mapping
 from dataclasses import replace
 from math import ceil, floor
 from statistics import mean
@@ -34,7 +33,6 @@ def _nearest_clear(centre: Point, drawn: Extent, occupied: list[Extent]) -> Plac
 
 def with_new_members(
     picture: RenderedPicture, diagram: LaidOutDiagram, new: frozenset[str],
-    ends: Mapping[str, tuple[str, str]],
 ) -> Layout:
     layout = diagram.layout
     keys = box_keys_by_alias(picture, diagram)
@@ -42,13 +40,15 @@ def with_new_members(
     orphaned = frozenset(k for k in (*layout.boxes, *layout.z) if is_rule_key(k) and k not in present_boxes)
     layout = layout.without(boxes=orphaned)
     elements = dict(layout.elements)
-    drawn = {key: shape.extent for alias, key in diagram.instance_by_alias.items()
-             if (shape := picture.elements.get(alias) or picture.boxes.get(alias)) is not None}
+    by_key = {key: alias for alias, key in diagram.instance_by_alias.items()}
+    drawn = {key: extent for key, alias in by_key.items() if (extent := picture.extent_of(alias)) is not None}
     occupied = {key: placed_extent(place, (drawn[key].width, drawn[key].height)) or drawn[key]
                 for key, place in elements.items() if key in drawn}
-    by_key = {key: alias for alias, key in diagram.instance_by_alias.items()}
+    occupied.update({key: extent for key, extent in drawn.items() if key not in new and key not in occupied})
     for key in sorted(new & drawn.keys() - elements.keys()):
-        neighbours = {b if a == key else a for a, b in ends.values() if key in (a, b)}
+        alias = by_key[key]
+        neighbours = {diagram.instance_by_alias[b if a == alias else a]
+                      for a, b in diagram.relations.values() if alias in (a, b)}
         centres = [occupied[n].centre for n in sorted(neighbours & occupied.keys())]
         centre = Point(mean(c.x for c in centres), mean(c.y for c in centres)) if centres else drawn[key].centre
         ancestors = set(picture.boxes_around(by_key[key]))
