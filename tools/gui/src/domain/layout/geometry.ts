@@ -47,6 +47,10 @@ export const shrunkBy = (extent: Extent, margin: number): Extent | null => {
   return widthOf(inner) > 0 && heightOf(inner) > 0 ? inner : null
 }
 
+/** Whether two extents share some area: touching along a side or at a corner is not overlapping. */
+export const overlaps = (one: Extent, other: Extent): boolean =>
+  one.left < other.right && other.left < one.right && one.top < other.bottom && other.top < one.bottom
+
 /** Whether *inner* lies wholly inside *outer*. */
 export const encloses = (outer: Extent, inner: Extent): boolean =>
   outer.left <= inner.left &&

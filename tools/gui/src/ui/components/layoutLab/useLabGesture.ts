@@ -14,6 +14,7 @@ import { SMALLEST_ELEMENT, moved, resized, resizedExtent } from '../../../domain
 import { changedShapes, placementOf } from '../../../domain/layout/lab/labRouting'
 import type { Placement } from '../../../domain/layout/lab/labRouting'
 import type { LayoutLab } from '../../composables/useLayoutLab'
+import type { Lift } from './labPaintOrder'
 
 /** How far a press travels before it is a drag rather than a click. */
 const TRAVEL = 4
@@ -30,8 +31,8 @@ interface Pressed {
 
 export function useLabGesture(lab: LayoutLab, svg: Ref<SVGSVGElement | null>) {
   const selected = ref<string | null>(null)
-  /** The shape last pressed, painted in front of its siblings. */
-  const lifted = ref<string | null>(null)
+  /** The shape last pressed and how, which the paint order brings forward (`labPaintOrder`). */
+  const lifted = ref<Lift | null>(null)
   /** Whether a press has travelled far enough to be a drag, until it is released. */
   const dragging = ref(false)
   let pressed: Pressed | null = null
@@ -58,7 +59,7 @@ export function useLabGesture(lab: LayoutLab, svg: Ref<SVGSVGElement | null>) {
     window.addEventListener('pointerup', release)
     window.addEventListener('pointercancel', release)
     selected.value = alias
-    lifted.value = alias
+    lifted.value = { alias, how: handle === null ? 'moved' : 'resized' }
     pressed = { alias, handle, from: pointIn(event), arrangement, placement, extent, dragging: false }
   }
 

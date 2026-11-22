@@ -1,18 +1,22 @@
 <script setup lang="ts">
 /**
- * The lab's picture: boxes, elements and lines drawn from the real geometry where they are now, with
- * the rule breaches over them and handles on the selected shape. Press and drag a shape to move it; a
- * box carries what it holds. Drag a handle to resize.
+ * The lab's picture: boxes, elements and lines drawn from the real geometry where they are now, in the
+ * one paint order of `labPaintOrder`, with the rule breaches over them and handles on the selected
+ * shape. Press and drag a shape to move it; a box carries what it holds. Drag a handle to resize.
  */
 import { computed, ref, watch } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
 import { heightOf, widthOf } from '../../../domain/layout/geometry'
+import type { DrawingNode } from '../../../domain/layout/lab/labGeometry'
+import type { DrawnLine } from '../../../domain/layout/lab/labLineDrawing'
 import { drawnLine } from '../../../domain/layout/lab/labLineDrawing'
 import type { PlacedDrawing } from '../../../domain/layout/lab/labShapeDrawing'
 import { shapeDrawing } from '../../../domain/layout/lab/labShapeDrawing'
 import { useElementSize } from '../../composables/useElementSize'
 import type { LayoutLab } from '../../composables/useLayoutLab'
-import { dragRegionOf, handlesOf, paintOrder, pointsAttribute } from './labDrawing'
+import { dragRegionOf, handlesOf, pointsAttribute } from './labDrawing'
+import type { Painted } from './labPaintOrder'
+import { paintOrder } from './labPaintOrder'
 import LabDrawn from './LabDrawn'
 import { useLabGesture } from './useLabGesture'
 
@@ -62,12 +66,15 @@ const viewBox = computed(() => {
 /** How wide the picture is shown on screen, in pixels: what a handle's size on screen is reckoned from. */
 const { width: shownWidth } = useElementSize(() => svg.value)
 
+/** One pixel on screen, in the picture's units: what the lab's own marks are sized by. */
+const pixel = computed((): number => {
+  const extent = view.value
+  return extent && shownWidth.value > 0 ? widthOf(extent) / shownWidth.value : 1
+})
+
 /** A handle is the same size on screen however far the picture is zoomed out to fit. */
 const HANDLE_PIXELS = 9
-const handleSide = computed((): number => {
-  const extent = view.value
-  return extent && shownWidth.value > 0 ? HANDLE_PIXELS * widthOf(extent) / shownWidth.value : HANDLE_PIXELS
-})
+const handleSide = computed((): number => HANDLE_PIXELS * pixel.value)
 
 const aspect = computed(() => {
   const extent = view.value
@@ -93,36 +100,68 @@ interface DrawnShape {
   readonly drawing: PlacedDrawing
 }
 
-/** Every shape back to front, each where it is now, drawn as PlantUML or the composer drew it. */
-const shapes = computed((): DrawnShape[] => {
+/** Every shape, by alias, where it is now, drawn as PlantUML or the composer drew it. */
+const shapes = computed((): ReadonlyMap<string, DrawnShape> => {
   const drawn = geometry.value
   const where = placement.value
-  if (!drawn || !where) return []
-  const known = new Map([...drawn.boxes, ...drawn.elements].map((shape) => [shape.alias, shape]))
+  if (!drawn || !where) return new Map()
   const reshaped = props.lab.reshaped.value
-  return paintOrder(drawn, gesture.lifted.value).flatMap(({ alias, isBox }): DrawnShape[] => {
-    const shape = known.get(alias)
-    const now = isBox ? where.boxes.get(alias) : where.elements.get(alias)
-    if (!shape || !now) return []
-    const drawing = shapeDrawing(shape.extent, shape.drawing, now, reshaped.get(alias))
-    return [{ alias, isBox, region: dragRegionOf(now), drawing }]
-  })
+  const all = [...drawn.boxes.map((shape) => ({ shape, isBox: true })), ...drawn.elements.map((shape) => ({ shape, isBox: false }))]
+  return new Map(all.flatMap(({ shape, isBox }): [string, DrawnShape][] => {
+    const now = isBox ? where.boxes.get(shape.alias) : where.elements.get(shape.alias)
+    if (!now) return []
+    const drawing = shapeDrawing(shape.extent, shape.drawing, now, reshaped.get(shape.alias))
+    return [[shape.alias, { alias: shape.alias, isBox, region: dragRegionOf(now), drawing }]]
+  }))
 })
 
-/** Each line: PlantUML's own until the first change, then drawn along the router's course. */
-const lines = computed(() => {
+interface DrawnRelation {
+  /** PlantUML's own drawing of the whole relation, label and decorations in it, until the first change. */
+  readonly asDrawn: DrawingNode | null
+  readonly along: DrawnLine
+}
+
+/** Each line, by its place: PlantUML's own until the first change, then drawn along the router's course. */
+const lines = computed((): ReadonlyMap<number, DrawnRelation> => {
   const drawn = geometry.value
-  if (!drawn) return []
+  if (!drawn) return new Map()
   const asDrawn = props.lab.routes.value === null
-  return drawn.relations.flatMap((relation) => {
+  return new Map(drawn.relations.flatMap((relation): [number, DrawnRelation][] => {
     const course = props.lab.courses.value.get(relation.index)
     if (!course || course.length < 2) return []
     const along = drawnLine(relation.drawing, course)
-    return [{ index: relation.index, asDrawn: asDrawn ? relation.drawing.group : null, along }]
-  })
+    return [[relation.index, { asDrawn: asDrawn ? relation.drawing.group : null, along }]]
+  }))
 })
 
-const marks = computed(() => (props.showBreaches ? props.lab.breaches.value : []))
+/** One piece of the picture, ready to draw. */
+type Piece =
+  | { readonly kind: 'shape'; readonly key: string; readonly shape: DrawnShape }
+  | { readonly kind: 'line'; readonly key: string; readonly relation: number; readonly drawn: DrawnRelation }
+  | {
+    readonly kind: 'label'; readonly key: string; readonly relation: number
+    readonly label: NonNullable<DrawnLine['label']>
+  }
+
+/** What *painted* draws, if anything: a label drawn inside PlantUML's own relation has no piece of its own. */
+const pieceOf = (painted: Painted): Piece[] => {
+  if (painted.kind === 'shape') {
+    const shape = shapes.value.get(painted.alias)
+    return shape ? [{ kind: 'shape', key: `shape:${painted.alias}`, shape }] : []
+  }
+  const drawn = lines.value.get(painted.relation)
+  if (!drawn) return []
+  if (painted.kind === 'line') return [{ kind: 'line', key: `line:${painted.relation}`, relation: painted.relation, drawn }]
+  const label = drawn.asDrawn === null ? drawn.along.label : null
+  return label ? [{ kind: 'label', key: `label:${painted.relation}`, relation: painted.relation, label }] : []
+}
+
+/** The picture back to front (`labPaintOrder`): shapes by nesting, then lines, then labels. */
+const pieces = computed((): Piece[] => {
+  const drawn = geometry.value
+  const where = placement.value
+  return drawn && where ? paintOrder(drawn, where, gesture.lifted.value).flatMap(pieceOf) : []
+})
 
 const ends = (relationIndex: number): Extent[] => {
   const relation = geometry.value?.relations.find((one) => one.index === relationIndex)
@@ -133,6 +172,8 @@ const ends = (relationIndex: number): Extent[] => {
     return extent ? [extent] : []
   })
 }
+
+const marks = computed(() => (props.showBreaches ? props.lab.breaches.value : []))
 
 const selectedExtent = computed((): Extent | null => {
   const alias = gesture.selected.value
@@ -157,51 +198,61 @@ const selectedExtent = computed((): Extent | null => {
       :transform="backdropTransform"
     />
 
-    <g
-      v-for="shape in shapes"
-      :key="shape.alias"
-      :class="shape.isBox ? 'lab-box' : 'lab-element'"
-      :data-alias="shape.alias"
-      @pointerdown="gesture.press($event, shape.alias)"
+    <template
+      v-for="piece in pieces"
+      :key="piece.key"
     >
-      <LabDrawn
-        :nodes="[shape.drawing.drawing]"
-        :transform="shape.drawing.transform"
-      />
-      <rect
-        class="lab-grip"
-        :x="shape.region.left"
-        :y="shape.region.top"
-        :width="widthOf(shape.region)"
-        :height="heightOf(shape.region)"
-      />
-    </g>
-
-    <g class="lab-lines">
-      <template
-        v-for="line in lines"
-        :key="line.index"
+      <g
+        v-if="piece.kind === 'shape'"
+        :class="piece.shape.isBox ? 'lab-box' : 'lab-element'"
+        :data-alias="piece.shape.alias"
+        data-painted="shape"
+        @pointerdown="gesture.press($event, piece.shape.alias)"
       >
         <LabDrawn
-          v-if="line.asDrawn"
-          :nodes="[line.asDrawn]"
+          :nodes="[piece.shape.drawing.drawing]"
+          :transform="piece.shape.drawing.transform"
         />
-        <g v-else>
-          <LabDrawn :nodes="[line.along.line]" />
+        <rect
+          class="lab-grip"
+          :x="piece.shape.region.left"
+          :y="piece.shape.region.top"
+          :width="widthOf(piece.shape.region)"
+          :height="heightOf(piece.shape.region)"
+        />
+      </g>
+      <g
+        v-else-if="piece.kind === 'line'"
+        class="lab-line"
+        :data-relation="piece.relation"
+        data-painted="line"
+      >
+        <LabDrawn
+          v-if="piece.drawn.asDrawn"
+          :nodes="[piece.drawn.asDrawn]"
+        />
+        <template v-else>
+          <LabDrawn :nodes="[piece.drawn.along.line]" />
           <LabDrawn
-            v-for="(end, side) in line.along.ends"
+            v-for="(end, side) in piece.drawn.along.ends"
             :key="side"
             :nodes="end.marks"
             :transform="end.transform"
           />
-          <LabDrawn
-            v-if="line.along.label"
-            :nodes="line.along.label.texts"
-            :transform="line.along.label.transform"
-          />
-        </g>
-      </template>
-    </g>
+        </template>
+      </g>
+      <g
+        v-else
+        class="lab-line-label"
+        :data-relation="piece.relation"
+        data-painted="label"
+      >
+        <LabDrawn
+          :nodes="piece.label.texts"
+          :transform="piece.label.transform"
+        />
+      </g>
+    </template>
 
     <g
       v-if="showBreaches"
@@ -266,7 +317,7 @@ const selectedExtent = computed((): Extent | null => {
 .lab-canvas { display: block; width: 100%; height: auto; max-height: 85vh; }
 /* Always being edited, so framed as a canvas in edit mode is. */
 .lab-canvas { border: 2px solid var(--accent); border-radius: 6px; touch-action: none; user-select: none; }
-.lab-backdrop, .lab-lines, .lab-box :deep(g), .lab-element :deep(g) { pointer-events: none; }
+.lab-backdrop, .lab-line, .lab-line-label, .lab-box :deep(g), .lab-element :deep(g) { pointer-events: none; }
 .lab-grip { fill: transparent; stroke: none; pointer-events: all; cursor: move; }
 .lab-breach { fill: none; stroke-width: 7; stroke-linecap: round; opacity: 0.45; pointer-events: stroke; }
 .lab-breach-frame { fill: none; stroke-width: 3; opacity: 0.7; }
