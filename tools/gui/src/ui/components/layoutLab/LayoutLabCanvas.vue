@@ -14,7 +14,8 @@ import type { PlacedDrawing } from '../../../domain/layout/lab/labShapeDrawing'
 import { shapeDrawing } from '../../../domain/layout/lab/labShapeDrawing'
 import { useElementSize } from '../../composables/useElementSize'
 import type { LayoutLab } from '../../composables/useLayoutLab'
-import { dragRegionOf, handlesOf, pointsAttribute } from './labDrawing'
+import type { BreachMark } from './labDrawing'
+import { breachMarksOf, dragRegionOf, handlesOf, pointsAttribute } from './labDrawing'
 import type { Painted } from './labPaintOrder'
 import { paintOrder } from './labPaintOrder'
 import LabDrawn from './LabDrawn'
@@ -72,9 +73,11 @@ const pixel = computed((): number => {
   return extent && shownWidth.value > 0 ? widthOf(extent) / shownWidth.value : 1
 })
 
-/** A handle is the same size on screen however far the picture is zoomed out to fit. */
+/** A handle, and a breach's tag, are the same size on screen however far the picture is zoomed out to fit. */
 const HANDLE_PIXELS = 9
+const TAG_PIXELS = 11
 const handleSide = computed((): number => HANDLE_PIXELS * pixel.value)
+const tagSize = computed((): number => TAG_PIXELS * pixel.value)
 
 const aspect = computed(() => {
   const extent = view.value
@@ -173,7 +176,8 @@ const ends = (relationIndex: number): Extent[] => {
   })
 }
 
-const marks = computed(() => (props.showBreaches ? props.lab.breaches.value : []))
+const marks = computed((): BreachMark[] =>
+  (props.showBreaches ? breachMarksOf(props.lab.breaches.value, ends, tagSize.value) : []))
 
 const selectedExtent = computed((): Extent | null => {
   const alias = gesture.selected.value
@@ -258,31 +262,36 @@ const selectedExtent = computed((): Extent | null => {
       v-if="showBreaches"
       class="lab-breaches"
     >
-      <template
-        v-for="(mark, index) in marks"
-        :key="index"
+      <g
+        v-for="mark in marks"
+        :key="mark.key"
+        :class="`lab-breach-mark lab-breach--${mark.breach.tier}`"
+        :data-rule="mark.breach.rule"
       >
+        <title>{{ mark.tag }} ({{ mark.breach.tier }})</title>
         <polyline
-          v-if="mark.at.length >= 2"
-          :points="pointsAttribute(mark.at)"
-          :class="`lab-breach lab-breach--${mark.tier}`"
-        >
-          <title>{{ mark.rule }} ({{ mark.tier }})</title>
-        </polyline>
-        <template v-else>
-          <rect
-            v-for="(extent, end) in ends(mark.relation)"
-            :key="end"
-            :x="extent.left - 3"
-            :y="extent.top - 3"
-            :width="widthOf(extent) + 6"
-            :height="heightOf(extent) + 6"
-            :class="`lab-breach-frame lab-breach--${mark.tier}`"
-          >
-            <title>{{ mark.rule }} ({{ mark.tier }})</title>
-          </rect>
-        </template>
-      </template>
+          v-if="mark.breach.at.length >= 2"
+          :points="pointsAttribute(mark.breach.at)"
+          class="lab-breach"
+        />
+        <rect
+          v-for="(extent, end) in mark.frames"
+          :key="end"
+          :x="extent.left - 3"
+          :y="extent.top - 3"
+          :width="widthOf(extent) + 6"
+          :height="heightOf(extent) + 6"
+          class="lab-breach-frame"
+        />
+        <text
+          v-if="mark.tagAt"
+          class="lab-breach-tag"
+          :x="mark.tagAt.x"
+          :y="mark.tagAt.y"
+          :font-size="tagSize"
+          :stroke-width="tagSize / 4"
+        >{{ mark.tag }}</text>
+      </g>
     </g>
 
     <g
@@ -319,10 +328,18 @@ const selectedExtent = computed((): Extent | null => {
 .lab-canvas { border: 2px solid var(--accent); border-radius: 6px; touch-action: none; user-select: none; }
 .lab-backdrop, .lab-line, .lab-line-label, .lab-box :deep(g), .lab-element :deep(g) { pointer-events: none; }
 .lab-grip { fill: transparent; stroke: none; pointer-events: all; cursor: move; }
-.lab-breach { fill: none; stroke-width: 7; stroke-linecap: round; opacity: 0.45; pointer-events: stroke; }
-.lab-breach-frame { fill: none; stroke-width: 3; opacity: 0.7; }
-.lab-breach--hard { stroke: #dc2626; }
-.lab-breach--soft { stroke: #f59e0b; }
+/* A breach is marked in its tier's colour along exactly the stretch that breaks the rule — square
+   ends, so the mark stops where the stretch does and never spills round a bend — and tagged with the
+   rule's name. */
+.lab-breach-mark { --breach: #dc2626; }
+.lab-breach-mark.lab-breach--soft { --breach: #d97706; }
+.lab-breach { fill: none; stroke: var(--breach); stroke-width: 6px; stroke-linecap: butt; opacity: 0.4; }
+.lab-breach, .lab-breach-frame { vector-effect: non-scaling-stroke; pointer-events: stroke; }
+.lab-breach-frame { fill: none; stroke: var(--breach); stroke-width: 2px; stroke-dasharray: 5 3; opacity: 0.8; }
+.lab-breach-tag {
+  fill: var(--breach); stroke: #fff; paint-order: stroke; stroke-linejoin: round; text-anchor: middle;
+  font-family: system-ui, sans-serif; font-weight: 600; pointer-events: none;
+}
 .lab-handles__frame { fill: none; stroke: var(--accent); stroke-width: 1.5px; pointer-events: none; }
 .lab-handles__frame, .lab-handles__handle { vector-effect: non-scaling-stroke; }
 .lab-handles__handle { fill: #fff; stroke: var(--accent); stroke-width: 1.5px; }

@@ -2,10 +2,11 @@
 /**
  * The lab's canvas draws its pieces in the one paint order, as the pointer leaves them: a box dragged
  * over an element is drawn after it, with the lines into that element drawn just before the box, so
- * the box hides them as it hides the element.
+ * the box hides them as it hides the element; and a breach is marked only while breaches are shown,
+ * tagged with the rule it breaks.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, h, nextTick } from 'vue'
+import { createApp, h, nextTick, reactive } from 'vue'
 import type { App } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
 import { drawnArrangement } from '../../../domain/layout/lab/labArrangement'
@@ -35,16 +36,17 @@ const geometry: LabGeometry = {
 
 let app: App | null = null
 
-const mounted = async (showBreaches = true) => {
+const mounted = async () => {
   const lab = useLayoutLab()
   lab.geometry.value = geometry
   lab.arrangement.value = drawnArrangement(geometry)
+  const shown = reactive({ breaches: true })
   const host = document.createElement('div')
   document.body.appendChild(host)
-  app = createApp({ render: () => h(LayoutLabCanvas, { lab, showBreaches }) })
+  app = createApp({ render: () => h(LayoutLabCanvas, { lab, showBreaches: shown.breaches }) })
   app.mount(host)
   await nextTick()
-  return { lab, host }
+  return { lab, host, shown }
 }
 
 /** What is drawn, back to front: a shape by its alias, a line or label by its kind and place. */
@@ -89,5 +91,19 @@ describe('the layout lab canvas', () => {
     await nextTick()
 
     expect(drawnOrder(host)).toEqual(['C', 'line:0', 'G', 'A'])
+  })
+
+  it('marks a breach with the rule it breaks while breaches are shown, and not otherwise', async () => {
+    const { lab, host, shown } = await mounted()
+    const drawn = drawnArrangement(geometry)
+    // C put over A: two connected elements over each other, which no route can satisfy.
+    lab.arrangement.value = { ...drawn, elements: new Map([...drawn.elements, ['C', at(60, 50, 160, 90)]]) }
+    lab.routeEverything()
+    await nextTick()
+    expect([...host.querySelectorAll('.lab-breach-tag')].map((tag) => tag.textContent)).toContain('ends overlap')
+
+    shown.breaches = false
+    await nextTick()
+    expect(host.querySelectorAll('.lab-breach-mark')).toHaveLength(0)
   })
 })
