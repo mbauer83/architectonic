@@ -1,3 +1,4 @@
+import functools
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
@@ -182,7 +183,7 @@ def create_entity(
             file_type="entity",
             desired_name=path.name,
             content=content,
-            schema_repo_root=repo_root,
+            verify_fn=functools.partial(verifier.verify_entity_file, schema_repo_root=repo_root),
         )
         return WriteResult(
             wrote=False,

@@ -16,14 +16,21 @@ from typing import Literal
 from src.application.repo_path_helpers import all_model_roots
 from src.application.verification.artifact_verifier_parsing import parse_connection_refs, parse_diagram_refs
 from src.application.verification.artifact_verifier_types import entity_id_from_path
-from src.domain.repository.artifact_location import model_file_kind
-from src.domain.repository.repo_layout import DIAGRAM_CATALOG, DIAGRAMS
+from src.domain.repository.artifact_location import artifact_kind_at, model_file_kind, owner_of_generated_path
+from src.domain.repository.repo_layout import (
+    ARCH_REPO,
+    DIAGRAM_CATALOG,
+    DIAGRAMS,
+    is_configuration_path,
+    is_runtime_path,
+)
 
 
 @dataclass
 class FileInventory:
     repo_path: Path
     include_diagrams: bool = True
+    unrecognised_paths: list[Path] = field(default_factory=list)
     rel_to_path: dict[str, Path] = field(default_factory=dict)
     path_to_rel: dict[Path, str] = field(default_factory=dict)
     snapshots: dict[str, dict[str, int | str]] = field(default_factory=dict)
@@ -45,8 +52,12 @@ class FileInventory:
         self.rel_to_path[rel] = path
         self.path_to_rel[path] = rel
         self.path_to_rel[path.resolve()] = rel
+        try:
+            fingerprint = content_hash(path)
+        except OSError as exc:
+            fingerprint = f"unreadable: {exc}"
         self.snapshots[rel] = {
-            "content_hash": content_hash(path),
+            "content_hash": fingerprint,
             "file_type": file_type,
         }
         self.file_type_by_relpath[rel] = file_type
@@ -60,6 +71,7 @@ class FileInventory:
 
 def inventory_files(repo_path: Path, *, include_diagrams: bool) -> FileInventory:
     inventory = _new_inventory(repo_path=repo_path, include_diagrams=include_diagrams)
+    inventory.unrecognised_paths = unrecognised_files(repo_path)
     _index_entity_files(inventory)
     _index_connection_files(inventory)
     if include_diagrams:
@@ -71,6 +83,23 @@ def inventory_files(repo_path: Path, *, include_diagrams: bool) -> FileInventory
         + inventory.diagram_matrix_relpaths
     )
     return inventory
+
+
+def unrecognised_files(root: Path) -> list[Path]:
+    found = []
+    for directory, subdirs, names in root.walk():
+        relative = directory.relative_to(root)
+        subdirs[:] = [
+            name for name in subdirs
+            if not is_runtime_path((relative / name).as_posix()) and (relative / name).parts[0] != ARCH_REPO
+        ]
+        for name in names:
+            path = relative / name
+            if is_configuration_path(path.as_posix()) or is_runtime_path(path.as_posix()):
+                continue
+            if artifact_kind_at(path) is None and owner_of_generated_path(path) is None:
+                found.append(root / path)
+    return sorted(found)
 
 
 def _new_inventory(repo_path: Path, *, include_diagrams: bool) -> FileInventory:

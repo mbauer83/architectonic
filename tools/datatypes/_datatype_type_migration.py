@@ -289,6 +289,7 @@ def _verify_staged_roots(staged_by_live: Mapping[Path, Path]) -> list[str]:
     from src.application.verification.artifact_verifier_registry import ArtifactRegistry
     from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
     from src.infrastructure.artifact_index.service import ArtifactIndex
+    from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 
     errors: list[str] = []
     enterprise = [
@@ -307,6 +308,7 @@ def _verify_staged_roots(staged_by_live: Mapping[Path, Path]) -> list[str]:
             ArtifactRegistry(store),
             catalogs=catalogs,
             committed_repo=committed_repository(store),
+            kind_bindings=KIND_BINDINGS,
         )
         errors.extend(
             f"{issue.code}: {issue.message} ({issue.location})"

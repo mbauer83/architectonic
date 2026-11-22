@@ -80,4 +80,7 @@ def deserialize_result(path: Path, data: dict) -> VerificationResult | None:
                 actions=actions,
             )
         )
-    return VerificationResult(path=path, file_type=file_type, issues=issues)
+    outcome = data.get("outcome", "verified")
+    if outcome not in ("verified", "unverified"):
+        return None
+    return VerificationResult(path=path, file_type=file_type, issues=issues, outcome=outcome)

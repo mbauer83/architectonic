@@ -113,6 +113,20 @@ def _no_registry_issue(loc: str) -> Issue:
     )
 
 
+#: Every finding a diagram file can carry in either notation, as its rule modules spell them. Declared so
+#: that what the verifier checks is a fact a reader can see; `test_each_verifier_declares_its_rule_codes`
+#: holds it equal to the codes its modules emit.
+RULE_CODES: frozenset[str] = frozenset({
+    "E001", "E011", "E012", "E013", "E014", "E021", "E022", "E031", "E042", "E043", "E045", "E101", "E102",
+    "E104", "E180", "E301", "E302", "E303", "E304", "E305", "E306", "E307", "E308", "E309", "E310", "E311",
+    "E312", "E313", "E314", "E315", "E316", "E317", "E318", "E319", "E320", "E335", "E340", "E364", "E365",
+    "E370", "E371", "E372", "E373", "E401", "E402", "E403", "E404", "E405", "E406", "E407", "E408", "E409",
+    "E410", "E411", "E412", "E413", "E414", "W002", "W031", "W041", "W042", "W043", "W044", "W046", "W155",
+    "W156", "W160", "W180", "W181", "W182", "W303", "W304", "W305", "W306", "W307", "W321", "W322", "W361",
+    "W362", "W375", "W376", "W377", "W378", "W379",
+})
+
+
 def verify_diagram(
     path: Path,
     ctx: DiagramRuleContext,

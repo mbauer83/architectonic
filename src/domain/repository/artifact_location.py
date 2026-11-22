@@ -35,9 +35,12 @@ from src.domain.repository.repo_layout import (
     DIAGRAMS,
     DOCS,
     ICONS,
+    MANAGED_INCLUDE_BASENAMES,
     MODEL,
     OUTGOING_SUFFIX,
     PROJECTS,
+    RENDERED,
+    RENDERED_SUFFIXES,
     SCRATCHPAD_SUFFIX,
     SCRATCHPADS,
 )
@@ -80,6 +83,14 @@ class KindDeclaration:
     #: Whether a change to a file of this kind is a change to the model's read-model.
     moves_model_generation: bool
 
+    identity_field: str = "artifact-id"
+    generated_paths: tuple[str, ...] = ()
+
+    def file_identity(self, path: PurePath) -> str:
+        """The identity carried by the file name, excluding the kind's full suffix."""
+        suffix = self.suffix_carried_by(path)
+        return path.name.removesuffix(suffix) if suffix else path.stem
+
     def may_hold(self, parts: tuple[str, ...]) -> bool:
         """Whether a file at *parts* sits where this kind's files do, whatever its name."""
         return any(_sits_under(parts, root, self.placement) for root in self.roots)
@@ -100,12 +111,16 @@ ARTIFACT_KINDS: tuple[KindDeclaration, ...] = (
     # An entity's outgoing connections live beside it in `<entity>.outgoing.md`.
     KindDeclaration(
         name="connection", roots=_MODEL_ROOTS, placement="anywhere-below", suffixes=(OUTGOING_SUFFIX,),
-        id_prefix=None, verification="with-the-model", moves_model_generation=True,
+        id_prefix=None, verification="with-the-model", moves_model_generation=True, identity_field="source-entity",
     ),
     KindDeclaration(
         name="diagram", roots=((DIAGRAM_CATALOG, DIAGRAMS),), placement="anywhere-below",
         suffixes=tuple(sorted(ARTIFACT_SOURCE_SUFFIXES)),
         id_prefix=None, verification="with-the-model", moves_model_generation=True,
+        generated_paths=(
+            *(f"{DIAGRAM_CATALOG}/{RENDERED}/**/*{suffix}" for suffix in RENDERED_SUFFIXES),
+            *(f"{DIAGRAM_CATALOG}/{name}" for name in sorted(MANAGED_INCLUDE_BASENAMES)),
+        ),
     ),
     KindDeclaration(
         name="document", roots=((DOCS,),), placement="anywhere-below", suffixes=(".md",),
@@ -157,6 +172,11 @@ def artifact_kind_declared_at(
     """The row of the kind a path relative to its repository's root holds, or None."""
     path = PurePosixPath(PurePath(relative).as_posix())
     return _most_specific(path, tuple(kind for kind in kinds if kind.may_hold(path.parts)))
+
+
+def owner_of_generated_path(relative: PurePath) -> KindDeclaration | None:
+    """The kind whose generated output occupies this path, separately from its verifiable sources."""
+    return next((kind for kind in ARTIFACT_KINDS if any(relative.full_match(p) for p in kind.generated_paths)), None)
 
 
 def artifact_kind_at(relative: PurePath | str) -> ArtifactKindName | None:

@@ -18,7 +18,7 @@ a write path calls it holding WRITE, which is strictly stronger.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from src.application.verification._verifier_inventory import FileInventory
@@ -30,6 +30,10 @@ class RepositorySnapshot:
 
     inventory: FileInventory
     contents: dict[Path, str]
+
+    read_errors: dict[Path, str] = field(default_factory=dict)
+
+    extra_paths: tuple[Path, ...] = ()
 
     def read(self, path: Path) -> str | None:
         """The bytes this snapshot holds for *path*, or None if it holds none.
@@ -50,12 +54,13 @@ def acquire_snapshot(inventory: FileInventory, *, extra_paths: list[Path] | None
     documents, which live outside it.
     """
     contents: dict[Path, str] = {}
+    errors: dict[Path, str] = {}
     enumerated = (inventory.rel_to_path[rel] for rel in inventory.ordered_paths if rel in inventory.rel_to_path)
     for path in [*(p.resolve() for p in enumerated), *(p.resolve() for p in extra_paths or [])]:
         try:
             contents[path] = path.read_text(encoding="utf-8")
-        except OSError:
-            # Left out deliberately: the rule that reads it reports E001 against the real error,
-            # which is a finding about the repository rather than about acquisition.
-            continue
-    return RepositorySnapshot(inventory=inventory, contents=contents)
+        except (OSError, UnicodeError) as exc:
+            errors[path] = str(exc)
+    return RepositorySnapshot(
+        inventory=inventory, contents=contents, read_errors=errors, extra_paths=tuple(extra_paths or [])
+    )

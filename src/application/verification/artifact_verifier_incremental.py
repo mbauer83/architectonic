@@ -267,6 +267,7 @@ def _serialize_issue(i) -> dict:
 def serialize_result(result: VerificationResult) -> dict:
     return {
         "file_type": result.file_type,
+        "outcome": result.outcome,
         "issues": [_serialize_issue(i) for i in result.issues],
     }
 

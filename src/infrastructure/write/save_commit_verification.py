@@ -25,7 +25,7 @@ def assert_repository_verifies(repo_root: Path) -> None:
 
     verifier = verifier_for(roots_key([repo_root]), include_registry=True)
     results = verifier.verify_all(repo_root)
-    failing = [result for result in results if not result.valid]
+    failing = [result for result in results if result.errors]
     if not failing:
         return
     lines = []

@@ -29,13 +29,7 @@ import re
 
 from src.application.puml_icon_header import assignments_outside_the_block, embedded_icons
 from src.domain.embedded_image import embedded_image
-
-_MANAGED_INCLUDE_BASENAMES = frozenset({
-    "_archimate-stereotypes.puml",
-    "_archimate-glyphs.puml",
-    "_archimate-relations.puml",
-    "_macros.puml",
-})
+from src.domain.repository.repo_layout import MANAGED_INCLUDE_BASENAMES
 
 #: Any preprocessor directive that brings in another source, however it is spelled:
 #: `!include`, `!include_once`, `!include_many`, `!includeurl`, `!includesub`, `!import`, …
@@ -52,7 +46,7 @@ _IO_BUILTIN_RE = re.compile(
 #: Every place creole or a stdlib macro takes an image: `<img:X>`, `<img src=X>`, `$sprite="img:X"`.
 _IMAGE_TARGET_RE = re.compile(r"(?:\bimg:|<img\s+src\s*=\s*[\"']?)([^\"'>\s{}]*)", re.IGNORECASE)
 _MANAGED_INCLUDE_RE = re.compile(
-    r"^(?:\.\./)*(" + "|".join(re.escape(b) for b in _MANAGED_INCLUDE_BASENAMES) + r")$"
+    r"^(?:\.\./)*(" + "|".join(re.escape(b) for b in MANAGED_INCLUDE_BASENAMES) + r")$"
 )
 
 
@@ -67,7 +61,7 @@ def is_managed_include(basename: str) -> bool:
     styling for other diagrams to include. Standalone they are neither renderable nor
     syntax-checkable, and treating them as diagrams reports errors against correct files.
     """
-    return basename in _MANAGED_INCLUDE_BASENAMES
+    return basename in MANAGED_INCLUDE_BASENAMES
 
 
 def find_unsafe_puml_directives(puml_body: str) -> list[str]:

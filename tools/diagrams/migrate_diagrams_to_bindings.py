@@ -248,11 +248,12 @@ def _run_verification(repo_roots: list[Path]) -> bool:
     from src.application.verification.artifact_verifier_registry import ArtifactRegistry
     from src.application.verification.artifact_verifier_types import Severity
     from src.infrastructure.artifact_index import shared_artifact_index
+    from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 
     ok = True
     for root in repo_roots:
         registry = ArtifactRegistry(shared_artifact_index(root))
-        results = ArtifactVerifier(registry, check_puml_syntax=False).verify_all(root)
+        results = ArtifactVerifier(registry, check_puml_syntax=False, kind_bindings=KIND_BINDINGS).verify_all(root)
         for r in results:
             errors = [i for i in r.issues if i.severity == Severity.ERROR]
             if errors:

@@ -41,9 +41,7 @@ class _FakeInventoryPort:
     def __init__(self, repo_path: Path, entity_file: Path | None = None) -> None:
         inv = _empty_inventory(repo_path)
         if entity_file is not None:
-            rel = str(entity_file.relative_to(repo_path))
-            inv.rel_to_path[rel] = entity_file
-            inv.path_to_rel[entity_file] = rel
+            rel = inv.add_file(entity_file, "entity")
             inv.entity_relpaths.append(rel)
             inv.ordered_paths.append(rel)
         self._inventory = inv

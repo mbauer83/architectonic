@@ -27,9 +27,9 @@ class CandidateInventoryPort:
     def filter_standalone_artifacts(self, repo_path: Path, candidates: list[Path]) -> list[Path]:
         return [
             path for path in candidates
-            if (rel := rel_to_root(path.resolve(), repo_path.resolve())) is not None
+            if path.is_file() and (rel := rel_to_root(path.resolve(), repo_path.resolve())) is not None
             and (declared := artifact_kind_declared_at(rel)) is not None
-            and declared.verification == "standalone"
+            and declared.verification != "with-the-model"
         ]
 
 

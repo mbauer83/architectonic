@@ -10,6 +10,7 @@ import pytest
 
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 from src.infrastructure.write.artifact_write.document import (
     _build_placeholder_body,
     _validate_section_templates,
@@ -58,7 +59,9 @@ def _adr_schema_sections(repo: Path, sections: str) -> None:
 
 
 def _verifier(repo: Path) -> ArtifactVerifier:
-    return ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+    return ArtifactVerifier(
+        ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs(), kind_bindings=KIND_BINDINGS
+    )
 
 
 # ── pure unit: _build_placeholder_body ─────────────────────────────────────

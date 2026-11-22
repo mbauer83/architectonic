@@ -24,7 +24,8 @@ import yaml
 from src.domain.icons.applicability import Applicability, InvalidApplicabilityError, applicability_from
 from src.domain.icons.icon_ref import ICON_STYLES, IconStyle
 from src.domain.icons.render_form import SourceFormat
-from src.domain.repository.frontmatter import Frontmatter, parse_frontmatter, read_frontmatter
+from src.domain.repository.frontmatter import Frontmatter, read_frontmatter
+from src.domain.yaml_documents import parse_yaml, parse_yaml_with_unique_keys
 
 ICON_ARTIFACT_TYPE = "icon"
 
@@ -96,15 +97,16 @@ def format_icon_file(icon: IconFile) -> str:
     return f"---\n{dumped.strip()}\n---\n\n" + "\n\n".join(blocks) + "\n"
 
 
-def read_icon_file(text: str) -> IconFile | IconFileProblem:
+def read_icon_file(text: str, *, strict_keys: bool = False) -> IconFile | IconFileProblem:
     match read_frontmatter(text):
-        case Frontmatter(body=body):
+        case Frontmatter(text=header, body=body):
             pass
         case _:
             return IconFileProblem("the file has no frontmatter block")
     try:
-        metadata = _metadata(parse_frontmatter(text))
-    except (_Unreadable, InvalidApplicabilityError) as exc:
+        raw = parse_yaml_with_unique_keys(header) if strict_keys else parse_yaml(header)
+        metadata = _metadata(raw if isinstance(raw, dict) else {})
+    except (_Unreadable, InvalidApplicabilityError, yaml.YAMLError) as exc:
         return IconFileProblem(str(exc))
     blocks = {kind: content for kind, content in _BLOCK_RE.findall(body)}
     if _PNG_FENCE not in blocks:

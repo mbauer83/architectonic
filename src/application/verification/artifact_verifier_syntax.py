@@ -24,6 +24,15 @@ from src.application.verification.artifact_verifier_types import Issue, Severity
 PLANTUML_JAR_RELPATHS: tuple[str, ...] = ("plantuml.jar", "tools/plantuml.jar")
 
 
+#: Every finding the PlantUML syntax check gives a diagram, the checks on the picture it draws
+#: included. Declared so that what the check covers is a fact a reader can see;
+#: `test_each_verifier_declares_its_rule_codes` holds it equal to the codes its modules emit.
+RULE_CODES: frozenset[str] = frozenset({
+    "E350", "E353", "W350", "W351", "W352", "W370", "W371", "W372", "W373", "W374", "W380", "W381", "W382",
+    "W383", "W384", "W385", "W386",
+})
+
+
 @lru_cache(maxsize=1)
 def find_plantuml_jar() -> Path | None:
     candidate = Path(__file__).resolve()

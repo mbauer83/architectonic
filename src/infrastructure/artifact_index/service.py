@@ -64,7 +64,7 @@ from .versioning import ReadModelVersion, build_read_model_etag, read_model_vers
 
 _T = TypeVar("_T", EntityRecord, ConnectionRecord, DiagramRecord, DocumentRecord, ScratchpadNoteRecord)
 
-#: How what `_service_incremental.CHANGE_READERS` read is applied: one entry per row of the kind table.
+#: How what `KIND_BINDINGS` read is applied: one entry per row of the kind table.
 _CHANGE_APPLIERS = {
     "connection": lambda service, path, data: _apply_outgoing_records(path, data, service._mem, service._db),
     "entity": lambda service, path, data: _apply_entity_record(path, data, service._mem, service._db),

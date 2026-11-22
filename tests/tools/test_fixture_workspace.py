@@ -105,17 +105,21 @@ def test_the_generated_workspace_verifies_clean(workspace: FixtureWorkspace) -> 
     from src.application.verification.artifact_verifier_registry import ArtifactRegistry
     from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
     from src.infrastructure.artifact_index import shared_artifact_index
+    from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 
     index = shared_artifact_index(workspace.engagement_root)
     try:
         verifier = ArtifactVerifier(
-            ArtifactRegistry(index), catalogs=build_runtime_catalogs(get_module_registry())
+            ArtifactRegistry(index), catalogs=build_runtime_catalogs(get_module_registry()),
+            kind_bindings=KIND_BINDINGS,
         )
         results = verifier.verify_all(workspace.engagement_root, include_diagrams=False)
     finally:
         index.close()
 
     assert results, "the verifier found nothing to verify, so this assertion proves nothing"
+    assert any((workspace.engagement_root / "diagram-catalog/rendered").rglob("*.svg"))
+    assert [r.path for r in results if any(i.code == "W015" for i in r.issues)] == []
     invalid = [
         f"{r.path.name}: {[i.message for i in r.issues if i.severity == 'error']}"
         for r in results

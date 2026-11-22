@@ -1,6 +1,6 @@
 import os
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 
 from src.application.document_links import ArtifactPathOf, unresolved_id_links
@@ -113,6 +113,22 @@ def _document_temp_path(tmp_root: Path, desired_name: str, support_repo_root: Pa
     return tmp_path
 
 
+def _beside_nothing(tmp_root: Path, desired_name: str, _support_repo_root: Path | None) -> Path:
+    """A file whose checks read nothing around it, at the top of the temp tree."""
+    return tmp_root / desired_name
+
+
+#: Where in a temp tree a file of each kind is laid out, so the checks that read around it find what
+#: they would in the repository. One entry per verified kind.
+_TEMP_LAYOUTS: Mapping[VerificationFileType, Callable[[Path, str, Path | None], Path]] = {
+    "entity": _beside_nothing,
+    "connection": _beside_nothing,
+    "icon": _beside_nothing,
+    "diagram": _diagram_temp_path,
+    "document": _document_temp_path,
+}
+
+
 def verify_content_in_temp_path(
     *,
     verifier: ArtifactVerifier,
@@ -120,43 +136,22 @@ def verify_content_in_temp_path(
     desired_name: str,
     content: str,
     support_repo_root: Path | None = None,
-    schema_repo_root: Path | None = None,
     verify_fn: Callable[[Path], VerificationResult] | None = None,
 ) -> VerificationResult:
     """Verify *content* by writing it to a temp location laid out for its file type.
 
-    ``verify_fn`` overrides the file-type's default verifier method — e.g. matrix
-    diagrams share ``file_type="diagram"``'s temp layout but need
-    ``verify_matrix_diagram_file`` instead of the PUML-oriented ``verify_diagram_file``.
-
-    ``schema_repo_root`` names the repo whose ``.arch-repo/schemata`` govern the content:
-    the temp file lives outside every repo root, so without it the entity frontmatter- and
-    attribute-schema checks (which resolve schemata relative to the governing repo) would be
-    silently skipped in the dry-run preview — under-reporting relative to the real write.
+    The file is verified by the verifier bound to *file_type*, unless ``verify_fn`` says otherwise.
+    An entity's writers pass one to name the repository whose ``.arch-repo/schemata`` govern it: the
+    temp file lives outside every repo root, so without it the frontmatter- and attribute-schema checks
+    would be skipped in the preview, under-reporting relative to the real write. A matrix diagram's
+    writers pass one because its layout is a diagram's and its verifier is the matrix one.
     """
     tmp_root = Path(tempfile.mkdtemp(prefix=f"model-write-verify-{file_type}-"))
-    if file_type == "diagram":
-        tmp_path = _diagram_temp_path(tmp_root, desired_name, support_repo_root)
-    elif file_type == "document":
-        tmp_path = _document_temp_path(tmp_root, desired_name, support_repo_root)
-    else:
-        tmp_path = tmp_root / desired_name
-
+    tmp_path = _TEMP_LAYOUTS[file_type](tmp_root, desired_name, support_repo_root)
     tmp_path.write_text(content, encoding="utf-8")
-
     if verify_fn is not None:
         return verify_fn(tmp_path)
-
-    if file_type == "entity":
-        return verifier.verify_entity_file(tmp_path, schema_repo_root=schema_repo_root)
-
-    dispatch = {
-        "connection": verifier.verify_connection_file,
-        "document": verifier.verify_document_file,
-        "diagram": verifier.verify_diagram_file,
-        "icon": verifier.verify_icon_file,
-    }
-    return dispatch[file_type](tmp_path)
+    return verifier.verify_as(file_type, tmp_path)
 
 
 def collect_verification_errors(repo_root: Path, *, include_diagrams: bool = False) -> list[str]:

@@ -363,7 +363,10 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
     SyntaxReader(
         syntax="how a YAML document is parsed",
         owners=(Path("src/domain/yaml_documents.py"),),
-        instead="`src.domain.yaml_documents.parse_yaml`",
+        instead=(
+            "`src.domain.yaml_documents.parse_yaml`, or its strict mode `parse_yaml_with_unique_keys` "
+            "where a key named twice must be refused rather than silently keep its last value"
+        ),
         incident=(
             "77 call sites each independently choosing the pure-Python loader on a machine with "
             "libyaml present; the C loader is 9.5x faster for identical results on this corpus"

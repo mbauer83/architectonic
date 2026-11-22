@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
-from dataclasses import replace
+from collections.abc import Mapping
 from pathlib import Path
 
 from src.application._diagram_entity_extraction import (
@@ -16,22 +15,7 @@ from src.application._diagram_entity_extraction import (
 from src.application._diagram_entity_extraction import (
     extract_diagram_entities as _extract_diagram_entities,
 )
-from src.application.artifacts.icon_parsing import parse_icon
-from src.application.artifacts.parsing import (
-    parse_diagram,
-    parse_document,
-    parse_entity,
-    parse_outgoing_file,
-)
-from src.application.repo_path_helpers import (
-    all_model_roots,
-    group_fn_diagram,
-    group_fn_document,
-    group_fn_entity,
-    group_fn_scratchpad,
-)
-from src.application.scratchpad.indexing import parse_scratchpad
-from src.config.repo_paths import MODEL
+from src.application.artifacts.mounted_readers import artifact_kind_for_path
 from src.domain.icons.icon_record import IconRecord
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
@@ -42,121 +26,13 @@ from src.domain.ontology_representation.artifact_types import (
     ScratchpadNoteRecord,
     ScratchpadRecord,
 )
-from src.domain.repository.artifact_location import ArtifactKindName, artifact_kind_at
+from src.domain.repository.artifact_location import ArtifactKindName
 from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX
+from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 
 from ._mem_store import _MemStore
 from ._service_scan import _AttrTypeRefFn
 from ._sqlite_store import _SqliteStore
-
-# ── Path classification helpers ───────────────────────────────────────────────
-
-
-def mount_for_path(path: Path, mounts: list[RepoMount]) -> RepoMount | None:
-    resolved = path.resolve()
-    return next((m for m in mounts if resolved.is_relative_to(m.root)), None)
-
-
-def model_root_for_path(path: Path, mounts: list[RepoMount]) -> Path | None:
-    """Return the nearest model root for path (supports both legacy and target layouts)."""
-    mount = mount_for_path(path, mounts)
-    if mount is None:
-        return None
-    # Check target layout first: projects/<slug>/model/
-    for mroot in all_model_roots(mount.root):
-        try:
-            path.resolve().relative_to(mroot.resolve())
-            return mroot
-        except ValueError:
-            continue
-    # Fallback to legacy root
-    return mount.root / MODEL
-
-
-def artifact_kind_for_path(path: Path, mounts: list[RepoMount]) -> ArtifactKindName | None:
-    """The kind of artifact *path* holds within the repository mounted over it, or None."""
-    mount = mount_for_path(path, mounts)
-    if mount is None:
-        return None
-    try:
-        relative = path.resolve().relative_to(mount.root.resolve())
-    except ValueError:
-        return None
-    return artifact_kind_at(relative)
-
-
-# ── Incremental updates ───────────────────────────────────────────────────────
-
-# Each change type has two phases:
-#   parse_*  — reads the file from disk; call OUTSIDE the index write lock
-#   apply_*  — updates mem and SQLite; call UNDER the index write lock
-
-
-def parse_entity_for_path(
-    path: Path, mounts: list[RepoMount], *, domain_names: frozenset[str]
-) -> EntityRecord | None:
-    mount = mount_for_path(path, mounts)
-    model_root = model_root_for_path(path, mounts)
-    if not path.exists() or mount is None or model_root is None:
-        return None
-    entity = parse_entity(path, model_root, domain_names=domain_names)
-    return replace(entity, group=group_fn_entity(path, mount.root)) if entity is not None else None
-
-
-def parse_outgoing_for_path(path: Path, mounts: list[RepoMount]) -> list[ConnectionRecord]:
-    if not path.exists():
-        return []
-    mount = mount_for_path(path, mounts)
-    if mount is None:
-        return parse_outgoing_file(path)
-    grp = group_fn_entity(path, mount.root)
-    return [replace(conn, group=grp) for conn in parse_outgoing_file(path)]
-
-
-def parse_diagram_for_path(path: Path, mounts: list[RepoMount]) -> DiagramRecord | None:
-    if not path.exists():
-        return None
-    diag = parse_diagram(path)
-    if diag is None:
-        return None
-    mount = mount_for_path(path, mounts)
-    return replace(diag, group=group_fn_diagram(path, mount.root)) if mount is not None else diag
-
-
-def parse_document_for_path(path: Path, mounts: list[RepoMount]) -> DocumentRecord | None:
-    if not path.exists():
-        return None
-    doc = parse_document(path)
-    if doc is None:
-        return None
-    mount = mount_for_path(path, mounts)
-    return replace(doc, group=group_fn_document(path, mount.root)) if mount is not None else doc
-
-
-def parse_scratchpad_for_path(
-    path: Path, mounts: list[RepoMount]
-) -> tuple[ScratchpadRecord | None, list[ScratchpadNoteRecord]]:
-    """The pad and every note the file holds now.
-
-    `(None, [])` when it was deleted, which is what removes its rows — both kinds of row, from one
-    answer, so a deleted pad cannot leave its own record behind while its notes go.
-    """
-    mount = mount_for_path(path, mounts)
-    if not path.exists() or mount is None:
-        return None, []
-    return parse_scratchpad(path, group=group_fn_scratchpad(path, mount.root))
-
-
-#: How a changed file of each kind is read. One entry per row of the kind table — a kind with none
-#: would raise on its first change — beside `service._CHANGE_APPLIERS`, which applies what these read.
-CHANGE_READERS: Mapping[ArtifactKindName, Callable[[Path, list[RepoMount], frozenset[str]], object]] = {
-    "connection": lambda path, mounts, _domain_names: parse_outgoing_for_path(path, mounts),
-    "entity": lambda path, mounts, domain_names: parse_entity_for_path(path, mounts, domain_names=domain_names),
-    "diagram": lambda path, mounts, _domain_names: parse_diagram_for_path(path, mounts),
-    "document": lambda path, mounts, _domain_names: parse_document_for_path(path, mounts),
-    "scratchpad": lambda path, mounts, _domain_names: parse_scratchpad_for_path(path, mounts),
-    "icon": lambda path, _mounts, _domain_names: parse_icon(path),
-}
 
 
 def classify_path_change(
@@ -168,7 +44,7 @@ def classify_path_change(
     only a refresh keeps the two views in agreement.
     """
     kind = artifact_kind_for_path(path, mounts)
-    return None if kind is None else (kind, path, CHANGE_READERS[kind](path, mounts, domain_names))
+    return None if kind is None else (kind, path, KIND_BINDINGS[kind].reader(path, mounts, domain_names))
 
 
 def _touching_endpoints(entity_id: str, mem: _MemStore) -> set[str]:

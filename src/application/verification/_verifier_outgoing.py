@@ -194,6 +194,17 @@ def _check_connection_block(
     return decl
 
 
+#: Every finding an outgoing-connections file can carry, as its rule modules spell them. Declared so that
+#: what the verifier checks is a fact a reader can see; `test_each_verifier_declares_its_rule_codes`
+#: holds it equal to the codes its modules emit.
+RULE_CODES: frozenset[str] = frozenset({
+    "E001", "E011", "E012", "E013", "E014", "E021", "E022", "E031", "E042", "E043", "E045", "E101", "E102",
+    "E104", "E120", "E121", "E122", "E123", "E124", "E125", "E126", "E127", "E128", "E129", "E130", "E131",
+    "E160", "E161", "E303", "E304", "E305", "E308", "E309", "E311", "E312", "E313", "W031", "W041", "W042",
+    "W043", "W120", "W121", "W126", "W127", "W128", "W129", "W155", "W156", "W160", "W321", "W322",
+})
+
+
 def verify_outgoing(
     path: Path,
     *,

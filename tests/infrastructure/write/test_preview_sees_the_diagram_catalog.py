@@ -20,6 +20,7 @@ from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 from src.infrastructure.write.artifact_write.verify import verify_content_in_temp_path
 
 _ADR_SCHEMA = {
@@ -77,7 +78,9 @@ See [A Context]({href}).
 
 def _verify(root: Path, href: str):
     catalogs = build_runtime_catalogs(get_module_registry())
-    verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(root)), catalogs=catalogs)
+    verifier = ArtifactVerifier(
+        ArtifactRegistry(shared_artifact_index(root)), catalogs=catalogs, kind_bindings=KIND_BINDINGS
+    )
     return verify_content_in_temp_path(
         verifier=verifier,
         file_type="document",

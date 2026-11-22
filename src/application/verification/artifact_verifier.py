@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import functools
 from dataclasses import replace
 from pathlib import Path
@@ -9,6 +10,7 @@ from typing import Literal
 
 from src.application.icons.icon_vocabulary import icon_applicability_names
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.application.verification._duplicate_identity_rules import duplicate_kind_files
 from src.application.verification._verifier_adapters import _VerifierAdapters
 from src.application.verification._verifier_contribution_runner import (
     build_candidate_repo,
@@ -58,6 +60,7 @@ from src.application.verification.evaluation import (
     EvaluationContext,
     PassCancellation,
 )
+from src.application.verification.kind_verification import KindBindings, verify_by_binding
 from src.application.verification.verifier_ports import (
     FileInventoryPort,
     IconLibrary,
@@ -67,7 +70,7 @@ from src.application.verification.verifier_ports import (
     VerifierScheduler,
 )
 from src.application.viewpoints.registry_snapshot import build_registry_snapshot as registry_snapshot
-from src.domain.repository.artifact_location import artifact_kind_at, model_file_kind
+from src.domain.repository.artifact_location import ArtifactKindName, artifact_kind_at, model_file_kind
 
 
 class ArtifactVerifier(_VerifierAdapters):
@@ -84,8 +87,12 @@ class ArtifactVerifier(_VerifierAdapters):
         incremental_state: IncrementalStatePort | None = None,
         picture_inspector: StoredPictureInspector | None = None,
         icon_library: IconLibrary | None = None,
+        kind_bindings: KindBindings | None = None,
     ) -> None:
         self.registry = registry
+        # Empty unless given: a verifier built without them binds no kind, so every file it is asked to
+        # verify by kind answers `unverified` rather than being verified as some other kind.
+        self._kind_bindings: KindBindings = kind_bindings if kind_bindings is not None else {}
         self.check_puml_syntax = check_puml_syntax
         self._catalogs = catalogs
         self._candidate_repo: object | None = build_candidate_repo(committed_repo, registry)
@@ -123,18 +130,6 @@ class ArtifactVerifier(_VerifierAdapters):
             repo_root_for_path=self._repo_root_for_path,
             icon_library=self.icon_library,
         )
-
-    def _repo_root_for_path(self, path: Path) -> Path | None:
-        if self.registry is None:
-            return None
-        resolved = path.resolve()
-        for root in self.registry.repo_roots:
-            try:
-                resolved.relative_to(root)
-                return root
-            except ValueError:
-                continue
-        return None
 
     def verify_entity_file(
         self, path: Path, *, schema_repo_root: Path | None = None, snapshot: RepositorySnapshot | None = None
@@ -179,11 +174,6 @@ class ArtifactVerifier(_VerifierAdapters):
         return verify_diagram(
             path, self._diagram_rules, run_syntax_check=self.check_puml_syntax, snapshot=snapshot
         )
-
-    def _verify_diagram_file(
-        self, path: Path, *, run_syntax_check: bool, snapshot: RepositorySnapshot | None = None
-    ) -> VerificationResult:
-        return verify_diagram(path, self._diagram_rules, run_syntax_check=run_syntax_check, snapshot=snapshot)
 
     def verify_matrix_diagram_file(
         self, path: Path, *, snapshot: RepositorySnapshot | None = None
@@ -230,10 +220,16 @@ class ArtifactVerifier(_VerifierAdapters):
             cancellation=cancellation,
         )
         if cfg.mode == "incremental":
-            return self._verify_all_incremental(
+            mode, results = self._verify_all_incremental(
                 repo_path, include_diagrams=include_diagrams, cfg=cfg, evaluation=evaluation
             )
-        return "full", self._verify_all_full(repo_path, include_diagrams=include_diagrams, evaluation=evaluation)
+        else:
+            mode = "full"
+            results = self._verify_all_full(repo_path, include_diagrams=include_diagrams, evaluation=evaluation)
+        by_path = {result.path: result for result in results if result.path != repo_path}
+        for path, issue in duplicate_kind_files(repo_path, by_path):
+            by_path[path].issues.append(issue)
+        return mode, results
 
     def acquire(self, repo_path: Path, *, include_diagrams: bool = True) -> RepositorySnapshot:
         """Read the repository once, for a pass to evaluate against.
@@ -266,14 +262,12 @@ class ArtifactVerifier(_VerifierAdapters):
 
         inv = self._inventory.build(repo_path, include_diagrams=include_diagrams)
         relpaths = {inv.path_to_rel[path.resolve()] for path in changed_paths if path.resolve() in inv.path_to_rel}
-        if not relpaths:
-            return []
 
         selected = relpaths if verification_scope == "changed" else expand_impacted_paths(inv, relpaths)
         results = self._verify_inventory_subset(inv, selected)
 
         standalone = self._inventory.filter_standalone_artifacts(repo_path, list(changed_paths))
-        results.extend(self._scheduler.run(self.verify_standalone_artifact, standalone))
+        results.extend(self._verify_each_by_kind(repo_path, standalone))
         return results
 
     def _verify_repository(self, repo_path: Path) -> VerificationResult | None:
@@ -321,16 +315,34 @@ class ArtifactVerifier(_VerifierAdapters):
     def _verify_standalone_artifacts(
         self, repo_path: Path, *, evaluation: EvaluationContext = UNCONDITIONAL
     ) -> list[VerificationResult]:
-        standalone = self._inventory.list_standalone_artifacts(repo_path)
-        return self._scheduler.run(evaluation.per_file(self.verify_standalone_artifact), standalone)
+        paths = (list(evaluation.snapshot.extra_paths) if evaluation.snapshot is not None
+                 else self._inventory.list_standalone_artifacts(repo_path))
+        results = self._verify_each_by_kind(repo_path, paths, evaluation=evaluation)
+        if evaluation.snapshot is not None:
+            for path in evaluation.snapshot.inventory.unrecognised_paths:
+                issue = Issue(Severity.WARNING, "W015", "Unrecognised repository content", str(path))
+                results.append(VerificationResult(path, "unrecognised", [issue], outcome="unverified"))
+        return results
 
-    def verify_standalone_artifact(
-        self, path: Path, *, snapshot: "RepositorySnapshot | None" = None
+    def _verify_each_by_kind(
+        self, repo_path: Path, paths: list[Path], *, evaluation: EvaluationContext = UNCONDITIONAL
+    ) -> list[VerificationResult]:
+        """Each file sent to the verifier bound to the kind the layout gives it under *repo_path*."""
+        root = repo_path.resolve()
+        kinds = {path: artifact_kind_at(path.resolve().relative_to(root)) for path in paths}
+
+        def verify_held(path: Path, *, snapshot: "RepositorySnapshot | None" = None) -> VerificationResult:
+            if (kind := kinds[path]) is None:
+                raise ValueError(f"{path} was listed for verification and holds no artifact where it sits")
+            return self.verify_as(kind, path, snapshot=snapshot)
+
+        return self._scheduler.run(evaluation.per_file(verify_held), paths)
+
+    def verify_as(
+        self, kind: ArtifactKindName, path: Path, *, snapshot: "RepositorySnapshot | None" = None
     ) -> VerificationResult:
-        root = self._repo_root_for_path(path)
-        if root is not None and artifact_kind_at(path.resolve().relative_to(root)) == "icon":
-            return self.verify_icon_file(path, snapshot=snapshot)
-        return self.verify_document_file(path, snapshot=snapshot)
+        """Verify *path* as a file of *kind*, with the verifier bound to that kind; `unverified` if none is."""
+        return verify_by_binding(self._kind_bindings, self, kind, path, snapshot)
 
     def verify_icon_file(self, path: Path, *, snapshot: "RepositorySnapshot | None" = None) -> VerificationResult:
         names = icon_applicability_names(self._catalogs) if self._catalogs is not None else None
@@ -342,31 +354,23 @@ class ArtifactVerifier(_VerifierAdapters):
         if self.registry is not None:
             _ = self.registry.entity_ids()
             _ = self.registry.connection_ids()
-        entity_files = [inv.rel_to_path[r] for r in inv.entity_relpaths if r in relpaths]
-        connection_files = [inv.rel_to_path[r] for r in inv.connection_relpaths if r in relpaths]
-        diagram_files = [inv.rel_to_path[r] for r in inv.diagram_puml_relpaths if r in relpaths]
-        matrix_files = [inv.rel_to_path[r] for r in inv.diagram_matrix_relpaths if r in relpaths]
+        paths = [inv.rel_to_path[r] for r in inv.ordered_paths if r in relpaths]
+        # Defer syntax to one PlantUML batch. A verifier is shared by concurrent requests.
+        host = copy.copy(self)
+        host.check_puml_syntax = False
 
-        out: list[VerificationResult] = []
-        out.extend(self._scheduler.run(evaluation.per_file(self.verify_entity_file), entity_files))
-        out.extend(self._scheduler.run(evaluation.per_file(self.verify_connection_file), connection_files))
+        def verify(path: Path, *, snapshot: RepositorySnapshot | None = None) -> VerificationResult:
+            return host.verify_as(inv.file_type_by_relpath[inv.path_to_rel[path]], path, snapshot=snapshot)
 
-        diagram_results = self._scheduler.run(
-            evaluation.per_file(functools.partial(self._verify_diagram_file, run_syntax_check=False)),
-            diagram_files,
-            max_workers=4,
-        )
-        if self.check_puml_syntax and diagram_results:
-            issues_by_path = self._puml_syntax.check_batch([r.path for r in diagram_results])
-            for d in diagram_results:
-                d.issues.extend(issues_by_path.get(d.path, []))
-        out.extend(diagram_results)
-        out.extend(self._scheduler.run(evaluation.per_file(self.verify_matrix_diagram_file), matrix_files))
-
-        by_path = {r.path: r for r in out}
-        return [
-            by_path[inv.rel_to_path[r]] for r in inv.ordered_paths if r in relpaths and inv.rel_to_path[r] in by_path
-        ]
+        results = self._scheduler.run(evaluation.per_file(verify), paths)
+        if self.check_puml_syntax:
+            diagrams = {inv.rel_to_path[r] for r in inv.diagram_puml_relpaths}
+            checked = [r for r in results if r.path in diagrams and r.outcome == "verified" and not r.errors]
+            if checked:
+                issues = self._puml_syntax.check_batch([r.path for r in checked])
+                for result in checked:
+                    result.issues.extend(issues.get(result.path, []))
+        return results
 
     def verify_document_file(
         self, path: Path, *, snapshot: "RepositorySnapshot | None" = None

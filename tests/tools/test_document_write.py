@@ -5,6 +5,7 @@ from pathlib import Path
 
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.document import create_document, edit_document
 
@@ -37,7 +38,9 @@ def _schema(repo: Path, *, subdirectory: str | None = None) -> None:
 
 
 def _verifier(repo: Path) -> ArtifactVerifier:
-    return ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+    return ArtifactVerifier(
+        ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs(), kind_bindings=KIND_BINDINGS
+    )
 
 
 def test_create_document_uses_schema_subdirectory(tmp_path: Path) -> None:

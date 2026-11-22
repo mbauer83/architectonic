@@ -11,9 +11,11 @@ from src.application.verification.artifact_verifier_types import (
     Severity,
     VerificationResult,
 )
+from src.domain.artifact_id import stable_id
+from src.domain.repository.artifact_location import artifact_kind
 from src.domain.repository.connection_declaration import parse_connection_header
 from src.domain.repository.frontmatter import Frontmatter, FrontmatterProblem, opens_with_frontmatter, read_frontmatter
-from src.domain.yaml_documents import parse_yaml
+from src.domain.yaml_documents import parse_yaml, parse_yaml_with_unique_keys
 
 if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
@@ -32,11 +34,14 @@ def read_file(
     A path the snapshot does not hold falls back to disk: single-file verification passes no
     snapshot at all, and a document outside the inventory is read the same way it always was.
     """
+    if snapshot is not None and (reason := snapshot.read_errors.get(path.resolve())) is not None:
+        result.issues.append(Issue(Severity.ERROR, "E001", f"Cannot read file: {reason}", loc))
+        return None
     if snapshot is not None and (content := snapshot.read(path)) is not None:
         return content
     try:
         return path.read_text(encoding="utf-8")
-    except OSError as exc:
+    except (OSError, UnicodeError) as exc:
         result.issues.append(Issue(Severity.ERROR, "E001", f"Cannot read file: {exc}", loc))
         return None
 
@@ -72,9 +77,12 @@ def parse_frontmatter(content: str, result: VerificationResult, loc: str) -> dic
         result.issues.append(Issue(Severity.ERROR, code, message, loc))
         return None
 
-    yaml_block = reading.text
+    return parse_identity_mapping(reading.text, result, loc)
+
+
+def parse_identity_mapping(yaml_block: str, result: VerificationResult, loc: str) -> dict | None:
     try:
-        fm = parse_yaml(yaml_block)
+        fm = parse_yaml_with_unique_keys(yaml_block)
     except yaml.YAMLError as exc:
         result.issues.append(Issue(Severity.ERROR, "E013", f"Frontmatter YAML parse error: {exc}", loc))
         return None
@@ -83,6 +91,20 @@ def parse_frontmatter(content: str, result: VerificationResult, loc: str) -> dic
         result.issues.append(Issue(Severity.ERROR, "E014", "Frontmatter is not a YAML mapping", loc))
         return None
 
+    assert result.file_type != "unrecognised"
+    kind = artifact_kind(result.file_type)
+    expected = kind.file_identity(result.path)
+    declared = fm.get(kind.identity_field)
+    # Outgoing sidecars reference their source by either full or rename-stable id.
+    matches = declared == expected or (
+        kind.identity_field == "source-entity" and isinstance(declared, str)
+        and stable_id(expected) == stable_id(declared)
+    )
+    if declared is not None and not matches:
+        result.issues.append(Issue(
+            Severity.ERROR, "E104",
+            f"File name carries '{expected}', but {kind.identity_field} is '{fm[kind.identity_field]}'.", loc,
+        ))
     return fm
 
 
@@ -121,10 +143,13 @@ def parse_connection_refs(path: Path) -> ConnectionRefs | None:
     """
     try:
         content = path.read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, UnicodeError):
         return None
 
-    fm = extract_yaml_block(content)
+    try:
+        fm = extract_yaml_block(content)
+    except yaml.YAMLError:
+        return None
     if fm is None:
         return None
 
@@ -150,13 +175,13 @@ def parse_connection_refs(path: Path) -> ConnectionRefs | None:
 def parse_diagram_refs(path: Path) -> dict[str, list[str]] | None:
     try:
         content = path.read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, UnicodeError):
         return None
 
-    if path.suffix == ".puml":
-        fm = extract_puml_frontmatter_best_effort(content)
-    else:
+    try:
         fm = extract_yaml_block(content)
+    except yaml.YAMLError:
+        return None
     if not isinstance(fm, dict):
         return None
 

@@ -137,6 +137,16 @@ def _verify_section_connections(
         )
 
 
+#: Every finding a document can carry, as its rule modules spell them. Declared so that what the verifier
+#: checks is a fact a reader can see; `test_each_verifier_declares_its_rule_codes` holds it equal to the
+#: codes its modules emit.
+RULE_CODES: frozenset[str] = frozenset({
+    "E001", "E011", "E012", "E013", "E014", "E021", "E022", "E031", "E101", "E102", "E104", "E153", "E154",
+    "E155", "E156", "E162", "E163", "E303", "E304", "E305", "E308", "E309", "E311", "E312", "E313", "W031",
+    "W155", "W156", "W157", "W159", "W162", "W163", "W164", "W165", "W166", "W167", "W168", "W321", "W322",
+})
+
+
 def verify_document(  # noqa: C901
     path: Path,
     *,

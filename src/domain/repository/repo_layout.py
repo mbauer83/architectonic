@@ -11,6 +11,14 @@ PROJECTS = "projects"  # model-project group containers: PROJECTS/<slug>/MODEL/.
 DIAGRAM_CATALOG = "diagram-catalog"
 DIAGRAMS = "diagrams"  # subdirectory within DIAGRAM_CATALOG/
 RENDERED = "rendered"  # subdirectory within DIAGRAM_CATALOG/ — derived output, excluded from indexing
+RENDERED_SUFFIXES: tuple[str, ...] = (".png", ".svg")
+MANAGED_INCLUDE_BASENAMES = frozenset({
+    "_archimate-stereotypes.puml",
+    "_archimate-glyphs.puml",
+    "_archimate-relations.puml",
+    "_macros.puml",
+})
+
 ICONS = "icons"  # subdirectory within DIAGRAM_CATALOG/ — the shared icon library, ICO@….md
 ARCH_REPO = ".arch-repo"
 ARCH_DOC_SCHEMATA = "documents"  # subdirectory within ARCH_REPO/ — document type JSON schemas
@@ -56,3 +64,15 @@ RUNTIME_STATE: tuple[str, ...] = (
     f"{ARCH_REPO}/{SYNC_WORKTREES}/",
     f"{ARCH_REPO}/{EXCHANGE_IDENTITY}",
 )
+
+
+def is_runtime_path(relative: str) -> bool:
+    """Whether a root-relative path belongs to Git or to the product's local state."""
+    return relative == ".git" or relative.startswith(".git/") or any(
+        relative == entry.rstrip("/") or (entry.endswith("/") and relative.startswith(entry))
+        for entry in RUNTIME_STATE
+    )
+
+
+def is_configuration_path(relative: str) -> bool:
+    return "/" not in relative or relative.startswith(f"{ARCH_REPO}/")
