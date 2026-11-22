@@ -85,7 +85,9 @@ export const shapeOrder = (geometry: LabGeometry, placement: Placement, lift: Li
  * Where in *shapes* each line is sunk: the place of the first shape painted after one of its ends that
  * covers that end — any shape but one the end holds. A line no shape hides is absent.
  */
-const sunkLines = (geometry: LabGeometry, placement: Placement, shapes: readonly PaintedShape[]): Map<number, number> => {
+const sunkLines = (
+  geometry: LabGeometry, placement: Placement, shapes: readonly PaintedShape[],
+): Map<number, number> => {
   const place = new Map(shapes.map((shape, index) => [shape.alias, index]))
   const held = new Map<string, ReadonlySet<string>>()
   const heldBy = (alias: string): ReadonlySet<string> => {

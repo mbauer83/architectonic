@@ -90,12 +90,17 @@ const halfWidthOf = (tag: string, size: number): number => tag.length * size * T
 /** The box round *tag*'s text, centred at *at* on its baseline. */
 const tagBoxAt = (tag: string, at: Point, size: number): Extent => {
   const half = halfWidthOf(tag, size) + size * TAG_PADDING
-  return { left: at.x - half, top: at.y - size * (0.9 + TAG_PADDING), right: at.x + half, bottom: at.y + size * (0.25 + TAG_PADDING) }
+  return {
+    left: at.x - half, top: at.y - size * (0.9 + TAG_PADDING),
+    right: at.x + half, bottom: at.y + size * (0.25 + TAG_PADDING),
+  }
 }
 
 /** Where *tag* goes near *wanted*: the first shift that clears every tag placed, or none if it is shown nearby. */
 const placedTag = (tag: string, wanted: Point, size: number, placed: readonly PlacedTag[]): PlacedTag | null => {
-  if (placed.some((other) => other.tag === tag && distanceBetween(other.at, wanted) < SAME_TAG_APART * size)) return null
+  const shownNearby = (other: PlacedTag): boolean =>
+    other.tag === tag && distanceBetween(other.at, wanted) < SAME_TAG_APART * size
+  if (placed.some(shownNearby)) return null
   const candidates = TAG_SHIFTS.map((shift): PlacedTag => {
     const at = { x: wanted.x, y: wanted.y + shift * size }
     return { tag, at, box: tagBoxAt(tag, at, size) }

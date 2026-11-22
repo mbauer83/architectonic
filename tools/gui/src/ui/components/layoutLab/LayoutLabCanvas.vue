@@ -7,17 +7,13 @@
 import { computed, ref, watch } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
 import { heightOf, widthOf } from '../../../domain/layout/geometry'
-import type { DrawingNode } from '../../../domain/layout/lab/labGeometry'
-import type { DrawnLine } from '../../../domain/layout/lab/labLineDrawing'
-import { drawnLine } from '../../../domain/layout/lab/labLineDrawing'
-import type { PlacedDrawing } from '../../../domain/layout/lab/labShapeDrawing'
-import { shapeDrawing } from '../../../domain/layout/lab/labShapeDrawing'
 import { useElementSize } from '../../composables/useElementSize'
 import type { LayoutLab } from '../../composables/useLayoutLab'
 import type { BreachMark } from './labDrawing'
-import { breachMarksOf, dragRegionOf, handlesOf, pointsAttribute } from './labDrawing'
-import type { Painted } from './labPaintOrder'
+import { breachMarksOf, handlesOf, pointsAttribute } from './labDrawing'
 import { paintOrder } from './labPaintOrder'
+import type { DrawnRelation, DrawnShape, Piece } from './labPieces'
+import { drawnRelations, drawnShapes, pieceOf } from './labPieces'
 import LabDrawn from './LabDrawn'
 import { useLabGesture } from './useLabGesture'
 
@@ -95,75 +91,23 @@ const backdropTransform = computed((): string => {
   return `translate(${extent.left} ${extent.top}) scale(${across} ${down}) translate(${-canvas.left} ${-canvas.top})`
 })
 
-interface DrawnShape {
-  readonly alias: string
-  readonly isBox: boolean
-  /** Where it is taken to drag it: the whole outline, a grouping's full-width title band included. */
-  readonly region: Extent
-  readonly drawing: PlacedDrawing
-}
-
-/** Every shape, by alias, where it is now, drawn as PlantUML or the composer drew it. */
+/** Every shape and line where it is now, drawn as PlantUML or the composer drew it (`labPieces`). */
 const shapes = computed((): ReadonlyMap<string, DrawnShape> => {
   const drawn = geometry.value
   const where = placement.value
-  if (!drawn || !where) return new Map()
-  const reshaped = props.lab.reshaped.value
-  const all = [...drawn.boxes.map((shape) => ({ shape, isBox: true })), ...drawn.elements.map((shape) => ({ shape, isBox: false }))]
-  return new Map(all.flatMap(({ shape, isBox }): [string, DrawnShape][] => {
-    const now = isBox ? where.boxes.get(shape.alias) : where.elements.get(shape.alias)
-    if (!now) return []
-    const drawing = shapeDrawing(shape.extent, shape.drawing, now, reshaped.get(shape.alias))
-    return [[shape.alias, { alias: shape.alias, isBox, region: dragRegionOf(now), drawing }]]
-  }))
+  return drawn && where ? drawnShapes(drawn, where, props.lab.reshaped.value) : new Map()
 })
-
-interface DrawnRelation {
-  /** PlantUML's own drawing of the whole relation, label and decorations in it, until the first change. */
-  readonly asDrawn: DrawingNode | null
-  readonly along: DrawnLine
-}
-
-/** Each line, by its place: PlantUML's own until the first change, then drawn along the router's course. */
 const lines = computed((): ReadonlyMap<number, DrawnRelation> => {
   const drawn = geometry.value
-  if (!drawn) return new Map()
-  const asDrawn = props.lab.routes.value === null
-  return new Map(drawn.relations.flatMap((relation): [number, DrawnRelation][] => {
-    const course = props.lab.courses.value.get(relation.index)
-    if (!course || course.length < 2) return []
-    const along = drawnLine(relation.drawing, course)
-    return [[relation.index, { asDrawn: asDrawn ? relation.drawing.group : null, along }]]
-  }))
+  return drawn ? drawnRelations(drawn, props.lab.courses.value, props.lab.routes.value === null) : new Map()
 })
-
-/** One piece of the picture, ready to draw. */
-type Piece =
-  | { readonly kind: 'shape'; readonly key: string; readonly shape: DrawnShape }
-  | { readonly kind: 'line'; readonly key: string; readonly relation: number; readonly drawn: DrawnRelation }
-  | {
-    readonly kind: 'label'; readonly key: string; readonly relation: number
-    readonly label: NonNullable<DrawnLine['label']>
-  }
-
-/** What *painted* draws, if anything: a label drawn inside PlantUML's own relation has no piece of its own. */
-const pieceOf = (painted: Painted): Piece[] => {
-  if (painted.kind === 'shape') {
-    const shape = shapes.value.get(painted.alias)
-    return shape ? [{ kind: 'shape', key: `shape:${painted.alias}`, shape }] : []
-  }
-  const drawn = lines.value.get(painted.relation)
-  if (!drawn) return []
-  if (painted.kind === 'line') return [{ kind: 'line', key: `line:${painted.relation}`, relation: painted.relation, drawn }]
-  const label = drawn.asDrawn === null ? drawn.along.label : null
-  return label ? [{ kind: 'label', key: `label:${painted.relation}`, relation: painted.relation, label }] : []
-}
 
 /** The picture back to front (`labPaintOrder`): shapes by nesting, then lines, then labels. */
 const pieces = computed((): Piece[] => {
   const drawn = geometry.value
   const where = placement.value
-  return drawn && where ? paintOrder(drawn, where, gesture.lifted.value).flatMap(pieceOf) : []
+  return drawn && where ? paintOrder(drawn, where, gesture.lifted.value)
+    .flatMap((painted) => pieceOf(painted, shapes.value, lines.value)) : []
 })
 
 /**
