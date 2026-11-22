@@ -15,7 +15,7 @@ from typing import Any, cast
 
 import pytest
 
-from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
+from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.domain.artifact_id import stable_id
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.artifact_index.events import AuthoritativeIndexMutationCommitted, event_bus
@@ -25,6 +25,7 @@ from src.infrastructure.mcp.artifact_mcp.bulk_tools import (
     artifact_bulk_write,
     artifact_get_operation,
 )
+from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 from src.infrastructure.write import artifact_write_ops
 
 
@@ -1058,7 +1059,7 @@ Alice -> Bob
         assert all(item["wrote"] is True for item in results)
         assert cast(dict[str, Any], payload["batch_verification"])["valid"] is True
 
-        verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
+        verifier = build_artifact_verifier(ArtifactRegistry(shared_artifact_index(repo)), catalogs=_catalogs())
         assert all(r.valid for r in verifier.verify_all(repo)), "repo should verify after batch delete"
 
     def test_delete_entity_requires_diagram_delete_in_same_batch(self, repo: Path) -> None:

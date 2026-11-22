@@ -116,6 +116,7 @@ def document_text(schema: DocumentSchema, tables: Mapping[str, str], **frontmatt
         for section in schema.sections
     ]
     return (
-        f"---\nartifact-id: DOC@1000000003.Doc.doc\nartifact-type: document\ndoc-type: {schema.doc_type}\n"
+        f"---\nartifact-id: {schema.data['abbreviation']}@1000000003.Doc.doc\n"
+        f"artifact-type: document\ndoc-type: {schema.doc_type}\n"
         f"{head}---\n\n" + "\n\n".join(sections) + "\n"
     )

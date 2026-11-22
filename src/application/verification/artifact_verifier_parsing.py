@@ -11,6 +11,7 @@ from src.application.verification.artifact_verifier_types import (
     Severity,
     VerificationResult,
 )
+from src.domain.artifact_id import stable_id
 from src.domain.repository.artifact_location import artifact_kind
 from src.domain.repository.connection_declaration import parse_connection_header
 from src.domain.repository.frontmatter import Frontmatter, FrontmatterProblem, opens_with_frontmatter, read_frontmatter
@@ -93,7 +94,13 @@ def parse_identity_mapping(yaml_block: str, result: VerificationResult, loc: str
     assert result.file_type != "unrecognised"
     kind = artifact_kind(result.file_type)
     expected = kind.file_identity(result.path)
-    if kind.identity_field in fm and fm[kind.identity_field] != expected:
+    declared = fm.get(kind.identity_field)
+    # Outgoing sidecars reference their source by either full or rename-stable id.
+    matches = declared == expected or (
+        kind.identity_field == "source-entity" and isinstance(declared, str)
+        and stable_id(expected) == stable_id(declared)
+    )
+    if declared is not None and not matches:
         result.issues.append(Issue(
             Severity.ERROR, "E104",
             f"File name carries '{expected}', but {kind.identity_field} is '{fm[kind.identity_field]}'.", loc,

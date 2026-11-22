@@ -34,17 +34,16 @@ from src.application.verification import (
     _verifier_outgoing,
     artifact_verifier_syntax,
 )
-from src.application.verification.kind_verification import KindBinding, KindBindings, KindVerifier
+from src.application.verification.kind_verification import KindBinding, KindBindings, KindVerifier, PerKindVerification
 from src.domain.repository.artifact_location import ARTIFACT_KINDS, ArtifactKindName, KindDeclaration
 
 if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
-    from src.application.verification.artifact_verifier import ArtifactVerifier
     from src.application.verification.artifact_verifier_types import VerificationResult
 
 
 def _diagram(
-    host: ArtifactVerifier, path: Path, snapshot: RepositorySnapshot | None
+    host: PerKindVerification, path: Path, snapshot: RepositorySnapshot | None
 ) -> VerificationResult:
     """A diagram in markdown is a matrix; in PlantUML, everything else. The notation is the suffix."""
     verify = host.verify_matrix_diagram_file if path.suffix == ".md" else host.verify_diagram_file

@@ -63,6 +63,7 @@ async def artifact_verify(
         result = verifier.verify_as(inferred, p)
         out = as_verification_result_dict(result)
         # A kind no verifier is bound to answers `unverified`, which `valid` already counts as not passed.
+        out["outcome"] = result.outcome
         out["repo_roots"] = [str(r) for r in roots]
         out["repo_scope"] = repo_scope
         return out
@@ -128,7 +129,9 @@ async def artifact_verify(
     for r in results:
         files_by_type[r.file_type] = files_by_type.get(r.file_type, 0) + 1
     if return_mode == "full":
-        payload: Any = [as_verification_result_dict(r) for r in results if r.issues or not r.valid]
+        payload: Any = [
+            dict(as_verification_result_dict(r), outcome=r.outcome) for r in results if r.issues or not r.valid
+        ]
     else:
         payload = [
             {

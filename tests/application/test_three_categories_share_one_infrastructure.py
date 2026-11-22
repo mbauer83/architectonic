@@ -199,7 +199,7 @@ def test_every_named_category_is_held_to_the_same_core_frontmatter(
     root, ids = repo_with_all_three
     for category, suffix in (("entity", ".md"), ("diagram", ".puml"), ("document", ".md")):
         path = _path_of(root, ids[category], suffix)
-        result = VerificationResult(path=str(path), file_type=category)
+        result = VerificationResult(path=path, file_type=category)
         frontmatter = parse_frontmatter(read_file(path, result, str(path)) or "", result, str(path))
         assert frontmatter is not None, (category, result.issues)
 

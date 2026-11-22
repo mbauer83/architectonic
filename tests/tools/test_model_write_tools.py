@@ -19,10 +19,11 @@ import pytest
 from pytest_bdd import given, scenarios, then, when
 
 from src.application.modeling.artifact_write import generate_diagram_id, prefix_for_diagram_type
-from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
+from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.domain.artifact_id import stable_id
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp import mcp_artifact_server as tools
+from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 
 
 @lru_cache(maxsize=1)
@@ -164,7 +165,7 @@ def repo_with_entities_and_connection(repo_root: Path) -> tuple[Path, str, str]:
     assert conn.get("wrote") is True
 
     # Sanity: verifier should pass across repo.
-    verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo_root)), catalogs=_catalogs())
+    verifier = build_artifact_verifier(ArtifactRegistry(shared_artifact_index(repo_root)), catalogs=_catalogs())
     results = verifier.verify_all(repo_root)
     assert all(r.valid for r in results), [i for r in results for i in r.errors]
     return repo_root, e1_id, e2_id
@@ -215,7 +216,7 @@ def diagram_inferred_ids(
 
     # Verify the created file.
     p = Path(diagram_result["path"])
-    verifier = ArtifactVerifier(ArtifactRegistry(shared_artifact_index(repo_root)), catalogs=_catalogs())
+    verifier = build_artifact_verifier(ArtifactRegistry(shared_artifact_index(repo_root)), catalogs=_catalogs())
     res = verifier.verify_diagram_file(p)
     assert res.valid is True, res.issues
 

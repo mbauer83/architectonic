@@ -18,7 +18,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, Protocol, TypeAlias
 
 from src.application.verification.artifact_verifier_parsing import parse_identity_mapping, read_file
 from src.application.verification.artifact_verifier_types import VerificationResult
@@ -27,11 +27,32 @@ from src.domain.repository.artifact_location import ArtifactKindName, artifact_k
 
 if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
-    from src.application.verification.artifact_verifier import ArtifactVerifier
+
+
+class PerKindVerification(Protocol):
+    """The verifier's per-kind entry points, which a binding chooses among."""
+
+    def verify_entity_file(self, path: Path, *, snapshot: RepositorySnapshot | None = None) -> VerificationResult: ...
+
+    def verify_connection_file(
+        self, path: Path, *, snapshot: RepositorySnapshot | None = None
+    ) -> VerificationResult: ...
+
+    def verify_diagram_file(self, path: Path, *, snapshot: RepositorySnapshot | None = None) -> VerificationResult: ...
+
+    def verify_matrix_diagram_file(
+        self, path: Path, *, snapshot: RepositorySnapshot | None = None
+    ) -> VerificationResult: ...
+
+    def verify_document_file(
+        self, path: Path, *, snapshot: RepositorySnapshot | None = None
+    ) -> VerificationResult: ...
+
+    def verify_icon_file(self, path: Path, *, snapshot: RepositorySnapshot | None = None) -> VerificationResult: ...
 
 
 #: Verify one file of the kind, given the verifier that holds the registry and catalogs to do it with.
-VerifyOne: TypeAlias = Callable[["ArtifactVerifier", Path, "RepositorySnapshot | None"], VerificationResult]
+VerifyOne: TypeAlias = Callable[[PerKindVerification, Path, "RepositorySnapshot | None"], VerificationResult]
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,7 +79,7 @@ KindBindings: TypeAlias = Mapping[ArtifactKindName, KindBinding]
 
 def verify_by_binding(
     bindings: KindBindings,
-    host: ArtifactVerifier,
+    host: PerKindVerification,
     kind: ArtifactKindName,
     path: Path,
     snapshot: RepositorySnapshot | None = None,

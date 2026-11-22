@@ -13,7 +13,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from src.application.repo_path_helpers import all_model_roots
+from src.application.puml_directive_policy import is_managed_include
+from src.application.repo_path_helpers import RENDERED_SUFFIXES, all_model_roots, rendered_root
 from src.application.verification.artifact_verifier_parsing import parse_connection_refs, parse_diagram_refs
 from src.application.verification.artifact_verifier_types import entity_id_from_path
 from src.domain.repository.artifact_location import artifact_kind_at, model_file_kind
@@ -87,6 +88,7 @@ def inventory_files(repo_path: Path, *, include_diagrams: bool) -> FileInventory
 
 def unrecognised_files(root: Path) -> list[Path]:
     found = []
+    rendered = rendered_root(root)
     for directory, subdirs, names in root.walk():
         relative = directory.relative_to(root)
         subdirs[:] = [
@@ -95,9 +97,14 @@ def unrecognised_files(root: Path) -> list[Path]:
         ]
         for name in names:
             path = relative / name
-            if not is_configuration_path(path.as_posix()) and not is_runtime_path(path.as_posix()):
-                if artifact_kind_at(path) is None:
-                    found.append(root / path)
+            if is_configuration_path(path.as_posix()) or is_runtime_path(path.as_posix()):
+                continue
+            if directory.is_relative_to(rendered) and path.suffix in RENDERED_SUFFIXES:
+                continue
+            if relative.parts == (DIAGRAM_CATALOG,) and is_managed_include(name):
+                continue
+            if artifact_kind_at(path) is None:
+                found.append(root / path)
     return sorted(found)
 
 

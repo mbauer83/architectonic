@@ -194,7 +194,10 @@ def test_repository_pass_checks_identity_and_scope(catalogs, repo: Path, monkeyp
     stray = repo / "extra/picture.dat"
     stray.parent.mkdir()
     stray.touch()
-    for name in ("README.md", ".arch/state", ".arch-repo/config", ".arch-repo/transactions/one/file"):
+    for name in (
+        "README.md", ".arch/state", ".arch-repo/config", ".arch-repo/transactions/one/file",
+        "diagram-catalog/rendered/group/drawing.svg", "diagram-catalog/_archimate-glyphs.puml",
+    ):
         path = repo / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.touch()

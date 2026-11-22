@@ -131,18 +131,6 @@ class ArtifactVerifier(_VerifierAdapters):
             icon_library=self.icon_library,
         )
 
-    def _repo_root_for_path(self, path: Path) -> Path | None:
-        if self.registry is None:
-            return None
-        resolved = path.resolve()
-        for root in self.registry.repo_roots:
-            try:
-                resolved.relative_to(root)
-                return root
-            except ValueError:
-                continue
-        return None
-
     def verify_entity_file(
         self, path: Path, *, schema_repo_root: Path | None = None, snapshot: RepositorySnapshot | None = None
     ) -> VerificationResult:

@@ -49,7 +49,7 @@ from tests.support.typed_table_documents import (
 _STAMP = "2026-11-20T10:00:00Z"
 _FRONTMATTER_AS_AN_AUTHOR_LEFT_IT = (
     "---\n# kept as written\ndoc-type:   stress-analysis\nartifact-type: document\n"
-    'title: "Checkout under stress"\nartifact-id: DOC@1000000003.Doc.doc\nstatus: draft\n'
+    'title: "Checkout under stress"\nartifact-id: STRESS@1000000003.Doc.doc\nstatus: draft\n'
     "last-updated: '2026-01-01T00:00:00Z'  # stamped by the write\n---\n"
 )
 

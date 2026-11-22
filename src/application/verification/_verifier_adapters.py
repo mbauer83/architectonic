@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import copy
 import functools
+from pathlib import Path
 from typing import Self
 
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
@@ -31,6 +32,18 @@ class _VerifierAdapters:
     _picture_inspector: StoredPictureInspector | None
     _icon_library: IconLibrary | None
     registry: ArtifactRegistry | None
+
+    def _repo_root_for_path(self, path: Path) -> Path | None:
+        if self.registry is None:
+            return None
+        resolved = path.resolve()
+        for root in self.registry.repo_roots:
+            try:
+                resolved.relative_to(root)
+                return root
+            except ValueError:
+                continue
+        return None
 
     @property
     def icon_library(self) -> IconLibrary | None:
