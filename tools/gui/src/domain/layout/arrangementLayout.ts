@@ -19,6 +19,14 @@ import type { Arrangement } from './lab/labArrangement'
 import { drawnArrangement } from './lab/labArrangement'
 import { placementOf } from './lab/labRouting'
 
+/** *geometry* less the elements *removed* names, by alias, and every line into them. */
+export const withoutElements = (geometry: LayoutGeometry, removed: ReadonlySet<string>): LayoutGeometry =>
+  removed.size === 0 ? geometry : {
+    ...geometry,
+    elements: geometry.elements.filter((one) => !removed.has(one.alias)),
+    relations: geometry.relations.filter((one) => !removed.has(one.source) && !removed.has(one.target)),
+  }
+
 /** A shape's place as a layout block states it: its corner, and its size where it states one. */
 export interface Placed {
   readonly x: number

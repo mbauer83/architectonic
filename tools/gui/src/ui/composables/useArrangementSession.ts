@@ -19,6 +19,7 @@ import { stillToReshape } from '../../domain/layout/lab/labShapeDrawing'
 import type { RoutingResult } from '../../domain/layout/routing/scene'
 import type { DrawingNode, LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import { pointsOf } from '../../domain/schemas/diagramLayoutGeometry'
+import { withoutElements } from '../../domain/layout/arrangementLayout'
 import type { ShapeToDraw } from '../../ports/DiagramLayoutRepository'
 
 /** What a session holds at one moment, and what undo returns to: where shapes are, and whether by hand. */
@@ -26,6 +27,8 @@ export interface ArrangementState {
   readonly arrangement: Arrangement
   /** Arranged by hand: every line routed. Otherwise the picture is PlantUML's, lines and all. */
   readonly byHand: boolean
+  /** Elements removed from the diagram in this session, by alias: drawn no more, with their lines. */
+  readonly removed?: ReadonlySet<string>
 }
 
 /** How long the last pass took: the budget is a drag frame. */
@@ -41,8 +44,11 @@ export type DrawShapes = (shapes: readonly ShapeToDraw[]) => Effect.Effect<reado
 export type TakeOver = (geometry: LayoutGeometry, automatic: Arrangement) => Arrangement
 
 export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver) {
-  const geometry = shallowRef<LayoutGeometry | null>(null)
+  /** The picture as PlantUML drew it; what is shown is that, less what the session removed. */
+  const drawnPicture = shallowRef<LayoutGeometry | null>(null)
   const state = shallowRef<ArrangementState | null>(null)
+  const geometry = computed(() =>
+    drawnPicture.value && withoutElements(drawnPicture.value, state.value?.removed ?? new Set()))
   const history = shallowRef<readonly ArrangementState[]>([])
   const future = shallowRef<readonly ArrangementState[]>([])
   const routes = shallowRef<RoutingResult | null>(null)
@@ -53,8 +59,16 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
   let reshaping = false
 
   const arrangement = computed(() => state.value?.arrangement ?? null)
-  const placement = computed(() =>
-    geometry.value && arrangement.value ? placementOf(geometry.value, arrangement.value) : null)
+  /** Where every shape now drawn is: a removed element is no obstacle and holds no box open. */
+  const placement = computed(() => {
+    const drawn = geometry.value
+    const now = arrangement.value
+    if (!drawn || !now) return null
+    const removed = state.value?.removed ?? new Set<string>()
+    const kept = removed.size === 0 ? now
+      : { ...now, elements: new Map([...now.elements].filter(([alias]) => !removed.has(alias))) }
+    return placementOf(drawn, kept)
+  })
 
   const reshape = async (): Promise<void> => {
     const drawn = geometry.value
@@ -133,7 +147,7 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
   const open = (drawn: LayoutGeometry, start: ArrangementState | null = null) => {
     reshaped.value = new Map()
     reshapeError.value = null
-    geometry.value = drawn
+    drawnPicture.value = drawn
     history.value = []
     future.value = []
     show(start ?? { arrangement: drawnArrangement(drawn), byHand: false })
@@ -150,7 +164,7 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
     if (!drawn || !now) return
     history.value = [...history.value, now]
     future.value = []
-    if (!now.byHand) show({ arrangement: takeOver(drawn, now.arrangement), byHand: true })
+    if (!now.byHand) show({ ...now, arrangement: takeOver(drawn, now.arrangement), byHand: true })
   }
 
   /** Make *next* the state, as one undoable step. */
@@ -161,7 +175,7 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
 
   /** One frame of a change: the arrangement reached, and the shapes whose lines it moved. */
   const preview = (next: Arrangement, changed: ReadonlySet<string>) => {
-    state.value = { arrangement: next, byHand: true }
+    state.value = { ...state.value, arrangement: next, byHand: true }
     if (!routes.value) routeEverything()
     if (frame !== null) return
     frame = requestAnimationFrame(() => {
@@ -196,8 +210,14 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
     show(later)
   }
 
+  /** Nothing open: what a failed read leaves. */
+  const close = () => {
+    drawnPicture.value = null
+    state.value = null
+  }
+
   return {
-    geometry, state, arrangement, history, future, routes, timing, placement, courses, breaches,
+    drawnPicture, geometry, state, close, arrangement, history, future, routes, timing, placement, courses, breaches,
     reshaped, reshapeError, open, begin, step, preview, commit, undo, redo, routeEverything,
   }
 }

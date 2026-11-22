@@ -14,6 +14,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { ModelService } from '../../application/ModelService'
 import { SMALLEST_ELEMENT, moved, resized, resizedExtent } from '../../domain/layout/lab/labArrangement'
+import type { DrawnMembership } from './useDiagramEditing'
 import { useDiagramEditing } from './useDiagramEditing'
 
 /** How far an arrow moves or resizes a shape: the grid, or one pixel with Shift. */
@@ -42,11 +43,11 @@ const isTyping = (target: EventTarget | null): boolean =>
 export function useDiagramEditMode(
   svc: ModelService,
   diagramId: Ref<string>,
-  parts: { canvas: Ref<CanvasHandle | null>; bar: Ref<EditBarHandle | null> },
+  parts: { canvas: Ref<CanvasHandle | null>; bar: Ref<EditBarHandle | null>; membership: () => DrawnMembership | null },
   onLeft: () => void,
   toast: Toast,
 ) {
-  const editing = useDiagramEditing(svc, () => diagramId.value)
+  const editing = useDiagramEditing(svc, () => diagramId.value, parts.membership)
   const active = ref(false)
   const leaving = ref(false)
   const spaceHeld = ref(false)
@@ -116,6 +117,11 @@ export function useDiagramEditMode(
     } else if (command && key === 'y') {
       event.preventDefault()
       session.redo()
+    } else if ((event.key === 'Delete' || event.key === 'Backspace') && parts.canvas.value?.selected) {
+      // Remove from the diagram only (owner's standing rule); deleting from the model is a menu command.
+      event.preventDefault()
+      editing.remove(parts.canvas.value.selected)
+      parts.canvas.value.clearSelection()
     } else if (event.key in ARROWS && parts.canvas.value?.selected) {
       event.preventDefault()
       nudge(parts.canvas.value.selected, ARROWS[event.key], event.shiftKey ? 1 : GRID, event.altKey)

@@ -10,6 +10,7 @@ import { moved } from '../../domain/layout/lab/labArrangement'
 import { LINE_DRAWING, SHAPE_DRAWING } from '../../domain/layout/lab/__tests__/labDrawingFixtures'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
+import type { DiagramWriteBody } from '../../ports/diagramWriteBodies'
 import { useDiagramEditing } from './useDiagramEditing'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
@@ -29,9 +30,18 @@ const geometry: LayoutGeometry = {
 }
 
 const sent: LayoutPatch[] = []
+const written: DiagramWriteBody[] = []
+const MEMBERSHIP = {
+  diagram_type: 'archimate-layered', name: 'Test', entity_ids: ['APP@1.a', 'APP@3.c'],
+  connection_ids: ['APP@1.a---APP@3.c@@archimate-serving'],
+}
 const service = {
   readLayoutGeometry: () => Effect.succeed(geometry),
   drawResizedShapes: () => Effect.succeed([]),
+  editDiagram: (_id: string, body: DiagramWriteBody) => {
+    written.push(body)
+    return Effect.succeed({ wrote: true })
+  },
   patchLayout: (_id: string, patch: LayoutPatch) => {
     sent.push(patch)
     return Effect.succeed({ artifact_id: 'ARC@1.a.test', wrote: true, warnings: [], errors: [], layout: {
@@ -41,7 +51,7 @@ const service = {
 } as unknown as ModelService
 
 const opened = async () => {
-  const editing = useDiagramEditing(service, () => 'ARC@1.a.test')
+  const editing = useDiagramEditing(service, () => 'ARC@1.a.test', () => MEMBERSHIP)
   await editing.open()
   return editing
 }
@@ -57,6 +67,7 @@ const move = (editing: Awaited<ReturnType<typeof opened>>, alias: string, dx: nu
 
 beforeEach(() => {
   sent.length = 0
+  written.length = 0
   vi.stubGlobal('requestAnimationFrame', (frame: FrameRequestCallback) => { frame(0); return 1 })
   vi.stubGlobal('cancelAnimationFrame', () => undefined)
 })
@@ -95,5 +106,26 @@ describe('the changes a session would save', () => {
     editing.discard()
     expect(editing.changes.value).toEqual([])
     expect(editing.session.state.value?.byHand).toBe(false)
+  })
+})
+
+describe('removing an element from the diagram', () => {
+  it('draws it no more, with its lines, and undo brings both back', async () => {
+    const editing = await opened()
+    editing.remove('C')
+    expect(editing.session.geometry.value?.elements.map((one) => one.alias)).toEqual(['A'])
+    expect(editing.session.geometry.value?.relations).toEqual([])
+    expect(editing.changes.value.map((change) => change.key)).toEqual(['removed:C'])
+    editing.session.undo()
+    expect(editing.session.geometry.value?.relations).toHaveLength(1)
+    expect(editing.changes.value).toEqual([])
+  })
+
+  it('saves the diagram without it and its connections, and leaves the model alone', async () => {
+    const editing = await opened()
+    editing.remove('C')
+    expect(await editing.save()).toBe(true)
+    expect(written).toHaveLength(1)
+    expect(written[0]).toMatchObject({ entity_ids: ['APP@1.a'], connection_ids: [], dry_run: false })
   })
 })

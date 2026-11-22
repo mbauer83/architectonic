@@ -42,7 +42,7 @@ export function useLayoutLab(svc: ModelService) {
     try {
       session.open(await Effect.runPromise(svc.readLayoutGeometry(artifactId)))
     } catch (failure) {
-      session.geometry.value = null
+      session.close()
       error.value = failure instanceof Error ? failure.message : String(failure)
     } finally {
       loading.value = false

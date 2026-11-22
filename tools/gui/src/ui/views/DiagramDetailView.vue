@@ -12,7 +12,7 @@ import { renderMatrixMarkdown } from '../lib/matrixMarkdown'
 import type { C4Navigation } from '../../domain'
 import {
   buildDrilldownByEntityId, c4NavigationOf, diagramNeedsSvg, editRouteFor, editsOnCanvas,
-  editableMetadataByEntityType, isADifferentDiagram, matrixHtmlOf,
+  editableMetadataByEntityType, isADifferentDiagram, matrixHtmlOf, membershipOf,
 } from './DiagramDetailView.helpers'
 import DrilldownMenu from '../components/DrilldownMenu.vue'
 import DiagramReadingPanel from '../components/DiagramReadingPanel.vue'
@@ -125,7 +125,9 @@ const editableMetadataByType = computed<Record<string, EditableMetadataSpec>>(()
 // which the server has drawn again from whatever was saved.
 const editCanvas = ref<CanvasHandle | null>(null)
 const editBar = ref<EditBarHandle | null>(null)
-const edit = useDiagramEditMode(svc, diagramId, { canvas: editCanvas, bar: editBar }, load, toast)
+const edit = useDiagramEditMode(
+  svc, diagramId, { canvas: editCanvas, bar: editBar, membership: () => membershipOf(detail.value) }, load, toast,
+)
 const editing = computed(() => edit.active.value)
 watch(editing, () => { void panZoom.fitDiagramToViewport() })
 watch(() => edit.session.geometry.value, () => { if (editing.value) void panZoom.fitDiagramToViewport() })
