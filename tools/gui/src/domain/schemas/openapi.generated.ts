@@ -7957,6 +7957,12 @@ export interface components {
             layout?: {
                 [key: string]: unknown;
             } | null;
+            /** Layout Patch */
+            layout_patch?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            } | null;
             /** Name */
             name: string;
             /** Status */

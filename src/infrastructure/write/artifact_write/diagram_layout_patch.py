@@ -20,6 +20,7 @@ from pathlib import Path
 from src.application.repo_path_helpers import resolve_diagram_source_path
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, Layout, layout_as_written, read_layout
+from src.domain.diagrams.layout.layout_checks import DiagramIdentities, pruned_to
 from src.domain.diagrams.layout.layout_patch import patched, read_layout_patch
 
 from .diagram_edit import edit_diagram
@@ -36,6 +37,21 @@ class LayoutPatchResult:
 
     write: WriteResult
     layout: dict[str, object]
+
+
+def reconciled_layout(
+    *, stored: object, patch: Mapping[str, object], identities: DiagramIdentities
+) -> dict[str, object]:
+    """The layout a diagram write stores when what the diagram holds changes in the same write (D12).
+
+    The stored layout with the editor's patch applied — each entry checked against what the editor read —
+    less every entry naming what the diagram no longer holds: placed instances keep their places, removed
+    ones and their routes go. Unstated boxes are fitted round their members when the picture is composed.
+    Raises `LayoutConflict` or `MalformedLayout` (a ValueError) for a patch that cannot apply.
+    """
+    base = read_layout(stored) if isinstance(stored, Mapping) and stored else Layout()
+    kept, _dropped = pruned_to(patched(base, read_layout_patch(patch), stored=base), identities)
+    return layout_as_written(kept)
 
 
 def patch_diagram_layout(

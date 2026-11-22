@@ -3,7 +3,7 @@ import type { ChangeRepository } from './ChangeRepository'
 import type { DocumentRepository } from './DocumentRepository'
 import type { DiagramReadingRepository } from './DiagramReadingRepository'
 import type { Effect } from 'effect'
-import type { DiagramComposition, DiagramWriteBody } from './diagramWriteBodies'
+import type { DiagramComposition, DiagramReplaceBody, DiagramWriteBody } from './diagramWriteBodies'
 import type { EnterpriseAdminRepository } from './EnterpriseAdminRepository'
 import type { IconRepository } from './IconRepository'
 import type { DiagramLayoutRepository } from './DiagramLayoutRepository'
@@ -230,7 +230,7 @@ export interface ModelRepository
   readonly createDiagram: (body: DiagramWriteBody & { keywords?: string[] }) =>
     Effect.Effect<WriteResult, RepoError>
   /** Whole-diagram replacement, so PUT: the body states what the diagram becomes, not a delta. */
-  readonly editDiagram: (id: string, body: DiagramWriteBody) =>
+  readonly editDiagram: (id: string, body: DiagramReplaceBody) =>
     Effect.Effect<WriteResult, RepoError>
   /**
    * Merge a whitelisted metadata delta into one datatype classifier. The server reads the file and

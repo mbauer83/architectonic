@@ -1,4 +1,5 @@
 import type { AuthoredGrouping } from '../domain/authoredGrouping'
+import type { LayoutPatch } from './DiagramLayoutRepository'
 
 /**
  * What a diagram *draws* — everything that ends up in the picture, and nothing about the operation.
@@ -26,3 +27,10 @@ export type DiagramWriteBody = DiagramComposition & {
   viewpoint?: { slug: string; version: number; enforcement_override?: 'off' | 'warn' | 'ghost' } | null;
   dry_run?: boolean;
 }
+
+/**
+ * A replacement of a diagram: a write body, and the layout as a patch against what was read — written in
+ * the same write as the membership and pruned to what the diagram then holds, so the stored layout
+ * matches the body. Only a replacement takes one: a new diagram has no layout to patch.
+ */
+export type DiagramReplaceBody = DiagramWriteBody & { layout_patch?: LayoutPatch }

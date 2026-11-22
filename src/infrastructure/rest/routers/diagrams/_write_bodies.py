@@ -57,6 +57,10 @@ class EditDiagramGuiBody(DiagramComposition, _Body, Rehomeable):
     #: The whole layout block to store. Absent keeps the diagram's own; an empty object removes it
     #: and returns the diagram to PlantUML's arrangement with nothing else changed.
     layout: dict[str, Any] | None = None
+    #: Instead of a whole block: entries of the layout patch (as `PATCH …/layout` takes them), applied to
+    #: the stored layout in the same write that changes the membership, which then drops whatever names
+    #: what the diagram no longer holds (D12). So the stored layout always matches the body written.
+    layout_patch: dict[str, dict[str, Any]] | None = None
     version: str | None = None
     status: str | None = None
     tlp: str | None = None

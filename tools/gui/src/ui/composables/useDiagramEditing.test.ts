@@ -10,7 +10,7 @@ import { moved } from '../../domain/layout/lab/labArrangement'
 import { LINE_DRAWING, SHAPE_DRAWING } from '../../domain/layout/lab/__tests__/labDrawingFixtures'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
-import type { DiagramWriteBody } from '../../ports/diagramWriteBodies'
+import type { DiagramReplaceBody } from '../../ports/diagramWriteBodies'
 import { useDiagramEditing } from './useDiagramEditing'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
@@ -30,7 +30,7 @@ const geometry: LayoutGeometry = {
 }
 
 const sent: LayoutPatch[] = []
-const written: DiagramWriteBody[] = []
+const written: DiagramReplaceBody[] = []
 const MEMBERSHIP = {
   diagram_type: 'archimate-layered', name: 'Test', entity_ids: ['APP@1.a', 'APP@3.c'],
   connection_ids: ['APP@1.a---APP@3.c@@archimate-serving'],
@@ -38,7 +38,7 @@ const MEMBERSHIP = {
 const service = {
   readLayoutGeometry: () => Effect.succeed(geometry),
   drawResizedShapes: () => Effect.succeed([]),
-  editDiagram: (_id: string, body: DiagramWriteBody) => {
+  editDiagram: (_id: string, body: DiagramReplaceBody) => {
     written.push(body)
     return Effect.succeed({ wrote: true, warnings: [] })
   },
@@ -127,5 +127,8 @@ describe('removing an element from the diagram', () => {
     expect(await editing.save()).toBe(true)
     expect(written).toHaveLength(1)
     expect(written[0]).toMatchObject({ entity_ids: ['APP@1.a'], connection_ids: [], dry_run: false })
+    // One write: the layout travels with the membership, never as a second request after it.
+    expect(written[0].layout_patch).toBeDefined()
+    expect(sent).toHaveLength(0)
   })
 })

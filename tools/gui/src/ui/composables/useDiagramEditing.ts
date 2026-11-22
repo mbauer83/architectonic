@@ -20,6 +20,7 @@ import { drawnArrangement } from '../../domain/layout/lab/labArrangement'
 import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { membershipWithout } from '../../domain/layout/diagramMembership'
+import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import { stableEntityId } from '../../domain/artifactId'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { ArrangementState } from './useArrangementSession'
@@ -122,7 +123,7 @@ export function useDiagramEditing(
    * Write what the diagram holds less what was removed, through the diagram write, and read the picture
    * it draws now, keeping the arrangement of everything still on it.
    */
-  const writeMembership = async (removed: ReadonlySet<string>, arranged: ArrangedLayout | null): Promise<void> => {
+  const writeMembership = async (removed: ReadonlySet<string>, layoutPatch: LayoutPatch): Promise<void> => {
     const drawn = membership()
     if (!drawn) throw new Error('The diagram has not been read; reload the page.')
     const kept = membershipWithout(drawn, removed)
@@ -131,12 +132,13 @@ export function useDiagramEditing(
       entity_ids: [...kept.entity_ids], connection_ids: [...kept.connection_ids],
       ...(drawn.diagram_entities ? { diagram_entities: { ...drawn.diagram_entities } } : {}),
       ...(kept.authored_groupings ? { authored_groupings: kept.authored_groupings } : {}),
+      layout_patch: layoutPatch,
       dry_run: false,
     }))
     if (!written.wrote) {
       throw new Error(`The diagram was not written: ${written.warnings.join(' ') || 'it was refused'}`)
     }
-    await reopen(arranged)
+    await reopen()
   }
 
   /** Write what the session changed. Stays in edit mode; what was saved is the new starting point. */
@@ -149,9 +151,13 @@ export function useDiagramEditing(
     saving.value = true
     error.value = null
     try {
-      const arranged = wanted()
-      if (removed.size > 0) await writeMembership(removed, arranged)
-      const patch = layoutPatchBetween(stored.value ?? {}, arranged === null ? null : wanted())
+      const patch = layoutPatchBetween(stored.value ?? {}, wanted())
+      // One write when what the diagram holds changes: membership and layout together, so the stored
+      // layout always matches the body that write generates (D12).
+      if (removed.size > 0) {
+        await writeMembership(removed, patch)
+        return true
+      }
       if (patchIsEmpty(patch)) {
         saved.value = session.state.value
         return true

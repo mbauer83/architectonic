@@ -123,3 +123,32 @@ def test_removing_every_entry_returns_the_diagram_to_plantuml(model: RenderedMod
     assert answer.json()["layout"] == {}
     assert not _stored_layout(path)
 
+
+def test_a_member_removed_with_a_layout_patch_is_written_once_and_the_layout_matches_the_body(
+    model: RenderedModel, client: TestClient
+) -> None:
+    artifact_id, path = _diagram(model, "top-to-bottom")
+    keys = [row["key"] for row in client.get(f"/api/diagrams/{artifact_id}/layout/geometry").json()["elements"]]
+    client.patch(
+        f"/api/diagrams/{artifact_id}/layout",
+        json={"patch": {"elements": {keys[0]: {"value": {"x": 10, "y": 10}}}}, "dry_run": False},
+    )
+    detail = client.get(f"/api/diagrams/{artifact_id}").json()
+    gone = next(id_ for id_ in detail["entity_ids_used"] if id_.startswith(keys[1]))
+
+    answer = client.put(f"/api/diagrams/{artifact_id}", json={
+        "diagram_type": detail["diagram_type"], "name": detail["name"],
+        "entity_ids": [id_ for id_ in detail["entity_ids_used"] if id_ != gone],
+        "connection_ids": [id_ for id_ in detail.get("connection_ids_used", []) if gone not in id_],
+        "layout_patch": {"elements": {keys[0]: {"value": {"x": 40, "y": 40}, "based_on": {"x": 10, "y": 10}}}},
+        "dry_run": False,
+    })
+
+    assert answer.status_code == 200, answer.text
+    stored = _stored_layout(path)
+    assert isinstance(stored, dict)
+    # The patched entry is written, the removed member's entry goes with it, the rest stay placed.
+    assert stored["elements"][keys[0]] == {"x": 40, "y": 40}
+    assert keys[1] not in stored["elements"]
+    assert set(stored["elements"]) >= set(keys[2:])
+

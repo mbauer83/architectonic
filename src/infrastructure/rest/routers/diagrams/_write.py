@@ -22,6 +22,7 @@ from src.infrastructure.rest.routers._openapi import (
     WriteResultResponse,
 )
 from src.infrastructure.rest.routers.diagrams._derived_entities import derived_entity_rows
+from src.infrastructure.rest.routers.diagrams._layout_with_membership import layout_to_store
 from src.infrastructure.rest.routers.diagrams._write_bodies import (
     CreateDiagramGuiBody,
     DiagramComposition,
@@ -247,7 +248,7 @@ def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
             entity_ids_used=entity_ids_used,
             connection_ids_used=connection_ids_used,
             authored_groupings=body.authored_groupings,
-            layout=body.layout,
+            layout=layout_to_store(artifact_id, body, composed),
             version=body.version,
             status=body.status,
             tlp=body.tlp,
