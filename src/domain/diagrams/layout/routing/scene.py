@@ -40,6 +40,10 @@ BORDER_OFFSET: Final = LINE_CLEARANCE + 4.0
 IDEAL_SEPARATION: Final = 12.0
 
 
+#: Space for following two lines that run side by side for several end runs.
+PARALLEL_SEPARATION: Final = IDEAL_SEPARATION + LINE_CLEARANCE
+
+
 def run_for(decorated: bool) -> float:
     """How long the straight run out of a port is: a decoration and a clear run, else a stub."""
     return END_RUN if decorated else STUB

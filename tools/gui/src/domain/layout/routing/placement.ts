@@ -3,8 +3,8 @@
  *
  * The TypeScript mirror of `src/domain/diagrams/layout/routing/placement.py`.
  */
-import { LINE_CLEARANCE } from '../routeQuality'
-import { IDEAL_SEPARATION, byText } from './scene'
+import { END_RUN, LINE_CLEARANCE } from '../routeQuality'
+import { IDEAL_SEPARATION, PARALLEL_SEPARATION, byText } from './scene'
 
 const SHARED = 1
 const PASSES = 50
@@ -156,4 +156,26 @@ export const firstThatFits = (cluster: readonly Member[]): [Member[], number[] |
     }
   }
   return [orders[0], oneByOne(orders[0])]
+}
+
+/** Widen long parallel runs in their existing order when there is room. */
+export const preferredPlaces = (ordered: readonly Member[]): number[] => {
+  const places = ordered.map((member) => member.at)
+  ordered.forEach((member, index) => {
+    if (!movableOf(member)) return
+    let least = member.least
+    let most = member.most
+    let close = false
+    ordered.forEach((other, j) => {
+      if (j === index || !share(member, other)) return
+      const at = places[j]
+      const overlap = Math.min(member.high, other.high) - Math.max(member.low, other.low)
+      if (other.owner && other.owner !== member.owner && Math.abs(member.at - at) < PARALLEL_SEPARATION &&
+          overlap >= 2 * END_RUN) close = true
+      if (at < member.at) least = Math.max(least, at + PARALLEL_SEPARATION)
+      else most = Math.min(most, at - PARALLEL_SEPARATION)
+    })
+    if (close && least <= most) places[index] = Math.min(Math.max(member.at, least), most)
+  })
+  return places
 }

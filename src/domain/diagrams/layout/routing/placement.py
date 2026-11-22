@@ -12,8 +12,8 @@ from bisect import bisect_left
 from dataclasses import dataclass
 from itertools import permutations
 
-from src.domain.diagrams.layout.route_quality import LINE_CLEARANCE
-from src.domain.diagrams.layout.routing.scene import IDEAL_SEPARATION
+from src.domain.diagrams.layout.route_quality import END_RUN, LINE_CLEARANCE
+from src.domain.diagrams.layout.routing.scene import IDEAL_SEPARATION, PARALLEL_SEPARATION
 
 #: How much two runs must share along their stretch to need separating.
 _SHARED = 1.0
@@ -141,3 +141,26 @@ def _one_by_one(ordered: list[Member]) -> list[float]:
                 break
         placed.append(member)
     return [places[id(member)] for member in ordered]
+
+
+def preferred_places(ordered: list[Member]) -> list[float]:
+    """Widen long parallel runs in their existing order when there is room."""
+    separation = PARALLEL_SEPARATION
+    places = [m.at for m in ordered]
+    for i, member in enumerate(ordered):
+        if not member.movable:
+            continue
+        shared = [(other, places[j]) for j, other in enumerate(ordered) if j != i and share(member, other)]
+        if not any(other.owner and other.owner != member.owner and abs(member.at - at) < separation
+                   and min(member.high, other.high) - max(member.low, other.low) >= 2 * END_RUN
+                   for other, at in shared):
+            continue
+        least, most = member.least, member.most
+        for _, at in shared:
+            if at < member.at:
+                least = max(least, at + separation)
+            else:
+                most = min(most, at - separation)
+        if least <= most:
+            places[i] = min(max(member.at, least), most)
+    return places

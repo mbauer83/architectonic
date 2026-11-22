@@ -9,6 +9,7 @@
 import { centreOf } from '../geometry'
 import { leavesLevel } from '../orthogonal'
 import { LINE_CLEARANCE } from '../routeQuality'
+import { Lines } from './lines'
 import type { EndOnSide, Stub } from './ports'
 import { inLine, spread, stubOf } from './ports'
 import type { Choice, Connector, RoutedConnector, RoutingScene } from './scene'
@@ -80,55 +81,45 @@ const stubFor = (scene: RoutingScene, connector: Connector, which: number, [side
     runFor(connector.decorated[which]),
   )
 
-/** Whether two stubs lie along each other closer than the least separation. */
-const meet = (one: Stub, other: Stub): boolean => {
-  const level = one.at.y === one.end.y
-  if (level !== (other.at.y === other.end.y)) return false
-  const at = level ? one.at.y : one.at.x
-  const otherAt = level ? other.at.y : other.at.x
-  const span = (stub: Stub): [number, number] => {
-    const [a, b] = level ? [stub.at.x, stub.end.x] : [stub.at.y, stub.end.y]
-    return [Math.min(a, b), Math.max(a, b)]
-  }
-  const [low, high] = span(one)
-  const [otherLow, otherHigh] = span(other)
-  return Math.abs(at - otherAt) < LINE_CLEARANCE + 1 && Math.min(high, otherHigh) - Math.max(low, otherLow) > 0
+const meetsEarlier = (stub: Stub, earlier: Lines): boolean => {
+  const [a, b] = stub.at.y === stub.end.y ? [stub.at.x, stub.end.x] : [stub.at.y, stub.end.y]
+  return earlier.spansNear(stub.at, stub.end, LINE_CLEARANCE + 1).some(
+    ([, low, high]) => Math.min(Math.max(a, b), high) > Math.max(Math.min(a, b), low),
+  )
 }
 
-/** *ports* with each unstated port whose stub runs into another connector's moved along its side. */
+/** Keep both stubs of each connector clear of previously placed connectors. */
 const clearOfFacing = (
   scene: RoutingScene,
   connectors: readonly Connector[],
   ports: Map<string, readonly [Choice, Choice]>,
 ): Map<string, readonly [Choice, Choice]> => {
-  const ends = [...connectors]
-    .sort((one, other) => byText(one.key, other.key))
-    .filter((connector) => ports.has(connector.key))
-    .flatMap((connector) => [0, 1].map((which) => [connector, which] as const))
-  ends.forEach(([connector, which], position) => {
-    if ((which === 0 ? connector.sourcePort : connector.targetPort) !== undefined) return
-    const chosen = ports.get(connector.key) as readonly [Choice, Choice]
-    const [side, at] = chosen[which]
-    const extent = extentOf(scene, which === 0 ? connector.source : connector.target)
-    const length = leavesLevel(side) ? extent.bottom - extent.top : extent.right - extent.left
-    const others = ends
-      .slice(0, position)
-      .filter(([other]) => other.key !== connector.key)
-      .map(([other, otherWhich]) => {
-        const theirs = ports.get(other.key) as readonly [Choice, Choice]
-        return stubFor(scene, other, otherWhich, theirs[otherWhich])
-      })
-    if (others.length === 0 || !others.some((one) => meet(stubFor(scene, connector, which, [side, at]), one))) return
-    for (const shift of [IDEAL_SEPARATION, -IDEAL_SEPARATION, 2 * IDEAL_SEPARATION, -2 * IDEAL_SEPARATION]) {
-      const moved = length > 0 ? at + shift / length : at
-      const stub = stubFor(scene, connector, which, [side, moved])
-      if (moved > 0 && moved < 1 && !others.some((one) => meet(stub, one))) {
-        const next: [Choice, Choice] = [chosen[0], chosen[1]]
-        next[which] = [side, moved]
-        ports.set(connector.key, next)
-        break
+  const earlier = new Lines()
+  for (const connector of [...connectors].sort((a, b) => byText(a.key, b.key))) {
+    const initial = ports.get(connector.key)
+    if (!initial) continue
+    const chosen: [Choice, Choice] = [...initial]
+    const placed: Stub[] = []
+    chosen.forEach(([side, at], which) => {
+      let stub = stubFor(scene, connector, which, [side, at])
+      const stated = which === 0 ? connector.sourcePort : connector.targetPort
+      if (stated === undefined && meetsEarlier(stub, earlier)) {
+        const extent = extentOf(scene, which === 0 ? connector.source : connector.target)
+        const length = leavesLevel(side) ? extent.bottom - extent.top : extent.right - extent.left
+        for (const shift of [1, -1, 2, -2]) {
+          const moved = length > 0 ? at + shift * IDEAL_SEPARATION / length : at
+          const trial = stubFor(scene, connector, which, [side, moved])
+          if (moved > 0 && moved < 1 && !meetsEarlier(trial, earlier)) {
+            chosen[which] = [side, moved]
+            stub = trial
+            break
+          }
+        }
       }
-    }
-  })
+      placed.push(stub)
+    })
+    ports.set(connector.key, chosen)
+    for (const stub of placed) earlier.add(stub.at, stub.end)
+  }
   return ports
 }

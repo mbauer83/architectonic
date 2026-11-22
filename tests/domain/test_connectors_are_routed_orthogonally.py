@@ -21,6 +21,7 @@ from src.domain.diagrams.layout.orthogonal import course_of
 from src.domain.diagrams.layout.route_quality import END_RUN, bends_at_ends, kinks, runs_along
 from src.domain.diagrams.layout.routing.graph import EAST, NORTH, SOUTH, WEST
 from src.domain.diagrams.layout.routing.lines import Stubs
+from src.domain.diagrams.layout.routing.nudging import nudged
 from src.domain.diagrams.layout.routing.router import as_route, rerouted, route_all
 from src.domain.diagrams.layout.routing.scene import CHANNEL_FULL, CROWDING, Connector, RoutingScene
 from src.domain.diagrams.layout.routing.search import REVERSE, step_cost
@@ -317,3 +318,15 @@ def test_course_of_the_route_form_matches_the_course_drawn() -> None:
         recompleted = course_of(as_route(routed), scene.extent_of(connector.source), scene.extent_of(connector.target))
         assert recompleted is not None
         assert len(recompleted) == len(routed.course), key
+
+def test_widening_a_parallel_run_cannot_merge_its_elbow_with_an_upright_run() -> None:
+    courses = {
+        "turn": [Point(200, 160), Point(200, 100), Point(310, 100), Point(310, 40)],
+        "parallel": [Point(214, 110), Point(300, 110)],
+        "upright": [Point(202, 85), Point(202, 97)],
+    }
+
+    moved, conflicts = nudged(courses, dict.fromkeys(courses, ()), ())
+
+    assert conflicts == []
+    assert runs_along(moved["turn"], [moved["upright"], moved["parallel"]]) == ()

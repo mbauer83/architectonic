@@ -14,14 +14,15 @@ import type { Port, Side } from '../orthogonal'
 import { STUB } from '../orthogonal'
 import { nudged } from './nudging'
 import type { Stub } from './ports'
-import { OUTWARD_INDEX, inLine, stubOf } from './ports'
+import { OUTWARD_INDEX, facingSide, inLine, stubOf } from './ports'
 import type { Choice, Connector, RoutedConnector, RoutingResult, RoutingScene } from './scene'
 import { IDEAL_SEPARATION, SIDES, byText, extentOf, runFor } from './scene'
 import type { Found } from './search'
-import { DIRECTIONS, REVERSE, search } from './search'
+import { DIRECTIONS, REVERSE, search, withoutStraightPoints } from './search'
 import type { Passage } from './visibility'
 import { Lines, Stubs } from './lines'
 import { FULL, Visibility } from './visibility'
+import { improvesDetour, shorten } from './shortcuts'
 import { special } from './special'
 import { portsSpread } from './spreading'
 
@@ -98,20 +99,6 @@ const acrossStub = (stub: Stub): Extent => {
 const usable = (stub: Stub, passage: Passage, own: readonly Extent[], arriving: boolean): boolean =>
   !passage.pointBlocked(stub.end) &&
   !(arriving ? passage.stepBlocked(stub.end, stub.at, own) : passage.stepBlocked(stub.at, stub.end, own))
-
-const straightened = (points: readonly Point[]): Point[] => {
-  const kept = [points[0]]
-  for (let index = 1; index < points.length - 1; index += 1) {
-    const before = kept[kept.length - 1]
-    const here = points[index]
-    const after = points[index + 1]
-    const repeat = here.x === before.x && here.y === before.y
-    const upright = before.x === here.x && here.x === after.x
-    const level = before.y === here.y && here.y === after.y
-    if (!repeat && !upright && !level) kept.push(here)
-  }
-  return [...kept, points[points.length - 1]]
-}
 
 class Routing {
   readonly visibility: Visibility
@@ -253,7 +240,7 @@ const asRouted = (
     key: connector.key,
     sourcePort: start.port,
     targetPort: goal.port,
-    course: straightened([start.at, ...found.points, goal.at]),
+    course: withoutStraightPoints([start.at, ...found.points, goal.at]),
   }
 }
 
@@ -267,6 +254,12 @@ export const routeAll = (
   scene: RoutingScene,
   connectors: readonly Connector[],
   quick: QuickPass | null = null,
+): RoutingResult => {
+  return routedScene(scene, connectors, quick, quick === null)
+}
+
+const routedScene = (
+  scene: RoutingScene, connectors: readonly Connector[], quick: QuickPass | null, retryPorts: boolean,
 ): RoutingResult => {
   const routing = new Routing(scene)
   const ordered = [...connectors].sort((one, other) => byText(one.key, other.key))
@@ -313,11 +306,24 @@ export const routeAll = (
   }
   const spreadPorts = portsSpread(scene, searched, first)
   const stubs = stubLines(scene, searched, spreadPorts, [...kept.values(), ...routes.values()])
+  let changedPorts = false
   for (const [key, [source, target]] of spreadPorts) {
     const connector = searched.find((one) => one.key === key)
     const before = first.get(key)
     if (!connector || !before) continue
-    const routed = routing.searched(connector, [source], [target], false, stubs) ?? before
+    let routed = routing.searched(connector, [source], [target], false, stubs) ?? before
+    if (retryPorts && !connector.sourcePort && routed.course.length >= 6) {
+      const side = facingSide(extentOf(scene, connector.source), extentOf(scene, connector.target))
+      if (side && side !== source[0]) {
+        const starts = [0.25, 0.5, 0.75].map((at): Choice => [side, at])
+        const goals = connector.targetPort ? [target] : SIDES.flatMap((s) => [0.25, 0.75].map((at): Choice => [s, at]))
+        const alternative = routing.searched(connector, starts, goals, false, stubs)
+        if (alternative && improvesDetour(routed, alternative, stubs)) {
+          changedPorts = true
+          routed = alternative
+        }
+      }
+    }
     routes.set(key, routed)
     routing.taken(routed)
     // Its first and last runs are fixed to nudging as a stub is: no later route goes along them.
@@ -347,6 +353,8 @@ export const routeAll = (
     scene.fixedLines,
     quick ? new Set(routes.keys()) : null,
   )
+  if (changedPorts && unseparated.length) return routedScene(scene, connectors, quick, false)
+  shorten(moved, searched, routing.visibility, unseparated)
   const keys = [...every.keys()].sort(byText)
   return {
     routes: new Map(

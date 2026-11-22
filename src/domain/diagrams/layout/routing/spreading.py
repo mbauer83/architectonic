@@ -17,6 +17,7 @@ from collections.abc import Mapping, Sequence
 from src.domain.diagrams.layout.layout_block import Side
 from src.domain.diagrams.layout.orthogonal import leaves_level
 from src.domain.diagrams.layout.route_quality import LINE_CLEARANCE
+from src.domain.diagrams.layout.routing.lines import Lines
 from src.domain.diagrams.layout.routing.ports import EndOnSide, Stub, in_line, spread, stub_of
 from src.domain.diagrams.layout.routing.scene import (
     IDEAL_SEPARATION,
@@ -80,40 +81,38 @@ def _stub(scene: RoutingScene, connector: Connector, which: int, choice: tuple[S
     return stub_of(scene.extent_of(end), choice[0], choice[1], run_for(connector.decorated[which]))
 
 
-def _meet(one: Stub, other: Stub) -> bool:
-    """Whether two stubs lie along each other closer than the least separation."""
-    level = one.at.y == one.end.y
-    if level != (other.at.y == other.end.y):
-        return False
-    at, other_at = (one.at.y, other.at.y) if level else (one.at.x, other.at.x)
-    low, high = sorted((one.at.x, one.end.x) if level else (one.at.y, one.end.y))
-    other_low, other_high = sorted((other.at.x, other.end.x) if level else (other.at.y, other.end.y))
-    return abs(at - other_at) < LINE_CLEARANCE + 1.0 and min(high, other_high) - max(low, other_low) > 0
+def _meets_earlier(stub: Stub, earlier: Lines) -> bool:
+    level = stub.at.y == stub.end.y
+    low, high = sorted((stub.at.x, stub.end.x) if level else (stub.at.y, stub.end.y))
+    return any(min(high, end) > max(low, start)
+               for _, start, end in earlier.spans_near(stub.at, stub.end, LINE_CLEARANCE + 1.0))
 
 
 def _clear_of_facing(
     scene: RoutingScene, connectors: Sequence[Connector],
     ports: dict[str, tuple[tuple[Side, float], tuple[Side, float]]],
 ) -> dict[str, tuple[tuple[Side, float], tuple[Side, float]]]:
-    """*ports* with each unstated port whose stub runs into another connector's moved along its side."""
-    ends = [(connector, which) for connector in sorted(connectors, key=lambda one: one.key)
-            if connector.key in ports for which in (0, 1)]
-    for position, (connector, which) in enumerate(ends):
-        if (connector.source_port, connector.target_port)[which] is not None:
+    """Keep both stubs of each connector clear of previously placed connectors."""
+    earlier = Lines()
+    for connector in sorted(connectors, key=lambda one: one.key):
+        if connector.key not in ports:
             continue
-        side, at = ports[connector.key][which]
-        extent = scene.extent_of(connector.source if which == 0 else connector.target)
-        length = extent.height if leaves_level(side) else extent.width
-        others = [_stub(scene, other, other_which, ports[other.key][other_which])
-                  for other, other_which in ends[:position] if other.key != connector.key]
-        if not others or not any(_meet(_stub(scene, connector, which, (side, at)), one) for one in others):
-            continue
-        for shift in (IDEAL_SEPARATION, -IDEAL_SEPARATION, 2 * IDEAL_SEPARATION, -2 * IDEAL_SEPARATION):
-            moved = at + shift / length if length > 0 else at
-            stub = _stub(scene, connector, which, (side, moved))
-            if 0.0 < moved < 1.0 and not any(_meet(stub, one) for one in others):
-                chosen = list(ports[connector.key])
-                chosen[which] = (side, moved)
-                ports[connector.key] = (chosen[0], chosen[1])
-                break
+        chosen = list(ports[connector.key])
+        placed = []
+        for which, (side, at) in enumerate(chosen):
+            stub = _stub(scene, connector, which, (side, at))
+            stated = (connector.source_port, connector.target_port)[which]
+            if stated is None and _meets_earlier(stub, earlier):
+                extent = scene.extent_of(connector.source if which == 0 else connector.target)
+                length = extent.height if leaves_level(side) else extent.width
+                for shift in (1, -1, 2, -2):
+                    moved = at + shift * IDEAL_SEPARATION / length if length > 0 else at
+                    trial = _stub(scene, connector, which, (side, moved))
+                    if 0.0 < moved < 1.0 and not _meets_earlier(trial, earlier):
+                        chosen[which], stub = (side, moved), trial
+                        break
+            placed.append(stub)
+        ports[connector.key] = (chosen[0], chosen[1])
+        for stub in placed:
+            earlier.add(stub.at, stub.end)
     return ports

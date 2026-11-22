@@ -76,7 +76,7 @@ def _windows(terminals: Sequence[Terminal]) -> list[Extent | None]:
     ] + [None]
 
 
-def _without_straight_points(points: Sequence[Point]) -> tuple[Point, ...]:
+def without_straight_points(points: Sequence[Point]) -> tuple[Point, ...]:
     kept = [points[0]]
     for index in range(1, len(points) - 1):
         before, here, after = kept[-1], points[index], points[index + 1]
@@ -164,7 +164,7 @@ def _walked_back(state: int, came: dict[int, int], graph: Joined) -> tuple[Point
     while state >= 0:
         points.append(Point(graph.x(state // 4), graph.y(state // 4)))
         state = came[state]
-    return _without_straight_points(points[::-1])
+    return without_straight_points(points[::-1])
 
 
 def search(starts: Sequence[Terminal], goals: Sequence[Terminal], passage: Passage, graph: Graph) -> Found | None:

@@ -26,7 +26,7 @@ from src.domain.diagrams.layout.layout_block import Port, Route, Side
 from src.domain.diagrams.layout.orthogonal import STUB, half_up
 from src.domain.diagrams.layout.routing.lines import Lines, Stubs
 from src.domain.diagrams.layout.routing.nudging import nudged
-from src.domain.diagrams.layout.routing.ports import OUTWARD_INDEX, Stub, in_line, stub_of
+from src.domain.diagrams.layout.routing.ports import OUTWARD_INDEX, Stub, facing_side, in_line, stub_of
 from src.domain.diagrams.layout.routing.scene import (
     IDEAL_SEPARATION,
     SIDES,
@@ -36,7 +36,15 @@ from src.domain.diagrams.layout.routing.scene import (
     RoutingScene,
     run_for,
 )
-from src.domain.diagrams.layout.routing.search import DIRECTIONS, REVERSE, Found, Terminal, search
+from src.domain.diagrams.layout.routing.search import (
+    DIRECTIONS,
+    REVERSE,
+    Found,
+    Terminal,
+    search,
+    without_straight_points,
+)
+from src.domain.diagrams.layout.routing.shortcuts import improves_detour, shorten
 from src.domain.diagrams.layout.routing.special import special
 from src.domain.diagrams.layout.routing.spreading import ports_spread
 from src.domain.diagrams.layout.routing.visibility import FULL, Passage, Visibility
@@ -199,19 +207,9 @@ class _Routing:
         connector: Connector, found: Found, starts: Sequence[Stub], goals: Sequence[Stub],
     ) -> RoutedConnector:
         start, goal = starts[found.start], goals[found.goal]
-        course = _straightened([start.at, *found.points, goal.at])
+        course = without_straight_points([start.at, *found.points, goal.at])
         return RoutedConnector(connector.key, start.port, goal.port, course)
 
-
-
-def _straightened(points: Sequence[Point]) -> tuple[Point, ...]:
-    kept = [points[0]]
-    for index in range(1, len(points) - 1):
-        before, here, after = kept[-1], points[index], points[index + 1]
-        if here == before or (before.x == here.x == after.x) or (before.y == here.y == after.y):
-            continue
-        kept.append(here)
-    return (*kept, points[-1])
 
 
 #: Far enough to stand for everywhere outside a box.
@@ -256,6 +254,13 @@ def route_all(
     previous: Mapping[str, RoutedConnector] | None = None, changed: frozenset[str] | None = None,
 ) -> RoutingResult:
     """Every connector's route, the unroutable ones, and what nudging could not separate."""
+    return _routed(scene, connectors, previous, changed, retry_ports=previous is None)
+
+
+def _routed(
+    scene: RoutingScene, connectors: Sequence[Connector], previous: Mapping[str, RoutedConnector] | None,
+    changed: frozenset[str] | None, *, retry_ports: bool,
+) -> RoutingResult:
     routing = _Routing(scene)
     ordered = sorted(connectors, key=lambda connector: connector.key)
     kept: dict[str, RoutedConnector] = {}
@@ -298,9 +303,20 @@ def route_all(
             routing.taken(made)
     spread_ports = ports_spread(scene, searched, first)
     stubs = _stub_lines(routing, searched, spread_ports, [*kept.values(), *routes.values()])
+    changed_ports = False
     for key, (source, target) in spread_ports.items():
         connector = next(one for one in searched if one.key == key)
         routes[key] = routing.searched(connector, (source,), (target,), lining_up=False, stubs=stubs) or first[key]
+        before = routes[key]
+        if retry_ports and connector.source_port is None and len(before.course) >= 6:
+            side = facing_side(scene.extent_of(connector.source), scene.extent_of(connector.target))
+            if side is not None and side != source[0]:
+                starts = [(side, at) for at in (0.25, 0.5, 0.75)]
+                goals = (target,) if connector.target_port else [(s, at) for s in SIDES for at in (0.25, 0.75)]
+                alternative = routing.searched(connector, starts, goals, lining_up=False, stubs=stubs)
+                if alternative and improves_detour(before, alternative, stubs):
+                    changed_ports = True
+                    routes[key] = alternative
         routing.taken(routes[key])
         # Its first and last runs are fixed to nudging as a stub is: no later route goes along them.
         course = routes[key].course
@@ -317,6 +333,9 @@ def route_all(
         courses, obstacles, list(scene.boxes.values()), scene.fixed_lines,
         movable=frozenset(routes) if previous is not None and changed is not None else None,
     )
+    if changed_ports and unseparated:
+        return _routed(scene, connectors, previous, changed, retry_ports=False)
+    shorten(moved, searched, routing.visibility, unseparated)
     every = {**kept, **routes}
     return RoutingResult(
         routes={

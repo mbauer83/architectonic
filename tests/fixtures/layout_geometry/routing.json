@@ -3565,6 +3565,348 @@
    }
   },
   {
+   "name": "a request leaves its facing side to pass the process title",
+   "scene": {
+    "elements": {
+     "left": {
+      "left": 31,
+      "top": 84,
+      "right": 220.7328,
+      "bottom": 135.6918
+     },
+     "request": {
+      "left": 298,
+      "top": 84,
+      "right": 469.7914,
+      "bottom": 135.6918
+     },
+     "queue": {
+      "left": 298,
+      "top": 298,
+      "right": 500.0961,
+      "bottom": 349.6918
+     },
+     "right": {
+      "left": 548,
+      "top": 84,
+      "right": 726.9985,
+      "bottom": 135.6918
+     }
+    },
+    "boxes": {
+     "process": {
+      "left": 126,
+      "top": 248,
+      "right": 654,
+      "bottom": 1055
+     }
+    },
+    "text": {
+     "title": {
+      "left": 223.5637,
+      "top": 248,
+      "right": 578.3371,
+      "bottom": 284.8617
+     },
+     "section": {
+      "left": 189.3721,
+      "top": 692,
+      "right": 392.628,
+      "bottom": 728.8617
+     }
+    },
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "left-queue",
+     "source": "left",
+     "target": "queue",
+     "decorated": [
+      false,
+      true
+     ]
+    },
+    {
+     "key": "request-queue",
+     "source": "request",
+     "target": "queue",
+     "decorated": [
+      false,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "left-queue": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.5007
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.3289
+      },
+      "course": [
+       [
+        126,
+        135.6918
+       ],
+       [
+        126,
+        240
+       ],
+       [
+        215,
+        240
+       ],
+       [
+        215,
+        315
+       ],
+       [
+        298,
+        315
+       ]
+      ]
+     },
+     "request-queue": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.7509
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.2515
+      },
+      "course": [
+       [
+        427,
+        135.6918
+       ],
+       [
+        427,
+        240
+       ],
+       [
+        587,
+        240
+       ],
+       [
+        587,
+        311
+       ],
+       [
+        500.0961,
+        311
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
+  },
+  {
+   "name": "parallel connectors with room to straighten after their ports are spread",
+   "scene": {
+    "elements": {
+     "a": {
+      "left": 400,
+      "top": 490,
+      "right": 470,
+      "bottom": 530
+     },
+     "b": {
+      "left": 200,
+      "top": 490,
+      "right": 270,
+      "bottom": 530
+     },
+     "c": {
+      "left": 100,
+      "top": 0,
+      "right": 170,
+      "bottom": 40
+     },
+     "d": {
+      "left": 0,
+      "top": 0,
+      "right": 70,
+      "bottom": 40
+     }
+    },
+    "boxes": {},
+    "text": {},
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "1",
+     "source": "a",
+     "target": "b",
+     "decorated": [
+      true,
+      true
+     ]
+    },
+    {
+     "key": "3",
+     "source": "d",
+     "target": "a",
+     "decorated": [
+      true,
+      true
+     ]
+    },
+    {
+     "key": "5",
+     "source": "d",
+     "target": "a",
+     "decorated": [
+      true,
+      true
+     ]
+    },
+    {
+     "key": "6",
+     "source": "b",
+     "target": "a",
+     "decorated": [
+      true,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "1": {
+      "source_port": {
+       "side": "left",
+       "at": 0.6
+      },
+      "target_port": {
+       "side": "right",
+       "at": 0.325
+      },
+      "course": [
+       [
+        400,
+        514
+       ],
+       [
+        346,
+        514
+       ],
+       [
+        346,
+        503
+       ],
+       [
+        270,
+        503
+       ]
+      ]
+     },
+     "3": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.3286
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.2
+      },
+      "course": [
+       [
+        23,
+        40
+       ],
+       [
+        23,
+        540
+       ],
+       [
+        370,
+        540
+       ],
+       [
+        370,
+        498
+       ],
+       [
+        400,
+        498
+       ]
+      ]
+     },
+     "5": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.6714
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.4
+      },
+      "course": [
+       [
+        47,
+        40
+       ],
+       [
+        47,
+        70
+       ],
+       [
+        358,
+        70
+       ],
+       [
+        358,
+        506
+       ],
+       [
+        400,
+        506
+       ]
+      ]
+     },
+     "6": {
+      "source_port": {
+       "side": "right",
+       "at": 0.675
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.8
+      },
+      "course": [
+       [
+        270,
+        517
+       ],
+       [
+        300,
+        517
+       ],
+       [
+        300,
+        522
+       ],
+       [
+        400,
+        522
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
+  },
+  {
    "name": "a synthetic arrangement of forty elements",
    "scene": {
     "elements": {
@@ -4593,16 +4935,8 @@
         161
        ],
        [
-        946,
-        161
-       ],
-       [
-        946,
-        239
-       ],
-       [
         652,
-        239
+        161
        ],
        [
         652,
