@@ -13,7 +13,6 @@ from src.application.verification.artifact_verifier_types import (
     Issue,
     Severity,
     VerificationResult,
-    entity_id_from_path,
 )
 from src.domain.markdown_table import tables_in
 from src.domain.repository.repo_layout import ARTIFACT_SOURCE_SUFFIXES, MODEL
@@ -46,18 +45,6 @@ def check_artifact_id_entity(fm: dict, result: VerificationResult, loc: str) -> 
             )
         )
         return
-
-    file_id = entity_id_from_path(result.path)
-    if file_id != aid:
-        result.issues.append(
-            Issue(
-                Severity.ERROR,
-                "E104",
-                f"entity filename stem '{file_id}' does not match artifact-id '{aid}'",
-                loc,
-            )
-        )
-
 
 def check_artifact_type(
     fm: dict,

@@ -26,9 +26,13 @@ would leave the verifier and the backend disagreeing about whether the repositor
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterable, Iterator
+from pathlib import Path
 from typing import Any
 
 from src.domain.artifact_id import stable_id
+from src.domain.repository.artifact_location import artifact_kind_declared_at
+from src.domain.verification_findings import Issue, Severity
 
 
 def _spellings_by_stem(records: Any) -> dict[str, list[str]]:
@@ -58,18 +62,27 @@ class DuplicateStableIdContribution:
     diagnostic_codes: tuple[str, ...] = ("E319",)
 
     def run(self, ctx: Any, result: Any) -> None:
-        from src.application.verification.artifact_verifier_types import Issue, Severity  # noqa: PLC0415
-
         records = [*ctx.candidate.list_entities(), *ctx.candidate.list_diagrams()]
         for stem, spellings in sorted(_spellings_by_stem(records).items()):
-            result.issues.append(Issue(
-                Severity.ERROR,
-                "E319",
-                f"{len(spellings)} artifacts claim the identity '{stem}': {', '.join(spellings)}. "
-                f"Identity is the id without its slug, so references to it resolve to whichever of "
-                f"them the index keyed. Keep one and delete the rest.",
-                ctx.location,
-            ))
+            result.issues.append(duplicate_finding(stem, spellings, ctx.location))
+
+
+def duplicate_finding(stem: str, spellings: list[str], location: str) -> Issue:
+    return Issue(Severity.ERROR, "E319", f"{len(spellings)} artifacts claim the identity '{stem}': "
+                 f"{', '.join(spellings)}. Keep one and remove the duplicate.", location)
+
+
+def duplicate_kind_files(root: Path, paths: Iterable[Path]) -> Iterator[tuple[Path, Issue]]:
+    """Find distinct files claiming one stable identity for kinds that declare their own prefix."""
+    claims: dict[str, set[Path]] = defaultdict(set)
+    for path in paths:
+        kind = artifact_kind_declared_at(path.relative_to(root))
+        if kind is not None and kind.id_prefix is not None:
+            claims[stable_id(kind.file_identity(path))].add(path)
+    for stem, files in sorted(claims.items()):
+        if len(files) > 1:
+            first, *others = sorted(files)
+            yield first, duplicate_finding(stem, [str(p.relative_to(root)) for p in (first, *others)], str(first))
 
 
 # ---------------------------------------------------------------------------

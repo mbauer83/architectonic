@@ -24,5 +24,6 @@ def as_verification_result_dict(result: VerificationResult) -> dict[str, Any]:
         "path": str(result.path),
         "file_type": result.file_type,
         "valid": result.valid,
+        "outcome": result.outcome,
         "issues": [as_issue_dict(i) for i in result.issues],
     }

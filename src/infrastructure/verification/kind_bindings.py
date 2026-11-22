@@ -111,7 +111,7 @@ def _row_contradictions(kind: KindDeclaration, binding: KindBinding | None) -> I
         case None, _:
             yield f"The {kind.name} kind has no binding. Bind its verifier, or None if it is unverified, in {where}."
         case KindBinding(reader=reader), _ if not callable(reader):
-            yield f"The {kind.name} kind has no reader. Bind its file reader in {where}."
+            yield f"The {kind.name} kind has no reader. Bind its file reader in {where}."  # type: ignore[unreachable]  # runtime wiring
         case KindBinding(verifier=None), "with-the-model" | "standalone":
             yield (
                 f"The {kind.name} kind is verified ({kind.verification}) and has no verifier bound. Bind one "

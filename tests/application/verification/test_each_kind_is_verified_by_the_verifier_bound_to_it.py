@@ -183,3 +183,31 @@ def test_a_matrix_diagram_is_verified_as_a_matrix(catalogs, repo: Path) -> None:
     verify(Host(), repo / "diagram-catalog/diagrams/ARC@1.a.x.puml", None)
 
     assert seen == ["matrix", "plantuml"]
+
+
+def test_repository_pass_checks_identity_and_scope(catalogs, repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ARCH_MODEL_VERIFY_MODE", "full")
+    doc = repo / "docs/adr/ADR@1790000000.abcdef.wrong-name.md"
+    doc.write_text(_DOCUMENT)
+    bad = repo / "model/REQ@1790000000.abcdef.damaged.md"
+    bad.write_bytes(b"\xff")
+    stray = repo / "extra/picture.dat"
+    stray.parent.mkdir()
+    stray.touch()
+    for name in ("README.md", ".arch/state", ".arch-repo/config", ".arch-repo/transactions/one/file"):
+        path = repo / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+    pads = [repo / f"scratchpads/thinking/SCR@1790000000.abcdef.{slug}.scratchpad.yaml" for slug in ("one", "two")]
+    for pad in pads:
+        pad.write_text("artifact-id: first\nartifact-id: second\n")
+
+    results = {r.path: r for r in _verifier(catalogs).verify_all(repo)}
+
+    assert set(results) == {doc, bad, stray, *pads}
+    assert "E104" in {i.code for i in results[doc].errors}
+    assert [i.code for i in results[bad].errors] == ["E001"]
+    assert [i.code for i in results[stray].warnings] == ["W015"]
+    assert all(r.outcome == "unverified" for r in (results[p] for p in pads))
+    assert all("E013" in {i.code for i in results[p].errors} for p in pads)
+    assert sum(i.code == "E319" for p in pads for i in results[p].errors) == 1

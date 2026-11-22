@@ -24,7 +24,7 @@ VerificationOutcome: TypeAlias = Literal["verified", "unverified"]
 @dataclass
 class VerificationResult:
     path: Path
-    file_type: ArtifactKindName
+    file_type: ArtifactKindName | Literal["unrecognised"]
     issues: list[Issue] = field(default_factory=list)
     outcome: VerificationOutcome = "verified"
 

@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 #: verifier checks is a fact a reader can see; `test_each_verifier_declares_its_rule_codes` holds it
 #: equal to the codes its modules emit.
 RULE_CODES: frozenset[str] = frozenset({
-    "E001", "E011", "E012", "E013", "E014", "E311", "E360", "E361", "E362", "E363", "W360",
+    "E001", "E011", "E012", "E013", "E014", "E104", "E311", "E360", "E361", "E362", "E363", "W360",
 })
 
 
@@ -53,7 +53,7 @@ def verify_icon(
     content = read_file(path, result, loc, snapshot=snapshot)
     if content is None:
         return result
-    match read_icon_file(content):
+    match read_icon_file(content, strict_keys=True):
         case IconFileProblem(reason=reason):
             result.issues.append(_error("E360", f"not a readable icon file: {reason}", loc))
         case IconFile() as icon:

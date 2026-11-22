@@ -80,6 +80,13 @@ class KindDeclaration:
     #: Whether a change to a file of this kind is a change to the model's read-model.
     moves_model_generation: bool
 
+    identity_field: str = "artifact-id"
+
+    def file_identity(self, path: PurePath) -> str:
+        """The identity carried by the file name, excluding the kind's full suffix."""
+        suffix = self.suffix_carried_by(path)
+        return path.name.removesuffix(suffix) if suffix else path.stem
+
     def may_hold(self, parts: tuple[str, ...]) -> bool:
         """Whether a file at *parts* sits where this kind's files do, whatever its name."""
         return any(_sits_under(parts, root, self.placement) for root in self.roots)
@@ -100,7 +107,7 @@ ARTIFACT_KINDS: tuple[KindDeclaration, ...] = (
     # An entity's outgoing connections live beside it in `<entity>.outgoing.md`.
     KindDeclaration(
         name="connection", roots=_MODEL_ROOTS, placement="anywhere-below", suffixes=(OUTGOING_SUFFIX,),
-        id_prefix=None, verification="with-the-model", moves_model_generation=True,
+        id_prefix=None, verification="with-the-model", moves_model_generation=True, identity_field="source-entity",
     ),
     KindDeclaration(
         name="diagram", roots=((DIAGRAM_CATALOG, DIAGRAMS),), placement="anywhere-below",

@@ -73,7 +73,7 @@ class FilesystemInventoryAdapter:
         found = (
             path
             for kind in ARTIFACT_KINDS
-            if kind.verification == "standalone"
+            if kind.verification != "with-the-model"
             for pattern in source_globs(kind)
             for path in repo_path.glob(pattern)
         )
@@ -89,7 +89,7 @@ def _is_standalone(repo_path: Path, path: Path) -> bool:
     except ValueError:
         return False
     declared = artifact_kind_declared_at(relative)
-    return declared is not None and declared.verification == "standalone"
+    return declared is not None and declared.verification != "with-the-model"
 
 
 class DefaultIncrementalStateAdapter:

@@ -20,9 +20,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, TypeAlias
 
+from src.application.verification.artifact_verifier_parsing import parse_identity_mapping, read_file
 from src.application.verification.artifact_verifier_types import VerificationResult
 from src.domain.ontology_representation.artifact_types import RepoMount
-from src.domain.repository.artifact_location import ArtifactKindName
+from src.domain.repository.artifact_location import ArtifactKindName, artifact_kind
 
 if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
@@ -68,4 +69,8 @@ def verify_by_binding(
         case KindVerifier(verify=verify):
             return verify(host, path, snapshot)
         case None:
-            return VerificationResult(path=path, file_type=kind, outcome="unverified")
+            result = VerificationResult(path=path, file_type=kind, outcome="unverified")
+            if binding is not None and (content := read_file(path, result, str(path), snapshot=snapshot)) is not None:
+                if artifact_kind(kind).verification == "unverified":
+                    parse_identity_mapping(content, result, str(path))
+            return result

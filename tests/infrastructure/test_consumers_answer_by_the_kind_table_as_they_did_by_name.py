@@ -35,7 +35,7 @@ _BEFORE: dict[ArtifactKindName, tuple[str, str | None, str, bool]] = {
     "document": ("docs/adr/core/ADR@1.a.x.md", "document", "document", True),
     "icon": ("diagram-catalog/icons/ICO@1.a.x.md", "icon", "icon", True),
     # Inferred since the verifier dispatches by binding: a scratchpad is answered `unverified`.
-    "scratchpad": ("scratchpads/core/SCR@1.a.x.scratchpad.yaml", "scratchpad", "scratchpad", False),
+    "scratchpad": ("scratchpads/core/SCR@1.a.x.scratchpad.yaml", "scratchpad", "scratchpad", True),
 }
 
 #: Paths the layout gives no kind, and what the save dialog lists each as.

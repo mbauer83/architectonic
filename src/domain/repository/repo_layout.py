@@ -56,3 +56,15 @@ RUNTIME_STATE: tuple[str, ...] = (
     f"{ARCH_REPO}/{SYNC_WORKTREES}/",
     f"{ARCH_REPO}/{EXCHANGE_IDENTITY}",
 )
+
+
+def is_runtime_path(relative: str) -> bool:
+    """Whether a root-relative path belongs to Git or to the product's local state."""
+    return relative == ".git" or relative.startswith(".git/") or any(
+        relative == entry.rstrip("/") or (entry.endswith("/") and relative.startswith(entry))
+        for entry in RUNTIME_STATE
+    )
+
+
+def is_configuration_path(relative: str) -> bool:
+    return "/" not in relative or relative.startswith(f"{ARCH_REPO}/")

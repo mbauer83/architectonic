@@ -10,6 +10,7 @@ from typing import Literal
 
 from src.application.icons.icon_vocabulary import icon_applicability_names
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.application.verification._duplicate_identity_rules import duplicate_kind_files
 from src.application.verification._verifier_adapters import _VerifierAdapters
 from src.application.verification._verifier_contribution_runner import (
     build_candidate_repo,
@@ -231,10 +232,16 @@ class ArtifactVerifier(_VerifierAdapters):
             cancellation=cancellation,
         )
         if cfg.mode == "incremental":
-            return self._verify_all_incremental(
+            mode, results = self._verify_all_incremental(
                 repo_path, include_diagrams=include_diagrams, cfg=cfg, evaluation=evaluation
             )
-        return "full", self._verify_all_full(repo_path, include_diagrams=include_diagrams, evaluation=evaluation)
+        else:
+            mode = "full"
+            results = self._verify_all_full(repo_path, include_diagrams=include_diagrams, evaluation=evaluation)
+        by_path = {result.path: result for result in results if result.path != repo_path}
+        for path, issue in duplicate_kind_files(repo_path, by_path):
+            by_path[path].issues.append(issue)
+        return mode, results
 
     def acquire(self, repo_path: Path, *, include_diagrams: bool = True) -> RepositorySnapshot:
         """Read the repository once, for a pass to evaluate against.
@@ -320,9 +327,14 @@ class ArtifactVerifier(_VerifierAdapters):
     def _verify_standalone_artifacts(
         self, repo_path: Path, *, evaluation: EvaluationContext = UNCONDITIONAL
     ) -> list[VerificationResult]:
-        return self._verify_each_by_kind(
-            repo_path, self._inventory.list_standalone_artifacts(repo_path), evaluation=evaluation
-        )
+        paths = (list(evaluation.snapshot.extra_paths) if evaluation.snapshot is not None
+                 else self._inventory.list_standalone_artifacts(repo_path))
+        results = self._verify_each_by_kind(repo_path, paths, evaluation=evaluation)
+        if evaluation.snapshot is not None:
+            for path in evaluation.snapshot.inventory.unrecognised_paths:
+                issue = Issue(Severity.WARNING, "W015", "Unrecognised repository content", str(path))
+                results.append(VerificationResult(path, "unrecognised", [issue], outcome="unverified"))
+        return results
 
     def _verify_each_by_kind(
         self, repo_path: Path, paths: list[Path], *, evaluation: EvaluationContext = UNCONDITIONAL

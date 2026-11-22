@@ -29,7 +29,7 @@ class CandidateInventoryPort:
             path for path in candidates
             if (rel := rel_to_root(path.resolve(), repo_path.resolve())) is not None
             and (declared := artifact_kind_declared_at(rel)) is not None
-            and declared.verification == "standalone"
+            and declared.verification != "with-the-model"
         ]
 
 
