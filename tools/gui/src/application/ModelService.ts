@@ -74,6 +74,8 @@ export const makeModelService = (repo: ModelRepository) =>
     getDiagramConnections: (diagramId: string) => repo.getDiagramConnections(diagramId),
     getDiagramSvg: (diagramId: string, lens?: ReadingLens) => repo.getDiagramSvg(diagramId, lens),
     getDiagramAttributePanel: (diagramId: string) => repo.getDiagramAttributePanel(diagramId),
+    getDiagramTypeConnectionTypes: (diagramType: string) => repo.getDiagramTypeConnectionTypes(diagramType),
+    getDerivedNeighbors: (entityId: string) => repo.getDerivedNeighbors(entityId),
     getEntityDisplayItem: (artifactId: string) => repo.getEntityDisplayItem(artifactId),
     searchEntityDisplay: (params: Parameters<ModelRepository['searchEntityDisplay']>[0]) =>
       repo.searchEntityDisplay(params),

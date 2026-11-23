@@ -21,6 +21,27 @@ export const DirectNeighborhoodSchema = Schema.Struct({
 })
 export type DirectNeighborhood = typeof DirectNeighborhoodSchema.Type
 
+/** One relationship the derivation composed from an entity: the other end, which way it runs relative
+ * to the entity read, and the stated connections it was composed from. */
+export const DerivedNeighborSchema = Schema.Struct({
+  entity_id: Schema.String,
+  entity_name: Schema.String,
+  type: Schema.String,
+  direction: Schema.Literal('outbound', 'inbound'),
+  certainty: Schema.String,
+  hops: Schema.Number,
+  via_connection_ids: Schema.Array(Schema.String),
+  path: Schema.String,
+})
+export type DerivedNeighbor = typeof DerivedNeighborSchema.Type
+
+/** The derived arm of the neighbourhood response. */
+export const DerivedNeighborhoodSchema = Schema.Struct({
+  traversal: Schema.Literal('derived'),
+  neighbors: Schema.Array(DerivedNeighborSchema),
+})
+export type DerivedNeighborhood = typeof DerivedNeighborhoodSchema.Type
+
 /**
  * One row of the entity list: enough to render, filter, link and badge.
  *

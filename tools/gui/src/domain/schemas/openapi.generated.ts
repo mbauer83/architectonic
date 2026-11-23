@@ -2358,6 +2358,9 @@ export interface paths {
          *     ``traversal`` is an alternate execution specification, so it stays in the query — but the
          *     two answers are genuinely different shapes, and the direct arm used to carry no tag at all,
          *     so a client could not tell which it had received.
+         *
+         *     ``max_hops`` left unset is one hop for the direct arm and the configured derivation bound for
+         *     the derived one, which composes nothing within fewer than two.
          */
         get: operations["connections_read_entity_neighbors"];
         put?: never;
@@ -7028,8 +7031,15 @@ export interface components {
         DerivedNeighbor: {
             /** Certainty */
             certainty: string;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "outbound" | "inbound";
             /** Entity Id */
             entity_id: string;
+            /** Entity Name */
+            entity_name: string;
             /** Hops */
             hops: number;
             /** Path */
@@ -22565,7 +22575,7 @@ export interface operations {
         parameters: {
             query?: {
                 include_potential?: boolean;
-                max_hops?: number;
+                max_hops?: number | null;
                 traversal?: "direct" | "derived";
             };
             header?: never;

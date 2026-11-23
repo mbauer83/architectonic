@@ -1,10 +1,5 @@
 .page { max-width: 100%; }
-.meta { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 12px; }
-.faded { color: #9ca3af; } .mono { font-family: monospace; }
 .state { color: #6b7280; } .err { color: #dc2626; }
-.type-badge {
-  padding: 2px 8px; border-radius: 4px; font-size: 11px; background: #dbeafe; color: #1e40af; font-weight: 500;
-}
 
 .img-container {
   position: relative; overflow: hidden; background: #f8fafc;
@@ -20,11 +15,6 @@
 }
 .img-container.editing:active { cursor: default; }
 .img-container.editing.panning, .img-container.editing.panning :deep(*) { cursor: grab !important; }
-.editing-note { color: var(--accent-strong); font-weight: 600; }
-.editing-note kbd {
-  font: 10px ui-monospace, monospace; padding: 0 4px; border: 1px solid var(--border-strong);
-  border-bottom-width: 2px; border-radius: 3px; background: var(--surface);
-}
 /* Fullscreen overrides the clamped height, and the browser paints black behind
    anything the element does not cover. */
 .img-container:fullscreen {
@@ -73,13 +63,32 @@
 .svg-wrap :deep(.svg-conn-selected) line,
 .svg-wrap :deep(.svg-conn-selected) polyline { stroke: #2563eb !important; stroke-width: 2.5 !important; }
 
-.src-row { margin-top: 16px; }
-.toggle-btn {
-  padding: 5px 14px; border-radius: 6px; border: 1px solid #d1d5db; background: white; font-size: 13px;
-  cursor: pointer; color: #374151; margin-bottom: 8px;
+/* The diagram reader (B97). Dimmed, never hidden: what the reading does not reach steps back but stays
+   where it is and stays clickable, and the pointer lifts it part-way. A mapped group dims its own
+   strokes and text, not a nested group, which may be lit. */
+.svg-wrap :deep(.reading-dim) > :not(g):not(title),
+.svg-wrap :deep(:not(g).reading-dim) { opacity: 0.16; transition: opacity 0.15s ease; }
+.svg-wrap :deep(.reading-dim.svg-hovered) > :not(g):not(title),
+.svg-wrap :deep(.reading-dim[data-conn-id]:hover) > :not(title) { opacity: 0.6; }
+/* Flow, laid over a line as a copy of its stroke: dots travelling in the model direction, or, for a
+   relation without one, an even pulse along the whole line. Under reduced motion, a still emphasis. */
+.svg-wrap :deep(.reading-flow) {
+  fill: none; stroke: var(--accent); stroke-width: 3px; stroke-dasharray: 2 14; stroke-linecap: round;
+  vector-effect: non-scaling-stroke; pointer-events: none; animation: reading-flow 0.8s linear infinite;
 }
-.toggle-btn:hover { background: #f9fafb; }
-.puml-src {
-  background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; font-size: 12px; line-height: 1.5;
-  overflow-x: auto; white-space: pre;
+.svg-wrap :deep(.reading-flow--reverse) { animation-direction: reverse; }
+.svg-wrap :deep(.reading-flow--pulse) {
+  stroke-dasharray: none; stroke-linecap: butt; stroke-width: 4px; animation: reading-pulse 1.6s ease-in-out infinite;
 }
+@keyframes reading-flow { from { stroke-dashoffset: 16; } to { stroke-dashoffset: 0; } }
+@keyframes reading-pulse { 0%, 100% { stroke-opacity: 0.12; } 50% { stroke-opacity: 0.6; } }
+@media (prefers-reduced-motion: reduce) {
+  .svg-wrap :deep(.reading-flow) { animation: none; stroke-dasharray: none; stroke-width: 4px; stroke-opacity: 0.45; }
+  .svg-wrap :deep(.reading-dim) > :not(g):not(title), .svg-wrap :deep(:not(g).reading-dim) { transition: none; }
+}
+/* Keyboard focus: the canvas is one stop, its elements are reached from it. The ring is the product's
+   (2 px, offset) and differs from the selection's outline. */
+.img-container:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.svg-wrap :deep([data-reading-stop]:focus) { outline: none; }
+.svg-wrap :deep([data-reading-stop]:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+

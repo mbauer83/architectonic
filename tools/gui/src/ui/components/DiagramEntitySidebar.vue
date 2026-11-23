@@ -46,6 +46,8 @@ const props = defineProps<{
   /** Set only when `selectedConnection` is a derived (composed) relationship — a real
    * modeled connection has no witness chain to show. */
   witnessChain?: WitnessChainDisplay | null
+  /** Whether the entity list steps aside for what the `lead` slot shows, as the Reading panel does. */
+  listFolded?: boolean
 }>()
 const emit = defineEmits<{
   'select-entity': [id: string]
@@ -58,8 +60,6 @@ const emit = defineEmits<{
   'entity-edited': []
 }>()
 
-/** Strips a first-heading duplicate of the entity's own name — the raw markdown-rendered
- * content otherwise repeats the title the panel already shows above it. */
 /**
  * What the selected element says it corresponds to in the model.
  *
@@ -72,6 +72,8 @@ const selectedBindings = computed(() => {
   return row?.bindings ?? []
 })
 
+// Strips a first-heading duplicate of the entity's own name — the raw markdown-rendered content
+// otherwise repeats the title the panel already shows above it.
 const selectedEntityDetailHtml = computed(() => {
   const entity = props.entityQuery.data.value
   if (!entity) return null
@@ -88,11 +90,18 @@ const selectedIsDiagramOnly = computed(() => {
 
 <template>
   <aside class="sidebar card">
-    <div class="sb-hdr">
+    <slot name="lead" />
+    <div
+      v-if="!listFolded"
+      class="sb-hdr"
+    >
       <span class="sb-title">Entities</span>
       <span class="sb-count">{{ entities.length }}</span>
     </div>
-    <ul class="ent-list">
+    <ul
+      v-if="!listFolded"
+      class="ent-list"
+    >
       <li
         v-for="e in entities"
         :key="e.artifact_id"

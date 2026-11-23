@@ -109,3 +109,34 @@ describe('deselecting a diagram entity', () => {
   })
 
 })
+
+describe('selecting several entities, as the diagram reader reads them together', () => {
+  const OTHER = 'ACT@1000000002.bbbbbb.b-step'
+
+  it('adds with Shift and takes away with Shift, showing details only while exactly one is selected', async () => {
+    const { selection } = harness()
+    selection.selectEntity(ENTITY_ID)
+    selection.selectEntity(OTHER, true)
+    await nextTick()
+    expect(selection.selectedIds.value).toEqual([ENTITY_ID, OTHER])
+    expect(selection.selectedId.value).toBeNull()
+    expect(selection.hasSelection.value).toBe(true)
+
+    selection.selectEntity(ENTITY_ID, true)
+    await nextTick()
+    expect(selection.selectedIds.value).toEqual([OTHER])
+    expect(selection.selectedId.value).toBe(OTHER)
+  })
+
+  it('starts a selection with Shift when nothing is selected, and a plain click selects one alone', async () => {
+    const { selection } = harness()
+    selection.selectEntity(OTHER, true)
+    selection.selectEntity(ENTITY_ID, true)
+    await nextTick()
+    expect(selection.selectedIds.value).toEqual([OTHER, ENTITY_ID])
+
+    selection.selectEntity(OTHER)
+    await nextTick()
+    expect(selection.selectedIds.value).toEqual([OTHER])
+  })
+})

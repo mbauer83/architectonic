@@ -149,4 +149,29 @@ describe('graphvizMapElements — edges', () => {
     })
     expect(edges.get('CONN@1')).toEqual([gEdge])
   })
+
+  it("maps a line drawn to a further occurrence to the connection the entity's own line stands for", () => {
+    const root = new FakeSvgRoot()
+    const gA = root.appendChild(new FakeElement('g').setId('ent1'))
+    gA.setAttribute('data-entity', 'A')
+    const gB = root.appendChild(new FakeElement('g').setId('ent2'))
+    gB.setAttribute('data-entity', 'B')
+    const gB2 = root.appendChild(new FakeElement('g').setId('ent3'))
+    gB2.setAttribute('data-entity', 'B__2')
+    const first = root.appendChild(new FakeElement('g'))
+    first.setAttribute('data-entity-1', 'ent1')
+    first.setAttribute('data-entity-2', 'ent2')
+    const second = root.appendChild(new FakeElement('g'))
+    second.setAttribute('data-entity-1', 'ent1')
+    second.setAttribute('data-entity-2', 'ent3')
+
+    const { nodes, edges } = graphvizMapElements(asSvgRoot(root), {
+      entities: [makeEntity('APP@1.a', 'A'), makeEntity('APP@2.b', 'B')],
+      connections: [makeConn('A', 'B', 'CONN@1')],
+      diagramEntities: { occurrence: [{ id: 'occ-b-2', backing_entity_id: 'APP@2.b' }] },
+    })
+
+    expect(nodes.get('APP@2.b')).toEqual([gB, gB2])
+    expect(edges.get('CONN@1')).toEqual([first, second])
+  })
 })

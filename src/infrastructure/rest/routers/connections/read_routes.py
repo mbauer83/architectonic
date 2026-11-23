@@ -17,6 +17,7 @@ from src.application.ontology_views import (
     element_appearance_payload,
 )
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.infrastructure.derived_neighbors import DerivationLimitError, derive_neighbors
 from src.infrastructure.rendering.diagram_selection import connections_among
 from src.infrastructure.rest.contracts.authoring_catalogs import (
     ClassificationLevelsResponse,
@@ -44,7 +45,6 @@ from src.infrastructure.rest.routers._openapi import (
     TAG_TAXONOMY,
 )
 from src.infrastructure.rest.routers._search_hits import search_hit_to_dict
-from src.infrastructure.rest.routers.connections.neighbors import DerivationLimitError, derive_neighbor_response
 
 
 def register_connection_read_routes(router: APIRouter) -> None:
@@ -94,7 +94,7 @@ def register_connection_read_routes(router: APIRouter) -> None:
         response_model=EntityNeighborhoodResponse, responses=READ_RESPONSES)
     def get_neighbors(
         artifact_id: str,
-        max_hops: int = 1,
+        max_hops: int | None = None,
         traversal: Literal["direct", "derived"] = "direct",
         include_potential: bool = False,
         catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
@@ -104,6 +104,9 @@ def register_connection_read_routes(router: APIRouter) -> None:
         ``traversal`` is an alternate execution specification, so it stays in the query — but the
         two answers are genuinely different shapes, and the direct arm used to carry no tag at all,
         so a client could not tell which it had received.
+
+        ``max_hops`` left unset is one hop for the direct arm and the configured derivation bound for
+        the derived one, which composes nothing within fewer than two.
         """
         entity_id = artifact_id
         repo = s.get_repo()
@@ -113,16 +116,17 @@ def register_connection_read_routes(router: APIRouter) -> None:
             # from a real one with no neighbours, which is the wrong answer to give.
             raise HTTPException(404, f"Not found: {entity_id!r}")
         if traversal == "direct":
-            hops = repo.find_neighbors(entity_id, max_hops=max_hops)
+            hops = repo.find_neighbors(entity_id, max_hops=max_hops or 1)
             return {"traversal": "direct", "hops": {hop: sorted(ids) for hop, ids in hops.items()}}
         try:
-            return derive_neighbor_response(
+            neighbors = derive_neighbors(
                 entity_id,
                 max_hops=max_hops,
                 include_potential=include_potential,
                 read_access=repo,
-                catalogs=catalogs,
+                registries=catalogs.module_catalog,
             )
+            return {"traversal": "derived", "neighbors": neighbors}
         except DerivationLimitError as exc:
             raise derivation_limit(str(exc)) from exc
 
