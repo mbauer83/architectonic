@@ -15,6 +15,7 @@ from src.application.puml_relation_parsing import without_layout_links
 from src.domain.diagrams.layout.layout_block import Layout
 from src.domain.diagrams.layout.rendered_picture import NotReadable
 from src.infrastructure.rendering.layout.first_layout import first_layout
+from src.infrastructure.rendering.layout.membership_placement import with_new_members
 from src.infrastructure.rendering.layout.plantuml_svg_reader import RenderedDrawing, read_rendered_drawing
 
 
@@ -60,3 +61,19 @@ def first_layout_of(
     diagram_type = str(frontmatter.get("diagram-type", "archimate"))
     drawing = plantuml_drawing(puml_body, repo_root, diagram_type)
     return first_layout(drawing.picture, joined_to_its_picture(frontmatter, Layout(), ontology))
+
+
+def placed_on_its_picture(
+    source: str, frontmatter: Mapping[str, object], layout: Layout, *, new: frozenset[str],
+    repo_root: Path, ontology: DeclaresElementKinds,
+) -> tuple[str, Layout]:
+    """*layout* matched to the picture PlantUML draws of *source*, which *frontmatter* states: the instances
+    in *new* placed beside their neighbours and every box it does not state fitted round its members.
+
+    Answers the source as drawn too, which is the one to store: drawing may have relaxed its ranking.
+    """
+    source, svg = measure_composition(source, repo_root, str(frontmatter.get("diagram-type", "archimate")))
+    drawing = read_rendered_drawing(svg)
+    if isinstance(drawing, NotReadable):
+        raise NotDrawn(f"The diagram's picture cannot be read: {drawing.met}")
+    return source, with_new_members(drawing.picture, joined_to_its_picture(frontmatter, layout, ontology), new)

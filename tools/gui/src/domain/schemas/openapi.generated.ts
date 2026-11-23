@@ -1974,7 +1974,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Align, distribute, straighten or return a diagram's layout to automatic */
+        /** Align, distribute, straighten, regroup or return a diagram's layout to automatic */
         post: operations["diagrams_arrange_diagram_layout"];
         delete?: never;
         options?: never;
@@ -7474,6 +7474,8 @@ export interface components {
         DiagramLayoutIntentsResponse: {
             /** Artifact Id */
             artifact_id: string;
+            /** Authored Groupings */
+            authored_groupings?: components["schemas"]["AuthoredGroupingResponse"][];
             /** Errors */
             errors: string[];
             layout: components["schemas"]["DiagramLayoutContract"];
@@ -10341,9 +10343,12 @@ export interface components {
         };
         /**
          * LayoutIntentsBody
-         * @description What the editor means, in order: ``align`` (``keys``, ``edge``), ``distribute`` (``keys``, ``axis``),
-         *     ``straighten`` (``relations``) and ``return_to_automatic`` (``keys``; none for the whole layout).
-         *     Each compiles to the layout patch that states it, checked against the stored layout.
+         * @description What the editor means, in order. Layout: ``align`` (``keys``, ``edge``), ``distribute`` (``keys``,
+         *     ``axis``), ``straighten`` (``relations``) and ``return_to_automatic`` (``keys``; none for the whole
+         *     layout). Groupings: ``nest`` (``keys``, ``grouping``), ``unnest`` (``keys``), ``create_grouping``
+         *     (``label``, ``keys``, ``parent?``) and ``delete_grouping`` (``grouping``). Layout intents compile to the
+         *     patch that states them, checked against the stored layout; grouping intents to the diagram's new
+         *     groupings and the layout change that keeps the layout matching them, written in the same edit.
          */
         LayoutIntentsBody: {
             /**

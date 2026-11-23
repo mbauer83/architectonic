@@ -364,6 +364,15 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
             "dry_run": False,
         },
     ),
+    # A grouping intent regenerates the body for the new groupings, in the same write as the layout.
+    WriteCall(
+        "artifact_arrange_diagram",
+        lambda c: {
+            "artifact_id": c.created["diagram"],
+            "intents": [{"intent": "create_grouping", "label": "MCP Walk Box", "keys": [c.created["entity"]]}],
+            "dry_run": False,
+        },
+    ),
     # The diagram's own mark moves into the library, and the diagram names it there.
     WriteCall(
         "artifact_share_icon",

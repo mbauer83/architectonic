@@ -8,7 +8,7 @@ layout is.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
 
@@ -20,8 +20,12 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.layout.layout_block import MalformedLayout
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
-from src.infrastructure.rendering.layout.diagram_geometry import geometry_response, intents_patch, stored_geometry
-from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, first_layout_of
+from src.infrastructure.rendering.layout.diagram_geometry import (
+    geometry_response,
+    read_and_measured,
+    stored_geometry,
+)
+from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, first_layout_of, placed_on_its_picture
 from src.infrastructure.rendering.layout.drawing_wire import reshaped
 from src.infrastructure.rest.contracts.diagram_layout_editing import (
     DiagramLayoutGeometryResponse,
@@ -42,7 +46,7 @@ from src.infrastructure.write.artifact_write.boundary import assert_engagement_w
 from src.infrastructure.write.artifact_write.parse_existing import ParsedDiagram, parse_diagram_file
 
 if TYPE_CHECKING:
-    from src.infrastructure.write.artifact_write.diagram_layout_patch import PatchOf
+    from src.infrastructure.write.artifact_write.diagram_layout_patch import LayoutPatchResult
 
 router = APIRouter()
 
@@ -182,13 +186,21 @@ def preview_diagram_layout_shapes(artifact_id: str, body: DrawShapesBody) -> dic
     responses=WRITE_RESPONSES,
 )
 def patch_diagram_layout_gui(artifact_id: str, body: PatchLayoutBody, catalogs: Catalogs) -> dict[str, object]:
-    return _written_layout("diagrams_patch_diagram_layout", artifact_id, body.patch, body.dry_run, catalogs)
+    from src.infrastructure.write.artifact_write.diagram_layout_patch import patch_diagram_layout  # noqa: PLC0415
+
+    return _written_layout(
+        "diagrams_patch_diagram_layout", patch_diagram_layout, catalogs,
+        artifact_id=artifact_id, patch=body.patch, dry_run=body.dry_run,
+    )
 
 
 class LayoutIntentsBody(BaseModel):
-    """What the editor means, in order: ``align`` (``keys``, ``edge``), ``distribute`` (``keys``, ``axis``),
-    ``straighten`` (``relations``) and ``return_to_automatic`` (``keys``; none for the whole layout).
-    Each compiles to the layout patch that states it, checked against the stored layout."""
+    """What the editor means, in order. Layout: ``align`` (``keys``, ``edge``), ``distribute`` (``keys``,
+    ``axis``), ``straighten`` (``relations``) and ``return_to_automatic`` (``keys``; none for the whole
+    layout). Groupings: ``nest`` (``keys``, ``grouping``), ``unnest`` (``keys``), ``create_grouping``
+    (``label``, ``keys``, ``parent?``) and ``delete_grouping`` (``grouping``). Layout intents compile to the
+    patch that states them, checked against the stored layout; grouping intents to the diagram's new
+    groupings and the layout change that keeps the layout matching them, written in the same edit."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -198,39 +210,46 @@ class LayoutIntentsBody(BaseModel):
 
 @router.post(
     "/api/diagrams/{artifact_id}/layout/arrange", tags=[TAG_DIAGRAMS],
-    summary="Align, distribute, straighten or return a diagram's layout to automatic",
+    summary="Align, distribute, straighten, regroup or return a diagram's layout to automatic",
     response_model=DiagramLayoutIntentsResponse, response_model_exclude_none=True, responses=WRITE_RESPONSES,
 )
 def arrange_diagram_layout_gui(artifact_id: str, body: LayoutIntentsBody, catalogs: Catalogs) -> dict[str, object]:
+    from src.infrastructure.write.artifact_write.diagram_arrangement import arrange_diagram  # noqa: PLC0415
+
+    root = _repo_root()
     try:
-        patch = intents_patch(body.intents, _stored_diagram(artifact_id), artifact_id, _repo_root(), catalogs.ontology)
+        intents, drawn = read_and_measured(body.intents, _stored_diagram(artifact_id), artifact_id, root,
+                                           catalogs.ontology)
     except ValueError as refusal:  # MalformedLayout is a ValueError
         raise HTTPException(400 if isinstance(refusal, MalformedLayout) else 422, str(refusal)) from refusal
     return _written_layout(
-        "diagrams_arrange_diagram_layout", artifact_id, patch, body.dry_run, catalogs, with_patch=True,
+        "diagrams_arrange_diagram_layout", arrange_diagram, catalogs, with_patch=True,
+        artifact_id=artifact_id, intents=intents, drawn=drawn, store=s.get_repo(), dry_run=body.dry_run,
+        place_members=lambda source, frontmatter, layout: placed_on_its_picture(
+            source, frontmatter, layout, new=frozenset(), repo_root=root, ontology=catalogs.ontology,
+        ),
     )
 
 
 def _written_layout(
-    operation: str, artifact_id: str, patch: Mapping[str, object] | PatchOf, dry_run: bool, catalogs: RuntimeCatalogs,
-    *, with_patch: bool = False,
+    operation: str, write: Callable[..., LayoutPatchResult], catalogs: RuntimeCatalogs, *,
+    with_patch: bool = False, **arguments: Any,
 ) -> dict[str, object]:
     """The layout write both routes make, through the write queue, with one mapping of its refusals.
 
-    *with_patch* also answers the patch applied: the intents route's caller did not state it.
+    *with_patch* also answers the patch applied: the intents route's caller did not state it. The groupings
+    are answered where the write changed them.
     """
-    from src.infrastructure.write.artifact_write.diagram_layout_patch import patch_diagram_layout  # noqa: PLC0415
-
     repo_root, _, verifier = s.get_write_deps(catalogs)
     try:
         result = s.authorized_write(
-            operation, patch_diagram_layout,
+            operation, write,
             repo_root=repo_root, verifier=verifier, clear_repo_caches=s.clear_caches,
-            assert_write_root=assert_engagement_write_root, artifact_id=artifact_id, patch=patch,
+            assert_write_root=assert_engagement_write_root,
             first_layout=lambda body_text, frontmatter: first_layout_of(
                 body_text, frontmatter, repo_root, catalogs.ontology
             ),
-            dry_run=dry_run,
+            **arguments,
         )
     except LayoutConflict as conflict:
         raise HTTPException(409, str(conflict)) from conflict
@@ -238,9 +257,4 @@ def _written_layout(
         raise HTTPException(422, str(refusal)) from refusal
     except (MalformedLayout, ValueError) as refusal:
         raise HTTPException(400, str(refusal)) from refusal
-    write = result.write
-    return {
-        "artifact_id": write.artifact_id, "wrote": write.wrote, "warnings": list(write.warnings),
-        "errors": write.error_messages, "layout": result.layout,
-        **({"patch": dict(result.patch)} if with_patch else {}),
-    }
+    return result.as_answer(with_patch=with_patch)
