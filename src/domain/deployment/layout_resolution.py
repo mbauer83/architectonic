@@ -39,8 +39,20 @@ Canonicalize = Callable[[Path], Path]
 
 
 def lexical_canonicalize(path: Path) -> Path:
-    """Absolute + normalized, without touching the filesystem (test default)."""
-    return Path(os.path.normpath(path)) if path.is_absolute() else Path(os.path.normpath(path.absolute()))
+    """Normalize an anchored path without consulting the process environment."""
+    if not path.is_absolute():
+        raise ValueError(f"lexical canonicalization requires an absolute path: {path}")
+    return Path(os.path.normpath(path))
+
+
+def _anchored(base: Path, raw: str, home: Path) -> Path:
+    path = Path(raw)
+    if path.parts and path.parts[0] == "~":
+        return home.joinpath(*path.parts[1:])
+    if path.parts and path.parts[0].startswith("~"):
+        # A named user's home requires the infrastructure canonicalizer.
+        return path
+    return base / path
 
 
 @dataclass(frozen=True)
@@ -65,22 +77,23 @@ def select_settings_document(
     env: Mapping[str, str],
     source_tree_settings: Path,
     cwd: Path,
+    home: Path,
     canonicalize: Canonicalize = lexical_canonicalize,
 ) -> SettingsDocumentSelection:
     """Stage 1 — exact order, first hit wins."""
     if cli_settings is not None:
         return SettingsDocumentSelection(canonicalize(cwd / cli_settings), "cli")
     if deployment_root is not None:
-        return SettingsDocumentSelection(canonicalize(deployment_root / "settings.yaml"), "deployment_root_default")
+        path = canonicalize(cwd / deployment_root / "settings.yaml")
+        return SettingsDocumentSelection(path, "deployment_root_default")
     env_path = env.get(ENV_SETTINGS_PATH)
     if env_path:
-        return SettingsDocumentSelection(canonicalize(cwd / Path(env_path).expanduser()), "env")
-    return SettingsDocumentSelection(canonicalize(source_tree_settings), "source_tree_default")
+        return SettingsDocumentSelection(canonicalize(_anchored(cwd, env_path, home)), "env")
+    return SettingsDocumentSelection(canonicalize(cwd / source_tree_settings), "source_tree_default")
 
 
 def _canonical(inputs: LayoutInputs, base: Path, raw: str) -> Path:
-    expanded = Path(raw).expanduser()
-    return inputs.canonicalize(expanded if expanded.is_absolute() else base / expanded)
+    return inputs.canonicalize(_anchored(inputs.cwd / base, raw, inputs.home))
 
 
 def _resolve_field(
@@ -117,11 +130,11 @@ def _resolve_field(
         return ResolvedPathField(winner_path, winner_source, provenance)
 
     if inputs.deployment_root is not None and deployment_root_default is not None:
-        path = inputs.canonicalize(deployment_root_default)
+        path = inputs.canonicalize(inputs.cwd / deployment_root_default)
         provenance = ProvenanceEntry("deployment_root_default", str(path))
         return ResolvedPathField(path, "deployment_root_default", (provenance,))
     if compat_default is not None:
-        path = inputs.canonicalize(compat_default)
+        path = inputs.canonicalize(inputs.cwd / compat_default)
         return ResolvedPathField(path, "compat_default", (ProvenanceEntry("compat_default", str(path)),))
     return None
 
