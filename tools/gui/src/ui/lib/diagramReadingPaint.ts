@@ -8,6 +8,8 @@
  *
  * Generic over every diagram type: it reads only the element map the type's viewer resolved.
  */
+import { centreOf, distanceBetween } from '../../domain/layout/geometry'
+import { pictureExtentOf } from './svgExtent'
 import { overlayStrokes } from './svgHitAreas'
 
 /** How a relation's flow runs: travelling along its model direction, or, without one, an even pulse. */
@@ -29,14 +31,6 @@ export interface ReadingPaint {
 const FLOW = 'data-reading-flow'
 const MARKS = ['reading-dim', 'reading-lit']
 
-const centreOf = (element: Element): { x: number; y: number } | null => {
-  if (!(element instanceof SVGGraphicsElement)) return null
-  try {
-    const box = element.getBBox()
-    return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-  } catch { return null }
-}
-
 /**
  * Whether a drawn stroke runs from the relation's source to its target. PlantUML draws `B <-- A` from
  * B, so the path's own direction says nothing; the end nearer the target's shape does.
@@ -46,9 +40,9 @@ const runsTowards = (stroke: SVGGeometryElement, target: readonly Element[]): bo
     const length = stroke.getTotalLength()
     const start = stroke.getPointAtLength(0)
     const end = stroke.getPointAtLength(length)
-    const centres = target.flatMap((element) => centreOf(element) ?? [])
+    const centres = target.flatMap((element) => pictureExtentOf(element) ?? []).map(centreOf)
     if (centres.length === 0) return true
-    const nearest = (point: DOMPoint) => Math.min(...centres.map((c) => Math.hypot(c.x - point.x, c.y - point.y)))
+    const nearest = (point: DOMPoint) => Math.min(...centres.map((centre) => distanceBetween(centre, point)))
     return nearest(end) <= nearest(start)
   } catch { return true }
 }

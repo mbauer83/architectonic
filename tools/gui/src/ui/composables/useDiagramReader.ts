@@ -6,7 +6,9 @@ import type { DerivedNeighbor } from '../../domain/schemas/entities'
 import type { Extent } from '../../domain/layout/geometry'
 import { DEFAULT_REACH, reachOf, type Reach, type ReadingRelation } from '../../domain/diagramReading'
 import { derivedOf, notDrawnOf } from '../../domain/diagramReadingLists'
+import { unionOf } from '../../domain/layout/lab/labArrangement'
 import { paintReading, type FlowOf } from '../lib/diagramReadingPaint'
+import { pictureExtentOf } from '../lib/svgExtent'
 import { onReducedMotionChange, readerPrefersReducedMotion } from '../lib/motionPreference'
 
 /** What the reader needs of the picture's selection: the selected entities and what everything is drawn as. */
@@ -119,16 +121,10 @@ export function useDiagramReader(options: {
   /** The part of the picture the reading covers: the selection and what it reaches. */
   const readingExtent = (): Extent | null => {
     const ids = [...focus.value, ...reached.value.incoming, ...reached.value.outgoing]
-    const boxes = ids.flatMap((id) => selection.nodeElements.value.get(id) ?? []).flatMap((element) => {
-      if (!(element instanceof SVGGraphicsElement)) return []
-      try { const box = element.getBBox(); return box.width > 0 || box.height > 0 ? [box] : [] } catch { return [] }
-    })
-    if (boxes.length === 0) return null
-    return {
-      left: Math.min(...boxes.map((box) => box.x)), top: Math.min(...boxes.map((box) => box.y)),
-      right: Math.max(...boxes.map((box) => box.x + box.width)),
-      bottom: Math.max(...boxes.map((box) => box.y + box.height)),
-    }
+    const extents = ids.flatMap((id) => selection.nodeElements.value.get(id) ?? [])
+      .flatMap((element) => pictureExtentOf(element) ?? [])
+      .filter((extent) => extent.right > extent.left || extent.bottom > extent.top)
+    return extents.length > 0 ? unionOf(extents) : null
   }
 
   return {

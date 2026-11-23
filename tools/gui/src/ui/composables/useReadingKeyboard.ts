@@ -1,5 +1,6 @@
 import { watch, type Ref } from 'vue'
-import type { Extent } from '../../domain/layout/geometry'
+import { centreOf, type Extent } from '../../domain/layout/geometry'
+import { pictureExtentOf } from '../lib/svgExtent'
 
 /** One element as the keyboard reaches it: where it is drawn and how it is announced. */
 interface Stop {
@@ -8,19 +9,10 @@ interface Stop {
   readonly box: Extent
 }
 
-const boxOf = (element: SVGGraphicsElement): Extent | null => {
-  try {
-    const box = element.getBBox()
-    return { left: box.x, top: box.y, right: box.x + box.width, bottom: box.y + box.height }
-  } catch { return null }
-}
-
 /** Top to bottom, then left to right; shapes whose tops are within a few units share a row. */
 const ROW = 8
 const readingOrder = (one: Stop, other: Stop): number =>
   Math.abs(one.box.top - other.box.top) > ROW ? one.box.top - other.box.top : one.box.left - other.box.left
-
-const centre = (box: Extent) => ({ x: (box.left + box.right) / 2, y: (box.top + box.bottom) / 2 })
 
 const DIRECTIONS: Readonly<Record<string, { x: number; y: number }>> = {
   ArrowRight: { x: 1, y: 0 }, ArrowLeft: { x: -1, y: 0 }, ArrowDown: { x: 0, y: 1 }, ArrowUp: { x: 0, y: -1 },
@@ -28,12 +20,12 @@ const DIRECTIONS: Readonly<Record<string, { x: number; y: number }>> = {
 
 /** The nearest stop from *from* in a direction: ahead of it, weighing sideways distance double. */
 const nearest = (from: Stop, stops: readonly Stop[], direction: { x: number; y: number }): Stop | null => {
-  const here = centre(from.box)
+  const here = centreOf(from.box)
   let best: Stop | null = null
   let bestScore = Number.POSITIVE_INFINITY
   for (const stop of stops) {
     if (stop === from) continue
-    const there = centre(stop.box)
+    const there = centreOf(stop.box)
     const ahead = (there.x - here.x) * direction.x + (there.y - here.y) * direction.y
     if (ahead <= 0) continue
     const aside = Math.abs((there.x - here.x) * direction.y + (there.y - here.y) * direction.x)
@@ -68,7 +60,7 @@ export function useReadingKeyboard(options: {
   watch(options.nodeElements, (nodes) => {
     stops = [...nodes].flatMap(([id, elements]) => {
       const element = elements.find((one): one is SVGGraphicsElement => one instanceof SVGGraphicsElement)
-      const box = element ? boxOf(element) : null
+      const box = element ? pictureExtentOf(element) : null
       return element && box ? [{ id, element, box }] : []
     }).sort(readingOrder)
     stops.forEach((stop, index) => {
