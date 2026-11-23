@@ -1,5 +1,6 @@
 """Read-only render records for elements and relations an editor has yet to save."""
 
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -41,7 +42,8 @@ class GeometryPreviewBody(DiagramComposition):
         entities: list[EntityRecord] = []
         connections: list[ConnectionRecord] = []
         members = {stable_id(item) for item in self.entity_ids}
-        relations = {stable_conn_id(item) for item in self.connection_ids}
+        selected = {stable_conn_id(item) for item in self.connection_ids}
+        relations: set[str] = set()
         for item in self.proposed_elements:
             key = stable_id(item.artifact_id)
             kind = ontology.entity_type_prefixes().get(parse_entity_id(item.artifact_id).prefix)
@@ -58,12 +60,18 @@ class GeometryPreviewBody(DiagramComposition):
         for relation in self.proposed_relations:
             source, target, kind = connection_id_as_written(relation.artifact_id)
             key = stable_conn_id(relation.artifact_id)
+            stored = repo.get_connection(relation.artifact_id)
             if (kind not in ontology.all_connection_types() or key in relations
-                    or repo.get_connection(relation.artifact_id) is not None):
+                    or (stored is not None) != (key in selected)):
                 raise ValueError(f"Invalid or duplicate proposed relation {relation.artifact_id}")
             if {stable_id(source), stable_id(target)} - members:
                 raise ValueError("Both ends of a proposed relation must be on the diagram")
             relations.add(key)
+            if stored is not None:
+                connections.append(replace(stored, content_text=relation.description,
+                                           src_multiplicity=relation.src_multiplicity,
+                                           tgt_multiplicity=relation.tgt_multiplicity))
+                continue
             connections.append(ConnectionRecord(
                 artifact_id=relation.artifact_id, source=source, target=target, conn_type=kind, version="",
                 status="draft", path=Path(), extra={}, content_text=relation.description,

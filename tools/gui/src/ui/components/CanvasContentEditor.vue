@@ -2,7 +2,8 @@
 import { computed, inject, nextTick, ref } from 'vue'
 import { Effect } from 'effect'
 import type { DiagramContext } from '../../domain'
-import { stableEntityId } from '../../domain/artifactId'
+import { canvasMembers } from '../../domain/layout/canvasComposition'
+import { stableConnectionId } from '../../domain/artifactId'
 import { modelServiceKey } from '../keys'
 import type { DiagramEditing } from '../composables/useDiagramEditing'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
@@ -31,37 +32,9 @@ const tgtCount = ref('')
 const description = ref('')
 const error = ref('')
 const currentLine = ref('')
-const members = computed(() => {
-  const lookup = new Map(
-    [...props.context.entities, ...props.context.suggested_entities.flatMap((s) => s.items)].map((e) => [
-      stableEntityId(e.artifact_id),
-      { id: e.artifact_id, name: e.name, type: e.artifact_type },
-    ]),
-  )
-  const state = props.editing.session.state.value
-  for (const [id, name] of state?.additions ?? []) {
-    const key = stableEntityId(id)
-    if (!lookup.has(key)) lookup.set(key, { id, name, type: state?.addedTypes?.get(id) ?? '' })
-  }
-  const cmds = state?.commands ?? []
-  for (const c of cmds) {
-    if (c.op === 'model.element.create')
-      lookup.set(stableEntityId(c.artifact_id), {
-        id: c.artifact_id,
-        name: c.name,
-        type: c.artifact_type ?? '',
-      })
-    if (c.op === 'model.element.rename') {
-      const m = lookup.get(stableEntityId(c.artifact_id))
-      if (m) m.name = c.name
-    }
-  }
-  const picture = props.editing.session.geometry.value
-  return [...(picture?.elements ?? []), ...(picture?.boxes ?? [])].flatMap((s) => {
-    const item = lookup.get(s.key ?? '')
-    return item ? [{ ...item, alias: s.alias }] : []
-  })
-})
+const members = computed(() => canvasMembers(
+  props.context, props.editing.session.state.value, props.editing.session.geometry.value,
+))
 const selected = computed(() => members.value.find((e) => e.alias === source.value))
 function position(x: number, y: number) {
   at.value = {
@@ -161,10 +134,20 @@ function editLine(index: number) {
   currentLine.value = record.artifact_id
   options.value = [record.conn_type]
   kind.value = record.conn_type
-  label.value = record.edge_label_override ?? ''
+  const pending = props.editing.session.state.value
+  const prior = props.context.diagram.extra?.connections
+  const overlays = [...(Array.isArray(prior) ? prior : []), ...(pending?.overlays ?? [])]
+  const overlay = overlays.reverse().find(r => stableConnectionId(String(r.artifact_id ?? r.connection_id)) === row.key)
+  label.value = String(overlay?.label ?? record.edge_label_override ?? '')
   description.value = record.content_text
   srcCount.value = record.src_multiplicity ?? ''
   tgtCount.value = record.tgt_multiplicity ?? ''
+  const edit = pending?.commands?.find(c => c.artifact_id === record.artifact_id && c.op === 'model.relation.edit')
+  if (edit && 'src_multiplicity' in edit) {
+    description.value = edit.description
+    srcCount.value = edit.src_multiplicity
+    tgtCount.value = edit.tgt_multiplicity
+  }
   mode.value = 'relation'
 }
 const { touchedLine, focusCanvas, up, release, moving } = useContentGestures(

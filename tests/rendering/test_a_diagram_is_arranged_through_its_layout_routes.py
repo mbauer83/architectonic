@@ -214,3 +214,20 @@ def test_membership_write_with_a_stale_layout_answers_conflict(model: RenderedMo
     })
     assert result.status_code == 409, result.text
     assert path.read_bytes() == before
+
+
+def test_preview_replaces_a_selected_relations_annotations_without_writing(model: RenderedModel, client: TestClient):
+    diagram, _ = _diagram(model, "top-to-bottom")
+    source, target = model.ids["customer"], model.ids["clerk"]
+    key = f"{source}---{target}@@archimate-assignment"
+    before = s.get_repo().get_connection(key)
+    assert before is not None
+    result = client.post(f"/api/diagrams/{diagram}/layout/geometry/preview", json={
+        "diagram_type": "archimate-layered", "name": "Edit relation", "entity_ids": [source, target],
+        "connection_ids": [key], "proposed_relations": [{"artifact_id": key, "description": "Preview only"}],
+        "diagram_entities": {"_connections": [{"artifact_id": key, "include_description": True}]},
+    })
+    assert result.status_code == 200, result.text
+    [line] = result.json()["relations"]
+    assert "Preview only" in line["label"]
+    assert s.get_repo().get_connection(key) == before

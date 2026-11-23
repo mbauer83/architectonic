@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from src.domain.artifact_id import stable_conn_id
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.rendering.diagram_selection import resolve_diagram_selection
 from src.infrastructure.rest.routers._failures import rejected_input
@@ -91,9 +92,13 @@ def render_composition(
         repo, body.entity_ids, body.connection_ids
     )
     entities.extend(proposed_entities)
-    connections.extend(proposed_connections)
+    # A draft can change the annotations on an already selected model relation.
+    # Preserve its position and its identity in the drawing, as in the eventual write.
+    proposals = {stable_conn_id(c.artifact_id): c for c in proposed_connections}
+    connections = [proposals.pop(stable_conn_id(c.artifact_id), c) for c in connections]
+    connections.extend(proposals.values())
     entity_ids_used.extend(entity.artifact_id for entity in proposed_entities)
-    connection_ids_used.extend(connection.artifact_id for connection in proposed_connections)
+    connection_ids_used.extend(connection.artifact_id for connection in proposals.values())
     de, dc = _split_diagram_entities(body.diagram_entities)
     try:
         de = with_icons_prepared(de) if de is not None else None

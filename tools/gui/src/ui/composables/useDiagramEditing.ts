@@ -276,7 +276,7 @@ export function useDiagramEditing(
     const now = session.state.value
     if (!now) return false
     let commands = [...now.commands ?? []]
-    if (command.op === 'model.element.rename') {
+    if (command.op === 'model.element.rename' || command.op === 'model.relation.edit') {
       commands = commands.filter(c => c.op !== command.op || c.artifact_id !== command.artifact_id)
     }
     commands.push(command)

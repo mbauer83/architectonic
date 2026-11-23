@@ -6,9 +6,13 @@ import type {
 } from '../../ports/diagramWriteBodies'
 import { membershipWithout } from './diagramMembership'
 import type { DrawnMembership } from './diagramMembership'
-import { stableEntityId } from '../artifactId'
+import { stableConnectionId, stableEntityId } from '../artifactId'
+
+import type { DiagramContext } from '..'
+import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 
 interface Content {
+  readonly addedTypes?: ReadonlyMap<string, string>
   readonly additions?: ReadonlyMap<string, string>
   readonly commands?: readonly CanvasCommand[]
   readonly overlays?: readonly Record<string, unknown>[]
@@ -21,9 +25,10 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
     ...commands.filter((c) => c.op === 'model.element.delete').map((c) => c.artifact_id),
   ])
   const creates = commands.filter((c) => c.op === 'model.element.create')
-  const links = commands.filter(
-    (c): c is Extract<CanvasCommand, { src_multiplicity: string }> => c.op === 'model.relation.create',
+  const relations = commands.filter(
+    (c): c is Extract<CanvasCommand, { src_multiplicity: string }> => 'src_multiplicity' in c,
   )
+  const links = relations.filter(c => c.op === 'model.relation.create')
   const kept = membershipWithout(
     {
       ...drawn,
@@ -75,8 +80,8 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
         specializations: c.specializations,
         attributes: c.attributes,
       })),
-    proposed_relations: links
-      .filter((c) => write.connection_ids.includes(c.artifact_id))
+    proposed_relations: relations
+      .filter(c => write.connection_ids.some(id => stableConnectionId(id) === stableConnectionId(c.artifact_id)))
       .map((c) => ({
         artifact_id: c.artifact_id,
         description: c.description,
@@ -96,4 +101,35 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
       : {}),
   }
   return { preview, write }
+}
+
+/** Resolve drawing aliases to their model identity, including unsaved additions and renames. */
+export function canvasMembers(context: DiagramContext, state: Content | null, picture: LayoutGeometry | null) {
+  const lookup = new Map(
+    [...context.entities, ...context.suggested_entities.flatMap((s) => s.items)].map((e) => [
+      stableEntityId(e.artifact_id),
+      { id: e.artifact_id, name: e.name, type: e.artifact_type },
+    ]),
+  )
+  for (const [id, name] of state?.additions ?? []) {
+    const key = stableEntityId(id)
+    if (!lookup.has(key)) lookup.set(key, { id, name, type: state?.addedTypes?.get(id) ?? '' })
+  }
+  const cmds = state?.commands ?? []
+  for (const c of cmds) {
+    if (c.op === 'model.element.create')
+      lookup.set(stableEntityId(c.artifact_id), {
+        id: c.artifact_id,
+        name: c.name,
+        type: c.artifact_type ?? '',
+      })
+    if (c.op === 'model.element.rename') {
+      const m = lookup.get(stableEntityId(c.artifact_id))
+      if (m) m.name = c.name
+    }
+  }
+  return [...(picture?.elements ?? []), ...(picture?.boxes ?? [])].flatMap((s) => {
+    const item = lookup.get(s.key ?? '')
+    return item ? [{ ...item, alias: s.alias }] : []
+  })
 }
