@@ -1414,7 +1414,7 @@ from src.infrastructure.write import artifact_write_cli  # noqa: E402
 
 def test_write_cli_errors_when_backend_absent(monkeypatch, tmp_path: Path, capsys) -> None:
     """artifact_write_cli exits with error when no backend state exists."""
-    monkeypatch.setattr(artifact_write_cli, "read_backend_state", lambda path: None)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "read_backend_state", lambda path: None)
 
     result = artifact_write_cli.main(["--repo-root", str(tmp_path), "delete-entity", "ENT@123.abc"])
 
@@ -1425,8 +1425,8 @@ def test_write_cli_errors_when_backend_absent(monkeypatch, tmp_path: Path, capsy
 
 def test_write_cli_errors_when_backend_unhealthy(monkeypatch, tmp_path: Path, capsys) -> None:
     """artifact_write_cli exits with error when backend state exists but probe fails."""
-    monkeypatch.setattr(artifact_write_cli, "read_backend_state", lambda path: {"port": 8123})
-    monkeypatch.setattr(artifact_write_cli, "probe_backend", lambda port: False)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "read_backend_state", lambda path: {"port": 8123})
+    monkeypatch.setattr(artifact_write_cli.backend_write, "probe_identity_on_port", lambda port: None)
 
     result = artifact_write_cli.main(["--repo-root", str(tmp_path), "delete-entity", "ENT@123.abc"])
 
@@ -1439,9 +1439,7 @@ def test_write_cli_routes_delete_entity_through_backend(monkeypatch, tmp_path: P
     """delete-entity targets the canonical entity detail route when a backend is available."""
     import json as json_mod  # noqa: PLC0415
 
-    monkeypatch.setattr(artifact_write_cli, "read_backend_state", lambda path: {"port": 8123})
-    monkeypatch.setattr(artifact_write_cli, "probe_backend", lambda port: True)
-    monkeypatch.setattr(artifact_write_cli, "port_serves_workspace", lambda port, claim: True)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "serving_port", lambda root: 8123)
 
     requests_captured: list[dict[str, object]] = []
 
@@ -1454,7 +1452,7 @@ def test_write_cli_routes_delete_entity_through_backend(monkeypatch, tmp_path: P
         requests_captured.append({"url": req.full_url, "method": req.get_method(), "body": req.data})
         return _FakeResp()
 
-    monkeypatch.setattr(artifact_write_cli, "urlopen", fake_urlopen)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "urlopen", fake_urlopen)
 
     result = artifact_write_cli.main(["--repo-root", str(tmp_path), "delete-entity", "ENT@123.abc"])
 

@@ -2430,6 +2430,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/exchange-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import an ArchiMate model exchange document into the engagement */
+        post: operations["entities_import_model"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/groups": {
         parameters: {
             query?: never;
@@ -9178,6 +9195,17 @@ export interface components {
         ErrorEnvelope: {
             detail: components["schemas"]["ErrorBody"];
         };
+        /** ExchangeImportResponse */
+        ExchangeImportResponse: {
+            /** Committed */
+            committed: boolean;
+            /** Connections */
+            connections: components["schemas"]["ImportedConnection"][];
+            /** Entities */
+            entities: components["schemas"]["ImportedEntity"][];
+            /** Unmappable */
+            unmappable: components["schemas"]["UnmappableItem"][];
+        };
         /** ExtentBody */
         ExtentBody: {
             /** Bottom */
@@ -10045,6 +10073,36 @@ export interface components {
             source_type: string;
             /** Target Type */
             target_type: string;
+        };
+        /** ImportedConnection */
+        ImportedConnection: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "created" | "skipped";
+            /** Artifact Id */
+            artifact_id: string;
+            /** Exchange Id */
+            exchange_id: string;
+            /** Warning */
+            warning?: string | null;
+        };
+        /** ImportedEntity */
+        ImportedEntity: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "created" | "updated";
+            /** Artifact Id */
+            artifact_id: string;
+            /** Exchange Id */
+            exchange_id: string;
+            /** Name */
+            name: string;
+            /** Warning */
+            warning?: string | null;
         };
         /**
          * IncidentConnectionNode
@@ -13528,6 +13586,20 @@ export interface components {
             available_topics: string[];
             /** Topic */
             topic: string;
+        };
+        /** UnmappableItem */
+        UnmappableItem: {
+            /** Concept Type */
+            concept_type: string;
+            /** Exchange Id */
+            exchange_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "element" | "relationship";
+            /** Reason */
+            reason: string;
         };
         /** UntouchedElement */
         UntouchedElement: {
@@ -22504,6 +22576,93 @@ export interface operations {
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    entities_import_model: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/xml": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExchangeImportResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };

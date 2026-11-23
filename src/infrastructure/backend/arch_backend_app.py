@@ -257,6 +257,7 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
     from src.infrastructure.rest.routers.entities.router import router as entities_router
     from src.infrastructure.rest.routers.entities.search import router as entity_search_router
     from src.infrastructure.rest.routers.events import router as events_router
+    from src.infrastructure.rest.routers.exchange import router as exchange_router
     from src.infrastructure.rest.routers.groups import router as groups_router
     from src.infrastructure.rest.routers.icons import router as icons_router
     from src.infrastructure.rest.routers.identifiers import router as identifiers_router
@@ -361,6 +362,7 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
         diagrams_router, documents_router, changes_router, groups_router, identifiers_router,
         modules_router, promote_router,
         candidates_router,
+        exchange_router,
         scratchpads_router, icons_router, sync_router, admin_router, events_router, assurance_router,
         authoring_guidance_router,
         viewpoints_router, viewpoint_authoring_router,

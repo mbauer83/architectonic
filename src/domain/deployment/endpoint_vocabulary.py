@@ -27,6 +27,10 @@ class BackendIdentity:
     repo_roots: tuple[str, ...]
     software_version: str
 
+    def serves_engagement(self, root: Path) -> bool:
+        """The identity endpoint lists the write target first, followed by read-only mounts."""
+        return self.repo_roots[:1] == (str(root),)
+
     def serves(self, root: Path) -> bool:
         return str(root) in self.repo_roots
 

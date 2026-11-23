@@ -54,6 +54,7 @@ _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "documents_update_document_table",
     "entities_create_entity",
     "entities_delete_entity",
+    "entities_import_model",
     "entities_update_entity",
     "groups_archive_group",
     "groups_create_group",

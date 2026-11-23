@@ -5,13 +5,19 @@ validation/verifier path.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
+from src.application.exchange.document import ExchangeModel
+from src.application.exchange.import_model import ImportReport, import_model
 from src.application.exchange.write_ports import ExchangeWriteOutcome, InvalidRelationshipError
+from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.domain.repository.groups import UNCATEGORIZED
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.exchange.archimate_model_exchange.concept_mapping import DeclarativeConceptMapper
+from src.infrastructure.exchange.archimate_model_exchange.identity_store import RepoExchangeIdentityStore
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 from src.infrastructure.write import artifact_write_ops
 from src.infrastructure.write.artifact_write.types import WriteResult
@@ -31,14 +37,21 @@ def _outcome(result: WriteResult) -> ExchangeWriteOutcome:
 
 
 class ArtifactWriteExchangeAdapter:
-    def __init__(self, repo_root: Path, *, group: str = UNCATEGORIZED) -> None:
+    def __init__(
+        self, repo_root: Path, *, group: str = UNCATEGORIZED, verifier: ArtifactVerifier | None = None,
+        clear_caches: Callable[[Path], None] | None = None,
+    ) -> None:
         self._repo_root = repo_root
         self._group = group
         self._registry = ArtifactRegistry(shared_artifact_index([repo_root]))
-        self._verifier = build_artifact_verifier(self._registry, catalogs=process_runtime_catalogs())
+        self._verifier = verifier or build_artifact_verifier(self._registry, catalogs=process_runtime_catalogs())
+        self._clear_caches = clear_caches or (lambda _: self._registry.refresh())
 
-    def _clear_caches(self, _path: Path) -> None:
-        self._registry.refresh()
+    def import_document(self, document: ExchangeModel, *, commit: bool) -> ImportReport:
+        return import_model(
+            document, store=self._registry, identity=RepoExchangeIdentityStore(self._repo_root),
+            mapper=DeclarativeConceptMapper(), writer=self, commit=commit,
+        )
 
     def create_entity(
         self,

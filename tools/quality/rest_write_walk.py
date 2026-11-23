@@ -43,6 +43,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from src.application.exchange.document import ExchangeModel  # noqa: E402
+from src.infrastructure.exchange.archimate_model_exchange import ArchimateModelExchangeWriter  # noqa: E402
 from tools.quality.fixture_backend import FixtureBackend, fixture_backend  # noqa: E402
 from tools.quality.fixture_workspace import REGISTER_TABLE  # noqa: E402
 
@@ -129,7 +131,7 @@ class Step:
     method: str
     #: Built from the context, because most write paths address something an earlier step made.
     path: Callable[[Context], str]
-    body: Callable[[Context], Mapping[str, Any]] | None = None
+    body: Callable[[Context], Mapping[str, Any] | bytes] | None = None
     expect: tuple[int, ...] = (200, 201)
     #: Read from the response and remembered under this key.
     captures: str | None = None
@@ -206,6 +208,8 @@ def _get(backend: FixtureBackend, path: str) -> tuple[int, Any]:
 
 
 STEPS: tuple[Step, ...] = (
+    Step("entities_import_model", "POST", lambda _: "/api/exchange-imports",
+         lambda _: ArchimateModelExchangeWriter().write(ExchangeModel(identifier="walk-model"))),
     Step(
         "entities_create_entity", "POST", lambda _c: "/api/entities",
         lambda _c: {
@@ -714,12 +718,15 @@ ADMIN_STEPS: tuple[Step, ...] = (
 
 
 def _request(backend: FixtureBackend, step: Step, path: str, body: Any) -> tuple[int, Any]:
-    data = None if body is None else json.dumps(body).encode("utf-8")
+    if isinstance(body, bytes):
+        data, media_type = body, "application/xml"
+    else:
+        data, media_type = None if body is None else json.dumps(body).encode("utf-8"), "application/json"
     request = urllib.request.Request(  # noqa: S310 - fixed scheme, local fixture backend
         f"{backend.base_url}{path}",
         data=data,
         method=step.method,
-        headers={"Content-Type": "application/json"} if data is not None else {},
+        headers={"Content-Type": media_type} if data is not None else {},
     )
     try:
         with urllib.request.urlopen(request, timeout=90) as response:  # noqa: S310

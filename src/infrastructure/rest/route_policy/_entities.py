@@ -13,6 +13,10 @@ from src.infrastructure.rest.route_policy._types import STREAM, TYPED, RouteRow
 
 ENTITY_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
+        "POST", "/api/exchange-imports", "collection", "entities_import_model", TYPED,
+        mutation_domain="repository", timeout_class="derived-graph",
+    ),
+    RouteRow(
         "GET", "/api/entities", "collection", "entities_list_entities", TYPED,
         cache_directive="no-cache", conditional_read="etag",
     ),

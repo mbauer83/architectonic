@@ -12,19 +12,18 @@ words separated.
 from __future__ import annotations
 
 import argparse
+import base64
+import json
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.application.verification.artifact_verifier_registry import ArtifactRegistry
+from pydantic import TypeAdapter
+
 from src.domain.icons.icon_ref import ICON_STYLES, IconStyle
 from src.domain.icons.render_form import SourceFormat
-from src.infrastructure.app_bootstrap import process_runtime_catalogs
-from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.artifact_index.bootstrap import notify_paths_changed
+from src.infrastructure.cli import backend_write
 from src.infrastructure.mcp.artifact_mcp.context import default_engagement_repo_root
-from src.infrastructure.verification.verifier_factory import build_artifact_verifier
-from src.infrastructure.write.artifact_write.icon import IconUpload, create_icon
 from src.infrastructure.write.artifact_write.types import WriteResult
 
 _FORMATS: dict[str, SourceFormat] = {".svg": "svg", ".png": "png", ".jpg": "jpeg", ".jpeg": "jpeg", ".webp": "webp"}
@@ -47,19 +46,21 @@ def run_import(
     style: IconStyle,
     commit: bool,
 ) -> list[ImportedFile]:
-    index = shared_artifact_index([repo_root])
-    catalogs = process_runtime_catalogs()
-    verifier = build_artifact_verifier(ArtifactRegistry(index), catalogs=catalogs, check_puml_syntax=False)
+    port = backend_write.serving_port(repo_root)
     results: list[ImportedFile] = []
     for path in sorted(p for p in folder.iterdir() if p.suffix.lower() in _FORMATS):
-        upload = IconUpload(
-            content=path.read_bytes(), source_format=_FORMATS[path.suffix.lower()], name=_name_of(path),
-            attribution=attribution, applies_to=applies_to, default_style=style, tags=tags,
-        )
-        result = create_icon(
-            repo_root=repo_root, verifier=verifier, clear_repo_caches=lambda p: notify_paths_changed([p]),
-            upload=upload, dry_run=not commit,
-        )
+        upload = {
+            "content_base64": base64.b64encode(path.read_bytes()).decode("ascii"),
+            "source_format": _FORMATS[path.suffix.lower()], "name": _name_of(path),
+            "attribution": attribution, "applies_to": applies_to, "tags": tags,
+            "default_style": style, "dry_run": not commit,
+        }
+        try:
+            answer = backend_write.post(port, "/api/icons", json.dumps(upload).encode(), "application/json")
+        except backend_write.BackendRefusal as exc:
+            results.append(ImportedFile(path, "refused", str(exc)))
+            continue
+        result = TypeAdapter(WriteResult).validate_python(answer)
         results.append(_outcome(path, result, commit))
     return results
 
@@ -123,7 +124,11 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
-    return int(args.func(args))
+    try:
+        return int(args.func(args))
+    except backend_write.BackendWriteError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

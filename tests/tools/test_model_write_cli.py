@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from src.domain.deployment.endpoint_vocabulary import BackendIdentity
 from src.infrastructure.write import artifact_write_cli
 
 
@@ -15,9 +16,7 @@ def live_backend(monkeypatch):
     The third part is not decoration: the CLI sends writes, so it confirms that the backend at the
     recorded port serves the repository it was given rather than a neighbouring workspace's.
     """
-    monkeypatch.setattr(artifact_write_cli, "read_backend_state", lambda path: {"port": 8000})
-    monkeypatch.setattr(artifact_write_cli, "probe_backend", lambda port: True)
-    monkeypatch.setattr(artifact_write_cli, "port_serves_workspace", lambda port, claim: True)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "serving_port", lambda root: 8000)
 
 
 class _FakeResp:
@@ -37,7 +36,7 @@ class _FakeResp:
 def test_cli_delete_entity_dry_run(tmp_path: Path, capsys, live_backend, monkeypatch) -> None:
     eid = "REQ@1000000000.TestAa.delete-me"
     monkeypatch.setattr(
-        artifact_write_cli,
+        artifact_write_cli.backend_write,
         "urlopen",
         lambda req, timeout=10.0: _FakeResp({"artifact_id": eid, "path": "model/x.md", "warnings": []}),
     )
@@ -52,7 +51,7 @@ def test_cli_delete_entity_dry_run(tmp_path: Path, capsys, live_backend, monkeyp
 def test_cli_delete_diagram_dry_run(tmp_path: Path, capsys, live_backend, monkeypatch) -> None:
     did = "diag-delete"
     monkeypatch.setattr(
-        artifact_write_cli,
+        artifact_write_cli.backend_write,
         "urlopen",
         lambda req, timeout=10.0: _FakeResp({"artifact_id": did, "path": "diagrams/x.puml", "warnings": []}),
     )
@@ -68,11 +67,12 @@ def test_cli_refuses_to_write_to_a_backend_serving_another_repository(
     tmp_path: Path, capsys, monkeypatch
 ) -> None:
     """A recorded port outlives the backend that wrote it; the next occupant may be a neighbour's."""
-    monkeypatch.setattr(artifact_write_cli, "read_backend_state", lambda path: {"port": 8000})
-    monkeypatch.setattr(artifact_write_cli, "probe_backend", lambda port: True)
-    monkeypatch.setattr(artifact_write_cli, "port_serves_workspace", lambda port, claim: False)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "read_backend_state", lambda path: {"port": 8000})
+    # Even if the requested root is mounted for reads, writes go to the engagement.
+    identity = BackendIdentity((str(tmp_path / "other"), str(tmp_path)), "test")
+    monkeypatch.setattr(artifact_write_cli.backend_write, "probe_identity_on_port", lambda port: identity)
     sent: list[object] = []
-    monkeypatch.setattr(artifact_write_cli, "urlopen", lambda req, timeout=10.0: sent.append(req))
+    monkeypatch.setattr(artifact_write_cli.backend_write, "urlopen", lambda req, timeout=10.0: sent.append(req))
 
     rc = artifact_write_cli.main(
         ["--repo-root", str(tmp_path), "delete-entity", "REQ@1000000000.TestAa.delete-me"]
