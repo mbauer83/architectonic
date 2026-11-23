@@ -114,3 +114,16 @@ def test_repository_configuration_is_readable_under_a_staged_root(tmp_path: Path
 
     assert (live / ".arch-repo" / "groups.yaml").read_text() == "model-projects: []\n"
     assert not (live / ".arch-repo" / "documents" / "spec.json").exists()
+
+
+def test_a_staged_render_sees_the_live_notation_includes(tmp_path: Path) -> None:
+    from src.domain.repository.repo_layout import DIAGRAM_CATALOG, MANAGED_INCLUDE_BASENAMES
+
+    live = _live_repo(tmp_path / "live")
+    catalog = live / DIAGRAM_CATALOG
+    catalog.mkdir()
+    for name in MANAGED_INCLUDE_BASENAMES:
+        (catalog / name).write_text(name)
+    staged = tmp_path / "staged"
+    StagedWorkspace(live_root=live, staged_root=staged).create_mirror()
+    assert all((staged / DIAGRAM_CATALOG / name).read_text() == name for name in MANAGED_INCLUDE_BASENAMES)

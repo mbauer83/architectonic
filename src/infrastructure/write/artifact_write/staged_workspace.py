@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-from src.domain.repository.repo_layout import ARCH_REPO, TRANSACTIONS
+from src.domain.repository.repo_layout import ARCH_REPO, DIAGRAM_CATALOG, MANAGED_INCLUDE_BASENAMES, TRANSACTIONS
 
 _ACTIVE_STAGED_ROOTS: set[Path] = set()
 _ACTIVE_LIVE_ROOTS: dict[Path, Path] = {}
@@ -37,6 +37,10 @@ class StagedWorkspace:
     def create_mirror(self) -> None:
         self.staged_root.mkdir()
         _stage_repository_configuration(self.staged_root, self.live_root)
+        # Diagram verification and publication must measure the same notation as the live preview.
+        for name in MANAGED_INCLUDE_BASENAMES:
+            relative = Path(DIAGRAM_CATALOG) / name
+            stage_live_path(self.staged_root / relative, self.live_root / relative)
 
     def activate(self) -> None:
         staged_root = self.staged_root.resolve()
