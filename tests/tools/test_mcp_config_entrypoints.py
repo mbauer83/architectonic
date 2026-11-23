@@ -217,6 +217,8 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "artifact_edit_connection_associations": (False, True, False, False),
         "artifact_create_diagram": (False, False, False, False),
         "artifact_edit_diagram": (False, True, False, False),
+        # Destructive: return_to_automatic and a patch removing entries discard a stated layout.
+        "artifact_arrange_diagram": (False, True, False, False),
         "artifact_delete_diagram": (False, True, False, False),
         # create_matrix is also its content-upsert operation when artifact_id already exists.
         "artifact_create_matrix": (False, True, False, False),

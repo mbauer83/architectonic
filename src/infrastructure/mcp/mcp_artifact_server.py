@@ -40,6 +40,7 @@ from src.infrastructure.mcp.artifact_mcp.edit_tools import (  # noqa: F401
     artifact_edit_diagram,
     artifact_edit_entity,
 )
+from src.infrastructure.mcp.artifact_mcp.layout_tools import register_layout_tools
 from src.infrastructure.mcp.artifact_mcp.name_normalization import install_call_tool_normalizer
 from src.infrastructure.mcp.artifact_mcp.scratchpad_tools import (
     register_scratchpad_read_tools,
@@ -103,6 +104,7 @@ mcp_write = MCPServer(
 
 register_write_tools(mcp_write)
 register_edit_tools(mcp_write)
+register_layout_tools(mcp_write)
 register_scratchpad_write_tools(mcp_write)
 register_change_write_tools(mcp_write)
 register_candidate_write_tools(mcp_write)
