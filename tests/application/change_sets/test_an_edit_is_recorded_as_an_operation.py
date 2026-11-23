@@ -49,7 +49,9 @@ def test_a_rename_records_the_name_it_replaces_and_a_second_rename_replaces_the_
     twice = record(once, op="edit_entity", artifact_id=SERVICE, field="name", value="Review Service")
 
     assert twice.changes.operations == (
-        EditEntity(target=SERVICE, field="name", value="Review Service", base=BaseValue("Repository Promotion Service")),
+        EditEntity(
+            target=SERVICE, field="name", value="Review Service", base=BaseValue("Repository Promotion Service"),
+        ),
     )
 
 
@@ -94,14 +96,16 @@ def test_removing_a_model_entity_records_its_revision_and_drops_its_edits() -> N
 
     removed = record(renamed, op="remove_entity", artifact_id=SERVICE)
 
-    assert removed.changes.operations == (RemoveEntity(target=SERVICE, base=BaseRevision(record_revision(SERVICE_FIELDS))),)
+    revision = BaseRevision(record_revision(SERVICE_FIELDS))
+    assert removed.changes.operations == (RemoveEntity(target=SERVICE, base=revision),)
 
 
 def test_removing_a_model_connection_records_its_revision() -> None:
     removed = record(draft(), op="remove_connection", source_entity=ARTIFACTS, connection_type="archimate-access",
                      target_entity=SERVICE)
 
-    assert removed.changes.operations == (RemoveConnection(ACCESS, BaseRevision(record_revision({"description": "reads"}))),)
+    revision = BaseRevision(record_revision({"description": "reads"}))
+    assert removed.changes.operations == (RemoveConnection(ACCESS, revision),)
 
 
 @pytest.mark.parametrize(
