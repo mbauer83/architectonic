@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
-logger = logging.getLogger(__name__)
 
-
-def is_module_enabled(
+def module_skip_reason(
     module: Any,
     overrides: dict[str, dict[str, object]],
     registered_names: set[str],
-) -> bool:
-    """Return True if *module* should be registered given YAML overrides and satisfied deps.
+) -> str | None:
+    """Return the reason registration is skipped, or None when the module is enabled.
 
     Uses getattr with defaults so modules that don't declare enabled/requires are
     treated as always-enabled with no dependencies (backward-compatible).
@@ -26,16 +23,11 @@ def is_module_enabled(
         effective_enabled = bool(yaml_entry["enabled"])
 
     if not effective_enabled:
-        return False
+        return "disabled"
 
     requires: list[str] = list(getattr(module, "requires", []))
     for dep in requires:
         if dep not in registered_names:
-            logger.warning(
-                "Module %r skipped: required capability/module %r is not available",
-                module_name,
-                dep,
-            )
-            return False
+            return f"required capability/module {dep!r} is not available"
 
-    return True
+    return None

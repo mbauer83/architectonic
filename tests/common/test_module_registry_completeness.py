@@ -34,12 +34,17 @@ def test_complete_vocabulary_includes_assurance_without_store(no_confidential_st
     assert "assurance" in registry.domain_order()
 
 
-def test_gated_registry_drops_assurance_without_store(no_confidential_store: None) -> None:
+def test_gated_registry_drops_assurance_without_store(
+    no_confidential_store: None, caplog: pytest.LogCaptureFixture
+) -> None:
     registry = app_bootstrap.build_module_registry()
     entity_types = set(registry.all_entity_types())
 
     assert not (_ASSURANCE_ENTITIES & entity_types)
     assert "assurance" not in registry.domain_order()
+    for name in ("assurance", "bowtie"):
+        reason = "required capability/module 'confidential_store' is not available"
+        assert f"Module {name!r} skipped: {reason}" in caplog.messages
 
 
 def test_complete_vocabulary_is_a_superset_of_the_gated_registry(no_confidential_store: None) -> None:
