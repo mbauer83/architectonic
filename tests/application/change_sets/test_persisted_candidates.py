@@ -8,11 +8,11 @@ import pytest
 from src.application.change_sets.candidate_architecture import CandidateArchitecture
 from src.application.change_sets.candidate_recorded_form import dump_candidate, load_candidate
 from src.application.change_sets.change_set import ChangeSet
-from src.infrastructure.candidates.repository import CandidateConflict, CandidateRepository
+from src.infrastructure.candidates.repository import CandidateArchitectureStore, CandidateConflict
 
 
 def test_record_round_trip_and_concurrent_replacement(tmp_path: Path) -> None:
-    repo = CandidateRepository(tmp_path)
+    repo = CandidateArchitectureStore(tmp_path)
     draft = CandidateArchitecture("CAND@1790000000.AbCdef.queue", "Queue", "", "draft", ChangeSet((), "base"))
     assert load_candidate(dump_candidate(draft)) == draft
     version = repo.save(draft, None)
@@ -27,11 +27,11 @@ def test_record_round_trip_and_concurrent_replacement(tmp_path: Path) -> None:
 def test_two_writers_replacing_one_version_preserve_the_winner(tmp_path: Path) -> None:
 
     draft = CandidateArchitecture("CAND@1790000000.AbCdef.queue", "Queue", "", "draft", ChangeSet((), "base"))
-    version = CandidateRepository(tmp_path).save(draft, None)
+    version = CandidateArchitectureStore(tmp_path).save(draft, None)
     ready = Barrier(2)
 
     def save(name: str) -> str | None:
-        store = CandidateRepository(tmp_path)
+        store = CandidateArchitectureStore(tmp_path)
         ready.wait()
         try:
             store.save(replace(draft, name=name), version)
@@ -41,4 +41,4 @@ def test_two_writers_replacing_one_version_preserve_the_winner(tmp_path: Path) -
 
     with ThreadPoolExecutor(2) as writers:
         winners = list(writers.map(save, ("One", "Two")))
-    assert [name for name in winners if name] == [CandidateRepository(tmp_path).require(draft.id).name]
+    assert [name for name in winners if name] == [CandidateArchitectureStore(tmp_path).require(draft.id).name]

@@ -20,7 +20,7 @@ from src.application.stress_analysis.workspace import analyse
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.viewpoints.placed_occurrences import resolve_placed_entities
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
-from src.infrastructure.candidates.repository import KIND, CandidateRepository
+from src.infrastructure.candidates.repository import KIND, CandidateArchitectureStore
 from src.infrastructure.rendering.layout.diagram_geometry import stored_geometry
 from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
 
@@ -28,7 +28,7 @@ from src.infrastructure.write.artifact_write.parse_existing import parse_diagram
 class CandidateService:
     def __init__(self, root: Path) -> None:
         self.root = root
-        self.store = CandidateRepository(root)
+        self.store = CandidateArchitectureStore(root)
         self.index = shared_artifact_index(root)
         self.registry = ArtifactRegistry(self.index)
 
