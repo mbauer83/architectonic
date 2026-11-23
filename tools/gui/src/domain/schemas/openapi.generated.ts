@@ -5693,7 +5693,7 @@ export interface components {
             candidate: string;
             /** Diff */
             diff: components["schemas"]["ChangeDifference"][];
-            drawing?: components["schemas"]["DiagramLayoutGeometryResponse"] | null;
+            drawing?: components["schemas"]["DiagramLayoutGeometryResponse"];
             /** Stack */
             stack: string[];
             /** Standing */

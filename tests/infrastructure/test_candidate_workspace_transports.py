@@ -44,7 +44,7 @@ def test_agents_and_canvas_share_versions_and_composed_diffs(tmp_path: Path, mon
         assert client.patch(path, json={"based_on": document["version"], "patch": {"name": "Stale"}}).status_code == 409
         assert client.get(path + "/standing").json() == mcp.change_set_read(ref, "standing", repo_root=str(root))
         diff = mcp.change_set_read(ref, "diff", repo_root=str(root))
-        assert client.get(path + "/diff").json() == diff | {"drawing": None}
+        assert client.get(path + "/diff").json() == diff
         assert diff["diff"][0]["fields"]["name"] == {"before": None, "after": "Queue"}
         assert client.post("/api/change-set-checks", json={"candidates": [ref]}).json() == mcp.change_set_check(
             [ref], str(root)

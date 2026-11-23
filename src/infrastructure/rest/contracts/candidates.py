@@ -1,7 +1,8 @@
 """Candidate architecture records, scoped comparisons and stress-analysis projections."""
-from pydantic import Field, JsonValue
+from pydantic import Field, JsonValue, model_serializer
 
 from src.infrastructure.rest.contracts.diagram_layout_editing import DiagramLayoutGeometryResponse
+from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
 type Fields = dict[str, JsonValue]
@@ -33,12 +34,12 @@ class CandidateList(Closed):
     candidates: list[CandidateSummary]
 
 
-class ScopedEntity(Closed):
+class ScopedEntity(NullsOmitted):
     id: str
     fields: Fields
 
 
-class ConnectionKey(Closed):
+class ConnectionKey(NullsOmitted):
     source_entity: str
     connection_type: str
     target_entity: str
@@ -48,30 +49,35 @@ class ScopedConnection(ConnectionKey):
     fields: Fields
 
 
-class ScopedView(Closed):
+class ScopedView(NullsOmitted):
     entities: list[ScopedEntity]
     connections: list[ScopedConnection]
 
 
-class ChangedField(Closed):
+class ChangedField(NullsOmitted):
     before: JsonValue
     after: JsonValue
 
+    @model_serializer(mode="wrap")
+    def _include_both_values(self, serialize):
+        # An absent side of a change is meaningful. Keep both keys even for null-omitting canvas geometry.
+        return {**serialize(self), "before": self.before, "after": self.after}
 
-class ChangeDifference(Closed):
+
+class ChangeDifference(NullsOmitted):
     kind: str
     target: str | ConnectionKey
     change: str
     fields: dict[str, ChangedField]
 
 
-class OperationStanding(Closed):
+class OperationStanding(NullsOmitted):
     operation: Fields
     standing: str
     reason: str
 
 
-class CandidateStanding(Closed):
+class CandidateStanding(NullsOmitted):
     candidate: str
     standing: list[OperationStanding]
 

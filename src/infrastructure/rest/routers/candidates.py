@@ -103,6 +103,7 @@ def changes_edit_candidate(artifact_id: str, body: CandidateEdit) -> dict[str, A
     tags=[TAG_CHANGES],
     summary="Compare a composed candidate against a selected base",
     response_model=CandidateComparison,
+    response_model_exclude_none=True,
     responses=READ_RESPONSES,
 )
 def changes_compare_candidate(
@@ -121,6 +122,7 @@ def changes_compare_candidate(
     tags=[TAG_CHANGES],
     summary="Read how each operation stands against the current model",
     response_model=CandidateStanding,
+    response_model_exclude_none=True,
     responses=READ_RESPONSES,
 )
 def changes_read_standing(artifact_id: str) -> dict[str, Any]:
