@@ -1,6 +1,6 @@
-"""Arrange a diagram from MCP: the layout patch or the layout intents the REST layout routes take, written
-the same way — over the stored layout or the diagram's first layout, each entry checked, through the
-write queue as one named operation."""
+"""Arrange a diagram from MCP: the layout patch or the intents the REST layout routes take, written the same
+way — over the stored layout or the diagram's first layout, each entry checked, through the write queue as
+one named operation."""
 
 from __future__ import annotations
 
@@ -8,23 +8,23 @@ from typing import Any
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
-from src.application.repo_path_helpers import resolve_diagram_source_path
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.context import (
     authoritative_callbacks_for,
+    repo_cached,
     resolve_repo_roots,
     roots_key,
     verifier_for,
 )
 from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool
 from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE
-from src.infrastructure.rendering.layout.diagram_geometry import intents_patch
-from src.infrastructure.rendering.layout.diagram_picture import first_layout_of
+from src.infrastructure.rendering.layout.diagram_geometry import read_and_measured
+from src.infrastructure.rendering.layout.diagram_picture import first_layout_of, placed_on_its_picture
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
-from src.infrastructure.write.artifact_write.diagram_layout_patch import patch_diagram_layout
-from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
+from src.infrastructure.write.artifact_write.diagram_arrangement import arrange_diagram
+from src.infrastructure.write.artifact_write.diagram_layout_patch import patch_diagram_layout, stored_diagram
 
-ARRANGE_DIAGRAM_DESCRIPTION = """Change a diagram's layout: exactly one of `patch` or `intents`.
+ARRANGE_DIAGRAM_DESCRIPTION = """Change a diagram's layout or groupings: exactly one of `patch` or `intents`.
 
 `patch`: entries by section (`elements`, `boxes`, `relations`, `z`) and layout key; each entry is null to
 remove it, or {value, based_on?} — what it becomes and what you read it as (null for absent). A based_on
@@ -32,8 +32,15 @@ that no longer holds is a conflict and nothing is written.
 
 `intents`, applied in order: {intent: "align", keys: [≥2 element keys], edge: left|right|top|bottom|
 centre_x|centre_y}, {intent: "distribute", keys: [≥3], axis: x|y}, {intent: "straighten", relations:
-[relation keys]}, {intent: "return_to_automatic", keys?: [...]} (no keys: the whole layout). Each compiles
-to the patch that states it, checked against the stored layout; the answer includes that patch.
+[relation keys]}, {intent: "return_to_automatic", keys?: [...]} (no keys: the whole layout); and for the
+groupings: {intent: "nest", keys: [...], grouping: "g-…"} (they join that listed grouping and leave any
+other), {intent: "unnest", keys: [...]} (to their grouping's parent, or the canvas), {intent:
+"create_grouping", label, keys: [...], parent?: "g-…"} (a new listed grouping with a minted id), {intent:
+"delete_grouping", grouping: "g-…"} (its members and subgroups go to its parent). A grouping that selects
+its members by a rule cannot gain or lose members by listing. Layout intents compile to the patch that
+states them, checked against the stored layout; grouping intents to the diagram's new groupings, written in
+the same edit with the layout pruned and the changed boxes fitted round their members. The answer includes
+the patch, and `authored_groupings` where they changed.
 
 Layout keys are those `GET /api/diagrams/{id}/layout/geometry` names. dry_run defaults to true."""
 
@@ -53,24 +60,20 @@ def artifact_arrange_diagram(
     verifier = verifier_for(key, include_registry=True)
     _, clear_repo_caches = authoritative_callbacks_for(roots)
     ontology = process_runtime_catalogs().ontology
-    stated: Any = patch
-    if intents is not None:
-        find = verifier.registry.find_file_by_id if verifier.registry is not None else None
-        path = resolve_diagram_source_path(root, artifact_id, find)
-        if path is None:
-            raise ValueError(f"Diagram '{artifact_id}' not found")
-        stated = intents_patch(intents, parse_diagram_file(path), artifact_id, root, ontology)
-    result = patch_diagram_layout(
-        repo_root=root, verifier=verifier, clear_repo_caches=clear_repo_caches,
-        assert_write_root=assert_engagement_write_root, artifact_id=artifact_id, patch=stated,
-        first_layout=lambda body, frontmatter: first_layout_of(body, frontmatter, root, ontology),
-        dry_run=dry_run,
-    )
-    write = result.write
-    return {
-        "artifact_id": write.artifact_id, "wrote": write.wrote, "warnings": list(write.warnings),
-        "errors": write.error_messages, "layout": result.layout, "patch": dict(result.patch),
+    common: dict[str, Any] = {
+        "repo_root": root, "verifier": verifier, "clear_repo_caches": clear_repo_caches,
+        "assert_write_root": assert_engagement_write_root, "artifact_id": artifact_id, "dry_run": dry_run,
+        "first_layout": lambda body, frontmatter: first_layout_of(body, frontmatter, root, ontology),
     }
+    if patch is not None:
+        return patch_diagram_layout(patch=patch, **common).as_answer(with_patch=True)
+    read, drawn = read_and_measured(intents, stored_diagram(root, verifier, artifact_id), artifact_id, root, ontology)
+    return arrange_diagram(
+        intents=read, drawn=drawn, store=repo_cached(key), **common,
+        place_members=lambda source, frontmatter, layout: placed_on_its_picture(
+            source, frontmatter, layout, new=frozenset(), repo_root=root, ontology=ontology,
+        ),
+    ).as_answer(with_patch=True)
 
 
 def register_layout_tools(mcp: MCPServer) -> None:

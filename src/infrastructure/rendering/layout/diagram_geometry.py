@@ -11,15 +11,15 @@ take, so the lab draws exactly what the composer would arrange, as the composer 
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds, joined_to_its_picture
+from src.domain.diagrams.layout.arrange_intents import ArrangeIntent, arranges, read_intents
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, Layout, layout_as_written, read_layout
-from src.domain.diagrams.layout.layout_intents import compiled_patch, read_intents
 from src.domain.diagrams.layout.rendered_picture import (
     DrawnBox,
     DrawnElement,
@@ -194,12 +194,13 @@ def drawn_extents(geometry: Mapping[str, object]) -> dict[str, Extent]:
     return found
 
 
-def intents_patch(
+def read_and_measured(
     raw: object, parsed: ParsedDiagram, artifact_id: str, root: Path, ontology: DeclaresElementKinds,
-) -> Callable[[Layout, Layout], Mapping[str, object]]:
-    """The patch function stating *raw* intents for this diagram, from the base and stored layouts the
-    layout write chooses (`diagram_layout_patch`). Refuses malformed intents before anything is drawn."""
-    intents = read_intents(raw)
-    drawn = drawn_extents(stored_geometry(parsed, artifact_id, root, ontology))
-    return lambda base, stored: compiled_patch(intents, base=base, stored=stored, drawn=drawn)
+) -> tuple[tuple[ArrangeIntent, ...], dict[str, Extent]]:
+    """The intents *raw* states, and each element's extent as drawn now, for the sizes a layout entry omits.
 
+    Refuses malformed intents before anything is drawn, and draws nothing for intents that state no geometry.
+    """
+    intents = read_intents(raw)
+    drawn = drawn_extents(stored_geometry(parsed, artifact_id, root, ontology)) if arranges(intents) else {}
+    return intents, drawn

@@ -44,3 +44,15 @@ def test_exactly_one_of_patch_or_intents_is_stated(model: RenderedModel) -> None
         artifact_arrange_diagram(artifact_id=path.stem, repo_root=str(model.repo))
     with pytest.raises(ValueError, match="exactly one"):
         artifact_arrange_diagram(artifact_id=path.stem, patch={}, intents=[], repo_root=str(model.repo))
+
+
+def test_grouping_intents_answer_the_compiled_groupings_and_write_nothing_on_a_dry_run(model: RenderedModel) -> None:
+    path = Path(model.scenes["groupings"].path)
+    before = path.read_text(encoding="utf-8")
+    answer = artifact_arrange_diagram(
+        artifact_id=path.stem, intents=[{"intent": "create_grouping", "label": "Pair", "keys": _keys(model, path)}],
+        repo_root=str(model.repo),
+    )
+    assert answer["wrote"] is False and path.read_text(encoding="utf-8") == before
+    labels = [entry["label"] for entry in answer["authored_groupings"]]  # type: ignore[attr-defined]
+    assert "Pair" in labels

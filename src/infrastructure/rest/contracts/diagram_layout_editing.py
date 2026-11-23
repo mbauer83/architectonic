@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+from src.infrastructure.rest.contracts.diagram_groupings import AuthoredGroupingResponse
 from src.infrastructure.rest.contracts.diagram_layout import DiagramLayoutContract, DiagramLayoutPatchContract
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 
@@ -132,6 +133,8 @@ class DiagramLayoutIntentsResponse(DiagramLayoutPatchResponse):
     becomes and what the stored layout held for it (``based_on``)."""
 
     patch: DiagramLayoutPatchContract
+    #: The groupings the diagram holds after grouping intents; absent where none was stated.
+    authored_groupings: list[AuthoredGroupingResponse] | None = None
 
 
 class ShapeDrawingsResponse(NullsOmitted):

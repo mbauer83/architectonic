@@ -64,54 +64,6 @@ class ReturnToAutomatic:
 type Intent = Align | Distribute | Straighten | ReturnToAutomatic
 
 
-def _names(item: Mapping[str, object], field: str, where: str, *, least: int = 1) -> tuple[str, ...]:
-    raw = item.get(field, [])
-    if not isinstance(raw, list) or not all(isinstance(key, str) and key for key in raw):
-        raise MalformedLayout(f"{where}.{field} is {raw!r}; expected a list of keys.")
-    if len(raw) < least:
-        raise MalformedLayout(f"{where}.{field} names {len(raw)}; this intent needs at least {least}.")
-    return tuple(dict.fromkeys(raw))
-
-
-def _choice(item: Mapping[str, object], field: str, allowed: tuple[str, ...], where: str) -> str:
-    value = item.get(field)
-    if value not in allowed:
-        raise MalformedLayout(f"{where}.{field} is {value!r}; expected one of {', '.join(allowed)}.")
-    return str(value)
-
-
-def read_intents(raw: object) -> tuple[Intent, ...]:
-    """The intents *raw* states. Refuses, saying what and where, a list that is not one."""
-    if not isinstance(raw, list) or not raw:
-        raise MalformedLayout(f"Intents are a non-empty list; got {raw!r}.")
-    intents: list[Intent] = []
-    for index, item in enumerate(raw):
-        where = f"intents[{index}]"
-        if not isinstance(item, Mapping):
-            raise MalformedLayout(f"{where} is {item!r}; expected an object with 'intent'.")
-        fields = {
-            "align": {"intent", "keys", "edge"}, "distribute": {"intent", "keys", "axis"},
-            "straighten": {"intent", "relations"}, "return_to_automatic": {"intent", "keys"},
-        }
-        kind = item.get("intent")
-        if kind not in fields:
-            raise MalformedLayout(f"{where}.intent is {kind!r}; expected one of {', '.join(fields)}.")
-        if unknown := sorted(set(map(str, item)) - fields[str(kind)]):
-            raise MalformedLayout(f"{where} states {', '.join(unknown)}, which {kind} does not take.")
-        match kind:
-            case "align":
-                edge = _choice(item, "edge", EDGES, where)
-                intents.append(Align(_names(item, "keys", where, least=2), edge))  # type: ignore[arg-type]
-            case "distribute":
-                axis = _choice(item, "axis", AXES, where)
-                intents.append(Distribute(_names(item, "keys", where, least=3), axis))  # type: ignore[arg-type]
-            case "straighten":
-                intents.append(Straighten(_names(item, "relations", where)))
-            case _:
-                intents.append(ReturnToAutomatic(_names(item, "keys", where, least=0)))
-    return tuple(intents)
-
-
 def _extents(layout: Layout, keys: Sequence[str], drawn: Mapping[str, Extent]) -> dict[str, Extent]:
     found: dict[str, Extent] = {}
     for key in keys:
@@ -211,10 +163,16 @@ def compiled_patch(
     result = base
     for intent in intents:
         result = applied(intent, result, drawn)
-    before, after, read = layout_as_written(base), layout_as_written(result), layout_as_written(stored)
+    return patch_between(base, result, stored=stored)
+
+
+def patch_between(before: Layout, after: Layout, *, stored: Layout) -> dict[str, dict[str, object]]:
+    """The patch taking *before* to *after*: each changed entry with what it becomes and, as ``based_on``,
+    what *stored* holds for it."""
+    old_written, new_written, held_written = (layout_as_written(layout) for layout in (before, after, stored))
 
     def section(name: str) -> dict[str, object]:
-        old, new, held = (_entries(written, name) for written in (before, after, read))
+        old, new, held = (_entries(written, name) for written in (old_written, new_written, held_written))
         return {
             key: {"value": new.get(key), "based_on": held.get(key)}
             for key in sorted(set(old) | set(new)) if old.get(key) != new.get(key)
@@ -226,4 +184,3 @@ def compiled_patch(
 def _entries(written: Mapping[str, object], section: str) -> Mapping[str, object]:
     entries = written.get(section)
     return entries if isinstance(entries, Mapping) else {}
-

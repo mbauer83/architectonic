@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import pytest
 
+from src.domain.diagrams.layout.arrange_intents import read_intents
 from src.domain.diagrams.layout.geometry import Extent
 from src.domain.diagrams.layout.layout_block import Layout, MalformedLayout, read_layout
-from src.domain.diagrams.layout.layout_intents import compiled_patch, read_intents
+from src.domain.diagrams.layout.layout_intents import compiled_patch
 from src.domain.diagrams.layout.layout_patch import LayoutConflict, patched, read_layout_patch
 
 A, B, C = "APP@1712870400.aaaaaa", "APP@1712870401.bbbbbb", "APP@1712870402.cccccc"
