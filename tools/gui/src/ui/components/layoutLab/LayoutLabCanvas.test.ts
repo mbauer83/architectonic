@@ -126,4 +126,31 @@ describe('the layout lab canvas', () => {
     await nextTick()
     expect(host.querySelectorAll('.lab-breach-mark')).toHaveLength(0)
   })
+
+  it('read only, picks what is pressed, moves nothing, and draws what it holds over the picture', async () => {
+    const lab = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
+    lab.open(geometry)
+    const picked: string[] = []
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    app = createApp({
+      render: () => h(LayoutLabCanvas, { session: lab, readonly: true, onPick: (alias: string) => picked.push(alias) },
+        { default: () => h('rect', { class: 'overlay' }) }),
+    })
+    app.mount(host)
+    await nextTick()
+    const grip = host.querySelector('[data-alias="A"] > .lab-grip')
+    if (grip === null) throw new Error('the element is drawn without a grip')
+    const before = lab.arrangement.value
+    pointer(grip, 'pointerdown', 30, 50)
+    pointer(window, 'pointermove', 300, 200)
+    pointer(window, 'pointerup', 300, 200)
+    await nextTick()
+
+    expect(picked).toEqual(['A'])
+    expect(lab.arrangement.value).toBe(before)
+    expect(lab.history.value).toHaveLength(0)
+    expect(host.querySelectorAll('.lab-handles')).toHaveLength(0)
+    expect(host.querySelector('svg .overlay')).not.toBeNull()
+  })
 })

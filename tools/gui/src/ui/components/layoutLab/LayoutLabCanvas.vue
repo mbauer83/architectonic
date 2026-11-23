@@ -18,10 +18,13 @@ import LabDrawn from './LabDrawn'
 import CanvasMarks from './CanvasMarks.vue'
 import { useLabGesture } from './useLabGesture'
 
-const props = defineProps<{ session: ArrangementSession; showBreaches?: boolean }>()
+/** *readonly*: a press picks a shape and nothing moves. The default slot draws over the picture. */
+const props = defineProps<{ session: ArrangementSession; showBreaches?: boolean; readonly?: boolean }>()
+const emit = defineEmits<{ pick: [alias: string] }>()
 
 const svg = ref<SVGSVGElement | null>(null)
 const gesture = useLabGesture(props.session, svg)
+const pick = (event: PointerEvent, alias: string) => { gesture.select(event, alias); emit('pick', alias) }
 
 /** Room round the drawing, so a shape dragged out of it stays in reach. */
 const MARGIN = 40
@@ -190,7 +193,7 @@ const selectedExtent = computed((): Extent | null => {
         :class="[piece.shape.isBox ? 'lab-box' : 'lab-element', { 'lab-carried': piece.shape.alias === carried }]"
         :data-alias="piece.shape.alias"
         data-painted="shape"
-        @pointerdown="gesture.press($event, piece.shape.alias)"
+        @pointerdown="readonly ? pick($event, piece.shape.alias) : gesture.press($event, piece.shape.alias)"
       >
         <LabDrawn
           :nodes="[piece.shape.drawing.drawing]"
@@ -203,7 +206,7 @@ const selectedExtent = computed((): Extent | null => {
           :y="piece.shape.body.top"
           :width="widthOf(piece.shape.body)"
           :height="heightOf(piece.shape.body)"
-          @pointerdown="gesture.select($event, piece.shape.alias)"
+          @pointerdown="readonly ? pick($event, piece.shape.alias) : gesture.select($event, piece.shape.alias)"
         />
         <rect
           class="lab-grip"
@@ -302,8 +305,10 @@ const selectedExtent = computed((): Extent | null => {
       :order="shapeOrder"
     />
 
+    <slot />
+
     <g
-      v-if="selectedExtent"
+      v-if="selectedExtent && !readonly"
       class="lab-handles"
     >
       <rect
