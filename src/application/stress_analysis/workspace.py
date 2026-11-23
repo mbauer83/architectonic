@@ -8,6 +8,9 @@ from typing import Any
 from src.application.artifacts.document_table_rows import DocumentTables
 from src.application.change_sets.candidate_view import CandidateView
 
+# The categories offered by the stress-analysis workspace.
+STRESSOR_KINDS = ("scale", "organisation", "technology", "actor", "regulation", "time")
+
 
 def _rows(tables: DocumentTables, name: str) -> list[dict[str, Any]]:
     table = tables.table(name)
@@ -62,11 +65,12 @@ def analyse(tables: DocumentTables, naive: CandidateView, *, kinds: tuple[str, .
             "incomplete_rows": [
                 {"table": table.spec.name, "row": row.row_id, "column": col.name}
                 for table in tables.tables for row in table.rows for col in table.spec.columns
-                if col.required and not row.cells[col.name].is_stated
+                if (col.required and not row.cells[col.name].is_stated)
+                or row.cells[col.name].unreadable or row.cells[col.name].unresolved
             ],
         },
         "coverage": {
-            "by_kind": dict(counts), "unused_kinds": sorted(set(kinds) - counts.keys()),
+            "by_kind": dict(counts), "unused_kinds": sorted(set(kinds or STRESSOR_KINDS) - counts.keys()),
             "single_stressor_end_states": [row["id"] for row in ends if grouped[row["id"]] == 1],
             "untouched": [
                 {"id": ref, "fan_in": fan_in[ref], "fan_out": fan_out[ref]}

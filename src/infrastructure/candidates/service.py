@@ -92,15 +92,18 @@ class CandidateService:
         return {"document": doc.artifact_id, "naive_candidate": naive, **analyse(tables, view, kinds=tuple(kinds))}
 
     def check(self, ids: Sequence[str]) -> dict[str, Any]:
+        if not ids or len(set(ids)) != len(ids):
+            raise ValueError("Select one or more distinct candidates.")
         selected = [self.store.require(ref) for ref in ids]
+        layers = {}
         for candidate in selected:
             if candidate.state != "candidate":
                 raise ValueError(f"Offer {candidate.id} as a candidate before checking integration.")
-            stack_of(candidate, self.store.find)
+            layers.update((c.id, c) for c in stack_of(candidate, self.store.find))
         return {"candidates": list(ids), "overlaps": [
             {"kind": overlap.kind, "subject": overlap.subject, "parties": [
                 {"set_id": p.set_id, "operation": operation_to_mapping(p.operation)} for p in overlap.parties
-            ]} for overlap in conflicts_between(selected)
+            ]} for overlap in conflicts_between(tuple(layers.values()))
         ]}
 
     def standing(self, ref: str) -> dict[str, Any]:

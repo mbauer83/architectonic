@@ -7,7 +7,7 @@ from pydantic_core import to_jsonable_python
 
 from src.application.change_sets.candidate_architecture import CandidateArchitecture
 from src.application.change_sets.candidate_view import CandidateView, difference, view_of
-from src.application.change_sets.operations import ConnectionAddress, entities_used
+from src.application.change_sets.operations import ConnectionAddress, CreateEntity
 from src.application.change_sets.reading import RecordedReading
 from src.application.change_sets.recorded_form import operation_to_mapping
 from src.application.change_sets.stacking import descendants, sets_beneath, stack_of
@@ -20,7 +20,12 @@ from src.infrastructure.candidates.repository import CandidateRepository
 
 def live_reading(stack: tuple[CandidateArchitecture, ...], registry: ArtifactRegistry) -> RecordedReading:
     refs = {ref for layer in stack for ref in layer.scope}
-    refs.update(ref for layer in stack for op in layer.changes.operations for ref in entities_used(op))
+    for layer in stack:
+        for operation in layer.changes.operations:
+            subject = operation.claim.subject
+            refs.update(subject.endpoints if isinstance(subject, ConnectionAddress) else (subject,))
+            if isinstance(operation, CreateEntity) and operation.artifact_id:
+                refs.add(operation.artifact_id)
     entities, relations = {}, {}
     aliases = {}
     for ref in sorted(refs):
@@ -32,7 +37,8 @@ def live_reading(stack: tuple[CandidateArchitecture, ...], registry: ArtifactReg
             address = ConnectionAddress(aliases.get(canonical_entity_key(conn.source), conn.source), conn.conn_type,
                                         aliases.get(canonical_entity_key(conn.target), conn.target))
             relations[address] = {
-                "description": conn.content_text, "metadata": dict(conn.extra), "specializations": conn.specializations,
+                "description": conn.content_text, "metadata": dict(conn.attributes),
+                "specializations": conn.specializations,
                 "src_multiplicity": conn.src_multiplicity, "tgt_multiplicity": conn.tgt_multiplicity,
             }
     return RecordedReading(entities, relations)

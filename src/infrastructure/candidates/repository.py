@@ -1,8 +1,11 @@
 """Atomic, version-checked persistence of candidate architectures in the engagement."""
 from __future__ import annotations
 
+import fcntl
+import os
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
-from threading import RLock
 
 from src.application.change_sets.base import record_revision
 from src.application.change_sets.candidate_architecture import CandidateArchitecture, MalformedCandidateArchitecture
@@ -12,8 +15,6 @@ from src.application.change_sets.stacking import sets_beneath, stack_of
 from src.domain.artifact_id import parse_entity_id
 from src.domain.repository.artifact_location import artifact_kind
 from src.infrastructure.atomic_file import write_atomic
-
-_SAVE_LOCK = RLock()
 
 KIND = artifact_kind("candidate-architecture")
 
@@ -60,8 +61,23 @@ class CandidateRepository:
     def list(self) -> list[CandidateArchitecture]:
         return [self.require(KIND.file_identity(p)) for p in sorted(self.directory.glob("*" + KIND.suffixes[0]))]
 
+    @contextmanager
+    def _locked(self, ref: str) -> Iterator[None]:
+        # Lock the directory itself. Two processes may be updating different members of one parent chain.
+        from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root  # noqa: PLC0415
+
+        directory = self.path(ref).parent
+        assert_engagement_write_root(directory.parent)
+        directory.mkdir(parents=True, exist_ok=True)
+        descriptor = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            yield
+        finally:
+            os.close(descriptor)
+
     def save(self, candidate: CandidateArchitecture, based_on: str | None) -> str:
-        with _SAVE_LOCK:
+        with self._locked(candidate.id):
             old = self.find(candidate.id)
             version = record_revision(to_mapping(candidate))
             if old == candidate:
@@ -71,6 +87,8 @@ class CandidateRepository:
                 raise CandidateConflict("The candidate changed. Read its current version before editing it.")
             if old and old.state in {"integrated", "superseded", "rejected"}:
                 raise CandidateConflict("A terminal candidate is immutable. Create a new candidate.")
+            if old and old.state == "candidate" and old.changes != candidate.changes:
+                raise CandidateConflict("Return the candidate to draft before changing its operations.")
             stack = stack_of(candidate, self.find)
             application_order(candidate.changes, beneath=sets_beneath(stack))
             write_atomic(self.path(candidate.id), dump_candidate(candidate))
