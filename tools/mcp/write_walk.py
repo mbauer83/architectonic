@@ -356,6 +356,14 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
             "dry_run": False,
         },
     ),
+    WriteCall(
+        "artifact_arrange_diagram",
+        lambda c: {
+            "artifact_id": c.created["diagram"],
+            "intents": [{"intent": "return_to_automatic"}],
+            "dry_run": False,
+        },
+    ),
     # The diagram's own mark moves into the library, and the diagram names it there.
     WriteCall(
         "artifact_share_icon",
