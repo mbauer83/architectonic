@@ -309,45 +309,43 @@ const executeDelete = () => {
             :is-fullscreen="fullscreen.isFullscreen.value"
             :revealed="selection.hasSelection.value"
           >
-            <div>
-              <DiagramMemberPicker
-                v-if="editing && contextQuery.data.value"
-                :context="contextQuery.data.value"
-                :busy="edit.editing.loading.value || edit.editing.saving.value"
-                @add="edit.editing.add"
-              />
-              <DiagramEntitySidebar
-                :list-folded="reader.reading.value"
-                :entities="diagramEntities"
-                :viewer-extension="selection.viewerExtension.value"
-                :selected-id="selection.selectedId.value"
-                :selected-connection="selection.selectedConnection.value"
-                :selected-sub-part="selection.selectedSubPart.value"
-                :selected-entity-record="selection.selectedEntityRecord.value"
-                :editable-metadata-by-type="editableMetadataByType"
-                :selection-token="selection.selectionToken.value"
-                :entity-query="selection.entityQuery"
-                :edge-label-input="selection.edgeLabelInput.value"
-                :edge-label-error="selection.edgeLabelMutation.errorMessage.value"
-                :metadata-error="selection.metadataMutation.errorMessage.value"
-                @select-entity="selection.selectEntity($event)"
-                @clear-connection="selection.clearConnection()"
-                @clear-sub-part="selection.clearSubPart()"
-                @update:edge-label-input="selection.edgeLabelInput.value = $event"
-                @save-edge-label="selection.saveEdgeLabel()"
-                @sub-part-save="selection.patchEntityMetadata($event)"
-                @entity-meta-save="selection.patchEntityMetadata($event)"
-                @entity-edited="selection.entityEdited()"
-              >
-                <template #lead>
-                  <DiagramReaderPanel
-                    v-if="reader.reading.value"
-                    v-bind="reader.panel.value"
-                    v-on="reader.panelEvents"
-                  />
-                </template>
-              </DiagramEntitySidebar>
-            </div>
+            <DiagramEntitySidebar
+              :list-folded="reader.reading.value"
+              :entities="diagramEntities"
+              :viewer-extension="selection.viewerExtension.value"
+              :selected-id="selection.selectedId.value"
+              :selected-connection="selection.selectedConnection.value"
+              :selected-sub-part="selection.selectedSubPart.value"
+              :selected-entity-record="selection.selectedEntityRecord.value"
+              :editable-metadata-by-type="editableMetadataByType"
+              :selection-token="selection.selectionToken.value"
+              :entity-query="selection.entityQuery"
+              :edge-label-input="selection.edgeLabelInput.value"
+              :edge-label-error="selection.edgeLabelMutation.errorMessage.value"
+              :metadata-error="selection.metadataMutation.errorMessage.value"
+              @select-entity="selection.selectEntity($event)"
+              @clear-connection="selection.clearConnection()"
+              @clear-sub-part="selection.clearSubPart()"
+              @update:edge-label-input="selection.edgeLabelInput.value = $event"
+              @save-edge-label="selection.saveEdgeLabel()"
+              @sub-part-save="selection.patchEntityMetadata($event)"
+              @entity-meta-save="selection.patchEntityMetadata($event)"
+              @entity-edited="selection.entityEdited()"
+            >
+              <template #lead>
+                <DiagramMemberPicker
+                  v-if="editing && contextQuery.data.value"
+                  :context="contextQuery.data.value"
+                  :busy="edit.editing.loading.value || edit.editing.saving.value"
+                  @add="edit.editing.add"
+                />
+                <DiagramReaderPanel
+                  v-if="reader.reading.value"
+                  v-bind="reader.panel.value"
+                  v-on="reader.panelEvents"
+                />
+              </template>
+            </DiagramEntitySidebar>
           </FullscreenDock>
         </template>
       </DiagramSplitLayout>
