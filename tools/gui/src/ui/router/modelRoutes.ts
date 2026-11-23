@@ -49,6 +49,8 @@ export const modelRoutes: RouteRecordRaw[] = [
     props: () => ({ axis: 'document-collection' }),
   },
   { path: ROUTE_TEMPLATES.documentDetail, component: () => import('../views/DocumentDetailView.vue') },
+  { path: ROUTE_TEMPLATES.stressAnalysisWorkspace, component: () => import('../views/StressWorkspaceView.vue') },
+  { path: ROUTE_TEMPLATES.stressAnalysisStart, component: () => import('../views/StressStartView.vue') },
   { path: '/search', component: SearchView },
   { path: ROUTE_TEMPLATES.diagramList, component: DiagramsView },
   {

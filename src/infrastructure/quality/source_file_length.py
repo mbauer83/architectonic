@@ -66,6 +66,9 @@ _FRONTEND_GENERATED_SUFFIX = ".generated.ts"
 # 425 → 421 when the neighbour-relations toggle arrived: its state became `useNeighbourRelations`,
 # and the edge styling went to `useGraphEdgeVisual` rather than the view growing by both.
 #
+# `DocumentDetailView.vue` went 432 → 387 when its styles moved to `DocumentDetailView.css`, as the
+# diagram page's already had, to take the stress-analysis document's entry to its workspace.
+#
 # One entry is **gone**. `artifact_verifier.py` (403) was a facade that had kept two rule bodies for
 # itself while five others had modules of their own; entities and diagrams moved to `_verifier_entity.py`
 # and `_verifier_diagram.py` and it landed at 329, under the hard limit. The number followed the
@@ -86,7 +89,7 @@ SOURCE_FILE_BASELINE_LIMITS: dict[str, int] = {
     "tools/gui/src/ui/views/AssuranceSupplyChainWizardView.vue": 431,
     "tools/gui/src/ui/views/CreateDiagramView.vue": 484,
     "tools/gui/src/ui/views/DocumentCreateView.vue": 594,
-    "tools/gui/src/ui/views/DocumentDetailView.vue": 432,
+    "tools/gui/src/ui/views/DocumentDetailView.vue": 387,
     "tools/gui/src/ui/views/EntitiesView.vue": 502,
     "tools/gui/src/ui/views/EntityCreateView.vue": 490,
     "tools/gui/src/ui/views/GraphExploreView.vue": 421,
