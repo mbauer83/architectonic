@@ -6,8 +6,14 @@
  * label set outside its element carried with the element. A connector is one drawn line, from its stated source to its
  * stated target. Only the router's public passes are called: `routeAll` with no quick pass on a drop,
  * and with one while something is dragged.
+ *
+ * A relation's stated route is read as the composer reads it (`_Arranging.routing`): one that states
+ * its bends between two stated ports runs them, a fixed line the others go round; one that states
+ * only ports is routed between them.
  */
-import type { Extent } from '../geometry'
+import type { Extent, Point } from '../geometry'
+import type { Route } from '../orthogonal'
+import { courseOf } from '../orthogonal'
 import { routeAll } from '../routing/router'
 import { widened } from '../routing/widening'
 import type { Connector, RoutedConnector, RoutingResult, RoutingScene } from '../routing/scene'
@@ -78,21 +84,54 @@ export const textRegions = (geometry: LayoutGeometry, placement: Placement): Rea
   return regions
 }
 
-export const sceneOf = (geometry: LayoutGeometry, placement: Placement): RoutingScene => ({
+/** Each drawn relation's stated route, by relation key: what the user shaped. */
+export type StatedRoutes = ReadonlyMap<string, Route>
+
+const NONE: StatedRoutes = new Map()
+
+/**
+ * The course of every relation whose route states its bends between two stated ports, by its place on
+ * the picture: the line it runs, which the router routes the others round.
+ */
+export const statedCourses = (
+  geometry: LayoutGeometry, placement: Placement, routes: StatedRoutes = NONE,
+): ReadonlyMap<number, Point[]> => {
+  const extentOf = (alias: string): Extent | undefined => placement.elements.get(alias) ?? placement.boxes.get(alias)
+  return new Map(geometry.relations.flatMap((relation): [number, Point[]][] => {
+    const route = relation.key === undefined ? undefined : routes.get(relation.key)
+    const [source, target] = [extentOf(relation.source), extentOf(relation.target)]
+    const course = route?.via?.length && source && target ? courseOf(route, source, target) : null
+    return course && course.length >= 2 ? [[relation.index, course]] : []
+  }))
+}
+
+export const sceneOf = (
+  geometry: LayoutGeometry, placement: Placement, fixed: ReadonlyMap<number, readonly Point[]> = new Map(),
+): RoutingScene => ({
   elements: placement.elements,
   boxes: placement.boxes,
   text: textRegions(geometry, placement),
-  fixedLines: [],
+  fixedLines: [...fixed.values()],
 })
 
-/** Every drawn line as a connector, keyed by its place on the picture as the composer keys it. */
-export const connectorsOf = (geometry: LayoutGeometry): Connector[] =>
-  geometry.relations.map((relation) => ({
-    key: String(relation.index),
-    source: relation.source,
-    target: relation.target,
-    decorated: relation.decorated,
-  }))
+/**
+ * Every drawn line the router routes as a connector, keyed by its place on the picture as the composer
+ * keys it, with the ports its route states; a line in *fixed* runs its stated course instead.
+ */
+export const connectorsOf = (
+  geometry: LayoutGeometry, routes: StatedRoutes = NONE, fixed: ReadonlyMap<number, unknown> = new Map(),
+): Connector[] =>
+  geometry.relations.filter((relation) => !fixed.has(relation.index)).map((relation) => {
+    const route = relation.key === undefined ? undefined : routes.get(relation.key)
+    return {
+      key: String(relation.index),
+      source: relation.source,
+      target: relation.target,
+      decorated: relation.decorated,
+      ...(route?.from ? { sourcePort: route.from } : {}),
+      ...(route?.to ? { targetPort: route.to } : {}),
+    }
+  })
 
 /** The shapes, elements and boxes alike, that sit or measure differently in *after* than in *before*. */
 export const changedShapes = (before: Placement, after: Placement): Set<string> => {
@@ -113,9 +152,11 @@ export const changedShapes = (before: Placement, after: Placement): Set<string> 
  */
 export const widenedArrangement = (geometry: LayoutGeometry, arrangement: Arrangement): Arrangement => {
   const placement = placementOf(geometry, arrangement)
-  const opened = widened(sceneOf(geometry, placement), connectorsOf(geometry))
+  const fixed = statedCourses(geometry, placement, arrangement.routes)
+  const opened = widened(sceneOf(geometry, placement, fixed), connectorsOf(geometry, arrangement.routes, fixed))
   const before = placement.boxes
   return {
+    routes: arrangement.routes,
     elements: new Map(opened.elements),
     stated: new Map([
       ...arrangement.stated,
@@ -127,14 +168,46 @@ export const widenedArrangement = (geometry: LayoutGeometry, arrangement: Arrang
   }
 }
 
-/** Every line routed afresh: what a drop asks for. */
-export const fullPass = (geometry: LayoutGeometry, placement: Placement): RoutingResult =>
-  routeAll(sceneOf(geometry, placement), connectorsOf(geometry))
+/** *result* with each line that runs its stated course in it as routed: every line's course in one place. */
+const withFixed = (
+  result: RoutingResult, geometry: LayoutGeometry, routes: StatedRoutes, fixed: ReadonlyMap<number, Point[]>,
+): RoutingResult => {
+  if (fixed.size === 0) return result
+  const lines = new Map(result.routes)
+  for (const relation of geometry.relations) {
+    const course = fixed.get(relation.index)
+    const route = relation.key === undefined ? undefined : routes.get(relation.key)
+    if (!course || !route?.from || !route.to) continue
+    const key = String(relation.index)
+    lines.set(key, { key, sourcePort: route.from, targetPort: route.to, course })
+  }
+  return { ...result, routes: lines }
+}
 
-/** Only the lines of the shapes in *changed* routed again, the rest kept from *previous*: a drag frame. */
+/** Every line routed afresh, those with stated bends run as stated: what opening a picture asks for. */
+export const fullPass = (geometry: LayoutGeometry, placement: Placement, routes: StatedRoutes = NONE): RoutingResult => {
+  const fixed = statedCourses(geometry, placement, routes)
+  const result = routeAll(sceneOf(geometry, placement, fixed), connectorsOf(geometry, routes, fixed))
+  return withFixed(result, geometry, routes, fixed)
+}
+
+/**
+ * Only the lines of the shapes in *changed*, and the lines *rerouted* names by their place, routed
+ * again; the rest kept from *previous* wherever they still go through nothing: a drag frame, or any
+ * change after one, so a line keeps the course it was shown with until something moves it.
+ */
 export const quickPass = (
   geometry: LayoutGeometry,
   placement: Placement,
+  routes: StatedRoutes,
   previous: ReadonlyMap<string, RoutedConnector>,
   changed: ReadonlySet<string>,
-): RoutingResult => routeAll(sceneOf(geometry, placement), connectorsOf(geometry), { previous, changed })
+  rerouted: ReadonlySet<string> = new Set(),
+): RoutingResult => {
+  const fixed = statedCourses(geometry, placement, routes)
+  const kept = new Map([...previous].filter(([key]) => !rerouted.has(key)))
+  const result = routeAll(sceneOf(geometry, placement, fixed), connectorsOf(geometry, routes, fixed), {
+    previous: kept, changed,
+  })
+  return withFixed(result, geometry, routes, fixed)
+}

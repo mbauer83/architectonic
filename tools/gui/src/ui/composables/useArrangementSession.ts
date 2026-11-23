@@ -3,9 +3,13 @@
  * router answered, and undo and redo. The diagram canvas and the layout lab both arrange through it.
  *
  * Lines are PlantUML's own while the picture is arranged automatically; once it is arranged by hand
- * every line is the router's. While something is dragged, each frame runs the router's quick pass over
- * the lines of what moved; a drop runs the full pass over every line. A resized shape is drawn again by
- * the composer (`drawShapes`), one request at a time.
+ * every line is the router's. Opening a picture runs the router's full pass, as the server does. From
+ * then on a line keeps the course it was shown with until something moves it: each drag frame, and
+ * each change, runs the quick pass over the lines of what moved and the lines whose stated route
+ * changed, keeping the rest wherever they still go through nothing. A drop keeps the picture the drag
+ * showed — the last frame, routed at once if it was still pending — and undo and redo return to the
+ * picture each state was shown with. A resized shape is drawn again by the composer (`drawShapes`),
+ * one request at a time.
  */
 import { computed, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
@@ -13,14 +17,14 @@ import type { Point } from '../../domain/layout/geometry'
 import type { Arrangement } from '../../domain/layout/lab/labArrangement'
 import { drawnArrangement } from '../../domain/layout/lab/labArrangement'
 import { breachesOf } from '../../domain/layout/lab/labBreaches'
-import { fullPass, placementOf, quickPass, textRegions } from '../../domain/layout/lab/labRouting'
+import { changedShapes, fullPass, placementOf, quickPass, textRegions } from '../../domain/layout/lab/labRouting'
 import type { Placement } from '../../domain/layout/lab/labRouting'
 import type { Reshaped } from '../../domain/layout/lab/labShapeDrawing'
 import { stillToReshape } from '../../domain/layout/lab/labShapeDrawing'
 import type { RoutingResult } from '../../domain/layout/routing/scene'
 import type { DrawingNode, LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import { pointsOf } from '../../domain/schemas/diagramLayoutGeometry'
-import { withoutElements } from '../../domain/layout/arrangementLayout'
+import { shapedLines, withoutElements } from '../../domain/layout/arrangementLayout'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import type { ShapeToDraw } from '../../ports/DiagramLayoutRepository'
 
@@ -38,6 +42,8 @@ export interface ArrangementState {
   readonly removed?: ReadonlySet<string>
   /** Where arranging by hand began, the picture taken over: what an edit is counted against. */
   readonly takenOver?: Arrangement
+  /** The lines as they were shown in this state, by hand: what undo and redo show again. */
+  readonly routed?: RoutingResult
 }
 
 /** How long the last pass took: the budget is a drag frame. */
@@ -68,16 +74,17 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
   let reshaping = false
 
   const arrangement = computed(() => state.value?.arrangement ?? null)
-  /** Where every shape now drawn is: a removed element is no obstacle and holds no box open. */
-  const placement = computed(() => {
+  /** Where every shape *one* draws is: a removed element is no obstacle and holds no box open. */
+  const placementIn = (one: ArrangementState | null): Placement | null => {
     const drawn = geometry.value
-    const now = arrangement.value
+    const now = one?.arrangement
     if (!drawn || !now) return null
-    const removed = state.value?.removed ?? new Set<string>()
+    const removed = one.removed ?? new Set<string>()
     const kept = removed.size === 0 ? now
       : { ...now, elements: new Map([...now.elements].filter(([alias]) => !removed.has(alias))) }
     return placementOf(drawn, kept)
-  })
+  }
+  const placement = computed(() => placementIn(state.value))
 
   const reshape = async (): Promise<void> => {
     const drawn = geometry.value
@@ -142,18 +149,50 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
   const routeEverything = () => {
     const drawn = geometry.value
     const where = placement.value
-    if (drawn && where) routes.value = timed('full', () => fullPass(drawn, where))
+    const now = arrangement.value
+    if (drawn && where && now) routes.value = timed('full', () => fullPass(drawn, where, now.routes))
   }
 
-  /** Show *next* at once: lines routed afresh when by hand, PlantUML's when not. */
-  const show = (next: ArrangementState) => {
-    if (next.picture && next.picture !== drawnPicture.value) {
-      drawnPicture.value = next.picture
+  /** The lines whose stated route differs between *before* and *after*, keyed as the router keys them. */
+  const restated = (before: Arrangement, after: Arrangement): ReadonlySet<string> => {
+    const drawn = geometry.value
+    return new Set(drawn ? shapedLines(drawn, before, after).map(String) : [])
+  }
+
+  /**
+   * The lines of the state now, routed from those shown in *before*: only what the change moved or
+   * reshaped is routed again (`quickPass`).
+   */
+  const routedFrom = (before: ArrangementState, shown: RoutingResult, changed?: ReadonlySet<string>) => {
+    const drawn = geometry.value
+    const where = placement.value
+    const now = arrangement.value
+    const was = placementIn(before)
+    if (!drawn || !where || !now || !was) return
+    const moved = changed ?? changedShapes(was, where)
+    const rerouted = restated(before.arrangement, now)
+    routes.value = timed('quick', () => quickPass(drawn, where, now.routes, shown.routes, moved, rerouted))
+  }
+
+  /**
+   * Show *next* at once. By hand: *again*, as undo and redo show a state, with the lines it was shown
+   * with; else routed on from the lines shown now where it is the same picture; else routed afresh.
+   * PlantUML's lines when not by hand.
+   */
+  const show = (next: ArrangementState, again = false) => {
+    const before = state.value
+    const shown = routes.value
+    const samePicture = !next.picture || next.picture === drawnPicture.value
+    if (!samePicture) {
+      drawnPicture.value = next.picture as LayoutGeometry
       reshaped.value = new Map()
     }
     state.value = next
-    if (next.byHand) routeEverything()
-    else routes.value = null
+    if (!next.byHand) routes.value = null
+    else if (again && next.routed) routes.value = next.routed
+    else if (samePicture && before?.byHand && shown) routedFrom(before, shown)
+    else routeEverything()
+    if (next.byHand && routes.value) state.value = { ...next, routed: routes.value }
   }
 
   /** Start on *drawn*'s picture, arranged as *start* says. Nothing to undo. */
@@ -200,26 +239,33 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
     if (drawn && now && where) show({ ...now, arrangement: next(drawn, now.arrangement, where), byHand: true })
   }
 
-  /** One frame of a change: the arrangement reached, and the shapes whose lines it moved. */
-  const preview = (next: Arrangement, changed: ReadonlySet<string>) => {
-    state.value = { ...state.value, arrangement: next, byHand: true }
-    if (!routes.value) routeEverything()
-    if (frame !== null) return
-    frame = requestAnimationFrame(() => {
-      frame = null
-      const drawn = geometry.value
-      const where = placement.value
-      const previous = routes.value
-      if (!drawn || !where || !previous) return
-      routes.value = timed('quick', () => quickPass(drawn, where, previous.routes, changed))
-    })
+  /** The frame waiting to be drawn: the state its lines are routed from, and the shapes the drag moved. */
+  let pending: { readonly from: ArrangementState; changed: ReadonlySet<string> } | null = null
+
+  const drawFrame = () => {
+    frame = null
+    const shown = routes.value
+    if (pending && shown) routedFrom(pending.from, shown, pending.changed)
+    pending = null
   }
 
-  /** The change is dropped: every line routed afresh. */
+  /** One frame of a change: the arrangement reached, and the shapes whose lines it moved. */
+  const preview = (next: Arrangement, changed: ReadonlySet<string>) => {
+    const from = state.value
+    if (!from) return
+    if (!routes.value) routeEverything()
+    state.value = { ...from, arrangement: next, byHand: true }
+    pending = { from: pending?.from ?? from, changed }
+    if (frame === null) frame = requestAnimationFrame(drawFrame)
+  }
+
+  /** The change is dropped: the picture keeps the lines its last frame showed, routed now if still pending. */
   const commit = () => {
     if (frame !== null) cancelAnimationFrame(frame)
+    if (pending) drawFrame()
     frame = null
-    routeEverything()
+    const now = state.value
+    if (now?.byHand && routes.value) state.value = { ...now, routed: routes.value }
   }
 
   const undo = () => {
@@ -227,7 +273,7 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
     if (!earlier || !state.value) return
     future.value = [state.value, ...future.value]
     history.value = history.value.slice(0, -1)
-    show(earlier)
+    show(earlier, true)
   }
 
   const redo = () => {
@@ -235,7 +281,7 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
     if (!later || !state.value) return
     history.value = [...history.value, state.value]
     future.value = future.value.slice(1)
-    show(later)
+    show(later, true)
   }
 
   /** Nothing open: what a failed read leaves. */

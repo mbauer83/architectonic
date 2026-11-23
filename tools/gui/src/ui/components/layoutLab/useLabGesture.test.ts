@@ -77,17 +77,18 @@ describe('the layout lab gesture', () => {
     expect(lab.layout.value?.elements['APP@3.c']).toEqual({ x: 400, y: 40 })
   })
 
-  it('moves an element by the pointer travel, routing live and again on the drop', () => {
+  it('moves an element by the pointer travel, routing live and keeping the last frame on the drop', () => {
     const { lab, gesture } = opened()
     press(gesture, 'C', 450, 60)
     pointer('pointermove', 470, 100)
 
     expect(gesture.dragging.value).toBe(true)
     expect(lab.timing.value?.kind).toBe('quick')
+    const shown = lab.courses.value.get(0)
     pointer('pointerup', 470, 100)
 
     expect(gesture.dragging.value).toBe(false)
-    expect(lab.timing.value?.kind).toBe('full')
+    expect(lab.courses.value.get(0)).toEqual(shown)
     expect(lab.arrangement.value?.elements.get('C')).toEqual(at(420, 80, 520, 120))
     expect(lab.layout.value).toMatchObject({ elements: { 'APP@3.c': { x: 420, y: 80 } } })
     const course = lab.courses.value.get(0)

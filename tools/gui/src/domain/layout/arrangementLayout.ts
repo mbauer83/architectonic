@@ -9,12 +9,16 @@
  * - `layoutPatchBetween` is the patch that turns the stored block into another one, each entry
  *   checked against what was read, so a layout changed meanwhile is refused rather than overwritten.
  * - `arrangedUnits` counts what an edit arranged: a box moved with its contents is one change, not
- *   one per member, and a box that only grew around a moved member is not a change of its own.
+ *   one per member, and a box that only grew around a moved member is not a change of its own;
+ *   `shapedLines` names each line whose stated route an edit changed.
+ *
+ * A relation's route is written as the block spells it (`Route`): only what was stated, by relation key.
  */
 import type { Extent } from './geometry'
 import { heightOf, widthOf } from './geometry'
 import type { DiagramLayoutSchema } from '../schemas/diagramLayout'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
+import type { Route } from './orthogonal'
 import type { Arrangement } from './lab/labArrangement'
 import { drawnArrangement } from './lab/labArrangement'
 import { placementOf } from './lab/labRouting'
@@ -35,14 +39,15 @@ export interface Placed {
   readonly h?: number
 }
 
-/** The two sections of a layout block an arrangement states. */
+/** The three sections of a layout block an arrangement states. */
 export interface ArrangedLayout {
   readonly elements: Readonly<Record<string, Placed>>
   readonly boxes: Readonly<Record<string, Placed>>
+  readonly relations?: Readonly<Record<string, Route>>
 }
 
 /** The sections of a stored block an arrangement reads and writes: the layout contract's own. */
-export type StoredLayout = Pick<typeof DiagramLayoutSchema.Type, 'elements' | 'boxes'>
+export type StoredLayout = Pick<typeof DiagramLayoutSchema.Type, 'elements' | 'boxes' | 'relations'>
 
 const SAME = 0.5
 
@@ -68,7 +73,9 @@ export const arrangedBy = (geometry: LayoutGeometry, stored: StoredLayout): Arra
       : (box.section === 'elements' ? elementsStated : boxesStated)[box.key]
     return placed ? [[box.alias, extentAt(placed, box.extent)]] : []
   }))
-  return { elements, stated }
+  const drawnKeys = new Set(geometry.relations.flatMap((one) => (one.key === undefined ? [] : [one.key])))
+  const routes = new Map(Object.entries(stored.relations ?? {}).filter(([key]) => drawnKeys.has(key)))
+  return { elements, stated, routes }
 }
 
 const placedAt = (extent: Extent, sized: boolean): Placed => ({
@@ -93,35 +100,47 @@ export const layoutOf = (geometry: LayoutGeometry, arrangement: Arrangement): Ar
     const now = placement.boxes.get(box.alias)
     if (box.key !== undefined && now) (box.section === 'elements' ? elements : boxes)[box.key] = placedAt(now, true)
   }
-  return { elements, boxes }
+  return { elements, boxes, relations: Object.fromEntries(arrangement.routes) }
 }
 
 /** One entry of a layout patch: what it becomes (null removes it) and what it was read as. */
-export interface EntryChange {
-  readonly value: Placed | null
-  readonly based_on: Placed | null
+export interface EntryChange<Value = Placed> {
+  readonly value: Value | null
+  readonly based_on: Value | null
 }
 
-export type ArrangementPatch = Readonly<Record<'elements' | 'boxes', Readonly<Record<string, EntryChange>>>>
+export type ArrangementPatch = {
+  readonly elements: Readonly<Record<string, EntryChange>>
+  readonly boxes: Readonly<Record<string, EntryChange>>
+  readonly relations: Readonly<Record<string, EntryChange<Route>>>
+}
 
 const samePlaced = (one: Placed | undefined, other: Placed | undefined): boolean =>
   one?.x === other?.x && one?.y === other?.y && one?.w === other?.w && one?.h === other?.h
 
-const sectionPatch = (
-  stored: Readonly<Record<string, Placed>>, wanted: Readonly<Record<string, Placed>>,
-): Record<string, EntryChange> =>
+/** Whether two routes state the same: the same parts, each the same, whatever order they were written in. */
+export const sameRoute = (one: Route | undefined, other: Route | undefined): boolean => {
+  const written = (route: Route | undefined) => route && JSON.stringify([route.from, route.to, route.via, route.label])
+  return written(one) === written(other)
+}
+
+const sectionPatch = <Value>(
+  stored: Readonly<Record<string, Value>>, wanted: Readonly<Record<string, Value>>,
+  same: (one: Value | undefined, other: Value | undefined) => boolean,
+): Record<string, EntryChange<Value>> =>
   Object.fromEntries([...new Set([...Object.keys(stored), ...Object.keys(wanted)])].flatMap((key) =>
-    samePlaced(stored[key], wanted[key]) ? []
+    same(stored[key], wanted[key]) ? []
       : [[key, { value: wanted[key] ?? null, based_on: stored[key] ?? null }]]))
 
 /** The patch turning *stored* into *wanted*; null for *wanted* removes every entry *stored* holds. */
 export const layoutPatchBetween = (stored: StoredLayout, wanted: ArrangedLayout | null): ArrangementPatch => ({
-  elements: sectionPatch(stored.elements ?? {}, wanted?.elements ?? {}),
-  boxes: sectionPatch(stored.boxes ?? {}, wanted?.boxes ?? {}),
+  elements: sectionPatch(stored.elements ?? {}, wanted?.elements ?? {}, samePlaced),
+  boxes: sectionPatch(stored.boxes ?? {}, wanted?.boxes ?? {}, samePlaced),
+  relations: sectionPatch<Route>(stored.relations ?? {}, wanted?.relations ?? {}, sameRoute),
 })
 
 export const patchIsEmpty = (patch: ArrangementPatch): boolean =>
-  Object.keys(patch.elements).length === 0 && Object.keys(patch.boxes).length === 0
+  [patch.elements, patch.boxes, patch.relations].every((section) => Object.keys(section).length === 0)
 
 const sameExtent = (one: Extent | undefined, other: Extent | undefined): boolean =>
   one !== undefined && other !== undefined && Math.abs(one.left - other.left) <= SAME
@@ -165,3 +184,8 @@ export const arrangedUnits = (
   }
   return [...inside.keys()].filter((alias) => changed(alias) && !carried(alias))
 }
+
+/** The lines whose stated route an edit changed from *before* to *after*, by their place on the picture. */
+export const shapedLines = (geometry: LayoutGeometry, before: Arrangement, after: Arrangement): readonly number[] =>
+  geometry.relations.filter((relation) => relation.key !== undefined
+    && !sameRoute(before.routes.get(relation.key), after.routes.get(relation.key))).map((relation) => relation.index)
