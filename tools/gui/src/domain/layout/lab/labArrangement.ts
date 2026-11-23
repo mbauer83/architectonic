@@ -8,8 +8,8 @@
  * it, and moving a box moves what it holds. Membership never changes here: which box an element is in
  * is the diagram's to say, not a drag's.
  */
-import type { Extent } from '../geometry'
-import { widthOf } from '../geometry'
+import type { Extent, Point } from '../geometry'
+import { unionOf, widthOf } from '../geometry'
 import type { GeometryBox, LayoutGeometry, MeasuredWord } from '../../schemas/diagramLayoutGeometry'
 
 /** What has been moved or resized: every element where it is now, and each box stated by size. */
@@ -29,13 +29,6 @@ export const translated = (extent: Extent, dx: number, dy: number): Extent => ({
   top: extent.top + dy,
   right: extent.right + dx,
   bottom: extent.bottom + dy,
-})
-
-export const unionOf = (extents: readonly Extent[]): Extent => ({
-  left: Math.min(...extents.map((extent) => extent.left)),
-  top: Math.min(...extents.map((extent) => extent.top)),
-  right: Math.max(...extents.map((extent) => extent.right)),
-  bottom: Math.max(...extents.map((extent) => extent.bottom)),
 })
 
 /** PlantUML's arrangement: every element where it drew it, nothing stated. */
@@ -115,15 +108,31 @@ export const descendantsOf = (geometry: LayoutGeometry, alias: string): readonly
   return walk(alias)
 }
 
-/** *arrangement* with the shape *alias* moved by (dx, dy): a box carries everything it holds. */
-export const moved = (
-  geometry: LayoutGeometry, arrangement: Arrangement, alias: string, dx: number, dy: number,
+/**
+ * *arrangement* with the shapes *aliases* moved together by (dx, dy): a box carries everything it holds,
+ * and a shape both chosen and carried moves once.
+ */
+export const movedTogether = (
+  geometry: LayoutGeometry, arrangement: Arrangement, aliases: readonly string[], dx: number, dy: number,
 ): Arrangement => {
-  const carried = new Set([alias, ...descendantsOf(geometry, alias)])
+  const carried = new Set(aliases.flatMap((alias) => [alias, ...descendantsOf(geometry, alias)]))
   const shift = (entries: ReadonlyMap<string, Extent>): Map<string, Extent> =>
     new Map([...entries].map(([key, extent]) => [key, carried.has(key) ? translated(extent, dx, dy) : extent]))
   return { elements: shift(arrangement.elements), stated: shift(arrangement.stated) }
 }
+
+/** *arrangement* with the shape *alias* moved by (dx, dy): a box carries everything it holds. */
+export const moved = (
+  geometry: LayoutGeometry, arrangement: Arrangement, alias: string, dx: number, dy: number,
+): Arrangement => movedTogether(geometry, arrangement, [alias], dx, dy)
+
+/** *arrangement* with each element of *corners* moved so its top-left corner is there, carrying what it holds. */
+export const placedAt = (
+  geometry: LayoutGeometry, arrangement: Arrangement, corners: ReadonlyMap<string, Point>,
+): Arrangement => [...corners].reduce((now, [alias, to]) => {
+  const from = arrangement.elements.get(alias)
+  return from ? moved(geometry, now, alias, to.x - from.left, to.y - from.top) : now
+}, arrangement)
 
 /** *arrangement* with the shape *alias* given *extent*: an element's own size, a box's stated size. */
 export const resized = (

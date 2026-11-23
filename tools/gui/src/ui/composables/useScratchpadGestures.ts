@@ -1,5 +1,5 @@
 import { computed, ref, type Ref } from 'vue'
-import { isAdditive } from './useScratchpadKeyboard'
+import { isAdditive } from '../lib/additiveClick'
 
 /**
  * Pan, zoom, drag, and the link-drawing gesture.

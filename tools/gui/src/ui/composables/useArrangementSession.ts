@@ -14,6 +14,7 @@ import type { Arrangement } from '../../domain/layout/lab/labArrangement'
 import { drawnArrangement } from '../../domain/layout/lab/labArrangement'
 import { breachesOf } from '../../domain/layout/lab/labBreaches'
 import { fullPass, placementOf, quickPass, textRegions } from '../../domain/layout/lab/labRouting'
+import type { Placement } from '../../domain/layout/lab/labRouting'
 import type { Reshaped } from '../../domain/layout/lab/labShapeDrawing'
 import { stillToReshape } from '../../domain/layout/lab/labShapeDrawing'
 import type { RoutingResult } from '../../domain/layout/routing/scene'
@@ -187,6 +188,18 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
     show(next)
   }
 
+  /**
+   * Change the arrangement as one undoable step: *next* is asked after the step has begun, so on a
+   * picture still arranged automatically it reads where the takeover put things.
+   */
+  const change = (next: (drawn: LayoutGeometry, now: Arrangement, where: Placement) => Arrangement) => {
+    begin()
+    const drawn = geometry.value
+    const now = state.value
+    const where = placement.value
+    if (drawn && now && where) show({ ...now, arrangement: next(drawn, now.arrangement, where), byHand: true })
+  }
+
   /** One frame of a change: the arrangement reached, and the shapes whose lines it moved. */
   const preview = (next: Arrangement, changed: ReadonlySet<string>) => {
     state.value = { ...state.value, arrangement: next, byHand: true }
@@ -233,7 +246,7 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
 
   return {
     drawnPicture, geometry, state, close, arrangement, history, future, routes, timing, placement, courses, breaches,
-    reshaped, reshapeError, open, begin, step, preview, commit, undo, redo, routeEverything,
+    reshaped, reshapeError, open, begin, step, change, preview, commit, undo, redo, routeEverything,
   }
 }
 

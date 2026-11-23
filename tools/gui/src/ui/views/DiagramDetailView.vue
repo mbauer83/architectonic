@@ -242,6 +242,7 @@ const executeDelete = () => {
             v-bind="reader.hostAttributes.value"
             @keydown="reader.onKeydown"
             @mousedown="editing ? edit.panPress($event, panZoom.onMouseDown) : panZoom.onMouseDown($event)"
+            @pointerdown="editing && !edit.spaceHeld.value && editCanvas?.sweepFrom($event)"
             @dblclick="editing || panZoom.resetView()"
           >
             <div
@@ -258,6 +259,7 @@ const executeDelete = () => {
                   :editing="edit.editing"
                   :context="contextQuery.data.value"
                   :selection="editCanvas?.selected"
+                  :selected-shapes="editCanvas?.selection"
                 >
                   <LayoutLabCanvas
                     ref="editCanvas"
@@ -295,7 +297,8 @@ const executeDelete = () => {
               :is-fullscreen="fullscreen.isFullscreen.value"
               :can-fullscreen="fullscreen.isSupported"
               :hint="editing
-                ? 'Drag an element or a box by its title to move it · drag a handle to resize · Space+drag pans'
+                ? 'Drag an element, or a box by its title, to move it · drag on paper to select · Shift-click adds'
+                  + ' · drag a handle to resize · Space+drag pans'
                 : 'Scroll to zoom · Drag to pan · Click entity to inspect · Double-click to reset'"
               @reset="panZoom.resetView"
               @toggle-fullscreen="fullscreen.toggle"
