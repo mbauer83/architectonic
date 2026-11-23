@@ -1965,6 +1965,23 @@ export interface paths {
         patch: operations["diagrams_patch_diagram_layout"];
         trace?: never;
     };
+    "/api/diagrams/{artifact_id}/layout/arrange": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Align, distribute, straighten or return a diagram's layout to automatic */
+        post: operations["diagrams_arrange_diagram_layout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diagrams/{artifact_id}/layout/geometry": {
         parameters: {
             query?: never;
@@ -7440,6 +7457,45 @@ export interface components {
             relations: components["schemas"]["GeometryRelationContract"][];
         };
         /**
+         * DiagramLayoutIntentsResponse
+         * @description What applying layout intents did, and the patch they compiled to: each changed entry with what it
+         *     becomes and what the stored layout held for it (``based_on``).
+         */
+        DiagramLayoutIntentsResponse: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Errors */
+            errors: string[];
+            layout: components["schemas"]["DiagramLayoutContract"];
+            patch: components["schemas"]["DiagramLayoutPatchContract"];
+            /** Warnings */
+            warnings: string[];
+            /** Wrote */
+            wrote: boolean;
+        };
+        /**
+         * DiagramLayoutPatchContract
+         * @description A layout patch by section and key, as the layout block keys them (`DiagramLayoutContract`).
+         */
+        DiagramLayoutPatchContract: {
+            /** Boxes */
+            boxes?: {
+                [key: string]: components["schemas"]["PlacedChangeContract"];
+            };
+            /** Elements */
+            elements?: {
+                [key: string]: components["schemas"]["PlacedChangeContract"];
+            };
+            /** Relations */
+            relations?: {
+                [key: string]: components["schemas"]["RouteChangeContract"];
+            };
+            /** Z */
+            z?: {
+                [key: string]: components["schemas"]["StackingChangeContract"];
+            };
+        };
+        /**
          * DiagramLayoutPatchResponse
          * @description What a layout patch did: whether it wrote, what the write warned or refused, and the layout block
          *     the diagram holds after it — empty where it holds none.
@@ -10274,6 +10330,23 @@ export interface components {
             query: string;
         };
         /**
+         * LayoutIntentsBody
+         * @description What the editor means, in order: ``align`` (``keys``, ``edge``), ``distribute`` (``keys``, ``axis``),
+         *     ``straighten`` (``relations``) and ``return_to_automatic`` (``keys``; none for the whole layout).
+         *     Each compiles to the layout patch that states it, checked against the stored layout.
+         */
+        LayoutIntentsBody: {
+            /**
+             * Dry Run
+             * @default true
+             */
+            dry_run: boolean;
+            /** Intents */
+            intents: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
          * LayoutLabelContract
          * @description Where a relation's label sits: a fraction along its route and an offset from that point.
          */
@@ -11458,6 +11531,15 @@ export interface components {
             target_type: string;
         };
         /**
+         * PlacedChangeContract
+         * @description One element or box entry a patch changes: what it becomes (omitted: removed) and what the stored
+         *     layout held for it (omitted: absent).
+         */
+        PlacedChangeContract: {
+            based_on?: components["schemas"]["LayoutPlacedContract"];
+            value?: components["schemas"]["LayoutPlacedContract"];
+        };
+        /**
          * PresentationSpecResponse
          * @description How one representation renders the population.
          *
@@ -12307,6 +12389,14 @@ export interface components {
             /** Target */
             target: string;
         };
+        /**
+         * RouteChangeContract
+         * @description One relation entry a patch changes, as `PlacedChangeContract` states an element's.
+         */
+        RouteChangeContract: {
+            based_on?: components["schemas"]["LayoutRouteContract"];
+            value?: components["schemas"]["LayoutRouteContract"];
+        };
         /** SaveBody */
         SaveBody: {
             /** Author Email */
@@ -13038,6 +13128,16 @@ export interface components {
             color?: string;
             /** Icon */
             icon?: string;
+        };
+        /**
+         * StackingChangeContract
+         * @description One stacking entry a patch changes, as `PlacedChangeContract` states an element's.
+         */
+        StackingChangeContract: {
+            /** Based On */
+            based_on?: number;
+            /** Value */
+            value?: number;
         };
         /**
          * StructuralClosureEntity
@@ -20607,6 +20707,95 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiagramLayoutPatchResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    diagrams_arrange_diagram_layout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LayoutIntentsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagramLayoutIntentsResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from src.infrastructure.rest.contracts.diagram_layout import DiagramLayoutContract
+from src.infrastructure.rest.contracts.diagram_layout import DiagramLayoutContract, DiagramLayoutPatchContract
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 
 
@@ -125,6 +125,13 @@ class DiagramLayoutPatchResponse(NullsOmitted):
     #: The verifier's errors, one message each; a write with any is not made.
     errors: list[str]
     layout: DiagramLayoutContract
+
+
+class DiagramLayoutIntentsResponse(DiagramLayoutPatchResponse):
+    """What applying layout intents did, and the patch they compiled to: each changed entry with what it
+    becomes and what the stored layout held for it (``based_on``)."""
+
+    patch: DiagramLayoutPatchContract
 
 
 class ShapeDrawingsResponse(NullsOmitted):

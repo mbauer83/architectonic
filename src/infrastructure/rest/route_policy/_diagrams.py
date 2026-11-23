@@ -134,6 +134,10 @@ DIAGRAM_ROWS: tuple[RouteRow, ...] = (
         identity_parameters=_ID, mutation_domain="repository", timeout_class="derived-graph",
     ),
     RouteRow(
+        "POST", "/api/diagrams/{artifact_id}/layout/arrange", "operation", "diagrams_arrange_diagram_layout", TYPED,
+        identity_parameters=_ID, mutation_domain="repository", timeout_class="derived-graph",
+    ),
+    RouteRow(
         "POST", "/api/diagrams/preview", "operation", "diagrams_preview_diagram", TYPED,
         timeout_class="derived-graph",
     ),

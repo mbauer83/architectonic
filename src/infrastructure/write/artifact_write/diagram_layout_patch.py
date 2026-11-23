@@ -8,7 +8,9 @@ and verified exactly as a whole block is. What is decided here is only what the 
   A diagram is taken over from exactly the picture it had, so a patch that moves one element of an
   automatically laid-out diagram leaves every other element where it was drawn.
 
-A patch whose entries moved under it (`LayoutConflict`) applies nothing.
+A patch whose entries moved under it (`LayoutConflict`) applies nothing. A caller that states intents
+rather than entries passes a function that compiles the patch from that same base and the stored layout
+(`layout_intents.compiled_patch`), so the base is chosen here once for both.
 """
 
 from __future__ import annotations
@@ -30,13 +32,17 @@ from .types import WriteResult
 #: The layout a diagram starts from when it has none: from its body and frontmatter.
 type FirstLayout = Callable[[str, Mapping[str, object]], Layout]
 
+#: A patch compiled from the base the diagram is arranged by and the layout it stores.
+type PatchOf = Callable[[Layout, Layout], Mapping[str, object]]
+
 
 @dataclass(frozen=True)
 class LayoutPatchResult:
-    """The diagram write, and the layout block the diagram holds after it (empty: none)."""
+    """The diagram write, the layout block the diagram holds after it (empty: none), and the patch applied."""
 
     write: WriteResult
     layout: dict[str, object]
+    patch: Mapping[str, object]
 
 
 def reconciled_layout(
@@ -64,11 +70,14 @@ def patch_diagram_layout(
     clear_repo_caches: Callable[[Path], None],
     assert_write_root: Callable[[Path], None],
     artifact_id: str,
-    patch: Mapping[str, object],
+    patch: Mapping[str, object] | PatchOf,
     first_layout: FirstLayout,
     dry_run: bool,
 ) -> LayoutPatchResult:
-    """Apply *patch* to *artifact_id*'s layout and write it. Raises ValueError for a refused patch."""
+    """Apply *patch* — stated, or compiled from the base — to *artifact_id*'s layout and write it.
+
+    Raises ValueError for a refused patch.
+    """
     find = verifier.registry.find_file_by_id if verifier.registry is not None else None
     diagram_path = resolve_diagram_source_path(repo_root, artifact_id, find)
     if diagram_path is None:
@@ -77,9 +86,10 @@ def patch_diagram_layout(
     raw = parsed.frontmatter.get(LAYOUT_KEY)
     stored = read_layout(raw) if isinstance(raw, Mapping) and raw else Layout()
     base = stored if not stored.states_nothing() else first_layout(parsed.puml_body, parsed.frontmatter)
-    block = layout_as_written(patched(base, read_layout_patch(patch), stored=stored))
+    stated = patch(base, stored) if callable(patch) else patch
+    block = layout_as_written(patched(base, read_layout_patch(stated), stored=stored))
     write = edit_diagram(
         assert_write_root=assert_write_root, repo_root=repo_root, verifier=verifier,
         clear_repo_caches=clear_repo_caches, artifact_id=artifact_id, layout=block, dry_run=dry_run,
     )
-    return LayoutPatchResult(write=write, layout=block)
+    return LayoutPatchResult(write=write, layout=block, patch=stated)

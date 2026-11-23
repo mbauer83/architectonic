@@ -11,7 +11,7 @@ take, so the lab draws exactly what the composer would arrange, as the composer 
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +19,7 @@ from src.application.modeling.diagram_layout_statement import DeclaresElementKin
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, Layout, layout_as_written, read_layout
+from src.domain.diagrams.layout.layout_intents import compiled_patch, read_intents
 from src.domain.diagrams.layout.rendered_picture import (
     DrawnBox,
     DrawnElement,
@@ -180,3 +181,25 @@ def geometry_response(
         **({"layout": stored} if isinstance(stored, dict) and stored else {}),
         **geometry,
     }
+
+
+def drawn_extents(geometry: Mapping[str, object]) -> dict[str, Extent]:
+    """Each element's extent as the geometry read draws it, by its layout key: the sizes a layout entry omits."""
+    found: dict[str, Extent] = {}
+    elements = geometry.get("elements")
+    for element in elements if isinstance(elements, list) else []:
+        key, extent = element.get("key"), element.get("extent")
+        if isinstance(key, str) and isinstance(extent, Mapping):
+            found[key] = Extent(extent["left"], extent["top"], extent["right"], extent["bottom"])
+    return found
+
+
+def intents_patch(
+    raw: object, parsed: ParsedDiagram, artifact_id: str, root: Path, ontology: DeclaresElementKinds,
+) -> Callable[[Layout, Layout], Mapping[str, object]]:
+    """The patch function stating *raw* intents for this diagram, from the base and stored layouts the
+    layout write chooses (`diagram_layout_patch`). Refuses malformed intents before anything is drawn."""
+    intents = read_intents(raw)
+    drawn = drawn_extents(stored_geometry(parsed, artifact_id, root, ontology))
+    return lambda base, stored: compiled_patch(intents, base=base, stored=stored, drawn=drawn)
+

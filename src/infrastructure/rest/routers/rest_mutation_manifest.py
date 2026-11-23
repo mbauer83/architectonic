@@ -40,6 +40,7 @@ _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "connections_delete_connection",
     "connections_update_connection",
     "connections_update_connection_associations",
+    "diagrams_arrange_diagram_layout",
     "diagrams_create_diagram",
     "diagrams_delete_diagram",
     "diagrams_patch_diagram_layout",

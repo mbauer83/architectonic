@@ -41,6 +41,8 @@ def document() -> dict[str, Any]:
 _ACTION_SEGMENTS: dict[str, frozenset[str]] = {
     "allocate": frozenset({"POST"}),
     "archive": frozenset({"POST"}),
+    # Applies layout intents (align, distribute, straighten, return to automatic) to a diagram.
+    "arrange": frozenset({"POST"}),
     "cleanup-broken-refs": frozenset({"POST"}),
     "execute": frozenset({"POST"}),
     "execute-diagram": frozenset({"POST"}),

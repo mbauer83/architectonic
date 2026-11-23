@@ -62,3 +62,35 @@ class DiagramLayoutContract(NullsOmitted):
     boxes: dict[str, LayoutPlacedContract] | None = None
     relations: dict[str, LayoutRouteContract] | None = None
     z: dict[str, int] | None = None
+
+
+class PlacedChangeContract(NullsOmitted):
+    """One element or box entry a patch changes: what it becomes (omitted: removed) and what the stored
+    layout held for it (omitted: absent)."""
+
+    value: LayoutPlacedContract | None = None
+    based_on: LayoutPlacedContract | None = None
+
+
+class RouteChangeContract(NullsOmitted):
+    """One relation entry a patch changes, as `PlacedChangeContract` states an element's."""
+
+    value: LayoutRouteContract | None = None
+    based_on: LayoutRouteContract | None = None
+
+
+class StackingChangeContract(NullsOmitted):
+    """One stacking entry a patch changes, as `PlacedChangeContract` states an element's."""
+
+    value: int | None = None
+    based_on: int | None = None
+
+
+class DiagramLayoutPatchContract(NullsOmitted):
+    """A layout patch by section and key, as the layout block keys them (`DiagramLayoutContract`)."""
+
+    elements: dict[str, PlacedChangeContract] | None = None
+    boxes: dict[str, PlacedChangeContract] | None = None
+    relations: dict[str, RouteChangeContract] | None = None
+    z: dict[str, StackingChangeContract] | None = None
+
