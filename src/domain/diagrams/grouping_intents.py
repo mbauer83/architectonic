@@ -92,21 +92,17 @@ class _Found:
 
 
 def _find(groupings: list[object], grouping_id: str) -> _Found:
-    def search(level: list[object], parent: dict[str, object] | None) -> _Found | None:
-        for entry in level:
-            if not isinstance(entry, dict):
-                continue
-            if entry.get(GROUPING_ID_KEY) == grouping_id:
-                return _Found(entry, parent, level)
-            nested = entry.get(GROUPING_SUBGROUPS_KEY)
-            if isinstance(nested, list) and (found := search(nested, entry)) is not None:
-                return found
-        return None
-
-    found = search(groupings, None)
-    if found is None:
-        raise MalformedGroupings(f"This diagram has no grouping '{grouping_id}'.")
-    return found
+    """The grouping *grouping_id*, the grouping around it, and the list it sits in — found by the one walk
+    of a groupings tree (`walk_groupings`)."""
+    parents: dict[tuple[int, ...], dict[str, object]] = {}
+    for trail, entry in walk_groupings(groupings):
+        parents[trail] = entry
+        if entry.get(GROUPING_ID_KEY) == grouping_id:
+            parent = parents.get(trail[: len(trail) - 1])
+            siblings = parent.get(GROUPING_SUBGROUPS_KEY) if parent is not None else groupings
+            assert isinstance(siblings, list)
+            return _Found(entry, parent, siblings)
+    raise MalformedGroupings(f"This diagram has no grouping '{grouping_id}'.")
 
 
 def _label(entry: Mapping[str, object]) -> str:
@@ -178,7 +174,9 @@ def _without_emptied(groupings: list[object], emptied: set[str]) -> tuple[list[o
 def _enclosing(groupings: object, ids: set[str]) -> frozenset[str]:
     """*ids* with the id of every grouping around one of them."""
     by_trail = {trail: str(entry.get(GROUPING_ID_KEY, "")) for trail, entry in walk_groupings(groupings)}
-    parent_of = {grouping_id: by_trail[trail[:-1]] for trail, grouping_id in by_trail.items() if len(trail) > 1}
+    parent_of = {
+        grouping_id: by_trail[trail[: len(trail) - 1]] for trail, grouping_id in by_trail.items() if len(trail) > 1
+    }
     found = set(ids)
     for grouping_id in ids:
         while (grouping_id := parent_of.get(grouping_id, "")) and grouping_id not in found:

@@ -26,7 +26,7 @@ from src.domain.diagrams.layout.layout_checks import DiagramIdentities
 from src.domain.diagrams.layout.layout_intents import patch_between
 
 from .diagram_edit import edit_diagram
-from .diagram_layout_patch import FirstLayout, LayoutPatchResult, matched_to, stored_diagram, stored_layout
+from .diagram_layout_patch import FirstLayout, LayoutPatchResult, arranged_by, matched_to, stored_diagram
 from .diagram_membership import RenderedMembership, rendered_membership
 
 #: *layout* matched to the picture of a body the frontmatter states; answers the body as drawn too.
@@ -53,14 +53,11 @@ def arrange_diagram(
     """
     parsed = stored_diagram(repo_root, verifier, artifact_id)
     frontmatter = parsed.frontmatter
-    stored = stored_layout(frontmatter)
-    arranged_by = stored if not stored.states_nothing() or not arranges(intents) else first_layout(
-        parsed.puml_body, frontmatter
-    )
+    stored, base = arranged_by(parsed, first_layout, taking_over=arranges(intents))
     groupings = frontmatter.get("authored-groupings")
     result = arranged(
         intents, groupings=groupings if isinstance(groupings, list) else [],
-        diagram_id=stable_id(str(frontmatter.get("artifact-id", artifact_id))), layout=arranged_by, drawn=drawn,
+        diagram_id=stable_id(str(frontmatter.get("artifact-id", artifact_id))), layout=base, drawn=drawn,
     )
     layout, membership, source = result.layout, None, None
     if result.groupings is not None:
@@ -87,7 +84,7 @@ def arrange_diagram(
         authored_groupings=membership.authored_groupings if membership else None, layout=block, dry_run=dry_run,
     )
     return LayoutPatchResult(
-        write, block, patch_between(arranged_by, layout, stored=stored),
+        write, block, patch_between(base, layout, stored=stored),
         membership.authored_groupings if membership else None,
     )
 

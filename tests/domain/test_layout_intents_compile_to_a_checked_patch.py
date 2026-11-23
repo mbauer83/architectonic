@@ -4,15 +4,23 @@ from __future__ import annotations
 
 import pytest
 
-from src.domain.diagrams.layout.arrange_intents import read_intents
+from src.domain.diagrams.layout.arrange_intents import ArrangeIntent, arranged, read_intents
 from src.domain.diagrams.layout.geometry import Extent
 from src.domain.diagrams.layout.layout_block import Layout, MalformedLayout, read_layout
-from src.domain.diagrams.layout.layout_intents import compiled_patch
+from src.domain.diagrams.layout.layout_intents import patch_between
 from src.domain.diagrams.layout.layout_patch import LayoutConflict, patched, read_layout_patch
 
 A, B, C = "APP@1712870400.aaaaaa", "APP@1712870401.bbbbbb", "APP@1712870402.cccccc"
 LINE = "APP@1712870400.aaaaaa---APP@1712870401.bbbbbb@@serving"
 DRAWN = {A: Extent(0, 0, 100, 40), B: Extent(0, 0, 60, 40), C: Extent(0, 0, 80, 40)}
+
+
+def compiled_patch(
+    intents: tuple[ArrangeIntent, ...], *, base: Layout, stored: Layout, drawn: dict[str, Extent],
+) -> dict[str, dict[str, object]]:
+    """The patch *intents* compile to over *base*, as the arrange write states it."""
+    result = arranged(intents, groupings=[], diagram_id="ADG@1712870400.dddddd", layout=base, drawn=drawn)
+    return patch_between(base, result.layout, stored=stored)
 
 
 def _stored() -> Layout:

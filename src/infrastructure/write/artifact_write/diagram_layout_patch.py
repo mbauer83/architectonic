@@ -90,10 +90,17 @@ def stored_diagram(repo_root: Path, verifier: ArtifactVerifier, artifact_id: str
     return parse_diagram_file(diagram_path)
 
 
-def stored_layout(frontmatter: Mapping[str, object]) -> Layout:
-    """The layout a diagram's frontmatter stores; an empty one where it stores none."""
-    raw = frontmatter.get(LAYOUT_KEY)
-    return read_layout(raw) if isinstance(raw, Mapping) and raw else Layout()
+def arranged_by(parsed: ParsedDiagram, first_layout: FirstLayout, *, taking_over: bool = True) -> tuple[Layout, Layout]:
+    """The layout *parsed* stores (empty where none), and the one a change to it applies to: the stored
+    one, or — where it stores none and the change states geometry (*taking_over*) — its first layout.
+
+    Refuses, as `MalformedLayout`, a stored block that cannot be read: a write must not build on it.
+    """
+    raw = parsed.frontmatter.get(LAYOUT_KEY)
+    stored = read_layout(raw) if isinstance(raw, Mapping) and raw else Layout()
+    if stored.states_nothing() and taking_over:
+        return stored, first_layout(parsed.puml_body, parsed.frontmatter)
+    return stored, stored
 
 
 def patch_diagram_layout(
@@ -112,8 +119,7 @@ def patch_diagram_layout(
     Raises ValueError for a refused patch.
     """
     parsed = stored_diagram(repo_root, verifier, artifact_id)
-    stored = stored_layout(parsed.frontmatter)
-    base = stored if not stored.states_nothing() else first_layout(parsed.puml_body, parsed.frontmatter)
+    stored, base = arranged_by(parsed, first_layout)
     block = layout_as_written(patched(base, read_layout_patch(patch), stored=stored))
     write = edit_diagram(
         assert_write_root=assert_write_root, repo_root=repo_root, verifier=verifier,

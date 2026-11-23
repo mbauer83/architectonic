@@ -118,11 +118,6 @@ def _regroups(intent: ArrangeIntent) -> TypeIs[GroupingIntent]:
     return isinstance(intent, Nest | Unnest | CreateGrouping | DeleteGrouping)
 
 
-def regroups(intents: Sequence[ArrangeIntent]) -> bool:
-    """Whether any of *intents* changes the diagram's groupings."""
-    return any(map(_regroups, intents))
-
-
 def arranges(intents: Sequence[ArrangeIntent]) -> bool:
     """Whether any of *intents* states geometry — which a diagram PlantUML arranges is taken over for."""
     return not all(map(_regroups, intents))

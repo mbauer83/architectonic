@@ -153,19 +153,6 @@ def applied(intent: Intent, layout: Layout, drawn: Mapping[str, Extent]) -> Layo
             return _returned(layout, intent)
 
 
-def compiled_patch(
-    intents: Sequence[Intent], *, base: Layout, stored: Layout, drawn: Mapping[str, Extent],
-) -> dict[str, dict[str, object]]:
-    """The patch stating *intents* applied to *base*, each entry checked against *stored*.
-
-    *drawn* is each element's extent as drawn, for the sizes a layout entry does not state.
-    """
-    result = base
-    for intent in intents:
-        result = applied(intent, result, drawn)
-    return patch_between(base, result, stored=stored)
-
-
 def patch_between(before: Layout, after: Layout, *, stored: Layout) -> dict[str, dict[str, object]]:
     """The patch taking *before* to *after*: each changed entry with what it becomes and, as ``based_on``,
     what *stored* holds for it."""

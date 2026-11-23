@@ -12,7 +12,7 @@ import pytest
 
 from src.domain.diagrams.authored_groupings import MalformedGroupings, check_groupings, grouping_ids
 from src.domain.diagrams.grouping_intents import CreateGrouping, DeleteGrouping, Nest, Unnest, regrouped
-from src.domain.diagrams.layout.arrange_intents import arranged, arranges, read_intents, regroups
+from src.domain.diagrams.layout.arrange_intents import arranged, arranges, read_intents
 from src.domain.diagrams.layout.layout_block import Layout, MalformedLayout, read_layout
 
 A, B, C = "APP@1712870400.aaaaaa", "APP@1712870401.bbbbbb", "APP@1712870402.cccccc"
@@ -118,7 +118,7 @@ def test_mixed_intents_apply_in_order_and_drop_the_box_entries_that_no_longer_fi
         {"intent": "nest", "keys": [C], "grouping": "g-outer1"},
         {"intent": "return_to_automatic", "keys": [B]},
     ])
-    assert regroups(intents) and arranges(intents)
+    assert arranges(intents)
     result = arranged(intents, groupings=_groupings(), diagram_id=DIAGRAM, layout=layout, drawn={})
     assert result.groupings is not None and _members(result.groupings, "g-outer1") == [A, C]
     assert set(result.layout.boxes) == {"g-inner1"} and not result.layout.z
@@ -127,7 +127,7 @@ def test_mixed_intents_apply_in_order_and_drop_the_box_entries_that_no_longer_fi
 
 def test_grouping_intents_alone_state_no_geometry() -> None:
     intents = read_intents([{"intent": "delete_grouping", "grouping": "g-inner1"}])
-    assert regroups(intents) and not arranges(intents)
+    assert not arranges(intents)
     assert arranged(intents, groupings=_groupings(), diagram_id=DIAGRAM, layout=Layout(), drawn={}).layout == Layout()
 
 
