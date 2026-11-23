@@ -3333,6 +3333,78 @@
    }
   },
   {
+   "name": "a decorated end attaches on the exposed portion of a side",
+   "scene": {
+    "elements": {
+     "service": {
+      "left": 620,
+      "top": 201,
+      "right": 839,
+      "bottom": 253
+     },
+     "process": {
+      "left": 693,
+      "top": 76,
+      "right": 839,
+      "bottom": 128
+     }
+    },
+    "boxes": {
+     "requirements": {
+      "left": 130,
+      "top": 86,
+      "right": 813,
+      "bottom": 662
+     },
+     "objects": {
+      "left": 864,
+      "top": 169,
+      "right": 1243,
+      "bottom": 394
+     }
+    },
+    "text": {},
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "promotion",
+     "source": "process",
+     "target": "service",
+     "decorated": [
+      false,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "promotion": {
+      "source_port": {
+       "side": "bottom",
+       "at": 0.8904
+      },
+      "target_port": {
+       "side": "top",
+       "at": 0.9269
+      },
+      "course": [
+       [
+        823,
+        128
+       ],
+       [
+        823,
+        201
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
+  },
+  {
    "name": "a walled-in element is unroutable",
    "scene": {
     "elements": {

@@ -31,3 +31,22 @@ def test_neighbours_new_ruled_box_and_orphaned_stacking():
     assert close.elements["new"] != original.elements["left"]
     place = close.elements["new"]
     assert Extent(place.x, place.y, place.x + 80, place.y + 40).overlap_with(area) is None
+
+
+def test_a_new_member_cannot_close_a_retained_relations_only_stated_port():
+    from src.domain.diagrams.layout.layout_block import Port, Route, Side
+    from src.domain.diagrams.layout.rendered_picture import DrawnRelation, EndMark, MarkShape
+    from src.infrastructure.rendering.layout.arrangement import arrange
+
+    shapes = {k: DrawnElement(k, Extent(0, top, 80, top + 40), None)
+              for k, top in (("process", -240), ("service", 0), ("new", -70))}
+    r = DrawnRelation(("process", "service"), "association", (), (), second_marks=(EndMark(MarkShape.POLYGON, (), True),))
+    picture = RenderedPicture(Extent(-100, -300, 300, 200), shapes, {}, (r,))
+    route = Route(target=Port(Side.TOP, 0.5))
+    key = "process---service@@association"
+    layout = Layout(elements={"process": Placed(0, -240), "service": Placed(0, 0)}, relations={key: route})
+    diagram = LaidOutDiagram(layout, {k: k for k in shapes}, relations={key: r.ends})
+    placed = with_new_members(picture, diagram, frozenset({"new"}))
+    assert placed.elements["process"] == layout.elements["process"]
+    assert placed.elements["service"] == layout.elements["service"]
+    assert not arrange(picture, replace(diagram, layout=placed)).unroutable

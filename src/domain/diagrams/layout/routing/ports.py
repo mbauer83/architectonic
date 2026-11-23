@@ -20,6 +20,8 @@ from src.domain.diagrams.layout.attachment import fraction
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import Port, Side
 from src.domain.diagrams.layout.orthogonal import half_up, leaves_level
+from src.domain.diagrams.layout.routing.graph import Graph
+from src.domain.diagrams.layout.routing.scene import SIDES
 
 #: The direction index (see `search.DIRECTIONS`) a route travels leaving each side.
 OUTWARD_INDEX: Mapping[Side, int] = {Side.RIGHT: 0, Side.LEFT: 1, Side.BOTTOM: 2, Side.TOP: 3}
@@ -73,6 +75,20 @@ def spread(ends: Sequence[EndOnSide]) -> dict[tuple[str, int], float]:
         for position, end in enumerate(ordered, start=1):
             spread_at[(end.connector, end.which)] = position / (len(ordered) + 1)
     return spread_at
+
+
+def visible_ports(extent: Extent, stated: Port | None, graph: Graph) -> list[tuple[Side, float]]:
+    """After a midpoint search fails, try ports on the obstacle-offset lines of the same graph."""
+    if stated is not None:
+        return [(stated.side, stated.at)]
+    ports: list[tuple[Side, float]] = []
+    for side in SIDES:
+        level = leaves_level(side)
+        low, high = (extent.top, extent.bottom) if level else (extent.left, extent.right)
+        lines = graph.level.lines if level else graph.upright.lines
+        ports.append((side, 0.5))
+        ports.extend((side, (line - low) / (high - low)) for line in lines if low < line < high)
+    return ports
 
 
 def in_line(source: Extent, target: Extent, sides: tuple[Side, Side]) -> tuple[float, float] | None:

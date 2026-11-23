@@ -26,7 +26,7 @@ from src.domain.diagrams.layout.layout_block import Port, Route, Side
 from src.domain.diagrams.layout.orthogonal import STUB, half_up
 from src.domain.diagrams.layout.routing.lines import Lines, Stubs
 from src.domain.diagrams.layout.routing.nudging import nudged
-from src.domain.diagrams.layout.routing.ports import OUTWARD_INDEX, Stub, facing_side, in_line, stub_of
+from src.domain.diagrams.layout.routing.ports import OUTWARD_INDEX, Stub, facing_side, in_line, stub_of, visible_ports
 from src.domain.diagrams.layout.routing.scene import (
     IDEAL_SEPARATION,
     SIDES,
@@ -141,6 +141,14 @@ class _Routing:
             if found is not None:
                 return found
         return None
+
+    def at_visible_ports(self, connector: Connector) -> RoutedConnector | None:
+        ends = (connector.source, connector.target)
+        return self._searched_in(
+            connector, visible_ports(self.scene.extent_of(ends[0]), connector.source_port, self.visibility.graph),
+            visible_ports(self.scene.extent_of(ends[1]), connector.target_port, self.visibility.graph),
+            self.visibility.passage(ends), lining_up=False, stubs=None,
+        )
 
     def _searched_in(
         self, connector: Connector, sources: Sequence[tuple[Side, float]], targets: Sequence[tuple[Side, float]],
@@ -291,7 +299,7 @@ def _routed(
                     _sides_of(connector.target_port, again.target_port.side),
                 )
                 if again is not None else None
-            ) or routing.searched(connector, *sides)
+            ) or routing.searched(connector, *sides) or routing.at_visible_ports(connector)
             if found is None:
                 unroutable.append(connector.key)
             else:
