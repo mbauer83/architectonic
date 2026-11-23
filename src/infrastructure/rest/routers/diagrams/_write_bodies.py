@@ -7,6 +7,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 from src.infrastructure.rest.contracts.artifact_home import FiledOnCreate, Rehomeable
+from src.infrastructure.write.artifact_write.canvas_commands import CanvasCommand
 
 
 class _Body(BaseModel):
@@ -54,6 +55,7 @@ class CreateDiagramGuiBody(DiagramComposition, FiledOnCreate):
 
 
 class EditDiagramGuiBody(DiagramComposition, _Body, Rehomeable):
+    commands: list[CanvasCommand] = []
     #: The whole layout block to store. Absent keeps the diagram's own; an empty object removes it
     #: and returns the diagram to PlantUML's arrangement with nothing else changed.
     layout: dict[str, Any] | None = None

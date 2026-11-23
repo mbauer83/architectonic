@@ -6,8 +6,7 @@ from typing import Literal
 
 from src.application.artifacts.parsing import parse_diagram, parse_document, parse_entity, parse_outgoing_file
 from src.application.modeling.enterprise_reference import enterprise_target
-from src.application.ports import ArtifactStorePort, Candidate
-from src.application.verification.artifact_verifier_registry import ArtifactRegistry
+from src.application.ports import Candidate, ReadableArtifactStore
 from src.application.verification.artifact_verifier_types import entity_id_from_path
 from src.config.repo_paths import MODEL
 from src.domain.artifact_id import stable_conn_id, stable_id
@@ -21,15 +20,15 @@ from src.domain.ontology_representation.artifact_types import (
     ScratchpadRecord,
 )
 from src.domain.repository.artifact_location import artifact_kind_at, is_verified_kind, model_file_kind
-from src.infrastructure.mcp.artifact_mcp.bulk.candidate_lists import CandidateListMixin
+from src.infrastructure.write.artifact_write.staged_lists import CandidateListMixin
 from src.infrastructure.write.artifact_write.staged_workspace import stage_live_path
 
 
-class CandidateStore(CandidateListMixin):
+class StagedStore(CandidateListMixin):
     def __init__(
         self,
         *,
-        live: ArtifactStorePort,
+        live: ReadableArtifactStore,
         live_root: Path,
         staged_root: Path,
         touched_paths: set[Path],
@@ -176,6 +175,11 @@ class CandidateStore(CandidateListMixin):
     def get_entity(self, artifact_id: str) -> EntityRecord | None:
         if (staged := self._entities.get(artifact_id)) is not None:
             return staged
+        # A rename changes the slug. Diagram membership and connection endpoints may still carry
+        # the previous spelling until their owning files are rewritten.
+        for entity in self._entities.values():
+            if stable_id(entity.artifact_id) == stable_id(artifact_id):
+                return entity
         if artifact_id in self._deleted_entities:
             return None
         return self._map_entity(self._live.get_entity(artifact_id))
@@ -365,24 +369,6 @@ class CandidateStore(CandidateListMixin):
 
     def find_neighbors(self, entity_id: str, *, max_hops: int = 1, conn_type: str | None = None):
         return self._live.find_neighbors(entity_id, max_hops=max_hops, conn_type=conn_type)
-
-
-def candidate_registry(*, live_root: Path, staged_root: Path, touched_paths: set[Path]) -> ArtifactRegistry:
-    return ArtifactRegistry(candidate_store(live_root=live_root, staged_root=staged_root, touched_paths=touched_paths))
-
-
-def candidate_store(*, live_root: Path, staged_root: Path, touched_paths: set[Path]) -> CandidateStore:
-    from src.infrastructure.app_bootstrap import process_runtime_catalogs
-    from src.infrastructure.artifact_index import mutable_artifact_index
-
-    domain_names = process_runtime_catalogs().ontology.known_domain_names()
-    return CandidateStore(
-        live=mutable_artifact_index(live_root),
-        live_root=live_root,
-        staged_root=staged_root,
-        touched_paths=touched_paths,
-        domain_names=domain_names,
-    )
 
 
 def _matches_connection(

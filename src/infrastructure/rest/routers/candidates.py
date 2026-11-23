@@ -4,8 +4,9 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.candidates.repository import CandidateConflict
 from src.infrastructure.candidates.service import CandidateService
 from src.infrastructure.rest.contracts.candidates import (
@@ -20,6 +21,7 @@ from src.infrastructure.rest.contracts.candidates import (
     CandidateStanding,
     IntegrationCheck,
 )
+from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_CHANGES, TAG_DOCUMENTS, WRITE_RESPONSES
 
@@ -111,9 +113,10 @@ def changes_compare_candidate(
     base: str = Query("model", description="Model, naive or a candidate id."),
     naive: str | None = Query(None, description="Naive candidate id when base is naive."),
     diagram: str | None = Query(None, description="Stored diagram for canvas geometry."),
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     with _refusals():
-        return _service().compare(artifact_id, base, naive, diagram)
+        return _service().compare(artifact_id, base, naive, diagram, catalogs.ontology)
 
 
 @router.get(

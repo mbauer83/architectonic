@@ -1,0 +1,51 @@
+import { expect, test } from '@playwright/test'
+
+const diagram = 'ARC@1783185029.4Ayzz3.one-enterprise-repository-many-engagements'
+
+test('adding a neighbour previews its drawing and can be undone before saving', async ({ page }) => {
+  await page.goto(`/diagrams/${encodeURIComponent(diagram)}`)
+  await page.getByTestId('diagram-edit').click()
+  const picker = page.getByRole('region', { name: 'Add from model' })
+  const member = picker.locator('button[draggable=true]').first()
+  const name = (await member.innerText()).replace('⠿', '').trim()
+  const preview = page.waitForResponse(response => response.url().endsWith('/layout/geometry/preview'))
+  await member.focus()
+  await member.press('Enter')
+  expect((await preview).ok()).toBe(true)
+  await page.getByTestId('edit-undo').click()
+  await expect(page.getByTestId('change-count')).toHaveText('No changes')
+  await page.getByTestId('edit-redo').click()
+  await page.getByTestId('change-count').click()
+  await expect(page.getByTestId('change-list')).toContainText(name)
+})
+
+
+test('creating and connecting a model element requires confirmation and can be discarded', async ({ page }) => {
+  await page.goto(`/diagrams/${encodeURIComponent(diagram)}`)
+  await page.getByTestId('diagram-edit').click()
+  const canvas = page.getByTestId('layout-lab-canvas')
+  await canvas.click({button: 'right', position: {x: 3, y: 3}})
+  const create = page.getByRole('dialog', {name: 'create'})
+  await create.getByRole('searchbox').fill('role')
+  await create.getByRole('button', {name: 'role', exact: true}).click()
+  const name = 'Canvas preview test'
+  await create.getByLabel('Name', {exact: true}).fill(name)
+  await create.getByRole('button', {name: 'Add to diagram'}).click()
+  await expect(create).toHaveCount(0)
+  const added = canvas.locator('g.lab-element').filter({hasText: name})
+  await added.locator('.lab-grip').click({button: 'right'})
+  await page.getByRole('button', {name: 'Connect to…'}).click()
+  await page.getByRole('dialog', {name: 'target'}).getByRole('button').nth(1).click()
+  const relation = page.getByRole('dialog', {name:'relation'})
+  await expect(relation.locator('option').first()).toBeAttached()
+  await relation.getByLabel('Source cardinality').fill('1')
+  await relation.getByLabel('Diagram label').fill('supports')
+  await relation.getByRole('button', {name:'Keep relationship'}).click()
+  await expect(relation).toHaveCount(0)
+  await page.getByTestId('edit-save').click()
+  await expect(page.getByTestId('change-list')).toContainText(name)
+  await expect(page.getByRole('button', {name:'Confirm and save'})).toBeVisible()
+  await page.getByTestId('edit-discard').click()
+  await expect(added).toHaveCount(0)
+  await expect(page.getByTestId('change-count')).toHaveText('No changes')
+})

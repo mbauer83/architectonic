@@ -48,7 +48,7 @@ export function useDiagramEditMode(
   onLeft: () => void,
   toast: Toast,
 ) {
-  const editing = useDiagramEditing(svc, () => diagramId.value, parts.membership)
+  const editing = useDiagramEditing(svc, () => diagramId.value, parts.membership, onLeft)
   const active = ref(false)
   const leaving = ref(false)
   const spaceHeld = ref(false)

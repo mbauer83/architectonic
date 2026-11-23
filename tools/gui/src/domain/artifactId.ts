@@ -12,7 +12,7 @@
  * nothing reports it — the join simply yields fewer connections than it should.
  */
 
-const SLUG_TAIL = /^([A-Za-z]{2,6}@\d+\.[A-Za-z0-9-]+)\.[A-Za-z0-9][A-Za-z0-9-]*$/
+const SLUG_TAIL = /^([A-Za-z]{2,6}@\d+\.[A-Za-z0-9_-]+)\.[A-Za-z0-9][A-Za-z0-9-]*$/
 
 /** The rename-stable stem of an entity id; anything not entity-shaped is returned as-is. */
 export const stableEntityId = (id: string): string => SLUG_TAIL.exec(id)?.[1] ?? id

@@ -72,6 +72,15 @@ def _is_layout_only(arrow: str) -> bool:
     return "[hidden]" in arrow
 
 
+def without_layout_links(body: str) -> str:
+    """Drop only hidden positioning arrows, preserving visible declarations and their labels."""
+    def keep(line: str) -> bool:
+        match = _BARE_ARROW_RE.fullmatch(line.rstrip("\r\n"))
+        return match is None or not _is_layout_only(match["arrow"])
+
+    return "".join(line for line in body.splitlines(keepends=True) if keep(line))
+
+
 def _containment_relations(content: str) -> list[DeclaredRelation]:
     """Relations the body states by nesting one element inside another.
 

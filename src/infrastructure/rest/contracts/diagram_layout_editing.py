@@ -2,7 +2,7 @@
 
 The geometry is PlantUML's own picture of the diagram, read by the one reader of its structure, with
 every shape and line named as a layout names it and carried with PlantUML's own drawing of it, so an
-editor draws exactly what the composer places (`routers/diagrams/_layout_geometry`).
+editor draws exactly what the composer places (`rendering/layout/diagram_geometry`).
 """
 
 from __future__ import annotations

@@ -1962,6 +1962,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diagrams/{artifact_id}/layout/geometry/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Draw an unsaved diagram composition with layout keys */
+        post: operations["diagrams_preview_diagram_layout_geometry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diagrams/{artifact_id}/layout/preview": {
         parameters: {
             query?: never;
@@ -5542,6 +5559,12 @@ export interface components {
             entity_type: string;
             /** Name Hint */
             name_hint?: string | null;
+            /**
+             * Scope
+             * @default diagram
+             * @enum {string}
+             */
+            scope: "diagram" | "model";
         };
         /** Body_viewpoints_execute_viewpoint */
         Body_viewpoints_execute_viewpoint: {
@@ -5755,6 +5778,7 @@ export interface components {
             /** State */
             state: string;
         };
+        CanvasCommand: components["schemas"]["CreateElement"] | components["schemas"]["RenameElement"] | components["schemas"]["DeleteElement"] | components["schemas"]["ConnectElements"];
         /** ChangedField */
         ChangedField: {
             after: components["schemas"]["JsonValue"];
@@ -6027,6 +6051,31 @@ export interface components {
              * @enum {string}
              */
             strategy: "accept_engagement" | "accept_enterprise" | "merge";
+        };
+        /** ConnectElements */
+        ConnectElements: {
+            /** Artifact Id */
+            artifact_id: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Op
+             * @enum {string}
+             */
+            op: "model.relation.create" | "model.relation.edit";
+            /**
+             * Src Multiplicity
+             * @default
+             */
+            src_multiplicity: string;
+            /**
+             * Tgt Multiplicity
+             * @default
+             */
+            tgt_multiplicity: string;
         };
         /** ConnectionAssociateBody */
         ConnectionAssociateBody: {
@@ -6439,6 +6488,36 @@ export interface components {
              */
             version: string;
         };
+        /** CreateElement */
+        CreateElement: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Artifact Type */
+            artifact_type?: string | null;
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            };
+            /** Group */
+            group: string;
+            /** Name */
+            name: string;
+            /**
+             * Op
+             * @constant
+             */
+            op: "model.element.create";
+            /**
+             * Specializations
+             * @default []
+             */
+            specializations: string[];
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
+        };
         /** CreateEntityBody */
         CreateEntityBody: {
             /** Artifact Type */
@@ -6784,6 +6863,16 @@ export interface components {
             type_id: string;
             /** Usages */
             usages: components["schemas"]["DatatypeTypeUsage"][];
+        };
+        /** DeleteElement */
+        DeleteElement: {
+            /** Artifact Id */
+            artifact_id: string;
+            /**
+             * Op
+             * @constant
+             */
+            op: "model.element.delete";
         };
         /**
          * DenialDetails
@@ -8217,6 +8306,11 @@ export interface components {
             authored_groupings?: {
                 [key: string]: unknown;
             }[] | null;
+            /**
+             * Commands
+             * @default []
+             */
+            commands: components["schemas"]["CanvasCommand"][];
             /** Connection Ids */
             connection_ids: string[];
             /** Diagram Entities */
@@ -9368,6 +9462,33 @@ export interface components {
             outside_label?: components["schemas"]["ExtentContract"];
             /** Words */
             words: components["schemas"]["MeasuredWordContract"][];
+        };
+        /** GeometryPreviewBody */
+        GeometryPreviewBody: {
+            /** Arrangement */
+            arrangement?: {
+                [key: string]: unknown;
+            } | null;
+            /** Authored Groupings */
+            authored_groupings?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Connection Ids */
+            connection_ids: string[];
+            /** Diagram Entities */
+            diagram_entities?: {
+                [key: string]: unknown;
+            } | null;
+            /** Diagram Type */
+            diagram_type: string;
+            /** Entity Ids */
+            entity_ids: string[];
+            /** Name */
+            name: string;
+            /** Proposed Elements */
+            proposed_elements?: components["schemas"]["ProposedElement"][];
+            /** Proposed Relations */
+            proposed_relations?: components["schemas"]["ProposedRelation"][];
         };
         /** GeometryRelationContract */
         GeometryRelationContract: {
@@ -11656,6 +11777,46 @@ export interface components {
             /** Target Kind */
             target_kind: string;
         };
+        /** ProposedElement */
+        ProposedElement: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            };
+            /** Name */
+            name: string;
+            /**
+             * Specializations
+             * @default []
+             */
+            specializations: string[];
+        };
+        /** ProposedRelation */
+        ProposedRelation: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Src Multiplicity
+             * @default
+             */
+            src_multiplicity: string;
+            /**
+             * Tgt Multiplicity
+             * @default
+             */
+            tgt_multiplicity: string;
+        };
         /**
          * ProposedStanding
          * @description The baseline plus local changes that have not been accepted upstream.
@@ -11950,6 +12111,18 @@ export interface components {
             op: "remove";
             /** Row Id */
             row_id: string;
+        };
+        /** RenameElement */
+        RenameElement: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Name */
+            name: string;
+            /**
+             * Op
+             * @constant
+             */
+            op: "model.element.rename";
         };
         /** RenameGroupBody */
         RenameGroupBody: {
@@ -20342,6 +20515,104 @@ export interface operations {
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    diagrams_preview_diagram_layout_geometry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GeometryPreviewBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagramLayoutGeometryResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };

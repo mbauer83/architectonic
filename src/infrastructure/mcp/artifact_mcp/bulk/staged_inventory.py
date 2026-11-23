@@ -15,7 +15,7 @@ class CandidateInventoryPort:
         self._changed_paths = changed_paths
 
     def build(self, repo_path: Path, *, include_diagrams: bool) -> FileInventory:
-        return candidate_inventory(
+        return staged_inventory(
             registry=self._registry,
             changed_paths=self._changed_paths,
             include_diagrams=include_diagrams,
@@ -33,7 +33,7 @@ class CandidateInventoryPort:
         ]
 
 
-def candidate_inventory(
+def staged_inventory(
     *,
     registry: ArtifactRegistry,
     changed_paths: set[Path],

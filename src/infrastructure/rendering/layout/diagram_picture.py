@@ -11,6 +11,7 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds, joined_to_its_picture
+from src.application.puml_relation_parsing import without_layout_links
 from src.domain.diagrams.layout.layout_block import Layout
 from src.domain.diagrams.layout.rendered_picture import NotReadable
 from src.infrastructure.rendering.layout.first_layout import first_layout
@@ -29,6 +30,19 @@ def plantuml_svg(puml_body: str, repo_root: Path, diagram_type: str) -> str:
     if svg is None:
         raise NotDrawn(f"PlantUML could not draw the diagram: {'; '.join(warnings)}")
     return svg
+
+
+def measure_composition(body: str, repo_root: Path, diagram_type: str) -> tuple[str, str]:
+    """Return the generated source and the SVG it actually drew, including any necessary rank relaxation.
+
+    Graphviz can crash on nested clusters and return its stack trace as a successful SVG.
+    Only that diagnostic retries, without hidden positioning constraints. Save draws the recovered source.
+    """
+    svg = plantuml_svg(body, repo_root, diagram_type)
+    if 'data-diagram-type="DESCRIPTION"' not in svg and "An error has occurred" in svg and "plantuml.dot." in svg:
+        body = without_layout_links(body)
+        svg = plantuml_svg(body, repo_root, diagram_type)
+    return body, svg
 
 
 def plantuml_drawing(puml_body: str, repo_root: Path, diagram_type: str) -> RenderedDrawing:

@@ -24,6 +24,8 @@ import { useDiagramSvgSelection } from '../composables/useDiagramSvgSelection'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import DiagramDetailHeader from '../components/DiagramDetailHeader.vue'
 import DiagramC4Navigation from '../components/DiagramC4Navigation.vue'
+import CanvasContentEditor from '../components/CanvasContentEditor.vue'
+import DiagramMemberPicker from '../components/DiagramMemberPicker.vue'
 import DiagramEntitySidebar from '../components/DiagramEntitySidebar.vue'
 import FullscreenDock from '../components/FullscreenDock.vue'
 import DiagramSyncPanel from '../components/DiagramSyncPanel.vue'
@@ -249,10 +251,17 @@ const executeDelete = () => {
                 ref="svgContainer"
                 class="svg-wrap"
               >
-                <LayoutLabCanvas
-                  ref="editCanvas"
-                  :session="edit.session"
-                />
+                <CanvasContentEditor
+                  v-if="contextQuery.data.value"
+                  :editing="edit.editing"
+                  :context="contextQuery.data.value"
+                  :selection="editCanvas?.selected"
+                >
+                  <LayoutLabCanvas
+                    ref="editCanvas"
+                    :session="edit.session"
+                  />
+                </CanvasContentEditor>
               </div>
               <div
                 v-else-if="reading.loading.value"
@@ -298,28 +307,36 @@ const executeDelete = () => {
             :is-fullscreen="fullscreen.isFullscreen.value"
             :revealed="selection.hasSelection.value"
           >
-            <DiagramEntitySidebar
-              :entities="diagramEntities"
-              :viewer-extension="selection.viewerExtension.value"
-              :selected-id="selection.selectedId.value"
-              :selected-connection="selection.selectedConnection.value"
-              :selected-sub-part="selection.selectedSubPart.value"
-              :selected-entity-record="selection.selectedEntityRecord.value"
-              :editable-metadata-by-type="editableMetadataByType"
-              :selection-token="selection.selectionToken.value"
-              :entity-query="selection.entityQuery"
-              :edge-label-input="selection.edgeLabelInput.value"
-              :edge-label-error="selection.edgeLabelMutation.errorMessage.value"
-              :metadata-error="selection.metadataMutation.errorMessage.value"
-              @select-entity="selection.selectEntity($event)"
-              @clear-connection="selection.clearConnection()"
-              @clear-sub-part="selection.clearSubPart()"
-              @update:edge-label-input="selection.edgeLabelInput.value = $event"
-              @save-edge-label="selection.saveEdgeLabel()"
-              @sub-part-save="selection.patchEntityMetadata($event)"
-              @entity-meta-save="selection.patchEntityMetadata($event)"
-              @entity-edited="selection.entityEdited()"
-            />
+            <div>
+              <DiagramMemberPicker
+                v-if="editing && contextQuery.data.value"
+                :context="contextQuery.data.value"
+                :busy="edit.editing.loading.value || edit.editing.saving.value"
+                @add="edit.editing.add"
+              />
+              <DiagramEntitySidebar
+                :entities="diagramEntities"
+                :viewer-extension="selection.viewerExtension.value"
+                :selected-id="selection.selectedId.value"
+                :selected-connection="selection.selectedConnection.value"
+                :selected-sub-part="selection.selectedSubPart.value"
+                :selected-entity-record="selection.selectedEntityRecord.value"
+                :editable-metadata-by-type="editableMetadataByType"
+                :selection-token="selection.selectionToken.value"
+                :entity-query="selection.entityQuery"
+                :edge-label-input="selection.edgeLabelInput.value"
+                :edge-label-error="selection.edgeLabelMutation.errorMessage.value"
+                :metadata-error="selection.metadataMutation.errorMessage.value"
+                @select-entity="selection.selectEntity($event)"
+                @clear-connection="selection.clearConnection()"
+                @clear-sub-part="selection.clearSubPart()"
+                @update:edge-label-input="selection.edgeLabelInput.value = $event"
+                @save-edge-label="selection.saveEdgeLabel()"
+                @sub-part-save="selection.patchEntityMetadata($event)"
+                @entity-meta-save="selection.patchEntityMetadata($event)"
+                @entity-edited="selection.entityEdited()"
+              />
+            </div>
           </FullscreenDock>
         </template>
       </DiagramSplitLayout>

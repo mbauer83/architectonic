@@ -171,3 +171,10 @@ class TestThereIsExactlyOneParser:
             assert "declared_relations" in source, f"{module_name} no longer reads the shared parser"
             assert "Rel_(?P" not in source, f"{module_name} regrew a private relation-macro regex"
             assert "_REL_LINE_RE" not in source, f"{module_name} regrew a private relation-arrow regex"
+
+
+def test_relaxing_hidden_ranks_preserves_model_relations_and_label_text():
+    from src.application.puml_relation_parsing import without_layout_links
+
+    kept = 'A --> B : preserves [hidden] in a label\nrectangle "A [hidden]" as A\n'
+    assert without_layout_links("  A -[hidden]down- B\n" + kept) == kept

@@ -20,10 +20,16 @@ import type { RoutingResult } from '../../domain/layout/routing/scene'
 import type { DrawingNode, LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import { pointsOf } from '../../domain/schemas/diagramLayoutGeometry'
 import { withoutElements } from '../../domain/layout/arrangementLayout'
+import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import type { ShapeToDraw } from '../../ports/DiagramLayoutRepository'
 
 /** What a session holds at one moment, and what undo returns to: where shapes are, and whether by hand. */
 export interface ArrangementState {
+  readonly commands?: readonly CanvasCommand[]
+  readonly overlays?: readonly Record<string, unknown>[]
+  readonly picture?: LayoutGeometry
+  readonly addedTypes?: ReadonlyMap<string, string>
+  readonly additions?: ReadonlyMap<string, string>
   readonly arrangement: Arrangement
   /** Arranged by hand: every line routed. Otherwise the picture is PlantUML's, lines and all. */
   readonly byHand: boolean
@@ -140,6 +146,10 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
 
   /** Show *next* at once: lines routed afresh when by hand, PlantUML's when not. */
   const show = (next: ArrangementState) => {
+    if (next.picture && next.picture !== drawnPicture.value) {
+      drawnPicture.value = next.picture
+      reshaped.value = new Map()
+    }
     state.value = next
     if (next.byHand) routeEverything()
     else routes.value = null
@@ -152,7 +162,7 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
     drawnPicture.value = drawn
     history.value = []
     future.value = []
-    show(start ?? { arrangement: drawnArrangement(drawn), byHand: false })
+    show({ ...(start ?? { arrangement: drawnArrangement(drawn), byHand: false }), picture: drawn })
   }
 
   /**

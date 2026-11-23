@@ -113,6 +113,7 @@ REST_MUTATION_MANIFEST: dict[str, MutationIntent] = {
 NON_MUTATING_REST_OPERATIONS: frozenset[str] = frozenset({
     "changes_check_candidates",
     "diagrams_preview_diagram",
+    "diagrams_preview_diagram_layout_geometry",
     "diagrams_preview_diagram_layout_shapes",
     "entities_allocate_identifiers",
     "icons_preview_shown_icons",

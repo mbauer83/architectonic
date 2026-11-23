@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
+from src.domain.diagrams.layout.layout_patch import LayoutConflict
 from src.domain.repository.groups import UNCATEGORIZED
-from src.infrastructure.rendering.diagram_selection import resolve_diagram_selection
 from src.infrastructure.rest.contracts.diagrams import DiagramPreviewResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
@@ -21,11 +19,11 @@ from src.infrastructure.rest.routers._openapi import (
     WRITE_RESPONSES,
     WriteResultResponse,
 )
+from src.infrastructure.rest.routers.diagrams._composition import render_composition
 from src.infrastructure.rest.routers.diagrams._derived_entities import derived_entity_rows
-from src.infrastructure.rest.routers.diagrams._layout_with_membership import layout_to_store
+from src.infrastructure.rest.routers.diagrams._layout_with_membership import source_and_layout_to_store
 from src.infrastructure.rest.routers.diagrams._write_bodies import (
     CreateDiagramGuiBody,
-    DiagramComposition,
     DiagramPreviewBody,
     EditDiagramGuiBody,
     PatchDiagramEntityMetadataBody,
@@ -41,99 +39,6 @@ from src.infrastructure.rest.routers.diagrams._write_responses import (
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 
 router = APIRouter(responses=WRITE_RESPONSES)
-
-def _split_diagram_entities(
-    diagram_entities: dict[str, Any] | None,
-) -> tuple[dict[str, Any] | None, list[dict[str, Any]] | None]:
-    """Separate the transport-only `_connections` key from entity data."""
-    if diagram_entities is None:
-        return None, None
-    conns = diagram_entities.get("_connections")
-    if conns is None:
-        return diagram_entities, None
-    clean = {k: v for k, v in diagram_entities.items() if k != "_connections"}
-    return clean or None, conns if isinstance(conns, list) else None
-
-
-def _extract_conn_bindings(
-    connections: list[dict[str, Any]] | None,
-) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]]]:
-    """Strip `backing_conn_id` from connections; return (clean, binding_dicts)."""
-    if not connections:
-        return connections, []
-    bindings: list[dict[str, Any]] = []
-    clean: list[dict[str, Any]] = []
-    for conn in connections:
-        if not isinstance(conn, dict):
-            clean.append(conn)
-            continue
-        backing_id = conn.get("backing_conn_id")
-        conn_id = conn.get("id")
-        if backing_id and conn_id:
-            bindings.append({
-                "id": f"bind-conn-{conn_id}",
-                "subject": {"kind": "connection", "id": conn_id},
-                "correspondence_kind": "represents",
-                "target": {"connection_id": backing_id},
-            })
-        clean.append({k: v for k, v in conn.items() if k != "backing_conn_id"})
-    return clean or None, bindings
-
-
-@dataclass(frozen=True)
-class _RenderedComposition:
-    """One composition, resolved and rendered — the same way for every surface that shows it."""
-
-    entities: list[Any]
-    connections: list[Any]
-    entity_ids_used: list[str]
-    connection_ids_used: list[str]
-    diagram_entities: dict[str, Any] | None
-    diagram_connections: list[dict[str, Any]] | None
-    conn_bindings: list[dict[str, Any]]
-    puml: str
-
-
-def _render_composition(body: DiagramComposition, *, repo: Any, repo_root: Path) -> _RenderedComposition:
-    """Resolve a composition and render it, once, for preview and for both writes.
-
-    The three surfaces used to assemble this themselves, and drifted twice over: preview never passed
-    `authored_groupings`, so custom boxes were invisible until the write; and preview rendered with
-    connection *bindings* still attached while the writes stripped them first, so the two were not
-    rendering the same input either. A preview is only worth having if it is the write's own picture.
-    """
-    from src.infrastructure.icons.diagram_icons import DiagramIconSource  # noqa: PLC0415
-    from src.infrastructure.icons.library_source import LibraryIconSource  # noqa: PLC0415
-    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
-    from src.infrastructure.write.artifact_write.diagram_body_preparation import with_icons_prepared  # noqa: PLC0415
-
-    entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
-        repo, body.entity_ids, body.connection_ids
-    )
-    de, dc = _split_diagram_entities(body.diagram_entities)
-    try:
-        de = with_icons_prepared(de) if de is not None else None
-    except ValueError as exc:  # an upload the normaliser refuses is the caller's to correct
-        raise rejected_input(str(exc), field="diagram_entities") from exc
-    dc, conn_bindings = _extract_conn_bindings(dc)
-    puml = generate_archimate_puml_body(
-        body.name,
-        entities,
-        connections,
-        diagram_type=body.diagram_type,
-        repo_root=repo_root,
-        diagram_entities=de,
-        diagram_connections=dc,
-        authored_groupings=body.authored_groupings,
-        # The diagram's own icons first, uploads not yet saved included, so a preview draws what the save will.
-        icon_source=DiagramIconSource(de, LibraryIconSource(repo)),
-    )
-    return _RenderedComposition(
-        entities=entities, connections=connections,
-        entity_ids_used=entity_ids_used, connection_ids_used=connection_ids_used,
-        diagram_entities=de, diagram_connections=dc, conn_bindings=conn_bindings, puml=puml,
-    )
-
 
 @router.post("/api/diagrams/preview", tags=[TAG_DIAGRAMS], summary="Preview a diagram write (dry-run)",
     response_model=DiagramPreviewResponse, responses=WRITE_RESPONSES)
@@ -151,7 +56,7 @@ def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depend
     # caller was told the server was broken and the only diagnostic stayed in the log. Config and
     # renderer faults still raise plain ValueError and still answer 500, which is honest for them.
     try:
-        composed = _render_composition(body, repo=repo, repo_root=repo_root)
+        composed = render_composition(body, repo=repo, repo_root=repo_root)
     except DiagramSelectionError as exc:
         raise rejected_input(str(exc), field="diagram_entities") from exc
     puml, de = composed.puml, composed.diagram_entities
@@ -174,7 +79,7 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
 
     repo = s.get_repo()
     repo_root, _, verifier = s.get_write_deps(catalogs)
-    composed = _render_composition(body, repo=repo, repo_root=repo_root)
+    composed = render_composition(body, repo=repo, repo_root=repo_root)
     puml, de, dc = composed.puml, composed.diagram_entities, composed.diagram_connections
     conn_bindings = composed.conn_bindings
     entity_ids_used, connection_ids_used = composed.entity_ids_used, composed.connection_ids_used
@@ -219,44 +124,36 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
 def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
+    from src.application.candidate_repository import committed_repository
+    from src.infrastructure.write.artifact_write.canvas_commands import canvas_save
     from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
     from src.infrastructure.write.artifact_write.enterprise_edit_arguments import KEYWORDS_UNSET
 
-    repo = s.get_repo()
-    repo_root, _, verifier = s.get_write_deps(catalogs)
-    composed = _render_composition(body, repo=repo, repo_root=repo_root)
-    puml, de, dc = composed.puml, composed.diagram_entities, composed.diagram_connections
-    conn_bindings = composed.conn_bindings
-    entity_ids_used, connection_ids_used = composed.entity_ids_used, composed.connection_ids_used
-    from src.application.candidate_repository import committed_repository  # noqa: PLC0415
-    try:
-        result = s.authorized_write(
-            "diagrams_replace_diagram", 
-            edit_diagram,
-            assert_write_root=assert_engagement_write_root,
-            repo_root=repo_root,
-            verifier=verifier,
-            clear_repo_caches=s.clear_caches,
-            artifact_id=artifact_id,
-            repo=repo,
-            puml=puml,
-            name=body.name,
-            group=body.group,
-            keywords=KEYWORDS_UNSET,
-            diagram_entities=de,
-            diagram_connections=dc,
-            entity_ids_used=entity_ids_used,
-            connection_ids_used=connection_ids_used,
-            authored_groupings=body.authored_groupings,
-            layout=layout_to_store(artifact_id, body, composed),
-            version=body.version,
-            status=body.status,
-            tlp=body.tlp,
-            bindings=conn_bindings or None,
-            viewpoint=body.viewpoint,
-            dry_run=body.dry_run,
-            committed_repo=committed_repository(repo),
+    root, _, live_verifier = s.get_write_deps(catalogs)
+
+    def save(repo_root, repo, verifier, clear, dry_run):
+        composed = render_composition(body, repo=repo, repo_root=repo_root)
+        source, layout = source_and_layout_to_store(artifact_id, body, composed, root, catalogs.ontology)
+        return edit_diagram(
+            assert_write_root=assert_engagement_write_root, repo_root=repo_root, verifier=verifier,
+            clear_repo_caches=clear, artifact_id=artifact_id, repo=s.get_repo(), puml=source,
+            name=body.name, group=body.group, keywords=KEYWORDS_UNSET, diagram_entities=composed.diagram_entities,
+            diagram_connections=composed.diagram_connections, entity_ids_used=composed.entity_ids_used,
+            connection_ids_used=composed.connection_ids_used, authored_groupings=body.authored_groupings,
+            layout=layout,
+            version=body.version, status=body.status, tlp=body.tlp, bindings=composed.conn_bindings or None,
+            viewpoint=body.viewpoint, dry_run=dry_run, committed_repo=committed_repository(repo),
         )
+
+    def replace_diagram():
+        if body.commands:
+            return canvas_save(body.commands, root, catalogs, body.dry_run, s.get_repo(), save, s.clear_caches)
+        return save(root, s.get_repo(), live_verifier, s.clear_caches, body.dry_run)
+
+    try:
+        result = s.authorized_write("diagrams_replace_diagram", replace_diagram)
+    except LayoutConflict as conflict:
+        raise HTTPException(409, str(conflict)) from conflict
     except ValueError as e:
         raise HTTPException(400, str(e))
     return s.write_result_to_dict(result)

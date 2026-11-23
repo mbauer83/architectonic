@@ -21,7 +21,7 @@ import pytest
 from src.application.verification._verifier_stdlib_adapters import FilesystemInventoryAdapter
 from src.domain.repository.artifact_location import ARTIFACT_KIND_NAMES, ArtifactKindName
 from src.infrastructure.artifact_index._service_incremental import CHANGE_APPLIERS
-from src.infrastructure.mcp.artifact_mcp.bulk.candidate_inventory import CandidateInventoryPort
+from src.infrastructure.mcp.artifact_mcp.bulk.staged_inventory import CandidateInventoryPort
 from src.infrastructure.mcp.artifact_mcp.verify_tools import _kind_at
 from src.infrastructure.rest.routers.sync.changes import _classify
 from src.infrastructure.verification.kind_bindings import KIND_BINDINGS

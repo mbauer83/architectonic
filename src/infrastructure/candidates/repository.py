@@ -30,7 +30,7 @@ class CandidateConflict(ValueError):
     pass
 
 
-class CandidateRepository:
+class CandidateArchitectureStore:
     def __init__(self, root: Path) -> None:
         self.directory = root.joinpath(*KIND.roots[0])
 

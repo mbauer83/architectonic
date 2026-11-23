@@ -16,7 +16,6 @@ from src.infrastructure.write.artifact_write.batch_transaction import (
 )
 from src.infrastructure.write.operation_registry import operation_registry
 
-from .candidate_state import candidate_registry, candidate_store
 from .common import (
     KNOWN_OPS,
     normalize_staged_result,
@@ -27,6 +26,7 @@ from .common import (
     unknown_item_fields,
 )
 from .diagram_refs import auto_sync_diagrams, collect_bulk_write_auto_sync_diagram_ids
+from .staged_state import staged_registry, staged_store
 from .write_apply import (
     apply_add_connections,
     apply_create_documents,
@@ -148,7 +148,7 @@ def _execute_staged(
             dry_run=dry_run,
             operation_id=operation_id,
             skipped=skipped,
-            current_registry=lambda: candidate_registry(
+            current_registry=lambda: staged_registry(
                 live_root=live_root,
                 staged_root=staged_root,
                 touched_paths=changed_paths,
@@ -163,7 +163,7 @@ def _execute_staged(
             dry_run=dry_run,
             operation_id=operation_id,
             skipped=skipped,
-            current_registry=lambda: candidate_registry(
+            current_registry=lambda: staged_registry(
                 live_root=live_root,
                 staged_root=staged_root,
                 touched_paths=changed_paths,
@@ -177,7 +177,7 @@ def _execute_staged(
             dry_run=dry_run,
             operation_id=operation_id,
             skipped=skipped,
-            current_registry=lambda: candidate_registry(
+            current_registry=lambda: staged_registry(
                 live_root=live_root,
                 staged_root=staged_root,
                 touched_paths=changed_paths,
@@ -244,7 +244,7 @@ def _sync_verify_and_commit(
             staged_root,
             items=[item for _index, item in indexed],
             results=results,
-            registry=candidate_registry(
+            registry=staged_registry(
                 live_root=live_root,
                 staged_root=staged_root,
                 touched_paths=changed_paths,
@@ -254,7 +254,7 @@ def _sync_verify_and_commit(
         auto_sync_diagrams(
             repo_root=staged_root,
             verifier=build_artifact_verifier(
-                candidate_registry(
+                staged_registry(
                     live_root=live_root,
                     staged_root=staged_root,
                     touched_paths=changed_paths,
@@ -264,7 +264,7 @@ def _sync_verify_and_commit(
             clear_repo_caches=clear_repo_caches,
             diagram_ids=auto_sync_diagram_ids,
             dry_run=dry_run,
-            store_factory=lambda: candidate_store(
+            store_factory=lambda: staged_store(
                 live_root=live_root,
                 staged_root=staged_root,
                 touched_paths=changed_paths,

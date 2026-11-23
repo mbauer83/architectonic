@@ -16,7 +16,6 @@ from src.infrastructure.write.artifact_write.batch_transaction import (
 )
 from src.infrastructure.write.operation_registry import operation_registry
 
-from .candidate_state import candidate_registry, candidate_store
 from .common import (
     normalize_staged_result,
     normalize_staged_verification,
@@ -33,6 +32,7 @@ from .delete_apply import (
 )
 from .delete_preflight import preflight_bulk_delete
 from .diagram_refs import auto_sync_diagrams
+from .staged_state import staged_registry, staged_store
 
 
 def artifact_bulk_delete(
@@ -133,7 +133,7 @@ def _execute_staged_delete_batch(
     results: dict[int, dict[str, object]] = {}
     clear_repo_caches, changed_paths = temp_repo_callbacks(staged_root)
 
-    registry = candidate_registry(live_root=live_root, staged_root=staged_root, touched_paths=changed_paths)
+    registry = staged_registry(live_root=live_root, staged_root=staged_root, touched_paths=changed_paths)
     verifier = build_artifact_verifier(registry, catalogs=process_runtime_catalogs())
     operation_registry.set_phase(operation_id, "apply")
 
@@ -145,14 +145,14 @@ def _execute_staged_delete_batch(
             verifier=verifier,
             clear_repo_caches=clear_repo_caches,
         )
-        registry = candidate_registry(live_root=live_root, staged_root=staged_root, touched_paths=changed_paths)
+        registry = staged_registry(live_root=live_root, staged_root=staged_root, touched_paths=changed_paths)
         verifier = build_artifact_verifier(registry, catalogs=process_runtime_catalogs())
         skipped = apply_planned_deletes(
             planned=planned,
             root=staged_root,
             registry=registry,
             verifier=verifier,
-            registry_factory=lambda: candidate_registry(
+            registry_factory=lambda: staged_registry(
                 live_root=live_root,
                 staged_root=staged_root,
                 touched_paths=changed_paths,
@@ -172,7 +172,7 @@ def _execute_staged_delete_batch(
         auto_sync_actions = auto_sync_diagrams(
             repo_root=staged_root,
             verifier=build_artifact_verifier(
-                candidate_registry(
+                staged_registry(
                     live_root=live_root,
                     staged_root=staged_root,
                     touched_paths=changed_paths,
@@ -182,7 +182,7 @@ def _execute_staged_delete_batch(
             clear_repo_caches=clear_repo_caches,
             diagram_ids=auto_sync_ids,
             dry_run=False,
-            store_factory=lambda: candidate_store(
+            store_factory=lambda: staged_store(
                 live_root=live_root,
                 staged_root=staged_root,
                 touched_paths=changed_paths,

@@ -19,6 +19,21 @@ const leaving = computed(() => props.edit.leaving.value)
 const error = computed(() => editing.value.error.value)
 
 const listOpen = ref(false)
+const confirmExit = ref(false)
+const requestSave = (exit = false) => {
+  if (changes.value.some(c => c.model)) {
+    confirmExit.value = exit
+    listOpen.value = true
+    props.edit.keepEditing()
+  } else if (exit) void props.edit.saveAndExit()
+  else void editing.value.save()
+}
+const confirm = async () => {
+  if (confirmExit.value) await props.edit.saveAndExit()
+  else await editing.value.save()
+  listOpen.value = Boolean(editing.value.error.value)
+  confirmExit.value = false
+}
 const saveAndExit = ref<HTMLButtonElement | null>(null)
 
 /** The choice takes the focus on its first, safest answer, so Enter saves and Escape keeps editing. */
@@ -101,7 +116,7 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
           class="btn btn-primary btn-sm"
           :disabled="saving"
           data-testid="save-and-exit"
-          @click="void edit.saveAndExit()"
+          @click="requestSave(true)"
         >Save and exit</button>
         <button
           type="button"
@@ -142,13 +157,23 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
           data-testid="change-list"
         >
           <h3>Save will write</h3>
-          <p class="group"><span class="tag">Diagram</span> {{ plural(changes.length) }} to this diagram only</p>
+          <p class="group">
+            <span class="tag">Diagram</span> {{ plural(changes.filter(c => !c.model).length) }} to this diagram
+          </p>
           <ul>
             <li
               v-for="change in changes"
               :key="change.key"
             >{{ change.text }}</li>
           </ul>
+          <button
+            v-if="changes.some(c => c.model)"
+            type="button"
+            :disabled="saving"
+            @click="confirm"
+          >
+            Confirm and save
+          </button>
         </div>
       </span>
       <button
@@ -165,7 +190,7 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
         class="btn btn-primary btn-sm"
         :disabled="changes.length === 0 || saving"
         data-testid="edit-save"
-        @click="void editing.save()"
+        @click="requestSave()"
       >
         {{ saving ? 'Saving…' : 'Save' }}
       </button>

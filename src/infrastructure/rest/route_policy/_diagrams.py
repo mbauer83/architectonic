@@ -120,6 +120,11 @@ DIAGRAM_ROWS: tuple[RouteRow, ...] = (
         identity_parameters=_ID, cache_directive="no-store", timeout_class="derived-graph",
     ),
     RouteRow(
+        "POST", "/api/diagrams/{artifact_id}/layout/geometry/preview", "operation",
+        "diagrams_preview_diagram_layout_geometry", TYPED,
+        identity_parameters=_ID, cache_directive="no-store", timeout_class="derived-graph",
+    ),
+    RouteRow(
         "POST", "/api/diagrams/{artifact_id}/layout/preview", "operation",
         "diagrams_preview_diagram_layout_shapes", TYPED,
         identity_parameters=_ID, cache_directive="no-store", timeout_class="derived-graph",

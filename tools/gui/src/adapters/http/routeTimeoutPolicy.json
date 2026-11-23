@@ -34,6 +34,7 @@
       "/api/diagrams/{artifact_id}/icons/{icon_key}/share",
       "/api/diagrams/{artifact_id}/layout",
       "/api/diagrams/{artifact_id}/layout/geometry",
+      "/api/diagrams/{artifact_id}/layout/geometry/preview",
       "/api/diagrams/{artifact_id}/layout/preview",
       "/api/diagrams/{artifact_id}/svg",
       "/api/diagrams/{artifact_id}/sync",
@@ -65,6 +66,7 @@
     ],
     "derived-graph": [
       "^/api/assurance/analyses/[^/?#]+/diagrams/[^/?#]+/rendered(\\?|$)",
+      "^/api/diagrams/[^/?#]+/layout/geometry/preview(\\?|$)",
       "^/api/assurance/analyses/[^/?#]+/gsn/rendered(\\?|$)",
       "^/api/diagrams/[^/?#]+/icons/[^/?#]+/share(\\?|$)",
       "^/api/assurance/arch\\-artifacts/[^/?#]+/security\\-snapshots(\\?|$)",

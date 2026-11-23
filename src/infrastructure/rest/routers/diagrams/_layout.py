@@ -8,17 +8,21 @@ layout is.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 
+from src.application.modeling.diagram_identities import alias_by_instance
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.layout.layout_block import MalformedLayout
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
+from src.infrastructure.rendering.layout.diagram_geometry import geometry_response, stored_geometry
 from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, first_layout_of
+from src.infrastructure.rendering.layout.drawing_wire import reshaped
 from src.infrastructure.rest.contracts.diagram_layout_editing import (
     DiagramLayoutGeometryResponse,
     DiagramLayoutPatchResponse,
@@ -31,8 +35,8 @@ from src.infrastructure.rest.routers._openapi import (
     TAG_DIAGRAMS,
     WRITE_RESPONSES,
 )
-from src.infrastructure.rest.routers.diagrams._layout_drawing import reshaped
-from src.infrastructure.rest.routers.diagrams._layout_geometry import stored_geometry
+from src.infrastructure.rest.routers.diagrams._composition import render_composition
+from src.infrastructure.rest.routers.diagrams._geometry_proposals import GeometryPreviewBody
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.parse_existing import ParsedDiagram, parse_diagram_file
 
@@ -114,11 +118,39 @@ def _repo_root() -> Path:
 )
 def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs) -> dict[str, object]:
     parsed = _stored_diagram(artifact_id)
+    return _geometry(lambda: stored_geometry(parsed, artifact_id, _repo_root(), catalogs.ontology))
+
+
+def _geometry(read: Callable[[], dict[str, object]]) -> dict[str, object]:
+    """A geometry read, refused as 422 where the picture cannot be drawn or the layout cannot be read."""
     try:
-        return stored_geometry(parsed, artifact_id, _repo_root(), catalogs.ontology)
-    except ValueError as refusal:
+        return read()
+    except ValueError as refusal:  # MalformedLayout is a ValueError
         raise HTTPException(422, str(refusal)) from refusal
 
+
+@router.post(
+    "/api/diagrams/{artifact_id}/layout/geometry/preview", tags=[TAG_DIAGRAMS],
+    summary="Draw an unsaved diagram composition with layout keys", response_model=DiagramLayoutGeometryResponse,
+    response_model_exclude_none=True, responses={**READ_RESPONSES, **WRITE_RESPONSES},
+)
+def preview_diagram_layout_geometry(
+    artifact_id: str, body: GeometryPreviewBody, catalogs: Catalogs,
+) -> dict[str, object]:
+    parsed = _stored_diagram(artifact_id)
+    repo = s.get_repo()
+    try:
+        elements, relations = body.proposals(catalogs, repo)
+        composed = render_composition(
+            body, repo=repo, repo_root=_repo_root(), proposed_entities=elements, proposed_connections=relations,
+        )
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    frontmatter = {**parsed.frontmatter, **composed.statements(body)}
+    return _geometry(lambda: geometry_response(
+        composed.puml, artifact_id, frontmatter, _repo_root(), catalogs.ontology, generated=True,
+        arrangement=body.arrangement, previous=frozenset(alias_by_instance(parsed.frontmatter)),
+    ))
 
 
 @router.post(
