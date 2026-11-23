@@ -31,6 +31,7 @@ export interface CanvasHandle {
   readonly selection: readonly string[]
   readonly hasSelection: boolean
   readonly clearSelection: () => void
+  readonly sweepFrom: (event: PointerEvent) => void
 }
 export interface EditBarHandle {
   readonly closeList: () => boolean

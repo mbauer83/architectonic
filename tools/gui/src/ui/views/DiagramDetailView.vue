@@ -242,6 +242,7 @@ const executeDelete = () => {
             v-bind="reader.hostAttributes.value"
             @keydown="reader.onKeydown"
             @mousedown="editing ? edit.panPress($event, panZoom.onMouseDown) : panZoom.onMouseDown($event)"
+            @pointerdown="editing && !edit.spaceHeld.value && editCanvas?.sweepFrom($event)"
             @dblclick="editing || panZoom.resetView()"
           >
             <div

@@ -77,6 +77,12 @@ defineExpose({
   selected: gesture.selected,
   selection: gesture.selection,
   clearSelection: () => gesture.clear(),
+  /** Begin a selection rectangle from a press beside the picture, on the page's empty paper: not a control. */
+  sweepFrom: (event: PointerEvent) => {
+    if (!(event.target instanceof Element && event.target.closest('button, a, input, select, textarea'))) {
+      gesture.sweepFrom(event)
+    }
+  },
 })
 
 const viewBox = computed(() => {
