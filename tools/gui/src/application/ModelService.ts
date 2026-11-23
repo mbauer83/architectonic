@@ -180,4 +180,14 @@ export const makeModelService = (repo: ModelRepository) =>
       repo.drawResizedShapes(diagramId, shapes),
     patchLayout: (diagramId: string, patch: Parameters<ModelRepository['patchLayout']>[1], dryRun: boolean) =>
       repo.patchLayout(diagramId, patch, dryRun),
+    listCandidates: () => repo.listCandidates(),
+    createCandidate: (...args: Parameters<ModelRepository['createCandidate']>) => repo.createCandidate(...args),
+    readCandidate: (id: string) => repo.readCandidate(id),
+    editCandidate: (...args: Parameters<ModelRepository['editCandidate']>) => repo.editCandidate(...args),
+    compareCandidate: (...args: Parameters<ModelRepository['compareCandidate']>) => repo.compareCandidate(...args),
+    checkCandidates: (ids: readonly string[]) => repo.checkCandidates(ids),
+    readDocumentTables: (documentId: string) => repo.readDocumentTables(documentId),
+    editDocumentTable: (...args: Parameters<ModelRepository['editDocumentTable']>) => repo.editDocumentTable(...args),
+    readAnalysisProgress: (documentId: string) => repo.readAnalysisProgress(documentId),
+    readAnalysisIncidence: (documentId: string) => repo.readAnalysisIncidence(documentId),
   }) as const
