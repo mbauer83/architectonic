@@ -20,6 +20,10 @@ export interface StressAnalysisRepository {
   readonly editCandidate: (
     id: string, basedOn: string, patch: Readonly<Record<string, unknown>>,
   ) => Effect.Effect<CandidateResponse, RepoError>
+  /** Record an edit among the candidate's operations; the server reads its base and merges it per claim. */
+  readonly recordOperation: (
+    id: string, basedOn: string, operation: Readonly<Record<string, unknown>>,
+  ) => Effect.Effect<CandidateResponse, RepoError>
   /** *base* is `model` or another candidate's id; *diagram* adds that stored diagram's drawing. */
   readonly compareCandidate: (
     id: string, base: string, diagram?: string,

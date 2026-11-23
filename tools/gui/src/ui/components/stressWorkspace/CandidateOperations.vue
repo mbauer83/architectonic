@@ -11,7 +11,7 @@ import { chainOf, stackLine } from '../../../domain/stressAnalysis/candidateStac
 import type { Candidates } from '../../composables/useCandidates'
 
 const props = defineProps<{ candidates: Candidates; naiveId: string; nameOf: (id: string) => string }>()
-const emit = defineEmits<{ frame: [target: string | null] }>()
+const emit = defineEmits<{ frame: [target: string | null]; sketch: [id: string] }>()
 
 const summary = computed(() => props.candidates.all.value.find((one) => one.id === props.candidates.selected.value) ?? null)
 const comparison = computed(() => props.candidates.comparison.value)
@@ -75,7 +75,15 @@ const cardRows = (row: ChangeDifference) => {
         <span class="role">{{ role }} · {{ summary.state }}</span>
         <span class="stack-of">{{ stackLine(summary.id, candidates.all.value) }}</span>
       </div>
-      <slot />
+      <button
+        v-if="summary.state === 'draft'"
+        type="button"
+        class="btn btn-sm"
+        data-testid="sketch"
+        @click="emit('sketch', summary.id)"
+      >
+        Sketch on the canvas
+      </button>
     </div>
     <div class="reads">
       <label>against

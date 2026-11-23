@@ -20,6 +20,8 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
   readCandidate: (id) => fetchJson(candidateUrl(id), CandidateResponseSchema),
   editCandidate: (id, basedOn, patch) =>
     patchJson(candidateUrl(id), { based_on: basedOn, patch }, CandidateResponseSchema),
+  recordOperation: (id, basedOn, operation) =>
+    postJson(candidateUrl(id, '/operations'), { based_on: basedOn, operation }, CandidateResponseSchema),
   compareCandidate: (id, base, diagram) =>
     fetchJson(candidateUrl(id, '/diff', { base, diagram }), CandidateComparisonSchema),
   checkCandidates: (ids) => postJson(buildUrl('/change-set-checks'), { candidates: ids }, IntegrationCheckSchema),

@@ -3,18 +3,22 @@ import { computed, inject, nextTick, ref } from 'vue'
 import { Effect } from 'effect'
 import type { DiagramContext } from '../../domain'
 import { canvasMembers } from '../../domain/layout/canvasComposition'
-import { stableConnectionId } from '../../domain/artifactId'
+import { connectionId, stableConnectionId } from '../../domain/artifactId'
 import { modelServiceKey } from '../keys'
 import type { DiagramEditing } from '../composables/useDiagramEditing'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import { elementAt, useContentGestures } from '../composables/useContentGestures'
 import CanvasElementForm from './CanvasElementForm.vue'
+import { type CanvasWords, DIAGRAM_WORDS } from './canvasWords'
 
 const props = defineProps<{
   editing: DiagramEditing
   context: DiagramContext
   selection?: string | null
+  /** What deleting means here; the diagram page's words when absent. */
+  words?: CanvasWords
 }>()
+const words = computed(() => props.words ?? DIAGRAM_WORDS)
 const svc = inject(modelServiceKey)!
 const host = ref<HTMLElement | null>(null)
 const field = ref<HTMLInputElement | null>(null)
@@ -112,7 +116,7 @@ function saveRelation() {
   const from = selected.value
   const to = members.value.find((e) => e.alias === target.value)
   if (!from || !to || !kind.value) return
-  const id = currentLine.value || `${from.id}---${to.id}@@${kind.value}`
+  const id = currentLine.value || connectionId(from.id, kind.value, to.id)
   void apply(
     {
       op: currentLine.value ? 'model.relation.edit' : 'model.relation.create',
@@ -228,8 +232,14 @@ function double(e: MouseEvent) {
           </button><button @click="mode = 'target'">
             Connect to…
           </button>
+          <button
+            v-if="words.removeEntry"
+            @click="editing.remove(source); mode = null"
+          >
+            {{ words.removeEntry }}
+          </button>
           <button @click="mode = 'delete'">
-            Delete from model…
+            {{ words.deleteEntry }}
           </button>
         </template>
         <template v-else-if="mode === 'target'">
@@ -262,9 +272,9 @@ function double(e: MouseEvent) {
           </button>
         </form>
         <template v-else-if="mode === 'delete' && selected">
-          <p>Delete {{ selected.name }} from the model at Save?</p>
+          <p>{{ words.deleteQuestion(selected.name) }}</p>
           <button @click="apply({ op: 'model.element.delete', artifact_id: selected.id })">
-            Confirm deletion
+            {{ words.deleteConfirm }}
           </button>
         </template>
         <form

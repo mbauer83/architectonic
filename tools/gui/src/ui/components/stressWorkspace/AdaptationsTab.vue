@@ -13,7 +13,7 @@ import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import CandidateOperations from './CandidateOperations.vue'
 
 const props = defineProps<{ analysis: StressAnalysis; candidates: Candidates }>()
-const emit = defineEmits<{ frame: [target: string | null] }>()
+const emit = defineEmits<{ frame: [target: string | null]; sketch: [id: string] }>()
 
 const adaptations = computed(() => props.candidates.inAnalysis.value.filter((one) => one.id !== props.analysis.naiveId.value))
 const answers = (id: string): string => props.analysis.adaptations.value
@@ -38,6 +38,7 @@ const create = async () => {
   }
   stacking.value = false
   name.value = ''
+  emit('sketch', id)
 }
 </script>
 
@@ -122,6 +123,7 @@ const create = async () => {
       :naive-id="analysis.naiveId.value"
       :name-of="analysis.nameOf"
       @frame="emit('frame', $event)"
+      @sketch="emit('sketch', $event)"
     />
   </div>
 </template>

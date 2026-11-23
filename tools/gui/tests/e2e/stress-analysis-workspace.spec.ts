@@ -127,3 +127,27 @@ test('focusing an end state turns the grid and marks what its stressors hit', as
   await expect(page.getByTestId('incidence-grid')).toHaveCount(0)
   await expect(page.locator('[data-marked]')).toHaveCount(0)
 })
+
+test('a rename on the sketching canvas is saved to the candidate, and renaming it back takes it away', async ({ page, request }) => {
+  const id = await analysisOf(request, 'Stress analysis — sketching')
+  await workspace(page, id, 'naive')
+  await page.getByTestId('sketch').click()
+  const service = page.getByTestId('candidate-canvas').locator(`g.lab-element[data-alias="${SERVICE_ALIAS}"] .lab-grip`)
+  const rename = async (name: string) => {
+    await service.click({ button: 'right', force: true })
+    await page.getByRole('dialog', { name: 'element' }).getByRole('button', { name: 'Rename' }).click()
+    await page.getByRole('dialog', { name: 'rename' }).getByLabel('Name').fill(name)
+    await page.getByRole('button', { name: 'Keep rename' }).click()
+  }
+  const operations = page.getByTestId('candidate-operations').locator('tr.oprow')
+
+  await rename('Promotion Review Service')
+  await expect(page.getByTestId('saved-at')).toContainText('Saved to the candidate')
+  await expect(operations).toHaveCount(1)
+  await expect(operations.first()).toContainText('Promotion Review Service')
+
+  await rename('Repository Promotion Service')
+  await expect(operations).toHaveCount(0)
+  await page.getByTestId('done-sketching').click()
+  await expect(page.getByTestId('workspace-canvas')).toBeVisible()
+})

@@ -24,6 +24,7 @@ import EndStatesTab from '../components/stressWorkspace/EndStatesTab.vue'
 import AdaptationsTab from '../components/stressWorkspace/AdaptationsTab.vue'
 import IntegrationTab from '../components/stressWorkspace/IntegrationTab.vue'
 import CandidateOperations from '../components/stressWorkspace/CandidateOperations.vue'
+import CandidateCanvas from '../components/stressWorkspace/CandidateCanvas.vue'
 
 const svc = inject(modelServiceKey)!
 const toast = inject(toastKey, () => undefined)
@@ -50,6 +51,18 @@ const tabs = computed(() => [
 const selected = ref<string | null>(null)
 const endStateFocus = ref<string | null>(null)
 const framed = ref<string | null>(null)
+/** The candidate being sketched on the canvas, if any. */
+const sketching = ref<string | null>(null)
+const sketched = computed(() => candidates.all.value.find((one) => one.id === sketching.value) ?? null)
+/** A change recorded in the sketched candidate: its table, and the naive architecture's names, follow. */
+const recorded = async () => {
+  await candidates.compareWith(candidates.against.value)
+  if (sketching.value === analysis.naiveId.value) await analysis.reload()
+}
+const doneSketching = async () => {
+  sketching.value = null
+  await recorded()
+}
 
 /** The naive architecture's own id for an element the canvas names by its stable id. */
 const fullIdOf = (stableId: string): string =>
@@ -170,6 +183,7 @@ onMounted(async () => {
           :naive-id="analysis.naiveId.value"
           :name-of="analysis.nameOf"
           @frame="framed = $event && stableEntityId($event)"
+          @sketch="sketching = $event"
         />
         <StressorsTab
           v-else-if="tab === 'stressors'"
@@ -200,6 +214,7 @@ onMounted(async () => {
           :analysis="analysis"
           :candidates="candidates"
           @frame="framed = $event && stableEntityId($event)"
+          @sketch="sketching = $event"
         />
         <IntegrationTab
           v-else-if="tab === 'integration'"
@@ -208,7 +223,19 @@ onMounted(async () => {
         />
       </section>
       <section aria-label="Canvas">
+        <CandidateCanvas
+          v-if="sketched && analysis.scopeDiagram.value"
+          :key="sketched.id"
+          :candidate-id="sketched.id"
+          :name="sketched.name"
+          :role="sketched.id === analysis.naiveId.value ? 'Naive architecture' : 'Adaptation'"
+          :diagram-id="analysis.scopeDiagram.value"
+          :changed="diffMarks(candidates.comparison.value?.diff ?? [])"
+          @recorded="recorded"
+          @done="doneSketching"
+        />
         <WorkspaceCanvas
+          v-else
           :diagram-id="analysis.scopeDiagram.value"
           :drawing="drawing"
           :marks="marks"

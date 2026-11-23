@@ -184,6 +184,7 @@ export const makeModelService = (repo: ModelRepository) =>
     createCandidate: (...args: Parameters<ModelRepository['createCandidate']>) => repo.createCandidate(...args),
     readCandidate: (id: string) => repo.readCandidate(id),
     editCandidate: (...args: Parameters<ModelRepository['editCandidate']>) => repo.editCandidate(...args),
+    recordOperation: (...args: Parameters<ModelRepository['recordOperation']>) => repo.recordOperation(...args),
     compareCandidate: (...args: Parameters<ModelRepository['compareCandidate']>) => repo.compareCandidate(...args),
     checkCandidates: (ids: readonly string[]) => repo.checkCandidates(ids),
     readDocumentTables: (documentId: string) => repo.readDocumentTables(documentId),

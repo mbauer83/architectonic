@@ -64,13 +64,16 @@ export function useDiagramEditing(
     session.open(geometry, carried ? { arrangement: arrangedBy(geometry, carried), byHand: true } : saved.value)
   }
 
-  const open = async (): Promise<boolean> => {
+  /** Open on the picture as stored; *commands* are content already proposed elsewhere, drawn at once. */
+  const open = async (commands: readonly CanvasCommand[] = []): Promise<boolean> => {
     loading.value = true
     error.value = null
     try {
       savedMembers.value = membership()
       await reopen()
-      return true
+      const now = session.state.value
+      loading.value = false
+      return commands.length === 0 || !now || await preview({ ...now, commands }, now)
     } catch (failure) {
       error.value = failure instanceof Error ? failure.message : String(failure)
       return false
