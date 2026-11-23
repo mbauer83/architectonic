@@ -121,6 +121,7 @@ def _beside_nothing(tmp_root: Path, desired_name: str, _support_repo_root: Path 
 #: Where in a temp tree a file of each kind is laid out, so the checks that read around it find what
 #: they would in the repository. One entry per verified kind.
 _TEMP_LAYOUTS: Mapping[VerificationFileType, Callable[[Path, str, Path | None], Path]] = {
+    "candidate-architecture": _beside_nothing,
     "entity": _beside_nothing,
     "connection": _beside_nothing,
     "icon": _beside_nothing,

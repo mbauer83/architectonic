@@ -142,22 +142,13 @@ class WriteCall:
     mutates: bool = True
 
 
-def _scratchpad_field(key: str) -> Callable[[object], str | None]:
-    """Read one field out of a scratchpad tool's answer.
-
-    The scratchpad tools nest the aggregate under `scratchpad` rather than answering a flat
-    `artifact_id`, because the whole document is the return value — so the walk needs to say which
-    field it wants rather than assume the shape every other tool happens to share.
-    """
-
+def _answer_field(*keys: str) -> Callable[[object], str | None]:
     def read(payload: object) -> str | None:
-        if not isinstance(payload, Mapping):
-            return None
-        scratchpad = payload.get("scratchpad")
-        if not isinstance(scratchpad, Mapping):
-            return None
-        value = scratchpad.get(key)
-        return value if isinstance(value, str) else None
+        for key in keys:
+            if not isinstance(payload, Mapping):
+                return None
+            payload = payload.get(key)
+        return payload if isinstance(payload, str) else None
 
     return read
 
@@ -544,6 +535,18 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         "artifact_discard_change",
         lambda c: {"artifact_id": c.created["change"]},
     ),
+    WriteCall(
+        "change_set_create", lambda _c: {"record": {"name": "Promotion queue"}},
+        captures=(
+            Capture("candidate", _answer_field("record", "id")),
+            Capture("candidate_version", _answer_field("version")),
+        ),
+    ),
+    WriteCall(
+        "change_set_edit",
+        lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"],
+                   "patch": {"rationale": "Queue promotions while the destination is offline."}},
+    ),
     # ── scratchpads: create → replace → edit → lift → delete, the whole loop an agent has ───────
     #
     # Replace carries the version the create answered with, because that is the contract: a stale
@@ -553,8 +556,8 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         "scratchpad_create",
         lambda _c: {"name": "MCP Walk Scratchpad", "group": "platform-core"},
         captures=(
-            Capture("scratchpad", _scratchpad_field("artifact-id")),
-            Capture("scratchpad_version", _scratchpad_field("version")),
+            Capture("scratchpad", _answer_field("scratchpad", "artifact-id")),
+            Capture("scratchpad_version", _answer_field("scratchpad", "version")),
         ),
     ),
     WriteCall(
@@ -574,7 +577,7 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
                 "layout": {"notes": {"n1": [40, 60], "n2": [260, 60]}},
             },
         },
-        captures=(Capture("scratchpad_replaced_version", _scratchpad_field("version")),),
+        captures=(Capture("scratchpad_replaced_version", _answer_field("scratchpad", "version")),),
     ),
     WriteCall(
         # The delta shape, which is how an agent changes one thing without sending the canvas back.
@@ -587,7 +590,7 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
             "remove": {"notes": ["n1"]},
             "upsert": {"notes": [{"id": "n2", "body": "Decided enough to lift."}]},
         },
-        captures=(Capture("scratchpad_lifted_version", _scratchpad_field("version")),),
+        captures=(Capture("scratchpad_lifted_version", _answer_field("scratchpad", "version")),),
     ),
     WriteCall(
         # A preflight: it reports what a lift would create and writes nothing, which is what the

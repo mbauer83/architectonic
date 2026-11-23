@@ -51,8 +51,9 @@ from src.domain.ontology_representation.artifact_types import (
     EntityRecord,
     RepoMount,
 )
-from src.domain.repository.artifact_location import artifact_kind_at, model_file_kind
+from src.domain.repository.artifact_location import artifact_kind_at, model_file_kind, source_globs
 from src.domain.repository.repo_layout import DIAGRAM_CATALOG, ICONS, SCRATCHPAD_SUFFIX
+from src.infrastructure.candidates.repository import KIND, read_candidate_path
 from src.infrastructure.write.artifact_write.staged_workspace import overlay_paths
 
 from ._mem_store import _MemStore
@@ -194,3 +195,7 @@ def scan_mount(
     _scan_document_records(mount.root, mem)
     _scan_scratchpad_records(mount.root, mem)
     _scan_icon_records(mount.root, mem)
+    for pattern in source_globs(KIND):
+        for path in mount.root.glob(pattern):
+            if candidate := read_candidate_path(path):
+                mem.candidate_paths[candidate.id] = path

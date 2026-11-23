@@ -6,14 +6,14 @@ after the connections the set removes from it. Those are the only orderings a se
 are read off the operations, so a set cannot carry an order that contradicts its own content and two
 machines cannot apply one set differently.
 
-**One set may be read on top of another.** The lower one is applied first, as its own set, and the
-upper may name what the lower creates. Which set is beneath which, and how deep that may go, is not
-decided here: a caller hands over the set beneath, or none.
+**One set may be read on top of others.** The lower ones are applied first, each as its own set, and
+the upper may name what any of them creates. Which sets are beneath which is not decided here: a
+caller hands over the sets beneath, lowest first, or none.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from graphlib import CycleError, TopologicalSorter
 
 from src.application.change_sets.change_set import ChangeSet
@@ -55,16 +55,16 @@ def dependencies(change_set: ChangeSet) -> Dependencies:
 
 
 def application_order(
-    change_set: ChangeSet, *, beneath: ChangeSet | None = None
+    change_set: ChangeSet, *, beneath: Sequence[ChangeSet] = ()
 ) -> tuple[Operation, ...]:
     """The set's own operations in an order that applies: each after everything it needs.
 
-    The operations of the set *beneath* are not included — they are applied first, as their own set
-    — but it is what decides whether a reference this set does not create is resolvable at all.
-    Refuses a set that names something nothing creates, and one whose operations need each other in
-    a circle.
+    The operations of the sets *beneath* are not included — they are applied first, each as its own
+    set — but they are what decide whether a reference this set does not create is resolvable at
+    all. Refuses a set that names something nothing creates, and one whose operations need each
+    other in a circle.
     """
-    inherited = frozenset(beneath.created) if beneath is not None else frozenset()
+    inherited = frozenset(alias for lower in beneath for alias in lower.created)
     unresolved = dangling(change_set.operations, inherited)
     if unresolved:
         raise MalformedChangeSet(

@@ -168,3 +168,10 @@ class TestScope:
 
 def test_sets_that_touch_different_things_do_not_overlap() -> None:
     assert overlaps(_each(S1=edit(_A, "name", "x"), S2=edit(_B, "name", "y"))) == ()
+
+
+def test_sibling_adaptations_can_disagree_about_an_alias_created_by_a_grandparent() -> None:
+    sets = _each(naive=create("queue"), middle=edit(_A, "name", "Gateway"),
+                 left=edit("$ref:queue", "name", "Bounded"), right=edit("$ref:queue", "name", "Unbounded"))
+    found, = conflicts(sets, stacked_on={"middle": "naive", "left": "middle", "right": "naive"})
+    assert {party.set_id for party in found.parties} == {"left", "right"}

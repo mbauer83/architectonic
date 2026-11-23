@@ -20,7 +20,7 @@ they are only named, so a caller showing a hypothetical state can say what it do
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from src.application.change_sets.change_set import ChangeSet
@@ -65,18 +65,19 @@ class ComposedReading:
 
 
 def compose(
-    change_set: ChangeSet, reading: ModelReading, *, beneath: ChangeSet | None = None
+    change_set: ChangeSet, reading: ModelReading, *, beneath: Sequence[ChangeSet] = ()
 ) -> ComposedReading:
-    """The model *reading* describes, with the set applied — on top of the set beneath, if any.
+    """The model *reading* describes, with the set applied — on top of the sets beneath, lowest first.
 
-    Two layers by signature. A deeper stack is composed by handing the result back in as the
-    reading, which is a decision for whoever owns the stack. Refuses what `application_order`
-    refuses: a reference nothing creates.
+    Each layer is applied as its own set, and may name what any layer under it creates. How deep a
+    stack may be is not decided here. Refuses what `application_order` refuses: a reference nothing
+    creates.
     """
     composed = ComposedReading(beneath=reading, entities={}, connections={})
-    if beneath is not None:
-        composed = _laid_over(composed, application_order(beneath))
-    return _laid_over(composed, application_order(change_set, beneath=beneath))
+    layers = (*beneath, change_set)
+    for depth, layer in enumerate(layers):
+        composed = _laid_over(composed, application_order(layer, beneath=layers[:depth]))
+    return composed
 
 
 def patched(kind: ArtifactKind, values: FieldValues, edit: EditEntity | EditConnection) -> FieldValues:

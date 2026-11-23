@@ -43,6 +43,7 @@ _WHAT_THE_LITERALS_SAID: dict[str, tuple[bool, bool, bool, str | None]] = {
     "connection": (True, False, True, None),
     "diagram": (True, False, True, None),
     "document": (True, True, True, None),
+    "candidate-architecture": (True, True, False, "CAND"),
     "icon": (True, True, True, "ICO"),
     "scratchpad": (False, False, False, "SCR"),
 }
@@ -53,6 +54,7 @@ _A_FILE_OF: dict[ArtifactKindName, tuple[str, ...]] = {
     "connection": ("model/a/b/APP@1.a.x.outgoing.md", "projects/core/model/a/b/APP@1.a.x.outgoing.md"),
     "diagram": ("diagram-catalog/diagrams/core/ARC@1.a.x.puml", "diagram-catalog/diagrams/core/MAT@1.a.x.md"),
     "document": ("docs/adr/core/ADR@1.a.x.md",),
+    "candidate-architecture": ("candidate-architectures/CAND@1.a.x.candidate.yaml",),
     "icon": ("diagram-catalog/icons/ICO@1.a.x.md",),
     "scratchpad": ("scratchpads/core/SCR@1.a.x.scratchpad.yaml",),
 }

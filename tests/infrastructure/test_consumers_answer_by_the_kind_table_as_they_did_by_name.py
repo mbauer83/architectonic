@@ -20,7 +20,7 @@ import pytest
 
 from src.application.verification._verifier_stdlib_adapters import FilesystemInventoryAdapter
 from src.domain.repository.artifact_location import ARTIFACT_KIND_NAMES, ArtifactKindName
-from src.infrastructure.artifact_index.service import _CHANGE_APPLIERS
+from src.infrastructure.artifact_index._service_incremental import CHANGE_APPLIERS
 from src.infrastructure.mcp.artifact_mcp.bulk.candidate_inventory import CandidateInventoryPort
 from src.infrastructure.mcp.artifact_mcp.verify_tools import _kind_at
 from src.infrastructure.rest.routers.sync.changes import _classify
@@ -33,6 +33,8 @@ _BEFORE: dict[ArtifactKindName, tuple[str, str | None, str, bool]] = {
     "connection": ("projects/core/model/motivation/goal/GOL@1.a.x.outgoing.md", "connection", "connections", False),
     "diagram": ("diagram-catalog/diagrams/core/ARC@1.a.x.puml", "diagram", "diagram", False),
     "document": ("docs/adr/core/ADR@1.a.x.md", "document", "document", True),
+    "candidate-architecture": ("candidate-architectures/CAND@1.a.x.candidate.yaml",
+                               "candidate-architecture", "candidate-architecture", True),
     "icon": ("diagram-catalog/icons/ICO@1.a.x.md", "icon", "icon", True),
     # Inferred since the verifier dispatches by binding: a scratchpad is answered `unverified`.
     "scratchpad": ("scratchpads/core/SCR@1.a.x.scratchpad.yaml", "scratchpad", "scratchpad", True),
@@ -116,4 +118,4 @@ def test_the_bulk_inventory_keeps_the_same_kinds_for_one_file_at_a_time(tmp_path
 def test_the_index_reads_and_applies_a_change_of_every_kind() -> None:
     """A table keyed by kind has no arm to forget, provided it has an entry per row."""
     assert set(KIND_BINDINGS) == set(ARTIFACT_KIND_NAMES)
-    assert set(_CHANGE_APPLIERS) == set(ARTIFACT_KIND_NAMES)
+    assert set(CHANGE_APPLIERS) == set(ARTIFACT_KIND_NAMES)

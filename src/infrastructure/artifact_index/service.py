@@ -47,15 +47,7 @@ from ._reverse_reference_queries import _EntityIds, _ReverseReferenceQueries
 from ._rwlock import _RWLock
 from ._scope_registry import _ScopeRegistry
 from ._scratchpad_note_queries import _ScratchpadNoteQueries
-from ._service_incremental import (
-    _apply_entity_record,
-    _apply_outgoing_records,
-    apply_diagram_change,
-    apply_document_change,
-    apply_icon_change,
-    apply_scratchpad_change,
-    classify_path_change,
-)
+from ._service_incremental import CHANGE_APPLIERS, classify_path_change
 from ._service_scan import scan_mount
 from ._sqlite_store import _SqliteStore
 from .bootstrap import normalize_mounts, service_key
@@ -64,19 +56,6 @@ from .versioning import ReadModelVersion, build_read_model_etag, read_model_vers
 
 _T = TypeVar("_T", EntityRecord, ConnectionRecord, DiagramRecord, DocumentRecord, ScratchpadNoteRecord)
 
-#: How what `KIND_BINDINGS` read is applied: one entry per row of the kind table.
-_CHANGE_APPLIERS = {
-    "connection": lambda service, path, data: _apply_outgoing_records(path, data, service._mem, service._db),
-    "entity": lambda service, path, data: _apply_entity_record(path, data, service._mem, service._db),
-    "diagram": lambda service, path, data: apply_diagram_change(
-        path, service._mem, service._db, parsed=data,
-        record_scopes=service._get_record_scopes(),
-        attr_type_ref_fn=service._attr_type_ref_extractor,
-    ),
-    "document": lambda service, path, data: apply_document_change(path, service._mem, service._db, parsed=data),
-    "scratchpad": lambda service, path, data: apply_scratchpad_change(path, service._mem, service._db, parsed=data),
-    "icon": lambda service, path, data: apply_icon_change(path, service._mem, parsed=data),
-}
 
 
 class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries, _IconQueries):
@@ -196,7 +175,7 @@ class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries, _IconQueri
         with self._lock.writing():
             references_before = self._mem.scratchpad_references_as_listed()
             for kind, path, data in parsed:
-                _CHANGE_APPLIERS[kind](self, path, data)
+                CHANGE_APPLIERS[kind](self, path, data)
             # The generation is the *model's* read-model validator, and a scratchpad is not model
             # content: it is not listed by `list_artifacts`, it ranks below everything in search, and
             # its own routes are `no-cache` precisely because it changes independently of the model.

@@ -80,7 +80,7 @@ def to_bulk_items(
     """
     known = resolved or {}
     created = frozenset(change_set.created)
-    operations = application_order(change_set, beneath=beneath)
+    operations = application_order(change_set, beneath=(beneath,) if beneath else ())
 
     def settled(reference: str, *, may_stay_provisional: bool = False) -> str:
         alias = alias_of(reference)

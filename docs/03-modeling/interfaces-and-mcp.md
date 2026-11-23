@@ -33,6 +33,8 @@ looking entirely normal. See
 <!-- mcp-tools:begin arch-read -->
 | Tool | Access | Purpose |
 |---|---|---|
+| `analysis_incidence` | Read-only | Read stressors, missing subjects and hits, end states, adaptations and pairwise coupling. |
+| `analysis_progress` | Read-only | Read outstanding analysis work and coverage, including unused categories from kinds. |
 | `artifact_aibom_coverage` | Read-only | Per-AI-component AIBOM coverage over the architecture model: blocking gaps (missing required attributes, missing dataset linkage, missing governance edge) vs advisory gaps (missing recommended attributes), plus repo-wide derivation roles that no connection type is bound to. |
 | `artifact_aibom_export` | Read-only | Emit a CycloneDX 1.6 ML-BOM DERIVED from the architecture model: every entity carrying an AI specialization (ai-model, ai-agent, ai-inference-service, ai-dataset, ai-prompt-asset, ai-vector-store, ai-runtime, ai-tool-interface) becomes a component, with its authored model card, dataset/governance links resolved from connections, and a dependency graph between AI components. |
 | `artifact_diagram_scaffold` | Read-only | Generate a ready-to-edit @startuml…@enduml scaffold from a list of entity IDs. |
@@ -48,6 +50,9 @@ looking entirely normal. See
 | `artifact_query_stats` | Read-only | Return model statistics: total entity/connection/diagram counts and breakdowns by domain, connection type, and group. |
 | `artifact_query_viewpoint` | Read-only | action='list': browse the effective merged viewpoint catalog — slug/version/name/purpose/content/stakeholders/concerns, a scope summary, a plain-language query_summary so you see what a viewpoint means, not just that it exists, and whether it is pinned (engagement-repo-local quick access). |
 | `artifact_verify` | Read-only | Verify one file or all model files. |
+| `change_set_check` | Read-only | Check candidates offered for integration and identify the parties to each conflict. |
+| `change_set_list` | Read-only | List candidate architectures by id, name, state and parent. |
+| `change_set_read` | Read-only | Read a candidate, its operation standing, or its scoped diff with optional diagram geometry. |
 | `scratchpad_list` | Read-only | List scratchpads with their metadata — id, name, status, version, collection and note count, never the notes themselves. |
 | `scratchpad_read` | Read-only | Read one scratchpad whole: its areas (the labelled frames), notes, links, groups and the layout block holding every coordinate. |
 <!-- mcp-tools:end arch-read -->
@@ -94,6 +99,8 @@ looking entirely normal. See
 | Other | `artifact_rebase_change` | Write | Bring a local change onto the enterprise artifact as it stands now, naming it by its own artifact_id (from artifact_list_changes). |
 | Other | `artifact_submit_changes` | Write | Submit local changes for review upstream, naming them by their own artifact_ids (from artifact_list_changes) in the order they are to be replayed. |
 | Other | `artifact_viewpoint` | Destructive | Create/edit/delete a ViewpointDefinition in the engagement repo's own catalog — the same validate/persist path a GUI builder's save flow uses. |
+| Other | `change_set_create` | Write | Create an engagement candidate with a name and optional parent, scope, operations or scope diagram. |
+| Other | `change_set_edit` | Destructive | Patch the named candidate fields using the version returned by the last read. |
 | Other | `scratchpad_edit` | Destructive | Change a scratchpad by saying what changed, instead of sending the whole document back. |
 | Other | `scratchpad_lift` | Write | Lift a selection of notes — and the links among them — into ordinary model content, through the same verified write path as any other authoring. |
 <!-- mcp-tools:end arch-write -->

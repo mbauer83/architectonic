@@ -20,6 +20,10 @@ from src.infrastructure.mcp.artifact_mcp import (
     register_verify_tools,
     register_write_tools,
 )
+from src.infrastructure.mcp.artifact_mcp.candidate_tools import (
+    register_candidate_read_tools,
+    register_candidate_write_tools,
+)
 from src.infrastructure.mcp.artifact_mcp.change_tools import (  # noqa: F401
     artifact_discard_change,
     artifact_list_changes,
@@ -87,6 +91,7 @@ register_query_tools(mcp_read)
 register_verify_tools(mcp_read)
 register_scratchpad_read_tools(mcp_read)
 register_change_read_tools(mcp_read)
+register_candidate_read_tools(mcp_read)
 install_call_tool_normalizer(mcp_read)
 
 
@@ -100,6 +105,7 @@ register_write_tools(mcp_write)
 register_edit_tools(mcp_write)
 register_scratchpad_write_tools(mcp_write)
 register_change_write_tools(mcp_write)
+register_candidate_write_tools(mcp_write)
 
 _sync_ops.register(mcp_write)
 # Same dispatch treatment as the read server: incoming tool-name normalization,

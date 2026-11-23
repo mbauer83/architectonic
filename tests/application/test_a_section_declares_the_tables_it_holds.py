@@ -198,12 +198,14 @@ class TestADeclarationSurvivesTheLoader:
         assert any(section.tables for section in schema.sections)
 
     @pytest.mark.parametrize("doc_type", sorted(BASE_DOCUMENT_SCHEMAS))
-    def test_a_shipped_type_declares_none_and_serialises_as_it_did(self, doc_type: str) -> None:
+    def test_a_shipped_type_preserves_its_table_declarations(self, doc_type: str) -> None:
         raw = copy.deepcopy(BASE_DOCUMENT_SCHEMAS[doc_type])
         schema = normalize_document_schema(doc_type, raw)
 
-        assert all(section.tables == () for section in schema.sections)
-        assert all("tables" not in section for section in schema.to_dict()["sections"])
+        restored = normalize_document_schema(doc_type, schema.to_dict())
+        assert restored.sections == schema.sections
+        for section, rendered in zip(schema.sections, schema.to_dict()["sections"], strict=True):
+            assert ("tables" in rendered) == bool(section.tables)
 
 
 class TestARowIdIsWrittenAndReadByItsTable:

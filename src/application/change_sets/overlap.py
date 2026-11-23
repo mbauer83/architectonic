@@ -76,17 +76,17 @@ class _Scoped:
     """One named set among the others: which it is, and which set it is read on top of."""
 
     name: str
-    change_set: ChangeSet
-    beneath: str | None
+    beneath: tuple[str, ...]
+    owners: Mapping[str, str]
 
     def is_stacked_with(self, other: _Scoped) -> bool:
-        return self.beneath == other.name or other.beneath == self.name
+        return other.name in self.beneath or self.name in other.beneath
 
     def owner_of(self, reference: str) -> tuple[str | None, str]:
         """A reference, with the set whose entity it names where the reference is provisional."""
         if alias_of(reference) is None:
             return (None, reference)
-        return (self.name if reference in self.change_set.created else self.beneath, reference)
+        return (self.owners.get(reference, self.beneath[-1] if self.beneath else self.name), reference)
 
 
 def overlaps(
@@ -97,8 +97,18 @@ def overlaps(
     `stacked_on` names, for a set read on top of another, the set beneath it.
     """
     below = stacked_on or {}
-    scoped = [_Scoped(name, change_set, below.get(name)) for name, change_set in sets.items()]
-    parties = [(owner, Party(owner.name, op)) for owner in scoped for op in owner.change_set.operations]
+    scoped = []
+    for name in sets:
+        ancestors: list[str] = []
+        parent = below.get(name)
+        while parent is not None:
+            if parent == name or parent in ancestors:
+                raise ValueError("Cannot check overlaps on a cyclic candidate stack.")
+            ancestors.append(parent)
+            parent = below.get(parent)
+        owners = {ref: layer for layer in (*reversed(ancestors), name) if layer in sets for ref in sets[layer].created}
+        scoped.append(_Scoped(name, tuple(ancestors), owners))
+    parties = [(owner, Party(owner.name, op)) for owner in scoped for op in sets[owner.name].operations]
     return (*_same_key(parties), *_remove_versus_use(parties))
 
 
@@ -114,7 +124,7 @@ def _same_key(parties: Sequence[tuple[_Scoped, Party]]) -> list[Overlap]:
     claims = ((_scoped_claim(owner, party.operation), party) for owner, party in parties)
     found: list[Overlap] = []
     for claimants in contested(claims).values():
-        overlaid = {beneath_of[party.set_id] for party in claimants}
+        overlaid = {lower for party in claimants for lower in beneath_of[party.set_id]}
         topmost = tuple(party for party in claimants if party.set_id not in overlaid)
         if len(topmost) > 1:
             effects = {_effect(party.operation) for party in topmost}
