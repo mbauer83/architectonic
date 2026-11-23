@@ -14,7 +14,11 @@ import IncidenceGrid from './IncidenceGrid.vue'
 import StressorRow from './StressorRow.vue'
 
 const props = defineProps<{ analysis: StressAnalysis; edits: AnalysisEdits; selected: string | null }>()
-const emit = defineEmits<{ select: [rowId: string | null]; show: [stableOrFullId: string]; openRow: [tab: 'stressors' | 'end-states', rowId: string] }>()
+const emit = defineEmits<{
+  select: [rowId: string | null]
+  show: [stableOrFullId: string]
+  openRow: [tab: 'stressors' | 'end-states', rowId: string]
+}>()
 
 const showHints = ref(false)
 /** The row just added, whose text field opens for typing. */
@@ -127,7 +131,9 @@ const aboutElement = async (id: string) => {
     <details class="coupling">
       <summary>
         <b>Coupling</b>
-        <span class="cnt">{{ coupling.length }} pair{{ coupling.length === 1 ? '' : 's' }} hit together by stressors</span>
+        <span class="cnt">
+          {{ coupling.length }} pair{{ coupling.length === 1 ? '' : 's' }} hit together by stressors
+        </span>
       </summary>
       <ul>
         <li
@@ -153,15 +159,37 @@ const aboutElement = async (id: string) => {
 </template>
 
 <style scoped>
-.kinds { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px; font-size: 12px; align-items: center; border-bottom: 1px solid var(--border); }
+.kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
 .k { padding: 1px 7px; border-radius: 3px; background: var(--soft); color: var(--text-2); }
 .k.low { background: var(--warn-soft); color: var(--warn-text); }
 .sp { flex: 1; }
 .help { padding: 6px 10px; font-size: 12px; color: var(--text-2); margin: 0; }
-.help kbd { font: 10px ui-monospace, monospace; border: 1px solid var(--border-strong); border-radius: 3px; padding: 0 3px; }
+.help kbd {
+  font: 10px ui-monospace, monospace;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  padding: 0 3px;
+}
 .scroll { max-height: calc(100vh - 440px); min-height: 160px; overflow: auto; }
 .tbl { width: 100%; border-collapse: collapse; }
-.tbl th { text-align: left; font-size: 11px; text-transform: uppercase; color: var(--muted); padding: 4px 8px; position: sticky; top: 0; background: var(--surface); }
+.tbl th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 4px 8px;
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+}
 .empty { padding: 10px; font-size: 12.5px; color: var(--muted); }
 .coupling { margin: 6px 10px; font-size: 12.5px; }
 .coupling summary { cursor: pointer; padding: 4px 0; }

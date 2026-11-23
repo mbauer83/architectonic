@@ -49,7 +49,9 @@ export const baseChoices = (
   const above = descendantsOf(id, all)
   return [
     { value: 'model', label: 'the current model' },
-    ...inAnalysis.filter((one) => one.id !== id && !above.has(one.id)).map((one) => ({ value: one.id, label: one.name })),
+    ...inAnalysis
+      .filter((one) => one.id !== id && !above.has(one.id))
+      .map((one) => ({ value: one.id, label: one.name })),
   ]
 }
 

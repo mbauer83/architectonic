@@ -224,7 +224,9 @@ onMounted(async () => {
             type="radio"
             value="model"
           ><span><b>From the current model, within the scope</b> <small>recommended</small>
-            <small>Read live from the model; it starts with no operations, and what you change becomes them.</small></span></label>
+            <small>
+              Read live from the model; it starts with no operations, and what you change becomes them.
+            </small></span></label>
           <label class="origin"><input
             v-model="origin"
             type="radio"
@@ -269,7 +271,9 @@ onMounted(async () => {
           :drawing="origin === 'empty' ? null : scope.drawing.value"
           :marks="marks"
           :dimmed="scope.outside.value"
-          :hint="scope.wholeDiagram.value ? 'The scope · what is outside it steps back' : 'Press elements to put them in the scope'"
+          :hint="scope.wholeDiagram.value
+            ? 'The scope · what is outside it steps back'
+            : 'Press elements to put them in the scope'"
           @pick="scope.press"
         />
       </section>
@@ -287,20 +291,63 @@ onMounted(async () => {
 .start { padding: 12px 14px; font-size: 12.5px; }
 .start h2 { font-size: 15px; margin: 0 0 2px; }
 .lead { color: var(--text-2); margin: 0 0 10px; }
-.fld { display: block; margin: 6px 0; font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-.fld input, .fld select { display: block; width: 100%; margin-top: 3px; font: inherit; font-size: 13px; text-transform: none; padding: 5px 8px; }
+.fld {
+  display: block;
+  margin: 6px 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.fld input, .fld select {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  font: inherit;
+  font-size: 13px;
+  text-transform: none;
+  padding: 5px 8px;
+}
 .step { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 10px 0; }
 .step h3 { font-size: 13px; margin: 0 0 6px; display: flex; gap: 8px; align-items: center; }
-.num { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; }
+.num {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+}
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 4px; }
 .seg .tab { flex: none; padding: 4px 10px; }
 .row { display: flex; gap: 8px 14px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
 .scope-sum { background: var(--soft); border-radius: 6px; padding: 6px 8px; margin: 8px 0 0; }
-.search-hits { flex-basis: 100%; max-height: 140px; overflow: auto; border: 1px solid var(--border); border-radius: 4px; }
+.search-hits {
+  flex-basis: 100%;
+  max-height: 140px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
 .search-hits label { display: flex; gap: 6px; padding: 2px 6px; }
 .search-hits small { color: var(--muted); }
-.origin { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px; margin-top: 6px; cursor: pointer; }
-.origin:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.origin {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 9px;
+  margin-top: 6px;
+  cursor: pointer;
+}
+.origin:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
 .origin small { display: block; color: var(--muted); font-size: 11.5px; }
 .origin select { margin-top: 4px; font-size: 12px; }
 .err { color: #b91c1c; }

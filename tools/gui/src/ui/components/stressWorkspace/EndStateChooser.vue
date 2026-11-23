@@ -140,5 +140,10 @@ defineExpose({ show })
 .es-menu li.active { background: var(--accent-soft, #eff6ff); color: var(--accent-strong, #1d4ed8); }
 .es-menu li.empty { color: var(--muted); cursor: default; }
 .es-menu .rid { color: var(--muted); font-family: ui-monospace, monospace; font-size: 11px; }
-.es-menu kbd { font: 10px ui-monospace, monospace; border: 1px solid var(--border); border-radius: 3px; padding: 0 3px; }
+.es-menu kbd {
+  font: 10px ui-monospace, monospace;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 3px;
+}
 </style>

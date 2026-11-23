@@ -30,7 +30,10 @@ const svc = inject(modelServiceKey)!
 
 // Read only: nothing is moved, so no shape is ever drawn anew and no picture is taken over.
 const session = useArrangementSession(() => Effect.succeed([]), (_, automatic) => automatic)
-watch(() => props.drawing, (drawing) => { if (drawing) session.open(drawing); else session.close() }, { immediate: true })
+watch(() => props.drawing, (drawing) => {
+  if (drawing) session.open(drawing)
+  else session.close()
+}, { immediate: true })
 const context = shallowRef<DiagramContext | null>(null)
 watch(() => props.diagramId, async (id) => {
   context.value = id ? await Effect.runPromise(svc.getDiagramContext(id)).catch(() => null) : null

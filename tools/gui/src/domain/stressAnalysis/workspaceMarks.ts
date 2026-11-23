@@ -21,7 +21,9 @@ export type Marks = ReadonlyMap<string, WorkspaceMark>
 /** Each component the focus hits, tagged with how many of the focused stressors hit it. */
 export const hitMarks = (hitsByStressor: ReadonlyMap<string, readonly string[]>): Marks => {
   const counts = new Map<string, number>()
-  for (const hits of hitsByStressor.values()) for (const hit of new Set(hits)) counts.set(hit, (counts.get(hit) ?? 0) + 1)
+  for (const hits of hitsByStressor.values()) {
+    for (const hit of new Set(hits)) counts.set(hit, (counts.get(hit) ?? 0) + 1)
+  }
   const of = hitsByStressor.size
   return new Map([...counts].map(([id, count]) => [stableEntityId(id), {
     kind: 'hit' as const,

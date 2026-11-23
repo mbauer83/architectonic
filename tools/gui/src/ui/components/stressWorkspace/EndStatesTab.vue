@@ -104,8 +104,13 @@ const keepChooser = (rowId: string, chooser: unknown) => {
         v-if="group.endState"
         class="es-f"
       >
-        <span>Required behaviour: {{ cell(group.endState, 'required_behaviour') ? nameOf(cell(group.endState, 'required_behaviour')) : '—' }}</span>
-        <span v-if="cell(group.endState, 'no_change_reason')">No change needed: {{ cell(group.endState, 'no_change_reason') }}</span>
+        <span>
+          Required behaviour:
+          {{ cell(group.endState, 'required_behaviour') ? nameOf(cell(group.endState, 'required_behaviour')) : '—' }}
+        </span>
+        <span v-if="cell(group.endState, 'no_change_reason')">
+          No change needed: {{ cell(group.endState, 'no_change_reason') }}
+        </span>
       </div>
     </div>
     <IncidenceGrid
@@ -136,9 +141,22 @@ const keepChooser = (rowId: string, chooser: unknown) => {
 .es-h { display: flex; gap: 8px; align-items: center; padding: 8px 10px 4px; }
 .es-h b { flex: 1; font-size: 13px; }
 .cnt { color: var(--muted); font-size: 12px; }
-.focus-btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-strong); border-color: var(--accent-border); font-weight: 600; }
+.focus-btn[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  border-color: var(--accent-border);
+  font-weight: 600;
+}
 .es ul { list-style: none; padding: 0 10px 6px; margin: 0; }
-.st { display: flex; gap: 6px; align-items: baseline; padding: 3px 6px; border-radius: 4px; font-size: 12.5px; cursor: grab; }
+.st {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  cursor: grab;
+}
 .st:hover, .st.sel { background: var(--hover); }
 .st:focus-visible { outline: 2px solid var(--accent); }
 .st .txt { flex: 1; }
@@ -146,5 +164,13 @@ const keepChooser = (rowId: string, chooser: unknown) => {
 .rid { font-family: ui-monospace, monospace; color: var(--text-2); }
 .m-chooser { visibility: hidden; }
 .st:focus-within .m-chooser, .st:hover .m-chooser { visibility: visible; }
-.es-f { display: flex; gap: 8px; flex-wrap: wrap; padding: 6px 10px 8px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-2); }
+.es-f {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-2);
+}
 </style>

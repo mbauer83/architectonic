@@ -201,7 +201,13 @@ const {
 .toolbar { display: flex; gap: 12px; padding: 16px; margin-bottom: 16px; flex-wrap: wrap; }
 .toolbar-field { display: flex; flex-direction: column; gap: 6px; min-width: 180px; }
 .toolbar-field--grow { flex: 1; }
-.toolbar-field span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; }
+.toolbar-field span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  font-weight: 700;
+}
 .toolbar-select, .toolbar-input {
   padding: 8px 10px;
   border: 1px solid #cbd5e1;
@@ -220,7 +226,11 @@ const {
   text-decoration: none;
 }
 .create-actions { display: flex; gap: 8px; }
-.create-btn--secondary { background: var(--surface); color: var(--accent-strong); border: 1px solid var(--accent-border); }
+.create-btn--secondary {
+  background: var(--surface);
+  color: var(--accent-strong);
+  border: 1px solid var(--accent-border);
+}
 .table-card { padding: 16px; }
 .result-count { color: #64748b; font-size: 13px; margin-bottom: 12px; }
 .documents-table { width: 100%; border-collapse: collapse; }

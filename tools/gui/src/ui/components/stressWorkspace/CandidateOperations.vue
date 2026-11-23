@@ -13,9 +13,11 @@ import type { Candidates } from '../../composables/useCandidates'
 const props = defineProps<{ candidates: Candidates; naiveId: string; nameOf: (id: string) => string }>()
 const emit = defineEmits<{ frame: [target: string | null]; sketch: [id: string] }>()
 
-const summary = computed(() => props.candidates.all.value.find((one) => one.id === props.candidates.selected.value) ?? null)
+const summary = computed(() =>
+  props.candidates.all.value.find((one) => one.id === props.candidates.selected.value) ?? null)
 const comparison = computed(() => props.candidates.comparison.value)
-const role = computed(() => summary.value?.id === props.naiveId ? 'naive architecture · the initial candidate' : 'adaptation')
+const role = computed(() =>
+  summary.value?.id === props.naiveId ? 'naive architecture · the initial candidate' : 'adaptation')
 const onBranch = computed(() => {
   const id = summary.value?.id
   const base = props.candidates.against.value
@@ -40,7 +42,9 @@ const CHANGE_WORD: Readonly<Record<string, string>> = { added: '+ added', edited
 const changeWord = (row: ChangeDifference): string =>
   row.change === 'removed' && !onBranch.value ? 'only in the base' : (CHANGE_WORD[row.change] ?? row.change)
 const shown = (value: unknown): string =>
-  value === null || value === undefined || value === '' ? '—' : typeof value === 'string' ? value : JSON.stringify(value)
+  value === null || value === undefined || value === ''
+    ? '—'
+    : typeof value === 'string' ? value : JSON.stringify(value)
 
 const standingOf = (row: ChangeDifference): string => {
   const target = typeof row.target === 'string' ? row.target : null
@@ -183,7 +187,14 @@ const cardRows = (row: ChangeDifference) => {
 .ops-h { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; padding: 8px 10px 4px; }
 .ops-h b { font-size: 13px; }
 .role, .stack-of { display: block; font-size: 11.5px; color: var(--muted); }
-.reads { display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
+.reads {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
 .reads select { font-size: 12px; max-width: 260px; margin-left: 4px; }
 .empty { padding: 10px; font-size: 12.5px; color: var(--muted); }
 .tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
@@ -203,7 +214,11 @@ const cardRows = (row: ChangeDifference) => {
 .standing--conflicting { background: #fee2e2; color: #991b1b; }
 .fcard {
   position: absolute; left: 100%; top: 0; z-index: 40; width: 340px; background: var(--surface);
-  border: 1px solid var(--border-strong); border-radius: 8px; box-shadow: var(--shadow); padding: 8px 10px; font-size: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 8px 10px;
+  font-size: 12px;
 }
 .fcard h4 { font-size: 13px; margin: 0 0 6px; }
 .fcard table { width: 100%; border-collapse: collapse; }

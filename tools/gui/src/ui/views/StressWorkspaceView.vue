@@ -44,7 +44,10 @@ const tabs = computed(() => [
   { id: 'naive' as const, label: 'Naive architecture', count: `${analysis.naive.value?.diff.length ?? 0} ops` },
   { id: 'stressors' as const, label: 'Stressors', count: String(analysis.stressors.value.length) },
   { id: 'end-states' as const, label: 'End states', count: String(analysis.endStates.value.length) },
-  { id: 'adaptations' as const, label: 'Adaptations', count: String(Math.max(candidates.inAnalysis.value.length - 1, 0)) },
+  {
+    id: 'adaptations' as const, label: 'Adaptations',
+    count: String(Math.max(candidates.inAnalysis.value.length - 1, 0)),
+  },
   { id: 'integration' as const, label: 'Integration', count: '' },
 ])
 
@@ -94,13 +97,17 @@ const pick = (stableId: string) => {
     framed.value = framed.value === stableId ? null : stableId
     return
   }
-  const tick = analysis.ticks.value.find((one) => one.stressor === stressor && stableEntityId(one.component) === stableId)
+  const tick = analysis.ticks.value.find(
+    (one) => one.stressor === stressor && stableEntityId(one.component) === stableId,
+  )
   void (tick ? edits.untick(tick) : edits.tick(stressor, fullIdOf(stableId)))
 }
 
 const openRow = (target: WorkspaceTab, row: string) => {
   tab.value = target
-  if (target === 'end-states') endStateFocus.value = analysis.endStates.value.some((one) => one.row_id === row) ? row : null
+  if (target === 'end-states') {
+    endStateFocus.value = analysis.endStates.value.some((one) => one.row_id === row) ? row : null
+  }
   else selected.value = row
 }
 

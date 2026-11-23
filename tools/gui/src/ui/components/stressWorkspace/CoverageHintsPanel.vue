@@ -127,7 +127,14 @@ const groups = (hints: CoverageHints): readonly { title: string; items: readonly
 </template>
 
 <style scoped>
-.hints { margin: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 8px 10px; font-size: 12.5px; }
+.hints {
+  margin: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 8px 10px;
+  font-size: 12.5px;
+}
 .sg-h { display: flex; gap: 8px; align-items: center; }
 .sg-h b { flex: 1; }
 .help { color: var(--text-2); font-size: 12px; margin: 2px 0 6px; }
@@ -137,6 +144,14 @@ const groups = (hints: CoverageHints): readonly { title: string; items: readonly
 .hint-grp li { display: flex; gap: 8px; align-items: center; padding: 1px 0; }
 .hint-grp li .link-btn { flex: 1; }
 .cnt { color: var(--muted); font-size: 11.5px; }
-.link-btn { border: none; background: none; color: var(--accent-strong); cursor: pointer; padding: 0; font: inherit; text-align: left; }
+.link-btn {
+  border: none;
+  background: none;
+  color: var(--accent-strong);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+}
 .link-btn:hover { text-decoration: underline; }
 </style>

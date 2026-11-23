@@ -21,8 +21,12 @@ const TAB_OF_TABLE: Readonly<Record<string, WorkspaceTab>> = {
 
 export const whatIsLeft = (progress: AnalysisProgress['progress']): readonly LeftItem[] => [
   ...progress.unwalked.map((row) => ({ row, tab: 'stressors' as const, text: `${row}: what happens is not written.` })),
-  ...progress.without_end_state.map((row) => ({ row, tab: 'stressors' as const, text: `${row} leads to no end state yet.` })),
-  ...progress.unexplained_hits.map((row) => ({ row, tab: 'stressors' as const, text: `Tick ${row} says nothing about why.` })),
+  ...progress.without_end_state.map((row) => ({
+    row, tab: 'stressors' as const, text: `${row} leads to no end state yet.`,
+  })),
+  ...progress.unexplained_hits.map((row) => ({
+    row, tab: 'stressors' as const, text: `Tick ${row} says nothing about why.`,
+  })),
   ...progress.without_required_behaviour.map((row) => ({
     row, tab: 'end-states' as const, text: `${row} names no required behaviour.`,
   })),
@@ -30,7 +34,8 @@ export const whatIsLeft = (progress: AnalysisProgress['progress']): readonly Lef
     row, tab: 'end-states' as const, text: `${row} has no adaptation and no reason for none.`,
   })),
   ...progress.incomplete_rows.map(({ table, row, column }) => ({
-    row, tab: TAB_OF_TABLE[table] ?? 'stressors', text: `${row}: ${column.replace(/_/g, ' ')} is missing or unreadable.`,
+    row, tab: TAB_OF_TABLE[table] ?? 'stressors',
+    text: `${row}: ${column.replace(/_/g, ' ')} is missing or unreadable.`,
   })),
 ].map((item, index) => ({ ...item, key: `${index}:${item.text}` }))
 

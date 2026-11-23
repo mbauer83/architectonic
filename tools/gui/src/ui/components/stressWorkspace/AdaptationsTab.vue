@@ -15,7 +15,8 @@ import CandidateOperations from './CandidateOperations.vue'
 const props = defineProps<{ analysis: StressAnalysis; candidates: Candidates }>()
 const emit = defineEmits<{ frame: [target: string | null]; sketch: [id: string] }>()
 
-const adaptations = computed(() => props.candidates.inAnalysis.value.filter((one) => one.id !== props.analysis.naiveId.value))
+const adaptations = computed(() =>
+  props.candidates.inAnalysis.value.filter((one) => one.id !== props.analysis.naiveId.value))
 const answers = (id: string): string => props.analysis.adaptations.value
   .filter((row) => cell(row, 'candidate_architecture') === id)
   .flatMap((row) => cellIds(row, 'end_states'))

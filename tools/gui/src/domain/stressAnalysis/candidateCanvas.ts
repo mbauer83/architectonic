@@ -24,7 +24,9 @@ export const editsOf = (command: CanvasCommand): readonly CandidateEdit[] => {
     case 'model.element.create':
       return [{
         op: 'create_entity', artifact_id: command.artifact_id,
-        fields: stated({ artifact_type: command.artifact_type, name: command.name, group: command.group, summary: command.summary }),
+        fields: stated({
+          artifact_type: command.artifact_type, name: command.name, group: command.group, summary: command.summary,
+        }),
       }]
     case 'model.element.rename':
       return [{ op: 'edit_entity', artifact_id: command.artifact_id, field: 'name', value: command.name }]
@@ -33,7 +35,8 @@ export const editsOf = (command: CanvasCommand): readonly CandidateEdit[] => {
     case 'model.relation.create': {
       const at = address(command.artifact_id)
       return at ? [{ op: 'add_connection', ...at, fields: stated({
-        description: command.description, src_multiplicity: command.src_multiplicity, tgt_multiplicity: command.tgt_multiplicity,
+        description: command.description,
+        src_multiplicity: command.src_multiplicity, tgt_multiplicity: command.tgt_multiplicity,
       }) }] : []
     }
     case 'model.relation.edit': {
@@ -51,7 +54,9 @@ const fieldsOf = (operation: Readonly<Record<string, unknown>>): Readonly<Record
   isFields(operation.fields) ? operation.fields : {}
 
 /** A candidate record's operations, as recorded under `changes`. */
-export const operationsOf = (record: Readonly<Record<string, unknown>>): readonly Readonly<Record<string, unknown>>[] => {
+type Operation = Readonly<Record<string, unknown>>
+
+export const operationsOf = (record: Readonly<Record<string, unknown>>): readonly Operation[] => {
   const operations = isFields(record.changes) ? record.changes.operations : undefined
   return Array.isArray(operations) ? operations.filter(isFields) : []
 }

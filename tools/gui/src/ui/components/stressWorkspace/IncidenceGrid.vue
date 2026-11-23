@@ -17,7 +17,11 @@ const props = defineProps<{
   /** Components down, the stressors across: how an end state in focus is read. */
   turned?: boolean
 }>()
-const emit = defineEmits<{ untick: [tick: Tick]; tick: [stressor: string, component: string]; note: [tick: Tick, note: string] }>()
+const emit = defineEmits<{
+  untick: [tick: Tick]
+  tick: [stressor: string, component: string]
+  note: [tick: Tick, note: string]
+}>()
 
 const focused = computed(() => new Set(props.stressors.map((row) => row.row_id)))
 const components = computed(() => componentsHitBy(props.ticks, focused.value))
@@ -152,7 +156,16 @@ const toggle = (stressor: string, component: string) => {
 
 <style scoped>
 .grid { border-top: 1px solid var(--border); }
-.grid-cap { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px 4px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.grid-cap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 10px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
 .pill { background: var(--soft); border-radius: 3px; padding: 1px 6px; font-weight: 600; font-size: 11px; }
 .hint { font-weight: 400; color: var(--muted); }
 .empty { padding: 6px 10px 10px; font-size: 12.5px; color: var(--muted); }
@@ -170,6 +183,14 @@ const toggle = (stressor: string, component: string) => {
 }
 .tick[aria-pressed="true"] { background: #1e293b; color: #fff; border-color: #1e293b; }
 .tick.note::after { content: '•'; color: #f59e0b; position: relative; top: -6px; }
-.note-btn { border: none; background: none; color: var(--text-2); cursor: text; font: inherit; padding: 0; text-align: left; }
+.note-btn {
+  border: none;
+  background: none;
+  color: var(--text-2);
+  cursor: text;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+}
 .cell-in { width: 100%; font: inherit; padding: 2px 4px; }
 </style>

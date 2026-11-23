@@ -42,4 +42,5 @@ export const connectionParts = (
 }
 
 /** Whether *id* is an entity id (`PREFIX@epoch.random[.slug]`) rather than another kind of reference. */
-export const isEntityId = (id: string): boolean => /^[A-Za-z]{2,6}@\d+\.[A-Za-z0-9_-]+(\.[A-Za-z0-9][A-Za-z0-9-]*)?$/.test(id)
+const ENTITY_ID = /^[A-Za-z]{2,6}@\d+\.[A-Za-z0-9_-]+(\.[A-Za-z0-9][A-Za-z0-9-]*)?$/
+export const isEntityId = (id: string): boolean => ENTITY_ID.test(id)

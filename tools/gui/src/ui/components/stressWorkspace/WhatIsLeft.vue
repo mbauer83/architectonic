@@ -59,13 +59,32 @@ const go = (item: LeftItem) => {
 
 <style scoped>
 .left { position: relative; }
-.left-sum { border: none; background: none; color: var(--accent-strong); cursor: pointer; font: inherit; font-size: 14px; }
+.left-sum {
+  border: none;
+  background: none;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+}
 .progress-pop {
   position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: 380px; padding: 10px 12px;
-  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; box-shadow: var(--shadow); font-size: 12.5px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  font-size: 12.5px;
 }
 .progress-pop ul { margin: 0; padding: 0 0 0 16px; }
 .progress-pop li { margin: 0 0 4px; }
-.link-btn { border: none; background: none; color: var(--accent-strong); cursor: pointer; padding: 0; font: inherit; text-align: left; }
+.link-btn {
+  border: none;
+  background: none;
+  color: var(--accent-strong);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+}
 .link-btn:hover { text-decoration: underline; }
 </style>
