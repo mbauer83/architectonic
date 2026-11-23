@@ -12,7 +12,7 @@ import { stableEntityId } from '../../domain/artifactId'
 import type { WorkspaceTab } from '../../domain/stressAnalysis/analysisProgress'
 import { cell } from '../../domain/stressAnalysis/analysisRows'
 import type { Marks } from '../../domain/stressAnalysis/workspaceMarks'
-import { diffMarks, framedMark, hitMarks } from '../../domain/stressAnalysis/workspaceMarks'
+import { diffMarks, framedMarks, hitMarks } from '../../domain/stressAnalysis/workspaceMarks'
 import { documentDetailRoute } from '../router/artifactRoutes'
 import { useStressAnalysis } from '../composables/useStressAnalysis'
 import { useAnalysisEdits } from '../composables/useAnalysisEdits'
@@ -55,11 +55,11 @@ const framed = ref<string | null>(null)
 const fullIdOf = (stableId: string): string =>
   analysis.naive.value?.view.entities.find((one) => stableEntityId(one.id) === stableId)?.id ?? stableId
 
-const hitsOf = (stressors: readonly string[]): ReadonlyMap<string, readonly string[]> => new Map(stressors.map((id) =>
-  [id, analysis.ticks.value.filter((tick) => tick.stressor === id).map((tick) => tick.component)]))
+const hitsOf = (stressors: readonly string[]): ReadonlyMap<string, readonly string[]> =>
+  new Map(stressors.map((id) => [id, analysis.hitsOf(id)]))
 const readsCandidate = computed(() => tab.value === 'naive' || tab.value === 'adaptations')
 const marks = computed((): Marks => {
-  const around = framed.value ? framedMark(framed.value, 'The row or hint selected on the left') : new Map()
+  const around = framed.value ? framedMarks([framed.value], 'The row or hint selected on the left') : new Map()
   if (readsCandidate.value) return new Map([...diffMarks(candidates.comparison.value?.diff ?? []), ...around])
   if (tab.value === 'stressors' && selected.value) return new Map([...hitMarks(hitsOf([selected.value])), ...around])
   if (tab.value === 'end-states' && endStateFocus.value) {

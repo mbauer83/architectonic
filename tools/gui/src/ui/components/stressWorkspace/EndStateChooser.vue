@@ -6,7 +6,7 @@
  */
 import { computed, nextTick, ref } from 'vue'
 import type { DocumentTableRow } from '../../../domain/schemas/candidates'
-import { cell } from '../../../domain/stressAnalysis/analysisRows'
+import { endStateName } from '../../../domain/stressAnalysis/analysisRows'
 
 const props = defineProps<{ endStates: readonly DocumentTableRow[]; current: string }>()
 const emit = defineEmits<{ choose: [rowId: string]; create: [name: string] }>()
@@ -16,11 +16,8 @@ const query = ref('')
 const active = ref(0)
 const field = ref<HTMLInputElement | null>(null)
 
-const nameOf = (row: DocumentTableRow): string => cell(row, 'end_state') || row.row_id
-const currentName = computed(() => {
-  const row = props.endStates.find((one) => one.row_id === props.current)
-  return row ? nameOf(row) : ''
-})
+const nameOf = (row: DocumentTableRow): string => endStateName(props.endStates, row.row_id)
+const currentName = computed(() => (props.current ? endStateName(props.endStates, props.current) : ''))
 const matches = computed(() => {
   const wanted = query.value.trim().toLowerCase()
   return props.endStates.filter((row) => !wanted || nameOf(row).toLowerCase().includes(wanted))

@@ -19,7 +19,7 @@ import { stressAnalysisWorkspaceRoute } from '../router/artifactRoutes'
 import { LARGE_SCOPE, useAnalysisScope } from '../composables/useAnalysisScope'
 import WorkspaceCanvas from '../components/stressWorkspace/WorkspaceCanvas.vue'
 import type { Marks } from '../../domain/stressAnalysis/workspaceMarks'
-import { framedMark } from '../../domain/stressAnalysis/workspaceMarks'
+import { framedMarks } from '../../domain/stressAnalysis/workspaceMarks'
 
 type Origin = 'model' | 'existing' | 'empty'
 
@@ -38,8 +38,7 @@ const candidates = shallowRef<readonly CandidateSummary[]>([])
 const starting = ref(false)
 const error = ref<string | null>(null)
 
-const marks = computed((): Marks => new Map([...scope.pressed.value]
-  .flatMap((id) => [...framedMark(id, 'In the scope')])))
+const marks = computed((): Marks => framedMarks(scope.pressed.value, 'In the scope'))
 const canStart = computed(() => title.value.trim() !== '' && naiveName.value.trim() !== ''
   && (origin.value !== 'existing' || fromCandidate.value !== '') && !starting.value)
 

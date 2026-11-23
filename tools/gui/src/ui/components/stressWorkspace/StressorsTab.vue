@@ -5,8 +5,7 @@
  * the stressor in focus.
  */
 import { computed, ref } from 'vue'
-import type { DocumentTableRow } from '../../../domain/schemas/candidates'
-import { cell } from '../../../domain/stressAnalysis/analysisRows'
+import { endStateName } from '../../../domain/stressAnalysis/analysisRows'
 import { coverageHints } from '../../../domain/stressAnalysis/analysisProgress'
 import type { AnalysisEdits } from '../../composables/useAnalysisEdits'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
@@ -29,16 +28,6 @@ const hints = computed(() => {
   const progress = props.analysis.progress.value
   return progress ? coverageHints(progress, props.analysis.nameOf) : null
 })
-const served = computed(() => new Map((props.analysis.incidence.value?.stressors ?? [])
-  .map((row) => [String(row.id), row])))
-const hitsOf = (row: DocumentTableRow): number => {
-  const hits = served.value.get(row.row_id)?.hits
-  return Array.isArray(hits) ? hits.length : 0
-}
-const missingOf = (row: DocumentTableRow): readonly string[] => {
-  const missing = served.value.get(row.row_id)?.missing_elements
-  return Array.isArray(missing) ? missing.map((id) => props.analysis.nameOf(String(id))) : []
-}
 const focused = computed(() => props.analysis.stressors.value.find((row) => row.row_id === props.selected) ?? null)
 const coupling = computed(() => [...props.analysis.incidence.value?.coupling ?? []].sort((a, b) => b.count - a.count))
 
@@ -53,10 +42,6 @@ const aboutElement = async (id: string) => {
   const added = await props.edits.addStressor({ subject: id })
   if (added) await props.edits.tick(added, id)
   if (added) emit('select', added)
-}
-const endStateName = (rowId: string): string => {
-  const row = props.analysis.endStates.value.find((one) => one.row_id === rowId)
-  return row ? cell(row, 'end_state') : ''
 }
 </script>
 
@@ -96,7 +81,7 @@ const endStateName = (rowId: string): string => {
     <CoverageHintsPanel
       v-if="showHints && hints"
       :hints="hints"
-      :end-state-name="endStateName"
+      :end-state-name="(rowId: string) => endStateName(analysis.endStates.value, rowId)"
       @close="showHints = false"
       @show="emit('show', $event)"
       @about-element="aboutElement"
@@ -120,8 +105,8 @@ const endStateName = (rowId: string): string => {
             :fresh="row.row_id === fresh"
             :selected="row.row_id === selected"
             :kinds="kinds"
-            :hits="hitsOf(row)"
-            :missing="missingOf(row)"
+            :hits="analysis.hitsOf(row.row_id).length"
+            :missing="analysis.missingOf(row.row_id).map(analysis.nameOf)"
             :end-states="analysis.endStates.value"
             @opened="fresh = null"
             @select="emit('select', row.row_id === selected ? null : row.row_id)"

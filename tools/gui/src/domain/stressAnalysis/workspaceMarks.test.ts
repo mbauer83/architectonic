@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { diffMarks, framedMark, hitMarks } from './workspaceMarks'
+import { diffMarks, framedMarks, hitMarks } from './workspaceMarks'
 
 const SERVICE = 'SRV@1712870400.Uv9Wx9.repository-promotion-service'
 const ARTIFACTS = 'PRC@1712870400.0Rz5Ex.promote-artifacts'
@@ -32,7 +32,7 @@ describe('the workspace marks', () => {
     expect(marks.get('SRV@1712870400.Uv9Wx9')?.title).toBe('Changed: a field differs from the base (name)')
   })
 
-  it('frames one element', () => {
-    expect([...framedMark(SERVICE, 'why')]).toEqual([['SRV@1712870400.Uv9Wx9', { kind: 'framed', tag: '', title: 'why' }]])
+  it('frames what a row or a choice is about', () => {
+    expect([...framedMarks([SERVICE], 'why')]).toEqual([['SRV@1712870400.Uv9Wx9', { kind: 'framed', tag: '', title: 'why' }]])
   })
 })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DocumentTableRow, DocumentTables } from '../schemas/candidates'
 import {
-  cell, cellIds, changeRow, componentsHitBy, groupedByEndState, removeRow, restoreRow, rowsOf, ticksOf,
+  cell, cellIds, changeRow, componentsHitBy, endStateName, groupedByEndState, removeRow, restoreRow, rowsOf, ticksOf,
 } from './analysisRows'
 
 const row = (row_id: string, values: DocumentTableRow['values']): DocumentTableRow => ({ row_id, values, unreadable: {} })
@@ -24,6 +24,11 @@ describe('the analysis rows', () => {
     expect(cell(adaptation, 'reasoning')).toBe('')
     expect(cellIds(adaptation, 'end_states')).toEqual(['E1', 'E2'])
     expect(cellIds(row('A2', { end_states: 'E3' }), 'end_states')).toEqual(['E3'])
+  })
+
+  it('names an end state by its row, and by its id where it names none or is gone', () => {
+    const ends = [row('E1', { end_state: 'Stall' }), row('E2', {})]
+    expect([endStateName(ends, 'E1'), endStateName(ends, 'E2'), endStateName(ends, 'E9')]).toEqual(['Stall', 'E2', 'E9'])
   })
 
   it('groups stressors under their end states, ungrouped first, an unknown end state ungrouped', () => {

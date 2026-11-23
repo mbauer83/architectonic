@@ -48,6 +48,6 @@ export const diffMarks = (diff: readonly ChangeDifference[]): Marks =>
     return [[stableEntityId(row.target), { kind, tag: DIFF_TAG[kind], title }] as const]
   }))
 
-/** The element a row or a hint is about, framed so it can be found on the picture. */
-export const framedMark = (id: string, title: string): Marks =>
-  new Map([[stableEntityId(id), { kind: 'framed' as const, tag: '', title }]])
+/** What a row, a hint or a choice is about, framed so it can be found on the picture. */
+export const framedMarks = (ids: Iterable<string>, title: string): Marks =>
+  new Map([...ids].map((id) => [stableEntityId(id), { kind: 'framed' as const, tag: '', title }]))

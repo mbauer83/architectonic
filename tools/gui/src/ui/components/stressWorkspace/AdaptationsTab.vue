@@ -6,7 +6,7 @@
  * adaptation of the end state it answers.
  */
 import { computed, ref } from 'vue'
-import { cell, cellIds } from '../../../domain/stressAnalysis/analysisRows'
+import { cell, cellIds, endStateName } from '../../../domain/stressAnalysis/analysisRows'
 import { chainOf, stackLine } from '../../../domain/stressAnalysis/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
@@ -16,14 +16,10 @@ const props = defineProps<{ analysis: StressAnalysis; candidates: Candidates }>(
 const emit = defineEmits<{ frame: [target: string | null] }>()
 
 const adaptations = computed(() => props.candidates.inAnalysis.value.filter((one) => one.id !== props.analysis.naiveId.value))
-const endStateName = (rowId: string): string => {
-  const row = props.analysis.endStates.value.find((one) => one.row_id === rowId)
-  return row ? cell(row, 'end_state') : rowId
-}
 const answers = (id: string): string => props.analysis.adaptations.value
   .filter((row) => cell(row, 'candidate_architecture') === id)
   .flatMap((row) => cellIds(row, 'end_states'))
-  .map(endStateName)
+  .map((rowId) => endStateName(props.analysis.endStates.value, rowId))
   .join(', ')
 const depth = (id: string): number => chainOf(id, props.candidates.all.value).length - 2
 

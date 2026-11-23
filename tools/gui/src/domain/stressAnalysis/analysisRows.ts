@@ -26,6 +26,12 @@ const textOf = (value: CellValue | undefined): string =>
 /** A cell's value as text, empty where the cell is. */
 export const cell = (row: DocumentTableRow, column: string): string => textOf(row.values[column])
 
+/** An end state's name, by row id; the id where the row names none or is not there. */
+export const endStateName = (endStates: readonly DocumentTableRow[], rowId: string): string => {
+  const row = endStates.find((one) => one.row_id === rowId)
+  return (row && cell(row, 'end_state')) || rowId
+}
+
 /** A many-valued row-reference cell as its row ids. */
 export const cellIds = (row: DocumentTableRow, column: string): readonly string[] => {
   const value = row.values[column]
