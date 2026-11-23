@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.domain.diagrams.diagram_ontology_loader import load_diagram_ontology
+from src.diagram_types._ontology_loader import load_diagram_ontology
 
 
 def _write_ontology(tmp_path: Path, yaml_text: str) -> Path:

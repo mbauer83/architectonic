@@ -4,9 +4,10 @@ from pathlib import Path
 from typing import Any
 
 from src.diagram_types._base import DiagramTypeBase
+from src.diagram_types._ontology_loader import load_diagram_ontology
 from src.diagram_types.activity.renderer import ActivityPumlRenderer
 from src.domain.diagrams.diagram_entities_schema import derive_diagram_entities_schema
-from src.domain.diagrams.diagram_ontology_loader import DiagramOntology, load_diagram_ontology
+from src.domain.diagrams.diagram_ontology_loader import DiagramOntology
 from src.domain.diagrams.diagram_ontology_merge import merge_ontology_into_diagram_only_types
 from src.domain.diagrams.diagram_type_config import puml_notes_from_config
 from src.domain.modules.bridges import BridgeDeclaration

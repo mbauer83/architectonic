@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.domain.diagrams.diagram_ontology_loader import load_diagram_ontology
+from src.diagram_types._ontology_loader import load_diagram_ontology
 
 _C4_CONTAINER_DIR = Path("src/diagram_types/c4/container")
 _C4_CONTEXT_DIR = Path("src/diagram_types/c4/system_context")

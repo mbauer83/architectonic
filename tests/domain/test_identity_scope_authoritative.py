@@ -58,7 +58,7 @@ def test_absent_identity_scope_defaults_to_diagram(tmp_path):
     happening to declare a scope-less type (classifier and generalization_set are both
     workspace-scoped).
     """
-    from src.domain.diagrams.diagram_ontology_loader import load_diagram_ontology
+    from src.diagram_types._ontology_loader import load_diagram_ontology
 
     ont = tmp_path / "ontology.yaml"
     ont.write_text(

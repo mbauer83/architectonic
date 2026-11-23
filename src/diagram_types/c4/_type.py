@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 # Import engine module to trigger strategy registration as a side effect.
 import src.diagram_types.c4._manifest  # noqa: F401
 from src.diagram_types._base import DiagramTypeBase
+from src.diagram_types._ontology_loader import load_diagram_ontology
 from src.diagram_types.c4.renderer import DIRECTION_KEY, C4PumlRenderer
 from src.domain.concept_scope import ConceptScope
 from src.domain.diagrams.bindings import (
@@ -25,7 +26,7 @@ from src.domain.diagrams.bindings import (
     SCOPE_KEY,
 )
 from src.domain.diagrams.diagram_entities_schema import derive_diagram_entities_schema
-from src.domain.diagrams.diagram_ontology_loader import DiagramOntology, load_diagram_ontology
+from src.domain.diagrams.diagram_ontology_loader import DiagramOntology
 from src.domain.diagrams.diagram_ontology_merge import merge_ontology_into_diagram_only_types
 from src.domain.diagrams.diagram_type_config import puml_notes_from_config
 from src.domain.modules.bridges import BridgeDeclaration

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.domain.diagrams.diagram_ontology_loader import load_diagram_ontology
+from src.diagram_types._ontology_loader import load_diagram_ontology
 from src.domain.ontology_representation.ontology_types import RELATIONSHIP_KINDS
 from src.ontologies.archimate_4 import module as archimate_module
 

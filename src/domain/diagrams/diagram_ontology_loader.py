@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 from src.domain.diagrams.allowed_bindings import AllowedBindingsSpec, allowed_bindings_from_config
@@ -18,7 +17,6 @@ from src.domain.ontology_representation.ontology_types import (
 )
 from src.domain.ontology_representation.relation_notation import parse_relation_notation
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet, permitted_connections_from_config
-from src.domain.yaml_documents import parse_yaml
 
 
 @dataclass(frozen=True)
@@ -34,10 +32,7 @@ class DiagramOntology:
     bridges: tuple[BridgeDeclaration, ...] = dataclasses.field(default_factory=tuple)
 
 
-def load_diagram_ontology(path: Path) -> DiagramOntology:
-    with path.open(encoding="utf-8") as fh:
-        raw: dict[str, Any] = parse_yaml(fh) or {}
-
+def diagram_ontology_from_mapping(raw: dict[str, Any]) -> DiagramOntology:
     raw_entity_types: dict[str, Any] = raw.get("entity_types") or {}
     entity_types = _parse_entity_types(raw_entity_types)
     entity_type_properties = {
