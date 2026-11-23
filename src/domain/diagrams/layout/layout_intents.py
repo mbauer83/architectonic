@@ -30,6 +30,7 @@ from src.domain.diagrams.layout.geometry import Extent
 from src.domain.diagrams.layout.layout_block import Layout, MalformedLayout, layout_as_written
 from src.domain.diagrams.layout.layout_checks import placed_extent
 from src.domain.diagrams.layout.layout_patch import SECTIONS
+from src.domain.diagrams.layout.orthogonal import half_up
 
 type Edge = Literal["left", "right", "top", "bottom", "centre_x", "centre_y"]
 type Axis = Literal["x", "y"]
@@ -82,7 +83,7 @@ def _extents(layout: Layout, keys: Sequence[str], drawn: Mapping[str, Extent]) -
 def _moved(layout: Layout, moves: Mapping[str, tuple[float, float]]) -> Layout:
     elements = dict(layout.elements)
     for key, (left, top) in moves.items():
-        elements[key] = replace(elements[key], x=round(left), y=round(top))
+        elements[key] = replace(elements[key], x=half_up(left), y=half_up(top))
     return replace(layout, elements=elements)
 
 

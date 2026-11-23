@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { Extent } from '../geometry'
 import type { AlignEdge, DistributeAxis } from '../layoutIntents'
-import { aligned, distributed, roundedAsTheServerDoes } from '../layoutIntents'
+import { aligned, distributed } from '../layoutIntents'
 
 interface Case {
   name: string
@@ -37,7 +37,4 @@ describe('align and distribute, as the server compiles them', () => {
     expect(Object.fromEntries([...answer].map(([key, at]) => [key, [at.x, at.y]]))).toEqual(one.to)
   })
 
-  it('rounds a half to the even number, as Python does', () => {
-    expect([0.5, 1.5, 264.5, -2.5, 2.4, 2.6].map(roundedAsTheServerDoes)).toEqual([0, 2, 264, -2, 2, 3])
-  })
 })

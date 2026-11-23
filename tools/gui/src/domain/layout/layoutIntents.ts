@@ -5,11 +5,12 @@
  * The TypeScript mirror of `_aligned` and `_distributed` in `src/domain/diagrams/layout/layout_intents.py`,
  * held equal to it by `tests/fixtures/layout_geometry/intents.json`. A centre is the centre of the
  * selection's bounding box; distributing keeps the first and the last where they are, ordered by their
- * leading edge and then by key. Each answer is an element's new top-left corner, rounded as the server
- * rounds it.
+ * leading edge and then by key. Each answer is an element's new top-left corner, a half rounded up
+ * (`halfUp`), the one rounding both languages share.
  */
 import type { Extent, Point } from './geometry'
 import { heightOf, widthOf } from './geometry'
+import { halfUp } from './orthogonal'
 
 /** The edge, or the centre line, elements are aligned on: the server's names. */
 export type AlignEdge = 'left' | 'right' | 'top' | 'bottom' | 'centre_x' | 'centre_y'
@@ -21,15 +22,7 @@ export type DistributeAxis = 'x' | 'y'
 export const LEAST_TO_ALIGN = 2
 export const LEAST_TO_DISTRIBUTE = 3
 
-/** Python's `round`: to the nearest whole number, a half going to the even one. */
-export const roundedAsTheServerDoes = (value: number): number => {
-  const floor = Math.floor(value)
-  const fraction = value - floor
-  if (fraction !== 0.5) return Math.round(value)
-  return floor % 2 === 0 ? floor : floor + 1
-}
-
-const corner = (x: number, y: number): Point => ({ x: roundedAsTheServerDoes(x), y: roundedAsTheServerDoes(y) })
+const corner = (x: number, y: number): Point => ({ x: halfUp(x), y: halfUp(y) })
 
 /** Each of *extents* lined up on *edge* of the box round them all; the other axis is kept. */
 export const aligned = (extents: ReadonlyMap<string, Extent>, edge: AlignEdge): ReadonlyMap<string, Point> => {
