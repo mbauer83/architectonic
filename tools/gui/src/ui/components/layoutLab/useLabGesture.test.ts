@@ -49,12 +49,11 @@ const opened = () => {
 }
 
 /** The pointer pressed on *alias* (or one of its handles) at (x, y): outside an SVG, page and picture agree. */
+const down = (x: number, y: number, shiftKey = false) =>
+  Object.assign(new MouseEvent('pointerdown', { clientX: x, clientY: y, button: 0, shiftKey }), { pointerId: 1 }) as PointerEvent
+
 const press = (gesture: ReturnType<typeof useLabGesture>, alias: string, x: number, y: number, handle?: Handle) =>
-  gesture.press(
-    Object.assign(new MouseEvent('pointerdown', { clientX: x, clientY: y, button: 0 }), { pointerId: 1 }) as PointerEvent,
-    alias,
-    handle ?? null,
-  )
+  gesture.press(down(x, y), alias, handle ?? null)
 
 const pointer = (type: string, x: number, y: number) =>
   window.dispatchEvent(new MouseEvent(type, { clientX: x, clientY: y }))
@@ -135,5 +134,56 @@ describe('the layout lab gesture', () => {
     expect(lab.routes.value).toBeNull()
     expect(lab.layout.value?.elements['APP@3.c']).toEqual({ x: 400, y: 40 })
     expect(lab.courses.value.get(0)).toEqual([{ x: 240, y: 60 }, { x: 400, y: 60 }])
+  })
+
+  it('toggles a shape in and out of the selection with Shift, and drags the whole selection', () => {
+    const { lab, gesture } = opened()
+    press(gesture, 'A', 30, 50)
+    pointer('pointerup', 30, 50)
+    gesture.press(down(450, 60, true), 'C')
+    expect(gesture.selection.value).toEqual(['A', 'C'])
+    expect(gesture.selected.value).toBeNull()
+
+    press(gesture, 'C', 450, 60)
+    pointer('pointermove', 450, 100)
+    pointer('pointerup', 450, 100)
+    expect(lab.arrangement.value?.elements.get('A')).toEqual(at(20, 80, 120, 120))
+    expect(lab.arrangement.value?.elements.get('C')).toEqual(at(400, 80, 500, 120))
+    expect(lab.arrangement.value?.elements.get('B')).toEqual(at(140, 40, 240, 80))
+    expect(lab.history.value).toHaveLength(1)
+
+    gesture.press(down(30, 90, true), 'A')
+    expect(gesture.selection.value).toEqual(['C'])
+  })
+
+  it('selects with a rectangle what it encloses, and a box only when wholly inside it', () => {
+    const { gesture } = opened()
+    gesture.sweepFrom(down(130, 30))
+    pointer('pointermove', 510, 85)
+    expect(gesture.rectangle.value).toEqual(at(130, 30, 510, 85))
+    pointer('pointerup', 510, 85)
+    expect(gesture.selection.value).toEqual(['B', 'C'])
+    expect(gesture.rectangle.value).toBeNull()
+
+    gesture.sweepFrom(down(0, 0, true))
+    pointer('pointermove', 130, 100)
+    pointer('pointerup', 130, 100)
+    expect(gesture.selection.value).toEqual(['B', 'C', 'A'])
+
+    gesture.sweepFrom(down(0, 0))
+    pointer('pointermove', 260, 100)
+    pointer('pointerup', 260, 100)
+    expect(gesture.selection.value).toEqual(['A', 'B', 'G'])
+  })
+
+  it('selects a box whose body is pressed without travel, and clears on empty paper', () => {
+    const { gesture } = opened()
+    gesture.sweepFrom(down(200, 85), 'G')
+    pointer('pointerup', 200, 85)
+    expect(gesture.selected.value).toBe('G')
+
+    gesture.sweepFrom(down(550, 300))
+    pointer('pointerup', 550, 300)
+    expect(gesture.selection.value).toEqual([])
   })
 })

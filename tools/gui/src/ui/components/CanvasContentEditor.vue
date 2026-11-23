@@ -9,20 +9,24 @@ import type { DiagramEditing } from '../composables/useDiagramEditing'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import { elementAt, useContentGestures } from '../composables/useContentGestures'
 import CanvasElementForm from './CanvasElementForm.vue'
+import CanvasSelectionMenu from './CanvasSelectionMenu.vue'
 import { type CanvasWords, DIAGRAM_WORDS } from './canvasWords'
 
 const props = defineProps<{
   editing: DiagramEditing
   context: DiagramContext
   selection?: string | null
+  /** Every shape selected: two or more open the selection's menu rather than an element's. */
+  selectedShapes?: readonly string[]
   /** What deleting means here; the diagram page's words when absent. */
   words?: CanvasWords
 }>()
 const words = computed(() => props.words ?? DIAGRAM_WORDS)
+const several = computed(() => props.selectedShapes ?? [])
 const svc = inject(modelServiceKey)!
 const host = ref<HTMLElement | null>(null)
 const field = ref<HTMLInputElement | null>(null)
-const mode = ref<'create' | 'element' | 'rename' | 'delete' | 'target' | 'relation' | null>(null)
+const mode = ref<'create' | 'element' | 'selection' | 'rename' | 'delete' | 'target' | 'relation' | null>(null)
 const at = ref({ x: 0, y: 0 })
 const source = ref('')
 const target = ref('')
@@ -57,7 +61,8 @@ function menu(event: MouseEvent) {
   event.preventDefault()
   position(event.clientX, event.clientY)
   source.value = elementAt(event)?.dataset.alias ?? ''
-  mode.value = selected.value ? 'element' : 'create'
+  const onSelection = several.value.length > 1 && (!source.value || several.value.includes(source.value))
+  mode.value = onSelection ? 'selection' : selected.value ? 'element' : 'create'
 }
 async function rename(alias: string) {
   source.value = alias
@@ -197,6 +202,13 @@ function double(e: MouseEvent) {
     @pointermove="moving"
   >
     <slot />
+    <p
+      class="live"
+      aria-live="polite"
+      data-testid="selection-announcement"
+    >
+      {{ several.length > 1 ? `${several.length} items selected` : '' }}
+    </p>
     <button
       v-if="touchedLine !== null"
       type="button"
@@ -226,6 +238,13 @@ function double(e: MouseEvent) {
           :context="context"
           @apply="apply"
         />
+        <CanvasSelectionMenu
+          v-else-if="mode === 'selection'"
+          :editing="editing"
+          :selection="several"
+          :words="words"
+          @done="mode = null"
+        />
         <template v-else-if="mode === 'element'">
           <strong>{{ selected?.name }}</strong> <button @click="rename(source)">
             Rename
@@ -234,7 +253,7 @@ function double(e: MouseEvent) {
           </button>
           <button
             v-if="words.removeEntry"
-            @click="editing.remove(source); mode = null"
+            @click="editing.remove([source]); mode = null"
           >
             {{ words.removeEntry }}
           </button>
@@ -309,33 +328,4 @@ function double(e: MouseEvent) {
     </Teleport>
   </div>
 </template>
-<style scoped>
-.canvas-pop {
-  position: fixed;
-  z-index: 100;
-  padding: 0.8rem;
-  width: 286px;
-  max-height: min(350px, 90vh);
-  overflow: auto;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: 0 5px 20px #0003;
-}
-.canvas-pop label,
-.canvas-pop button,
-.canvas-pop input,
-.canvas-pop select {
-  display: block;
-  margin-block: 0.25rem;
-}
-.close {
-  float: right;
-}
-.content-canvas :deep(.lab-line path),
-.content-canvas :deep(.lab-line-label text) {
-  pointer-events: visiblePainted;
-  cursor: pointer;
-}
-</style>
+<style scoped src="./CanvasContentEditor.css"></style>

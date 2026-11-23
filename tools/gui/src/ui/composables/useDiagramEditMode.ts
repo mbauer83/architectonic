@@ -13,7 +13,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { ModelService } from '../../application/ModelService'
-import { SMALLEST_ELEMENT, moved, resized, resizedExtent } from '../../domain/layout/lab/labArrangement'
+import { SMALLEST_ELEMENT, movedTogether, resized, resizedExtent } from '../../domain/layout/lab/labArrangement'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { useDiagramEditing } from './useDiagramEditing'
 
@@ -28,6 +28,7 @@ const ARROWS: Readonly<Record<string, readonly [number, number]>> = {
 /** What the page's canvas and edit bar let the keys ask of them. */
 export interface CanvasHandle {
   readonly selected: string | null
+  readonly selection: readonly string[]
   readonly hasSelection: boolean
   readonly clearSelection: () => void
 }
@@ -88,23 +89,18 @@ export function useDiagramEditMode(
   }
 
   /**
-   * The selected shape moved by the arrows, or resized by Alt and the arrows from its right and bottom
-   * edges (Q35): one undoable step each, *by* pixels at a time.
+   * The selection moved by the arrows, or one selected shape resized by Alt and the arrows from its
+   * right and bottom edges (Q35): one undoable step each, *by* pixels at a time.
    */
-  const nudge = (alias: string, [x, y]: readonly [number, number], by: number, resize: boolean) => {
-    const geometry = session.geometry.value
-    if (!geometry) return
-    session.begin()
-    const from = session.arrangement.value
-    const placement = session.placement.value
-    const extent = placement?.elements.get(alias) ?? placement?.boxes.get(alias)
-    if (!from || !extent) return
-    const isBox = placement?.boxes.has(alias) ?? false
-    const next = resize
-      ? resized(geometry, from, alias, resizedExtent(extent, 'se', x * by, y * by, isBox ? 1 : SMALLEST_ELEMENT))
-      : moved(geometry, from, alias, x * by, y * by)
-    session.preview(next, new Set([alias]))
-    session.commit()
+  const nudge = (selection: readonly string[], [x, y]: readonly [number, number], by: number, resize: boolean) => {
+    const [alias] = selection
+    if (resize && selection.length !== 1) return
+    session.change((geometry, from, placement) => {
+      if (!resize) return movedTogether(geometry, from, selection, x * by, y * by)
+      const extent = placement.elements.get(alias) ?? placement.boxes.get(alias)
+      const least = placement.boxes.has(alias) ? 1 : SMALLEST_ELEMENT
+      return extent ? resized(geometry, from, alias, resizedExtent(extent, 'se', x * by, y * by, least)) : from
+    })
   }
 
   const onKey = (event: KeyboardEvent) => {
@@ -121,14 +117,14 @@ export function useDiagramEditMode(
     } else if (command && key === 'y') {
       event.preventDefault()
       session.redo()
-    } else if ((event.key === 'Delete' || event.key === 'Backspace') && parts.canvas.value?.selected) {
+    } else if ((event.key === 'Delete' || event.key === 'Backspace') && parts.canvas.value?.hasSelection) {
       // Remove from the diagram only (owner's standing rule); deleting from the model is a menu command.
       event.preventDefault()
-      editing.remove(parts.canvas.value.selected)
+      editing.remove(parts.canvas.value.selection)
       parts.canvas.value.clearSelection()
-    } else if (event.key in ARROWS && parts.canvas.value?.selected) {
+    } else if (event.key in ARROWS && parts.canvas.value?.hasSelection) {
       event.preventDefault()
-      nudge(parts.canvas.value.selected, ARROWS[event.key], event.shiftKey ? 1 : GRID, event.altKey)
+      nudge(parts.canvas.value.selection, ARROWS[event.key], event.shiftKey ? 1 : GRID, event.altKey)
     } else if (event.key === ' ') {
       event.preventDefault()
       spaceHeld.value = true

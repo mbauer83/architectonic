@@ -113,6 +113,7 @@ onMounted(async () => {
             :editing="editing"
             :context="context"
             :selection="canvas?.selected"
+            :selected-shapes="canvas?.selection"
             :words="CANDIDATE_WORDS"
           >
             <LayoutLabCanvas

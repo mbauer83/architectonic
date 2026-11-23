@@ -10,12 +10,14 @@ import { heightOf, widthOf } from '../../../domain/layout/geometry'
 import { useElementSize } from '../../composables/useElementSize'
 import type { ArrangementSession } from '../../composables/useArrangementSession'
 import type { BreachMark } from './labDrawing'
-import { breachMarksOf, handlesOf, pointsAttribute } from './labDrawing'
+import { breachMarksOf, pointsAttribute } from './labDrawing'
 import { paintOrder } from './labPaintOrder'
 import type { DrawnRelation, DrawnShape, Piece } from './labPieces'
 import { drawnRelations, drawnShapes, pieceOf } from './labPieces'
 import LabDrawn from './LabDrawn'
 import CanvasMarks from './CanvasMarks.vue'
+import LabSelection from './LabSelection.vue'
+import { unionOf } from '../../../domain/layout/lab/labArrangement'
 import { useLabGesture } from './useLabGesture'
 
 /** *readonly*: a press picks a shape and nothing moves. The default slot draws over the picture. */
@@ -51,11 +53,6 @@ const drawnExtent = computed((): Extent | null => {
   }
 })
 
-const union = (one: Extent, other: Extent): Extent => ({
-  left: Math.min(one.left, other.left), top: Math.min(one.top, other.top),
-  right: Math.max(one.right, other.right), bottom: Math.max(one.bottom, other.bottom),
-})
-
 /**
  * The view: PlantUML's page, grown to take in whatever is drawn beyond it and never shrunk, so the
  * picture keeps its scale while it is arranged. Held still while something is dragged, so the point
@@ -65,7 +62,7 @@ const view = ref<Extent | null>(null)
 const grown = (now: Extent | null): Extent | null => {
   const page = geometry.value?.canvas ?? null
   const before = view.value ?? page
-  return now && before ? union(before, now) : (now ?? before)
+  return now && before ? unionOf([before, now]) : (now ?? before)
 }
 watch(geometry, () => { view.value = null })
 watch(drawnExtent, (now) => {
@@ -74,9 +71,11 @@ watch(drawnExtent, (now) => {
 watch(() => gesture.dragging.value, (dragging) => { if (!dragging) view.value = grown(drawnExtent.value) })
 
 defineExpose({
-  /** Whether a shape is selected; and clearing it, as Escape's first step does. */
-  hasSelection: computed(() => gesture.selected.value !== null),
-  selected: computed(() => gesture.selected.value),
+  /** Whether anything is selected; and clearing it, as Escape's first step does. */
+  hasSelection: computed(() => gesture.selection.value.length > 0),
+  /** The one shape selected, or null when none or several are; and every shape selected. */
+  selected: gesture.selected,
+  selection: gesture.selection,
   clearSelection: () => gesture.clear(),
 })
 
@@ -161,11 +160,6 @@ const marks = computed((): BreachMark[] =>
 /** The shapes back to front, as painted: what the marks read what covers what from. */
 const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind === 'shape' ? [piece.shape.alias] : [])))
 
-const selectedExtent = computed((): Extent | null => {
-  const alias = gesture.selected.value
-  const where = placement.value
-  return alias && where ? (where.elements.get(alias) ?? where.boxes.get(alias) ?? null) : null
-})
 </script>
 
 <template>
@@ -175,7 +169,7 @@ const selectedExtent = computed((): Extent | null => {
     :viewBox="viewBox"
     :style="{ aspectRatio: aspect }"
     data-testid="layout-lab-canvas"
-    @pointerdown="gesture.clear"
+    @pointerdown="readonly ? gesture.clear() : gesture.sweepFrom($event)"
   >
     <LabDrawn
       v-if="geometry"
@@ -206,7 +200,7 @@ const selectedExtent = computed((): Extent | null => {
           :y="piece.shape.body.top"
           :width="widthOf(piece.shape.body)"
           :height="heightOf(piece.shape.body)"
-          @pointerdown="readonly ? pick($event, piece.shape.alias) : gesture.select($event, piece.shape.alias)"
+          @pointerdown="readonly ? pick($event, piece.shape.alias) : gesture.sweepFrom($event, piece.shape.alias)"
         />
         <rect
           class="lab-grip"
@@ -307,29 +301,14 @@ const selectedExtent = computed((): Extent | null => {
 
     <slot />
 
-    <g
-      v-if="selectedExtent && !readonly"
-      class="lab-handles"
-    >
-      <rect
-        :x="selectedExtent.left"
-        :y="selectedExtent.top"
-        :width="widthOf(selectedExtent)"
-        :height="heightOf(selectedExtent)"
-        class="lab-handles__frame"
-      />
-      <rect
-        v-for="{ handle, at } in handlesOf(selectedExtent)"
-        :key="handle"
-        :x="at.x - handleSide / 2"
-        :y="at.y - handleSide / 2"
-        :width="handleSide"
-        :height="handleSide"
-        :class="`lab-handles__handle lab-handles__handle--${handle}`"
-        :data-handle="handle"
-        @pointerdown="gesture.press($event, gesture.selected.value ?? '', handle)"
-      />
-    </g>
+    <LabSelection
+      :placement="placement"
+      :selection="gesture.selection.value"
+      :rectangle="gesture.rectangle.value"
+      :handle-side="handleSide"
+      :readonly="readonly"
+      @handle="(event, handle) => gesture.press(event, gesture.selected.value ?? '', handle)"
+    />
   </svg>
 </template>
 
@@ -363,11 +342,4 @@ const selectedExtent = computed((): Extent | null => {
 .lab-breach-tag {
   fill: var(--breach); text-anchor: middle; font-family: system-ui, sans-serif; font-weight: 600; pointer-events: none;
 }
-.lab-handles__frame { fill: none; stroke: var(--accent); stroke-width: 1.5px; pointer-events: none; }
-.lab-handles__frame, .lab-handles__handle { vector-effect: non-scaling-stroke; }
-.lab-handles__handle { fill: #fff; stroke: var(--accent); stroke-width: 1.5px; }
-.lab-handles__handle--n, .lab-handles__handle--s { cursor: ns-resize; }
-.lab-handles__handle--e, .lab-handles__handle--w { cursor: ew-resize; }
-.lab-handles__handle--ne, .lab-handles__handle--sw { cursor: nesw-resize; }
-.lab-handles__handle--nw, .lab-handles__handle--se { cursor: nwse-resize; }
 </style>

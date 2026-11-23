@@ -112,7 +112,7 @@ describe('the changes a session would save', () => {
 describe('removing an element from the diagram', () => {
   it('draws it no more, with its lines, and undo brings both back', async () => {
     const editing = await opened()
-    editing.remove('C')
+    editing.remove(['C'])
     expect(editing.session.geometry.value?.elements.map((one) => one.alias)).toEqual(['A'])
     expect(editing.session.geometry.value?.relations).toEqual([])
     expect(editing.changes.value.map((change) => change.key)).toEqual(['removed:C'])
@@ -121,9 +121,18 @@ describe('removing an element from the diagram', () => {
     expect(editing.changes.value).toEqual([])
   })
 
+  it('removes a selection as one step, passing over a box', async () => {
+    const editing = await opened()
+    editing.remove(['A', 'C', 'no-such-box'])
+    expect(editing.session.geometry.value?.elements).toEqual([])
+    expect(editing.session.history.value).toHaveLength(1)
+    editing.session.undo()
+    expect(editing.session.geometry.value?.elements.map((one) => one.alias)).toEqual(['A', 'C'])
+  })
+
   it('saves the diagram without it and its connections, and leaves the model alone', async () => {
     const editing = await opened()
-    editing.remove('C')
+    editing.remove(['C'])
     expect(await editing.save()).toBe(true)
     expect(written).toHaveLength(1)
     expect(written[0]).toMatchObject({ entity_ids: ['APP@1.a'], connection_ids: [], dry_run: false })

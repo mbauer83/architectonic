@@ -210,27 +210,31 @@ export function useDiagramEditing(
     if (geometry && now?.byHand) session.step({ ...now, arrangement: drawnArrangement(geometry), byHand: false })
   }
 
-  /** Remove *alias* from the diagram, never from the model, as one undoable step. */
-  const remove = (alias: string) => {
+  /**
+   * Remove the elements of *aliases* from the diagram, never from the model, as one undoable step. A box
+   * among them is not removed: a grouping is the diagram's structure, not an element it draws.
+   */
+  const remove = (aliases: readonly string[]) => {
     const now = session.state.value
-    const key = session.geometry.value?.elements.find((one) => one.alias === alias)?.key
-    if (!now || key === undefined) return
-    // A further occurrence of an entity is held by the diagram's own records, which this write does not
-    // edit yet: refused with a sentence rather than removed on the canvas and quietly kept by Save.
-    const added = [...now.additions ?? []].find(([id]) => stableEntityId(id) === stableEntityId(key))
-    if (added) {
-      const additions = new Map(now.additions)
-      additions.delete(added[0])
-      session.step({ ...now, additions, removed: new Set([...now.removed ?? [], alias]) })
-      return
+    if (!now) return
+    const additions = new Map(now.additions)
+    const removed = new Set(now.removed)
+    const refused: string[] = []
+    for (const alias of aliases) {
+      const key = session.geometry.value?.elements.find((one) => one.alias === alias)?.key
+      if (key === undefined) continue
+      // A further occurrence of an entity is held by the diagram's own records, which this write does not
+      // edit yet: refused with a sentence rather than removed on the canvas and quietly kept by Save.
+      const added = [...additions].find(([id]) => stableEntityId(id) === stableEntityId(key))
+      const member = savedMembers.value?.entity_ids.some((id) => stableEntityId(id) === stableEntityId(key)) ?? false
+      if (added) additions.delete(added[0])
+      else if (!member) { refused.push(nameOf(alias)); continue }
+      removed.add(alias)
     }
-    const member = savedMembers.value?.entity_ids.some((id) => stableEntityId(id) === stableEntityId(key)) ?? false
-    if (!member) {
-      error.value = `${nameOf(alias)} is a further occurrence; removing one is not possible here yet.`
-      return
-    }
-    error.value = null
-    session.step({ ...now, removed: new Set([...now.removed ?? [], alias]) })
+    error.value = refused.length === 0 ? null
+      : `${refused.join(', ')} ${refused.length === 1 ? 'is a further occurrence' : 'are further occurrences'}; `
+        + 'removing one is not possible here yet.'
+    if (removed.size > (now.removed?.size ?? 0)) session.step({ ...now, additions, removed })
   }
 
   const add = async (id: string, name: string, type?: string) => {
