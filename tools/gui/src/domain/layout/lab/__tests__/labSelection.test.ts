@@ -13,7 +13,10 @@ import { SHAPE_DRAWING } from './labDrawingFixtures'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 const element = (alias: string, extent: Extent, inside?: string) =>
-  ({ alias, key: `APP@1.${alias}`, label: alias, extent, inside, words: [], outside_label: undefined, drawing: SHAPE_DRAWING })
+  ({
+    alias, key: `APP@1.${alias}`, label: alias, extent, inside, words: [], outside_label: undefined,
+    drawing: SHAPE_DRAWING,
+  })
 
 /** A and B in box G; C and D outside it, D with E drawn inside it. */
 const geometry: LayoutGeometry = {

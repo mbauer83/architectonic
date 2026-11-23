@@ -73,7 +73,8 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
   // Followed on the window, not by pointer capture: pressing a shape paints it in front, which moves
   // its node, and a moved node loses its capture — the release then landed nowhere.
   const follow = (on: boolean) => {
-    for (const [type, listener] of [['pointermove', drag], ['pointerup', release], ['pointercancel', release]] as const) {
+    const followed = [['pointermove', drag], ['pointerup', release], ['pointercancel', release]] as const
+    for (const [type, listener] of followed) {
       if (on) window.addEventListener(type, listener)
       else window.removeEventListener(type, listener)
     }

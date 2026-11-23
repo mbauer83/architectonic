@@ -44,7 +44,8 @@ export const elementsOf = (selection: readonly string[], placement: Placement): 
  * was where fewer than two are elements.
  */
 export const alignedSelection = (
-  geometry: LayoutGeometry, arrangement: Arrangement, placement: Placement, selection: readonly string[], edge: AlignEdge,
+  geometry: LayoutGeometry, arrangement: Arrangement, placement: Placement, selection: readonly string[],
+  edge: AlignEdge,
 ): Arrangement => {
   const elements = elementsOf(selection, placement)
   return elements.size < LEAST_TO_ALIGN ? arrangement : placedAt(geometry, arrangement, aligned(elements, edge))

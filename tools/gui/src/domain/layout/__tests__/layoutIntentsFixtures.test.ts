@@ -19,7 +19,9 @@ interface Case {
 }
 
 const { cases } = JSON.parse(
-  readFileSync(fileURLToPath(new URL('../../../../../../tests/fixtures/layout_geometry/intents.json', import.meta.url)), 'utf-8'),
+  readFileSync(
+    fileURLToPath(new URL('../../../../../../tests/fixtures/layout_geometry/intents.json', import.meta.url)), 'utf-8',
+  ),
 ) as { cases: Case[] }
 
 describe('align and distribute, as the server compiles them', () => {
@@ -30,7 +32,8 @@ describe('align and distribute, as the server compiles them', () => {
 
   it.each(cases.map((one) => [one.name, one] as const))('%s', (_name, one) => {
     const extents = new Map(Object.entries(one.elements))
-    const answer = one.intent.intent === 'align' ? aligned(extents, one.intent.edge) : distributed(extents, one.intent.axis)
+    const answer = one.intent.intent === 'align'
+      ? aligned(extents, one.intent.edge) : distributed(extents, one.intent.axis)
     expect(Object.fromEntries([...answer].map(([key, at]) => [key, [at.x, at.y]]))).toEqual(one.to)
   })
 
