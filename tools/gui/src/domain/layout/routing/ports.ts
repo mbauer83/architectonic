@@ -8,9 +8,24 @@ import type { Extent, Point } from '../geometry'
 import { heightOf, widthOf } from '../geometry'
 import type { Port, Side } from '../orthogonal'
 import { halfUp, leavesLevel } from '../orthogonal'
-import { byText } from './scene'
+import { SIDES, byText } from './scene'
+import type { Choice } from './scene'
+import type { Graph } from './graph'
 
 export const OUTWARD_INDEX: Readonly<Record<Side, number>> = { right: 0, left: 1, bottom: 2, top: 3 }
+
+/** Ports on obstacle-offset visibility lines, tried only after the usual midpoint search fails. */
+export function visiblePorts(extent: Extent, stated: Port | undefined, graph: Graph): Choice[] {
+  if (stated) return [[stated.side, stated.at]]
+  return SIDES.flatMap(side => {
+    const level = leavesLevel(side)
+    const [low, high] = level ? [extent.top, extent.bottom] : [extent.left, extent.right]
+    const lines = level ? graph.level.lines : graph.upright.lines
+    const ports: Choice[] = [[side, 0.5]]
+    for (const line of lines) if (low < line && line < high) ports.push([side, (line - low) / (high - low)])
+    return ports
+  })
+}
 
 export interface Stub {
   readonly port: Port

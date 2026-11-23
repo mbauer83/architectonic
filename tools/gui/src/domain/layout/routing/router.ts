@@ -14,7 +14,7 @@ import type { Port, Side } from '../orthogonal'
 import { STUB } from '../orthogonal'
 import { nudged } from './nudging'
 import type { Stub } from './ports'
-import { OUTWARD_INDEX, facingSide, inLine, stubOf } from './ports'
+import { OUTWARD_INDEX, facingSide, inLine, stubOf, visiblePorts } from './ports'
 import type { Choice, Connector, RoutedConnector, RoutingResult, RoutingScene } from './scene'
 import { IDEAL_SEPARATION, SIDES, byText, extentOf, runFor } from './scene'
 import type { Found } from './search'
@@ -157,6 +157,15 @@ class Routing {
     return null
   }
 
+  atVisiblePorts(connector: Connector): RoutedConnector | null {
+    return this.searchedIn(
+      connector,
+      visiblePorts(extentOf(this.scene, connector.source), connector.sourcePort, this.visibility.graph),
+      visiblePorts(extentOf(this.scene, connector.target), connector.targetPort, this.visibility.graph),
+      this.visibility.passage([connector.source, connector.target]), false, null,
+    )
+  }
+
   private searchedIn(
     connector: Connector,
     sources: readonly Choice[],
@@ -295,6 +304,7 @@ const routedScene = (
               sidesOf(connector.targetPort, again.targetPort.side),
             )
           : null) ?? routing.searched(connector, sidesOf(connector.sourcePort), sidesOf(connector.targetPort))
+        ?? routing.atVisiblePorts(connector)
       if (found) first.set(connector.key, found)
       else unroutable.push(connector.key)
     } else if (made === null) {

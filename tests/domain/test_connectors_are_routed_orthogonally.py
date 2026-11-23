@@ -330,3 +330,12 @@ def test_widening_a_parallel_run_cannot_merge_its_elbow_with_an_upright_run() ->
 
     assert conflicts == []
     assert runs_along(moved["turn"], [moved["upright"], moved["parallel"]]) == ()
+
+
+def test_a_midpoint_blocked_by_a_regrouping_leaves_the_exposed_port_available():
+    from tests.support.routing_fixtures import partly_blocked_ports
+
+    scene, connectors = partly_blocked_ports()
+    result = route_all(scene, connectors)
+    assert not result.unroutable
+    assert result.routes["promotion"].course[-1].x > scene.boxes["requirements"].right

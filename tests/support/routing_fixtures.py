@@ -82,6 +82,15 @@ def result_as_json(result: RoutingResult) -> dict[str, object]:
     }
 
 
+def partly_blocked_ports() -> tuple[RoutingScene, list[Connector]]:
+    """Both side midpoints are obstructed, but the top right of the service can accept its arrow."""
+    scene = RoutingScene(
+        elements={"service": Extent(620, 201, 839, 253), "process": Extent(693, 76, 839, 128)},
+        boxes={"requirements": Extent(130, 86, 813, 662), "objects": Extent(864, 169, 1243, 394)},
+    )
+    return scene, [Connector("promotion", "process", "service", (False, True))]
+
+
 def _box(left: float, top: float, width: float, height: float) -> Extent:
     return Extent(left, top, left + width, top + height)
 
@@ -272,6 +281,7 @@ def build_routing() -> dict[str, object]:
               RoutingScene(elements={"a": a, "b": _box(0, 168, 100, 40)}), [Connector("ab", "a", "b")]),
         _case("into and out of nested boxes, round a box that holds neither end", *_nested_scene()),
         _case("many routes through one channel are nudged apart", *_channel_scene()),
+        _case("a decorated end attaches on the exposed portion of a side", *partly_blocked_ports()),
         _case("a walled-in element is unroutable", *_walled_scene()),
         _case("two members of a box are joined inside it", *inside_scene()),
         _case("and outside it only where no way inside exists", *inside_scene(room_below=False)),
