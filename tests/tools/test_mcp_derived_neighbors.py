@@ -61,7 +61,7 @@ def test_limit_error_has_no_neighbor_payload(repo: Path, monkeypatch: pytest.Mon
     _connection(repo, component, function, "archimate-assignment")
     _connection(repo, function, service, "archimate-realization")
     monkeypatch.setattr(
-        "src.infrastructure.mcp.artifact_mcp.query_graph_tools.viewpoints_derivation_max_relationships", lambda: 0
+        "src.infrastructure.derived_neighbors.viewpoints_derivation_max_relationships", lambda: 0
     )
 
     result = _tool()(entity_id=component, traversal="derived", max_hops=2, repo_root=str(repo), repo_scope="engagement")

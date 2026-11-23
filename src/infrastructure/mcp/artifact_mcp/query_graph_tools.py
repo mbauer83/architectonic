@@ -2,18 +2,8 @@ from typing import Literal
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
-from src.config.viewpoints_settings import (
-    viewpoints_derivation_max_relationships,
-    viewpoints_derivation_time_budget_seconds,
-)
-from src.domain.relationships.relationship_reachability import (
-    DerivationBounds,
-    DerivationCertaintyPolicy,
-    DerivationLimitError,
-    RelationshipDerivationRequest,
-    derive_relationships,
-)
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
+from src.infrastructure.derived_neighbors import DerivationLimitError, derive_neighbors
 from src.infrastructure.mcp import execution_failure as failures
 from src.infrastructure.mcp.artifact_mcp.context import (
     RepoScope,
@@ -136,39 +126,17 @@ def register_query_graph_tools(mcp: MCPServer) -> None:
             neighbors = repo.find_neighbors(entity_id, max_hops=max_hops, conn_type=conn_type)
             normalized: dict[str, object] = {key: sorted(values) for key, values in neighbors.items()}
         else:
-            certainty: DerivationCertaintyPolicy = "include_potential" if include_potential else "certain_only"
             try:
-                relationships = derive_relationships(
-                    RelationshipDerivationRequest(
-                        anchors=frozenset({entity_id}),
-                        direction="either",
-                        certainty=certainty,
-                        bounds=DerivationBounds(
-                            max_hops=max_hops,
-                            max_relationships=viewpoints_derivation_max_relationships(),
-                            time_budget_seconds=viewpoints_derivation_time_budget_seconds(),
-                        ),
-                    ),
+                derived = derive_neighbors(
+                    entity_id,
+                    max_hops=max_hops,
+                    include_potential=include_potential,
                     read_access=repo,
                     registries=process_runtime_catalogs().module_catalog,
-                ).relationships
+                )
             except DerivationLimitError as exc:
                 return failures.traversal_budget_exceeded(str(exc), path="max_hops")
-            normalized = {
-                "derived": [
-                    {
-                        "entity_id": (
-                            relationship.target_id if relationship.source_id == entity_id else relationship.source_id
-                        ),
-                        "type": relationship.connection_type,
-                        "certainty": relationship.certainty,
-                        "hops": relationship.hops,
-                        "via_connection_ids": list(relationship.via_connection_ids),
-                        "path": relationship.path_key,
-                    }
-                    for relationship in relationships
-                ]
-            }
+            normalized = {"derived": derived}
 
         ab = _allowed_bindings_for(diagram_type)
         result: dict[str, object] = {

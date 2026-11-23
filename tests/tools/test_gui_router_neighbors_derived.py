@@ -58,3 +58,53 @@ def test_derived_neighbors_match_mcp(repo: Path) -> None:
     ).json()
 
     assert rest_result["neighbors"] == mcp_result["neighbors"]["derived"]
+
+
+def _client():
+    from starlette.testclient import TestClient
+
+    from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
+    from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
+
+    app = build_api_app(router)
+    app.dependency_overrides[runtime_catalogs_dependency] = lambda: build_runtime_catalogs(get_module_registry())
+    return TestClient(app)
+
+
+def _chain(repo: Path) -> tuple[str, str, str]:
+    component = _entity(repo, "application-component", "Component")
+    function = _entity(repo, "function", "Function")
+    service = _entity(repo, "service", "Service")
+    _connection(repo, component, function, "archimate-assignment")
+    _connection(repo, function, service, "archimate-realization")
+    gui_state.init_state(ArtifactRepository(shared_artifact_index([repo])), repo, None)
+    return component, function, service
+
+
+def test_each_derived_neighbour_says_which_way_it_runs(repo: Path) -> None:
+    """Read from either end, one derived relationship is outbound at its source and inbound at its target.
+
+    The diagram reader splits what leads to an element from what it leads to; without the direction
+    the derived rows could only be listed as one undirected heap.
+    """
+    component, _function, service = _chain(repo)
+    client = _client()
+
+    from_source = client.get(f"/api/entities/{component}/neighbors?traversal=derived&max_hops=2").json()
+    from_target = client.get(f"/api/entities/{service}/neighbors?traversal=derived&max_hops=2").json()
+
+    assert [(row["entity_id"], row["direction"]) for row in from_source["neighbors"]] == [(service, "outbound")]
+    assert [(row["entity_id"], row["direction"]) for row in from_target["neighbors"]] == [(component, "inbound")]
+    assert [row["entity_name"] for row in from_source["neighbors"]] == ["Service"]
+
+
+def test_derived_neighbours_without_a_hop_count_derive_within_the_configured_bound(repo: Path) -> None:
+    """The route's old default of one hop derived nothing at all: derivation composes from two hops up."""
+    component, function, service = _chain(repo)
+    client = _client()
+
+    derived = client.get(f"/api/entities/{component}/neighbors?traversal=derived").json()
+    direct = client.get(f"/api/entities/{component}/neighbors").json()
+
+    assert [row["entity_id"] for row in derived["neighbors"]] == [service]
+    assert direct["hops"] == {"1": [function]}

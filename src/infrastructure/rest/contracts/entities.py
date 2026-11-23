@@ -285,7 +285,11 @@ class DerivedNeighbor(Closed):
     """
 
     entity_id: str
+    entity_name: str
     type: str
+    #: The relationship's model direction relative to the entity read: what leads to it, or what it
+    #: leads to.
+    direction: Literal["outbound", "inbound"]
     certainty: str
     hops: int
     via_connection_ids: list[str]
