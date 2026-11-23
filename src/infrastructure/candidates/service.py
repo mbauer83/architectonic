@@ -60,7 +60,9 @@ class CandidateService:
             drawing = self.index.get_diagram(diagram)
             if drawing is None:
                 raise FileNotFoundError(diagram)
-            body["scope"] = [e.artifact_id for e in resolve_placed_entities(dict(drawing.extra), self.registry)]
+            # A diagram may draw one entity more than once; the scope is the entities, each once.
+            placed = resolve_placed_entities(dict(drawing.extra), self.registry)
+            body["scope"] = list(dict.fromkeys(e.artifact_id for e in placed))
         return self.save(body, None)
 
     def edit(self, ref: str, based_on: str, patch: Mapping[str, Any]) -> dict[str, Any]:
