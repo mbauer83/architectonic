@@ -28,6 +28,8 @@ _SKIP_DIRECTORIES = frozenset({
     ".git", ".venv", "node_modules", "dist", "__pycache__", ".pytest_cache", ".ruff_cache",
     ".mypy_cache", "coverage", "playwright-report", "test-results", ".arch-repo",
     ".arch-assurance", "htmlcov", ".nyc_output",
+    # Agent worktrees are whole checkouts of other branches, not this one's content.
+    ".claude",
 })
 
 #: Files where a retired literal is a *record* rather than a reference.

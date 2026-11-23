@@ -25,7 +25,10 @@ def _c4_puml_files() -> list[Path]:
     """
     root = Path(__file__).parent.parent.parent  # workspace root
     files: list[Path] = []
-    for diagrams_dir in root.rglob("diagram-catalog/diagrams"):
+    # The repositories this checkout holds, not the whole tree: agent worktrees under `.claude/` are
+    # other checkouts, and counting their copies multiplied this file's cases twentyfold.
+    repositories = [root / "engagements", root / "enterprise-repository"]
+    for diagrams_dir in (d for repo in repositories for d in repo.rglob("diagram-catalog/diagrams")):
         for puml in diagrams_dir.rglob("*.puml"):
             text = puml.read_text(encoding="utf-8")
             if re.search(r"diagram-type:\s*c4-", text):
