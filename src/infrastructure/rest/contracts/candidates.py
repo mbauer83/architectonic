@@ -18,6 +18,13 @@ class CandidateEdit(Closed):
     patch: Fields
 
 
+class CandidateOperation(Closed):
+    """An edit to record among a candidate's operations; the server reads its base."""
+
+    based_on: str
+    operation: Fields
+
+
 class CandidateResponse(Closed):
     record: Fields
     version: str

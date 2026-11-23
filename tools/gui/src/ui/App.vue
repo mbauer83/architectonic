@@ -2,6 +2,7 @@
 import { RouterView } from 'vue-router'
 import { inject, provide, ref } from 'vue'
 import { modelServiceKey, toastKey } from './keys'
+import type { ShowToast, ToastAction } from './keys'
 import NavBar from './components/NavBar.vue'
 import ToastStack from './components/ToastStack.vue'
 import SaveChangesDialog from './components/SaveChangesDialog.vue'
@@ -12,13 +13,14 @@ type SaveMode = 'engagement-save' | 'enterprise-save' | 'enterprise-submit' | 'e
 const svc = inject(modelServiceKey)!
 const saveDialogMode = ref<SaveMode | null>(null)
 
-const toasts = ref<Array<{id: number; message: string; type: 'info'|'warn'|'error'}>>([])
+const toasts = ref<Array<{id: number; message: string; type: 'info'|'warn'|'error'; action?: ToastAction}>>([])
 let toastCounter = 0
 
-const addToast = (message: string, type: 'info'|'warn'|'error' = 'info', durationMs = 4000) => {
+const closeToast = (id: number) => { toasts.value = toasts.value.filter(t => t.id !== id) }
+const addToast: ShowToast = (message, type = 'info', durationMs = 4000, action) => {
   const id = ++toastCounter
-  toasts.value.push({ id, message, type })
-  setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id) }, durationMs)
+  toasts.value.push({ id, message, type, action })
+  setTimeout(() => closeToast(id), durationMs)
 }
 
 const {
@@ -58,7 +60,10 @@ provide(toastKey, addToast)
     <RouterView />
   </main>
 
-  <ToastStack :toasts="toasts" />
+  <ToastStack
+    :toasts="toasts"
+    @close="closeToast"
+  />
 
   <SaveChangesDialog
     v-if="saveDialogMode"

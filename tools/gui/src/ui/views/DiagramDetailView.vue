@@ -12,8 +12,9 @@ import { renderMatrixMarkdown } from '../lib/matrixMarkdown'
 import type { C4Navigation } from '../../domain'
 import {
   buildDrilldownByEntityId, c4NavigationOf, diagramNeedsSvg, editRouteFor, editsOnCanvas,
-  editableMetadataByEntityType, isADifferentDiagram, matrixHtmlOf, membershipOf,
+  editableMetadataByEntityType, isADifferentDiagram, matrixHtmlOf,
 } from './DiagramDetailView.helpers'
+import { membershipOf } from '../../domain/layout/diagramMembership'
 import DrilldownMenu from '../components/DrilldownMenu.vue'
 import DiagramReadingPanel from '../components/DiagramReadingPanel.vue'
 import { useDiagramReadingLens } from '../composables/useDiagramReadingLens'

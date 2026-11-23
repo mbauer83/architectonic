@@ -73,6 +73,10 @@ export const ROUTE_TEMPLATES = {
   documentCreate: '/documents/new',
   documentGroups: '/documents/groups',
   documentDetail: '/documents/:artifactId',
+  /** A stress analysis's workspace: its tables beside the canvas. Reached from the analysis document. */
+  stressAnalysisWorkspace: '/documents/:artifactId/workspace',
+  /** Starting a stress analysis: a scope, then the naive architecture. Creates the document. */
+  stressAnalysisStart: '/stress-analyses/new',
   scratchpadList: '/scratchpads',
   scratchpadDetail: '/scratchpads/:artifactId',
   /** The icon library, for curation; icons are given to elements in the diagram editor. */
@@ -138,6 +142,8 @@ export const layeredExplorationRoute = (): string => ROUTE_TEMPLATES.layeredExpl
 export const documentListRoute = (): string => ROUTE_TEMPLATES.documentList
 export const documentCreateRoute = (): string => ROUTE_TEMPLATES.documentCreate
 export const documentDetailRoute = (artifactId: string): string => `/documents/${seg(artifactId)}`
+export const stressAnalysisWorkspaceRoute = (artifactId: string): string => `/documents/${seg(artifactId)}/workspace`
+export const stressAnalysisStartRoute = (): string => ROUTE_TEMPLATES.stressAnalysisStart
 
 export const diagramListRoute = (): string => ROUTE_TEMPLATES.diagramList
 export const layoutLabRoute = (artifactId = ''): string =>

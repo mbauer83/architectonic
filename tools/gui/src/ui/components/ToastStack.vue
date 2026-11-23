@@ -1,13 +1,23 @@
 <script setup lang="ts">
+import type { ToastAction } from '../keys'
+
 interface Toast {
   id: number
   message: string
   type: 'info' | 'warn' | 'error'
+  action?: ToastAction
 }
 
 defineProps<{
   toasts: Toast[]
 }>()
+const emit = defineEmits<{ close: [id: number] }>()
+
+/** A toast's action runs once and closes it. */
+const act = (toast: Toast) => {
+  toast.action?.run()
+  emit('close', toast.id)
+}
 </script>
 
 <template>
@@ -17,8 +27,17 @@ defineProps<{
       :key="toast.id"
       class="toast"
       :class="`toast--${toast.type}`"
+      role="status"
     >
       {{ toast.message }}
+      <button
+        v-if="toast.action"
+        type="button"
+        class="toast-action"
+        @click="act(toast)"
+      >
+        {{ toast.action.label }}
+      </button>
     </div>
   </div>
 </template>
@@ -62,6 +81,18 @@ defineProps<{
   background: #fee2e2;
   color: #991b1b;
   border-left: 3px solid #ef4444;
+}
+
+.toast-action {
+  margin-left: 10px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 4px;
+  padding: 1px 8px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* A reader who asked for less motion still sees the toast arrive, without the travel. */

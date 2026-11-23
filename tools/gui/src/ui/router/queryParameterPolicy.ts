@@ -57,6 +57,8 @@ export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>>
   'ui/views/EntitiesView.vue#view': 'presentation',
   'ui/views/AssuranceBrowseView.vue#view': 'presentation',
   'ui/views/AssuranceBrowseView.vue#node_id': 'presentation',
+  // Which of the workspace's tables is open: the analysis is the same whichever tab shows it.
+  'ui/views/StressWorkspaceView.vue#tab': 'presentation',
 
   // ── operation input ──────────────────────────────────────────────────────
   'ui/views/PromoteView.vue#*': 'operation-input',

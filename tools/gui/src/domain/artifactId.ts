@@ -24,13 +24,22 @@ export const stableEntityId = (id: string): string => SLUG_TAIL.exec(id)?.[1] ??
  * safe. Anything not connection-shaped is returned unchanged rather than mangled.
  */
 export const stableConnectionId = (id: string): string => {
-  const typeAt = id.lastIndexOf('@@')
-  if (typeAt < 0) return id
-  const endpoints = id.slice(0, typeAt)
-  const connectionType = id.slice(typeAt + 2)
-  const joinAt = endpoints.indexOf('---')
-  if (joinAt < 0) return id
-  const source = stableEntityId(endpoints.slice(0, joinAt))
-  const target = stableEntityId(endpoints.slice(joinAt + 3))
-  return `${source}---${target}@@${connectionType}`
+  const parts = connectionParts(id)
+  return parts ? `${stableEntityId(parts.source)}---${stableEntityId(parts.target)}@@${parts.type}` : id
 }
+
+/** The id of the connection of *type* from *source* to *target*. */
+export const connectionId = (source: string, type: string, target: string): string => `${source}---${target}@@${type}`
+
+/** A connection id's source, type and target as written; null where *id* is not connection-shaped. */
+export const connectionParts = (
+  id: string,
+): { readonly source: string; readonly type: string; readonly target: string } | null => {
+  const typeAt = id.lastIndexOf('@@')
+  const joinAt = typeAt < 0 ? -1 : id.slice(0, typeAt).indexOf('---')
+  return joinAt < 0 ? null
+    : { source: id.slice(0, joinAt), type: id.slice(typeAt + 2), target: id.slice(joinAt + 3, typeAt) }
+}
+
+/** Whether *id* is an entity id (`PREFIX@epoch.random[.slug]`) rather than another kind of reference. */
+export const isEntityId = (id: string): boolean => /^[A-Za-z]{2,6}@\d+\.[A-Za-z0-9_-]+(\.[A-Za-z0-9][A-Za-z0-9-]*)?$/.test(id)

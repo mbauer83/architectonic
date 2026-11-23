@@ -10,6 +10,8 @@ CANDIDATE_ROWS = (
              identity_parameters=("artifact_id",), cache_directive="no-cache"),
     RouteRow("PATCH", "/api/change-sets/{artifact_id}", "detail", "changes_edit_candidate", TYPED,
              identity_parameters=("artifact_id",), mutation_domain="repository"),
+    RouteRow("POST", "/api/change-sets/{artifact_id}/operations", "subresource", "changes_record_operation", TYPED,
+             identity_parameters=("artifact_id",), mutation_domain="repository"),
     RouteRow("GET", "/api/change-sets/{artifact_id}/diff", "subresource", "changes_compare_candidate", TYPED,
              identity_parameters=("artifact_id",), cache_directive="no-cache", timeout_class="derived-graph"),
     RouteRow("GET", "/api/change-sets/{artifact_id}/standing", "subresource", "changes_read_standing", TYPED,

@@ -1,15 +1,17 @@
 """Compose candidate reads over current scoped records: the composed view, a diff against a base, standing."""
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from typing import Any, Protocol
 
 from pydantic_core import to_jsonable_python
 
 from src.application.change_sets.candidate_architecture import CandidateArchitecture
 from src.application.change_sets.candidate_view import CandidateView, difference, view_of
+from src.application.change_sets.change_set import ChangeSet
+from src.application.change_sets.composition import compose
 from src.application.change_sets.operations import ConnectionAddress, CreateEntity
-from src.application.change_sets.reading import RecordedReading
+from src.application.change_sets.reading import ModelReading, RecordedReading
 from src.application.change_sets.recorded_form import operation_to_mapping
 from src.application.change_sets.stacking import descendants, sets_beneath, stack_of
 from src.application.change_sets.standing import standing_of
@@ -26,8 +28,11 @@ class CandidateLookup(Protocol):
     def list(self) -> Sequence[CandidateArchitecture]: ...
 
 
-def live_reading(stack: tuple[CandidateArchitecture, ...], registry: ArtifactRegistry) -> RecordedReading:
-    refs = {ref for layer in stack for ref in layer.scope}
+def live_reading(
+    stack: tuple[CandidateArchitecture, ...], registry: ArtifactRegistry, also: Iterable[str] = (),
+) -> RecordedReading:
+    """The model's records over what the stack reads, and *also* what an edit about to be recorded names."""
+    refs = {ref for layer in stack for ref in layer.scope} | set(also)
     for layer in stack:
         for operation in layer.changes.operations:
             subject = operation.claim.subject
@@ -81,6 +86,15 @@ def comparison(
         "view": after.wire(), "diff": difference(before, after),
         "standing": _standing(candidate, stack, live),
     })
+
+
+def reading_beneath(
+    candidate: CandidateArchitecture, store: CandidateLookup, registry: ArtifactRegistry, also: Iterable[str] = (),
+) -> ModelReading:
+    """What *candidate*'s operations are written against: the model with the stack beneath it laid over."""
+    stack = stack_of(candidate, store.find)
+    live = live_reading(stack, registry, also)
+    return compose(ChangeSet((), candidate.changes.repository_revision), live, beneath=sets_beneath(stack))
 
 
 def standing_report(

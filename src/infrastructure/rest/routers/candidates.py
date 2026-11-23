@@ -16,6 +16,7 @@ from src.infrastructure.rest.contracts.candidates import (
     CandidateCreate,
     CandidateEdit,
     CandidateList,
+    CandidateOperation,
     CandidateResponse,
     CandidateSelection,
     CandidateStanding,
@@ -97,6 +98,22 @@ def changes_read_candidate(artifact_id: str) -> dict[str, Any]:
 def changes_edit_candidate(artifact_id: str, body: CandidateEdit) -> dict[str, Any]:
     with _refusals():
         return s.authorized_write("changes_edit_candidate", _service().edit, artifact_id, body.based_on, body.patch)
+
+
+@router.post(
+    "/api/change-sets/{artifact_id}/operations",
+    operation_id="changes_record_operation",
+    tags=[TAG_CHANGES],
+    summary="Record an edit among a candidate's operations",
+    response_model=CandidateResponse,
+    responses=WRITE_RESPONSES,
+)
+def changes_record_operation(artifact_id: str, body: CandidateOperation) -> dict[str, Any]:
+    """Merged per claim: an edit replaces the one before it, and an edit back to its base drops it."""
+    with _refusals():
+        return s.authorized_write(
+            "changes_record_operation", _service().record, artifact_id, body.based_on, body.operation,
+        )
 
 
 @router.get(

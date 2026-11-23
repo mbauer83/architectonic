@@ -3,6 +3,7 @@ import { inject } from 'vue'
 import ArtifactBadges from '../components/ArtifactBadges.vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { modelServiceKey } from '../keys'
+import { stressAnalysisStartRoute } from '../router/artifactRoutes'
 import { LIST_TIERS } from '../lib/tierUrlState'
 import { useDocumentsListState } from '../composables/useDocumentsListState'
 import GroupSelector from '../components/GroupSelector.vue'
@@ -58,13 +59,21 @@ const {
               Documents
             </h1>
           </div>
-          <button
-            class="create-btn"
-            type="button"
-            @click="router.push('/documents/new')"
-          >
-            + New Document
-          </button>
+          <div class="create-actions">
+            <RouterLink
+              class="create-btn create-btn--secondary"
+              :to="stressAnalysisStartRoute()"
+            >
+              + New stress analysis
+            </RouterLink>
+            <button
+              class="create-btn"
+              type="button"
+              @click="router.push('/documents/new')"
+            >
+              + New Document
+            </button>
+          </div>
         </div>
 
         <div class="toolbar card">
@@ -208,7 +217,10 @@ const {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
 }
+.create-actions { display: flex; gap: 8px; }
+.create-btn--secondary { background: var(--surface); color: var(--accent-strong); border: 1px solid var(--accent-border); }
 .table-card { padding: 16px; }
 .result-count { color: #64748b; font-size: 13px; margin-bottom: 12px; }
 .documents-table { width: 100%; border-collapse: collapse; }

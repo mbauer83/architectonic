@@ -58,6 +58,7 @@ import { scratchpadMethods } from './HttpScratchpadRepository'
 import { iconMethods } from './HttpIconRepository'
 import { diagramLayoutMethods } from './HttpDiagramLayoutRepository'
 import { workspaceMethods } from './HttpWorkspaceRepository'
+import { stressAnalysisMethods } from './HttpStressAnalysisRepository'
 
 // Timeout budgets are no longer set here. Viewpoint execution and the other derived-graph
 // routes are classified in `routeTimeoutPolicy`, which the transport and the dev proxy both
@@ -390,4 +391,5 @@ export const makeHttpModelRepository = (): ModelRepository => ({
   ...iconMethods(),
   ...diagramLayoutMethods(),
   ...workspaceMethods(),
+  ...stressAnalysisMethods(),
 })

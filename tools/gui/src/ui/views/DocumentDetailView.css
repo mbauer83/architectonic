@@ -1,0 +1,54 @@
+/* The document page's styles, apart from its template as the diagram page's are. */
+.detail-page { max-width: 1100px; margin: 0 auto; }
+.page-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+.back-link { border: 0; background: transparent; color: #64748b; cursor: pointer; padding: 0; font-size: 13px; }
+.page-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; }
+.meta-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-field--wide { grid-column: span 1; }
+.form-field span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; }
+.form-control { padding: 9px 11px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; }
+.form-control--invalid { border-color: #dc2626; background: #fef2f2; }
+.field-error { color: #dc2626; font-size: 12px; }
+.readonly-pill {
+  display: inline-flex; align-items: center; min-height: 39px; padding: 0 11px;
+  border-radius: 8px; background: #eff6ff; color: #1d4ed8; font-size: 13px; font-weight: 600;
+}
+.readonly-pill--type { background: #eff6ff; color: #1d4ed8; }
+.readonly-pill--status { background: #f0fdf4; color: #166534; min-height: unset; padding: 3px 10px; }
+.editor-toolbar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.artifact-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; color: #64748b; font-size: 12px; }
+.bottom-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.primary-btn, .secondary-btn, .danger-btn {
+  border: 0; border-radius: 8px; padding: 9px 14px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.primary-btn { background: #2563eb; color: white; }
+.secondary-btn { background: #e2e8f0; color: #0f172a; }
+.danger-btn { background: #fee2e2; color: #991b1b; }
+.state-msg { color: #64748b; }
+.state-msg--error { color: #dc2626; margin-top: 10px; }
+.issue-list { margin: 10px 0 0; padding-left: 18px; color: #991b1b; font-size: 13px; }
+.overlay {
+  position: fixed; inset: 0; display: grid; place-items: center;
+  background: rgba(15, 23, 42, 0.3); padding: 16px;
+}
+/* View mode styles */
+.view-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; }
+.doc-title { font-size: 20px; font-weight: 700; color: #0f172a; margin: 0; flex: 1; }
+.view-pills { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+.view-keywords { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.keyword-chip {
+  background: #f1f5f9; color: #475569; border-radius: 6px;
+  padding: 2px 9px; font-size: 12px; font-weight: 500;
+}
+.doc-body {
+  color: #1f2937; line-height: 1.65; font-size: 14px;
+  border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 4px;
+}
+.doc-body :deep(h1), .doc-body :deep(h2), .doc-body :deep(h3) { margin: 0 0 12px; color: #0f172a; }
+.doc-body :deep(p), .doc-body :deep(ul), .doc-body :deep(ol) { margin: 0 0 12px; }
+.doc-body :deep(code) { background: #f1f5f9; padding: 1px 4px; border-radius: 4px; }
+.doc-body :deep(pre) { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; overflow-x: auto; }
+@media (max-width: 760px) { .meta-grid { grid-template-columns: 1fr; } }

@@ -8,6 +8,7 @@ import type { EnterpriseAdminRepository } from './EnterpriseAdminRepository'
 import type { IconRepository } from './IconRepository'
 import type { DiagramLayoutRepository } from './DiagramLayoutRepository'
 import type { ScratchpadRepository } from './ScratchpadRepository'
+import type { StressAnalysisRepository } from './StressAnalysisRepository'
 import type { RepoError } from './repositoryErrors'
 import type { SyncChangesResult } from '../domain/schemas-changes'
 import type {
@@ -92,7 +93,7 @@ export type { DiagramComposition, DiagramWriteBody }
 export interface ModelRepository
   extends EnterpriseAdminRepository, ScratchpadRepository, IconRepository, DiagramReadingRepository,
     DiagramLayoutRepository,
-    ChangeRepository, DocumentRepository {
+    ChangeRepository, DocumentRepository, StressAnalysisRepository {
   readonly getServerInfo: () => Effect.Effect<ServerInfo, RepoError>
   readonly listModules: () => Effect.Effect<readonly ModuleSummary[], RepoError>
   readonly getStats: () => Effect.Effect<Stats, RepoError>
