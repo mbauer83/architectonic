@@ -1,7 +1,6 @@
 import { Effect, Schema, Either } from 'effect'
 import type { ModelRepository, ListParams, Direction } from '../../ports/ModelRepository'
 import { NetworkError } from '../../domain/errors'
-import { lensParams, type ReadingLens } from '../../domain/readingLens'
 import {
   StatsSchema,
   EntityListSchema,
@@ -20,7 +19,6 @@ import {
   DatatypeTypeCatalogSchema,
   DatatypeTypeUsagesSchema,
   AllocatedIdentifierSchema,
-  DiagramAttributePanelSchema,
   DiagramContextSchema,
   DiagramEntityDiscoverySchema,
   WriteResultSchema,
@@ -45,7 +43,7 @@ import {
   ClassificationLevelsResponseSchema,
 } from '../../domain/schemas'
 import {
-  buildUrl, deleteNoContent, deleteReq, entityAddress, fetchJson, fetchJsonNotFound, fetchText,
+  buildUrl, deleteNoContent, deleteReq, entityAddress, fetchJson, fetchJsonNotFound,
   fetchWithTimeout, patchJson, postJson, putJson,
 } from './httpTransport'
 import { encodeIdentitySegment } from '../../domain/identitySegments'
@@ -57,6 +55,7 @@ import { viewpointMethods } from './HttpViewpointRepository'
 import { scratchpadMethods } from './HttpScratchpadRepository'
 import { iconMethods } from './HttpIconRepository'
 import { diagramLayoutMethods } from './HttpDiagramLayoutRepository'
+import { diagramReadingMethods } from './HttpDiagramReadingRepository'
 import { workspaceMethods } from './HttpWorkspaceRepository'
 import { stressAnalysisMethods } from './HttpStressAnalysisRepository'
 
@@ -296,18 +295,6 @@ export const makeHttpModelRepository = (): ModelRepository => ({
       Schema.Struct({ items: Schema.Array(DiagramConnectionSchema) }),
     ).pipe(Effect.map((r) => r.items as import('../../domain').DiagramConnection[])),
 
-  getDiagramSvg: (diagramId: string, lens?: ReadingLens) =>
-    fetchText(buildUrl(
-      `/diagrams/${encodeIdentitySegment(diagramId)}/svg`,
-      lens && lensParams(lens),
-    )),
-
-  getDiagramAttributePanel: (diagramId: string) =>
-    fetchJson(
-      buildUrl(`/diagrams/${encodeIdentitySegment(diagramId)}/attribute-panel`),
-      DiagramAttributePanelSchema,
-    ),
-
   getEntityDisplayItem: (artifactId: string) =>
     fetchJson(
       buildUrl(`/entities/${encodeIdentitySegment(artifactId)}/display-item`),
@@ -390,6 +377,7 @@ export const makeHttpModelRepository = (): ModelRepository => ({
   ...scratchpadMethods(),
   ...iconMethods(),
   ...diagramLayoutMethods(),
+  ...diagramReadingMethods(),
   ...workspaceMethods(),
   ...stressAnalysisMethods(),
 })

@@ -2,6 +2,7 @@ import { describe, expectTypeOf, it } from 'vitest'
 import type { Immutable, SchemaType } from './contractOracle'
 import type { components } from './openapi.generated'
 import type {
+  DerivedNeighborhoodSchema,
   DirectNeighborhoodSchema,
   DocumentReferenceSchema,
   ScratchpadReferenceSchema,
@@ -158,6 +159,12 @@ describe('the neighbourhood', () => {
   it('decodes a direct neighbourhood, and the hop map inside it', () => {
     expectTypeOf<SchemaType<typeof DirectNeighborhoodSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DirectNeighborhood']>
+    >()
+  })
+
+  it('decodes a derived neighbourhood, each row saying which way it runs', () => {
+    expectTypeOf<SchemaType<typeof DerivedNeighborhoodSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['DerivedNeighborhood']>
     >()
   })
 })
