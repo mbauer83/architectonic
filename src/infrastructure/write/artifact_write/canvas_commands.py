@@ -14,14 +14,14 @@ from src.domain.artifact_id import connection_id_as_written, parse_entity_id
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 
-from .batch_transaction import commit_staged_repo, create_staging_repo
+from .batch_transaction import commit_staged_repo, create_staging_repo, location_in_live, path_in_live, text_in_live
 from .boundary import assert_engagement_write_root
-from .candidate_state import CandidateStore
 from .connection import add_connection
 from .connection_edit import edit_connection
 from .entity import create_entity
 from .entity_delete import delete_entity
 from .entity_edit import edit_entity
+from .staged_state import StagedStore
 from .types import WriteResult
 
 
@@ -60,7 +60,7 @@ class ConnectElements:
 
 
 type CanvasCommand = CreateElement | RenameElement | DeleteElement | ConnectElements
-type SaveDiagram = Callable[[Path, CandidateStore, ArtifactVerifier, Callable[[Path], None], bool], WriteResult]
+type SaveDiagram = Callable[[Path, StagedStore, ArtifactVerifier, Callable[[Path], None], bool], WriteResult]
 
 
 def canvas_save(
@@ -72,8 +72,8 @@ def canvas_save(
     touched: set[Path] = set()
     live = shared_artifact_index(live_repo.repo_mounts)
 
-    def context() -> tuple[CandidateStore, ArtifactRegistry, ArtifactVerifier]:
-        store = CandidateStore(live=live, live_root=root, staged_root=staged, touched_paths=touched,
+    def context() -> tuple[StagedStore, ArtifactRegistry, ArtifactVerifier]:
+        store = StagedStore(live=live, live_root=root, staged_root=staged, touched_paths=touched,
                                domain_names=catalogs.ontology.known_domain_names())
         registry = ArtifactRegistry(store)
         return store, registry, build_artifact_verifier(registry, catalogs=catalogs)
@@ -144,17 +144,14 @@ def canvas_save(
         if not dry_run:
             commit_staged_repo(live_root=root, staged_root=staged, touched_paths=touched,
                                rebuild_index=lambda result: changed(result.changed_paths + result.deleted_paths))
-        def live_text(text: str) -> str:
-            return text.replace(str(staged) + "/", str(root) + "/")
-
         verification = dict(diagram.verification or {})
         if "path" in verification:
-            verification["path"] = live_text(str(verification["path"]))
+            verification["path"] = path_in_live(verification["path"], staged_root=staged, live_root=root)
         verification["issues"] = [
-            {**issue, "location": live_text(issue["location"])} if isinstance(issue.get("location"), str) else issue
+            {**issue, "location": location_in_live(issue.get("location"), staged, root)}
             for issue in verification.get("issues", [])
         ]
         return replace(diagram, path=root / diagram.path.relative_to(staged), wrote=not dry_run,
-                       warnings=[live_text(w) for w in diagram.warnings], verification=verification)
+                       warnings=[text_in_live(w, staged, root) for w in diagram.warnings], verification=verification)
     finally:
         staging.cleanup()

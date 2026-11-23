@@ -84,7 +84,7 @@ _STILL_BRANCHING: dict[Path, Remaining] = {
         ),
         until=_MODEL_FILES,
     ),
-    Path("src/infrastructure/mcp/artifact_mcp/bulk/candidate_inventory.py"): Remaining(
+    Path("src/infrastructure/mcp/artifact_mcp/bulk/staged_inventory.py"): Remaining(
         branches=4,
         why=(
             "the bulk inventory files a changed path under the model inventory's one list per kind "
@@ -96,7 +96,7 @@ _STILL_BRANCHING: dict[Path, Remaining] = {
             "bulk inventory has to fill as the full one does; the entity test " + _MODEL_FILES
         ),
     ),
-    Path("src/infrastructure/write/artifact_write/candidate_state.py"): Remaining(
+    Path("src/infrastructure/write/artifact_write/staged_state.py"): Remaining(
         branches=2,
         why=(
             "the staging overlay keeps staged records of four kinds in four dictionaries and absorbs "

@@ -13,9 +13,10 @@ from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.mcp.artifact_mcp.edit_tools import _require_registry, _resolve
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
+from src.infrastructure.write.artifact_write.batch_transaction import location_in_live, path_in_live
 
-from .candidate_inventory import CandidateInventoryPort
-from .candidate_state import candidate_registry
+from .staged_inventory import CandidateInventoryPort
+from .staged_state import staged_registry
 
 KNOWN_DELETE_OPS = frozenset({"delete_entity", "delete_connection", "delete_document", "delete_diagram"})
 KNOWN_OPS = frozenset({
@@ -101,17 +102,6 @@ def temp_repo_callbacks(
     return clear_repo_caches, changed_paths
 
 
-def map_path_to_live(path_value: object, *, staged_root: Path, live_root: Path) -> object:
-    if not isinstance(path_value, str):
-        return path_value
-    path = Path(path_value)
-    try:
-        rel = path.relative_to(staged_root)
-    except ValueError:
-        return path_value
-    return str(live_root / rel)
-
-
 def normalize_staged_result(
     result: dict[str, object],
     *,
@@ -122,7 +112,7 @@ def normalize_staged_result(
 ) -> dict[str, object]:
     out = dict(result)
     if "path" in out:
-        out["path"] = map_path_to_live(out["path"], staged_root=staged_root, live_root=live_root)
+        out["path"] = path_in_live(out["path"], staged_root=staged_root, live_root=live_root)
     if dry_run or not committed:
         out["wrote"] = False
     out.pop("dry_run", None)
@@ -151,13 +141,13 @@ def normalize_staged_verification(
     out["results"] = [
         {
             **result,
-            "path": map_path_to_live(
+            "path": path_in_live(
                 result.get("path"),
                 staged_root=staged_root,
                 live_root=live_root,
             ),
             "issues": [
-                {**issue, "location": _location_in_live(issue.get("location"), staged_root, live_root)}
+                {**issue, "location": location_in_live(issue.get("location"), staged_root, live_root)}
                 for issue in result.get("issues", [])
             ],
         }
@@ -165,14 +155,6 @@ def normalize_staged_verification(
         if isinstance(result, dict)
     ]
     return out
-
-
-def _location_in_live(location: object, staged_root: Path, live_root: Path) -> object:
-    """An issue's location is a path, optionally followed by a position inside the file."""
-    staged = str(staged_root)
-    if isinstance(location, str) and location.startswith(staged):
-        return f"{live_root}{location[len(staged):]}"
-    return location
 
 
 def unexecuted_batch_verification(live_root: Path) -> dict[str, object]:
@@ -328,7 +310,7 @@ def stage_batch_verification(
 ) -> dict[str, object]:
 
     registry = (
-        candidate_registry(live_root=live_root, staged_root=repo_root, touched_paths=changed_paths)
+        staged_registry(live_root=live_root, staged_root=repo_root, touched_paths=changed_paths)
         if live_root is not None
         else ArtifactRegistry(shared_artifact_index([repo_root]))
     )

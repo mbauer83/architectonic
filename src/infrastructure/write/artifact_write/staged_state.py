@@ -20,11 +20,11 @@ from src.domain.ontology_representation.artifact_types import (
     ScratchpadRecord,
 )
 from src.domain.repository.artifact_location import artifact_kind_at, is_verified_kind, model_file_kind
-from src.infrastructure.write.artifact_write.candidate_lists import CandidateListMixin
+from src.infrastructure.write.artifact_write.staged_lists import CandidateListMixin
 from src.infrastructure.write.artifact_write.staged_workspace import stage_live_path
 
 
-class CandidateStore(CandidateListMixin):
+class StagedStore(CandidateListMixin):
     def __init__(
         self,
         *,

@@ -247,3 +247,31 @@ def _managed_relpath(path: Path, *, live_root: Path, staged_root: Path) -> Path 
 def _is_managed_relpath(relpath: Path) -> bool:
     return bool(relpath.parts) and relpath.parts[0] in _MANAGED_SUBTREES
 
+
+# ── Answers from a staged write, addressed to the live repository ─────────────────────────────────
+# The staging copy is gone when a caller reads the answer, so every place it names is restated
+# against the live root. One owner for bulk writes and canvas saves.
+
+
+def path_in_live(path_value: object, *, staged_root: Path, live_root: Path) -> object:
+    """A staged path as the live path; anything else unchanged."""
+    if not isinstance(path_value, str):
+        return path_value
+    try:
+        return str(live_root / Path(path_value).relative_to(staged_root))
+    except ValueError:
+        return path_value
+
+
+def location_in_live(location: object, staged_root: Path, live_root: Path) -> object:
+    """An issue's location is a path, optionally followed by a position inside the file."""
+    staged = str(staged_root)
+    if isinstance(location, str) and location.startswith(staged):
+        return f"{live_root}{location[len(staged):]}"
+    return location
+
+
+def text_in_live(text: str, staged_root: Path, live_root: Path) -> str:
+    """Free text, such as a warning, that may name staged paths anywhere in it."""
+    return text.replace(f"{staged_root}/", f"{live_root}/")
+

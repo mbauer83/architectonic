@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from src.infrastructure.mcp import mcp_artifact_server as mcp
-from src.infrastructure.mcp.artifact_mcp.bulk.candidate_state import CandidateStore, candidate_store
+from src.infrastructure.mcp.artifact_mcp.bulk.staged_state import StagedStore, staged_store
 from src.infrastructure.write.artifact_write.batch_transaction import create_staging_repo
 from src.infrastructure.write.artifact_write.staged_workspace import stage_live_path
 
@@ -58,8 +58,8 @@ class _Batch:
         path.unlink()
         self.touched.add(path)
 
-    def store(self) -> CandidateStore:
-        return candidate_store(live_root=self.live, staged_root=self.staged, touched_paths=self.touched)
+    def store(self) -> StagedStore:
+        return staged_store(live_root=self.live, staged_root=self.staged, touched_paths=self.touched)
 
 
 @pytest.fixture()
