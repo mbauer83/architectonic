@@ -2,6 +2,8 @@ import { computed, nextTick, onUnmounted, ref, watch, type Ref } from 'vue'
 import { usePanTranslateStyle } from './usePanCanvasStyle'
 import { usePanGesture } from './usePanGesture'
 import { useWheelZoom } from './useWheelZoom'
+import type { ReadingView } from '../../domain/diagramReading'
+import type { Extent } from '../../domain/layout/geometry'
 
 /**
  * Fit-to-viewport framing for a rendered SVG inside `containerRef`, with `svgContainer` pointing at
@@ -126,6 +128,57 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     ty.value = fitTy.value
   }
 
+  /** Where the picture's own origin sits in the SVG: what a picture point is measured from on screen. */
+  const pictureOrigin = (): { x: number; y: number } => {
+    const viewBox = (svgContainer.value?.querySelector('svg') as SVGSVGElement | null)?.viewBox?.baseVal
+    return { x: viewBox?.x ?? 0, y: viewBox?.y ?? 0 }
+  }
+
+  /** The window as a reading names it: the picture point at its centre, and the zoom in percent. */
+  const windowView = (): ReadingView | null => {
+    const rect = containerRef.value?.getBoundingClientRect()
+    if (!rect || rect.width <= 0) return null
+    const origin = pictureOrigin()
+    return {
+      x: origin.x + (rect.width / 2 - tx.value) / scale.value,
+      y: origin.y + (rect.height / 2 - ty.value) / scale.value,
+      percent: scale.value * 100,
+    }
+  }
+
+  /** Show the window a reading names: its centre point in the middle, at its zoom. */
+  const showView = (view: ReadingView) => {
+    const rect = containerRef.value?.getBoundingClientRect()
+    if (!rect || rect.width <= 0 || view.percent <= 0) return
+    const origin = pictureOrigin()
+    scale.value = view.percent / 100
+    tx.value = rect.width / 2 - (view.x - origin.x) * scale.value
+    ty.value = rect.height / 2 - (view.y - origin.y) * scale.value
+  }
+
+  /** Fit the window to a part of the picture, never closer than its natural size. */
+  const frame = (extent: Extent, padding = 40) => {
+    const rect = containerRef.value?.getBoundingClientRect()
+    const width = extent.right - extent.left
+    const height = extent.bottom - extent.top
+    if (!rect || width <= 0 || height <= 0) return
+    const fitted = Math.min((rect.width - padding * 2) / width, (rect.height - padding * 2) / height, 1)
+    showView({ x: extent.left + width / 2, y: extent.top + height / 2, percent: Math.max(fitted, 0.05) * 100 })
+  }
+
+  /** Move the window by the least that brings a part of the picture *margin* pixels inside it. */
+  const reveal = (extent: Extent, margin = 32) => {
+    const rect = containerRef.value?.getBoundingClientRect()
+    if (!rect) return
+    const origin = pictureOrigin()
+    const shift = (low: number, high: number, size: number): number =>
+      (low < margin ? margin - low : high > size - margin ? Math.max(size - margin - high, margin - low) : 0)
+    const left = tx.value + (extent.left - origin.x) * scale.value
+    const top = ty.value + (extent.top - origin.y) * scale.value
+    tx.value += shift(left, left + (extent.right - extent.left) * scale.value, rect.width)
+    ty.value += shift(top, top + (extent.bottom - extent.top) * scale.value, rect.height)
+  }
+
   watch(containerRef, (el) => {
     resizeObserver?.disconnect()
     resizeObserver = null
@@ -138,5 +191,8 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
 
   onUnmounted(() => resizeObserver?.disconnect())
 
-  return { scale, tx, ty, canvasStyle, isTransformed, onMouseDown, resetView, fitDiagramToViewport }
+  return {
+    scale, tx, ty, canvasStyle, isTransformed, onMouseDown, resetView, fitDiagramToViewport,
+    windowView, showView, frame, reveal,
+  }
 }

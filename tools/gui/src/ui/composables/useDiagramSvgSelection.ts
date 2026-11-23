@@ -12,7 +12,7 @@ import type { NotFoundError } from '../../domain'
 import type { MarkdownError } from '../../application/MarkdownService'
 import type { DrilldownTarget } from '../views/DiagramDetailView.helpers'
 import { lookupViewerExtension, resolveElementMap, neutralizeSentinelLink } from '../lib/diagramViewerExtensions'
-import { SVG_MARKER_ATTRIBUTES } from '../lib/svgHitAreas'
+import { addConnectionHitAreas } from '../lib/svgHitAreas'
 
 /** The only two `DiagramContext['diagram']` fields this composable actually reads — a real
  * persisted diagram's full detail record satisfies this structurally, but so does an
@@ -49,13 +49,21 @@ export function useDiagramSvgSelection(options: {
 
   const svgContainer = ref<HTMLElement | null>(null)
   const svgNodeElems = ref(new Map<string, Element[]>())
+  const svgEdgeElems = ref(new Map<string, Element[]>())
   const prevHighlighted = ref<Element[]>([])
   let hoveredElems: Element[] = []
   const selectedConnectionGroup = ref<SVGGElement | null>(null)
   let interactivityController: AbortController | null = null
   let attachRun = 0
 
-  const selectedId = ref<string | null>(null)
+  // Several entities may be selected at once (Shift adds or takes one away): the diagram reader reads
+  // what they reach together. `selectedId` is the one entity whose details the sidebar shows, and so is
+  // null unless exactly one is selected; setting it selects that one alone.
+  const selectedIds = ref<readonly string[]>([])
+  const selectedId = computed<string | null>({
+    get: () => (selectedIds.value.length === 1 ? selectedIds.value[0] : null),
+    set: (id) => { selectedIds.value = id === null ? [] : [id] },
+  })
   const selectedConnection = ref<DiagramConnection | null>(null)
   //: Which drill-down targets a reader is being asked to choose between, and where the badge they
   //: clicked sits on screen. Null while nothing is being asked.
@@ -99,13 +107,10 @@ export function useDiagramSvgSelection(options: {
 
   watch([selectedId, selectedSubPart], () => { selectionToken.value += 1 })
 
-  watch(selectedId, (newId) => {
+  watch(selectedIds, (ids) => {
     for (const el of prevHighlighted.value) el.classList.remove('svg-selected')
-    prevHighlighted.value = []
-    if (!newId) return
-    const els = svgNodeElems.value.get(newId) ?? []
-    for (const el of els) el.classList.add('svg-selected')
-    prevHighlighted.value = els
+    prevHighlighted.value = ids.flatMap((id) => svgNodeElems.value.get(id) ?? [])
+    for (const el of prevHighlighted.value) el.classList.add('svg-selected')
   })
 
   /**
@@ -150,15 +155,23 @@ export function useDiagramSvgSelection(options: {
     selectedSubPartEls = elements
     for (const el of elements) el.classList.add('svg-subpart-selected')
   }
-  const selectEntity = (id: string) => {
+  /** *additive* (Shift): add the entity to the selection, or take it out if it is in. */
+  const selectEntity = (id: string, additive = false) => {
     clearConnection()
     clearSubPart()
+    if (additive && selectedIds.value.length > 0) {
+      const has = selectedIds.value.includes(id)
+      selectedIds.value = has ? selectedIds.value.filter((one) => one !== id) : [...selectedIds.value, id]
+      if (selectedId.value) entityQuery.run(svc.getEntity(selectedId.value))
+      else entityQuery.reset()
+      return
+    }
     // Selecting what is already selected is a no-op, not a deselect. Clicking a shape twice is
     // something a reader does while reading it — to bring the panel back into focus, or because the
     // first click landed on a label rather than the body — and taking the panel away in answer to
     // that is a surprise. Deselection is `clearSelection`, reached by clicking away from everything.
     if (selectedId.value === id) return
-    selectedId.value = id
+    selectedIds.value = [id]
     entityQuery.run(svc.getEntity(id))
   }
 
@@ -166,8 +179,8 @@ export function useDiagramSvgSelection(options: {
   const clearSelection = () => {
     clearConnection()
     clearSubPart()
-    if (selectedId.value !== null) {
-      selectedId.value = null
+    if (selectedIds.value.length > 0) {
+      selectedIds.value = []
       entityQuery.reset()
     }
   }
@@ -224,30 +237,6 @@ export function useDiagramSvgSelection(options: {
     }
   }
 
-  const addConnectionHitAreas = (group: SVGGElement) => {
-    for (const oldHit of Array.from(group.querySelectorAll('[data-conn-hit]'))) oldHit.remove()
-    const segments = Array.from(group.querySelectorAll<SVGElement>('path, line, polyline'))
-    for (const segment of segments) {
-      if (segment.closest('[data-entity-id]')) continue
-      const tag = segment.tagName.toLowerCase()
-      const hit = document.createElementNS('http://www.w3.org/2000/svg', tag)
-      const skippedAttrs: readonly string[] = ['id', 'class', 'style', ...SVG_MARKER_ATTRIBUTES]
-      for (const attr of Array.from(segment.attributes)) {
-        if (skippedAttrs.includes(attr.name)) continue
-        hit.setAttribute(attr.name, attr.value)
-      }
-      const strokeWidth = Number(segment.getAttribute('stroke-width') ?? '')
-      const hitWidth = Math.max(Number.isFinite(strokeWidth) ? strokeWidth * 4 : 0, 12)
-      hit.setAttribute('data-conn-hit', 'true')
-      hit.setAttribute('fill', 'none')
-      hit.setAttribute('stroke', 'transparent')
-      hit.setAttribute('stroke-width', String(hitWidth))
-      hit.setAttribute('pointer-events', 'stroke')
-      hit.setAttribute('vector-effect', 'non-scaling-stroke')
-      group.appendChild(hit)
-    }
-  }
-
   // Delegate selectable node sub-parts (e.g. datatype attribute rows) to the diagram type's
   // viewer extension, if any — keeps all type-specific knowledge out of this generic view.
   const attachNodeSubParts = (g: SVGGElement, entityId: string, signal: AbortSignal) => {
@@ -268,7 +257,8 @@ export function useDiagramSvgSelection(options: {
     interactivityController?.abort()
     interactivityController = new AbortController()
     const { signal } = interactivityController
-    svgNodeElems.value.clear()
+    svgNodeElems.value = new Map()
+    svgEdgeElems.value = new Map()
     prevHighlighted.value = []
     hoveredElems = []
     await nextTick()
@@ -305,14 +295,16 @@ export function useDiagramSvgSelection(options: {
         : undefined,
     })
 
+    svgNodeElems.value = nodes
     for (const [artifactId, elems] of nodes) {
-      svgNodeElems.value.set(artifactId, elems)
       for (const g of elems) {
         // Mapped representatives may be group/anchor elements OR bare shapes (an activity
         // step's rect/polygon, mapped so the whole step is clickable, not only its label).
         if (!(g instanceof SVGElement)) continue
         g.setAttribute('data-entity-id', artifactId)
-        g.addEventListener('click', (ev) => { ev.stopPropagation(); ev.preventDefault(); selectEntity(artifactId) }, { signal })
+        g.addEventListener('click', (ev) => {
+          ev.stopPropagation(); ev.preventDefault(); selectEntity(artifactId, ev.shiftKey)
+        }, { signal })
         g.addEventListener('mouseenter', () => setHovered(artifactId), { signal })
         g.addEventListener('mouseleave', () => setHovered(null), { signal })
         if (g instanceof SVGGElement) attachNodeSubParts(g, artifactId, signal)
@@ -370,6 +362,7 @@ export function useDiagramSvgSelection(options: {
         g.addEventListener('click', (ev) => { ev.stopPropagation(); selectConnection(conn, g) }, { signal })
       }
     }
+    svgEdgeElems.value = edges
   }
 
   watch([svgHtml, diagramEntities, diagramConnections], () => { void attachInteractivity() }, { flush: 'post' })
@@ -382,7 +375,7 @@ export function useDiagramSvgSelection(options: {
    * selection is added: it would keep answering "nothing selected" while something was.
    */
   const hasSelection = computed(
-    () => selectedId.value !== null || selectedConnection.value !== null || selectedSubPart.value !== null,
+    () => selectedIds.value.length > 0 || selectedConnection.value !== null || selectedSubPart.value !== null,
   )
 
   return {
@@ -391,6 +384,11 @@ export function useDiagramSvgSelection(options: {
     viewerExtension,
     svgContainer,
     selectedId,
+    selectedIds,
+    /** What each selectable entity and connection is drawn as, once the picture is mapped. */
+    nodeElements: svgNodeElems,
+    edgeElements: svgEdgeElems,
+    setHovered,
     selectedConnection,
     selectedSubPart,
     hasSelection,

@@ -64,19 +64,3 @@ describe('stripMarkerAttributes', () => {
     expect(el.getAttribute('stroke-width')).toBe('12')
   })
 })
-
-describe('attribute-copy hit-area pattern (DiagramDetailView)', () => {
-  it('excludes marker-end when copying attributes onto a new hit-area element', () => {
-    const source = gsnEdgeFixture()
-    const hit = new FakeSvgElement()
-    const skipped: readonly string[] = ['id', 'class', 'style', ...SVG_MARKER_ATTRIBUTES]
-    for (const attr of source.attributes) {
-      if (skipped.includes(attr.name)) continue
-      hit.set(attr.name, attr.value)
-    }
-
-    expect(hit.getAttribute('marker-end')).toBeNull()
-    expect(hit.getAttribute('stroke')).toBe('#20242A')
-    expect(hit.getAttribute('stroke-width')).toBe('1.5')
-  })
-})

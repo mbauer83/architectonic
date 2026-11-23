@@ -12,7 +12,18 @@
 export const motionAllowed = (): boolean =>
   typeof requestAnimationFrame === 'function' && !readerPrefersReducedMotion()
 
-const readerPrefersReducedMotion = (): boolean =>
-  typeof window !== 'undefined'
-  && typeof window.matchMedia === 'function'
-  && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const REDUCED = '(prefers-reduced-motion: reduce)'
+
+const reducedMotionQuery = (): MediaQueryList | null =>
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia(REDUCED) : null
+
+/** Whether the reader has asked for less motion. */
+export const readerPrefersReducedMotion = (): boolean => reducedMotionQuery()?.matches ?? false
+
+/** Call *listener* whenever the reader changes that preference; returns how to stop listening. */
+export const onReducedMotionChange = (listener: (reduced: boolean) => void): (() => void) => {
+  const query = reducedMotionQuery()
+  const changed = (event: MediaQueryListEvent) => listener(event.matches)
+  query?.addEventListener?.('change', changed)
+  return () => query?.removeEventListener?.('change', changed)
+}

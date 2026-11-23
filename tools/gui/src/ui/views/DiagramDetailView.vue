@@ -38,6 +38,10 @@ import DiagramEditBar from '../components/DiagramEditBar.vue'
 import LayoutLabCanvas from '../components/layoutLab/LayoutLabCanvas.vue'
 import type { CanvasHandle, EditBarHandle } from '../composables/useDiagramEditMode'
 import { useDiagramEditMode } from '../composables/useDiagramEditMode'
+import { useDiagramPageReader } from '../composables/useDiagramPageReader'
+import DiagramReaderPanel from '../components/DiagramReaderPanel.vue'
+import PumlSourceToggle from '../components/PumlSourceToggle.vue'
+import DiagramMetaLine from '../components/DiagramMetaLine.vue'
 
 const svc = inject(modelServiceKey)!
 const toast = inject(toastKey, () => undefined)
@@ -70,8 +74,6 @@ const matrixHtml = computed(() =>
 const editPath = computed(() =>
   editRouteFor(detail.value?.diagram_type, diagramId.value, matrixEditRoute, diagramEditRoute))
 const isGlobalDiagram = computed(() => detail.value?.is_global ?? false)
-
-const showSource = ref(false)
 
 // The diagram the query currently holds, so a reload can tell a refresh from a fresh load.
 let loadedDiagramId: string | null = null
@@ -136,6 +138,12 @@ const editing = computed(() => edit.active.value)
 watch(editing, () => { void panZoom.fitDiagramToViewport() })
 watch(() => edit.session.geometry.value, () => { if (editing.value) void panZoom.fitDiagramToViewport() })
 
+// The diagram reader (B97): in view mode only, on the picture's own selection and window.
+const reader = useDiagramPageReader({
+  svc, route, router, context: contextQuery.data, selection, panZoom, host: containerRef, toast,
+  viewing: computed(() => !editing.value && svgHtml.value !== null),
+})
+
 const executeDelete = () => {
   void router.push(isGlobalDiagram.value ? { path: '/diagrams', query: { tier: 'enterprise' } } : '/diagrams')
 }
@@ -193,19 +201,10 @@ const executeDelete = () => {
     </div>
 
     <template v-else-if="detail">
-      <div class="meta">
-        <span class="type-badge">{{ detail.diagram_type.replace('archimate-', '') }}</span>
-        <span
-          class="status-badge"
-          :class="`status--${detail.status}`"
-        >{{ detail.status }}</span>
-        <span class="mono faded">v{{ detail.version }} · {{ detail.artifact_id }}</span>
-        <span
-          v-if="editing"
-          class="editing-note"
-          data-testid="editing-note"
-        >Editing — nothing is saved until you press Save · <em>Done</em> or <kbd>Esc</kbd> leaves</span>
-      </div>
+      <DiagramMetaLine
+        :detail="detail"
+        :editing="editing"
+      />
 
       <DiagramEditBar
         v-if="editing"
@@ -240,6 +239,8 @@ const executeDelete = () => {
             :class="{ editing, panning: edit.spaceHeld.value }"
             :data-mode="editing ? 'edit' : 'view'"
             data-testid="diagram-canvas-host"
+            v-bind="reader.hostAttributes.value"
+            @keydown="reader.onKeydown"
             @mousedown="editing ? edit.panPress($event, panZoom.onMouseDown) : panZoom.onMouseDown($event)"
             @dblclick="editing || panZoom.resetView()"
           >
@@ -316,6 +317,7 @@ const executeDelete = () => {
                 @add="edit.editing.add"
               />
               <DiagramEntitySidebar
+                :list-folded="reader.reading.value"
                 :entities="diagramEntities"
                 :viewer-extension="selection.viewerExtension.value"
                 :selected-id="selection.selectedId.value"
@@ -336,7 +338,15 @@ const executeDelete = () => {
                 @sub-part-save="selection.patchEntityMetadata($event)"
                 @entity-meta-save="selection.patchEntityMetadata($event)"
                 @entity-edited="selection.entityEdited()"
-              />
+              >
+                <template #lead>
+                  <DiagramReaderPanel
+                    v-if="reader.reading.value"
+                    v-bind="reader.panel.value"
+                    v-on="reader.panelEvents"
+                  />
+                </template>
+              </DiagramEntitySidebar>
             </div>
           </FullscreenDock>
         </template>
@@ -364,21 +374,10 @@ const executeDelete = () => {
         @deleted="executeDelete"
       />
 
-      <div
+      <PumlSourceToggle
         v-if="detail.puml_source"
-        class="src-row"
-      >
-        <button
-          class="toggle-btn"
-          @click="showSource = !showSource"
-        >
-          {{ showSource ? 'Hide' : 'Show' }} PUML source
-        </button>
-        <pre
-          v-if="showSource"
-          class="puml-src"
-        >{{ detail.puml_source }}</pre>
-      </div>
+        :source="detail.puml_source"
+      />
     </template>
   </div>
 </template>
