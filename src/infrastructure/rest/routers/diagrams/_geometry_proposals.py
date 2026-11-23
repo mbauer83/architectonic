@@ -16,16 +16,21 @@ class ProposedElement(BaseModel):
     model_config = ConfigDict(extra="forbid")
     artifact_id: str
     name: str = Field(min_length=1)
+    specializations: tuple[str, ...] = ()
     attributes: dict[str, object] = Field(default_factory=dict)
 
 
 class ProposedRelation(BaseModel):
+    description: str = ""
+    src_multiplicity: str = ""
+    tgt_multiplicity: str = ""
     model_config = ConfigDict(extra="forbid")
     artifact_id: str
     attributes: dict[str, object] = Field(default_factory=dict)
 
 
 class GeometryPreviewBody(DiagramComposition):
+    arrangement: dict[str, Any] | None = None
     proposed_elements: list[ProposedElement] = Field(default_factory=list)
     proposed_relations: list[ProposedRelation] = Field(default_factory=list)
 
@@ -48,7 +53,7 @@ class GeometryPreviewBody(DiagramComposition):
                 artifact_id=item.artifact_id, artifact_type=kind, name=item.name, version="", status="draft",
                 domain=hierarchy[0], subdomain="", path=Path(), keywords=(), extra={}, content_text="",
                 display_blocks={}, display_label=item.name, display_alias=standard_alias_of(item.artifact_id),
-                attributes=item.attributes,
+                attributes=item.attributes, specializations=item.specializations,
             ))
         for relation in self.proposed_relations:
             source, target, kind = connection_id_as_written(relation.artifact_id)
@@ -61,6 +66,8 @@ class GeometryPreviewBody(DiagramComposition):
             relations.add(key)
             connections.append(ConnectionRecord(
                 artifact_id=relation.artifact_id, source=source, target=target, conn_type=kind, version="",
-                status="draft", path=Path(), extra={}, content_text="", attributes=relation.attributes,
+                status="draft", path=Path(), extra={}, content_text=relation.description,
+                attributes=relation.attributes,
+                src_multiplicity=relation.src_multiplicity, tgt_multiplicity=relation.tgt_multiplicity,
             ))
         return tuple(entities), tuple(connections)

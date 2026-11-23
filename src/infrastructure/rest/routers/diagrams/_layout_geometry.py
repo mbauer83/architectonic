@@ -12,11 +12,12 @@ take, so the lab draws exactly what the composer would arrange, as the composer 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from typing import Any
 
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds, joined_to_its_picture
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
-from src.domain.diagrams.layout.layout_block import Layout
+from src.domain.diagrams.layout.layout_block import Layout, layout_as_written, read_layout
 from src.domain.diagrams.layout.rendered_picture import (
     DrawnBox,
     DrawnElement,
@@ -30,6 +31,7 @@ from src.domain.diagrams.layout.text_clearance import padded, text_extent, title
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
 from src.infrastructure.rendering.layout._svg_relations import RelationMarkup
 from src.infrastructure.rendering.layout.box_identities import box_keys_by_alias
+from src.infrastructure.rendering.layout.membership_placement import with_new_members
 from src.infrastructure.rendering.layout.plantuml_svg_reader import RenderedDrawing, read_rendered_drawing
 from src.infrastructure.rendering.layout.relation_identities import DrawnAs, relation_keys_by_index
 from src.infrastructure.rest.routers.diagrams._layout_drawing import node_of, relation_drawing
@@ -126,13 +128,20 @@ def geometry_of(drawing: RenderedDrawing, diagram: LaidOutDiagram) -> Wire:
 
 
 def diagram_geometry(
-    plantuml_svg: str, frontmatter: Mapping[str, object], ontology: DeclaresElementKinds
+    plantuml_svg: str, frontmatter: Mapping[str, object], ontology: DeclaresElementKinds,
+    *, arrangement: dict[str, Any] | None = None, previous: frozenset[str] = frozenset(),
 ) -> Wire | NotReadable:
     """The lab's geometry of the diagram *frontmatter* states, from PlantUML's own picture of it."""
     drawing = read_rendered_drawing(plantuml_svg)
     if isinstance(drawing, NotReadable):
         return drawing
     try:
-        return geometry_of(drawing, joined_to_its_picture(frontmatter, Layout(), ontology))
+        layout = read_layout(arrangement) if arrangement else Layout()
+        diagram = joined_to_its_picture(frontmatter, layout, ontology)
+        result = geometry_of(drawing, diagram)
+        if arrangement:
+            new = frozenset(diagram.instance_by_alias.values()) - previous
+            result["layout"] = layout_as_written(with_new_members(drawing.picture, diagram, new))
+        return result
     except Unreadable as unreadable:
         return NotReadable(met=unreadable.met)

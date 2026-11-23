@@ -7,12 +7,13 @@ callers cannot supply an arbitrary prefix.
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 
 from src.application.identifier_allocator import get_default_allocator
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.domain.modules.module_types import EntityTypeName
 from src.infrastructure.rest.contracts.platform import AllocatedIdentifierResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers._openapi import TAG_ENTITIES
@@ -27,6 +28,7 @@ def allocate_identifier(
     entity_type: Annotated[str, Body()],
     name_hint: Annotated[str | None, Body()] = None,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+    scope: Annotated[Literal["diagram", "model"], Body()] = "diagram",
 ) -> dict[str, str]:
     """Mint a workspace-identity ID for a diagram entity (non-persistent).
 
@@ -42,6 +44,12 @@ def allocate_identifier(
     dt_module = catalogs.diagram_types.find_diagram_type(diagram_type)
     if dt_module is None:
         raise HTTPException(404, f"Unknown diagram type: {diagram_type!r}")
+
+    if scope == "model":
+        info = dt_module.effective_entity_types().get(EntityTypeName(entity_type))
+        if info is None or info.internal:
+            raise HTTPException(400, f"{diagram_type} cannot draw a new {entity_type} model element")
+        return {"id": get_default_allocator().allocate(prefix=info.prefix, name_hint=name_hint)}
 
     ui_entry = next(
         (oe for oe in dt_module.ui_config.diagram_only_types if oe.entity_type == entity_type),

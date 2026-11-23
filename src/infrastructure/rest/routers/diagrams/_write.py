@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
+from src.domain.diagrams.layout.layout_patch import LayoutConflict
 from src.domain.repository.groups import UNCATEGORIZED
 from src.infrastructure.rest.contracts.diagrams import DiagramPreviewResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
@@ -123,44 +124,35 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
 def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
+    from src.application.candidate_repository import committed_repository
+    from src.infrastructure.write.artifact_write.canvas_commands import canvas_save
     from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
     from src.infrastructure.write.artifact_write.enterprise_edit_arguments import KEYWORDS_UNSET
 
-    repo = s.get_repo()
-    repo_root, _, verifier = s.get_write_deps(catalogs)
-    composed = render_composition(body, repo=repo, repo_root=repo_root)
-    puml, de, dc = composed.puml, composed.diagram_entities, composed.diagram_connections
-    conn_bindings = composed.conn_bindings
-    entity_ids_used, connection_ids_used = composed.entity_ids_used, composed.connection_ids_used
-    from src.application.candidate_repository import committed_repository  # noqa: PLC0415
-    try:
-        result = s.authorized_write(
-            "diagrams_replace_diagram", 
-            edit_diagram,
-            assert_write_root=assert_engagement_write_root,
-            repo_root=repo_root,
-            verifier=verifier,
-            clear_repo_caches=s.clear_caches,
-            artifact_id=artifact_id,
-            repo=repo,
-            puml=puml,
-            name=body.name,
-            group=body.group,
-            keywords=KEYWORDS_UNSET,
-            diagram_entities=de,
-            diagram_connections=dc,
-            entity_ids_used=entity_ids_used,
-            connection_ids_used=connection_ids_used,
-            authored_groupings=body.authored_groupings,
-            layout=layout_to_store(artifact_id, body, composed, repo_root, catalogs.ontology),
-            version=body.version,
-            status=body.status,
-            tlp=body.tlp,
-            bindings=conn_bindings or None,
-            viewpoint=body.viewpoint,
-            dry_run=body.dry_run,
-            committed_repo=committed_repository(repo),
+    root, _, live_verifier = s.get_write_deps(catalogs)
+
+    def save(repo_root, repo, verifier, clear, dry_run):
+        composed = render_composition(body, repo=repo, repo_root=repo_root)
+        return edit_diagram(
+            assert_write_root=assert_engagement_write_root, repo_root=repo_root, verifier=verifier,
+            clear_repo_caches=clear, artifact_id=artifact_id, repo=s.get_repo(), puml=composed.puml,
+            name=body.name, group=body.group, keywords=KEYWORDS_UNSET, diagram_entities=composed.diagram_entities,
+            diagram_connections=composed.diagram_connections, entity_ids_used=composed.entity_ids_used,
+            connection_ids_used=composed.connection_ids_used, authored_groupings=body.authored_groupings,
+            layout=layout_to_store(artifact_id, body, composed, root, catalogs.ontology),
+            version=body.version, status=body.status, tlp=body.tlp, bindings=composed.conn_bindings or None,
+            viewpoint=body.viewpoint, dry_run=dry_run, committed_repo=committed_repository(repo),
         )
+
+    def replace_diagram():
+        if body.commands:
+            return canvas_save(body.commands, root, catalogs, body.dry_run, s.get_repo(), save, s.clear_caches)
+        return save(root, s.get_repo(), live_verifier, s.clear_caches, body.dry_run)
+
+    try:
+        result = s.authorized_write("diagrams_replace_diagram", replace_diagram)
+    except LayoutConflict as conflict:
+        raise HTTPException(409, str(conflict)) from conflict
     except ValueError as e:
         raise HTTPException(400, str(e))
     return s.write_result_to_dict(result)

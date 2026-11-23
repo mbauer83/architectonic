@@ -14,6 +14,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 
+from src.application.modeling.diagram_identities import alias_by_instance
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, MalformedLayout
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
@@ -123,21 +124,25 @@ def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs) -> dict[s
 
 def _geometry_response(
     puml: str, artifact_id: str, frontmatter: dict[str, Any], catalogs: RuntimeCatalogs,
+    *, arrangement: dict[str, Any] | None = None, previous: frozenset[str] = frozenset(),
 ) -> dict[str, object]:
     diagram_type = str(frontmatter.get("diagram-type", "archimate"))
     try:
         svg = plantuml_svg(puml, _repo_root(), diagram_type)
     except NotDrawn as refusal:
         raise HTTPException(422, str(refusal)) from refusal
-    geometry = diagram_geometry(svg, frontmatter, catalogs.ontology)
+    try:
+        geometry = diagram_geometry(svg, frontmatter, catalogs.ontology, arrangement=arrangement, previous=previous)
+    except MalformedLayout as exc:
+        raise HTTPException(422, str(exc)) from exc
     if isinstance(geometry, NotReadable):
         raise HTTPException(422, f"This diagram's picture cannot be arranged: {geometry.met}")
     stored = frontmatter.get(LAYOUT_KEY)
     return {
         "artifact_id": str(frontmatter.get("artifact-id", artifact_id)),
         "name": str(frontmatter.get("name") or artifact_id),
-        **geometry,
         **({"layout": stored} if isinstance(stored, dict) and stored else {}),
+        **geometry,
     }
 
 
@@ -160,7 +165,7 @@ def preview_diagram_layout_geometry(
         raise HTTPException(422, str(exc)) from exc
     return _geometry_response(composed.puml, artifact_id, {
         **parsed.frontmatter, **composed.statements(body),
-    }, catalogs)
+    }, catalogs, arrangement=body.arrangement, previous=frozenset(alias_by_instance(parsed.frontmatter)))
 
 
 @router.post(

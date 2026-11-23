@@ -61,7 +61,7 @@ def with_new_members(
     scene = routing_input(picture, replace(diagram, layout=layout)).scene
     boxes = dict(layout.boxes)
     for alias, key in keys.items():
-        if key not in boxes and is_rule_key(key):
+        if key not in boxes:
             extent = scene.boxes[alias]
             boxes[key] = Placed(round(extent.left), round(extent.top), ceil(extent.width), ceil(extent.height))
     return replace(layout, boxes=boxes)

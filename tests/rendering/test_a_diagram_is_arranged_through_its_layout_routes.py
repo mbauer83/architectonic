@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.application.artifacts.repository import ArtifactRepository
+from src.application.repo_path_helpers import rendered_path_for
 from src.domain.repository.frontmatter import parse_frontmatter
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as s
@@ -171,3 +172,45 @@ def test_preview_draws_proposed_members_under_layout_keys_without_writing(model:
     assert len(picture["relations"]) == 1 and picture["relations"][0]["key"]
     assert path.read_bytes() == before
     assert s.get_repo().get_entity(proposed) is None
+
+
+def test_canvas_commands_and_membership_publish_together(model: RenderedModel, client: TestClient):
+    artifact_id, path = _diagram(model, "top-to-bottom")
+    before = path.read_bytes()
+    proposed = "ROL@1790000000.CaNvAs.dispatcher"
+    detail = client.get(f"/api/diagrams/{artifact_id}").json()
+    body = {
+        "diagram_type": detail["diagram_type"], "name": detail["name"],
+        "entity_ids": [*detail["entity_ids_used"], proposed], "connection_ids": detail["connection_ids_used"],
+        "commands": [{"op": "model.element.create", "artifact_id": proposed, "name": "Dispatcher",
+                      "group": "uncategorized", "summary": "Coordinates dispatch."}],
+        "layout_patch": {}, "dry_run": False,
+    }
+    refused = client.put(f"/api/diagrams/{artifact_id}", json={
+        **body, "layout_patch": {"elements": {"missing": {"value": {"x": "invalid", "y": 1}}}},
+    })
+    assert refused.status_code == 400, refused.text
+    assert not list(model.repo.rglob(f"{proposed}.md"))
+    assert path.read_bytes() == before
+    for dry_run in (True, False):
+        answer = client.put(f"/api/diagrams/{artifact_id}", json={**body, "dry_run": dry_run})
+        assert answer.status_code == 200, answer.text
+        assert answer.json()["wrote"] is not dry_run
+        assert bool(list(model.repo.rglob(f"{proposed}.md"))) is not dry_run
+    assert "Dispatcher" in rendered_path_for(path, model.repo, ".svg").read_text()
+    assert rendered_path_for(path, model.repo, ".png").read_bytes().startswith(b"\x89PNG")
+    assert proposed in client.get(f"/api/diagrams/{artifact_id}").json()["entity_ids_used"]
+
+
+def test_membership_write_with_a_stale_layout_answers_conflict(model: RenderedModel, client: TestClient):
+    artifact_id, path = _diagram(model, "top-to-bottom")
+    before = path.read_bytes()
+    detail = client.get(f"/api/diagrams/{artifact_id}").json()
+    result = client.put(f"/api/diagrams/{artifact_id}", json={
+        "diagram_type": detail["diagram_type"], "name": detail["name"], "entity_ids": detail["entity_ids_used"],
+        "connection_ids": [], "dry_run": False, "layout_patch": {"elements": {
+            model.ids["clerk"]: {"value": {"x": 30, "y": 40}, "based_on": {"x": 10, "y": 10}},
+        }},
+    })
+    assert result.status_code == 409, result.text
+    assert path.read_bytes() == before

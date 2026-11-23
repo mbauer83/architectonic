@@ -5397,6 +5397,12 @@ export interface components {
             entity_type: string;
             /** Name Hint */
             name_hint?: string | null;
+            /**
+             * Scope
+             * @default diagram
+             * @enum {string}
+             */
+            scope: "diagram" | "model";
         };
         /** Body_viewpoints_execute_viewpoint */
         Body_viewpoints_execute_viewpoint: {
@@ -5540,6 +5546,7 @@ export interface components {
              */
             severity: "ontology" | "entity-id";
         };
+        CanvasCommand: components["schemas"]["CreateElement"] | components["schemas"]["RenameElement"] | components["schemas"]["DeleteElement"] | components["schemas"]["ConnectElements"];
         /**
          * ChangeDiscardedResponse
          * @description What a discard did.
@@ -5794,6 +5801,31 @@ export interface components {
              * @enum {string}
              */
             strategy: "accept_engagement" | "accept_enterprise" | "merge";
+        };
+        /** ConnectElements */
+        ConnectElements: {
+            /** Artifact Id */
+            artifact_id: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Op
+             * @enum {string}
+             */
+            op: "model.relation.create" | "model.relation.edit";
+            /**
+             * Src Multiplicity
+             * @default
+             */
+            src_multiplicity: string;
+            /**
+             * Tgt Multiplicity
+             * @default
+             */
+            tgt_multiplicity: string;
         };
         /** ConnectionAssociateBody */
         ConnectionAssociateBody: {
@@ -6175,6 +6207,36 @@ export interface components {
              */
             version: string;
         };
+        /** CreateElement */
+        CreateElement: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Artifact Type */
+            artifact_type?: string | null;
+            /** Attributes */
+            attributes?: {
+                [key: string]: unknown;
+            };
+            /** Group */
+            group: string;
+            /** Name */
+            name: string;
+            /**
+             * Op
+             * @constant
+             */
+            op: "model.element.create";
+            /**
+             * Specializations
+             * @default []
+             */
+            specializations: string[];
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
+        };
         /** CreateEntityBody */
         CreateEntityBody: {
             /** Artifact Type */
@@ -6520,6 +6582,16 @@ export interface components {
             type_id: string;
             /** Usages */
             usages: components["schemas"]["DatatypeTypeUsage"][];
+        };
+        /** DeleteElement */
+        DeleteElement: {
+            /** Artifact Id */
+            artifact_id: string;
+            /**
+             * Op
+             * @constant
+             */
+            op: "model.element.delete";
         };
         /**
          * DenialDetails
@@ -7953,6 +8025,11 @@ export interface components {
             authored_groupings?: {
                 [key: string]: unknown;
             }[] | null;
+            /**
+             * Commands
+             * @default []
+             */
+            commands: components["schemas"]["CanvasCommand"][];
             /** Connection Ids */
             connection_ids: string[];
             /** Diagram Entities */
@@ -9104,6 +9181,10 @@ export interface components {
         };
         /** GeometryPreviewBody */
         GeometryPreviewBody: {
+            /** Arrangement */
+            arrangement?: {
+                [key: string]: unknown;
+            } | null;
             /** Authored Groupings */
             authored_groupings?: {
                 [key: string]: unknown;
@@ -11391,6 +11472,11 @@ export interface components {
             };
             /** Name */
             name: string;
+            /**
+             * Specializations
+             * @default []
+             */
+            specializations: string[];
         };
         /** ProposedRelation */
         ProposedRelation: {
@@ -11400,6 +11486,21 @@ export interface components {
             attributes?: {
                 [key: string]: unknown;
             };
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Src Multiplicity
+             * @default
+             */
+            src_multiplicity: string;
+            /**
+             * Tgt Multiplicity
+             * @default
+             */
+            tgt_multiplicity: string;
         };
         /**
          * ProposedStanding
@@ -11695,6 +11796,18 @@ export interface components {
             op: "remove";
             /** Row Id */
             row_id: string;
+        };
+        /** RenameElement */
+        RenameElement: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Name */
+            name: string;
+            /**
+             * Op
+             * @constant
+             */
+            op: "model.element.rename";
         };
         /** RenameGroupBody */
         RenameGroupBody: {
