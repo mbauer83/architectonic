@@ -19,7 +19,8 @@ import {
 import { drawnArrangement } from '../../domain/layout/lab/labArrangement'
 import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
-import { membershipWithout } from '../../domain/layout/diagramMembership'
+import { composeCanvas } from '../../domain/layout/canvasComposition'
+import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import { stableEntityId } from '../../domain/artifactId'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
@@ -30,10 +31,12 @@ import { useArrangementSession } from './useArrangementSession'
 export interface PendingChange {
   readonly key: string
   readonly text: string
+  readonly model?: boolean
 }
 
 export function useDiagramEditing(
   svc: ModelService, diagramId: () => string, membership: () => DrawnMembership | null,
+  onMembershipSaved: () => void = () => {},
 ) {
   const session = useArrangementSession(
     (shapes) => svc.drawResizedShapes(diagramId(), shapes),
@@ -88,20 +91,28 @@ export function useDiagramEditing(
     const now = session.state.value
     const before = saved.value
     if (!geometry || !now || !before) return []
+    const model = (now.commands ?? []).map(c => ({
+      key: `${c.op}:${c.artifact_id}`, model: true,
+      text: c.op === 'model.element.create' ? `Create element: ${c.name}`
+        : c.op === 'model.element.rename' ? `Rename element: ${c.name}`
+        : c.op === 'model.element.delete' ? `Delete from model: ${c.artifact_id}`
+        : `${c.op === 'model.relation.edit' ? 'Edit' : 'Create'} relationship: ${c.artifact_id}`,
+    }))
     const added = [...now.additions ?? []].map(([id, name]) => ({ key: id, text: `Added to diagram: ${name}` }))
     const originalAliases = new Set(before.picture?.elements.map(e => e.alias))
     const removed = [...now.removed ?? []].filter(alias => originalAliases.has(alias)).map((alias) => ({
       key: `removed:${alias}`, text: `Removed from the diagram: ${nameOf(alias)} — it stays in the model`,
     }))
     if (!now.byHand) {
-      return [...(before.byHand ? [{ key: 'automatic', text: 'Returned to automatic layout' }] : []), ...added, ...removed]
+      return [...(before.byHand ? [{ key: 'automatic', text: 'Returned to automatic layout' }] : []),
+        ...added, ...removed, ...model]
     }
     const reference = before.byHand ? before.arrangement
       : (now.takenOver ?? widenedArrangement(geometry, before.arrangement))
     const takenOver: PendingChange[] = before.byHand ? []
       : [{ key: 'by-hand', text: 'Arranged by hand: new elements will be placed beside their neighbours' }]
     return [
-      ...added, ...removed,
+      ...added, ...removed, ...model,
       ...takenOver,
       ...arrangedUnits(geometry, reference, now.arrangement).map((alias) => ({
         key: alias, text: `Arranged: ${nameOf(alias)}`,
@@ -116,9 +127,8 @@ export function useDiagramEditing(
   }
 
   /** The entity ids the session removed from the diagram, from the picture as drawn. */
-  const removedIds = (): ReadonlySet<string> => {
-    const removed = session.state.value?.removed ?? new Set<string>()
-    return new Set(session.drawnPicture.value?.elements
+  const removedIds = (removed = session.state.value?.removed ?? new Set<string>()): ReadonlySet<string> => {
+    return new Set(saved.value?.picture?.elements
       .filter((one) => removed.has(one.alias) && one.key !== undefined)
       .flatMap((one) => (one.key === undefined ? [] : [one.key])) ?? [])
   }
@@ -130,22 +140,20 @@ export function useDiagramEditing(
   const writeMembership = async (removed: ReadonlySet<string>, layoutPatch: LayoutPatch): Promise<void> => {
     const drawn = savedMembers.value
     if (!drawn) throw new Error('The diagram has not been read; reload the page.')
-    const kept = membershipWithout({
-      ...drawn, entity_ids: [...drawn.entity_ids, ...(session.state.value?.additions?.keys() ?? [])],
-    }, removed)
+    const state = session.state.value
+    if (!state) return
+    const { write } = composeCanvas(drawn, state, removed)
     const written = await Effect.runPromise(svc.editDiagram(diagramId(), {
-      diagram_type: drawn.diagram_type, name: drawn.name,
-      entity_ids: [...kept.entity_ids], connection_ids: [...kept.connection_ids],
-      ...(drawn.diagram_entities ? { diagram_entities: { ...drawn.diagram_entities } } : {}),
-      ...(kept.authored_groupings ? { authored_groupings: kept.authored_groupings } : {}),
+      ...write, ...(state.commands?.length ? { commands: state.commands } : {}),
       layout_patch: layoutPatch,
       dry_run: false,
     }))
     if (!written.wrote) {
       throw new Error(`The diagram was not written: ${written.warnings.join(' ') || 'it was refused'}`)
     }
-    savedMembers.value = { ...drawn, ...kept }
+    savedMembers.value = write
     await reopen()
+    onMembershipSaved()
   }
 
   /** Write what the session changed. Stays in edit mode; what was saved is the new starting point. */
@@ -161,7 +169,7 @@ export function useDiagramEditing(
       const patch = layoutPatchBetween(stored.value ?? {}, wanted())
       // One write when what the diagram holds changes: membership and layout together, so the stored
       // layout always matches the body that write generates (D12).
-      if (removed.size > 0 || now.additions?.size) {
+      if (removed.size > 0 || now.additions?.size || now.commands?.length || now.overlays?.length) {
         await writeMembership(removed, patch)
         return true
       }
@@ -222,38 +230,60 @@ export function useDiagramEditing(
     session.step({ ...now, removed: new Set([...now.removed ?? [], alias]) })
   }
 
-  const add = async (id: string, name: string) => {
+  const add = async (id: string, name: string, type?: string) => {
     const drawn = savedMembers.value
     const now = session.state.value
     if (!drawn || !now || loading.value || saving.value) return
-    const existing = session.drawnPicture.value?.elements.find(e => e.key === stableEntityId(id))
+    const existing = [...session.drawnPicture.value?.elements ?? [], ...saved.value?.picture?.elements ?? []]
+      .find(e => e.key === stableEntityId(id))
     if (existing && now.removed?.has(existing.alias)) {
       const removed = new Set(now.removed)
       removed.delete(existing.alias)
-      session.step({ ...now, removed })
+      const additions = new Map(now.additions)
+      if (!drawn.entity_ids.some(key => stableEntityId(key) === stableEntityId(id))) additions.set(id, name)
+      await preview({ ...now, removed, additions }, now)
       return
     }
     if (drawn.entity_ids.some(key => stableEntityId(key) === stableEntityId(id)) || now.additions?.has(id)) return
     const additions = new Map(now.additions).set(id, name)
+    await preview({ ...now, additions, addedTypes: type ? new Map(now.addedTypes).set(id, type) : now.addedTypes }, now)
+  }
+
+  const preview = async (next: ArrangementState, previous: ArrangementState) => {
+    const drawn = savedMembers.value
+    if (!drawn || loading.value || saving.value) return false
     loading.value = true
     error.value = null
     try {
-      const picture = await Effect.runPromise(svc.previewLayoutGeometry(diagramId(), {
-        ...drawn, entity_ids: [...drawn.entity_ids, ...additions.keys()], connection_ids: [...drawn.connection_ids],
-      }))
-      if (session.state.value !== now) return
+      const { preview: request } = composeCanvas(drawn, next, removedIds(next.removed))
       const carried = wanted()
-      session.step({ ...now, picture, additions,
-        arrangement: carried ? arrangedBy(picture, carried) : drawnArrangement(picture),
-      })
+      const picture = await Effect.runPromise(svc.previewLayoutGeometry(diagramId(), {
+        ...request, ...(carried ? {arrangement: carried} : {}),
+      }))
+      if (session.state.value !== previous) return false
+      const arrangement = carried ? arrangedBy(picture, picture.layout ?? carried) : drawnArrangement(picture)
+      session.step({ ...next, picture, arrangement })
+      return true
     } catch (failure) {
       error.value = failure instanceof Error ? failure.message : String(failure)
+      return false
     } finally {
       loading.value = false
     }
   }
 
-  return { add, session, changes, loading, saving, error, open, save, discard, returnToAutomatic, remove }
+  const propose = async (command: CanvasCommand, overlay?: Record<string, unknown>) => {
+    const now = session.state.value
+    if (!now) return false
+    let commands = [...now.commands ?? []]
+    if (command.op === 'model.element.rename') {
+      commands = commands.filter(c => c.op !== command.op || c.artifact_id !== command.artifact_id)
+    }
+    commands.push(command)
+    return preview({ ...now, commands, overlays: overlay ? [...now.overlays ?? [], overlay] : now.overlays }, now)
+  }
+
+  return { add, propose, session, changes, loading, saving, error, open, save, discard, returnToAutomatic, remove }
 }
 
 export type DiagramEditing = ReturnType<typeof useDiagramEditing>

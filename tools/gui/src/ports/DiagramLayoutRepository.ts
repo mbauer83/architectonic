@@ -1,8 +1,10 @@
 import type { Effect } from 'effect'
-import type { DiagramComposition } from './diagramWriteBodies'
+import type { GeometryComposition } from './diagramWriteBodies'
 import type { Extent } from '../domain/layout/geometry'
 import type {
-  DiagramLayoutPatchResult, DrawingNode, LayoutGeometry,
+  DiagramLayoutPatchResult,
+  DrawingNode,
+  LayoutGeometry,
 } from '../domain/schemas/diagramLayoutGeometry'
 import type { RepoError } from './repositoryErrors'
 
@@ -28,12 +30,21 @@ export type LayoutPatch = Readonly<Record<string, Readonly<Record<string, Layout
 
 /** Arranging a diagram: the picture it is arranged on, resized shapes drawn anew, and the layout write. */
 export interface DiagramLayoutRepository {
-  readonly previewLayoutGeometry: (diagramId: string, composition: DiagramComposition) => Effect.Effect<LayoutGeometry, RepoError>
+  readonly listDiagramElementTypes: (
+    diagramType: string,
+  ) => Effect.Effect<readonly { artifact_type: string; domain: string }[], RepoError>
+  readonly previewLayoutGeometry: (
+    diagramId: string,
+    composition: GeometryComposition,
+  ) => Effect.Effect<LayoutGeometry, RepoError>
   readonly readLayoutGeometry: (diagramId: string) => Effect.Effect<LayoutGeometry, RepoError>
   readonly drawResizedShapes: (
-    diagramId: string, shapes: readonly ShapeToDraw[],
+    diagramId: string,
+    shapes: readonly ShapeToDraw[],
   ) => Effect.Effect<readonly DrawingNode[], RepoError>
   readonly patchLayout: (
-    diagramId: string, patch: LayoutPatch, dryRun: boolean,
+    diagramId: string,
+    patch: LayoutPatch,
+    dryRun: boolean,
   ) => Effect.Effect<DiagramLayoutPatchResult, RepoError>
 }

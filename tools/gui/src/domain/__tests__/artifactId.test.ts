@@ -6,6 +6,10 @@ describe('stableEntityId', () => {
     expect(stableEntityId('FNC@1777390496.Z2rrfP.select-artifacts-for-promotion')).toBe('FNC@1777390496.Z2rrfP')
   })
 
+  it('joins proposed elements whose allocated key contains an underscore', () => {
+    expect(stableEntityId('ROL@2._k6RLj9.canvas-preview')).toBe('ROL@2._k6RLj9')
+  })
+
   it('returns a stem-form id unchanged', () => {
     expect(stableEntityId('FNC@1777390496.Z2rrfP')).toBe('FNC@1777390496.Z2rrfP')
   })

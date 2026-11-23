@@ -1,4 +1,4 @@
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import type { DiagramLayoutRepository } from '../../ports/DiagramLayoutRepository'
 import {
   DiagramLayoutGeometrySchema, DiagramLayoutPatchResultSchema, ShapeDrawingsSchema,
@@ -11,6 +11,10 @@ const layoutUrl = (diagramId: string, part = ''): string =>
 
 /** The arranging half of the HTTP adapter, over a diagram's layout routes. */
 export const diagramLayoutMethods = (): DiagramLayoutRepository => ({
+  listDiagramElementTypes: diagramType => fetchJson(
+    buildUrl(`/diagram-types/${encodeURIComponent(diagramType)}/entity-types`),
+    Schema.Struct({items: Schema.Array(Schema.Struct({artifact_type: Schema.String, domain: Schema.String}))}),
+  ).pipe(Effect.map(response => response.items)),
   previewLayoutGeometry: (diagramId, body) =>
     postJson(layoutUrl(diagramId, '/geometry/preview'), body, DiagramLayoutGeometrySchema),
   readLayoutGeometry: (diagramId) => fetchJson(layoutUrl(diagramId, '/geometry'), DiagramLayoutGeometrySchema),
