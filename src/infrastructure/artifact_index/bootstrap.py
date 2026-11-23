@@ -4,7 +4,8 @@ import threading
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from src.domain.ontology_representation.artifact_types import RepoMount, infer_mount
+from src.config.workspace_paths import resolve_mount
+from src.domain.ontology_representation.artifact_types import RepoMount
 
 from .combined_index import CombinedArtifactView
 
@@ -14,9 +15,9 @@ if TYPE_CHECKING:
 
 def normalize_mounts(repo_root: Path | list[Path] | list[RepoMount]) -> list[RepoMount]:
     if isinstance(repo_root, Path):
-        mounts: list[RepoMount] = [infer_mount(repo_root)]
+        mounts: list[RepoMount] = [resolve_mount(repo_root)]
     else:
-        mounts = [m if isinstance(m, RepoMount) else infer_mount(m) for m in repo_root]
+        mounts = [m if isinstance(m, RepoMount) else resolve_mount(m) for m in repo_root]
     roots = [m.root for m in mounts]
     if len(set(map(str, roots))) != len(roots):
         raise ValueError("Duplicate repo root in ArtifactIndex mounts")

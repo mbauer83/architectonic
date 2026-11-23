@@ -121,9 +121,9 @@ def migrate_repo(repo_root: Path, *, dry_run: bool = False) -> MigrationResult:
         )
 
     # Derive engagement label from repo root name heuristic
-    from src.domain.ontology_representation.artifact_types import infer_mount  # noqa: PLC0415
+    from src.config.workspace_paths import resolve_mount  # noqa: PLC0415
 
-    mount = infer_mount(repo_root)
+    mount = resolve_mount(repo_root)
     engagement_label = mount.engagement_label or "default"
     project_slug = _slug_from_label(engagement_label)
 

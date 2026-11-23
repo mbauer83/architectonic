@@ -73,7 +73,7 @@ def compute_group_mapping(
 
     ent_by_id = {e.id: e for e in ent_reg.model_projects}
     ent_by_slug = {e.slug: e for e in ent_reg.model_projects}
-    engagement_label = slugify(infer_engagement_label(engagement_root, scope="engagement"))
+    engagement_label = slugify(infer_engagement_label(engagement_root.resolve(), scope="engagement"))
 
     seen: set[str] = set()
     mapping: list[GroupMappingEntry] = []

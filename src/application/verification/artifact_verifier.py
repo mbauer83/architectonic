@@ -384,7 +384,7 @@ class ArtifactVerifier(_VerifierAdapters):
             return self.registry.scope_for_path(path)
         from src.domain.repository.repo_scope import infer_repo_scope  # noqa: PLC0415
 
-        return infer_repo_scope(path)
+        return infer_repo_scope(path.resolve())
 
 
 __all__ = [
