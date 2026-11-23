@@ -20,7 +20,12 @@ from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, MalformedLayout
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
 from src.domain.diagrams.layout.rendered_picture import NotReadable
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
-from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, first_layout_of, plantuml_svg
+from src.infrastructure.rendering.layout.diagram_picture import (
+    NotDrawn,
+    first_layout_of,
+    measure_composition,
+    plantuml_svg,
+)
 from src.infrastructure.rest.contracts.diagram_layout_editing import (
     DiagramLayoutGeometryResponse,
     DiagramLayoutPatchResponse,
@@ -124,11 +129,14 @@ def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs) -> dict[s
 
 def _geometry_response(
     puml: str, artifact_id: str, frontmatter: dict[str, Any], catalogs: RuntimeCatalogs,
-    *, arrangement: dict[str, Any] | None = None, previous: frozenset[str] = frozenset(),
+    *, generated: bool = False, arrangement: dict[str, Any] | None = None, previous: frozenset[str] = frozenset(),
 ) -> dict[str, object]:
     diagram_type = str(frontmatter.get("diagram-type", "archimate"))
     try:
-        svg = plantuml_svg(puml, _repo_root(), diagram_type)
+        if generated:
+            _, svg = measure_composition(puml, _repo_root(), diagram_type)
+        else:
+            svg = plantuml_svg(puml, _repo_root(), diagram_type)
     except NotDrawn as refusal:
         raise HTTPException(422, str(refusal)) from refusal
     try:
@@ -165,7 +173,8 @@ def preview_diagram_layout_geometry(
         raise HTTPException(422, str(exc)) from exc
     return _geometry_response(composed.puml, artifact_id, {
         **parsed.frontmatter, **composed.statements(body),
-    }, catalogs, arrangement=body.arrangement, previous=frozenset(alias_by_instance(parsed.frontmatter)))
+    }, catalogs, generated=True, arrangement=body.arrangement,
+        previous=frozenset(alias_by_instance(parsed.frontmatter)))
 
 
 @router.post(

@@ -53,15 +53,6 @@ def render_connection_lines(
     endpoint_aliases: EndpointRouter,
 ) -> list[str]:
     conn_lines: list[str] = []
-    # Directed edges anchor a cluster in the rank graph. Without one, imposing ranks
-    # on associations at its border can contradict its internal ranks and crash dot.
-    anchored = set()
-    for edge in connections:
-        if edge.conn_type in nesting_conn_types:
-            continue
-        info = connection_info(edge.conn_type)
-        if info and any(mark in info.puml_arrow for mark in ("<", ">")):
-            anchored.update((alias_by_id.get(edge.source), alias_by_id.get(edge.target)))
     for conn in connections:
         conn_info = connection_info(conn.conn_type)
         if conn_info and conn.conn_type in nesting_conn_types:
@@ -95,7 +86,7 @@ def render_connection_lines(
                 arrow = insert_arrow_line_style(arrow, "dashed" if certainty == "certain" else "dotted")
             elif conn_spec is not None and conn_spec.notation.line_style:
                 arrow = insert_arrow_line_style(arrow, conn_spec.notation.line_style)
-            if direction and all(alias in anchored or not children_map.get(alias) for alias in (src, tgt)):
+            if direction:
                 arrow = insert_arrow_direction(arrow, direction)
             override = edge_labels.get(drawn.key) if edge_labels else None
             if override is not None:

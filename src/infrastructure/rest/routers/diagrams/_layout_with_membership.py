@@ -15,8 +15,10 @@ from fastapi import HTTPException
 from src.application.modeling.diagram_identities import diagram_identities, drawn_instances, strings_of
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds, joined_to_its_picture
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, Layout
-from src.infrastructure.rendering.layout.diagram_picture import plantuml_drawing
+from src.domain.diagrams.layout.rendered_picture import NotReadable
+from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, measure_composition
 from src.infrastructure.rendering.layout.membership_placement import with_new_members
+from src.infrastructure.rendering.layout.plantuml_svg_reader import read_rendered_drawing
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers.diagrams._composition import RenderedComposition
 from src.infrastructure.rest.routers.diagrams._write_bodies import EditDiagramGuiBody
@@ -24,13 +26,13 @@ from src.infrastructure.write.artifact_write.diagram_layout_patch import reconci
 from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
 
 
-def layout_to_store(
+def source_and_layout_to_store(
     artifact_id: str, body: EditDiagramGuiBody, composed: RenderedComposition,
     repo_root: Path, ontology: DeclaresElementKinds,
-) -> dict[str, object] | None:
+) -> tuple[str, dict[str, object] | None]:
     """*body*'s whole layout, or its patch applied to the stored one and pruned to the new membership."""
     if body.layout_patch is None:
-        return body.layout
+        return composed.puml, body.layout
     if body.layout is not None:
         raise HTTPException(400, "State either layout or layout_patch, not both.")
     record = s.get_repo().get_diagram(artifact_id)
@@ -47,12 +49,20 @@ def layout_to_store(
     )
     changed = previous != identities.instances or before.get("authored-groupings") != body.authored_groupings
 
+    source = composed.puml
+
     def place(layout: Layout) -> Layout:
-        picture = plantuml_drawing(composed.puml, repo_root, body.diagram_type).picture
+        nonlocal source
+        source, svg = measure_composition(source, repo_root, body.diagram_type)
+        drawing = read_rendered_drawing(svg)
+        if isinstance(drawing, NotReadable):
+            raise NotDrawn(f"The diagram's picture cannot be read: {drawing.met}")
+        picture = drawing.picture
         diagram = joined_to_its_picture(composed.statements(body), layout, ontology)
         return with_new_members(picture, diagram, identities.instances - previous)
 
-    return reconciled_layout(
+    result = reconciled_layout(
         stored=before.get(LAYOUT_KEY), patch=body.layout_patch, identities=identities,
         place_members=place if changed else None,
     )
+    return source, result

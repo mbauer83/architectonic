@@ -21,7 +21,7 @@ from src.infrastructure.rest.routers._openapi import (
 )
 from src.infrastructure.rest.routers.diagrams._composition import render_composition
 from src.infrastructure.rest.routers.diagrams._derived_entities import derived_entity_rows
-from src.infrastructure.rest.routers.diagrams._layout_with_membership import layout_to_store
+from src.infrastructure.rest.routers.diagrams._layout_with_membership import source_and_layout_to_store
 from src.infrastructure.rest.routers.diagrams._write_bodies import (
     CreateDiagramGuiBody,
     DiagramPreviewBody,
@@ -133,13 +133,14 @@ def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
 
     def save(repo_root, repo, verifier, clear, dry_run):
         composed = render_composition(body, repo=repo, repo_root=repo_root)
+        source, layout = source_and_layout_to_store(artifact_id, body, composed, root, catalogs.ontology)
         return edit_diagram(
             assert_write_root=assert_engagement_write_root, repo_root=repo_root, verifier=verifier,
-            clear_repo_caches=clear, artifact_id=artifact_id, repo=s.get_repo(), puml=composed.puml,
+            clear_repo_caches=clear, artifact_id=artifact_id, repo=s.get_repo(), puml=source,
             name=body.name, group=body.group, keywords=KEYWORDS_UNSET, diagram_entities=composed.diagram_entities,
             diagram_connections=composed.diagram_connections, entity_ids_used=composed.entity_ids_used,
             connection_ids_used=composed.connection_ids_used, authored_groupings=body.authored_groupings,
-            layout=layout_to_store(artifact_id, body, composed, root, catalogs.ontology),
+            layout=layout,
             version=body.version, status=body.status, tlp=body.tlp, bindings=composed.conn_bindings or None,
             viewpoint=body.viewpoint, dry_run=dry_run, committed_repo=committed_repository(repo),
         )
