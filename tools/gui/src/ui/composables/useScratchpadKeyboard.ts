@@ -12,15 +12,6 @@
  * simulated drag.
  */
 
-/** `Ctrl+click` is the context-menu gesture on Apple platforms, so accepting it as "add to the
- * selection" there would toggle a note *and* open the menu on the same click. Cmd takes its place;
- * Shift works everywhere and is what every canvas tool already trains. */
-const APPLE = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
-
-export function isAdditive(event: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }): boolean {
-  return event.shiftKey || (APPLE ? event.metaKey : event.ctrlKey || event.metaKey)
-}
-
 export interface NoteKeyIntents {
   readonly onToggle: (id: string, additive: boolean) => void
   readonly onEditTitle: (id: string) => void

@@ -8,7 +8,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { isAdditive, noteKeydown, selectionAnnouncement } from '../useScratchpadKeyboard'
+import { isAdditive } from '../../lib/additiveClick'
+import { noteKeydown, selectionAnnouncement } from '../useScratchpadKeyboard'
 
 const intents = () => ({
   onToggle: vi.fn(),
