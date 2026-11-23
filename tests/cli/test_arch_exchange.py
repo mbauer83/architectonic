@@ -8,11 +8,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import httpx
 import pytest
 
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.backend.backend_probe import backend_url
 from src.infrastructure.cli import arch_exchange as cli
+from src.infrastructure.cli import backend_write
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 
 
@@ -32,7 +35,7 @@ def _create(repo: Path, artifact_type: str, name: str) -> str:
     return str(result["artifact_id"])
 
 
-def test_export_then_import_round_trip_via_main(tmp_path: Path) -> None:
+def test_export_then_import_round_trip_via_main(tmp_path: Path, served_repo: Path, capsys) -> None:
     source_root = _eng_root(tmp_path, "CLI1")
     _create(source_root, "business-actor", "Alice Actor")
     out_path = tmp_path / "export.xml"
@@ -42,14 +45,16 @@ def test_export_then_import_round_trip_via_main(tmp_path: Path) -> None:
     assert out_path.exists()
     assert b"BusinessActor" in out_path.read_bytes()
 
-    dest_root = _eng_root(tmp_path, "CLI2")
+    dest_root = served_repo
     import_exit = cli.main(["import", "--source", str(out_path), "--commit", "--repo", str(dest_root)])
     assert import_exit == 0
 
-    dest_registry = _registry(dest_root)
-    entities = [dest_registry.get_entity(e) for e in dest_registry.entity_ids()]
-    names = {e.name for e in entities if e is not None}
-    assert "Alice Actor" in names
+    report = capsys.readouterr().out
+    assert "created" in report and "Alice Actor" in report
+    url = backend_url(backend_write.serving_port(dest_root))
+    response = httpx.get(f"{url}/api/entities", params={"artifact_type": "business-actor"})
+    response.raise_for_status()
+    assert any(row["name"] == "Alice Actor" for row in response.json()["items"])
 
 
 def test_import_without_commit_writes_nothing(tmp_path: Path) -> None:
@@ -102,15 +107,10 @@ def test_import_malformed_document_reports_error_and_exits_nonzero(
     assert "ERROR" in capsys.readouterr().err
 
 
-def test_import_report_prints_created_entities(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    source_root = _eng_root(tmp_path, "CLI8")
-    _create(source_root, "business-actor", "Alice Actor")
-    out_path = tmp_path / "export.xml"
-    cli.main(["export", "--out", str(out_path), "--repo", str(source_root)])
-
-    dest_root = _eng_root(tmp_path, "CLI9")
-    cli.main(["import", "--source", str(out_path), "--commit", "--repo", str(dest_root)])
-
-    out = capsys.readouterr().out
-    assert "created" in out
-    assert "Alice Actor" in out
+def test_committed_import_requires_the_serving_backend(tmp_path: Path, capsys, monkeypatch) -> None:
+    monkeypatch.setenv("ARCH_BACKEND_STATE_DIR", str(tmp_path / "state"))
+    root = _eng_root(tmp_path, "OFFLINE")
+    source = tmp_path / "model.xml"
+    cli.main(["export", "--out", str(source), "--repo", str(root)])
+    assert cli.main(["import", "--source", str(source), "--repo", str(root), "--commit"]) == 1
+    assert "arch-backend" in capsys.readouterr().err

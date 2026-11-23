@@ -7,17 +7,7 @@ from pathlib import Path
 import pytest
 
 from src.infrastructure.cli.arch_icons import main
-from src.infrastructure.rendering.generate_static_includes import generate_static_includes
 from tests.support.icon_files import png_of
-
-
-@pytest.fixture
-def repo(tmp_path: Path) -> Path:
-    root = tmp_path / "engagements" / "ENG-T" / "architecture-repository"
-    for directory in ("model", "docs", "diagram-catalog/diagrams"):
-        (root / directory).mkdir(parents=True)
-    generate_static_includes(root)
-    return root
 
 
 @pytest.fixture
@@ -41,16 +31,20 @@ def _run(repo: Path, folder: Path, *extra: str) -> int:
                  "--for", "technology-node", "--repo", str(repo), *extra])
 
 
-def test_a_dry_run_reports_and_writes_nothing(repo: Path, folder: Path, capsys) -> None:
-    code = _run(repo, folder)
-
+def test_import_folder_through_backend(served_repo: Path, folder: Path, capsys) -> None:
+    before = set(_icons(served_repo))
+    assert _run(served_repo, folder) == 1
     report = capsys.readouterr().out
-    assert code == 1 and "broken.png" in report and "Dry run" in report and _icons(repo) == []
+    assert "broken.png" in report and "Dry run" in report and set(_icons(served_repo)) == before
 
-
-def test_a_commit_adds_each_new_picture_once_and_names_the_rest(repo: Path, folder: Path, capsys) -> None:
-    _run(repo, folder, "--commit")
-
+    assert _run(served_repo, folder, "--commit") == 1
     report = capsys.readouterr().out
-    assert len(_icons(repo)) == 1 and _icons(repo)[0].endswith("azure-kubernetes-service.md")
+    added = set(_icons(served_repo)) - before
+    assert len(added) == 1 and added.pop().endswith("azure-kubernetes-service.md")
     assert "present (1)" in report and "refused (1)" in report and "readme.txt" not in report
+
+
+def test_commit_requires_the_serving_backend(tmp_path: Path, folder: Path, capsys, monkeypatch) -> None:
+    monkeypatch.setenv("ARCH_BACKEND_STATE_DIR", str(tmp_path / "state"))
+    assert _run(tmp_path, folder, "--commit") == 1
+    assert "arch-backend" in capsys.readouterr().err and _icons(tmp_path) == []

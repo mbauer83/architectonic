@@ -40,6 +40,7 @@
       "/api/diagrams/{artifact_id}/sync",
       "/api/diagrams/{artifact_id}/viewpoint-projection",
       "/api/entities/{artifact_id}/neighbors",
+      "/api/exchange-imports",
       "/api/icons/{artifact_id}/replace",
       "/api/matrices",
       "/api/matrices/preview",
@@ -110,6 +111,7 @@
       "^/api/promote/plan(\\?|$)",
       "^/api/sync/changes(\\?|$)",
       "^/api/diagram\\-entity\\-discovery(\\?|$)",
+      "^/api/exchange\\-imports(\\?|$)",
       "^/api/diagrams(\\?|$)",
       "^/api/matrices(\\?|$)"
     ]

@@ -15,18 +15,20 @@ import argparse
 import sys
 from pathlib import Path
 
+from pydantic import TypeAdapter
+
 from src.application.exchange.export_model import ExportReport, export_model
-from src.application.exchange.import_model import ImportReport, import_model
+from src.application.exchange.import_model import ImportReport
 from src.application.exchange.ports import ExchangeDocumentError
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.cli import backend_write
 from src.infrastructure.exchange.archimate_model_exchange import (
     ArchimateModelExchangeReader,
     ArchimateModelExchangeWriter,
 )
 from src.infrastructure.exchange.archimate_model_exchange.concept_mapping import DeclarativeConceptMapper
-from src.infrastructure.exchange.archimate_model_exchange.identity_store import RepoExchangeIdentityStore
-from src.infrastructure.exchange.archimate_model_exchange.write_adapter import ArtifactWriteExchangeAdapter
+from src.infrastructure.exchange.archimate_model_exchange.import_service import import_document
 from src.infrastructure.mcp.artifact_mcp.context import default_engagement_repo_root
 
 
@@ -61,18 +63,15 @@ def _print_export_report(report: ExportReport, out_path: str) -> None:
 
 
 def run_import(*, repo_root: Path, source: Path, schema: Path | None, commit: bool) -> ImportReport:
-    reader = ArchimateModelExchangeReader(schema_path=str(schema) if schema else None)
-    document = reader.read(source.read_bytes())
-    mapper = DeclarativeConceptMapper()
-    registry = _registry(repo_root)
-    return import_model(
-        document,
-        store=registry,
-        identity=RepoExchangeIdentityStore(repo_root),
-        mapper=mapper,
-        writer=ArtifactWriteExchangeAdapter(repo_root),
-        commit=commit,
-    )
+    source_bytes = source.read_bytes()
+    if commit:
+        port = backend_write.serving_port(repo_root)
+        if schema:
+            ArchimateModelExchangeReader(schema_path=str(schema)).read(source_bytes)
+        answer = backend_write.post(port, "/api/exchange-imports", source_bytes, "application/xml")
+        return TypeAdapter(ImportReport).validate_python(answer)
+    document = ArchimateModelExchangeReader(schema_path=str(schema) if schema else None).read(source_bytes)
+    return import_document(repo_root, document, commit=False)
 
 
 def run_export(*, repo_root: Path, out: Path, scope: list[str] | None) -> ExportReport:
@@ -92,7 +91,7 @@ def _cmd_import(args: argparse.Namespace) -> int:
             schema=Path(args.schema) if args.schema else None,
             commit=args.commit,
         )
-    except ExchangeDocumentError as exc:
+    except (ExchangeDocumentError, backend_write.BackendWriteError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
     _print_import_report(report)

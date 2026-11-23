@@ -61,6 +61,7 @@ _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "groups_rename_group",
     "groups_unarchive_group",
     "groups_update_group",
+    "entities_import_model",
     "icons_create_icon",
     "icons_delete_icon",
     "icons_replace_icon",

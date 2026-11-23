@@ -5,6 +5,7 @@ validation/verifier path.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 from src.application.exchange.write_ports import ExchangeWriteOutcome, InvalidRelationshipError
@@ -31,14 +32,15 @@ def _outcome(result: WriteResult) -> ExchangeWriteOutcome:
 
 
 class ArtifactWriteExchangeAdapter:
-    def __init__(self, repo_root: Path, *, group: str = UNCATEGORIZED) -> None:
+    def __init__(
+        self, repo_root: Path, *, group: str = UNCATEGORIZED, clear_caches: Callable[[Path], None] | None = None,
+    ) -> None:
         self._repo_root = repo_root
         self._group = group
         self._registry = ArtifactRegistry(shared_artifact_index([repo_root]))
         self._verifier = build_artifact_verifier(self._registry, catalogs=process_runtime_catalogs())
 
-    def _clear_caches(self, _path: Path) -> None:
-        self._registry.refresh()
+        self._clear_caches = clear_caches or (lambda _: self._registry.refresh())
 
     def create_entity(
         self,
