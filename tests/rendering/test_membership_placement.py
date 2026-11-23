@@ -40,7 +40,8 @@ def test_a_new_member_cannot_close_a_retained_relations_only_stated_port():
 
     shapes = {k: DrawnElement(k, Extent(0, top, 80, top + 40), None)
               for k, top in (("process", -240), ("service", 0), ("new", -70))}
-    r = DrawnRelation(("process", "service"), "association", (), (), second_marks=(EndMark(MarkShape.POLYGON, (), True),))
+    head = EndMark(MarkShape.POLYGON, (), True)
+    r = DrawnRelation(("process", "service"), "association", (), (), second_marks=(head,))
     picture = RenderedPicture(Extent(-100, -300, 300, 200), shapes, {}, (r,))
     route = Route(target=Port(Side.TOP, 0.5))
     key = "process---service@@association"

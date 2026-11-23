@@ -167,12 +167,8 @@ class Routing {
   }
 
   private searchedIn(
-    connector: Connector,
-    sources: readonly Choice[],
-    targets: readonly Choice[],
-    bounded: Passage,
-    liningUp: boolean,
-    stubs: Stubs | null,
+    connector: Connector, sources: readonly Choice[], targets: readonly Choice[],
+    bounded: Passage, liningUp: boolean, stubs: Stubs | null,
   ): RoutedConnector | null {
     let passage = bounded
     const starts = this.stubs(connector, 0, sources, passage)
