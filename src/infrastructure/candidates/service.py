@@ -7,12 +7,13 @@ from typing import Any
 
 from src.application.artifacts.document_table_rows import tables_of_stored_document
 from src.application.change_sets.base import record_revision
-from src.application.change_sets.candidate_reads import comparison, read_view, standing_report
+from src.application.change_sets.candidate_reads import comparison, read_view, reading_beneath, standing_report
 from src.application.change_sets.candidate_recorded_form import from_mapping, to_mapping
 from src.application.change_sets.candidate_work import conflicts_between
 from src.application.change_sets.change_set import ChangeSet
 from src.application.change_sets.recorded_form import operation_to_mapping
 from src.application.change_sets.recorded_form import to_mapping as set_to_mapping
+from src.application.change_sets.recording import recorded
 from src.application.change_sets.stacking import stack_of
 from src.application.modeling.artifact_write import generate_entity_id
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds
@@ -68,6 +69,13 @@ class CandidateService:
     def edit(self, ref: str, based_on: str, patch: Mapping[str, Any]) -> dict[str, Any]:
         current = self.read(ref)
         return self.save(current["record"] | dict(patch), based_on, ref=ref)
+
+    def record(self, ref: str, based_on: str, intent: Mapping[str, Any]) -> dict[str, Any]:
+        """Record an edit among the candidate's operations, its base read from the stack beneath it."""
+        candidate = self.store.require(ref)
+        named = [str(intent[part]) for part in ("artifact_id", "source_entity", "target_entity") if part in intent]
+        beneath = reading_beneath(candidate, self.store, self.registry, named)
+        return self.save(to_mapping(recorded(candidate, intent, beneath)), based_on, ref=ref)
 
     def compare(
         self, ref: str, base: str, naive: str | None, diagram: str | None, ontology: DeclaresElementKinds,

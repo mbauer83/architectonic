@@ -1325,6 +1325,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/change-sets/{artifact_id}/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record an edit among a candidate's operations
+         * @description Merged per claim: an edit replaces the one before it, and an edit back to its base drops it.
+         */
+        post: operations["changes_record_operation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/change-sets/{artifact_id}/standing": {
         parameters: {
             query?: never;
@@ -5739,6 +5759,15 @@ export interface components {
         CandidateList: {
             /** Candidates */
             candidates: components["schemas"]["CandidateSummary"][];
+        };
+        /**
+         * CandidateOperation
+         * @description An edit to record among a candidate's operations; the server reads its base.
+         */
+        CandidateOperation: {
+            /** Based On */
+            based_on: string;
+            operation: components["schemas"]["Fields"];
         };
         /** CandidateOverlap */
         CandidateOverlap: {
@@ -17988,6 +18017,95 @@ export interface operations {
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_record_operation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateOperation"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };
