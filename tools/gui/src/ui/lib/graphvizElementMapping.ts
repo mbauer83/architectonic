@@ -39,7 +39,9 @@ const mapNodes = (
   const nodes = new Map<string, Element[]>()
   const svgNodeIdToAlias = new Map<string, string>()
   const aliasToId = buildAliasToId(entities)
-  addOccurrenceAliases(aliasToId, entities, diagramEntities)
+  // A further occurrence's lines are the same connections as the first's, which are keyed by the
+  // entity's own alias: an edge reached through an occurrence is resolved through that alias.
+  const occurrenceBase = addOccurrenceAliases(aliasToId, entities, diagramEntities)
   // Alias→artifact pairs a diagram type computed for itself. Deliberately opaque here: the
   // generic matcher is told *that* there are more aliases, never what kind of thing they name.
   for (const [alias, artifactId] of supplementaryAliases ?? []) aliasToId.set(alias, artifactId)
@@ -49,18 +51,20 @@ const mapNodes = (
     const alias = resolveNodeAlias(g, aliasToId)
     if (!alias) continue
     const artifactId = aliasToId.get(alias)!
-    if (g.id) svgNodeIdToAlias.set(g.id, alias)
+    if (g.id) svgNodeIdToAlias.set(g.id, occurrenceBase.get(alias) ?? alias)
     pushInto(nodes, artifactId, g)
   }
   return { nodes, svgNodeIdToAlias }
 }
 
+/** Adds each further occurrence's alias; returns, per occurrence alias, the entity's own alias. */
 const addOccurrenceAliases = (
   aliasToId: Map<string, string>,
   entities: ReadonlyArray<DiagramContextEntity>,
   diagramEntities?: Record<string, unknown>,
-): void => {
-  if (!diagramEntities) return
+): Map<string, string> => {
+  const baseOf = new Map<string, string>()
+  if (!diagramEntities) return baseOf
   const entityById = new Map(entities.map((entity) => [entity.artifact_id, entity]))
   const counts = new Map<string, number>()
   for (const occurrence of occurrenceItems(diagramEntities)) {
@@ -70,7 +74,9 @@ const addOccurrenceAliases = (
     const index = (counts.get(entity.artifact_id) ?? 1) + 1
     counts.set(entity.artifact_id, index)
     aliasToId.set(`${base}__${index}`, entity.artifact_id)
+    baseOf.set(`${base}__${index}`, entity.display_alias)
   }
+  return baseOf
 }
 
 const mapEdges = (
@@ -118,9 +124,8 @@ const mapEdges = (
  * Default `mapElements` implementation for diagram types with no viewer extension of their
  * own: matches graphviz/PlantUML's SVG id/attribute conventions (the logic every renderer but
  * GSN/datatype relies on implicitly). One node or connection may match more than one SVG
- * element (WU-B3 multi-occurrence views); this only happens today if a renderer emits the same
- * alias twice, which none currently do — the one-to-many shape is forward-compatible, not yet
- * exercised by ArchiMate occurrence aliases such as `APP_A__2`.
+ * element (WU-B3 multi-occurrence views): an ArchiMate occurrence (`APP_A__2`) maps to its entity,
+ * and a line drawn to it to the connection the entity's own line stands for.
  */
 /**
  * The default matcher, and the base a diagram type composes with.
