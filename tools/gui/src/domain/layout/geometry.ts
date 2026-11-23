@@ -36,6 +36,19 @@ export const distanceBetween = (from: Point, to: Point): number =>
 export const courseLength = (course: readonly Point[]): number =>
   course.slice(1).reduce((walked, point, index) => walked + distanceBetween(course[index], point), 0)
 
+/** The smallest extent holding every one of *extents*; none is an error, as `Math.min` of nothing is. */
+export const unionOf = (extents: readonly Extent[]): Extent => ({
+  left: Math.min(...extents.map((extent) => extent.left)),
+  top: Math.min(...extents.map((extent) => extent.top)),
+  right: Math.max(...extents.map((extent) => extent.right)),
+  bottom: Math.max(...extents.map((extent) => extent.bottom)),
+})
+
+/** The smallest extent holding every one of *points*, or null for none (`Extent.around`). */
+export const extentAround = (points: readonly Point[]): Extent | null =>
+  points.length === 0 ? null
+    : unionOf(points.map((point) => ({ left: point.x, top: point.y, right: point.x, bottom: point.y })))
+
 /** *extent* with *margin* taken off every side, or null where nothing is left. */
 export const shrunkBy = (extent: Extent, margin: number): Extent | null => {
   const inner = {

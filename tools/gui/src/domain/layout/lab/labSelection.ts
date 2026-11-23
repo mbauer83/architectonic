@@ -6,7 +6,7 @@
  * (sketch 02·8). Align and distribute act on elements only, as the server's intents do; a box moves
  * with its members.
  */
-import type { Extent, Point } from '../geometry'
+import type { Extent } from '../geometry'
 import { encloses, overlaps } from '../geometry'
 import type { AlignEdge, DistributeAxis } from '../layoutIntents'
 import { LEAST_TO_ALIGN, LEAST_TO_DISTRIBUTE, aligned, distributed } from '../layoutIntents'
@@ -17,12 +17,6 @@ import type { Placement } from './labRouting'
 
 /** Whether a rectangle selects the elements it encloses, or every element it touches. */
 export type RectangleRule = 'encloses' | 'touches'
-
-/** The extent between two corners, whichever way the rectangle was drawn. */
-export const spannedBy = (from: Point, to: Point): Extent => ({
-  left: Math.min(from.x, to.x), top: Math.min(from.y, to.y),
-  right: Math.max(from.x, to.x), bottom: Math.max(from.y, to.y),
-})
 
 /** The shapes *rectangle* selects: elements by *rule*, boxes only when wholly inside it. */
 export const chosenBy = (rectangle: Extent, placement: Placement, rule: RectangleRule = 'encloses'): string[] => {

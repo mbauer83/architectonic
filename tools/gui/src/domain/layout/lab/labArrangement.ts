@@ -9,7 +9,7 @@
  * is the diagram's to say, not a drag's.
  */
 import type { Extent, Point } from '../geometry'
-import { widthOf } from '../geometry'
+import { unionOf, widthOf } from '../geometry'
 import type { GeometryBox, LayoutGeometry, MeasuredWord } from '../../schemas/diagramLayoutGeometry'
 
 /** What has been moved or resized: every element where it is now, and each box stated by size. */
@@ -29,13 +29,6 @@ export const translated = (extent: Extent, dx: number, dy: number): Extent => ({
   top: extent.top + dy,
   right: extent.right + dx,
   bottom: extent.bottom + dy,
-})
-
-export const unionOf = (extents: readonly Extent[]): Extent => ({
-  left: Math.min(...extents.map((extent) => extent.left)),
-  top: Math.min(...extents.map((extent) => extent.top)),
-  right: Math.max(...extents.map((extent) => extent.right)),
-  bottom: Math.max(...extents.map((extent) => extent.bottom)),
 })
 
 /** PlantUML's arrangement: every element where it drew it, nothing stated. */

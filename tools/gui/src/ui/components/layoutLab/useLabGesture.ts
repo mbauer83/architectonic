@@ -15,11 +15,12 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import type { Extent, Point } from '../../../domain/layout/geometry'
+import { distanceBetween, extentAround } from '../../../domain/layout/geometry'
 import type { Arrangement, Handle } from '../../../domain/layout/lab/labArrangement'
 import { SMALLEST_ELEMENT, movedTogether, resized, resizedExtent } from '../../../domain/layout/lab/labArrangement'
 import { changedShapes, placementOf } from '../../../domain/layout/lab/labRouting'
 import type { Placement } from '../../../domain/layout/lab/labRouting'
-import { chosenBy, spannedBy, toggled } from '../../../domain/layout/lab/labSelection'
+import { chosenBy, toggled } from '../../../domain/layout/lab/labSelection'
 import type { ArrangementSession } from '../../composables/useArrangementSession'
 import { isAdditive } from '../../lib/additiveClick'
 import type { Lift } from './labPaintOrder'
@@ -128,11 +129,11 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
 
   const swept = (state: Sweep, at: Point) => {
     const placement = session.placement.value
-    if (!placement) return
-    const travelled = Math.hypot(at.x - state.from.x, at.y - state.from.y) >= TRAVEL
-    if (!travelled && rectangle.value === null) return
-    rectangle.value = spannedBy(state.from, at)
-    const chosen = chosenBy(rectangle.value, placement)
+    const travelled = distanceBetween(state.from, at) >= TRAVEL
+    const spanned = extentAround([state.from, at])
+    if (!placement || !spanned || (!travelled && rectangle.value === null)) return
+    rectangle.value = spanned
+    const chosen = chosenBy(spanned, placement)
     selection.value = state.additive ? [...new Set([...state.before, ...chosen])] : chosen
   }
 

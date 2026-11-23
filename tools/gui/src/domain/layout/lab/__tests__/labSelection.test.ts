@@ -7,7 +7,8 @@ import type { Extent } from '../../geometry'
 import type { LayoutGeometry } from '../../../schemas/diagramLayoutGeometry'
 import { drawnArrangement, movedTogether, placedAt } from '../labArrangement'
 import { placementOf } from '../labRouting'
-import { alignedSelection, chosenBy, distributedSelection, spannedBy, toggled } from '../labSelection'
+import { alignedSelection, chosenBy, distributedSelection, toggled } from '../labSelection'
+import { extentAround } from '../../geometry'
 import { SHAPE_DRAWING } from './labDrawingFixtures'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
@@ -32,7 +33,8 @@ const placement = placementOf(geometry, start)
 
 describe('a selection rectangle', () => {
   it('spans its two corners whichever way it was drawn', () => {
-    expect(spannedBy({ x: 50, y: 90 }, { x: 10, y: 20 })).toEqual(at(10, 20, 50, 90))
+    expect(extentAround([{ x: 50, y: 90 }, { x: 10, y: 20 }])).toEqual(at(10, 20, 50, 90))
+    expect(extentAround([])).toBeNull()
   })
 
   it('chooses the elements it encloses, and a box only when wholly inside it', () => {

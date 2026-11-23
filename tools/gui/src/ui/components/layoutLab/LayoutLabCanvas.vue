@@ -6,7 +6,7 @@
  */
 import { computed, ref, watch } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
-import { heightOf, widthOf } from '../../../domain/layout/geometry'
+import { extentAround, heightOf, unionOf, widthOf } from '../../../domain/layout/geometry'
 import { useElementSize } from '../../composables/useElementSize'
 import type { ArrangementSession } from '../../composables/useArrangementSession'
 import type { BreachMark } from './labDrawing'
@@ -17,7 +17,6 @@ import { drawnRelations, drawnShapes, pieceOf } from './labPieces'
 import LabDrawn from './LabDrawn'
 import CanvasMarks from './CanvasMarks.vue'
 import LabSelection from './LabSelection.vue'
-import { unionOf } from '../../../domain/layout/lab/labArrangement'
 import { useLabGesture } from './useLabGesture'
 
 /** *readonly*: a press picks a shape and nothing moves. The default slot draws over the picture. */
@@ -38,18 +37,12 @@ const placement = computed(() => props.session.placement.value)
 const drawnExtent = computed((): Extent | null => {
   const where = placement.value
   if (!where) return null
-  const points = [...props.session.courses.value.values()].flat()
-  const all: Extent[] = [
-    ...where.elements.values(),
-    ...where.boxes.values(),
-    ...points.map((point) => ({ left: point.x, top: point.y, right: point.x, bottom: point.y })),
-  ]
+  const lines = extentAround([...props.session.courses.value.values()].flat())
+  const all = [...where.elements.values(), ...where.boxes.values(), ...(lines ? [lines] : [])]
   if (all.length === 0) return null
+  const drawn = unionOf(all)
   return {
-    left: Math.min(...all.map((extent) => extent.left)) - MARGIN,
-    top: Math.min(...all.map((extent) => extent.top)) - MARGIN,
-    right: Math.max(...all.map((extent) => extent.right)) + MARGIN,
-    bottom: Math.max(...all.map((extent) => extent.bottom)) + MARGIN,
+    left: drawn.left - MARGIN, top: drawn.top - MARGIN, right: drawn.right + MARGIN, bottom: drawn.bottom + MARGIN,
   }
 })
 
