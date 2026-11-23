@@ -4,8 +4,9 @@
  * only, with the workspace's marks over it — what the focus hits, and a candidate against its base.
  * A press on an element answers `pick` with its entity id, which is how a tick is made on the picture.
  */
-import { computed, inject, ref, watch } from 'vue'
+import { computed, inject, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
+import type { DiagramContext } from '../../../domain'
 import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
 import type { Marks } from '../../../domain/stressAnalysis/workspaceMarks'
 import { modelServiceKey } from '../../keys'
@@ -30,7 +31,11 @@ const svc = inject(modelServiceKey)!
 // Read only: nothing is moved, so no shape is ever drawn anew and no picture is taken over.
 const session = useArrangementSession(() => Effect.succeed([]), (_, automatic) => automatic)
 watch(() => props.drawing, (drawing) => { if (drawing) session.open(drawing); else session.close() }, { immediate: true })
-const entityOf = useDrawnEntities(svc, () => props.diagramId, () => props.drawing)
+const context = shallowRef<DiagramContext | null>(null)
+watch(() => props.diagramId, async (id) => {
+  context.value = id ? await Effect.runPromise(svc.getDiagramContext(id)).catch(() => null) : null
+}, { immediate: true })
+const entityOf = useDrawnEntities(() => context.value, () => props.drawing)
 
 const pick = (alias: string) => {
   const stableId = entityOf.value.get(alias)

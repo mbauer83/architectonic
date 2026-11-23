@@ -1,7 +1,6 @@
 import { Option, Schema } from 'effect'
 import { C4NavigationSchema } from '../../domain/schemas/diagrams'
-import type { C4Navigation, DiagramConnection, DiagramContextEntity, DiagramDetail } from '../../domain'
-import type { DrawnMembership } from '../../domain/layout/diagramMembership'
+import type { C4Navigation, DiagramConnection, DiagramContextEntity } from '../../domain'
 
 /** A diagram kind's own region of a read: whatever `read_diagram_extras` or
  * `build_context_extras` returned, which this package cannot know the shape of. A consumer that
@@ -180,16 +179,6 @@ export const editsOnCanvas = (
   && detail.extra?.['manual-layout'] !== true
 
 /** What a diagram draws, as its read states it: what removing from it writes back, less the removed. */
-export const membershipOf = (detail: DiagramDetail | null): DrawnMembership | null =>
-  detail && {
-    diagram_type: detail.diagram_type,
-    name: detail.name,
-    entity_ids: detail.entity_ids_used ?? [],
-    connection_ids: detail.connection_ids_used ?? [],
-    ...(detail.diagram_entities ? { diagram_entities: detail.diagram_entities } : {}),
-    ...(detail.authored_groupings ? { authored_groupings: detail.authored_groupings } : {}),
-  }
-
 export const editRouteFor = <T>(
   diagramType: string | undefined,
   diagramId: string,

@@ -12,7 +12,7 @@ import type { Marks } from '../../../domain/stressAnalysis/workspaceMarks'
 import { stableEntityId } from '../../../domain/artifactId'
 import { modelServiceKey } from '../../keys'
 import { formatEffectError } from '../../lib/errors'
-import { membershipOf } from '../../views/DiagramDetailView.helpers'
+import { membershipOf } from '../../../domain/layout/diagramMembership'
 import { useCandidateEditing } from '../../composables/useCandidateEditing'
 import { useDrawnEntities } from '../../composables/useDrawnEntities'
 import { useFittedPanZoom } from '../../composables/useFittedPanZoom'
@@ -34,7 +34,7 @@ const editing = useCandidateEditing(
   () => emit('recorded'),
 )
 const canvas = ref<InstanceType<typeof LayoutLabCanvas> | null>(null)
-const entityOf = useDrawnEntities(svc, () => props.diagramId, () => editing.session.geometry.value)
+const entityOf = useDrawnEntities(() => context.value, () => editing.session.geometry.value)
 
 /** F14: what the candidate changed, and what it creates (+), drawn by the id the canvas gave it. */
 const created = computed(() => (editing.session.state.value?.commands ?? [])
