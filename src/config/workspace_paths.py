@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
+from src.domain.ontology_representation.artifact_types import RepoMount, infer_mount
+from src.domain.repository.repo_scope import infer_repo_scope as scope_from_resolved_path
 from src.domain.yaml_documents import parse_yaml
 
 CONFIG_FILENAME = "arch-workspace.yaml"
@@ -182,8 +184,8 @@ def infer_repo_scope(path: Path, *, start: Path | None = None) -> RepoScope:
             return "engagement"
         except ValueError:
             pass
-    if "engagements" in resolved.parts:
-        return "engagement"
-    if "enterprise-repository" in resolved.parts:
-        return "enterprise"
-    return "engagement"
+    return scope_from_resolved_path(resolved)
+
+
+def resolve_mount(root: Path) -> RepoMount:
+    return infer_mount(root.resolve())

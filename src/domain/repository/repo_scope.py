@@ -9,8 +9,8 @@ MountScope = Literal["engagement", "enterprise"]
 
 
 def infer_repo_scope(path: Path) -> MountScope:
-    """Classify a repo root as engagement or enterprise using directory-name heuristics."""
-    parts = path.resolve().parts
+    """Classify a resolved repo root as engagement or enterprise using directory-name heuristics."""
+    parts = path.parts
     if "engagements" in parts:
         return "engagement"
     if "enterprise-repository" in parts:

@@ -81,10 +81,10 @@ def test_sprite_for_returns_none() -> None:
 
 def test_module_not_registered_without_store(monkeypatch: pytest.MonkeyPatch) -> None:
     """Assurance module is skipped when confidential_store is not in registered_names."""
-    from src.domain.modules.module_filter import is_module_enabled
+    from src.domain.modules.module_filter import module_skip_reason
 
-    assert not is_module_enabled(assurance_module, {}, set())
-    assert is_module_enabled(assurance_module, {}, {"confidential_store"})
+    assert module_skip_reason(assurance_module, {}, set()) is not None
+    assert module_skip_reason(assurance_module, {}, {"confidential_store"}) is None
 
 
 class TestAssuranceLoaderGuidanceOverlay:

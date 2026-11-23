@@ -167,3 +167,14 @@ def test_single_edit_document_group_move_visible_without_explicit_reindex(repo: 
     roots = ctx.resolve_repo_roots(repo_scope="engagement", repo_root=str(repo), repo_preset=None, enterprise_root=None)
     key = ctx.roots_key(roots)
     assert ctx.repo_cached(key).stats()["documents_by_group"] == {"doc-group": 1}
+
+
+def test_mount_scope_and_label_follow_the_symlink_target(tmp_path: Path) -> None:
+    from src.config.workspace_paths import resolve_mount
+
+    target = tmp_path / "engagements" / "example"
+    target.mkdir(parents=True)
+    alias = tmp_path / "enterprise-repository"
+    alias.symlink_to(target)
+    mount = resolve_mount(alias)
+    assert (mount.root, mount.scope, mount.engagement_label) == (target, "engagement", "example")

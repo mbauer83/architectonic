@@ -82,6 +82,7 @@ def resolve_settings_selection(
         env=environment,
         source_tree_settings=source_tree_root() / "config" / "settings.yaml",
         cwd=Path.cwd(),
+        home=Path.home(),
         canonicalize=_canonicalize,
     )
 

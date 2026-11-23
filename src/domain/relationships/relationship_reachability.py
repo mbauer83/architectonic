@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from time import monotonic
 from typing import Literal
@@ -158,6 +158,7 @@ def derive_relationships(
     *,
     read_access: CriteriaReadAccess,
     registries: ModuleCatalog,
+    now: Callable[[], float] = monotonic,
 ) -> DerivedRelationshipSet:
     """Enumerate bounded relationship compositions adjacent to the requested anchors."""
     if request.bounds.max_hops < 2 or not request.anchors:
@@ -189,11 +190,11 @@ def derive_relationships(
     )
     results: dict[tuple[str, str], DerivedRelationship] = {}
     seen_paths: set[tuple[str, ...]] = set()
-    start_time = monotonic()
+    start_time = now()
     truncated = False
 
     while queue:
-        if monotonic() - start_time > request.bounds.time_budget_seconds:
+        if now() - start_time > request.bounds.time_budget_seconds:
             truncated = True
             break
         current = queue.popleft()

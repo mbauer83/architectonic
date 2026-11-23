@@ -22,7 +22,7 @@ class DuplicateArtifactIdError(ValueError):
 def infer_engagement_label(root: Path, *, scope: MountScope) -> str:
     if scope == "enterprise":
         return "enterprise"
-    parts = root.resolve().parts
+    parts = root.parts
     if "engagements" in parts:
         idx = parts.index("engagements")
         if idx + 1 < len(parts):
@@ -31,9 +31,9 @@ def infer_engagement_label(root: Path, *, scope: MountScope) -> str:
 
 
 def infer_mount(root: Path) -> RepoMount:
-    resolved = root.resolve()
-    scope: MountScope = "enterprise" if infer_repo_scope(resolved) == "enterprise" else "engagement"
-    return RepoMount(root=resolved, scope=scope, engagement_label=infer_engagement_label(resolved, scope=scope))
+    """Construct a mount from its resolved root."""
+    scope = infer_repo_scope(root)
+    return RepoMount(root=root, scope=scope, engagement_label=infer_engagement_label(root, scope=scope))
 
 
 @dataclass(frozen=True)

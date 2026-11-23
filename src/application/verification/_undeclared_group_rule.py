@@ -1,6 +1,5 @@
 """W046 — content filed under a group the registry does not declare.
 
-Registered into `_GENERIC_REPOSITORY_CONTRIBUTIONS` on import, the same mechanism as W044 and E335.
 
 `artifact_create_entity(group="payments")` writes `projects/payments/model/…` whether or not
 `payments` is a declared model project — the group is a property of the path, and the path is valid
@@ -81,11 +80,3 @@ class UndeclaredGroupContribution:
                         ctx.location,
                     )
                 )
-
-
-_W046_SINGLETON = UndeclaredGroupContribution()
-
-from src.domain.diagrams.diagram_verification import _GENERIC_REPOSITORY_CONTRIBUTIONS  # noqa: E402
-
-if not any(isinstance(c, UndeclaredGroupContribution) for c in _GENERIC_REPOSITORY_CONTRIBUTIONS):
-    _GENERIC_REPOSITORY_CONTRIBUTIONS.append(_W046_SINGLETON)

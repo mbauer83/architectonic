@@ -4,14 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
-from pathlib import Path
 from typing import Literal, cast
-
-from src.domain.relationships.relationship_derivation_restrictions import (
-    DerivationRestriction,
-    restriction_rules_from_mapping,
-)
-from src.domain.yaml_documents import parse_yaml
 
 Certainty = Literal["certain", "potential"]
 Join = Literal["target-source", "target-target", "source-source", "source-target"]
@@ -140,27 +133,3 @@ def _optional_bool(value: object) -> bool:
     if not isinstance(value, bool):
         raise ValueError("relationship derivation permitted-result flag must be a boolean")
     return value
-
-
-def load_composition_rules(package_dir: Path) -> tuple[CompositionRule, ...]:
-    """Load an ontology's optional declarative relationship-composition rules."""
-    path = package_dir / "relationship_derivation.yaml"
-    if not path.is_file():
-        return ()
-    with path.open(encoding="utf-8") as stream:
-        raw: object = parse_yaml(stream) or {}
-    if not isinstance(raw, Mapping):
-        raise ValueError("relationship derivation data must be a mapping")
-    return composition_rules_from_mapping(raw.get("composition_rules", ()))
-
-
-def load_derivation_restrictions(package_dir: Path) -> tuple[DerivationRestriction, ...]:
-    """Load an ontology's optional declarative relationship restrictions."""
-    path = package_dir / "relationship_derivation.yaml"
-    if not path.is_file():
-        return ()
-    with path.open(encoding="utf-8") as stream:
-        raw: object = parse_yaml(stream) or {}
-    if not isinstance(raw, Mapping):
-        raise ValueError("relationship derivation data must be a mapping")
-    return restriction_rules_from_mapping(raw.get("restrictions", ()))

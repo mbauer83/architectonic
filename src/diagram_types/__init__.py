@@ -23,7 +23,7 @@ from src.diagram_types.gsn import module as gsn
 from src.diagram_types.matrix import module as matrix
 from src.diagram_types.sequence import module as sequence
 from src.diagram_types.uca_matrix import module as uca_matrix
-from src.domain.modules.module_filter import is_module_enabled
+from src.domain.modules.module_filter import module_skip_reason
 from src.domain.modules.module_registry import ModuleRegistry
 from src.domain.ontology_representation.ontology_protocol import DiagramTypeModule
 
@@ -57,17 +57,24 @@ def register_default_diagram_types(
     *,
     overrides: dict[str, dict[str, object]] | None = None,
     registered_names: set[str] | None = None,
-) -> None:
+) -> list[tuple[str, str]]:
     """Register the built-in diagram types on *registry*.
 
     When *overrides* and *registered_names* are supplied, each diagram type is
-    checked via ``is_module_enabled`` before registration (fail-closed on
+    checked via ``module_skip_reason`` before registration (fail-closed on
     unsatisfied requires).  Without them, all types are registered unconditionally
     (backward-compatible default).
     """
     effective_overrides = overrides or {}
     effective_registered = registered_names if registered_names is not None else set()
+    skipped: list[tuple[str, str]] = []
     for module in DEFAULT_DIAGRAM_KINDS:
-        if overrides is None or is_module_enabled(module, effective_overrides, effective_registered):
+        reason = (
+            module_skip_reason(module, effective_overrides, effective_registered) if overrides is not None else None
+        )
+        if reason is None:
             registry.register_diagram_type(module)
             effective_registered.add(str(module.name))
+        else:
+            skipped.append((str(module.name), reason))
+    return skipped

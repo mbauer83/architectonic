@@ -6,14 +6,21 @@ from pathlib import Path
 from typing import Any
 
 from src.application._diagram_entity_extraction import HeldRecordScope, held_record_scopes
-from src.application.verification import (
-    _duplicate_identity_rules,  # noqa: F401  # ensure E319 registered
-    _exclusive_containment_rule,  # noqa: F401  # ensure E340 registered
-    _orphan_attachment_schema_rule,  # noqa: F401  # ensure W044 registered
-    _undeclared_group_rule,  # noqa: F401  # ensure W046 registered
-    _workspace_identity_rules,  # noqa: F401  # ensure E335 registered
-)
+from src.application.verification._duplicate_identity_rules import DuplicateStableIdContribution
+from src.application.verification._exclusive_containment_rule import ExclusiveContainmentContribution
+from src.application.verification._orphan_attachment_schema_rule import OrphanAttachmentSchemaContribution
+from src.application.verification._undeclared_group_rule import UndeclaredGroupContribution
+from src.application.verification._workspace_identity_rules import WorkspaceIdUniquenessContribution
 from src.application.verification.artifact_verifier_types import VerificationResult
+from src.domain.diagrams.diagram_verification import RepositoryVerificationContext, RepositoryVerificationContribution
+
+GENERIC_REPOSITORY_CONTRIBUTIONS: tuple[RepositoryVerificationContribution, ...] = (
+    DuplicateStableIdContribution(),
+    ExclusiveContainmentContribution(),
+    OrphanAttachmentSchemaContribution(),
+    UndeclaredGroupContribution(),
+    WorkspaceIdUniquenessContribution(),
+)
 
 
 class RegistryOnlyCandidateRepository:
@@ -100,10 +107,6 @@ def run_repository_contributions(
 ) -> VerificationResult | None:
     if candidate is None or runtime_catalogs is None:
         return None
-    from src.domain.diagrams.diagram_verification import (  # noqa: PLC0415
-        RepositoryVerificationContext,
-        get_generic_repository_contributions,
-    )
 
     ctx = RepositoryVerificationContext(
         committed=committed if committed is not None else candidate,
@@ -113,7 +116,7 @@ def run_repository_contributions(
         type_references_blocking=getattr(runtime_catalogs, "datatype_type_references_blocking", True),
     )
     result = VerificationResult(path=repo_path, file_type="diagram")
-    for contrib in get_generic_repository_contributions():
+    for contrib in GENERIC_REPOSITORY_CONTRIBUTIONS:
         contrib.run(ctx, result)
     for mod in runtime_catalogs.diagram_types.all_diagram_types().values():
         for contrib in mod.repository_verification_contributions():

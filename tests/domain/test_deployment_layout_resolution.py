@@ -51,6 +51,7 @@ def _selection(**kwargs):  # type: ignore[no-untyped-def]
         env={},
         source_tree_settings=_TREE / "config" / "settings.yaml",
         cwd=_CWD,
+        home=_HOME,
     )
     return select_settings_document(**{**defaults, **kwargs})
 
@@ -79,6 +80,9 @@ class TestStageOneSelection:
         assert selection.source == "env"
         assert selection.operator_owned
 
+    def test_env_selector_uses_injected_home(self) -> None:
+        assert _selection(env={ENV_SETTINGS_PATH: "~/settings.yaml"}).path == _HOME / "settings.yaml"
+
     def test_source_tree_fallback_is_not_operator_owned(self) -> None:
         selection = _selection()
         assert selection.path == _TREE / "config" / "settings.yaml"
@@ -88,6 +92,7 @@ class TestStageOneSelection:
 
 # One row per (field, source-combination) — the normative source-table permutations.
 _FIELD_CASES = [
+    ("workspace_root", {"workspace": "~/ws"}, {}, {}, str(_HOME / "ws"), "cli"),
     # (field, cli kwargs, settings kwargs, env, expected path, expected source)
     ("assurance_db_path", {"assurance_store": "/x/store.db"}, {}, {}, "/x/store.db", "cli"),
     ("assurance_db_path", {}, {"deployment_assurance_db_path": "/s/store.db"}, {}, "/s/store.db", "settings"),

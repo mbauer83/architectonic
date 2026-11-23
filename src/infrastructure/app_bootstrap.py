@@ -23,7 +23,7 @@ from src.domain.modules.catalogs import (
     OntologyCatalogImpl,
 )
 from src.domain.modules.module_catalog import ModuleCatalog, ModuleCatalogBuilder
-from src.domain.modules.module_filter import is_module_enabled
+from src.domain.modules.module_filter import module_skip_reason
 from src.domain.modules.module_registry import ModuleRegistry
 from src.domain.ontology_representation.ontology_protocol import OntologyModule
 from src.domain.ontology_representation.profile_registry import merge_profile_registries
@@ -126,6 +126,11 @@ def _inject_capability_sentinels(registered_names: set[str]) -> None:
         from src.infrastructure.assurance import arch_ref_rename_follower  # noqa: F401, PLC0415
 
 
+def _log_skipped_module(name: str, reason: str) -> None:
+    log = _logger.info if reason == "disabled" else _logger.warning
+    log("Module %r skipped: %s", name, reason)
+
+
 def build_module_registry(*, complete_vocabulary: bool = False) -> ModuleRegistry:
     """Assemble the module registry from the configured ontology and diagram-type modules.
 
@@ -144,16 +149,19 @@ def build_module_registry(*, complete_vocabulary: bool = False) -> ModuleRegistr
     _inject_capability_sentinels(registered_names)
 
     for om in _ALL_ONTOLOGY_MODULES:
-        if complete_vocabulary or is_module_enabled(om, overrides, registered_names):
+        reason = None if complete_vocabulary else module_skip_reason(om, overrides, registered_names)
+        if reason is None:
             registry.register_ontology(om)
             registered_names.add(om.name)
         else:
-            _logger.info("Ontology module %r skipped (disabled or unsatisfied requires)", om.name)
+            _log_skipped_module(om.name, reason)
 
     if complete_vocabulary:
         register_default_diagram_types(registry)
     else:
-        register_default_diagram_types(registry, overrides=overrides, registered_names=registered_names)
+        skipped = register_default_diagram_types(registry, overrides=overrides, registered_names=registered_names)
+        for name, reason in skipped:
+            _log_skipped_module(name, reason)
     validate_registry_consistency(registry)
     # The kind table against what each kind is bound to, which only this layer can see.
     if contradictions := list(kind_binding_contradictions()):

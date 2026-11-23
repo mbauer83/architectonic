@@ -317,9 +317,10 @@ class TestTheReliaceWalkIsBounded:
         from src.domain.assurance.fmea_structural_signals import DerivationBounds, common_cause_report
 
         edges = self._chain(6) + [_edge("APP@alt", "archimate-serving", "APP@1")]
-        expired = DerivationBounds(max_hops=10, max_relationships=20000, time_budget_seconds=-1.0)
+        expired = DerivationBounds(max_hops=10, max_relationships=20000, time_budget_seconds=1.0)
 
-        report = common_cause_report([("APP@0", "APP@alt")], edges, bounds=expired)
+        now = iter((0.0, 2.0, 2.0)).__next__
+        report = common_cause_report([("APP@0", "APP@alt")], edges, bounds=expired, now=now)
 
         assert report.truncated
 

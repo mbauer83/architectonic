@@ -28,10 +28,9 @@ from src.domain.relationships.permitted_relationships import PermittedRelationsh
 from src.domain.relationships.relationship_derivation_restrictions import DerivationRestriction
 from src.domain.relationships.relationship_derivation_rules import (
     CompositionRule,
-    load_composition_rules,
-    load_derivation_restrictions,
 )
 from src.domain.yaml_documents import parse_yaml
+from src.ontologies._derivation_loader import load_derivation
 from src.ontologies.archimate_4._yaml_data import META_ONTOLOGY_ALIAS as META_ONTOLOGY_ALIAS
 from src.ontologies.archimate_4._yaml_data import (
     build_permitted_relationships,
@@ -266,8 +265,7 @@ def load_archimate_4_module(
 
     entity_types = load_entity_types(entity_data, guidance)
     connection_types = load_connection_types(conn_data, guidance)
-    derivation_rules = load_composition_rules(package_dir)
-    derivation_restrictions = load_derivation_restrictions(package_dir)
+    derivation_rules, derivation_restrictions = load_derivation(package_dir)
     permitted = build_permitted_relationships(conn_data, entity_types)
     matrix_abbreviations: dict[str, str] = dict(conn_data.get("matrix_abbreviations", {}))
     element_classes = load_element_classes(entity_data)

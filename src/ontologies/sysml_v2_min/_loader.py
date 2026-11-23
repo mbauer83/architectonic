@@ -19,12 +19,9 @@ from src.domain.relationships.permitted_relationships import (
     PermittedRelationshipSet,
 )
 from src.domain.relationships.relationship_derivation_restrictions import DerivationRestriction
-from src.domain.relationships.relationship_derivation_rules import (
-    CompositionRule,
-    load_composition_rules,
-    load_derivation_restrictions,
-)
+from src.domain.relationships.relationship_derivation_rules import CompositionRule
 from src.domain.yaml_documents import parse_yaml
+from src.ontologies._derivation_loader import load_derivation
 
 DISPLAY_SECTION_ID = "sysml"
 
@@ -265,6 +262,7 @@ def load_sysml_module(package_dir: Path, *, guidance: GuidanceOverlay | None = N
     with open(package_dir / "connections.yaml") as fh:
         conn_data = parse_yaml(fh)
 
+    derivation_rules, derivation_restrictions = load_derivation(package_dir)
     entity_types = _load_entity_types(entity_data, guidance)
     connection_types = _load_connection_types(conn_data, guidance)
     permitted = _build_permitted_relationships(conn_data, entity_types)
@@ -275,6 +273,6 @@ def load_sysml_module(package_dir: Path, *, guidance: GuidanceOverlay | None = N
         connection_types=connection_types,
         permitted_relationships=permitted,
         element_classes=element_classes,
-        derivation_rules=load_composition_rules(package_dir),
-        derivation_restrictions=load_derivation_restrictions(package_dir),
+        derivation_rules=derivation_rules,
+        derivation_restrictions=derivation_restrictions,
     )

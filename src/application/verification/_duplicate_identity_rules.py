@@ -83,13 +83,3 @@ def duplicate_kind_files(root: Path, paths: Iterable[Path]) -> Iterator[tuple[Pa
         if len(files) > 1:
             first, *others = sorted(files)
             yield first, duplicate_finding(stem, [str(p.relative_to(root)) for p in (first, *others)], str(first))
-
-
-# ---------------------------------------------------------------------------
-# Register E319 into the central generic registry (idempotent, import-time)
-# ---------------------------------------------------------------------------
-from src.domain.diagrams.diagram_verification import _GENERIC_REPOSITORY_CONTRIBUTIONS  # noqa: E402
-
-_E319_SINGLETON = DuplicateStableIdContribution()
-if not any(isinstance(c, DuplicateStableIdContribution) for c in _GENERIC_REPOSITORY_CONTRIBUTIONS):
-    _GENERIC_REPOSITORY_CONTRIBUTIONS.append(_E319_SINGLETON)

@@ -9,7 +9,7 @@ import pytest
 
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, EntityTypeInfo
 from src.domain.relationships.relationship_derivation import OrientedRelation, compose, fold_chain
-from src.domain.relationships.relationship_derivation_rules import load_composition_rules
+from src.ontologies._derivation_loader import load_derivation
 from src.ontologies.archimate_4._loader import _PACKAGE_DIR, load_archimate_4_module
 
 
@@ -48,7 +48,7 @@ def test_ontology_can_supply_composition_rules_from_its_own_yaml(tmp_path: Path)
         encoding="utf-8",
     )
 
-    rules = load_composition_rules(tmp_path)
+    rules, _ = load_derivation(tmp_path)
 
     assert len(rules) == 1
     assert rules[0].spec_ref == "EX-1"

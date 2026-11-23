@@ -193,12 +193,11 @@ class TestItIsActuallyInvoked:
     def test_the_rule_is_registered_with_the_generic_contributions(self) -> None:
         """A contribution that answers correctly and is never invoked reports nothing, and from a unit
         test the two look identical. The registry is what the verifier iterates."""
-        from src.application.verification import _verifier_contribution_runner  # noqa: F401, PLC0415
-        from src.domain.diagrams.diagram_verification import (  # noqa: PLC0415
-            get_generic_repository_contributions,
+        from src.application.verification._verifier_contribution_runner import (  # noqa: PLC0415
+            GENERIC_REPOSITORY_CONTRIBUTIONS,
         )
 
-        registered = {type(c) for c in get_generic_repository_contributions()}
+        registered = {type(c) for c in GENERIC_REPOSITORY_CONTRIBUTIONS}
 
         assert DuplicateStableIdContribution in registered
 
