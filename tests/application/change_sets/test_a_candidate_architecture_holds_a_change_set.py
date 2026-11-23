@@ -20,7 +20,6 @@ from src.application.change_sets.candidate_architecture import (
     CANDIDATE_STATES,
     CandidateArchitecture,
     MalformedCandidateArchitecture,
-    beneath,
 )
 from src.application.change_sets.composition import compose
 from src.application.change_sets.operations import AddConnection, MalformedChangeSet, RemoveEntity
@@ -73,32 +72,6 @@ class TestTheHeader:
         proposing = candidate(edit(_A, "name", "Invoicing"))
         composed = compose(proposing.changes, RecordedReading(entities={_A: {"name": "Billing"}}))
         assert composed.entity(_A) == {"name": "Invoicing"}
-
-
-class TestWhichCandidateIsBeneath:
-    def test_a_candidate_alone_is_read_on_nothing(self) -> None:
-        assert beneath(candidate(), None) is None
-
-    def test_a_child_is_read_on_its_parents_change_set(self) -> None:
-        parent = candidate(create("queue"), id="CA-0")
-        assert beneath(candidate(parent_id="CA-0"), parent) == parent.changes
-
-    def test_a_child_cannot_be_read_without_its_parent(self) -> None:
-        with pytest.raises(MalformedCandidateArchitecture, match="none was given"):
-            beneath(candidate(parent_id="CA-0"), None)
-
-    def test_the_parent_must_be_the_one_the_candidate_names(self) -> None:
-        with pytest.raises(MalformedCandidateArchitecture, match="'CA-9' was given"):
-            beneath(candidate(parent_id="CA-0"), candidate(id="CA-9"))
-
-    def test_a_candidate_without_a_parent_is_not_given_one(self) -> None:
-        with pytest.raises(MalformedCandidateArchitecture, match="has no parent"):
-            beneath(candidate(), candidate(id="CA-0"))
-
-    def test_three_layers_are_refused_with_what_to_do(self) -> None:
-        middle = candidate(id="CA-0", parent_id="CA-root")
-        with pytest.raises(MalformedCandidateArchitecture, match="two deep for now"):
-            beneath(candidate(parent_id="CA-0"), middle)
 
 
 class TestOverlapBetweenCandidates:

@@ -191,4 +191,5 @@ def candidates(draw: st.DrawFn) -> CandidateArchitecture:
         changes=draw(change_sets()),
         answers=tuple(draw(st.lists(_names, max_size=2, unique=True))),
         satisfies=tuple(draw(st.lists(_ids, max_size=2, unique=True))),
+        scope=tuple(draw(st.lists(_ids, max_size=2, unique=True))),
     )

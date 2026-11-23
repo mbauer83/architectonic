@@ -47,11 +47,13 @@ from src.domain.repository.repo_layout import (
 
 #: The public list of kind names. A `Literal` because typed contracts need one and a type cannot be
 #: computed from the rows; `tests/domain/test_the_kind_table.py` holds it equal to them.
-ArtifactKindName = Literal["entity", "connection", "diagram", "document", "icon", "scratchpad"]
+ArtifactKindName = Literal[
+    "entity", "connection", "diagram", "document", "icon", "candidate-architecture", "scratchpad"
+]
 
 #: The kinds the artifact verifier takes — the rows whose `verification` is not `unverified`, as a
 #: type, for the same reason and held equal by the same test.
-VerifiedArtifactKindName = Literal["entity", "connection", "diagram", "document", "icon"]
+VerifiedArtifactKindName = Literal["entity", "connection", "diagram", "document", "icon", "candidate-architecture"]
 
 #: How the artifact verifier treats a kind. `with-the-model`: inside the model inventory, against the
 #: graph, with per-file state reused between passes. `standalone`: one file at a time beside it, on
@@ -129,6 +131,11 @@ ARTIFACT_KINDS: tuple[KindDeclaration, ...] = (
     KindDeclaration(
         name="icon", roots=((DIAGRAM_CATALOG, ICONS),), placement="directly-below", suffixes=(".md",),
         id_prefix="ICO", verification="standalone", moves_model_generation=True,
+    ),
+    KindDeclaration(
+        name="candidate-architecture", roots=(("candidate-architectures",),), placement="directly-below",
+        suffixes=(".candidate.yaml",), id_prefix="CAND", verification="standalone",
+        moves_model_generation=False, identity_field="id",
     ),
     # Not model content: unlisted by `list_artifacts`, ranked below everything in search, and saved
     # about once a second while someone is thinking — so its changes move a generation of their own.

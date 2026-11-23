@@ -14,9 +14,13 @@ run, and nothing here is restated there.
 lost and is kept as one. A proposed change's coordination states (`proposed_change`) are a different
 vocabulary about a different thing and are not touched.
 
-**Stacking is depth two.** A candidate may be read on top of one parent — the naive architecture,
-then an adaptation of it. A parent that itself has a parent is refused: three layers is a history,
-and a history needs decisions about rebasing the middle that have not been made.
+**A candidate may be read on top of a parent**, which may have one of its own, to any depth: the naive
+architecture started from an existing candidate, then adaptations of it, then a candidate built on
+an adaptation. Which candidates a stack holds, and that it is not a circle, is `stacking`'s.
+
+**Its scope is what it reads live.** `scope` names the model's entities the candidate is drawn over
+without changing them: a naive architecture started from the current model within a scope copies
+nothing, and the model's later changes show through. A candidate started empty has none.
 
 **What `answers` and `satisfies` hold is opaque here.** They are references whose form is decided by
 whoever stores a candidate. The value only keeps them.
@@ -58,40 +62,13 @@ class CandidateArchitecture:
     #: What the candidate answers and what it satisfies, as references whose form the store decides.
     answers: tuple[str, ...] = ()
     satisfies: tuple[str, ...] = ()
+    #: The model's entities the candidate is read over without changing them, by id.
+    scope: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         refusal = _refusal(self)
         if refusal is not None:
             raise MalformedCandidateArchitecture(refusal)
-
-
-def beneath(
-    candidate: CandidateArchitecture, parent: CandidateArchitecture | None
-) -> ChangeSet | None:
-    """The change set *candidate* is read on top of: its parent's, or None where it has no parent.
-
-    Refuses a parent that is not the one the candidate names, a candidate whose parent was not
-    supplied, and a stack deeper than two.
-    """
-    if candidate.parent_id is None:
-        if parent is not None:
-            raise MalformedCandidateArchitecture(
-                f"'{candidate.id}' has no parent, and '{parent.id}' was given as one"
-            )
-        return None
-    if parent is None or parent.id != candidate.parent_id:
-        given = "none was given" if parent is None else f"'{parent.id}' was given"
-        raise MalformedCandidateArchitecture(
-            f"'{candidate.id}' is read on top of '{candidate.parent_id}', and {given}. A candidate "
-            "cannot be read without the one beneath it."
-        )
-    if parent.parent_id is not None:
-        raise MalformedCandidateArchitecture(
-            f"'{candidate.id}' is stacked on '{parent.id}', which is itself stacked on "
-            f"'{parent.parent_id}'. Candidates stack two deep for now: integrate or merge the lower "
-            "two first."
-        )
-    return parent.changes
 
 
 def _refusal(candidate: CandidateArchitecture) -> str | None:
@@ -109,7 +86,9 @@ def _refusal(candidate: CandidateArchitecture) -> str | None:
         )
     if candidate.parent_id == candidate.id:
         return f"candidate architecture '{candidate.id}' names itself as its parent"
-    for label, references in (("answers", candidate.answers), ("satisfies", candidate.satisfies)):
+    for label, references in (
+        ("answers", candidate.answers), ("satisfies", candidate.satisfies), ("reads over", candidate.scope)
+    ):
         if any(not reference for reference in references):
             return f"candidate architecture '{candidate.id}' has an empty reference among what it {label}"
         if len(set(references)) != len(references):

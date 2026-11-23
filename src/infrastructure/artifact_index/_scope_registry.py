@@ -125,6 +125,11 @@ class _ScopeRegistry:
         """
         self._ensure_loaded()
         with self._lock.reading():
+            candidate_key = (
+                self._mem.canonical_id(artifact_id) if stable_id(artifact_id) == artifact_id else artifact_id
+            )
+            if candidate_key in self._mem.candidate_paths:
+                return self._mem.candidate_paths[candidate_key]
             for table in (self._mem.entities, self._mem.diagrams, self._mem.documents, self._mem.icons):
                 r = table.get(artifact_id)
                 if r is not None:

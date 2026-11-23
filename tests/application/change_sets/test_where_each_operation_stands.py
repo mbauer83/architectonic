@@ -211,7 +211,7 @@ class TestASetReadOnTopOfAnother:
 
     def test_is_judged_against_the_model_with_the_lower_set_applied(self) -> None:
         lower, upper, link, rename = self._layers()
-        found = {s.operation.claim: s.standing for s in standing_of(upper, _MODEL, beneath=lower)}
+        found = {s.operation.claim: s.standing for s in standing_of(upper, _MODEL, beneath=(lower,))}
         assert found == {link.claim: "applies", rename.claim: "applies"}
 
     def test_cannot_be_judged_without_it(self) -> None:

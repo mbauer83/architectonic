@@ -12,12 +12,13 @@ take, so the lab draws exactly what the composer would arrange, as the composer 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds, joined_to_its_picture
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
-from src.domain.diagrams.layout.layout_block import Layout, layout_as_written, read_layout
+from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, Layout, layout_as_written, read_layout
 from src.domain.diagrams.layout.rendered_picture import (
     DrawnBox,
     DrawnElement,
@@ -31,10 +32,12 @@ from src.domain.diagrams.layout.text_clearance import padded, text_extent, title
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
 from src.infrastructure.rendering.layout._svg_relations import RelationMarkup
 from src.infrastructure.rendering.layout.box_identities import box_keys_by_alias
+from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, measure_composition, plantuml_svg
 from src.infrastructure.rendering.layout.membership_placement import with_new_members
 from src.infrastructure.rendering.layout.plantuml_svg_reader import RenderedDrawing, read_rendered_drawing
 from src.infrastructure.rendering.layout.relation_identities import DrawnAs, relation_keys_by_index
 from src.infrastructure.rest.routers.diagrams._layout_drawing import node_of, relation_drawing
+from src.infrastructure.write.artifact_write.parse_existing import ParsedDiagram
 
 type Wire = dict[str, object]
 
@@ -145,3 +148,35 @@ def diagram_geometry(
         return result
     except Unreadable as unreadable:
         return NotReadable(met=unreadable.met)
+
+
+def stored_geometry(
+    parsed: ParsedDiagram, artifact_id: str, root: Path, ontology: DeclaresElementKinds,
+) -> Wire:
+    """The geometry of a stored diagram as it is drawn now."""
+    return geometry_response(parsed.puml_body, artifact_id, dict(parsed.frontmatter), root, ontology)
+
+
+def geometry_response(
+    puml: str, artifact_id: str, frontmatter: Mapping[str, object], root: Path, ontology: DeclaresElementKinds,
+    *, generated: bool = False, arrangement: dict[str, Any] | None = None, previous: frozenset[str] = frozenset(),
+) -> Wire:
+    """The geometry of *puml*, stored or composed (*generated*); raises ValueError when it cannot be drawn.
+
+    With an *arrangement*, members not in *previous* are placed and the returned layout replaces the stored one.
+    """
+    diagram_type = str(frontmatter.get("diagram-type", "archimate"))
+    try:
+        svg = measure_composition(puml, root, diagram_type)[1] if generated else plantuml_svg(puml, root, diagram_type)
+    except NotDrawn as refusal:
+        raise ValueError(str(refusal)) from refusal
+    geometry = diagram_geometry(svg, frontmatter, ontology, arrangement=arrangement, previous=previous)
+    if isinstance(geometry, NotReadable):
+        raise ValueError(f"This diagram's picture cannot be arranged: {geometry.met}")
+    stored = frontmatter.get(LAYOUT_KEY)
+    return {
+        "artifact_id": str(frontmatter.get("artifact-id", artifact_id)),
+        "name": str(frontmatter.get("name") or artifact_id),
+        **({"layout": stored} if isinstance(stored, dict) and stored else {}),
+        **geometry,
+    }

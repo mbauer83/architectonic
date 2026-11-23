@@ -165,6 +165,8 @@ MUTATION_TOOL_MANIFEST: dict[str, MutationToolManifestRow] = {
         intents=("enterprise_discard",), build_request=_enterprise_discard
     ),
     "artifact_admin_reindex": MutationToolManifestRow(intents=("maintenance",), build_request=_maintenance),
+    "change_set_create": _ENGAGEMENT_ROW,
+    "change_set_edit": _ENGAGEMENT_ROW,
     "scratchpad_create": _ENGAGEMENT_ROW,
     "scratchpad_replace": _ENGAGEMENT_ROW,
     "scratchpad_edit": _ENGAGEMENT_ROW,

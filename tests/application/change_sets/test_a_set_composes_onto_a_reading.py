@@ -123,7 +123,7 @@ class TestASetReadOnTopOfAnother:
             edit("$ref:queue", "summary", "Buffers."),
             AddConnection(joins(_A, "$ref:queue"), {}),
         )
-        composed = compose(upper, _MODEL, beneath=lower)
+        composed = compose(upper, _MODEL, beneath=(lower,))
 
         assert composed.entity(_A)["name"] == "Invoices"  # type: ignore[index]
         assert composed.entity("$ref:queue")["summary"] == "Buffers."  # type: ignore[index]
@@ -136,7 +136,7 @@ class TestASetReadOnTopOfAnother:
         lower = change_set(create("queue"), AddConnection(link, {}))
         upper = change_set(RemoveEntity("$ref:queue", _REVISION))
 
-        composed = compose(upper, _MODEL, beneath=lower)
+        composed = compose(upper, _MODEL, beneath=(lower,))
 
         assert composed.entity("$ref:queue") is None
         assert composed.connection(link) is None

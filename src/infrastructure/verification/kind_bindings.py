@@ -36,6 +36,9 @@ from src.application.verification import (
 )
 from src.application.verification.kind_verification import KindBinding, KindBindings, KindVerifier, PerKindVerification
 from src.domain.repository.artifact_location import ARTIFACT_KINDS, ArtifactKindName, KindDeclaration
+from src.infrastructure.candidates.repository import read_candidate_path
+from src.infrastructure.candidates.verification import RULE_CODES as CANDIDATE_CODES
+from src.infrastructure.candidates.verification import verify_candidate
 
 if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
@@ -51,6 +54,10 @@ def _diagram(
 
 
 KIND_BINDINGS: Mapping[ArtifactKindName, KindBinding] = {
+    "candidate-architecture": KindBinding(
+        reader=lambda path, _mounts, _domains: read_candidate_path(path),
+        verifier=KindVerifier(verify=verify_candidate, rule_codes=CANDIDATE_CODES),
+    ),
     "entity": KindBinding(
         reader=lambda path, mounts, domain_names: parse_entity_for_path(path, mounts, domain_names=domain_names),
         verifier=KindVerifier(

@@ -1,0 +1,23 @@
+"""Route policy for candidate architectures and analysis reads."""
+from src.infrastructure.rest.route_policy._types import TYPED, RouteRow
+
+CANDIDATE_ROWS = (
+    RouteRow("GET", "/api/change-sets", "collection", "changes_list_candidates", TYPED,
+             cache_directive="no-cache"),
+    RouteRow("POST", "/api/change-sets", "collection", "changes_create_candidate", TYPED,
+             mutation_domain="repository"),
+    RouteRow("GET", "/api/change-sets/{artifact_id}", "detail", "changes_read_candidate", TYPED,
+             identity_parameters=("artifact_id",), cache_directive="no-cache"),
+    RouteRow("PATCH", "/api/change-sets/{artifact_id}", "detail", "changes_edit_candidate", TYPED,
+             identity_parameters=("artifact_id",), mutation_domain="repository"),
+    RouteRow("GET", "/api/change-sets/{artifact_id}/diff", "subresource", "changes_compare_candidate", TYPED,
+             identity_parameters=("artifact_id",), cache_directive="no-cache", timeout_class="derived-graph"),
+    RouteRow("GET", "/api/change-sets/{artifact_id}/standing", "subresource", "changes_read_standing", TYPED,
+             identity_parameters=("artifact_id",), cache_directive="no-cache"),
+    RouteRow("POST", "/api/change-set-checks", "collection", "changes_check_candidates", TYPED,
+             cache_directive="no-cache"),
+    RouteRow("GET", "/api/documents/{artifact_id}/progress", "subresource", "documents_analysis_progress", TYPED,
+             identity_parameters=("artifact_id",), cache_directive="no-cache"),
+    RouteRow("GET", "/api/documents/{artifact_id}/incidence", "subresource", "documents_analysis_incidence", TYPED,
+             identity_parameters=("artifact_id",), cache_directive="no-cache"),
+)

@@ -23,7 +23,7 @@ on, and a paraphrase here would be a second vocabulary for it.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal, TypeAlias, get_args
 
@@ -72,17 +72,17 @@ def standing_of(
     change_set: ChangeSet,
     reading: ModelReading,
     *,
-    beneath: ChangeSet | None = None,
+    beneath: Sequence[ChangeSet] = (),
     would_refuse: WouldRefuse = lambda _operation: None,
 ) -> tuple[OperationStanding, ...]:
     """Each operation's standing, in the order the set would be applied.
 
-    A set read on top of another is judged against the model *with the lower set applied*: that is
+    A set read on top of others is judged against the model *with the lower sets applied*: that is
     the state it was written on, and judging it against the bare model would report every use of
-    what the lower set creates as a conflict.
+    what a lower set creates as a conflict.
     """
     operations = application_order(change_set, beneath=beneath)
-    lower = reading if beneath is None else compose(beneath, reading)
+    lower = compose(beneath[-1], reading, beneath=beneath[:-1]) if beneath else reading
     created = frozenset(change_set.created)
     return tuple(_judged(operation, lower, created, would_refuse) for operation in operations)
 

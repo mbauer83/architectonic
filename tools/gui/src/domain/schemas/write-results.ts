@@ -28,7 +28,7 @@ export type VerificationIssue = typeof VerificationIssueSchema.Type
 export const WriteVerificationSchema = Schema.Struct({
   path: Schema.optional(Schema.NullOr(Schema.String)),
   file_type: Schema.optional(
-    Schema.NullOr(Schema.Literal('entity', 'connection', 'diagram', 'document', 'icon')),
+    Schema.NullOr(Schema.Literal('entity', 'connection', 'diagram', 'document', 'icon', 'candidate-architecture')),
   ),
   valid: Schema.Boolean,
   issues: Schema.Array(VerificationIssueSchema),
