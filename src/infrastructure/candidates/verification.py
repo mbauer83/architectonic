@@ -1,6 +1,7 @@
 """File and reference rules for a candidate; standing is checked against current model fields."""
 from pathlib import Path
 
+from src.application.change_sets.candidate_reads import live_reading
 from src.application.change_sets.candidate_recorded_form import load_candidate
 from src.application.change_sets.stacking import sets_beneath, stack_of
 from src.application.change_sets.standing import standing_of
@@ -8,7 +9,6 @@ from src.application.verification._verifier_snapshot import RepositorySnapshot
 from src.application.verification.artifact_verifier_parsing import read_file
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
 from src.application.verification.kind_verification import PerKindVerification
-from src.infrastructure.candidates.reads import live_reading
 from src.infrastructure.candidates.repository import KIND, CandidateRepository
 
 RULE_CODES = frozenset({"E001", "E104", "E420", "W421"})

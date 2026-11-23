@@ -25,6 +25,8 @@ from src.domain.diagrams.layout.rendered_picture import RenderedPicture
 from src.domain.repository.frontmatter import parse_frontmatter
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.rendering.layout.diagram_geometry import diagram_geometry
+from src.infrastructure.rendering.layout.drawing_wire import element_of, node_of
 from src.infrastructure.rendering.layout.plantuml_svg_reader import (
     RenderedDrawing,
     read_rendered_drawing,
@@ -33,8 +35,6 @@ from src.infrastructure.rendering.layout.plantuml_svg_reader import (
 from src.infrastructure.rendering.layout.shape_drawing import fitted_box, resized_element
 from src.infrastructure.rest.layout_lab.routes import LAB_PREFIX, install_layout_lab
 from src.infrastructure.rest.routers import state as s
-from src.infrastructure.rest.routers.diagrams._layout_drawing import element_of, node_of
-from src.infrastructure.rest.routers.diagrams._layout_geometry import diagram_geometry
 from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
 from tests.support.api_app import build_api_app
 from tests.support.rendered_pictures import RenderedModel, build_rendered_model, plantuml_available

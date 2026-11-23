@@ -4,6 +4,7 @@ from typing import Any, Literal
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
+from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.candidates.service import CandidateService
 from src.infrastructure.mcp.artifact_mcp.context import resolve_repo_roots
 from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool
@@ -32,7 +33,7 @@ def change_set_read(
     """Read a candidate, its operation standing, or its scoped diff with optional diagram geometry."""
     service = _service(repo_root)
     if mode == "diff":
-        return service.compare(artifact_id, base, naive, diagram)
+        return service.compare(artifact_id, base, naive, diagram, process_runtime_catalogs().ontology)
     if mode == "standing":
         return service.standing(artifact_id)
     return service.read(artifact_id)

@@ -7,6 +7,7 @@ from typing import Any
 
 from src.application.artifacts.document_table_rows import tables_of_stored_document
 from src.application.change_sets.base import record_revision
+from src.application.change_sets.candidate_reads import comparison, read_view, standing_report
 from src.application.change_sets.candidate_recorded_form import from_mapping, to_mapping
 from src.application.change_sets.candidate_work import conflicts_between
 from src.application.change_sets.change_set import ChangeSet
@@ -14,12 +15,14 @@ from src.application.change_sets.recorded_form import operation_to_mapping
 from src.application.change_sets.recorded_form import to_mapping as set_to_mapping
 from src.application.change_sets.stacking import stack_of
 from src.application.modeling.artifact_write import generate_entity_id
+from src.application.modeling.diagram_layout_statement import DeclaresElementKinds
 from src.application.stress_analysis.workspace import analyse
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.viewpoints.placed_occurrences import resolve_placed_entities
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
-from src.infrastructure.candidates.reads import comparison, read_view
 from src.infrastructure.candidates.repository import KIND, CandidateRepository
+from src.infrastructure.rendering.layout.diagram_geometry import stored_geometry
+from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
 
 
 class CandidateService:
@@ -64,18 +67,16 @@ class CandidateService:
         current = self.read(ref)
         return self.save(current["record"] | dict(patch), based_on, ref=ref)
 
-    def compare(self, ref: str, base: str, naive: str | None, diagram: str | None) -> dict[str, Any]:
+    def compare(
+        self, ref: str, base: str, naive: str | None, diagram: str | None, ontology: DeclaresElementKinds,
+    ) -> dict[str, Any]:
         result = comparison(self.store.require(ref), self.store, self.registry, base=base, naive=naive)
         if diagram:
-            from src.infrastructure.app_bootstrap import process_runtime_catalogs  # noqa: PLC0415
-            from src.infrastructure.rest.routers.diagrams._layout_geometry import stored_geometry  # noqa: PLC0415
-            from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file  # noqa: PLC0415
-
             record = self.index.get_diagram(diagram)
             if record is None:
                 raise FileNotFoundError(diagram)
-            result["drawing"] = stored_geometry(parse_diagram_file(record.path), record.artifact_id, self.root,
-                                                process_runtime_catalogs().ontology)
+            parsed = parse_diagram_file(record.path)
+            result["drawing"] = stored_geometry(parsed, record.artifact_id, self.root, ontology)
         return result
 
     def analysis(self, ref: str, kinds: Sequence[str] = ()) -> dict[str, Any]:
@@ -107,8 +108,7 @@ class CandidateService:
         ]}
 
     def standing(self, ref: str) -> dict[str, Any]:
-        report = self.compare(ref, "model", None, None)
-        return {"candidate": ref, "standing": report["standing"]}
+        return {"candidate": ref, "standing": standing_report(self.store.require(ref), self.store, self.registry)}
 
     def progress(self, ref: str, kinds: Sequence[str] = ()) -> dict[str, Any]:
         report = self.analysis(ref, kinds)

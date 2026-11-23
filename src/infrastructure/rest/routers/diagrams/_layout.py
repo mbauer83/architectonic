@@ -20,7 +20,9 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.layout.layout_block import MalformedLayout
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
+from src.infrastructure.rendering.layout.diagram_geometry import geometry_response, stored_geometry
 from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, first_layout_of
+from src.infrastructure.rendering.layout.drawing_wire import reshaped
 from src.infrastructure.rest.contracts.diagram_layout_editing import (
     DiagramLayoutGeometryResponse,
     DiagramLayoutPatchResponse,
@@ -35,8 +37,6 @@ from src.infrastructure.rest.routers._openapi import (
 )
 from src.infrastructure.rest.routers.diagrams._composition import render_composition
 from src.infrastructure.rest.routers.diagrams._geometry_proposals import GeometryPreviewBody
-from src.infrastructure.rest.routers.diagrams._layout_drawing import reshaped
-from src.infrastructure.rest.routers.diagrams._layout_geometry import geometry_response, stored_geometry
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.parse_existing import ParsedDiagram, parse_diagram_file
 

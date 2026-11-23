@@ -1,7 +1,8 @@
-"""Compose candidate reads over current scoped records from the repository index."""
+"""Compose candidate reads over current scoped records: the composed view, a diff against a base, standing."""
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Sequence
+from typing import Any, Protocol
 
 from pydantic_core import to_jsonable_python
 
@@ -15,7 +16,14 @@ from src.application.change_sets.standing import standing_of
 from src.application.modeling.edit_field_values import current_entity_values
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.domain.artifact_id import canonical_entity_key
-from src.infrastructure.candidates.repository import CandidateRepository
+
+
+class CandidateLookup(Protocol):
+    """Where candidates are found: by id, required by id, or all of them."""
+
+    def find(self, ref: str) -> CandidateArchitecture | None: ...
+    def require(self, ref: str) -> CandidateArchitecture: ...
+    def list(self) -> Sequence[CandidateArchitecture]: ...
 
 
 def live_reading(stack: tuple[CandidateArchitecture, ...], registry: ArtifactRegistry) -> RecordedReading:
@@ -45,24 +53,23 @@ def live_reading(stack: tuple[CandidateArchitecture, ...], registry: ArtifactReg
 
 
 def read_view(
-    candidate: CandidateArchitecture, store: CandidateRepository, registry: ArtifactRegistry,
+    candidate: CandidateArchitecture, store: CandidateLookup, registry: ArtifactRegistry,
 ) -> CandidateView:
     stack = stack_of(candidate, store.find)
     return view_of(stack, live_reading(stack, registry))
 
 
 def comparison(
-    candidate: CandidateArchitecture, store: CandidateRepository, registry: ArtifactRegistry,
+    candidate: CandidateArchitecture, store: CandidateLookup, registry: ArtifactRegistry,
     *, base: str, naive: str | None,
 ) -> dict[str, Any]:
     stack = stack_of(candidate, store.find)
     live = live_reading(stack, registry)
     after = view_of(stack, live)
     if base == "model":
-        refs = set(live.entities)
         before = CandidateView(
-            {ref: fields for ref, fields in live.entities.items() if ref in refs},
-            {a: f for a, f in live.connections.items() if all(end in refs for end in a.endpoints)},
+            dict(live.entities),
+            {a: f for a, f in live.connections.items() if all(end in live.entities for end in a.endpoints)},
         )
     else:
         selected = naive if base == "naive" else base
@@ -72,8 +79,22 @@ def comparison(
     return to_jsonable_python({
         "candidate": candidate.id, "base": base, "stack": [layer.id for layer in stack],
         "view": after.wire(), "diff": difference(before, after),
-        "standing": [
-            {"operation": operation_to_mapping(item.operation), "standing": item.standing, "reason": item.reason}
-            for item in standing_of(candidate.changes, live, beneath=sets_beneath(stack))
-        ],
+        "standing": _standing(candidate, stack, live),
     })
+
+
+def standing_report(
+    candidate: CandidateArchitecture, store: CandidateLookup, registry: ArtifactRegistry,
+) -> list[dict[str, Any]]:
+    """Where each of the candidate's own operations stands on the model as it is now."""
+    stack = stack_of(candidate, store.find)
+    return _standing(candidate, stack, live_reading(stack, registry))
+
+
+def _standing(
+    candidate: CandidateArchitecture, stack: tuple[CandidateArchitecture, ...], live: RecordedReading,
+) -> list[dict[str, Any]]:
+    return to_jsonable_python([
+        {"operation": operation_to_mapping(item.operation), "standing": item.standing, "reason": item.reason}
+        for item in standing_of(candidate.changes, live, beneath=sets_beneath(stack))
+    ])
