@@ -28,7 +28,7 @@ from src.infrastructure.exchange.archimate_model_exchange import (
     ArchimateModelExchangeWriter,
 )
 from src.infrastructure.exchange.archimate_model_exchange.concept_mapping import DeclarativeConceptMapper
-from src.infrastructure.exchange.archimate_model_exchange.import_service import import_document
+from src.infrastructure.exchange.archimate_model_exchange.write_adapter import ArtifactWriteExchangeAdapter
 from src.infrastructure.mcp.artifact_mcp.context import default_engagement_repo_root
 
 
@@ -71,7 +71,7 @@ def run_import(*, repo_root: Path, source: Path, schema: Path | None, commit: bo
         answer = backend_write.post(port, "/api/exchange-imports", source_bytes, "application/xml")
         return TypeAdapter(ImportReport).validate_python(answer)
     document = ArchimateModelExchangeReader(schema_path=str(schema) if schema else None).read(source_bytes)
-    return import_document(repo_root, document, commit=False)
+    return ArtifactWriteExchangeAdapter(repo_root).import_document(document, commit=False)
 
 
 def run_export(*, repo_root: Path, out: Path, scope: list[str] | None) -> ExportReport:

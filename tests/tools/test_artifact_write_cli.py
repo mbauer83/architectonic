@@ -34,13 +34,13 @@ class TestMainErrors:
                 main(["delete-entity", "REQ@1.AA.test"])
 
     def test_backend_not_running_returns_1(self, tmp_path) -> None:
-        with patch("src.infrastructure.write.artifact_write_cli.read_backend_state", return_value=None):
+        with patch("src.infrastructure.cli.backend_write.read_backend_state", return_value=None):
             result = main(["--repo-root", str(tmp_path), "delete-entity", "REQ@1.AA.test"])
         assert result == 1
 
     def test_backend_probe_fails_returns_1(self, tmp_path) -> None:
-        with patch("src.infrastructure.write.artifact_write_cli.read_backend_state",
+        with patch("src.infrastructure.cli.backend_write.read_backend_state",
                    return_value={"pid": 1, "port": 9999}):
-            with patch("src.infrastructure.write.artifact_write_cli.probe_backend", return_value=False):
+            with patch("src.infrastructure.cli.backend_write.probe_identity_on_port", return_value=None):
                 result = main(["--repo-root", str(tmp_path), "delete-entity", "REQ@1.AA.test"])
         assert result == 1

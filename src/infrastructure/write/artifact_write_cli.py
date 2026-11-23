@@ -3,17 +3,13 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
-from typing import Any
-from urllib.error import HTTPError, URLError
 from urllib.parse import quote
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
-from src.infrastructure.backend.backend_endpoint import claim_for_roots, port_serves_workspace
-from src.infrastructure.backend.backend_probe import backend_url, probe_backend
-from src.infrastructure.backend.backend_state import read_backend_state
+from src.infrastructure.backend.backend_probe import backend_url
+from src.infrastructure.cli import backend_write
 from src.infrastructure.workspace.workspace_init import load_init_state
 
 
@@ -64,28 +60,6 @@ def _delete_request(port: int, args: argparse.Namespace) -> Request:
     )
 
 
-def _port_serving(repo_root: Path) -> int | None:
-    """The port of the backend serving *this* repository, or None if none does.
-
-    A recorded port outlives the backend that wrote it, and on a machine running more than one
-    workspace another backend may hold it by then. Sending a delete to whatever answers would mutate
-    a repository the operator never named, so liveness alone is not enough to act on.
-    """
-    state = read_backend_state(repo_root)
-    if state is None:
-        return None
-    port = state["port"]
-    if not probe_backend(port):
-        return None
-    if not port_serves_workspace(port, claim_for_roots(repo_root, None)):
-        print(
-            f"The backend on port {port} does not serve {repo_root}; refusing to send a write to it.",
-            file=sys.stderr,
-        )
-        return None
-    return port
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -94,27 +68,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("No --repo-root given and no arch-init state found.")
     repo_root = Path(args.repo_root)
 
-    port = _port_serving(repo_root)
-    if port is None:
-        print(
-            f"arch-write-cli requires the arch-backend serving {repo_root} to be running. "
-            "Start it with: arch-backend --daemon",
-            file=sys.stderr,
-        )
-        return 1
-
-    req = _delete_request(port, args)
     try:
-        with urlopen(req, timeout=10.0) as resp:  # noqa: S310
-            payload = resp.read().decode("utf-8")
-            # A committed deletion answers 204 with no body; only a dry run has a plan to report.
-            result: dict[str, Any] = json.loads(payload) if payload.strip() else {}
-    except HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace").strip()
-        print(detail or str(exc), file=sys.stderr)
-        return 1
-    except (URLError, TimeoutError, OSError, ValueError) as exc:
-        print(f"Backend proxy failed: {exc}", file=sys.stderr)
+        port = backend_write.serving_port(repo_root)
+        result = backend_write.send(_delete_request(port, args), timeout=10)
+    except backend_write.BackendWriteError as exc:
+        print(str(exc), file=sys.stderr)
         return 1
 
     if result.get("content"):

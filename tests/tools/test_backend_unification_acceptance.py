@@ -80,11 +80,7 @@ def test_cli_targets_entity_remove_path(monkeypatch) -> None:
 
     from src.infrastructure.write import artifact_write_cli  # noqa: PLC0415
 
-    monkeypatch.setattr(artifact_write_cli, "read_backend_state", lambda path: {"port": 8000})
-    monkeypatch.setattr(artifact_write_cli, "probe_backend", lambda port: True)
-    # The CLI sends a write, so it confirms the backend on that port serves the repository it was
-    # given: a recorded port can by then belong to another workspace's backend.
-    monkeypatch.setattr(artifact_write_cli, "port_serves_workspace", lambda port, claim: True)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "serving_port", lambda root: 8000)
 
     captured: list[str] = []
 
@@ -94,7 +90,7 @@ def test_cli_targets_entity_remove_path(monkeypatch) -> None:
         def __enter__(self): return self
         def __exit__(self, *a): pass
 
-    monkeypatch.setattr(artifact_write_cli, "urlopen", lambda req, timeout=10.0: (
+    monkeypatch.setattr(artifact_write_cli.backend_write, "urlopen", lambda req, timeout=10.0: (
         captured.append(req.full_url) or _FakeResp()
     ))
 
@@ -111,11 +107,7 @@ def test_cli_targets_diagram_remove_path(monkeypatch) -> None:
 
     from src.infrastructure.write import artifact_write_cli  # noqa: PLC0415
 
-    monkeypatch.setattr(artifact_write_cli, "read_backend_state", lambda path: {"port": 8000})
-    monkeypatch.setattr(artifact_write_cli, "probe_backend", lambda port: True)
-    # The CLI sends a write, so it confirms the backend on that port serves the repository it was
-    # given: a recorded port can by then belong to another workspace's backend.
-    monkeypatch.setattr(artifact_write_cli, "port_serves_workspace", lambda port, claim: True)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "serving_port", lambda root: 8000)
 
     captured: list[str] = []
 
@@ -125,7 +117,7 @@ def test_cli_targets_diagram_remove_path(monkeypatch) -> None:
         def __enter__(self): return self
         def __exit__(self, *a): pass
 
-    monkeypatch.setattr(artifact_write_cli, "urlopen", lambda req, timeout=10.0: (
+    monkeypatch.setattr(artifact_write_cli.backend_write, "urlopen", lambda req, timeout=10.0: (
         captured.append(req.full_url) or _FakeResp()
     ))
 

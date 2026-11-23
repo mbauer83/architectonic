@@ -7,8 +7,7 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from src.infrastructure.backend.backend_endpoint import claim_for_roots, port_serves_workspace
-from src.infrastructure.backend.backend_probe import backend_url, probe_backend
+from src.infrastructure.backend.backend_probe import backend_url, probe_identity_on_port
 from src.infrastructure.backend.backend_state import read_backend_state
 
 
@@ -22,11 +21,12 @@ class BackendRefusal(BackendWriteError):
 
 def serving_port(root: Path) -> int:
     state = read_backend_state(root)
-    if state is None or not probe_backend(state["port"]):
+    identity = probe_identity_on_port(state["port"]) if state else None
+    if state is None or identity is None:
         raise BackendWriteError(f"Start arch-backend --daemon for {root} before issuing this command.")
     port = state["port"]
-    if not port_serves_workspace(port, claim_for_roots(root, None)):
-        raise BackendWriteError(f"The backend on port {port} does not serve {root}; refusing to send a write to it.")
+    if not identity.serves_engagement(root.resolve()):
+        raise BackendWriteError(f"The backend on port {port} does not serve {root} as its engagement.")
     return port
 
 
