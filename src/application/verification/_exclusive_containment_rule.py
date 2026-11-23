@@ -1,6 +1,5 @@
 """E340 — two wholes claiming one part through a relation that permits only one.
 
-Registered into `_GENERIC_REPOSITORY_CONTRIBUTIONS` on import, the same mechanism as W044 and E335.
 
 ArchiMate 4 defines composition by exclusivity, and says so in the ontology itself: `create_when`
 admits a composition when the target is an integral part of the source "and of that whole alone …
@@ -73,11 +72,3 @@ class ExclusiveContainmentContribution:
                     ctx.location,
                 )
             )
-
-
-_E340_SINGLETON = ExclusiveContainmentContribution()
-
-from src.domain.diagrams.diagram_verification import _GENERIC_REPOSITORY_CONTRIBUTIONS  # noqa: E402
-
-if not any(isinstance(c, ExclusiveContainmentContribution) for c in _GENERIC_REPOSITORY_CONTRIBUTIONS):
-    _GENERIC_REPOSITORY_CONTRIBUTIONS.append(_E340_SINGLETON)

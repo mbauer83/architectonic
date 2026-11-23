@@ -1,7 +1,4 @@
-"""WU-0.6: E335 — generic workspace-id uniqueness check.
-
-Registered into _GENERIC_REPOSITORY_CONTRIBUTIONS on import.
-"""
+"""WU-0.6: E335 — generic workspace-id uniqueness check."""
 
 from __future__ import annotations
 
@@ -120,16 +117,6 @@ def validate_workspace_entity_ids(
                     f"'{prefix}@EPOCH.RANDOM.SLUG'"
                 )
     return errors
-
-
-# ---------------------------------------------------------------------------
-# Register E335 into the central generic registry (idempotent, import-time)
-# ---------------------------------------------------------------------------
-from src.domain.diagrams.diagram_verification import _GENERIC_REPOSITORY_CONTRIBUTIONS  # noqa: E402
-
-_E335_SINGLETON = WorkspaceIdUniquenessContribution()
-if not any(isinstance(c, WorkspaceIdUniquenessContribution) for c in _GENERIC_REPOSITORY_CONTRIBUTIONS):
-    _GENERIC_REPOSITORY_CONTRIBUTIONS.append(_E335_SINGLETON)
 
 
 def committed_workspace_entity_ids(fm: dict, module: object) -> set[str]:

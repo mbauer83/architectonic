@@ -268,6 +268,6 @@ def test_validate_format_diagram_scoped_entity_ignored():
 
 def test_e335_registered_in_generic_registry():
     """WorkspaceIdUniquenessContribution is present in the central generic registry."""
-    from src.domain.diagrams.diagram_verification import get_generic_repository_contributions
-    generic = get_generic_repository_contributions()
+    from src.application.verification._verifier_contribution_runner import GENERIC_REPOSITORY_CONTRIBUTIONS
+    generic = GENERIC_REPOSITORY_CONTRIBUTIONS
     assert any(isinstance(c, WorkspaceIdUniquenessContribution) for c in generic)
