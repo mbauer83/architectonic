@@ -22,7 +22,7 @@ Three rules make a graph-derived value trustworthy, and all three are enforced h
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from time import monotonic
 
@@ -210,6 +210,7 @@ def _reached(
     *,
     bounds: DerivationBounds,
     deadline: float,
+    now: Callable[[], float],
 ) -> tuple[dict[str, int], bool]:
     """Everything `start` transitively relies on, with the hop it was first reached at.
 
@@ -222,7 +223,7 @@ def _reached(
     for hop in range(1, bounds.max_hops + 1):
         next_frontier: list[str] = []
         for node in frontier:
-            if monotonic() > deadline:
+            if now() > deadline:
                 return reached, True
             for target in outgoing.get(node, []):
                 if target == start or target in reached:
@@ -269,6 +270,7 @@ def common_cause_report(
     edges: Sequence[TypedEdge],
     *,
     bounds: DerivationBounds = DEFAULT_BOUNDS,
+    now: Callable[[], float] = monotonic,
 ) -> CommonCauseReport:
     """Pairs that are redundant on paper but share a transitive dependency.
 
@@ -281,12 +283,12 @@ def common_cause_report(
     two elements serving the same dependents, so there is no declared attribute to contradict.
     """
     outgoing = _outgoing(edges)
-    deadline = monotonic() + bounds.time_budget_seconds
+    deadline = now() + bounds.time_budget_seconds
     found: list[CommonCause] = []
     truncated = False
     for left, right in pairs:
-        left_reach, left_cut = _reached(left, outgoing, bounds=bounds, deadline=deadline)
-        right_reach, right_cut = _reached(right, outgoing, bounds=bounds, deadline=deadline)
+        left_reach, left_cut = _reached(left, outgoing, bounds=bounds, deadline=deadline, now=now)
+        right_reach, right_cut = _reached(right, outgoing, bounds=bounds, deadline=deadline, now=now)
         cut = left_cut or right_cut
         truncated = truncated or cut
         for ancestor in sorted(set(left_reach) & set(right_reach)):
@@ -306,9 +308,10 @@ def common_cause_exposure(
     edges: Sequence[TypedEdge],
     *,
     bounds: DerivationBounds = DEFAULT_BOUNDS,
+    now: Callable[[], float] = monotonic,
 ) -> tuple[CommonCause, ...]:
     """The exposures alone, for callers that do not surface truncation."""
-    return common_cause_report(pairs, edges, bounds=bounds).exposures
+    return common_cause_report(pairs, edges, bounds=bounds, now=now).exposures
 
 
 def interchangeable_pairs(edges: Sequence[TypedEdge]) -> tuple[tuple[str, str], ...]:

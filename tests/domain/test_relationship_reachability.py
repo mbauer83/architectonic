@@ -212,3 +212,20 @@ def test_reachability_never_traverses_dangling_connections_or_returns_partial_re
 
     with pytest.raises(DerivationLimitError):
         derive_relationships(_request(frozenset({"A"}), limit=1), read_access=graph, registries=_catalog())
+
+
+def test_clock_controls_the_reachability_cutoff() -> None:
+    graph = _Graph(
+        {identifier: _entity(identifier) for identifier in ("A", "B", "C")},
+        [
+            _connection("CON@a", "A", "B", "archimate-assignment"),
+            _connection("CON@b", "B", "C", "archimate-realization"),
+        ],
+    )
+    request = _request(frozenset({"A"}))
+    complete = derive_relationships(request, read_access=graph, registries=_catalog(), now=lambda: 0.0)
+    expired = derive_relationships(
+        request, read_access=graph, registries=_catalog(), now=iter((0.0, 100.0)).__next__
+    )
+    assert complete.relationships and not complete.truncated
+    assert expired.truncated and not expired.relationships
