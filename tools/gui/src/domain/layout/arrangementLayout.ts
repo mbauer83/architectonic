@@ -22,6 +22,8 @@ import type { Route } from './orthogonal'
 import type { Arrangement } from './lab/labArrangement'
 import { drawnArrangement } from './lab/labArrangement'
 import { placementOf } from './lab/labRouting'
+import { statedWhole } from './lab/labRouteEdits'
+import type { RoutedConnector } from './routing/scene'
 
 /** *geometry* less the elements *removed* names, by alias, and every line into them. */
 export const withoutElements = (geometry: LayoutGeometry, removed: ReadonlySet<string>): LayoutGeometry =>
@@ -189,3 +191,22 @@ export const arrangedUnits = (
 export const shapedLines = (geometry: LayoutGeometry, before: Arrangement, after: Arrangement): readonly number[] =>
   geometry.relations.filter((relation) => relation.key !== undefined
     && !sameRoute(before.routes.get(relation.key), after.routes.get(relation.key))).map((relation) => relation.index)
+
+/**
+ * What Save states for the lines the session moved (owner, 2026-11-24): each line with an end on an
+ * element now placed elsewhere than in *reference* is written as the course the editor showed, so a
+ * saved diagram keeps the lines that were seen. Lines nothing moved stay the router's, and a route the
+ * user stated by hand (*stated*) is kept as stated.
+ */
+export const shownRoutesOfMoved = (
+  geometry: LayoutGeometry, reference: Arrangement, now: Arrangement,
+  routed: ReadonlyMap<string, RoutedConnector>,
+): Record<string, Route> => {
+  const moved = (alias: string) => !sameExtent(reference.elements.get(alias), now.elements.get(alias))
+  return Object.fromEntries(geometry.relations.flatMap((relation): [string, Route][] => {
+    const connector = routed.get(String(relation.index))
+    if (relation.key === undefined || now.routes.has(relation.key) || connector === undefined) return []
+    return moved(relation.source) || moved(relation.target) ? [[relation.key, statedWhole(connector)]] : []
+  }))
+}
+

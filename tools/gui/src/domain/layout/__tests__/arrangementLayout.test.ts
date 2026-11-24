@@ -6,7 +6,10 @@
 import { describe, expect, it } from 'vitest'
 import type { Extent } from '../geometry'
 import type { LayoutGeometry } from '../../schemas/diagramLayoutGeometry'
-import { arrangedBy, arrangedUnits, layoutOf, layoutPatchBetween, patchIsEmpty, shapedLines } from '../arrangementLayout'
+import {
+  arrangedBy, arrangedUnits, layoutOf, layoutPatchBetween, patchIsEmpty, shapedLines, shownRoutesOfMoved,
+} from '../arrangementLayout'
+import type { RoutedConnector } from '../routing/scene'
 import { drawnArrangement, moved, resized } from '../lab/labArrangement'
 import { placementOf } from '../lab/labRouting'
 import { LINE_DRAWING, SHAPE_DRAWING } from '../lab/__tests__/labDrawingFixtures'
@@ -118,3 +121,29 @@ describe('a line\'s stated route', () => {
     expect(one.routes.get('r')?.via?.at(-1)).toEqual([360, 90])
   })
 })
+
+describe('what Save states for the lines the session moved', () => {
+  const routed = new Map<string, RoutedConnector>([['0', {
+    key: '0', sourcePort: { side: 'right', at: 0.5 }, targetPort: { side: 'left', at: 0.5 },
+    course: [{ x: 240, y: 60 }, { x: 320, y: 60 }, { x: 320, y: 120 }, { x: 400, y: 120 }],
+  }]])
+  const before = drawnArrangement(geometry)
+
+  it('states the shown course of a line whose end moved', () => {
+    const now = moved(geometry, before, 'C', 0, 60)
+    expect(shownRoutesOfMoved(geometry, before, now, routed)).toEqual({
+      r: { from: { side: 'right', at: 0.5 }, to: { side: 'left', at: 0.5 }, via: [[320, 60], [320, 120]] },
+    })
+  })
+
+  it('leaves a line nothing moved to the router', () => {
+    expect(shownRoutesOfMoved(geometry, before, before, routed)).toEqual({})
+  })
+
+  it('keeps a route the user stated', () => {
+    const stated = new Map([['r', { via: [[300, 70]] as [number, number][] }]])
+    const now = { ...moved(geometry, before, 'C', 0, 60), routes: stated }
+    expect(shownRoutesOfMoved(geometry, before, now, routed)).toEqual({})
+  })
+})
+

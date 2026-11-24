@@ -14,8 +14,9 @@ import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type { ArrangedLayout, StoredLayout } from '../../domain/layout/arrangementLayout'
 import {
-  arrangedBy, arrangedUnits, layoutOf, layoutPatchBetween, patchIsEmpty,
+  arrangedBy, arrangedUnits, layoutOf, layoutPatchBetween, patchIsEmpty, shownRoutesOfMoved,
 } from '../../domain/layout/arrangementLayout'
+import type { Arrangement } from '../../domain/layout/lab/labArrangement'
 import { drawnArrangement } from '../../domain/layout/lab/labArrangement'
 import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
@@ -110,8 +111,7 @@ export function useDiagramEditing(
       return [...(before.byHand ? [{ key: 'automatic', text: 'Returned to automatic layout' }] : []),
         ...added, ...removed, ...model]
     }
-    const reference = before.byHand ? before.arrangement
-      : (now.takenOver ?? widenedArrangement(geometry, before.arrangement))
+    const reference = referenceOf(geometry, before, now)
     const takenOver: PendingChange[] = before.byHand ? []
       : [{ key: 'by-hand', text: 'Arranged by hand: new elements will be placed beside their neighbours' }]
     return [
@@ -123,10 +123,20 @@ export function useDiagramEditing(
     ]
   })
 
+  /** What the session's arranging is counted against: the last save, or the picture it took over. */
+  const referenceOf = (geometry: LayoutGeometry, before: ArrangementState, now: ArrangementState): Arrangement =>
+    before.byHand ? before.arrangement : (now.takenOver ?? widenedArrangement(geometry, before.arrangement))
+
   const wanted = (): ArrangedLayout | null => {
     const geometry = session.geometry.value
     const now = session.state.value
-    return geometry && now?.byHand ? layoutOf(geometry, now.arrangement) : null
+    if (!geometry || !now?.byHand) return null
+    const layout = layoutOf(geometry, now.arrangement)
+    const before = saved.value
+    const routed = session.routes.value?.routes
+    if (!before || !routed) return layout
+    const shown = shownRoutesOfMoved(geometry, referenceOf(geometry, before, now), now.arrangement, routed)
+    return { ...layout, relations: { ...shown, ...layout.relations } }
   }
 
   /** The entity ids the session removed from the diagram, from the picture as drawn. */
