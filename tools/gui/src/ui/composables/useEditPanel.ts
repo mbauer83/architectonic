@@ -1,17 +1,8 @@
 import { computed, ref } from 'vue'
+import { rememberFlag, rememberedFlag } from '../lib/rememberedFlag'
 
 /** Remembered per browser: a reader who closes the panel to arrange wants it closed next time too. */
 const PANEL_KEY = 'arch_diagram_edit_panel'
-
-const remembered = (): boolean | null => {
-  try {
-    const value = localStorage.getItem(PANEL_KEY)
-    return value === null ? null : value === '1'
-  } catch { return null }
-}
-const remember = (open: boolean): void => {
-  try { localStorage.setItem(PANEL_KEY, open ? '1' : '0') } catch { /* storage refused: for this page only */ }
-}
 
 /**
  * The edit mode's panel beside the canvas (owner, Q22): open or closed from the panel icon at the end
@@ -24,7 +15,7 @@ export function useEditPanel(large: () => boolean) {
   return {
     open: computed(() => open.value),
     /** Edit mode was entered: the remembered choice, or the default for this diagram's size. */
-    opened: () => { open.value = remembered() ?? !large() },
-    toggle: () => { open.value = !open.value; remember(open.value) },
+    opened: () => { open.value = rememberedFlag(PANEL_KEY) ?? !large() },
+    toggle: () => { open.value = !open.value; rememberFlag(PANEL_KEY, open.value) },
   }
 }

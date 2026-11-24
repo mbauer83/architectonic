@@ -7,6 +7,7 @@ import { DEFAULT_REACH, reachOf, type Reach, type ReadingRelation } from '../../
 import { derivedOf, notDrawnOf } from '../../domain/diagramReadingLists'
 import { paintReading, type FlowOf } from '../lib/diagramReadingPaint'
 import { onReducedMotionChange, readerPrefersReducedMotion } from '../lib/motionPreference'
+import { rememberFlag, rememberedFlag } from '../lib/rememberedFlag'
 
 /** What the reader needs of the picture's selection: the selected entities and what everything is drawn as. */
 export interface ReaderSelection {
@@ -18,10 +19,6 @@ export interface ReaderSelection {
 
 /** The flow toggle is remembered per browser: a reader who wants it on wants it on everywhere. */
 const FLOW_KEY = 'arch_diagram_reading_flow'
-const remembered = (): boolean => { try { return localStorage.getItem(FLOW_KEY) === '1' } catch { return false } }
-const remember = (on: boolean): void => {
-  try { localStorage.setItem(FLOW_KEY, on ? '1' : '0') } catch { /* storage refused: remembered for this page only */ }
-}
 
 /**
  * The diagram reader (B97) on a diagram page in view mode: select, and the rest steps back.
@@ -42,7 +39,7 @@ export function useDiagramReader(options: {
 }) {
   const { svc, context, viewing, selection } = options
   const reach = ref<Reach>(DEFAULT_REACH)
-  const flowOn = ref(remembered())
+  const flowOn = ref(rememberedFlag(FLOW_KEY) ?? false)
   const reducedMotion = ref(readerPrefersReducedMotion())
   onUnmounted(onReducedMotionChange((reduced) => { reducedMotion.value = reduced }))
 
@@ -123,7 +120,7 @@ export function useDiagramReader(options: {
     toggleFlow: () => {
       if (reducedMotion.value) return
       flowOn.value = !flowOn.value
-      remember(flowOn.value)
+      rememberFlag(FLOW_KEY, flowOn.value)
     },
   }
 }
