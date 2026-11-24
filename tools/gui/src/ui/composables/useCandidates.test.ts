@@ -5,7 +5,7 @@ import type { CandidateComparison, CandidateSummary } from '../../domain/schemas
 import { type CandidateAccess, useCandidates } from './useCandidates'
 
 const candidate = (id: string, parent: string | null = null): CandidateSummary =>
-  ({ id, name: `${id} name`, state: 'draft', parent })
+  ({ id, name: `${id} name`, state: 'draft', parent, scope: [], operations: 0 })
 
 const comparisonOf = (id: string, base: string): CandidateComparison =>
   ({ candidate: id, base, standing: [], stack: [], view: { entities: [], connections: [] }, diff: [] })

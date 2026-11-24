@@ -1,27 +1,8 @@
 /**
  * The candidate architectures as a catalogue: each stack under the scope its root was started over,
- * each candidate below what it stacks on. A candidate's scope and its operations are read off its
- * record (`changes_read_candidate`); the list read names only what each stacks on.
+ * each candidate below what it stacks on, as the list read names them.
  */
 import type { CandidateSummary } from '../schemas/candidates'
-
-/** What a candidate's record says beyond its summary. */
-export interface CandidateFacts {
-  /** The model's entities it is read over, by id; empty for one started empty or stacked on another. */
-  readonly scope: readonly string[]
-  readonly operations: number
-}
-
-const strings = (value: unknown): readonly string[] =>
-  Array.isArray(value) ? value.filter((one): one is string => typeof one === 'string') : []
-
-/** A candidate's scope and how many operations it records, read off its recorded form. */
-export const factsOf = (record: Readonly<Record<string, unknown>>): CandidateFacts => {
-  const changes = record.changes
-  const operations = typeof changes === 'object' && changes !== null && 'operations' in changes
-    && Array.isArray(changes.operations) ? changes.operations.length : 0
-  return { scope: strings(record.scope), operations }
-}
 
 /** One line of the catalogue: a candidate, and how deep it stacks under its group's root. */
 export interface CatalogRow {
@@ -43,7 +24,7 @@ const byName = (a: CandidateSummary, b: CandidateSummary): number => a.name.loca
  * where the walk first meets it, so nothing is left out.
  */
 export const catalogOf = (
-  candidates: readonly CandidateSummary[], facts: ReadonlyMap<string, CandidateFacts>,
+  candidates: readonly CandidateSummary[],
 ): readonly ScopeGroup[] => {
   const known = new Set(candidates.map((one) => one.id))
   const children = new Map<string, CandidateSummary[]>()
@@ -62,7 +43,7 @@ export const catalogOf = (
   for (const root of [...roots, ...[...candidates].sort(byName)]) {
     const rows = walk(root, 0)
     if (!rows.length) continue
-    const scope = [...(facts.get(root.id)?.scope ?? [])].sort()
+    const scope = [...root.scope].sort()
     const key = scope.join('\n')
     const group = groups.get(key) ?? { scope, rows: [] }
     group.rows.push(...rows)
@@ -74,5 +55,5 @@ export const catalogOf = (
 /** A group's heading: what its roots were started over. */
 export const scopeLabel = (scope: readonly string[]): string =>
   scope.length === 0
-    ? 'No scope: started empty, or scope not read yet'
+    ? 'No scope: started empty'
     : `Scope of ${scope.length} element${scope.length === 1 ? '' : 's'}`

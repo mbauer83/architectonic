@@ -5914,8 +5914,18 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /**
+             * Operations
+             * @description How many operations it records itself, not counting what it stacks on.
+             */
+            operations: number;
             /** Parent */
             parent: string | null;
+            /**
+             * Scope
+             * @description The model's entities it is read over, by id; empty when started empty.
+             */
+            scope: string[];
             /** State */
             state: string;
         };

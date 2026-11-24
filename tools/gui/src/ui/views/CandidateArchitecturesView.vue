@@ -198,7 +198,7 @@ onMounted(async () => {
               </RouterLink>
             </td>
             <td><span class="state">{{ row.candidate.state }}</span></td>
-            <td>{{ catalog.facts.value.get(row.candidate.id)?.operations ?? '—' }}</td>
+            <td>{{ row.candidate.operations }}</td>
             <td class="row-acts">
               <button
                 type="button"

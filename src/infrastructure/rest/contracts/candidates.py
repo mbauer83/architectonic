@@ -57,6 +57,8 @@ class CandidateSummary(Closed):
     name: str
     state: str
     parent: str | None
+    scope: list[str] = Field(description="The model's entities it is read over, by id; empty when started empty.")
+    operations: int = Field(description="How many operations it records itself, not counting what it stacks on.")
 
 
 class CandidateList(Closed):

@@ -46,6 +46,8 @@ def test_agents_and_canvas_share_versions_and_composed_diffs(tmp_path: Path, mon
         diff = mcp.change_set_read(ref, "diff", repo_root=str(root))
         assert client.get(path + "/diff").json() == diff
         assert diff["diff"][0]["fields"]["name"] == {"before": None, "after": "Queue"}
+        (listed,) = client.get("/api/change-sets").json()["candidates"]
+        assert (listed["scope"], listed["operations"]) == ([], 1)
         assert client.post("/api/change-set-checks", json={"candidates": [ref]}).json() == mcp.change_set_check(
             [ref], str(root)
         )

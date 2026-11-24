@@ -16,6 +16,8 @@ export const CandidateSummarySchema = Schema.Struct({
   name: Schema.String,
   state: Schema.String,
   parent: Schema.NullOr(Schema.String),
+  scope: Schema.Array(Schema.String),
+  operations: Schema.Number,
 })
 export type CandidateSummary = typeof CandidateSummarySchema.Type
 

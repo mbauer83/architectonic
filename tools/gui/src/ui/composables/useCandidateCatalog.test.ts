@@ -1,30 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { Effect } from 'effect'
-import { NetworkError } from '../../domain/errors'
 import type { CandidateSummary } from '../../domain/schemas/candidates'
 import type { CandidateAccess } from './useCandidates'
 import { useCandidateCatalog } from './useCandidateCatalog'
 
-const candidate = (id: string, parent: string | null = null): CandidateSummary =>
-  ({ id, name: `${id} name`, state: 'draft', parent })
+const candidate = (id: string, parent: string | null = null, scope: readonly string[] = []): CandidateSummary =>
+  ({ id, name: `${id} name`, state: 'draft', parent, scope, operations: 0 })
 
-const RECORDS: Record<string, Record<string, unknown>> = {
-  naive: { id: 'naive', scope: ['e1', 'e2'], changes: { operations: [{}, {}] } },
-  queue: { id: 'queue', parent: 'naive', changes: { operations: [{}] } },
-}
-
-const fakeAccess = (store: CandidateSummary[]): CandidateAccess => ({
+const fakeAccess = (store: CandidateSummary[], reads: string[] = []): CandidateAccess => ({
   listCandidates: () => Effect.succeed([...store]),
-  createCandidate: (record) => {
+  createCandidate: () => {
     store.push(candidate('empty'))
-    RECORDS.empty = { id: 'empty', ...record, changes: { operations: [] } }
-    return Effect.succeed({ record: RECORDS.empty, version: 'v1' })
+    return Effect.succeed({ record: { id: 'empty' }, version: 'v1' })
   },
   readCandidate: (id) => {
-    const record = RECORDS[id]
-    return record
-      ? Effect.succeed({ record, version: 'v1' })
-      : Effect.fail(new NetworkError({ status: 404, message: `${id} not found` }))
+    reads.push(id)
+    return Effect.die('the list carries what the catalogue shows')
   },
   rebaseCandidate: () => Effect.die('not used'),
   compareCandidate: () => Effect.die('not used'),
@@ -35,23 +26,22 @@ const fakeAccess = (store: CandidateSummary[]): CandidateAccess => ({
 })
 
 describe('useCandidateCatalog', () => {
-  it('lists every candidate with what its record says, grouped by its root\'s scope', async () => {
-    const catalog = useCandidateCatalog(fakeAccess([candidate('naive'), candidate('queue', 'naive'), candidate('lost')]))
+  it('groups every candidate by its root\'s scope from the list read alone', async () => {
+    const reads: string[] = []
+    const catalog = useCandidateCatalog(fakeAccess(
+      [candidate('naive', null, ['e1', 'e2']), candidate('queue', 'naive'), candidate('lost')], reads))
     await catalog.refresh()
-    expect(catalog.facts.value.get('naive')).toEqual({ scope: ['e1', 'e2'], operations: 2 })
-    expect(catalog.facts.value.get('queue')).toEqual({ scope: [], operations: 1 })
-    // A record that cannot be read leaves its candidate listed, without facts.
-    expect(catalog.facts.value.has('lost')).toBe(false)
     expect(catalog.groups.value.map((group) => group.rows.map((row) => row.candidate.id)))
       .toEqual([['lost'], ['naive', 'queue']])
+    expect(reads).toEqual([])
   })
 
-  it('reads the facts again after a create and a delete', async () => {
+  it('lists again after a create and a delete', async () => {
     const catalog = useCandidateCatalog(fakeAccess([candidate('naive')]))
     await catalog.refresh()
     expect(await catalog.create({ name: 'Empty' })).toBe('empty')
-    expect(catalog.facts.value.get('empty')).toEqual({ scope: [], operations: 0 })
+    expect(catalog.candidates.all.value.map((one) => one.id)).toContain('empty')
     expect(await catalog.remove('empty')).toBe(true)
-    expect(catalog.facts.value.has('empty')).toBe(false)
+    expect(catalog.candidates.all.value.map((one) => one.id)).not.toContain('empty')
   })
 })

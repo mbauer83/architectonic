@@ -47,7 +47,8 @@ class CandidateService:
         self.registry = ArtifactRegistry(self.index)
 
     def list(self) -> list[dict[str, Any]]:
-        return [{"id": c.id, "name": c.name, "state": c.state, "parent": c.parent_id}
+        return [{"id": c.id, "name": c.name, "state": c.state, "parent": c.parent_id,
+                 "scope": list(c.scope), "operations": len(c.changes.operations)}
                 for c in self.store.list()]
 
     def read(self, ref: str) -> dict[str, Any]:
