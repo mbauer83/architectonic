@@ -18,9 +18,10 @@ import type { Route } from '../../../domain/layout/orthogonal'
 import { courseOf } from '../../../domain/layout/orthogonal'
 import type { End } from '../../../domain/layout/lab/labRouteEdits'
 import {
-  bendsShown, labelAnchoredAt, labelCentre, lineEndNear, portNear, segmentMoved, statedWhole, tidiedRoute,
-  withBendAdded, withBendAt, withBendRemoved, withEndAt, withRouteStated,
+  bendsShown, labelAnchoredAt, labelCentre, lineAt, lineEndNear, portNear, segmentMoved, tidiedRoute,
+  wholeRoute, withBendAdded, withBendAt, withBendRemoved, withEndAt, withRouteStated,
 } from '../../../domain/layout/lab/labRouteEdits'
+import { MIDDLE } from '../../../domain/layout/lab/labLineDrawing'
 import type { RoutedConnector } from '../../../domain/layout/routing/scene'
 import type { ArrangementSession } from '../../composables/useArrangementSession'
 import { followingPointer, pointOnPicture } from './pointerOnPicture'
@@ -58,11 +59,11 @@ export function useLineGesture(
   const movingLabel = ref(false)
   let pressed: Pressed | null = null
 
-  const relation = computed(() => session.geometry.value?.relations.find((one) => one.index === line.value) ?? null)
+  const selected = computed(() => lineAt(session.geometry.value, session.arrangement.value, line.value))
+  const relation = computed(() => selected.value.relation)
   const routed = computed(() =>
     (line.value === null ? null : session.routes.value?.routes.get(String(line.value)) ?? null))
-  const stated = computed((): Route =>
-    (relation.value?.key === undefined ? {} : session.arrangement.value?.routes.get(relation.value.key) ?? {}))
+  const stated = computed((): Route => selected.value.stated)
   /** The bends the selected line shows as handles. */
   const bends = computed((): Point[] => (routed.value ? bendsShown(routed.value.course, stated.value) : []))
 
@@ -99,10 +100,9 @@ export function useLineGesture(
   }
   const pressLabel = (event: PointerEvent, index: number) => {
     const course = session.courses.value.get(index)
-    const key = session.geometry.value?.relations.find((one) => one.index === index)?.key
-    const anchor = key === undefined ? undefined : session.arrangement.value?.routes.get(key)?.label
     if (!course) return
-    const centre = anchor ? labelCentre(course, anchor) : labelCentre(course, { at: 0.5, dx: 0, dy: 0 })
+    const { stated: route } = lineAt(session.geometry.value, session.arrangement.value, index)
+    const centre = labelCentre(course, route.label ?? MIDDLE)
     const at = pointOnPicture(svg.value, event)
     begin(event, index, { kind: 'label', grab: { x: at.x - centre.x, y: at.y - centre.y } })
   }
@@ -145,8 +145,7 @@ export function useLineGesture(
       return { route: tidiedRoute(course, start.routed, 0, start.stated), course }
     }
     if (drag.kind === 'bend') {
-      const whole = start.stated.via?.length ? start.stated : statedWhole(start.routed, start.stated)
-      return { route: withBendAt(whole, drag.index, at), course: null }
+      return { route: withBendAt(wholeRoute(start.stated, start.routed), drag.index, at), course: null }
     }
     const centre = { x: at.x - drag.grab.x, y: at.y - drag.grab.y }
     return { route: { ...start.stated, label: labelAnchoredAt(start.routed.course, centre) }, course: null }
@@ -218,8 +217,7 @@ export function useLineGesture(
     if (line.value === null) return
     event.stopPropagation()
     if (bendIndex !== null) {
-      restate((route, routedNow) =>
-        withBendRemoved(route.via?.length ? route : statedWhole(routedNow, route), bendIndex))
+      restate((route, routedNow) => withBendRemoved(wholeRoute(route, routedNow), bendIndex))
       bend.value = null
       return
     }
@@ -231,7 +229,7 @@ export function useLineGesture(
   const removePickedBend = (): boolean => {
     const picked = bend.value
     if (picked === null || line.value === null) return false
-    restate((route, routedNow) => withBendRemoved(route.via?.length ? route : statedWhole(routedNow, route), picked))
+    restate((route, routedNow) => withBendRemoved(wholeRoute(route, routedNow), picked))
     bend.value = null
     return true
   }

@@ -18,6 +18,7 @@ import type { Bend, LabelAnchor, Port, Route, Side } from '../orthogonal'
 import { IN_LINE, OUTWARD, fractionAlong, halfUp, leavesLevel, pointAlong, portPoint } from '../orthogonal'
 import { runFor } from '../routing/scene'
 import type { RoutedConnector } from '../routing/scene'
+import type { GeometryRelation, LayoutGeometry } from '../../schemas/diagramLayoutGeometry'
 import type { Arrangement } from './labArrangement'
 
 /** Which end of a line: its source (`from`) or its target (`to`), as a route names them. */
@@ -36,6 +37,19 @@ export const statedWhole = (routed: RoutedConnector, stated?: Route): Route => (
   to: routed.targetPort,
   via: routed.course.slice(1, -1).map(bend),
 })
+
+/** *stated* where it states its bends, else the whole route *routed* runs: what a bend edit starts from. */
+export const wholeRoute = (stated: Route, routed: RoutedConnector): Route =>
+  (stated.via?.length ? stated : statedWhole(routed, stated))
+
+/** The relation drawn at *index* on *geometry*, and the route *arrangement* states for it ({} where none). */
+export const lineAt = (
+  geometry: LayoutGeometry | null, arrangement: Arrangement | null, index: number | null,
+): { readonly relation: GeometryRelation | null; readonly stated: Route } => {
+  const relation = geometry?.relations.find((one) => one.index === index) ?? null
+  const stated = relation?.key === undefined ? undefined : arrangement?.routes.get(relation.key)
+  return { relation, stated: stated ?? {} }
+}
 
 /**
  * The bends a selected line shows as handles: the stated ones where its route states them, else the
@@ -118,7 +132,7 @@ const footOn = (start: Point, end: Point, point: Point): Point => {
 
 /** The whole route of *routed* with a bend added where *point* falls on its course: it stays until moved. */
 export const withBendAdded = (routed: RoutedConnector, point: Point, stated?: Route): Route => {
-  const whole = stated?.via?.length ? stated : statedWhole(routed, stated)
+  const whole = wholeRoute(stated ?? {}, routed)
   const course = routed.course
   const index = segmentNearest(course, point)
   const added = footOn(course[index], course[index + 1], point)

@@ -8,7 +8,7 @@
 import { computed, ref } from 'vue'
 import type { Route, Side } from '../../domain/layout/orthogonal'
 import type { End } from '../../domain/layout/lab/labRouteEdits'
-import { straightened, withEndAt, withRouteStated } from '../../domain/layout/lab/labRouteEdits'
+import { lineAt, straightened, withEndAt, withRouteStated } from '../../domain/layout/lab/labRouteEdits'
 import type { DiagramEditing } from '../composables/useDiagramEditing'
 
 const props = defineProps<{ editing: DiagramEditing; line: number }>()
@@ -18,11 +18,10 @@ const SIDES: readonly Side[] = ['top', 'right', 'bottom', 'left']
 const session = props.editing.session
 const page = ref<'top' | 'sides'>('top')
 
-const relation = computed(() =>
-  session.geometry.value?.relations.find((one) => one.index === props.line) ?? null)
+const selected = computed(() => lineAt(session.geometry.value, session.arrangement.value, props.line))
+const relation = computed(() => selected.value.relation)
 const nameOf = (alias: string) => session.geometry.value?.elements.find((one) => one.alias === alias)?.label ?? alias
-const stated = computed((): Route =>
-  (relation.value?.key === undefined ? {} : session.arrangement.value?.routes.get(relation.value.key) ?? {}))
+const stated = computed((): Route => selected.value.stated)
 const sideNow = (end: End): Side | undefined =>
   stated.value[end]?.side
   ?? session.routes.value?.routes.get(String(props.line))?.[end === 'from' ? 'sourcePort' : 'targetPort'].side

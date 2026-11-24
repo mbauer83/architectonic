@@ -11,7 +11,7 @@
 import type { Point } from '../geometry'
 import { distanceBetween } from '../geometry'
 import type { LabelAnchor } from '../orthogonal'
-import { pointAlong } from '../orthogonal'
+import { labelCentre } from './labRouteEdits'
 import type { DrawingNode, LineDrawing, LineEnd } from '../../schemas/diagramLayoutGeometry'
 
 /** How round a bend is drawn. */
@@ -102,6 +102,9 @@ export const transformOf = ({ pivot, to, degrees }: Motion): string =>
   `translate(${written(to.x)} ${written(to.y)}) rotate(${written(degrees)}) `
   + `translate(${written(-pivot.x)} ${written(-pivot.y)})`
 
+/** Where a label no anchor states is drawn: the middle of its line. */
+export const MIDDLE: LabelAnchor = { at: 0.5, dx: 0, dy: 0 }
+
 export interface DrawnLine {
   readonly line: DrawingNode
   readonly ends: readonly { readonly marks: readonly DrawingNode[]; readonly transform: string }[]
@@ -115,8 +118,7 @@ export interface DrawnLine {
  */
 export const drawnLine = (drawing: LineDrawing, course: readonly Point[], anchor?: LabelAnchor): DrawnLine => {
   const [atSource, atTarget] = drawing.ends
-  const base = pointAlong(course, anchor?.at ?? 0.5)
-  const labelAt = { x: base.x + (anchor?.dx ?? 0), y: base.y + (anchor?.dy ?? 0) }
+  const labelAt = labelCentre(course, anchor ?? MIDDLE)
   const labelShift = (centre: readonly [number, number]): string =>
     `translate(${written(labelAt.x - centre[0])} ${written(labelAt.y - centre[1])})`
   const d = roundedPath(stoppingShort(course, atSource.gap, atTarget.gap))
