@@ -123,7 +123,11 @@ const leaderLine = computed(() => {
 .lab-line-handles__segment.is-upright { cursor: ew-resize; }
 .lab-line-handles__end, .lab-line-handles__bend, .lab-line-handles__segment { vector-effect: non-scaling-stroke; }
 .lab-line-handles__leader {
-  stroke: var(--paper-accent); stroke-width: 1px; stroke-dasharray: 2 2; pointer-events: none; vector-effect: non-scaling-stroke;
+  stroke: var(--paper-accent);
+  stroke-width: 1px;
+  stroke-dasharray: 2 2;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
 }
 .lab-line-handles__anchor { fill: var(--paper-accent); pointer-events: none; }
 </style>

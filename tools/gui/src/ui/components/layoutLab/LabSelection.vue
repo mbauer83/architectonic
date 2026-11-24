@@ -82,6 +82,10 @@ const resizable = computed((): Extent | null =>
 .lab-handles__handle--nw, .lab-handles__handle--se { cursor: nwse-resize; }
 /* The rectangle that selects what it encloses: dashed, so it reads as a gesture, not a shape. */
 .lab-rectangle {
-  fill: var(--paper-accent-soft); stroke: var(--paper-accent); stroke-width: 1px; stroke-dasharray: 4 3; pointer-events: none;
+  fill: var(--paper-accent-soft);
+  stroke: var(--paper-accent);
+  stroke-width: 1px;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
 }
 </style>
