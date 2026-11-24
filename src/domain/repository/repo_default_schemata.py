@@ -11,10 +11,10 @@ from __future__ import annotations
 from src.domain.repository.repo_default_arc42 import ARC42_DOCUMENT_SCHEMA
 from src.domain.repository.repo_default_assurance_schemata import ASSURANCE_ATTRIBUTE_SCHEMATA
 from src.domain.repository.repo_default_attribute_schemata import ARCHIMATE_ATTRIBUTE_SCHEMATA
-from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_SCHEMA
+from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS, STRESS_ANALYSIS_SCHEMA
 
 BASE_DOCUMENT_SCHEMAS: dict[str, dict] = {
-    "stress-analysis": STRESS_ANALYSIS_SCHEMA,
+    STRESS_ANALYSIS: STRESS_ANALYSIS_SCHEMA,
     "arc42": ARC42_DOCUMENT_SCHEMA,
     "adr": {
         "abbreviation": "ADR",

@@ -25,6 +25,7 @@ import AdaptationsTab from '../components/stressWorkspace/AdaptationsTab.vue'
 import IntegrationTab from '../components/stressWorkspace/IntegrationTab.vue'
 import CandidateOperations from '../components/stressWorkspace/CandidateOperations.vue'
 import CandidateCanvas from '../components/stressWorkspace/CandidateCanvas.vue'
+import ModelMovedBanner from '../components/stressWorkspace/ModelMovedBanner.vue'
 
 const svc = inject(modelServiceKey)!
 const toast = inject(toastKey, () => undefined)
@@ -61,6 +62,17 @@ const sketched = computed(() => candidates.all.value.find((one) => one.id === sk
 const recorded = async () => {
   await candidates.compareWith(candidates.against.value)
   if (sketching.value === analysis.naiveId.value) await analysis.reload()
+}
+/** The candidate read on the left, which the "model moved" band speaks about. */
+const read = computed(() => candidates.all.value.find((one) => one.id === candidates.selected.value) ?? null)
+const rebasing = ref(false)
+const rebase = async () => {
+  const id = read.value?.id
+  if (!id) return
+  rebasing.value = true
+  if (await candidates.rebase(id)) toast(`Re-based ${read.value?.name ?? id} on the model as it stands now.`)
+  rebasing.value = false
+  if (id === analysis.naiveId.value) await analysis.reload()
 }
 const doneSketching = async () => {
   sketching.value = null
@@ -122,6 +134,8 @@ watch([tab, () => analysis.naiveId.value, () => candidates.all.value], async ([n
 onMounted(async () => {
   await analysis.reload()
   await candidates.load()
+  // The band says whether the model moved under the naive architecture on every tab, not only its own.
+  if (!candidates.selected.value && analysis.naiveId.value) await candidates.select(analysis.naiveId.value)
 })
 </script>
 
@@ -162,6 +176,13 @@ onMounted(async () => {
     >
       {{ analysis.error.value }}
     </p>
+    <ModelMovedBanner
+      v-if="read && candidates.comparison.value?.candidate === read.id"
+      :name="read.name"
+      :standing="candidates.comparison.value.standing"
+      :busy="rebasing"
+      @rebase="rebase"
+    />
     <div class="ws">
       <section
         class="pane card"

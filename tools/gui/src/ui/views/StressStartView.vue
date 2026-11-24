@@ -2,11 +2,8 @@
 /**
  * Starting a stress analysis (06·0): a name and a question, then two steps — the scope, and the naive
  * architecture, the first candidate architecture — while the canvas previews the scope. *Start the
- * naive architecture* creates the naive as a draft candidate and the analysis document naming it, then
- * opens the workspace on the naive architecture.
- *
- * Two writes, the candidate first: when the document is refused, the candidate it would have named
- * is said by id rather than left unmentioned.
+ * naive architecture* creates the naive as a draft candidate and the analysis document naming it, in
+ * one write the server makes whole or not at all, then opens the workspace on the naive architecture.
  */
 import { computed, inject, onMounted, ref, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
@@ -52,24 +49,16 @@ const naiveRecord = (): Record<string, unknown> => ({
 const start = async () => {
   starting.value = true
   error.value = null
-  let naive: string | null = null
   try {
-    const created = await Effect.runPromise(svc.createCandidate(naiveRecord()))
-    naive = String(created.record.id)
     const diagram = origin.value === 'empty' ? '' : scope.diagramId.value
-    const written = await Effect.runPromise(svc.createDocument({
-      doc_type: 'stress-analysis', title: title.value.trim(), dry_run: false,
-      extra_frontmatter: {
-        'naive-candidate': naive,
-        ...(question.value.trim() ? { question: question.value.trim() } : {}),
-        ...(diagram ? { 'scope-diagram': diagram } : {}),
-      },
+    const started = await Effect.runPromise(svc.startAnalysis({
+      title: title.value.trim(), naive: naiveRecord(),
+      ...(question.value.trim() ? { question: question.value.trim() } : {}),
+      ...(diagram ? { scope_diagram: diagram } : {}),
     }))
-    await router.push({ path: stressAnalysisWorkspaceRoute(written.artifact_id), query: { tab: 'naive' } })
+    await router.push({ path: stressAnalysisWorkspaceRoute(started.document), query: { tab: 'naive' } })
   } catch (failure) {
-    error.value = naive
-      ? `The naive architecture ${naive} was created, but the analysis document was not: ${formatEffectError(failure)}`
-      : formatEffectError(failure)
+    error.value = formatEffectError(failure)
   } finally {
     starting.value = false
   }

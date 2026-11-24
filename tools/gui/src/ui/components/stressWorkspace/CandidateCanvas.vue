@@ -3,7 +3,8 @@
  * Sketching a candidate (06·5, F12, F14): the scope diagram in edit mode with the diagram page's own
  * editor (`CanvasContentEditor` over `LayoutLabCanvas`), in a candidate's words. A band names what is
  * sketched and when it was last saved to the candidate; there is no Save, because every change is
- * recorded as it is made. What the session created or renamed carries a small + or ~.
+ * recorded as it is made. What the session created or renamed carries a small + or ~. *Undo* (and
+ * Ctrl+Z on the canvas) takes back the last step, and with it what that step recorded in the candidate.
  */
 import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
@@ -50,6 +51,21 @@ const panZoom = useFittedPanZoom(containerRef, svgContainer)
 watch(() => editing.session.geometry.value, () => { void panZoom.fitDiagramToViewport() })
 const tagSize = computed(() => 14 / Math.max(panZoom.scale.value, 0.05))
 
+const canUndo = computed(() => editing.session.history.value.length > 0)
+const canRedo = computed(() => editing.session.future.value.length > 0)
+const typing = (target: EventTarget | null): boolean =>
+  target instanceof HTMLElement
+  && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+/** Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y on the canvas, as on the diagram page. */
+const onKey = (event: KeyboardEvent) => {
+  if (!(event.ctrlKey || event.metaKey) || typing(event.target)) return
+  const key = event.key.toLowerCase()
+  if (key !== 'z' && key !== 'y') return
+  event.preventDefault()
+  if (key === 'y' || event.shiftKey) editing.session.redo()
+  else editing.session.undo()
+}
+
 onMounted(async () => {
   try {
     context.value = await Effect.runPromise(svc.getDiagramContext(props.diagramId))
@@ -76,6 +92,21 @@ onMounted(async () => {
         <button
           type="button"
           class="btn btn-sm"
+          data-testid="undo-sketch"
+          :disabled="!canUndo"
+          title="Undo the last change, and what it recorded in the candidate (Ctrl+Z)"
+          @click="editing.session.undo()"
+        >Undo</button>
+        <button
+          type="button"
+          class="btn btn-sm"
+          :disabled="!canRedo"
+          title="Redo (Ctrl+Shift+Z)"
+          @click="editing.session.redo()"
+        >Redo</button>
+        <button
+          type="button"
+          class="btn btn-sm"
           :aria-pressed="showChanges"
           @click="showChanges = !showChanges"
         >Show changes</button>
@@ -99,6 +130,7 @@ onMounted(async () => {
     <div
       ref="containerRef"
       class="img-container editing"
+      @keydown="onKey"
     >
       <div
         class="pan-canvas"

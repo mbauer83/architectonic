@@ -5,8 +5,8 @@ import type { APIRequestContext, Page } from '@playwright/test'
  * The stress-analysis workspace, driven as an analyst drives it: starting an analysis from a diagram,
  * a stressor written, grouped and ticked on the canvas, and an end state in focus.
  *
- * Each test makes its own analysis and deletes its document afterwards. A candidate architecture has
- * no delete route yet, so the naive architecture each test starts stays behind as a draft.
+ * Each test makes its own analysis and deletes it afterwards: the document, then the naive
+ * architecture it named, which the candidate delete refuses while the document still names it.
  */
 
 const DIAGRAM = 'ARC@1783185029.4Ayzz3.one-enterprise-repository-many-engagements'
@@ -14,6 +14,7 @@ const SERVICE_ALIAS = 'SRV_Uv9Wx9'
 const ARTIFACTS_ALIAS = 'PRC_0Rz5Ex'
 
 const created: string[] = []
+const candidates: string[] = []
 
 /** Whether the served engagement declares the stress-analysis document type (shipped as a default). */
 const declaresStressAnalysis = async (request: APIRequestContext): Promise<boolean> => {
@@ -21,22 +22,28 @@ const declaresStressAnalysis = async (request: APIRequestContext): Promise<boole
   return types.document_types.some((one) => one.doc_type === 'stress-analysis')
 }
 
-/** An analysis of the diagram, made through the same two writes the start page makes. */
-const analysisOf = async (request: APIRequestContext, title: string): Promise<string> => {
-  const naive = await request.post('/api/change-sets', { data: { record: { name: 'Naive architecture' }, diagram: DIAGRAM } })
-  expect(naive.ok(), await naive.text()).toBe(true)
-  const naiveId = (await naive.json() as { record: { id: string } }).record.id
-  const document = await request.post('/api/documents', {
-    data: {
-      doc_type: 'stress-analysis', title, dry_run: false,
-      extra_frontmatter: { 'naive-candidate': naiveId, 'scope-diagram': DIAGRAM },
-    },
+interface Started { document: string; naive_candidate: { record: { id: string; changes: Record<string, unknown> }; version: string } }
+
+/** An analysis of the diagram, started through the one write the start page makes. */
+const startAnalysis = async (request: APIRequestContext, title: string): Promise<Started> => {
+  const started = await request.post('/api/stress-analyses', {
+    data: { title, naive: { name: 'Naive architecture' }, scope_diagram: DIAGRAM },
   })
-  expect(document.ok(), await document.text()).toBe(true)
-  const id = (await document.json() as { artifact_id: string }).artifact_id
-  created.push(id)
-  return id
+  expect(started.ok(), await started.text()).toBe(true)
+  const body = await started.json() as Started
+  created.push(body.document)
+  candidates.push(body.naive_candidate.record.id)
+  return body
 }
+const analysisOf = async (request: APIRequestContext, title: string): Promise<string> =>
+  (await startAnalysis(request, title)).document
+
+const listedCandidates = async (request: APIRequestContext): Promise<string[]> =>
+  ((await (await request.get('/api/change-sets')).json()) as { candidates: { id: string }[] }).candidates.map((c) => c.id)
+
+const operationsOf = async (request: APIRequestContext, id: string): Promise<unknown[]> =>
+  ((await (await request.get(`/api/change-sets/${encodeURIComponent(id)}`)).json()) as
+    { record: { changes: { operations: unknown[] } } }).record.changes.operations
 
 const workspace = (page: Page, id: string, tab: string) =>
   page.goto(`/documents/${encodeURIComponent(id)}/workspace?tab=${tab}`)
@@ -50,9 +57,71 @@ test.beforeEach(async ({ request }) => {
 
 test.afterEach(async ({ request }) => {
   for (const id of created.splice(0)) await request.delete(`/api/documents/${encodeURIComponent(id)}?dry_run=false`)
+  for (const id of candidates.splice(0)) await request.delete(`/api/change-sets/${encodeURIComponent(id)}`)
 })
 
-test('starting an analysis from a diagram opens the naive architecture in the workspace', async ({ page }) => {
+test('starting writes the naive architecture and the document together, and a refused start writes neither', async ({ request }) => {
+  const { document, naive_candidate: naive } = await startAnalysis(request, 'Stress analysis — one write')
+  const read = await (await request.get(`/api/documents/${encodeURIComponent(document)}`)).json() as { extra: Record<string, string> }
+  expect(read.extra['naive-candidate']).toBe(naive.record.id)
+  expect(await listedCandidates(request)).toContain(naive.record.id)
+
+  const before = await listedCandidates(request)
+  const refused = await request.post('/api/stress-analyses', {
+    data: { title: 'Stress analysis — one write', naive: { name: 'A second naive' }, scope_diagram: DIAGRAM },
+  })
+  expect(refused.status()).toBe(422)
+  expect(await listedCandidates(request)).toEqual(before)
+
+  const named = await request.delete(`/api/change-sets/${encodeURIComponent(naive.record.id)}`)
+  expect(named.status()).toBe(409)
+  expect(await named.text()).toContain('naive architecture of')
+})
+
+test('the workspace says the model moved under a drifted operation, and re-basing settles it', async ({ page, request }) => {
+  const { document, naive_candidate: naive } = await startAnalysis(request, 'Stress analysis — model moved')
+  const scope = await (await request.get(`/api/change-sets/${encodeURIComponent(naive.record.id)}`)).json() as
+    { record: { scope: string[] } }
+  const service = scope.record.scope.find((ref) => ref.startsWith('SRV@')) ?? ''
+  // An edit written against a name the model no longer holds: what a rename made elsewhere leaves behind.
+  const drifted = { op: 'edit_entity', artifact_id: service, field: 'name', value: 'Promotion Review Service',
+    base: { value: 'Promotion Service (as it was)' } }
+  const edited = await request.patch(`/api/change-sets/${encodeURIComponent(naive.record.id)}`, {
+    data: { based_on: naive.version, patch: { changes: { ...naive.record.changes, operations: [drifted] } } },
+  })
+  expect(edited.ok(), await edited.text()).toBe(true)
+
+  await workspace(page, document, 'stressors')
+  const band = page.getByTestId('model-moved')
+  await expect(band).toContainText('1 operation changed in the model since it was written.')
+  await band.getByRole('button', { name: 'Show them' }).click()
+  await expect(band).toContainText('changed since this edit was written')
+  await band.getByTestId('rebase').click()
+  await expect(band).toHaveCount(0)
+  const standing = await (await request.get(`/api/change-sets/${encodeURIComponent(naive.record.id)}/standing`)).json() as
+    { standing: { standing: string }[] }
+  expect(standing.standing.map((one) => one.standing)).toEqual(['applies'])
+})
+
+test('undo on the sketching canvas takes the recorded operation back out of the candidate', async ({ page, request }) => {
+  const { document, naive_candidate: naive } = await startAnalysis(request, 'Stress analysis — undo')
+  await workspace(page, document, 'naive')
+  await page.getByTestId('sketch').click()
+  const service = page.getByTestId('candidate-canvas').locator(`g.lab-element[data-alias="${SERVICE_ALIAS}"] .lab-grip`)
+  await service.click({ button: 'right', force: true })
+  await page.getByRole('dialog', { name: 'element' }).getByRole('button', { name: 'Rename' }).click()
+  await page.getByRole('dialog', { name: 'rename' }).getByLabel('Name').fill('Promotion Review Service')
+  await page.getByRole('button', { name: 'Keep rename' }).click()
+  const operations = page.getByTestId('candidate-operations').locator('tr.oprow')
+  await expect(operations).toHaveCount(1)
+  await expect.poll(() => operationsOf(request, naive.record.id)).toHaveLength(1)
+
+  await page.getByTestId('undo-sketch').click()
+  await expect(operations).toHaveCount(0)
+  await expect.poll(() => operationsOf(request, naive.record.id)).toHaveLength(0)
+})
+
+test('starting an analysis from a diagram opens the naive architecture in the workspace', async ({ page, request }) => {
   await page.goto('/stress-analyses/new')
   await page.getByTestId('analysis-name').fill('Stress analysis — start flow')
   await page.getByTestId('scope-diagram').selectOption(DIAGRAM)
@@ -61,7 +130,10 @@ test('starting an analysis from a diagram opens the naive architecture in the wo
   await page.getByTestId('start-naive').click()
 
   await page.waitForURL(/\/workspace\?tab=naive$/)
-  created.push(decodeURIComponent(page.url().split('/documents/')[1].split('/workspace')[0]))
+  const document = decodeURIComponent(page.url().split('/documents/')[1].split('/workspace')[0])
+  created.push(document)
+  const read = await (await request.get(`/api/documents/${encodeURIComponent(document)}`)).json() as { extra: Record<string, string> }
+  candidates.push(read.extra['naive-candidate'])
   await expect(page.getByRole('tab', { name: /Naive architecture/ })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByTestId('candidate-operations')).toContainText('naive architecture · the initial candidate')
   await expect(element(page, SERVICE_ALIAS)).toBeAttached()

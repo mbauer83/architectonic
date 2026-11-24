@@ -5,6 +5,7 @@
  * (`POST /api/change-sets/{id}/operations`). Nothing here reads or spells a base or an alias.
  */
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
+import type { ScopedEntity } from '../schemas/candidates'
 import { connectionId, connectionParts, isEntityId } from '../artifactId'
 
 /** An edit as the candidate records it: what is wanted, never what it replaces. */
@@ -62,12 +63,21 @@ export const operationsOf = (record: Readonly<Record<string, unknown>>): readonl
 }
 
 /**
- * The commands that draw a candidate's own operations on its canvas when it is opened: what it
- * creates (by the id chosen for it), what it renames, and the relations it adds between entities
- * that have ids. A relation to something the candidate creates is named by an alias the server keeps,
- * so it is listed in the operations table and not drawn until the canvas creates it again.
+ * The ids chosen for what a candidate's stack creates, by the reference its composed view names each
+ * with. The server spells the reference; this only looks it up.
  */
-export const commandsOf = (operations: readonly Readonly<Record<string, unknown>>[]): readonly CanvasCommand[] =>
+export const chosenIds = (view: { readonly entities: readonly ScopedEntity[] }): ReadonlyMap<string, string> =>
+  new Map(view.entities.flatMap((one) => (one.artifact_id ? [[one.id, one.artifact_id] as const] : [])))
+
+/**
+ * The commands that draw a candidate's own operations on its canvas when it is opened: what it
+ * creates (by the id chosen for it), what it renames, and the relations it adds. A relation's end that
+ * names something the stack creates is a reference the server keeps; *chosen* (the composed view's
+ * `chosenIds`) resolves it to the id the canvas drew that element with.
+ */
+export const commandsOf = (
+  operations: readonly Readonly<Record<string, unknown>>[], chosen: ReadonlyMap<string, string> = new Map(),
+): readonly CanvasCommand[] =>
   operations.flatMap((operation): CanvasCommand[] => {
     const fields = fieldsOf(operation)
     if (operation.op === 'create_entity' && typeof operation.artifact_id === 'string') {
@@ -79,8 +89,8 @@ export const commandsOf = (operations: readonly Readonly<Record<string, unknown>
     if (operation.op === 'edit_entity' && operation.field === 'name' && typeof operation.artifact_id === 'string') {
       return [{ op: 'model.element.rename', artifact_id: operation.artifact_id, name: text(operation.value) }]
     }
-    const source = text(operation.source_entity)
-    const target = text(operation.target_entity)
+    const source = chosen.get(text(operation.source_entity)) ?? text(operation.source_entity)
+    const target = chosen.get(text(operation.target_entity)) ?? text(operation.target_entity)
     if (operation.op === 'add_connection' && isEntityId(source) && isEntityId(target)) {
       return [{
         op: 'model.relation.create', artifact_id: connectionId(source, text(operation.connection_type), target),

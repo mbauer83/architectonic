@@ -563,6 +563,23 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         "change_set_edit",
         lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"],
                    "patch": {"rationale": "Queue promotions while the destination is offline."}},
+        captures=(Capture("candidate_version", _answer_field("version")),),
+    ),
+    WriteCall(
+        # Nothing in a fresh candidate has drifted, so this answers the record unchanged: the walk
+        # proves the transport and the queue, and the drift itself is the application tests'.
+        "change_set_rebase",
+        lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"]},
+    ),
+    WriteCall(
+        "analysis_start",
+        lambda _c: {"title": "MCP Walk Stress Analysis", "naive": {"name": "Walk naive architecture"}},
+    ),
+    WriteCall(
+        # The candidate the walk made, which nothing stacks on and no analysis names. The naive the
+        # start made stays: deleting it is refused while its analysis names it.
+        "change_set_delete",
+        lambda c: {"artifact_id": c.created["candidate"]},
     ),
     # ── scratchpads: create → replace → edit → lift → delete, the whole loop an agent has ───────
     #

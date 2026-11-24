@@ -7,6 +7,7 @@
  */
 import { computed, ref } from 'vue'
 import type { ChangeDifference } from '../../../domain/schemas/candidates'
+import { chosenIds } from '../../../domain/stressAnalysis/candidateCanvas'
 import { chainOf, stackLine } from '../../../domain/stressAnalysis/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
 
@@ -48,8 +49,10 @@ const shown = (value: unknown): string =>
 
 const standingOf = (row: ChangeDifference): string => {
   const target = typeof row.target === 'string' ? row.target : null
+  // What the stack creates is named by its reference; the view says the id its create was given.
+  const chosen = target === null ? undefined : chosenIds(comparison.value?.view ?? { entities: [] }).get(target)
   const found = comparison.value?.standing.find(({ operation }) =>
-    target !== null && (operation.artifact_id === target || `$ref:${String(operation.ref)}` === target))
+    target !== null && (operation.artifact_id === target || (chosen !== undefined && operation.artifact_id === chosen)))
   return found?.standing ?? ''
 }
 

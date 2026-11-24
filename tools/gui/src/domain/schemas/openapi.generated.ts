@@ -1301,7 +1301,11 @@ export interface paths {
         get: operations["changes_read_candidate"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete a candidate nothing stacks on and no analysis starts from
+         * @description Refused with 409, saying why, while a candidate stacks on it or an analysis names it as its naive.
+         */
+        delete: operations["changes_delete_candidate"];
         options?: never;
         head?: never;
         /** Edit fields of a versioned candidate */
@@ -1339,6 +1343,26 @@ export interface paths {
          * @description Merged per claim: an edit replaces the one before it, and an edit back to its base drops it.
          */
         post: operations["changes_record_operation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/change-sets/{artifact_id}/rebase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Re-base a candidate's drifted operations on the current model
+         * @description Each drifted operation keeps what it asks for and is written against the model as it stands now.
+         */
+        post: operations["changes_rebase_candidate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3094,6 +3118,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stress-analyses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a stress analysis and its naive architecture
+         * @description One write: the naive architecture and the document naming it are both written, or neither is.
+         */
+        post: operations["documents_start_stress_analysis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sync/changes": {
         parameters: {
             query?: never;
@@ -3999,6 +4043,29 @@ export interface components {
             /** Naive Candidate */
             naive_candidate: string;
             progress: components["schemas"]["AnalysisOutstanding"];
+        };
+        /**
+         * AnalysisStart
+         * @description Start a stress analysis: the document and its naive architecture, in one write.
+         */
+        AnalysisStart: {
+            /** @description The naive architecture's record: a name, and its scope or parent. */
+            naive: components["schemas"]["Fields"];
+            /** Question */
+            question?: string | null;
+            /**
+             * Scope Diagram
+             * @description The diagram the analysis is drawn on; its entities scope a naive that states none.
+             */
+            scope_diagram?: string | null;
+            /** Title */
+            title: string;
+        };
+        /** AnalysisStarted */
+        AnalysisStarted: {
+            /** Document */
+            document: string;
+            naive_candidate: components["schemas"]["CandidateResponse"];
         };
         /**
          * AppliedDiagramViewpointResponse
@@ -5814,6 +5881,14 @@ export interface components {
             parties: components["schemas"]["OverlapParty"][];
             /** Subject */
             subject: string;
+        };
+        /**
+         * CandidateRebase
+         * @description Re-base a candidate's drifted operations on the model as it stands now.
+         */
+        CandidateRebase: {
+            /** Based On */
+            based_on: string;
         };
         /** CandidateResponse */
         CandidateResponse: {
@@ -12483,6 +12558,11 @@ export interface components {
         };
         /** ScopedEntity */
         ScopedEntity: {
+            /**
+             * Artifact Id
+             * @description The id chosen for an entity the stack creates.
+             */
+            artifact_id?: string;
             fields: components["schemas"]["Fields"];
             /** Id */
             id: string;
@@ -18077,6 +18157,98 @@ export interface operations {
             };
         };
     };
+    changes_delete_candidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     changes_edit_candidate: {
         parameters: {
             query?: never;
@@ -18234,6 +18406,95 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CandidateOperation"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_rebase_candidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateRebase"];
             };
         };
         responses: {
@@ -25383,6 +25644,93 @@ export interface operations {
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_start_stress_analysis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisStarted"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };

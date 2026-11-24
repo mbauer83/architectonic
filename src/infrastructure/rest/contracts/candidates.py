@@ -30,6 +30,28 @@ class CandidateResponse(Closed):
     version: str
 
 
+class CandidateRebase(Closed):
+    """Re-base a candidate's drifted operations on the model as it stands now."""
+
+    based_on: str
+
+
+class AnalysisStart(Closed):
+    """Start a stress analysis: the document and its naive architecture, in one write."""
+
+    title: str = Field(min_length=1)
+    question: str | None = None
+    naive: Fields = Field(description="The naive architecture's record: a name, and its scope or parent.")
+    scope_diagram: str | None = Field(
+        None, description="The diagram the analysis is drawn on; its entities scope a naive that states none.",
+    )
+
+
+class AnalysisStarted(Closed):
+    document: str
+    naive_candidate: CandidateResponse
+
+
 class CandidateSummary(Closed):
     id: str
     name: str
@@ -44,6 +66,7 @@ class CandidateList(Closed):
 class ScopedEntity(NullsOmitted):
     id: str
     fields: Fields
+    artifact_id: str | None = Field(None, description="The id chosen for an entity the stack creates.")
 
 
 class ConnectionKey(NullsOmitted):

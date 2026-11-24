@@ -17,8 +17,8 @@ that is the base the operation is later judged by and the client has no business
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
-from dataclasses import replace
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import asdict, replace
 from typing import Any
 
 from src.application.change_sets.base import (
@@ -64,6 +64,36 @@ def recorded(candidate: CandidateArchitecture, intent: Intent, beneath: ModelRea
     except KeyError as missing:
         raise MalformedChangeSet(f"a {intent['op']} edit states its {missing.args[0]}") from missing
     return replace(candidate, changes=ChangeSet(operations, candidate.changes.repository_revision))
+
+
+def rebased(
+    candidate: CandidateArchitecture, operations: Iterable[Operation], beneath: ModelReading,
+) -> CandidateArchitecture:
+    """*candidate* with each of *operations* recorded again against *beneath*, the model as it stands now.
+
+    What a drifted operation's standing advises — make the edit again against the model as it is —
+    done as one act: the value an edit asks for is kept and what it replaces is read again, so applying
+    it overwrites deliberately what the model came to say. An edit the model has since come to agree
+    with drops, as any edit back to its base does. Only what has a base can be re-based.
+    """
+    for operation in operations:
+        candidate = recorded(candidate, _intent_of(operation), beneath)
+    return candidate
+
+
+def _intent_of(operation: Operation) -> Intent:
+    """The edit that records *operation*: what it asks for, without what it was written against."""
+    match operation:
+        case EditEntity(target=target, field=field, value=value, key=key):
+            return {"op": "edit_entity", "artifact_id": target, "field": field, "value": value, "key": key}
+        case RemoveEntity(target=target):
+            return {"op": "remove_entity", "artifact_id": target}
+        case EditConnection(address=address, field=field, value=value, key=key):
+            return {"op": "edit_connection", **asdict(address), "field": field, "value": value, "key": key}
+        case RemoveConnection(address=address):
+            return {"op": "remove_connection", **asdict(address)}
+        case _:
+            raise MalformedChangeSet("A create or an add states all it makes, so it has no base to re-read.")
 
 
 class _Set:

@@ -1,5 +1,5 @@
 """Route policy for candidate architectures and analysis reads."""
-from src.infrastructure.rest.route_policy._types import TYPED, RouteRow
+from src.infrastructure.rest.route_policy._types import BODYLESS, TYPED, RouteRow
 
 CANDIDATE_ROWS = (
     RouteRow("GET", "/api/change-sets", "collection", "changes_list_candidates", TYPED,
@@ -10,6 +10,10 @@ CANDIDATE_ROWS = (
              identity_parameters=("artifact_id",), cache_directive="no-cache"),
     RouteRow("PATCH", "/api/change-sets/{artifact_id}", "detail", "changes_edit_candidate", TYPED,
              identity_parameters=("artifact_id",), mutation_domain="repository"),
+    RouteRow("DELETE", "/api/change-sets/{artifact_id}", "detail", "changes_delete_candidate", BODYLESS,
+             identity_parameters=("artifact_id",), mutation_domain="repository"),
+    RouteRow("POST", "/api/change-sets/{artifact_id}/rebase", "operation", "changes_rebase_candidate", TYPED,
+             identity_parameters=("artifact_id",), mutation_domain="repository"),
     RouteRow("POST", "/api/change-sets/{artifact_id}/operations", "subresource", "changes_record_operation", TYPED,
              identity_parameters=("artifact_id",), mutation_domain="repository"),
     RouteRow("GET", "/api/change-sets/{artifact_id}/diff", "subresource", "changes_compare_candidate", TYPED,
@@ -18,6 +22,8 @@ CANDIDATE_ROWS = (
              identity_parameters=("artifact_id",), cache_directive="no-cache"),
     RouteRow("POST", "/api/change-set-checks", "collection", "changes_check_candidates", TYPED,
              cache_directive="no-cache"),
+    RouteRow("POST", "/api/stress-analyses", "collection", "documents_start_stress_analysis", TYPED,
+             mutation_domain="repository"),
     RouteRow("GET", "/api/documents/{artifact_id}/progress", "subresource", "documents_analysis_progress", TYPED,
              identity_parameters=("artifact_id",), cache_directive="no-cache"),
     RouteRow("GET", "/api/documents/{artifact_id}/incidence", "subresource", "documents_analysis_incidence", TYPED,

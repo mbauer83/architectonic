@@ -250,6 +250,11 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "artifact_viewpoint": (False, True, False, False),
         "change_set_create": (False, False, False, False),
         "change_set_edit": (False, True, False, False),
+        # Rewrites the base of each drifted operation, so what the candidate held before is replaced.
+        "change_set_rebase": (False, True, False, False),
+        "change_set_delete": (False, True, False, False),
+        # Creates a candidate and a document, and nothing else.
+        "analysis_start": (False, False, False, False),
         "scratchpad_create": (False, False, False, False),
         # The aggregate is replaced whole, so a document that omits a note deletes it.
         "scratchpad_replace": (False, True, False, False),
