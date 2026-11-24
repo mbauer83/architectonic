@@ -17,6 +17,7 @@ import type { EntityDetail } from '../../domain'
 import { entityEditFormKey } from '../composables/useEntityEditForm'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import { editBlockedReason, editOutcome, editOutcomeTitle } from '../lib/entityEditBlocking'
+import { domainStyle } from '../lib/domains'
 
 const props = defineProps<{
   detail: EntityDetail
@@ -152,8 +153,8 @@ const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode
         </span>
         <span class="sep">·</span>
         <span
-          class="domain-badge"
-          :class="`domain--${detail.domain}`"
+          class="domain-badge domain-fill"
+          :style="domainStyle(detail.domain)"
         >{{ detail.domain }}</span>
         <span
           v-if="detail.subdomain"

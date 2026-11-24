@@ -28,6 +28,7 @@ import {
   friendlyEntityId,
   getEntityConnectionTotal,
   getDomainLabel,
+  domainStyle,
 } from '../lib/domains'
 import { formatLastModified, lastModifiedTitle } from '../lib/lastModified'
 import { entityCreateRoute, entityDetailRoute, filtersToEntityCriteriaMapping, isServerSortKey, sortEntityRows } from './EntitiesView.helpers'
@@ -455,8 +456,8 @@ const displayCount = computed(() => {
 
               <template #domain="{ row: entity }">
                 <span
-                  class="domain-badge"
-                  :class="`domain--${entity.domain}`"
+                  class="domain-badge domain-fill"
+                  :style="domainStyle(entity.domain)"
                 >{{ entity.domain }}</span>
               </template>
 

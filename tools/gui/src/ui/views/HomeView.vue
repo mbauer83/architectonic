@@ -5,7 +5,7 @@ import { modelServiceKey } from '../keys'
 import { useQuery } from '../composables/useQuery'
 import type { Stats, EntityList } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
-import { domainOptionsForDomains } from '../lib/domains'
+import { domainOptionsForDomains, domainStyle } from '../lib/domains'
 import { repositoryWideDomainQuery } from '../composables/listRequestParams'
 import PinnedViewpointsSection from '../components/PinnedViewpointsSection.vue'
 
@@ -104,7 +104,7 @@ const activeDomainOptions = computed(() =>
           :key="d.key"
           :to="{ path: '/entities', query: repositoryWideDomainQuery(d.key) }"
           class="card card--domain"
-          :class="`domain--${d.key}`"
+          :style="domainStyle(d.key)"
         >
           <span class="domain-name">{{ d.label }}</span>
           <span class="domain-count">{{ statsState.data.value.entities_by_domain[d.key] ?? 0 }}</span>
@@ -202,12 +202,7 @@ const activeDomainOptions = computed(() =>
 .domain-name { font-weight: 500; font-size: 13px; }
 .domain-count { font-size: 20px; font-weight: 700; }
 
-.domain--motivation  { border-left-color: var(--domain-motivation); }
-.domain--strategy    { border-left-color: var(--domain-strategy); }
-.domain--business    { border-left-color: var(--domain-business); }
-.domain--common      { border-left-color: var(--domain-common); }
-.domain--application { border-left-color: var(--domain-application); }
-.domain--technology  { border-left-color: var(--domain-technology); }
+.card--domain { border-left-color: var(--domain); }
 
 .conn-table { border-collapse: collapse; }
 .conn-type { padding: 4px 16px 4px 0; font-family: monospace; font-size: 12px; color: var(--text-2); }

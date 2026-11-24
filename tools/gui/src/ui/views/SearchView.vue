@@ -5,6 +5,7 @@ import { hitKindLabel, hitTypeLabel } from './SearchView.helpers'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { modelServiceKey } from '../keys'
 import { searchHitRoute } from '../lib/searchNavigation'
+import { domainStyle } from '../lib/domains'
 import { useQuery } from '../composables/useQuery'
 import type { SearchResult } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
@@ -142,8 +143,8 @@ const friendlyName = (id: string) => {
             <ProposedBadge :standing="h.baseline_standing" />
             <span
               v-if="h.domain"
-              class="domain-badge"
-              :class="`domain--${h.domain}`"
+              class="domain-badge domain-fill"
+              :style="domainStyle(h.domain)"
             >{{ h.domain }}</span>
             <span
               class="status-badge"

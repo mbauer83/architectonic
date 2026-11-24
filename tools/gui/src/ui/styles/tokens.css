@@ -10,8 +10,8 @@
    no way to name one block from two selectors with a media query between them.
    `tokens.test.ts` holds the two copies equal. */
 :root {
-  --domain-motivation: #d8c1e4; --domain-strategy: #efbd5d; --domain-common: #e8e5d3;
-  --domain-business: #f4de7f; --domain-application: #b6d7e1; --domain-technology: #c3e1b4;
+  /* Text on a layer colour. The layer colours themselves are the ontology's (`element_appearance`),
+     set per element as `--domain` by `domainStyle` in `lib/domains.ts`, never spelled here. */
   --on-domain: #252327;
   --paper: #fafafa; --on-paper: #6b7280;
   /* Marks drawn on the paper (selection, handles, warnings): fixed like the paper, never themed. */

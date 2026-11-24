@@ -34,6 +34,11 @@ export const DOMAIN_OPTIONS = [
 export const getDomainColor = (domain?: string) =>
   (domain ? DOMAIN_COLORS[domain] : undefined) ?? '#cbd5e1'
 
+/** A domain's colour as the `--domain` property, for a surface to paint with as its own CSS decides:
+ * a badge's fill, a card's edge. Every surface reads the one declared palette through this, so a
+ * domain the ontology adds is coloured everywhere without a rule per domain. */
+export const domainStyle = (domain?: string) => ({ '--domain': getDomainColor(domain) })
+
 export const getDomainLabel = (domain: string) =>
   DOMAIN_OPTIONS.find(option => option.key === domain)?.label ?? domain
 
@@ -85,13 +90,3 @@ export const domainOptionsForDomains = (domains: Iterable<string>) => {
 
 export const domainOptionsForModules = (modules?: readonly ModuleLike[]) =>
   domainOptionsForDomains(frameworkGroupsForModules(modules).flatMap((group) => [...group.domains]))
-
-export const softTint = (hex: string, strength = 0.82) => {
-  const value = hex.replace('#', '')
-  if (value.length !== 6) return hex
-  const mix = (offset: number) =>
-    Math.round(parseInt(value.slice(offset, offset + 2), 16) * (1 - strength) + 255 * strength)
-      .toString(16)
-      .padStart(2, '0')
-  return `#${mix(0)}${mix(2)}${mix(4)}`
-}

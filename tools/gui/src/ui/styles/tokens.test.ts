@@ -34,10 +34,9 @@ describe('the theme tokens', () => {
     expect(missing).toEqual([])
   })
 
-  it('keep the diagram paper and the layer colours out of the dark theme', () => {
-    const paperOrLayer = (name: string) =>
-      name === '--on-paper' || name.startsWith('--paper') || name.startsWith('--domain-')
-    const themed = [...chosenDark.keys()].filter(paperOrLayer)
+  it('keep the diagram paper out of the dark theme', () => {
+    const paper = (name: string) => name === '--on-paper' || name.startsWith('--paper')
+    const themed = [...chosenDark.keys()].filter(paper)
     expect(themed).toEqual([])
     expect(light.get('--paper')).toBe('#fafafa')
   })

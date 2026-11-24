@@ -15,12 +15,8 @@
   font-weight: 500;
 }
 
-.domain--motivation { background: var(--domain-motivation); color: var(--on-domain); }
-.domain--strategy { background: var(--domain-strategy); color: var(--on-domain); }
-.domain--common { background: var(--domain-common); color: var(--on-domain); }
-.domain--business { background: var(--domain-business); color: var(--on-domain); }
-.domain--application { background: var(--domain-application); color: var(--on-domain); }
-.domain--technology { background: var(--domain-technology); color: var(--on-domain); }
+/* Filled with the element's layer colour, which `domainStyle` sets as `--domain`. */
+.domain-fill { background: var(--domain); color: var(--on-domain); }
 
 .status--draft { background: var(--soft); color: var(--muted); }
 .status--active { background: var(--ok-soft); color: var(--ok-text); }

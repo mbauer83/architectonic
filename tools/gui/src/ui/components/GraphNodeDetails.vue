@@ -8,6 +8,7 @@ import { RouterLink } from 'vue-router'
 import type { RenderedEntityDetail } from '../../domain'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import { contentHtmlWithoutTitleHeading } from './entityContentHtml'
+import { domainStyle } from '../lib/domains'
 
 const props = defineProps<{
   detail: RenderedEntityDetail
@@ -34,8 +35,8 @@ const contentHtml = computed(() =>
   </div>
   <div class="detail-field">
     <label>Domain</label><span
-      class="detail-value domain-badge"
-      :class="`domain--${detail.domain}`"
+      class="detail-value domain-badge domain-fill"
+      :style="domainStyle(detail.domain)"
     >{{ detail.domain }}</span>
   </div>
   <div class="detail-field">
@@ -92,12 +93,7 @@ const contentHtml = computed(() =>
 .explore-link { font-size: 12px; color: var(--accent); font-weight: 500; }
 .domain-badge, .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
 /* Restated from `shared.css` because `.detail-value` here outranks the global badge colours. */
-.domain--motivation  { background: var(--domain-motivation); color: var(--on-domain); }
-.domain--strategy    { background: var(--domain-strategy); color: var(--on-domain); }
-.domain--business    { background: var(--domain-business); color: var(--on-domain); }
-.domain--common      { background: var(--domain-common); color: var(--on-domain); }
-.domain--application { background: var(--domain-application); color: var(--on-domain); }
-.domain--technology  { background: var(--domain-technology); color: var(--on-domain); }
+.detail-value.domain-fill { background: var(--domain); color: var(--on-domain); }
 .status--draft       { background: var(--soft); color: var(--muted); }
 .status--active      { background: var(--ok-soft); color: var(--ok-text); }
 .status--deprecated  { background: var(--danger-soft); color: var(--danger-strong); }

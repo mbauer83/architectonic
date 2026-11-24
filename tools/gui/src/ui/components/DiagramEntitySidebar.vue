@@ -14,7 +14,7 @@ import type { RepoError } from '../../ports/ModelRepository'
 import type { NotFoundError } from '../../domain'
 import type { MarkdownError } from '../../application/MarkdownService'
 import type { WitnessChainDisplay } from '../composables/useWitnessChain'
-import { getDomainColor } from '../lib/domains'
+import { domainStyle, getDomainColor } from '../lib/domains'
 import { toGlyphKey } from '../lib/glyphKey'
 import { isDiagramOnly } from '../views/DiagramDetailView.helpers'
 import { contentHtmlWithoutTitleHeading } from './entityContentHtml'
@@ -283,8 +283,8 @@ const selectedIsDiagramOnly = computed(() => {
       </div>
       <div class="det-chips">
         <span
-          class="chip"
-          :class="`domain--${entityQuery.data.value.domain}`"
+          class="chip domain-fill"
+          :style="domainStyle(entityQuery.data.value.domain)"
         >{{ entityQuery.data.value.domain }}</span>
         <span
           class="chip"
