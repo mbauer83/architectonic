@@ -75,8 +75,8 @@ watch(() => props.artifactId, load, { immediate: true })
 
 <style scoped>
 .derived-security {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--canvas);
+  border: 1px solid var(--border);
   border-left: 4px solid #1e293b;
   border-radius: 6px;
   padding: 10px 14px;
@@ -84,24 +84,24 @@ watch(() => props.artifactId, load, { immediate: true })
 }
 .panel-title {
   display: flex; align-items: center; gap: 8px;
-  font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 8px;
+  font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 8px;
 }
 .classification-icon {
   background: #1e293b; color: #f8fafc; border-radius: 4px;
   padding: 1px 7px; font-size: 10px; font-weight: 700;
 }
 .readonly-tag {
-  margin-left: auto; font-size: 10px; color: #64748b;
-  border: 1px solid #cbd5e1; border-radius: 3px; padding: 0 5px;
+  margin-left: auto; font-size: 10px; color: var(--muted);
+  border: 1px solid var(--border-strong); border-radius: 3px; padding: 0 5px;
 }
 .rows { margin: 0; display: flex; flex-direction: column; gap: 3px; }
 .row { display: flex; gap: 8px; font-size: 12px; }
-.row dt { color: #64748b; min-width: 220px; }
-.row dd { margin: 0; color: #0f172a; font-weight: 500; }
-.caveat { font-size: 11px; color: #92400e; margin: 8px 0 0; }
+.row dt { color: var(--muted); min-width: 220px; }
+.row dd { margin: 0; color: var(--text); font-weight: 500; }
+.caveat { font-size: 11px; color: var(--warn-text); margin: 8px 0 0; }
 .drill-down {
   display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 500;
-  color: #1d4ed8; text-decoration: none;
+  color: var(--accent-strong); text-decoration: none;
 }
 .drill-down:hover { text-decoration: underline; }
 </style>

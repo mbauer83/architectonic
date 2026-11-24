@@ -225,22 +225,22 @@ const add = (): void => {
 </template>
 
 <style scoped>
-.attributes { border-top: 1px solid #f0f0f2; margin-top: 10px; padding-top: 8px; }
+.attributes { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 8px; }
 .attributes h3 {
-  font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #9ca3af; margin: 0 0 6px;
+  font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); margin: 0 0 6px;
 }
 .row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
-.name { flex: 1; color: #6b7280; padding-top: 6px; word-break: break-word; }
-.name.undeclared { font-style: italic; color: #d97706; }
-.required { color: #b91c1c; text-decoration: none; margin-left: 2px; }
-.type, .new-name { padding: 5px 4px; border: 1px solid #d1d5db; border-radius: 5px; font-size: 11.5px; }
+.name { flex: 1; color: var(--muted); padding-top: 6px; word-break: break-word; }
+.name.undeclared { font-style: italic; color: var(--warn); }
+.required { color: var(--danger-strong); text-decoration: none; margin-left: 2px; }
+.type, .new-name { padding: 5px 4px; border: 1px solid var(--border-strong); border-radius: 5px; font-size: 11.5px; }
 .new-name { flex: 1; min-width: 0; }
 .remove, .add, .confirm {
-  border: 1px solid #d1d5db; border-radius: 5px; background: #fff; color: #374151;
+  border: 1px solid var(--border-strong); border-radius: 5px; background: var(--surface); color: var(--text-2);
   font-size: 11.5px; cursor: pointer; padding: 4px 8px;
 }
-.remove { border: none; color: #b0b0b8; font-size: 15px; padding: 2px 4px; }
-.remove:hover { color: #dc2626; }
+.remove { border: none; color: var(--faint); font-size: 15px; padding: 2px 4px; }
+.remove:hover { color: var(--danger); }
 .confirm:disabled { opacity: .5; cursor: not-allowed; }
 .adding { flex-wrap: wrap; }
 </style>

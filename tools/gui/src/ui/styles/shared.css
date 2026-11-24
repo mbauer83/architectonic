@@ -1,35 +1,9 @@
-:root {
-  --domain-motivation: #d8c1e4;
-  --domain-strategy: #efbd5d;
-  --domain-common: #e8e5d3;
-  --domain-business: #f4de7f;
-  --domain-application: #b6d7e1;
-  --domain-technology: #c3e1b4;
-  /* The interface's accent: what is selected, what acts, the frame of a canvas being edited. */
-  --accent: #2563eb;
-  --accent-strong: #1d4ed8;
-  --accent-soft: #eff6ff;
-  --accent-border: #bfdbfe;
-  --on-accent: #fff;
-  /* The interface's surfaces, text and lines, as the diagram editor's chrome uses them. Light only for
-     now: the dark interface follows the system setting once every surface reads these. */
-  --surface: #fff;
-  --canvas: #f8fafc;
-  --paper: #fafafa;
-  --text: #1a1a1a;
-  --text-2: #374151;
-  --muted: #6b7280;
-  --faint: #9ca3af;
-  --border: #e5e7eb;
-  --border-strong: #d1d5db;
-  --hover: #f9fafb;
-  --soft: #f3f4f6;
-  --danger-strong: #b91c1c;
-  --danger-border: #fecaca;
-  --warn-soft: #fef3c7;
-  --warn-text: #92400e;
-  --warn-border: #fde68a;
-  --shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+@import './tokens.css';
+
+/* A form control no component styles takes the theme's surface and text rather than the browser's own
+   dark grey. Zero specificity, so any component rule still wins. */
+:where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]), select, textarea) {
+  background-color: var(--surface); color: var(--text);
 }
 
 .domain-badge,
@@ -41,16 +15,16 @@
   font-weight: 500;
 }
 
-.domain--motivation { background: var(--domain-motivation); color: #252327; }
-.domain--strategy { background: var(--domain-strategy); color: #252327; }
-.domain--common { background: var(--domain-common); color: #252327; }
-.domain--business { background: var(--domain-business); color: #252327; }
-.domain--application { background: var(--domain-application); color: #252327; }
-.domain--technology { background: var(--domain-technology); color: #252327; }
+.domain--motivation { background: var(--domain-motivation); color: var(--on-domain); }
+.domain--strategy { background: var(--domain-strategy); color: var(--on-domain); }
+.domain--common { background: var(--domain-common); color: var(--on-domain); }
+.domain--business { background: var(--domain-business); color: var(--on-domain); }
+.domain--application { background: var(--domain-application); color: var(--on-domain); }
+.domain--technology { background: var(--domain-technology); color: var(--on-domain); }
 
-.status--draft { background: #f3f4f6; color: #6b7280; }
-.status--active { background: #dcfce7; color: #166534; }
-.status--deprecated { background: #fee2e2; color: #991b1b; }
+.status--draft { background: var(--soft); color: var(--muted); }
+.status--active { background: var(--ok-soft); color: var(--ok-text); }
+.status--deprecated { background: var(--danger-soft); color: var(--danger-strong); }
 
 /* A docked sidebar while the viewport owns the screen — see `FullscreenDock.vue`.
 
@@ -94,8 +68,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  background: rgb(255 255 255 / 92%);
-  border: 1px solid #d1d5db;
+  background: var(--overlay);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 6px 10px;
   box-shadow: 0 6px 20px rgb(15 23 42 / 10%);

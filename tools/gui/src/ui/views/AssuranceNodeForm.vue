@@ -329,52 +329,52 @@ function handleSubmit() {
 .node-form { display: flex; flex-direction: column; gap: 14px; }
 .form-row { display: flex; flex-direction: column; gap: 4px; }
 .form-row--split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.form-label { font-size: 12px; font-weight: 600; color: #374151; }
-.required { color: #dc2626; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.required { color: var(--danger); }
 .form-control {
   font-size: 13px;
   padding: 6px 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: #fff;
-  color: #111827;
+  background: var(--surface);
+  color: var(--text);
   width: 100%;
   box-sizing: border-box;
 }
-.form-control:focus { outline: 2px solid #2563eb; border-color: transparent; }
+.form-control:focus { outline: 2px solid var(--accent); border-color: transparent; }
 .form-textarea { resize: vertical; min-height: 64px; font-family: inherit; }
-.form-locked-value { font-size: 13px; color: #6b7280; font-style: italic; }
+.form-locked-value { font-size: 13px; color: var(--muted); font-style: italic; }
 .safeguard-warning {
   margin: 6px 0 0;
   padding: 8px 10px;
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
   border-radius: 6px;
   font-size: 12px;
-  color: #991b1b;
+  color: var(--danger-strong);
   line-height: 1.5;
 }
 .form-actions { display: flex; gap: 10px; padding-top: 4px; }
 .btn-primary {
   padding: 7px 18px;
-  background: #2563eb;
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
-.btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.btn-primary:hover:not(:disabled) { background: var(--accent-strong); }
 .btn-primary:disabled { opacity: 0.5; cursor: default; }
 .btn-secondary {
   padding: 7px 18px;
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: var(--soft);
+  color: var(--text-2);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   font-size: 13px;
   cursor: pointer;
 }
-.btn-secondary:hover { background: #e5e7eb; }
+.btn-secondary:hover { background: var(--border); }
 </style>

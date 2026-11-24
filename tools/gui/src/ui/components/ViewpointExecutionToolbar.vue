@@ -80,16 +80,16 @@ const apply = () => { if (missing().length === 0) emit('apply', parametersToWire
 <style scoped>
 .vp-toolbar {
   display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 18px;
-  padding: 10px 14px; margin-bottom: 12px; background: #f9fafb;
-  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 12px; background: var(--hover);
+  border: 1px solid var(--border); border-radius: 8px;
 }
 .vp-toolbar-field { display: flex; flex-direction: column; gap: 4px; }
 .vp-toolbar-field label {
-  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #6b7280;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
 }
-.vp-req { color: #b91c1c; }
+.vp-req { color: var(--danger-strong); }
 .vp-apply {
-  padding: 6px 16px; border-radius: 7px; border: none; background: #6366f1; color: #fff;
+  padding: 6px 16px; border-radius: 7px; border: none; background: var(--indigo); color: var(--on-accent);
   font-size: 13px; font-weight: 600; cursor: pointer;
 }
 .vp-apply:disabled { opacity: .5; cursor: not-allowed; }

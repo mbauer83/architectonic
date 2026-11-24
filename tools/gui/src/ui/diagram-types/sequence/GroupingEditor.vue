@@ -163,25 +163,25 @@ function needsLabel(kind: string) {
 <style scoped>
 .grp-editor { display: flex; flex-direction: column; gap: 8px; }
 .grp-header { display: flex; align-items: center; justify-content: space-between; font-weight: 650; font-size: 12px; }
-.list-hint { font-size: 12px; color: #9ca3af; margin: 0; }
-.grp-card { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid #dbe3ef; border-radius: 8px; background: #fff; }
+.list-hint { font-size: 12px; color: var(--faint); margin: 0; }
+.grp-card { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .grp-card-top { display: flex; align-items: center; gap: 6px; }
 .kind-sel { width: 90px; }
 .label-inp { flex: 1; }
 .rm-btn { flex-shrink: 0; }
 .operands { display: flex; flex-direction: column; gap: 4px; padding-left: 4px; }
 .operand-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.op-label { font-size: 11px; font-weight: 600; color: #6366f1; width: 28px; flex-shrink: 0; }
-.op-to { font-size: 11px; color: #94a3b8; }
+.op-label { font-size: 11px; font-weight: 600; color: var(--indigo); width: 28px; flex-shrink: 0; }
+.op-to { font-size: 11px; color: var(--faint); }
 .guard-inp { width: 80px; }
 .span-sel { width: 130px; }
-.add-op-btn { align-self: flex-start; font-size: 11px; color: #6366f1; background: none; border: 1px dashed #c7d2fe; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
-.add-op-btn:hover { background: #eef2ff; }
-.mini-btn { min-width: 24px; height: 24px; border: 1px solid #cbd5e1; background: #fff; border-radius: 5px; cursor: pointer; font-size: 14px; color: #374151; }
+.add-op-btn { align-self: flex-start; font-size: 11px; color: var(--indigo); background: none; border: 1px dashed var(--indigo-border); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+.add-op-btn:hover { background: var(--indigo-soft); }
+.mini-btn { min-width: 24px; height: 24px; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 5px; cursor: pointer; font-size: 14px; color: var(--text-2); }
 .mini-btn:disabled { opacity: .45; cursor: not-allowed; }
 .inp {
-  padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 5px;
-  font-size: 12px; background: white; color: #1e293b; outline: none; box-sizing: border-box;
+  padding: 4px 6px; border: 1px solid var(--border-strong); border-radius: 5px;
+  font-size: 12px; background: var(--surface); color: var(--text); outline: none; box-sizing: border-box;
 }
-.inp:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px #bfdbfe; }
+.inp:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-ring); }
 </style>

@@ -209,20 +209,20 @@ watch(activeDomain, (domain) => {
 <style scoped>
 .page-title { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
 .wizard-header { margin-bottom: 20px; }
-.wizard-subtitle { color: #6b7280; margin: 0 0 8px; }
+.wizard-subtitle { color: var(--muted); margin: 0 0 8px; }
 .btn-link {
-  background: none; border: none; color: #2563eb; cursor: pointer; padding: 0;
+  background: none; border: none; color: var(--accent); cursor: pointer; padding: 0;
   font-size: 13px; text-decoration: underline;
 }
-.state-msg { color: #6b7280; padding: 8px 0; }
-.state-msg--error { color: #dc2626; }
+.state-msg { color: var(--muted); padding: 8px 0; }
+.state-msg--error { color: var(--danger); }
 
 .draft-banner {
-  border: 1px solid #fcd34d; background: #fffbeb; color: #92400e; border-radius: 8px;
+  border: 1px solid var(--warn-border); background: var(--warn-soft); color: var(--warn-text); border-radius: 8px;
   padding: 10px 14px; margin-bottom: 16px; font-size: 13px;
   display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
 }
-.draft-link { color: #b45309; text-decoration: underline; }
+.draft-link { color: var(--warn-text); text-decoration: underline; }
 
 .domain-hub {
   display: grid;
@@ -232,28 +232,28 @@ watch(activeDomain, (domain) => {
 }
 .domain-card {
   display: flex; flex-direction: column; gap: 4px;
-  padding: 14px 16px; border: 1px solid #e5e7eb; border-left: 4px solid transparent;
-  border-radius: 8px; background: #fff; cursor: pointer; text-align: left;
+  padding: 14px 16px; border: 1px solid var(--border); border-left: 4px solid transparent;
+  border-radius: 8px; background: var(--surface); cursor: pointer; text-align: left;
 }
 .domain-card:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, .08); }
-.domain-card--active { outline: 2px solid #2563eb; outline-offset: -1px; }
+.domain-card--active { outline: 2px solid var(--accent); outline-offset: -1px; }
 .domain-card__label { font-weight: 600; }
 .domain-card__badge {
-  align-self: flex-start; font-size: 11px; font-weight: 600; color: #1d4ed8;
-  background: #dbeafe; border-radius: 10px; padding: 1px 8px;
+  align-self: flex-start; font-size: 11px; font-weight: 600; color: var(--accent-strong);
+  background: var(--type-soft); border-radius: 10px; padding: 1px 8px;
 }
 .domain-card__intro {
-  font-size: 12px; color: #6b7280; line-height: 1.4;
+  font-size: 12px; color: var(--muted); line-height: 1.4;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.domain-card__count { font-size: 12px; color: #6b7280; }
+.domain-card__count { font-size: 12px; color: var(--muted); }
 
 .domain-panel, .review-later, .recap {
-  border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;
+  border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;
 }
 .domain-panel__title { font-size: 16px; font-weight: 600; margin: 0 0 12px; }
 .recap-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.recap-list a { color: #2563eb; font-size: 13px; }
-.recap-meta { font-size: 12px; color: #6b7280; margin-left: 8px; }
-.recap-connections { font-size: 12px; color: #4b5563; margin: 10px 0 0; }
+.recap-list a { color: var(--accent); font-size: 13px; }
+.recap-meta { font-size: 12px; color: var(--muted); margin-left: 8px; }
+.recap-connections { font-size: 12px; color: var(--text-2); margin: 10px 0 0; }
 </style>

@@ -83,25 +83,26 @@ const apply = (): void => {
 <style scoped>
 .dle {
   display: flex; flex-direction: column; gap: 6px; padding: 8px 10px 10px;
-  border-top: 1px solid #f3f4f6; background: #faf5ff;
+  border-top: 1px solid var(--hair); background: var(--violet-soft);
 }
 .dle__label { display: flex; flex-direction: column; gap: 3px; }
 .dle__caption {
-  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #6d28d9;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--violet-text);
 }
 .dle__input {
-  padding: 5px 8px; border: 1px solid #ddd6fe; border-radius: 6px; font-size: 13px; color: #1f2937; background: #fff;
+  padding: 5px 8px; border: 1px solid var(--violet-border); border-radius: 6px; font-size: 13px; color: var(--text);
+  background: var(--surface);
 }
-.dle__input:focus { outline: 2px solid #c4b5fd; outline-offset: 1px; }
+.dle__input:focus { outline: 2px solid var(--violet-border); outline-offset: 1px; }
 .dle__actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .dle__apply, .dle__reset, .dle__cancel {
   padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid transparent;
 }
 .dle__apply { background: #6d28d9; color: #fff; }
 .dle__apply:hover { background: #5b21b6; }
-.dle__reset { background: #fff; color: #6d28d9; border-color: #ddd6fe; }
-.dle__reset:hover { background: #f5f3ff; }
-.dle__cancel { background: none; color: #6b7280; }
-.dle__cancel:hover { color: #374151; }
-.dle__hint { margin: 0; font-size: 11px; color: #6b7280; }
+.dle__reset { background: var(--surface); color: var(--violet-text); border-color: var(--violet-border); }
+.dle__reset:hover { background: var(--violet-soft); }
+.dle__cancel { background: none; color: var(--muted); }
+.dle__cancel:hover { color: var(--text-2); }
+.dle__hint { margin: 0; font-size: 11px; color: var(--muted); }
 </style>

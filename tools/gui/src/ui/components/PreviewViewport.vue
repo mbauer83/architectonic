@@ -42,7 +42,7 @@ defineExpose({ resetView })
 <style scoped>
 .preview-viewport {
   position: relative; overflow: hidden; cursor: grab; user-select: none;
-  background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px;
+  background: var(--paper); border: 1px solid var(--border); border-radius: 6px;
   min-height: 200px; height: clamp(360px, 70vh, 900px);
 }
 @media (max-width: 800px) { .preview-viewport { height: clamp(300px, 60vh, 700px); } }
@@ -53,7 +53,7 @@ defineExpose({ resetView })
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
 }
-.reset-btn { position: absolute; top: 8px; right: 8px; padding: 4px 10px; background: rgba(255,255,255,.92); border: 1px solid #d1d5db; border-radius: 5px; font-size: 12px; cursor: pointer; color: #374151; }
-.reset-btn:hover { background: white; }
-.zoom-hint { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #9ca3af; background: rgba(255,255,255,.8); padding: 2px 8px; border-radius: 4px; pointer-events: none; white-space: nowrap; }
+.reset-btn { position: absolute; top: 8px; right: 8px; padding: 4px 10px; background: var(--overlay); border: 1px solid var(--border-strong); border-radius: 5px; font-size: 12px; cursor: pointer; color: var(--text-2); }
+.reset-btn:hover { background: var(--surface); }
+.zoom-hint { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--muted); background: var(--overlay); padding: 2px 8px; border-radius: 4px; pointer-events: none; white-space: nowrap; }
 </style>

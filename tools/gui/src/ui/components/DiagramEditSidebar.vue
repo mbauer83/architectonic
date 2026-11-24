@@ -198,31 +198,31 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; }
+.card { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); }
 .sidebar { display: flex; flex-direction: column; position: sticky; top: 16px; max-height: calc(100vh - 80px); overflow: hidden; }
-.sb-search { padding: 10px; border-bottom: 1px solid #f3f4f6; flex-shrink: 0; position: relative; z-index: 10; }
+.sb-search { padding: 10px; border-bottom: 1px solid var(--hair); flex-shrink: 0; position: relative; z-index: 10; }
 .sb-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
-.sb-section { border-bottom: 1px solid #f3f4f6; }
+.sb-section { border-bottom: 1px solid var(--hair); }
 .sb-section--pad { padding: 10px; }
-.sb-sec-hdr { display: flex; align-items: center; gap: 5px; padding: 8px 10px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; }
-.sb-sec-hdr--rm { color: #dc2626; }
-.sb-count { font-size: 10px; font-weight: 400; color: #9ca3af; }
+.sb-sec-hdr { display: flex; align-items: center; gap: 5px; padding: 8px 10px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.sb-sec-hdr--rm { color: var(--danger); }
+.sb-count { font-size: 10px; font-weight: 400; color: var(--faint); }
 .entity-section { padding: 0 10px 10px; }
 
 .rm-row { display: flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 12px; }
-.rm-glyph { color: #dc2626; opacity: 0.7; }
-.rm-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #374151; }
-.undo-btn { background: none; border: none; cursor: pointer; color: #9ca3af; font-size: 13px; padding: 0 2px; flex-shrink: 0; }
-.undo-btn:hover { color: #374151; }
+.rm-glyph { color: var(--danger); opacity: 0.7; }
+.rm-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+.undo-btn { background: none; border: none; cursor: pointer; color: var(--faint); font-size: 13px; padding: 0 2px; flex-shrink: 0; }
+.undo-btn:hover { color: var(--text-2); }
 
-.sb-hint { padding: 12px 10px; font-size: 11px; color: #9ca3af; }
-.sb-actions { padding: 10px; display: flex; flex-direction: column; gap: 6px; margin-top: auto; border-top: 1px solid #f3f4f6; flex-shrink: 0; }
-.btn-preview { width: 100%; padding: 7px 12px; background: #f3f4f6; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; }
-.btn-preview:hover:not(:disabled) { background: #eff6ff; }
-.btn-save { width: 100%; padding: 7px 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
-.btn-save:hover:not(:disabled) { background: #1d4ed8; }
+.sb-hint { padding: 12px 10px; font-size: 11px; color: var(--faint); }
+.sb-actions { padding: 10px; display: flex; flex-direction: column; gap: 6px; margin-top: auto; border-top: 1px solid var(--hair); flex-shrink: 0; }
+.btn-preview { width: 100%; padding: 7px 12px; background: var(--soft); color: var(--accent-strong); border: 1px solid var(--accent-border); border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; }
+.btn-preview:hover:not(:disabled) { background: var(--accent-soft); }
+.btn-save { width: 100%; padding: 7px 12px; background: var(--accent); color: var(--on-accent); border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-save:hover:not(:disabled) { background: var(--accent-strong); }
 .btn-preview:disabled, .btn-save:disabled { opacity: .5; cursor: not-allowed; }
-.save-err { font-size: 12px; color: #dc2626; }
-.viewpoint-label { display: block; font-size: 11px; font-weight: 700; color: #374151; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
-.sb-viewpoint { border-bottom: 1px solid #f3f4f6; }
+.save-err { font-size: 12px; color: var(--danger); }
+.viewpoint-label { display: block; font-size: 11px; font-weight: 700; color: var(--text-2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
+.sb-viewpoint { border-bottom: 1px solid var(--hair); }
 </style>

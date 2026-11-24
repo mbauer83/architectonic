@@ -259,34 +259,35 @@ watch(name, () => { previewClean.value = false })
 <style scoped>
 .wizard-entity-form { display: flex; flex-direction: column; gap: 12px; }
 .form-row { display: flex; flex-direction: column; gap: 4px; }
-.form-label { font-size: 12px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: .04em; }
-.required { color: #dc2626; }
+.form-label {
+  font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; }
+.required { color: var(--danger); }
 .form-input, .form-textarea {
-  padding: 7px 10px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;
+  padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border-strong); font-size: 13px;
   outline: none; box-sizing: border-box; font-family: inherit;
 }
-.form-input:focus, .form-textarea:focus { border-color: #2563eb; }
-.form-hint { font-size: 11px; color: #9ca3af; }
+.form-input:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-hint { font-size: 11px; color: var(--faint); }
 .similar-block { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.similar-label { font-size: 12px; color: #92400e; }
+.similar-label { font-size: 12px; color: var(--warn-text); }
 .similar-chip {
-  padding: 2px 10px; border-radius: 12px; border: 1px solid #fcd34d; background: #fffbeb;
-  color: #92400e; font-size: 12px; cursor: pointer;
+  padding: 2px 10px; border-radius: 12px; border: 1px solid var(--warn-border); background: var(--warn-soft);
+  color: var(--warn-text); font-size: 12px; cursor: pointer;
 }
-.similar-chip:hover { background: #fef3c7; }
+.similar-chip:hover { background: var(--warn-soft); }
 .prop-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
-.prop-key { flex: 0 0 160px; font-size: 12px; color: #4b5563; }
-.btn-link { align-self: flex-start; background: none; border: none; color: #2563eb; cursor: pointer; padding: 0; font-size: 12px; text-decoration: underline; }
+.prop-key { flex: 0 0 160px; font-size: 12px; color: var(--text-2); }
+.btn-link { align-self: flex-start; background: none; border: none; color: var(--accent); cursor: pointer; padding: 0; font-size: 12px; text-decoration: underline; }
 .state-msg { font-size: 12px; }
-.state-msg--error { color: #dc2626; }
+.state-msg--error { color: var(--danger); }
 .state-msg--error ul { margin: 4px 0 0; padding-left: 18px; }
-.state-msg--ok { color: #16a34a; }
+.state-msg--ok { color: var(--ok); }
 .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .btn-cancel, .btn-preview, .btn-create {
   padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: none;
 }
-.btn-cancel { background: none; border: 1px solid #d1d5db; color: #6b7280; }
-.btn-preview { background: #f3f4f6; border: 1px solid #bfdbfe; color: #1d4ed8; }
-.btn-create { background: #16a34a; color: white; }
+.btn-cancel { background: none; border: 1px solid var(--border-strong); color: var(--muted); }
+.btn-preview { background: var(--soft); border: 1px solid var(--accent-border); color: var(--accent-strong); }
+.btn-create { background: var(--ok); color: var(--on-accent); }
 .btn-cancel:disabled, .btn-preview:disabled, .btn-create:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

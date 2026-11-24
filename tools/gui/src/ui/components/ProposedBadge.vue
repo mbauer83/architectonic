@@ -36,6 +36,6 @@ const props = defineProps<{ standing: BaselineStanding }>()
 }
 /* Amber for a change awaiting review; red-tinted where the reader has to act, because `stale` and
    `conflicting` mean the change no longer applies cleanly to what it was written against. */
-.proposed-pending { background: #fef3c7; color: #92400e; }
-.proposed-attention { background: #fee2e2; color: #991b1b; }
+.proposed-pending { background: var(--warn-soft); color: var(--warn-text); }
+.proposed-attention { background: var(--danger-soft); color: var(--danger-strong); }
 </style>

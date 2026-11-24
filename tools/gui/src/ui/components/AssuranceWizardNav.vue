@@ -95,23 +95,23 @@ const SECTIONS: readonly NavSection[] = [
 
 <style scoped>
 .wizard-nav {
-  width: 232px; flex-shrink: 0; border-right: 1px solid #e5e7eb; background: #fafafa;
+  width: 232px; flex-shrink: 0; border-right: 1px solid var(--border); background: var(--hover);
   padding: 12px 0; overflow-y: auto;
 }
 .nav-section { margin-bottom: 18px; }
 .nav-title {
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
-  color: #6b7280; margin: 0 0 6px 14px;
+  color: var(--muted); margin: 0 0 6px 14px;
 }
 .nav-link {
-  display: block; padding: 5px 14px; font-size: 12.5px; color: #374151; text-decoration: none;
+  display: block; padding: 5px 14px; font-size: 12.5px; color: var(--text-2); text-decoration: none;
   border-left: 2px solid transparent;
 }
-.nav-link:hover { background: #f3f4f6; color: #111827; }
+.nav-link:hover { background: var(--soft); color: var(--text); }
 /* Selected state carries its own text colour rather than relying on the hover rule, which a
    single-class active rule would otherwise lose to on hover. */
 .nav-link--active {
-  background: #eff6ff; color: #1d4ed8; font-weight: 600; border-left-color: #2563eb;
+  background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; border-left-color: var(--accent);
 }
-.nav-link--active:hover { background: #dbeafe; color: #1d4ed8; }
+.nav-link--active:hover { background: var(--type-soft); color: var(--accent-strong); }
 </style>

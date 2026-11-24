@@ -1,0 +1,62 @@
+.layout { display: flex; gap: 24px; }
+.sidebar { width: 190px; flex-shrink: 0; }
+.sidebar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.sidebar-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.manage-link { font-size: 14px; color: var(--faint); text-decoration: none; line-height: 1; }
+.manage-link:hover { color: var(--text-2); }
+
+.domain-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.domain-btn { width: 100%; padding: 7px 10px; border: 0; border-left: 3px solid transparent; border-radius: 6px; background: transparent; color: var(--text-2); cursor: pointer; font-size: 13px; text-align: left; }
+.domain-btn:hover { background: var(--soft); }
+.domain-btn.active { background: var(--accent-soft); color: var(--accent-strong); font-weight: 500; }
+
+.content { flex: 1; min-width: 0; }
+.content-header, .actions, .view-toggle, .toolbar, .toolbar-field { display: flex; align-items: center; }
+.content-header { justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.actions, .view-toggle { gap: 10px; }
+.page-title { font-size: 22px; font-weight: 600; }
+.subtitle, .count, .state-msg, .conn-split { color: var(--muted); }
+.subtitle { margin-top: 2px; font-size: 13px; }
+.count { margin-left: 6px; font-size: 14px; font-weight: 400; }
+.toolbar { justify-content: space-between; margin-bottom: 14px; }
+.toolbar-field { gap: 8px; }
+.toolbar-field span { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.toolbar-select, .toggle-btn {
+  border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--text-2); }
+.toolbar-select { min-width: 180px; padding: 7px 10px; }
+.toggle-btn { padding: 7px 12px; cursor: pointer; font-size: 13px; }
+.toggle-btn--active { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.save-as-viewpoint-btn {
+  appearance: none; border: 1px dashed var(--border-strong); background: var(--surface); color: var(--muted);
+  border-radius: 7px; padding: 7px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.save-as-viewpoint-btn:hover { border-color: var(--indigo); color: var(--indigo-text); }
+.create-btn { padding: 8px 14px; border-radius: 6px; background: var(--ok); color: var(--on-accent); font-size: 13px; font-weight: 500; white-space: nowrap; }
+.create-btn:hover { background: var(--ok); text-decoration: none; }
+.wizard-link {
+  padding: 8px 12px; border-radius: 6px; border: 1px solid var(--accent-border); color: var(--accent-strong);
+  font-size: 13px; white-space: nowrap; background: var(--surface);
+}
+.wizard-link:hover { background: var(--accent-soft); text-decoration: none; }
+
+.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.stamp { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.type-cell { display: inline-flex; align-items: center; gap: 8px; }
+.type-glyph { color: var(--text-2); fill: none; flex: 0 0 auto; }
+.mono, .conn-counts { font-family: monospace; }
+.mono { font-size: 12px; color: var(--text-2); }
+.conn-counts { font-size: 12px; white-space: nowrap; }
+.state-msg--error { color: var(--danger); }
+.global-badge { display: inline-block; background: var(--warn-soft); color: var(--warn-text); border: 1px solid var(--warn-border); border-radius: 4px; padding: 1px 7px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-right: 8px; vertical-align: middle; }
+.row-tier-badge { margin-left: 8px; vertical-align: middle; }
+.group-chip { display: inline-block; margin-left: 6px; background: var(--info-soft); color: var(--info-text); border: 1px solid var(--info-border); border-radius: 3px; padding: 0 5px; font-size: 10px; font-weight: 500; vertical-align: middle; cursor: pointer; }
+.group-chip:hover { background: var(--info-border); }
+.table-card :deep(.row--global) td { background: var(--warn-soft); }
+.table-card :deep(.row--global):hover td { background: var(--warn-soft); }
+
+.pagination { display: flex; align-items: center; gap: 12px; padding: 12px 0; justify-content: center; }
+.page-btn { padding: 6px 14px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--text-2); cursor: pointer; font-size: 13px; }
+.page-btn:hover:not(:disabled) { background: var(--soft); }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.page-info { font-size: 13px; color: var(--muted); }

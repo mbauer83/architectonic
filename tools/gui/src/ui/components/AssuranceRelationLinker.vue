@@ -58,6 +58,6 @@ function onSelect(event: Event): void {
 
 <style scoped>
 .relation { display: inline-flex; align-items: center; gap: 6px; }
-.relation-select { font-size: 12px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 5px; }
-.relation-set { font-size: 12px; color: #15803d; font-weight: 600; }
+.relation-select { font-size: 12px; padding: 4px 8px; border: 1px solid var(--border-strong); border-radius: 5px; }
+.relation-set { font-size: 12px; color: var(--ok-text); font-weight: 600; }
 </style>

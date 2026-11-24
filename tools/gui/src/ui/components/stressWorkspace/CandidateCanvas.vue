@@ -144,7 +144,7 @@ onMounted(async () => {
 .kind { grid-column: 1 / -1; font-size: 12px; color: var(--text-2); }
 .acts { grid-row: 1; grid-column: 2; display: flex; gap: 6px; align-items: center; }
 .saved { font-size: 11.5px; color: var(--muted); }
-.err { color: #b91c1c; font-size: 12.5px; }
+.err { color: var(--danger-strong); font-size: 12.5px; }
 .img-container {
   position: relative; overflow: hidden; background: var(--paper); border: 1px solid var(--accent);
   box-shadow: inset 0 2px 0 var(--accent); border-radius: 8px; height: clamp(380px, calc(100vh - 340px), 900px);

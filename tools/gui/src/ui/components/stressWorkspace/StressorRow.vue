@@ -204,5 +204,5 @@ watch(() => props.fresh, async (fresh) => {
 textarea.cell-in { resize: vertical; min-height: 44px; }
 .warnline { display: block; font-size: 11.5px; color: var(--warn-text); }
 .rm-row { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 15px; padding: 0 4px; }
-.rm-row:hover, .rm-row:focus-visible { color: #b91c1c; }
+.rm-row:hover, .rm-row:focus-visible { color: var(--danger-strong); }
 </style>

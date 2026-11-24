@@ -58,10 +58,11 @@ const set = (patch: Partial<StepNote>) => {
 <style scoped>
 .ns { display: flex; flex-direction: column; gap: 4px; }
 .ns-hdr { display: flex; align-items: center; gap: 6px; }
-.ns-side { padding: 3px 5px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; background: #fffbeb; }
-.ns-rm { font-size: 11px; color: #9ca3af; background: none; border: 1px solid #e2e8f0; border-radius: 4px; padding: 2px 6px; cursor: pointer; }
-.ns-rm:hover { color: #ef4444; border-color: #fca5a5; }
-.ns-text { width: 100%; resize: vertical; font-family: inherit; font-size: 12px; padding: 4px 6px; border: 1px solid #fde68a; border-radius: 4px; background: #fffbeb; box-sizing: border-box; }
-.ns-add { font-size: 11px; color: #92400e; background: none; border: 1px dashed #fde68a; border-radius: 4px; padding: 2px 7px; cursor: pointer; align-self: flex-start; }
-.ns-add:hover { background: #fffbeb; }
+.ns-side { padding: 3px 5px; border: 1px solid var(--border-strong); border-radius: 4px; font-size: 12px;
+  background: var(--warn-soft); }
+.ns-rm { font-size: 11px; color: var(--faint); background: none; border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; cursor: pointer; }
+.ns-rm:hover { color: var(--danger); border-color: var(--danger-border); }
+.ns-text { width: 100%; resize: vertical; font-family: inherit; font-size: 12px; padding: 4px 6px; border: 1px solid var(--warn-border); border-radius: 4px; background: var(--warn-soft); box-sizing: border-box; }
+.ns-add { font-size: 11px; color: var(--warn-text); background: none; border: 1px dashed var(--warn-border); border-radius: 4px; padding: 2px 7px; cursor: pointer; align-self: flex-start; }
+.ns-add:hover { background: var(--warn-soft); }
 </style>

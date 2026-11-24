@@ -99,17 +99,17 @@ const tierWithArticle = computed(() => (props.viewingTier ? withArticle(props.vi
 </template>
 
 <style scoped>
-.hint { background: #fef3c7; color: #92400e; padding: 8px 12px; border-radius: 6px; }
-.hint--readonly { background: #f3f4f6; color: #374151; }
+.hint { background: var(--warn-soft); color: var(--warn-text); padding: 8px 12px; border-radius: 6px; }
+.hint--readonly { background: var(--soft); color: var(--text-2); }
 .issue-list { list-style: none; padding: 0; }
 .issue-list li { padding: 6px 10px; border-radius: 6px; margin: 4px 0; cursor: pointer; font-size: 12.5px; }
-.issue-list li.error { background: #fee2e2; color: #991b1b; }
-.issue-list li.warning { background: #fef3c7; color: #92400e; }
-.broken-block { border: 1px solid #fecaca; border-radius: 6px; padding: 8px 12px; margin: 4px 0; }
-.broken-lead { margin: 0 0 6px; font-size: 12.5px; color: #991b1b; }
+.issue-list li.error { background: var(--danger-soft); color: var(--danger-strong); }
+.issue-list li.warning { background: var(--warn-soft); color: var(--warn-text); }
+.broken-block { border: 1px solid var(--danger-border); border-radius: 6px; padding: 8px 12px; margin: 4px 0; }
+.broken-lead { margin: 0 0 6px; font-size: 12.5px; color: var(--danger-strong); }
 .broken-list { list-style: none; padding: 0; margin: 0; }
 .broken-list li { padding: 5px 10px; border-radius: 6px; margin: 3px 0; font-size: 12.5px; }
-.broken-list li.ontology { background: #fee2e2; color: #991b1b; }
-.broken-list li.entity-id { background: #fef3c7; color: #92400e; }
+.broken-list li.ontology { background: var(--danger-soft); color: var(--danger-strong); }
+.broken-list li.entity-id { background: var(--warn-soft); color: var(--warn-text); }
 .broken-list code { font-family: ui-monospace, monospace; }
 </style>

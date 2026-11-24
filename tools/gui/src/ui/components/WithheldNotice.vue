@@ -44,9 +44,9 @@ onMounted(async () => {
   align-items: baseline;
   gap: 6px;
   font-size: 12px;
-  color: #92400e;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  color: var(--warn-text);
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-border);
   border-radius: 6px;
   padding: 8px 10px;
   margin: 8px 0 0;
@@ -54,7 +54,7 @@ onMounted(async () => {
 .withheld-icon { flex-shrink: 0; }
 .withheld-notice code {
   font-size: 11px;
-  background: #fef3c7;
+  background: var(--warn-soft);
   padding: 1px 4px;
   border-radius: 3px;
 }

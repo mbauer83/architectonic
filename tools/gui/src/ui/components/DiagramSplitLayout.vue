@@ -83,10 +83,10 @@ const { gridStyle, startResize } = useSidebarResize(gridRef, {
   height: 100%;
   margin: 0 auto;
   border-radius: 999px;
-  background: #e5e7eb;
+  background: var(--border);
   transition: background-color 0.15s ease;
 }
-.sidebar-splitter:hover::before { background: #93c5fd; }
+.sidebar-splitter:hover::before { background: var(--accent-border); }
 @media (max-width: 800px) {
   .sidebar-splitter { display: none; }
 }

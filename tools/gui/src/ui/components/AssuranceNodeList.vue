@@ -181,28 +181,28 @@ const emit = defineEmits<{
 /* Deliberately the architecture catalog's own numbers (EntitiesView), not an approximation of
    them: two toggles that differ by two pixels of padding read as two different controls. */
 .toggle-btn {
-  font-size: 13px; padding: 7px 12px; border: 1px solid #d1d5db; border-radius: 6px;
-  background: white; cursor: pointer; color: #374151;
+  font-size: 13px; padding: 7px 12px; border: 1px solid var(--border-strong); border-radius: 6px;
+  background: var(--surface); cursor: pointer; color: var(--text-2);
 }
-.toggle-btn:hover:not(.toggle-btn--active) { background: #f3f4f6; }
+.toggle-btn:hover:not(.toggle-btn--active) { background: var(--soft); }
 /* Selected keeps its own colours through hover, as elsewhere: a bare :hover rule would
    otherwise restore the pale background while the white label stayed. */
-.toggle-btn--active { background: #2563eb; border-color: #2563eb; color: white; }
-.toggle-btn--active:hover { background: #1d4ed8; }
+.toggle-btn--active { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.toggle-btn--active:hover { background: var(--accent-strong); }
 
-.list-count { font-size: 11.5px; color: #6b7280; padding: 6px 16px; }
-.list-loading { font-size: 13px; color: #6b7280; padding: 16px; }
+.list-count { font-size: 11.5px; color: var(--muted); padding: 6px 16px; }
+.list-loading { font-size: 13px; color: var(--muted); padding: 16px; }
 .node-table-scroll { flex: 1; overflow: auto; }
 
 .node-type-badge {
-  font-size: 11px; background: #eef2ff; color: #3730a3; border-radius: 4px; padding: 1px 6px;
+  font-size: 11px; background: var(--indigo-soft); color: var(--indigo-text); border-radius: 4px; padding: 1px 6px;
 }
-.node-name--link { color: #1d4ed8; text-decoration: none; }
+.node-name--link { color: var(--accent-strong); text-decoration: none; }
 .node-name--link:hover { text-decoration: underline; }
-.node-status, .node-concern { font-size: 11.5px; color: #374151; }
+.node-status, .node-concern { font-size: 11.5px; color: var(--text-2); }
 /* The direction breakdown reads as a gloss on the total, not a second number. */
-.conn-split { margin-left: 6px; font-size: 11px; color: #6b7280; }
+.conn-split { margin-left: 6px; font-size: 11px; color: var(--muted); }
 .node-tlp { font-size: 11px; font-weight: 600; }
-.node-binding { font-size: 11px; color: #374151; }
-.stamp { font-size: 11.5px; color: #6b7280; }
+.node-binding { font-size: 11px; color: var(--text-2); }
+.stamp { font-size: 11.5px; color: var(--muted); }
 </style>

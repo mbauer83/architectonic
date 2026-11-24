@@ -197,23 +197,23 @@ watch([analysisId, diagramType], clearSelection)
 <style scoped>
 .detail-page { max-width: 100%; padding: 24px 24px 32px; }
 .detail-header { margin-bottom: 18px; }
-.back-link { font-size: 13px; color: #64748b; display: block; margin-bottom: 12px; }
+.back-link { font-size: 13px; color: var(--muted); display: block; margin-bottom: 12px; }
 .detail-title { font-size: 20px; font-weight: 700; margin: 0; }
-.detail-subtitle { color: #64748b; font-size: 13px; margin: 6px 0 0; }
-.state-msg { color: #64748b; font-size: 14px; }
-.state-error { color: #dc2626; font-size: 14px; }
+.detail-subtitle { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+.state-msg { color: var(--muted); font-size: 14px; }
+.state-error { color: var(--danger); font-size: 14px; }
 
 .selection-panel {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface);
   overflow: hidden;
   position: sticky;
   top: 16px;
   max-height: clamp(420px, 78vh, 980px);
   overflow-y: auto;
 }
-.edit-node-link { display: block; padding: 0 16px 16px; font-size: 12px; color: #1d4ed8; }
+.edit-node-link { display: block; padding: 0 16px 16px; font-size: 12px; color: var(--accent-strong); }
 .edge-detail { padding: 16px; font-size: 13px; }
 .edge-detail__header { display: flex; justify-content: space-between; }
 .edge-detail__header button { border: 0; background: none; cursor: pointer; font-size: 18px; }

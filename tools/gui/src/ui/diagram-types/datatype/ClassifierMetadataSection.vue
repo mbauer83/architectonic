@@ -38,5 +38,5 @@ const onSave = (patch: Record<string, unknown>) => emit('save', { classifierId: 
 </template>
 
 <style scoped>
-.clf-meta { padding-top: 8px; border-top: 1px dashed #e5e7eb; }
+.clf-meta { padding-top: 8px; border-top: 1px dashed var(--border); }
 </style>

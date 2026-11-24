@@ -77,15 +77,15 @@ watch(() => [props.artifactId, props.standing] as const, load)
 
 <style scoped>
 .pending {
-  border: 1px solid #fcd34d;
-  background: #fffbeb;
+  border: 1px solid var(--warn-border);
+  background: var(--warn-soft);
   border-radius: 6px;
   padding: 0.75rem 0.9rem;
   margin-bottom: 1rem;
 }
 .pending__title { font-size: 0.95rem; margin: 0 0 0.25rem; }
-.pending__intro { margin: 0 0 0.6rem; font-size: 0.85rem; color: #78350f; }
+.pending__intro { margin: 0 0 0.6rem; font-size: 0.85rem; color: var(--warn-text); }
 .pending__fields { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.75rem; margin: 0; }
-.pending__field { font-weight: 600; font-size: 0.85rem; color: #78350f; }
+.pending__field { font-weight: 600; font-size: 0.85rem; color: var(--warn-text); }
 .pending__value { margin: 0; font-size: 0.9rem; white-space: pre-wrap; }
 </style>

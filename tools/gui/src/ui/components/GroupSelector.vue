@@ -262,44 +262,46 @@ const toggleArchived = () => emit('update:showArchived', !props.showArchived)
 .group-btn {
   width: 100%; display: flex; align-items: center; justify-content: space-between;
   padding: 6px 10px; border: 0; border-left: 3px solid transparent;
-  border-radius: 6px; background: transparent; color: #374151;
+  border-radius: 6px; background: transparent; color: var(--text-2);
   cursor: pointer; font-size: 13px; text-align: left;
 }
-.group-btn:hover { background: #f3f4f6; }
-.group-btn.active { background: #eff6ff; color: #1d4ed8; font-weight: 500; border-left-color: #2563eb; }
+.group-btn:hover { background: var(--soft); }
+.group-btn.active {
+  background: var(--accent-soft); color: var(--accent-strong); font-weight: 500; border-left-color: var(--accent); }
 .group-btn.archived { opacity: 0.55; }
 .group-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.group-count { font-size: 11px; color: #9ca3af; margin-left: 4px; flex-shrink: 0; }
+.group-count { font-size: 11px; color: var(--faint); margin-left: 4px; flex-shrink: 0; }
 
 .item-menu-btn {
-  flex-shrink: 0; width: 18px; height: 18px; border-radius: 4px; border: 1px solid #d1d5db;
-  background: white; font-size: 10px; cursor: pointer; display: none;
-  align-items: center; justify-content: center; line-height: 1; color: #374151; margin-left: 2px;
+  flex-shrink: 0; width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--border-strong);
+  background: var(--surface); font-size: 10px; cursor: pointer; display: none;
+  align-items: center; justify-content: center; line-height: 1; color: var(--text-2); margin-left: 2px;
 }
 .group-item:hover .item-menu-btn { display: flex; }
 
 .group-actions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
 .action-btn {
-  padding: 3px 8px; border: 1px dashed #d1d5db; border-radius: 4px;
-  background: transparent; font-size: 11px; color: #6b7280; cursor: pointer;
+  padding: 3px 8px; border: 1px dashed var(--border-strong); border-radius: 4px;
+  background: transparent; font-size: 11px; color: var(--muted); cursor: pointer;
 }
-.action-btn:hover { background: #f3f4f6; }
-.action-btn.active { color: #2563eb; border-color: #2563eb; }
+.action-btn:hover { background: var(--soft); }
+.action-btn.active { color: var(--accent); border-color: var(--accent); }
 
 .group-dialog {
-  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;
+  background: var(--hover); border: 1px solid var(--border); border-radius: 8px;
   padding: 12px; display: flex; flex-direction: column; gap: 8px; margin-top: 4px;
 }
-.dialog-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #374151; }
-.dialog-note { font-size: 11px; color: #6b7280; margin: 0; }
-.field { display: flex; flex-direction: column; gap: 2px; font-size: 10px; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
-.field-input { padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; }
-.dialog-err { font-size: 11px; color: #dc2626; }
+.dialog-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-2); }
+.dialog-note { font-size: 11px; color: var(--muted); margin: 0; }
+.field { display: flex; flex-direction: column; gap: 2px; font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.field-input { padding: 4px 8px; border: 1px solid var(--border-strong); border-radius: 4px; font-size: 12px; }
+.dialog-err { font-size: 11px; color: var(--danger); }
 .dialog-row { display: flex; gap: 6px; justify-content: flex-end; }
-.btn { padding: 4px 10px; border: 1px solid #d1d5db; border-radius: 4px; background: white; cursor: pointer; font-size: 12px; }
-.btn--primary { background: #2563eb; color: white; border-color: #2563eb; }
-.btn--primary:hover:not(:disabled) { background: #1d4ed8; }
-.btn--danger { background: #dc2626; color: white; border-color: #dc2626; }
-.btn--danger:hover:not(:disabled) { background: #b91c1c; }
+.btn { padding: 4px 10px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--surface); cursor: pointer; font-size: 12px; }
+.btn--primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.btn--primary:hover:not(:disabled) { background: var(--accent-strong); }
+.btn--danger { background: var(--danger); color: var(--on-accent); border-color: var(--danger); }
+.btn--danger:hover:not(:disabled) { background: var(--danger-strong); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

@@ -61,13 +61,15 @@ const emit = defineEmits<{ 'update:modelValue': [value: GroupNode | null] }>()
 </template>
 
 <style scoped>
-.builder { border: 1px dashed #d1d5db; border-radius: 10px; padding: 12px; background: #f9fafb; margin: 8px 0; }
+.builder { border: 1px dashed var(--border-strong); border-radius: 10px; padding: 12px; background: var(--hover);
+  margin: 8px 0; }
 .builder-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.builder-title { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .05em; }
-.placeholder { font-size: 12.5px; color: #6b7280; margin: 4px 0; }
+.builder-title {
+  font-size: 11px; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: .05em; }
+.placeholder { font-size: 12.5px; color: var(--muted); margin: 4px 0; }
 .clear-btn, .add-btn {
-  appearance: none; border: 1px dashed #d1d5db; background: #fff; color: #6b7280;
+  appearance: none; border: 1px dashed var(--border-strong); background: var(--surface); color: var(--muted);
   border-radius: 7px; padding: 4px 9px; font-size: 11.5px; font-weight: 600; cursor: pointer;
 }
-.clear-btn:hover, .add-btn:hover { border-color: #6366f1; color: #4338ca; }
+.clear-btn:hover, .add-btn:hover { border-color: var(--indigo); color: var(--indigo-text); }
 </style>

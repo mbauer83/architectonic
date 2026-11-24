@@ -154,26 +154,27 @@ const removeConnection = (artifactId: string) => {
 <style scoped>
 .conn-section {
   display: flex; flex-direction: column; gap: 8px;
-  padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc;
+  padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--canvas);
 }
 .conn-hdr { display: flex; align-items: center; gap: 8px; }
-.conn-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #374151; }
-.conn-hint { font-size: 11px; color: #9ca3af; flex: 1; }
-.add-btn { padding: 3px 10px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; color: #374151; }
-.add-btn:hover { background: #f9fafb; }
-.add-form { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; }
-.conn-select { flex: 1; min-width: 120px; padding: 4px 6px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 4px; }
-.arrow { font-size: 14px; color: #6b7280; flex-shrink: 0; }
-.label-input { flex: 1; min-width: 100px; padding: 4px 6px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 4px; }
-.confirm-btn { padding: 4px 12px; font-size: 12px; border: 1px solid #3b82f6; border-radius: 6px; background: #3b82f6; color: white; cursor: pointer; }
+.conn-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); }
+.conn-hint { font-size: 11px; color: var(--faint); flex: 1; }
+.add-btn { padding: 3px 10px; font-size: 12px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); cursor: pointer; color: var(--text-2); }
+.add-btn:hover { background: var(--hover); }
+.add-form { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+.conn-select { flex: 1; min-width: 120px; padding: 4px 6px; font-size: 12px; border: 1px solid var(--border-strong); border-radius: 4px; }
+.arrow { font-size: 14px; color: var(--muted); flex-shrink: 0; }
+.label-input { flex: 1; min-width: 100px; padding: 4px 6px; font-size: 12px; border: 1px solid var(--border-strong); border-radius: 4px; }
+.confirm-btn { padding: 4px 12px; font-size: 12px; border: 1px solid var(--accent); border-radius: 6px; background: var(--accent); color: var(--on-accent); cursor: pointer; }
 .confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.confirm-btn:not(:disabled):hover { background: #2563eb; }
+.confirm-btn:not(:disabled):hover { background: var(--accent); }
 .conn-list { display: flex; flex-direction: column; gap: 4px; }
-.conn-row { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: white; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 12px; }
-.conn-src, .conn-tgt { font-weight: 500; color: #1e293b; }
-.conn-arrow { color: #9ca3af; }
-.conn-label { color: #6b7280; font-style: italic; flex: 1; }
-.remove-btn { margin-left: auto; padding: 2px 6px; font-size: 11px; border: 1px solid #fca5a5; border-radius: 4px; background: white; color: #dc2626; cursor: pointer; }
-.remove-btn:hover { background: #fef2f2; }
-.conn-empty { font-size: 12px; color: #9ca3af; padding: 4px 2px; }
+.conn-row { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; font-size: 12px; }
+.conn-src, .conn-tgt { font-weight: 500; color: var(--text); }
+.conn-arrow { color: var(--faint); }
+.conn-label { color: var(--muted); font-style: italic; flex: 1; }
+.remove-btn { margin-left: auto; padding: 2px 6px; font-size: 11px; border: 1px solid var(--danger-border); border-radius: 4px; background: var(--surface); color: var(--danger); cursor: pointer; }
+.remove-btn:hover { background: var(--danger-soft); }
+.conn-empty { font-size: 12px; color: var(--faint); padding: 4px 2px; }
 </style>

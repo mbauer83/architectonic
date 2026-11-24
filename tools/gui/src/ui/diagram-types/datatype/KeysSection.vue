@@ -92,11 +92,11 @@ function removeKey(index: number) {
 .keys { display: flex; flex-direction: column; gap: 5px; }
 .keys-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .keys-hdr { display: flex; align-items: center; justify-content: space-between; }
-.keys-label { font-size: 11px; font-weight: 600; color: #374151; white-space: nowrap; }
-.keys-add { font-size: 11px; padding: 1px 6px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; }
+.keys-label { font-size: 11px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.keys-add { font-size: 11px; padding: 1px 6px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--surface); cursor: pointer; }
 .keys-add:disabled { opacity: 0.5; cursor: not-allowed; }
 .key-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.key-name { width: 110px; font-size: 11px; border: 1px solid #e2e8f0; border-radius: 3px; padding: 1px 4px; }
-.key-del { border: none; background: none; cursor: pointer; color: #9ca3af; font-size: 14px; padding: 0 2px; }
-.key-del:hover { color: #ef4444; }
+.key-name { width: 110px; font-size: 11px; border: 1px solid var(--border); border-radius: 3px; padding: 1px 4px; }
+.key-del { border: none; background: none; cursor: pointer; color: var(--faint); font-size: 14px; padding: 0 2px; }
+.key-del:hover { color: var(--danger); }
 </style>

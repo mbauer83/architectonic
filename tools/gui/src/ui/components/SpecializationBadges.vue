@@ -23,5 +23,5 @@ defineProps<{ specializations: readonly string[] }>()
 </template>
 
 <style scoped>
-.type-specialization { font-size: 11px; font-style: italic; color: #6d28d9; }
+.type-specialization { font-size: 11px; font-style: italic; color: var(--violet-text); }
 </style>

@@ -84,7 +84,7 @@ const emit = defineEmits<{ open: []; close: []; recorded: [] }>()
 /* Moved verbatim from the matrix view with the cell itself: the state colours are decisions, not
    decoration, and re-choosing them here would quietly change what a reader sees. */
 td {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   padding: 6px 8px;
   text-align: left;
   vertical-align: top;
@@ -97,30 +97,32 @@ td {
 }
 /* Untouched and not-credible must never be confusable: one has been looked at. */
 .cell-untouched {
-  background: #ffffff;
-  color: #9ca3af;
+  background: var(--surface);
+  color: var(--faint);
   border-style: dashed;
 }
 .cell-not-credible {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--soft);
+  color: var(--text-2);
 }
 /* `indeterminate` is deliberately unlike every band — an unrated row is a gap, not a quiet one. */
 .cell-indeterminate {
-  background: repeating-linear-gradient(45deg, #ffffff, #ffffff 6px, #eef2ff 6px, #eef2ff 12px);
-  color: #3730a3;
+  background: repeating-linear-gradient(
+    45deg, var(--surface), var(--surface) 6px, var(--indigo-soft) 6px, var(--indigo-soft) 12px
+  );
+  color: var(--indigo-text);
 }
 .cell-high {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-soft);
+  color: var(--danger-strong);
 }
 .cell-medium {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warn-soft);
+  color: var(--warn-text);
 }
 .cell-low {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--ok-soft);
+  color: var(--ok-text);
 }
 .cell-factors {
   display: flex;
@@ -131,7 +133,7 @@ td {
   font-size: 11px;
 }
 .cell-basis {
-  color: #6b7280;
+  color: var(--muted);
 }
 .cell-reason {
   font-size: 11px;
@@ -144,6 +146,6 @@ td {
   font-size: 11px;
   font-style: italic;
 }
-.cell-record { margin-top: 4px; padding: 3px 7px; border: 1px solid #1d4ed8; border-radius: 4px;
-  background: white; color: #1d4ed8; font: inherit; font-size: 11px; cursor: pointer; }
+.cell-record { margin-top: 4px; padding: 3px 7px; border: 1px solid var(--accent-strong); border-radius: 4px;
+  background: var(--surface); color: var(--accent-strong); font: inherit; font-size: 11px; cursor: pointer; }
 </style>

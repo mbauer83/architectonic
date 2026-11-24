@@ -38,8 +38,10 @@ const headline = computed(() => quarantineHeadline(props.artifactType, props.spe
 </template>
 
 <style scoped>
-.quarantine { border: 1px solid #fecaca; background: #fef2f2; border-radius: 6px; padding: 8px 12px; margin: 4px 0; }
-.quarantine-lead { margin: 0; font-size: 12.5px; color: #991b1b; }
+.quarantine {
+  border: 1px solid var(--danger-border); background: var(--danger-soft); border-radius: 6px; padding: 8px 12px;
+  margin: 4px 0; }
+.quarantine-lead { margin: 0; font-size: 12.5px; color: var(--danger-strong); }
 .quarantine-list { list-style: disc; margin: 6px 0 0; padding-left: 18px; }
-.quarantine-list li { font-size: 12px; color: #991b1b; font-family: ui-monospace, monospace; }
+.quarantine-list li { font-size: 12px; color: var(--danger-strong); font-family: ui-monospace, monospace; }
 </style>

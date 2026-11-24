@@ -303,31 +303,34 @@ const onChipRemoveKey = (e: KeyboardEvent, isSelected: boolean, remove: () => vo
 </template>
 
 <style scoped>
-fieldset { border: 1px solid #d1d5db; border-radius: 8px; margin: 10px 0; padding: 8px 12px; }
-.mode-row { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: #374151; margin: 4px 0 8px; }
-.counts { font-size: 12px; color: #6b7280; margin: 4px 0; }
+fieldset { border: 1px solid var(--border-strong); border-radius: 8px; margin: 10px 0; padding: 8px 12px; }
+.mode-row {
+  display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--text-2); margin: 4px 0 8px; }
+.counts { font-size: 12px; color: var(--muted); margin: 4px 0; }
 .type-ahead {
-  display: block; width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #d1d5db;
+  display: block; width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-strong);
   font-size: 13px; font-family: inherit; box-sizing: border-box; margin: 4px 0 8px;
 }
-.empty-hint { font-size: 12px; color: #92400e; background: #fef3c7; padding: 6px 10px; border-radius: 6px; }
+.empty-hint {
+  font-size: 12px; color: var(--warn-text); background: var(--warn-soft); padding: 6px 10px; border-radius: 6px; }
 .domain-group { margin: 8px 0; }
 .domain-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.domain-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
+.domain-name {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .bulk-btn {
-  appearance: none; border: 1px dashed #d1d5db; background: #fff; color: #6b7280;
+  appearance: none; border: 1px dashed var(--border-strong); background: var(--surface); color: var(--muted);
   border-radius: 99px; padding: 2px 9px; font-size: 11px; font-weight: 600; cursor: pointer;
 }
-.bulk-btn:hover { border-color: #6366f1; color: #4338ca; }
-.bulk-btn:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+.bulk-btn:hover { border-color: var(--indigo); color: var(--indigo-text); }
+.bulk-btn:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
-  appearance: none; border: 1px solid #d1d5db; background: #fff; border-radius: 999px;
-  padding: 4px 10px; font-size: 12px; color: #374151; cursor: pointer;
+  appearance: none; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 999px;
+  padding: 4px 10px; font-size: 12px; color: var(--text-2); cursor: pointer;
 }
-.chip:hover { border-color: #6366f1; color: #4338ca; }
-.chip:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
-.chip.on { background: #6366f1; border-color: #6366f1; color: #fff; }
-.chip.explicit { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
-.chip.inherited { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+.chip:hover { border-color: var(--indigo); color: var(--indigo-text); }
+.chip:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
+.chip.on { background: var(--indigo); border-color: var(--indigo); color: var(--on-accent); }
+.chip.explicit { background: var(--danger-soft); border-color: var(--danger-border); color: var(--danger-strong); }
+.chip.inherited { background: var(--warn-soft); border-color: var(--warn-border); color: var(--warn-text); }
 </style>

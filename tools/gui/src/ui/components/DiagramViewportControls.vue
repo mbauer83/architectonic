@@ -67,13 +67,13 @@ defineEmits<{ reset: []; 'toggle-fullscreen': [] }>()
 .viewport-btn {
   /* Square, like the zoom cluster it now matches: a glyph in a box rather than a label in a pill. */
   width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(255, 255, 255, .92); border: 1px solid #d1d5db;
-  border-radius: 5px; font-size: 14px; line-height: 1; cursor: pointer; color: #374151;
+  background: var(--overlay); border: 1px solid var(--border-strong);
+  border-radius: 5px; font-size: 14px; line-height: 1; cursor: pointer; color: var(--text-2);
 }
-.viewport-btn:hover { background: white; }
+.viewport-btn:hover { background: var(--surface); }
 .zoom-hint {
   position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
-  font-size: 11px; color: #9ca3af; background: rgba(255, 255, 255, .8);
+  font-size: 11px; color: var(--muted); background: var(--overlay);
   padding: 2px 8px; border-radius: 4px; pointer-events: none; white-space: nowrap;
 }
 </style>

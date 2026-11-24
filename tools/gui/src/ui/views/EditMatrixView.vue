@@ -300,53 +300,54 @@ const doSave = async () => {
 <style scoped>
 .page { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
 .page-hdr { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
-.back { font-size: 13px; color: #6b7280; text-decoration: none; }
-.back:hover { color: #374151; }
+.back { font-size: 13px; color: var(--muted); text-decoration: none; }
+.back:hover { color: var(--text-2); }
 .pg-title { font-size: 20px; font-weight: 600; margin: 0; }
-.state { color: #9ca3af; font-size: 14px; padding: 40px 0; }
-.card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; }
+.state { color: var(--faint); font-size: 14px; padding: 40px 0; }
+.card { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); }
 .meta-card { padding: 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
 .field { display: flex; flex-direction: column; gap: 4px; }
-.lbl { font-size: 12px; font-weight: 600; color: #374151; }
-.inp { border: 1px solid #d1d5db; border-radius: 6px; padding: 7px 10px; font-size: 13px; }
-.inp:focus { outline: none; border-color: #2563eb; }
-.combined-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #374151; cursor: pointer; }
-.mode-toggle { display: inline-flex; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
-.mode-btn { padding: 5px 14px; font-size: 12px; font-weight: 500; color: #374151; background: white; border: none; cursor: pointer; }
-.mode-btn + .mode-btn { border-left: 1px solid #d1d5db; }
-.mode-btn--active { background: #0f172a; color: white; }
-.mode-btn:not(.mode-btn--active):hover { background: #f9fafb; }
-.subsection-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; margin: 8px 0 4px; }
+.lbl { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.inp { border: 1px solid var(--border-strong); border-radius: 6px; padding: 7px 10px; font-size: 13px; }
+.inp:focus { outline: none; border-color: var(--accent); }
+.combined-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); cursor: pointer; }
+.mode-toggle { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+.mode-btn { padding: 5px 14px; font-size: 12px; font-weight: 500; color: var(--text-2); background: var(--surface); border: none; cursor: pointer; }
+.mode-btn + .mode-btn { border-left: 1px solid var(--border-strong); }
+.mode-btn--active { background: var(--inverse); color: var(--on-inverse); }
+.mode-btn:not(.mode-btn--active):hover { background: var(--hover); }
+.subsection-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 8px 0 4px; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 .panel { padding: 12px; min-width: 0; }
 .panel-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.panel-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; }
+.panel-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .picker-wrap { margin-bottom: 10px; position: relative; }
-.err-msg { color: #dc2626; font-size: 13px; margin-bottom: 10px; }
+.err-msg { color: var(--danger); font-size: 13px; margin-bottom: 10px; }
 .actions { display: flex; gap: 10px; margin-bottom: 20px; }
-.btn-primary { padding: 8px 20px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
-.btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.btn-primary { padding: 8px 20px; background: var(--accent); color: var(--on-accent); border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-primary:hover:not(:disabled) { background: var(--accent-strong); }
 .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
-.btn-secondary { padding: 8px 20px; background: white; color: #374151; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
-.btn-secondary:hover:not(:disabled) { background: #f9fafb; }
+.btn-secondary { padding: 8px 20px; background: var(--surface); color: var(--text-2); border: 1px solid var(--border-strong); border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-secondary:hover:not(:disabled) { background: var(--hover); }
 .btn-secondary:disabled { opacity: .5; cursor: not-allowed; }
 .matrix-preview { padding: 16px; overflow: auto; max-height: clamp(300px, 60vh, 700px); }
 .matrix-preview :deep(table) { border-collapse: collapse; margin-bottom: 20px; }
 .matrix-preview :deep(th) {
-  border: 1px solid #e2e8f0; padding: 6px 8px; font-size: 11px; font-weight: 600;
+  border: 1px solid var(--border); padding: 6px 8px; font-size: 11px; font-weight: 600;
   min-width: 5rem; max-width: 9rem;
   text-align: center; vertical-align: bottom; white-space: normal; word-break: break-word;
 }
 .matrix-preview :deep(th:first-child) {
-  position: sticky; left: 0; z-index: 2; background: white;
-  text-align: left; min-width: 10rem; max-width: 16rem; border-right: 2px solid #d1d5db;
+  position: sticky; left: 0; z-index: 2; background: var(--surface);
+  text-align: left; min-width: 10rem; max-width: 16rem; border-right: 2px solid var(--border-strong);
 }
-.matrix-preview :deep(td) { border: 1px solid #e2e8f0; padding: 4px 8px; font-size: 12px; }
+.matrix-preview :deep(td) { border: 1px solid var(--border); padding: 4px 8px; font-size: 12px; }
 .matrix-preview :deep(td:first-child) {
-  position: sticky; left: 0; z-index: 1; background: white;
+  position: sticky; left: 0; z-index: 1; background: var(--surface);
   font-size: 11px; font-weight: 500; min-width: 10rem; max-width: 16rem;
-  word-break: break-word; border-right: 2px solid #d1d5db;
+  word-break: break-word; border-right: 2px solid var(--border-strong);
 }
 .matrix-preview :deep(td:not(:first-child)) { text-align: center; }
-.matrix-preview :deep(h2) { font-size: 13px; font-weight: 700; margin: 16px 0 6px; color: #374151; }
+.matrix-preview :deep(h2) { font-size: 13px; font-weight: 700; margin: 16px 0 6px; color: var(--text-2); }
 </style>

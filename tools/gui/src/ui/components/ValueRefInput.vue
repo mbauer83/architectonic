@@ -190,7 +190,8 @@ const onBindingChange = (patch: { binding?: string; project?: string; aggregate?
 
 <style scoped>
 .value-ref { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.val-kind { max-width: 220px; color: #6b7280; }
+.val-kind { max-width: 220px; color: var(--muted); }
 .val { min-width: 90px; }
-.inp { padding: 4px 6px; border-radius: 5px; border: 1px solid #d1d5db; font-size: 12.5px; font-family: inherit; }
+.inp { padding: 4px 6px; border-radius: 5px; border: 1px solid var(--border-strong); font-size: 12.5px;
+  font-family: inherit; }
 </style>

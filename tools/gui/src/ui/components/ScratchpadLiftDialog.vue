@@ -280,40 +280,41 @@ const isNew = (slug: string): boolean => !!slug && !props.projects.includes(slug
 }
 .dialog {
   outline: none;
-  background: #fff; border-radius: 10px; width: min(680px, 100%); max-height: 82vh;
+  background: var(--surface); border-radius: 10px; width: min(680px, 100%); max-height: 82vh;
   display: flex; flex-direction: column; padding: 16px 18px;
   box-shadow: 0 20px 50px rgba(0,0,0,.24); font-size: 13px;
 }
 header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 h2 { font-size: 15px; margin: 0 0 10px; }
-h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; margin: 0 0 4px; }
-.close { border: none; background: none; font-size: 18px; line-height: 1; cursor: pointer; color: #9ca3af; }
+h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 4px; }
+.close { border: none; background: none; font-size: 18px; line-height: 1; cursor: pointer; color: var(--faint); }
 .field { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.field span { color: #6b7280; }
-.field input { flex: 1; padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
-.note { margin: 0 0 10px; color: #6b7280; font-size: 11.5px; }
-.new { color: #2563eb; font-size: 11px; font-style: normal; }
+.field span { color: var(--muted); }
+.field input { flex: 1; padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: 6px; font-size: 13px; }
+.note { margin: 0 0 10px; color: var(--muted); font-size: 11.5px; }
+.new { color: var(--accent); font-size: 11px; font-style: normal; }
 .field.draw { gap: 6px; margin: 0 0 10px; }
-.field.draw span { color: #374151; font-size: 12px; }
+.field.draw span { color: var(--text-2); font-size: 12px; }
 .field.draw input { flex: 0 0 auto; }
 .groups { overflow-y: auto; flex: 1; }
 .groups section { margin-bottom: 12px; }
 ul { list-style: none; margin: 0; padding: 0; }
 li { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; padding: 2px 0; }
 .label { flex: 1 1 auto; }
-.why { color: #6b7280; font-size: 11.5px; flex: 1 1 100%; }
-code { font-size: 11px; color: #4b5563; background: #f3f4f6; padding: 0 4px; border-radius: 3px; }
-.bad .label { color: #dc2626; }
-.warn .label { color: #d97706; }
-.muted .label { color: #6b7280; }
-.refusal { color: #dc2626; margin: 4px 0; }
-.done { color: #059669; margin: 8px 0; }
+.why { color: var(--muted); font-size: 11.5px; flex: 1 1 100%; }
+code { font-size: 11px; color: var(--text-2); background: var(--soft); padding: 0 4px; border-radius: 3px; }
+.bad .label { color: var(--danger); }
+.warn .label { color: var(--warn); }
+.muted .label { color: var(--muted); }
+.refusal { color: var(--danger); margin: 4px 0; }
+.done { color: var(--ok); margin: 8px 0; }
 footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 10px; }
 footer .why { flex: 1 1 auto; }
 footer button {
-  padding: 5px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff;
-  font-size: 13px; cursor: pointer; color: #374151;
+  padding: 5px 12px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface);
+  font-size: 13px; cursor: pointer; color: var(--text-2);
 }
-footer button.primary { border-color: #2563eb; background: #2563eb; color: #fff; font-weight: 600; }
+footer button.primary {
+  border-color: var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 600; }
 footer button:disabled { opacity: .45; cursor: default; }
 </style>

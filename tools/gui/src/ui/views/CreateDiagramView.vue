@@ -504,33 +504,33 @@ watch(diagramType, () => {
 <style scoped>
 .layout { max-width: 1200px; margin: 0 auto; }
 .page-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
-.back-link { font-size: 13px; color: #6b7280; background: none; border: none; cursor: pointer; padding: 0; }
-.back-link:hover { color: #374151; }
+.back-link { font-size: 13px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; }
+.back-link:hover { color: var(--text-2); }
 .page-title { font-size: 20px; font-weight: 600; margin: 0; }
 
 .columns { display: grid; grid-template-columns: 480px 1fr; gap: 20px; align-items: start; }
 @media (max-width: 860px) { .columns { grid-template-columns: 1fr; } }
 
-.card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; padding: 20px; }
+.card { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); padding: 20px; }
 .form-row { margin-bottom: 14px; }
-.lbl { display: block; font-size: 11px; font-weight: 700; color: #374151; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
-.req { color: #dc2626; }
-.inp { width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; outline: none; box-sizing: border-box; background: white; }
-.inp:focus { border-color: #2563eb; }
+.lbl { display: block; font-size: 11px; font-weight: 700; color: var(--text-2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
+.req { color: var(--danger); }
+.inp { width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border-strong); font-size: 13px; outline: none; box-sizing: border-box; background: var(--surface); }
+.inp:focus { border-color: var(--accent); }
 
 .actions { display: flex; gap: 8px; justify-content: flex-end; padding-top: 8px; }
-.btn-preview { padding: 7px 16px; background: #f3f4f6; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; }
-.btn-preview:hover:not(:disabled) { background: #eff6ff; }
-.btn-create { padding: 7px 16px; background: #16a34a; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
-.btn-create:hover:not(:disabled) { background: #15803d; }
+.btn-preview { padding: 7px 16px; background: var(--soft); color: var(--accent-strong); border: 1px solid var(--accent-border); border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; }
+.btn-preview:hover:not(:disabled) { background: var(--accent-soft); }
+.btn-create { padding: 7px 16px; background: var(--ok); color: var(--on-accent); border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-create:hover:not(:disabled) { background: var(--ok); }
 .btn-preview:disabled, .btn-create:disabled { opacity: .5; cursor: not-allowed; }
-.state-msg { font-size: 13px; color: #6b7280; }
-.state-err { font-size: 13px; color: #dc2626; margin-top: 6px; }
-.warn { font-size: 12px; color: #b45309; margin-bottom: 4px; }
-.preview-hint { font-size: 13px; color: #9ca3af; }
+.state-msg { font-size: 13px; color: var(--muted); }
+.state-err { font-size: 13px; color: var(--danger); margin-top: 6px; }
+.warn { font-size: 12px; color: var(--warn-text); margin-bottom: 4px; }
+.preview-hint { font-size: 13px; color: var(--faint); }
 .preview-img { max-width: none; display: block; }
-.toggle-src { margin-top: 10px; font-size: 12px; color: #2563eb; background: none; border: none; cursor: pointer; padding: 0; }
+.toggle-src { margin-top: 10px; font-size: 12px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0; }
 .toggle-src:hover { text-decoration: underline; }
-.puml-src { font-size: 11px; font-family: monospace; white-space: pre-wrap; margin-top: 8px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; max-height: 400px; overflow-y: auto; }
-.render-warnings { margin: 6px 0 0 0; padding-left: 18px; font-size: 12px; color: #b45309; }
+.puml-src { font-size: 11px; font-family: monospace; white-space: pre-wrap; margin-top: 8px; background: var(--hover); border: 1px solid var(--border); border-radius: 6px; padding: 10px; max-height: 400px; overflow-y: auto; }
+.render-warnings { margin: 6px 0 0 0; padding-left: 18px; font-size: 12px; color: var(--warn-text); }
 </style>

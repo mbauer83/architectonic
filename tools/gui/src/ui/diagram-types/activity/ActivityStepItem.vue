@@ -312,24 +312,25 @@ const addPartStep = (type: StepType) =>
 .rejoin {
   margin: 2px 0 4px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted);
 }
 .returns-to {
   margin: 2px 0 4px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted);
 }
 .step-item {
   display: flex; flex-direction: column; gap: 6px;
-  padding: 6px 8px; border-radius: 6px; border: 1px solid #e2e8f0;
-  background: #fafafa; position: relative;
+  padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--hover); position: relative;
 }
-.step-action    { background: #f0f9ff; border-color: #bae6fd; }
-.step-decision  { background: #fefce8; border-color: #fde68a; }
-.step-fork      { background: #f0fdf4; border-color: #bbf7d0; }
-.step-partition { background: #f5f3ff; border-color: #ddd6fe; }
+.step-action    { background: var(--info-soft); border-color: var(--info-border); }
+.step-decision  { background: var(--warn-soft); border-color: var(--warn-border); }
+.step-fork      { background: var(--ok-soft); border-color: var(--ok-border); }
+.step-partition { background: var(--violet-soft); border-color: var(--violet-border); }
 
-.inp { padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+.inp { padding: 4px 6px; border: 1px solid var(--border-strong); border-radius: 4px; font-size: 13px;
+  box-sizing: border-box; }
 .action-row   { display: flex; gap: 6px; }
 .label-inp    { flex: 1 1 140px; min-width: 0; }
 .link-inp     { width: 100%; }
@@ -339,13 +340,13 @@ const addPartStep = (type: StepType) =>
 .decision-header { display: flex; gap: 6px; }
 .branch {
   display: flex; flex-direction: column; gap: 4px;
-  padding: 6px; border: 1px solid #e2e8f0; border-radius: 4px;
-  background: rgba(255,255,255,0.6);
+  padding: 6px; border: 1px solid var(--border); border-radius: 4px;
+  background: var(--overlay);
 }
 .branch-hdr { display: flex; align-items: center; gap: 6px; }
-.branch-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; white-space: nowrap; }
+.branch-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); white-space: nowrap; }
 .branch-lbl-inp { flex: 1; min-width: 0; }
 
-.mini-btn { min-width: 28px; height: 28px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.mini-btn { min-width: 28px; height: 28px; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 6px; cursor: pointer; font-size: 13px; }
 .remove-btn { position: absolute; top: 4px; right: 4px; }
 </style>

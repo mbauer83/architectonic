@@ -83,11 +83,11 @@ const roleMissing = () => props.roleRequired && !(props.classifier.role ?? '').t
 <style scoped>
 .meta { display: flex; flex-direction: column; gap: 5px; }
 .meta-hdr { display: flex; align-items: center; justify-content: space-between; }
-.meta-title { font-size: 11px; font-weight: 600; color: #374151; }
-.meta-toggle { font-size: 10px; padding: 0 6px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; color: #6b7280; }
+.meta-title { font-size: 11px; font-weight: 600; color: var(--text-2); }
+.meta-toggle { font-size: 10px; padding: 0 6px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--surface); cursor: pointer; color: var(--muted); }
 .role-row, .prov-row { display: flex; flex-direction: column; gap: 2px; }
-.role-label, .prov-label { font-size: 10px; color: #6b7280; }
-.req { color: #dc2626; margin-left: 1px; }
-.role-in, .prov-in { font-size: 11px; border: 1px solid #e2e8f0; border-radius: 3px; padding: 2px 4px; }
-.role-in.invalid { border-color: #fca5a5; background: #fef2f2; }
+.role-label, .prov-label { font-size: 10px; color: var(--muted); }
+.req { color: var(--danger); margin-left: 1px; }
+.role-in, .prov-in { font-size: 11px; border: 1px solid var(--border); border-radius: 3px; padding: 2px 4px; }
+.role-in.invalid { border-color: var(--danger-border); background: var(--danger-soft); }
 </style>

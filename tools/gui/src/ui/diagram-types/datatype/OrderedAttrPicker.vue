@@ -73,11 +73,11 @@ function add(event: Event) {
 
 <style scoped>
 .oap { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-.chip { display: inline-flex; align-items: center; gap: 1px; font-size: 11px; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 10px; padding: 0 2px 0 6px; }
-.chip-name { color: #3730a3; }
-.chip-mv { border: none; background: none; cursor: pointer; color: #6366f1; font-size: 12px; padding: 0 1px; }
+.chip { display: inline-flex; align-items: center; gap: 1px; font-size: 11px; background: var(--indigo-soft); border: 1px solid var(--indigo-border); border-radius: 10px; padding: 0 2px 0 6px; }
+.chip-name { color: var(--indigo-text); }
+.chip-mv { border: none; background: none; cursor: pointer; color: var(--indigo); font-size: 12px; padding: 0 1px; }
 .chip-mv:disabled { color: #c7d2fe; cursor: default; }
-.chip-del { border: none; background: none; cursor: pointer; color: #9ca3af; font-size: 12px; padding: 0 2px; }
-.chip-del:hover { color: #ef4444; }
-.oap-add { font-size: 10px; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 1px 4px; background: #fff; cursor: pointer; color: #6b7280; }
+.chip-del { border: none; background: none; cursor: pointer; color: var(--faint); font-size: 12px; padding: 0 2px; }
+.chip-del:hover { color: var(--danger); }
+.oap-add { font-size: 10px; border: 1px dashed var(--border-strong); border-radius: 10px; padding: 1px 4px; background: var(--surface); cursor: pointer; color: var(--muted); }
 </style>

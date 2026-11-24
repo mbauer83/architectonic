@@ -157,17 +157,20 @@ const render = (): void => {
 </template>
 
 <style scoped>
-.builder-panel { padding: 12px 16px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; font-size: 13px; }
+.builder-panel {
+  padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--hover); font-size: 13px; }
 .builder-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.builder-label { font-weight: 600; color: #374151; }
+.builder-label { font-weight: 600; color: var(--text-2); }
 .preset-btn, .mode-btn {
-  padding: 3px 10px; border-radius: 5px; border: 1px solid #d1d5db; background: white; font-size: 12px; cursor: pointer;
+  padding: 3px 10px; border-radius: 5px; border: 1px solid var(--border-strong); background: var(--surface);
+  font-size: 12px; cursor: pointer;
 }
-.preset-btn--active, .mode-btn--active { background: #2563eb; color: white; border-color: #2563eb; }
+.preset-btn--active, .mode-btn--active {
+  background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .root-chips { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 8px 0; }
-.root-chip { background: #e0e7ff; color: #3730a3; border-radius: 12px; padding: 3px 8px; font-size: 12px; display: flex; align-items: center; gap: 4px; }
-.chip-remove { border: none; background: none; cursor: pointer; color: #3730a3; font-weight: 700; }
-h3 { font-size: 12.5px; margin: 10px 0 4px; color: #374151; }
-.render-btn { margin-top: 10px; padding: 6px 16px; background: #16a34a; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+.root-chip { background: var(--indigo-soft); color: var(--indigo-text); border-radius: 12px; padding: 3px 8px; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.chip-remove { border: none; background: none; cursor: pointer; color: var(--indigo-text); font-weight: 700; }
+h3 { font-size: 12.5px; margin: 10px 0 4px; color: var(--text-2); }
+.render-btn { margin-top: 10px; padding: 6px 16px; background: var(--ok); color: var(--on-accent); border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
 .render-btn:disabled { opacity: .5; cursor: not-allowed; }
 </style>

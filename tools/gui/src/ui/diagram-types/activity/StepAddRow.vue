@@ -38,8 +38,8 @@ const label = (key: StepKey) => `+ ${key.charAt(0).toUpperCase()}${key.slice(1)}
 .add-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
 .add-btn {
   padding: 2px 7px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
   border-radius: 6px;
   cursor: pointer;
   font-size: 11px;

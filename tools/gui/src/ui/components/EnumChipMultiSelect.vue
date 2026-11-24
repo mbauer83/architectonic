@@ -43,10 +43,10 @@ const toggle = (choice: string) => {
 <style scoped>
 .chip-row { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .chip {
-  appearance: none; border: 1px solid #d1d5db; background: #fff; border-radius: 999px;
-  padding: 3px 10px; font-size: 12px; color: #374151; cursor: pointer;
+  appearance: none; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 999px;
+  padding: 3px 10px; font-size: 12px; color: var(--text-2); cursor: pointer;
 }
-.chip:hover { border-color: #6366f1; color: #4338ca; }
-.chip:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
-.chip.on { background: #6366f1; border-color: #6366f1; color: #fff; }
+.chip:hover { border-color: var(--indigo); color: var(--indigo-text); }
+.chip:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
+.chip.on { background: var(--indigo); border-color: var(--indigo); color: var(--on-accent); }
 </style>

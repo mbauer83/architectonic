@@ -82,16 +82,16 @@ onMounted(() => { void load() })
 <style scoped>
 .gaps { margin-top: 24px; max-width: 90ch; }
 .gaps__title { font-size: 15px; margin: 0 0 6px; }
-.gaps__explanation { font-size: 13px; color: #4b5563; margin: 0 0 8px; max-width: 78ch; line-height: 1.5; }
-.gaps__summary { font-size: 12px; color: #6b7280; margin: 0 0 10px; }
+.gaps__explanation { font-size: 13px; color: var(--text-2); margin: 0 0 8px; max-width: 78ch; line-height: 1.5; }
+.gaps__summary { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
 .gaps__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px;
   max-height: 420px; overflow-y: auto; }
-.gaps__list > li { border-left: 3px solid #e5e7eb; padding-left: 8px; font-size: 12px; }
+.gaps__list > li { border-left: 3px solid var(--border); padding-left: 8px; font-size: 12px; }
 .gaps__element { display: block; font-weight: 600; }
 /* The id is demoted, never dropped: it is what someone quotes when they act on the finding. */
-.gaps__id { display: block; font-size: 11px; color: #9ca3af; font-family: monospace; }
-.gaps__message { display: block; color: #4b5563; }
-.gaps__witness { margin-top: 4px; color: #374151; }
+.gaps__id { display: block; font-size: 11px; color: var(--faint); font-family: monospace; }
+.gaps__message { display: block; color: var(--text-2); }
+.gaps__witness { margin-top: 4px; color: var(--text-2); }
 .gaps__witness summary { cursor: pointer; }
 .gaps__witness ul { margin: 4px 0 0; padding-left: 16px; }
 </style>

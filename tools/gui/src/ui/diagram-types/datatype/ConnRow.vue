@@ -205,20 +205,22 @@ async function applyFix() {
 <style scoped>
 .row-wrap { display: flex; flex-direction: column; gap: 2px; }
 .rl-row { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-.conn-type { font-size: 11px; border: 1px solid #e2e8f0; border-radius: 3px; padding: 1px 3px; background: #f8fafc; min-width: 120px; }
-.conn-end { font-size: 11px; border: 1px solid #e2e8f0; border-radius: 3px; padding: 1px 3px; min-width: 80px; }
-.rl-arrow { font-size: 11px; color: #6b7280; }
-.mult-in { width: 52px; font-size: 11px; border: 1px solid #e2e8f0; border-radius: 3px; padding: 1px 3px; }
-.field-stack { display: flex; flex-direction: column; gap: 1px; font-size: 9px; color: #6b7280; }
-.lbl-in { flex: 1; min-width: 60px; font-size: 11px; border: 1px solid #e2e8f0; border-radius: 3px; padding: 1px 4px; }
-.gset-sel { font-size: 11px; border: 1px solid #c7d2fe; border-radius: 3px; padding: 1px 3px; background: #eef2ff; }
-.binding-badge { font-size: 12px; color: #059669; padding: 0 2px; }
-.del-btn { border: none; background: none; cursor: pointer; color: #9ca3af; font-size: 14px; padding: 0 2px; flex-shrink: 0; }
-.del-btn:hover { color: #ef4444; }
-.fix-row { display: flex; gap: 6px; align-items: center; padding: 2px 4px; background: #fffbeb; border-left: 2px solid #f59e0b; border-radius: 0 3px 3px 0; }
-.fix-warn { font-size: 10px; color: #b45309; flex: 1; }
-.fix-btn { font-size: 10px; padding: 1px 8px; border: 1px solid #f59e0b; border-radius: 3px; background: #fef3c7; cursor: pointer; white-space: nowrap; }
-.fix-btn:hover:not(:disabled) { background: #fde68a; }
+.conn-type { font-size: 11px; border: 1px solid var(--border); border-radius: 3px; padding: 1px 3px; background: var(--canvas); min-width: 120px; }
+.conn-end { font-size: 11px; border: 1px solid var(--border); border-radius: 3px; padding: 1px 3px; min-width: 80px; }
+.rl-arrow { font-size: 11px; color: var(--muted); }
+.mult-in { width: 52px; font-size: 11px; border: 1px solid var(--border); border-radius: 3px; padding: 1px 3px; }
+.field-stack { display: flex; flex-direction: column; gap: 1px; font-size: 9px; color: var(--muted); }
+.lbl-in {
+  flex: 1; min-width: 60px; font-size: 11px; border: 1px solid var(--border); border-radius: 3px; padding: 1px 4px; }
+.gset-sel { font-size: 11px; border: 1px solid var(--indigo-border); border-radius: 3px; padding: 1px 3px;
+  background: var(--indigo-soft); }
+.binding-badge { font-size: 12px; color: var(--ok); padding: 0 2px; }
+.del-btn { border: none; background: none; cursor: pointer; color: var(--faint); font-size: 14px; padding: 0 2px; flex-shrink: 0; }
+.del-btn:hover { color: var(--danger); }
+.fix-row { display: flex; gap: 6px; align-items: center; padding: 2px 4px; background: var(--warn-soft); border-left: 2px solid var(--warn); border-radius: 0 3px 3px 0; }
+.fix-warn { font-size: 10px; color: var(--warn-text); flex: 1; }
+.fix-btn { font-size: 10px; padding: 1px 8px; border: 1px solid var(--warn); border-radius: 3px; background: var(--warn-soft); cursor: pointer; white-space: nowrap; }
+.fix-btn:hover:not(:disabled) { background: var(--warn-border); }
 .fix-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.fix-err { font-size: 10px; color: #dc2626; }
+.fix-err { font-size: 10px; color: var(--danger); }
 </style>

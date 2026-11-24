@@ -66,21 +66,21 @@ const act = (toast: Toast) => {
 }
 
 .toast--info {
-  background: #f1f5f9;
-  color: #334155;
-  border-left: 3px solid #3b82f6;
+  background: var(--soft);
+  color: var(--text-2);
+  border-left: 3px solid var(--accent);
 }
 
 .toast--warn {
-  background: #fef3c7;
-  color: #92400e;
-  border-left: 3px solid #f59e0b;
+  background: var(--warn-soft);
+  color: var(--warn-text);
+  border-left: 3px solid var(--warn);
 }
 
 .toast--error {
-  background: #fee2e2;
-  color: #991b1b;
-  border-left: 3px solid #ef4444;
+  background: var(--danger-soft);
+  color: var(--danger-strong);
+  border-left: 3px solid var(--danger);
 }
 
 .toast-action {

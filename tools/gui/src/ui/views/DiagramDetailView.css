@@ -1,9 +1,9 @@
 .page { max-width: 100%; }
-.state { color: #6b7280; } .err { color: #dc2626; }
+.state { color: var(--muted); } .err { color: var(--danger); }
 
 .img-container {
-  position: relative; overflow: hidden; background: #f8fafc;
-  border: 1px solid #e5e7eb; border-radius: 8px;
+  position: relative; overflow: hidden; background: var(--paper);
+  border: 1px solid var(--border); border-radius: 8px;
   min-height: 400px; height: clamp(420px, 78vh, 980px);
   cursor: grab; user-select: none;
 }
@@ -19,10 +19,10 @@
    anything the element does not cover. */
 .img-container:fullscreen {
   width: 100vw; height: 100vh; max-height: none;
-  border: none; border-radius: 0; background: #f8fafc;
+  border: none; border-radius: 0; background: var(--paper);
 }
-.no-img { padding: 60px 40px; text-align: center; color: #9ca3af; font-size: 13px; }
-.err-txt { color: #dc2626; }
+.no-img { padding: 60px 40px; text-align: center; color: var(--on-paper); font-size: 13px; }
+.err-txt { color: var(--danger); }
 .reading-panel { margin: 0 0 0.5rem; }
 .svg-wrap :deep(svg) { display: block; max-width: none; }
 .svg-wrap :deep([data-entity-id]) { cursor: pointer; }

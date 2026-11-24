@@ -46,14 +46,14 @@ const hiddenCount = computed(() => hiddenMatchCount(props.entities, props.totalC
 
 <style scoped>
 .matched-entities { margin-top: 6px; font-size: 12.5px; }
-.matched-entities > summary { cursor: pointer; color: #374151; font-weight: 600; }
+.matched-entities > summary { cursor: pointer; color: var(--text-2); font-weight: 600; }
 .matched-list { list-style: none; margin: 4px 0 0; padding: 0; max-height: 300px; overflow-y: auto; }
 .matched-row { display: flex; align-items: baseline; gap: 8px; padding: 1px 0; }
-.matched-name { color: #111827; }
-.matched-type { color: #6b7280; font-size: 11.5px; }
+.matched-name { color: var(--text); }
+.matched-type { color: var(--muted); font-size: 11.5px; }
 .derived-tag {
-  font-size: 10.5px; color: #7c3aed; background: #f3e8ff;
+  font-size: 10.5px; color: var(--violet); background: var(--violet-soft);
   padding: 0 6px; border-radius: 9999px; white-space: nowrap;
 }
-.matched-more { color: #6b7280; margin-top: 2px; }
+.matched-more { color: var(--muted); margin-top: 2px; }
 </style>

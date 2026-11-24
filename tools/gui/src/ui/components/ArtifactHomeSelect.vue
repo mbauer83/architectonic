@@ -96,14 +96,14 @@ watch(() => props.axis, load)
 
 <style scoped>
 .home-field { display: flex; flex-direction: column; gap: 0.25rem; }
-.home-field__label { font-size: 12px; font-weight: 600; color: #374151; }
+.home-field__label { font-size: 12px; font-weight: 600; color: var(--text-2); }
 .home-field__select {
   padding: 6px 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   font-size: 13px;
-  background: #fff;
-  color: #111827;
+  background: var(--surface);
+  color: var(--text);
 }
 .home-field__select:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>

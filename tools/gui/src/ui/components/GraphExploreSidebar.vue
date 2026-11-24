@@ -77,16 +77,16 @@ defineProps<{
 
 <style scoped>
 .graph-sidebar {
-  width: 320px; background: white; border-left: 1px solid #e5e7eb;
+  width: 320px; background: var(--surface); border-left: 1px solid var(--border);
   padding: 16px; overflow-y: auto; flex-shrink: 0;
 }
-.sidebar-title { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 16px; }
+.sidebar-title { font-size: 14px; font-weight: 600; color: var(--text-2); margin-bottom: 16px; }
 /* Matches the diagram sidebar's `det-name`: the entity's name, sized as the heading it is,
    in the link colour so it reads as the way through to the entity rather than a caption. */
 .sidebar-title-link {
-  font-size: 16px; font-weight: 700; color: #1d4ed8; text-decoration: none; line-height: 1.3;
+  font-size: 16px; font-weight: 700; color: var(--accent-strong); text-decoration: none; line-height: 1.3;
 }
 .sidebar-title-link:hover { text-decoration: underline; }
-.sidebar-empty, .sidebar-loading { font-size: 13px; color: #6b7280; }
-.sidebar-error { font-size: 13px; color: #dc2626; }
+.sidebar-empty, .sidebar-loading { font-size: 13px; color: var(--muted); }
+.sidebar-error { font-size: 13px; color: var(--danger); }
 </style>

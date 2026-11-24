@@ -345,13 +345,13 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
 .page { max-width: 100%; }
 
 .img-container {
-  position: relative; overflow: hidden; background: #f8fafc;
-  border: 1px solid #e5e7eb; border-radius: 8px; min-height: 500px;
+  position: relative; overflow: hidden; background: var(--paper);
+  border: 1px solid var(--border); border-radius: 8px; min-height: 500px;
   cursor: grab; user-select: none;
 }
 .img-container:active { cursor: grabbing; }
-.no-img { padding: 60px 40px; text-align: center; color: #9ca3af; font-size: 13px; }
-.err-txt { color: #dc2626; }
+.no-img { padding: 60px 40px; text-align: center; color: var(--on-paper); font-size: 13px; }
+.err-txt { color: var(--danger); }
 
 .svg-wrap :deep(svg) { display: block; max-width: none; }
 .svg-wrap :deep([data-entity-id]) { cursor: pointer; }
@@ -370,7 +370,7 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
 .svg-wrap :deep(.svg-viewpoint-ghosted) { opacity: 0.3; filter: grayscale(60%); }
 .svg-wrap :deep(.svg-viewpoint-hidden) { display: none; }
 
-.reset-btn { position: absolute; top: 8px; right: 8px; padding: 4px 10px; background: rgba(255,255,255,.92); border: 1px solid #d1d5db; border-radius: 5px; font-size: 12px; cursor: pointer; color: #374151; }
-.reset-btn:hover { background: white; }
-.zoom-hint { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #9ca3af; background: rgba(255,255,255,.8); padding: 2px 8px; border-radius: 4px; pointer-events: none; white-space: nowrap; }
+.reset-btn { position: absolute; top: 8px; right: 8px; padding: 4px 10px; background: var(--overlay); border: 1px solid var(--border-strong); border-radius: 5px; font-size: 12px; cursor: pointer; color: var(--text-2); }
+.reset-btn:hover { background: var(--surface); }
+.zoom-hint { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--muted); background: var(--overlay); padding: 2px 8px; border-radius: 4px; pointer-events: none; white-space: nowrap; }
 </style>

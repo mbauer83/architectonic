@@ -111,14 +111,14 @@ const steps = computed(() => props.summary?.witness_steps ?? [])
 
 <style scoped>
 .detail-field { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
-.detail-field label, .detail-content label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: #9ca3af; }
-.detail-value { font-size: 13px; color: #111827; }
+.detail-field label, .detail-content label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--faint); }
+.detail-value { font-size: 13px; color: var(--text); }
 .detail-value.mono, .mono { font-family: ui-monospace, monospace; font-size: 12px; }
-.detail-link { color: #2563eb; text-decoration: none; }
+.detail-link { color: var(--accent); text-decoration: none; }
 .detail-link:hover { text-decoration: underline; }
 .detail-content { margin-bottom: 10px; }
-.content-body { font-size: 12.5px; color: #374151; white-space: pre-wrap; }
-.witness-steps { margin: 4px 0 0; padding-left: 18px; font-size: 12.5px; color: #374151; }
+.content-body { font-size: 12.5px; color: var(--text-2); white-space: pre-wrap; }
+.witness-steps { margin: 4px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--text-2); }
 .witness-steps li { margin-bottom: 2px; }
-.witness-unavailable { font-size: 12px; color: #b45309; }
+.witness-unavailable { font-size: 12px; color: var(--warn-text); }
 </style>

@@ -103,5 +103,5 @@ onMounted(async () => {
 
 <style scoped>
 .filing-tree { padding: 2px 0; }
-.filing-tree__state { font-size: 12px; color: #6b7280; padding: 4px 14px; margin: 0; }
+.filing-tree__state { font-size: 12px; color: var(--muted); padding: 4px 14px; margin: 0; }
 </style>

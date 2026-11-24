@@ -158,34 +158,34 @@ const removeMember = (index: number, id: string): void => {
 <style scoped>
 .grp__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .lbl {
-  display: block; font-size: 11px; font-weight: 700; color: #374151;
+  display: block; font-size: 11px; font-weight: 700; color: var(--text-2);
   text-transform: uppercase; letter-spacing: .05em;
 }
 .grp__add {
-  padding: 5px 12px; background: #f3f4f6; color: #1d4ed8; border: 1px solid #bfdbfe;
+  padding: 5px 12px; background: var(--soft); color: var(--accent-strong); border: 1px solid var(--accent-border);
   border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;
 }
-.grp__add:hover { background: #eff6ff; }
-.grp__empty, .grp__hint { font-size: 12px; color: #9ca3af; margin: 0; }
+.grp__add:hover { background: var(--accent-soft); }
+.grp__empty, .grp__hint { font-size: 12px; color: var(--faint); margin: 0; }
 .grp__box {
-  border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px;
-  margin-top: 8px; background: #fafafa;
+  border: 1px solid var(--border); border-radius: 6px; padding: 10px;
+  margin-top: 8px; background: var(--hover);
 }
 .grp__row { display: flex; gap: 6px; margin-bottom: 8px; }
 .grp__label {
-  flex: 1; padding: 6px 8px; border: 1px solid #d1d5db;
+  flex: 1; padding: 6px 8px; border: 1px solid var(--border-strong);
   border-radius: 6px; font-size: 13px;
 }
 .grp__remove, .grp__drop {
-  background: none; border: none; color: #9ca3af; cursor: pointer;
+  background: none; border: none; color: var(--faint); cursor: pointer;
   font-size: 16px; line-height: 1; padding: 0 6px;
 }
-.grp__remove:hover, .grp__drop:hover { color: #b91c1c; }
+.grp__remove:hover, .grp__drop:hover { color: var(--danger-strong); }
 .grp__members { list-style: none; margin: 8px 0 0; padding: 0; }
 .grp__member {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
-  padding: 4px 6px; background: white; border: 1px solid #e5e7eb;
+  padding: 4px 6px; background: var(--surface); border: 1px solid var(--border);
   border-radius: 4px; margin-bottom: 4px;
 }
-.grp__name { font-size: 12px; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grp__name { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>

@@ -79,19 +79,19 @@ const onDragEnd = () => {
 
 <style scoped>
 .conn-list { display: flex; flex-direction: column; gap: 2px; }
-.empty { color: #9ca3af; font-size: 13px; padding: 8px 0; }
+.empty { color: var(--faint); font-size: 13px; padding: 8px 0; }
 .conn-row {
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 6px;
-  background: white; cursor: grab;
+  padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface); cursor: grab;
 }
-.conn-row.drag-over { border-color: #2563eb; background: #eff6ff; }
+.conn-row.drag-over { border-color: var(--accent); background: var(--accent-soft); }
 .conn-row.inactive { opacity: 0.5; }
-.drag-handle { color: #9ca3af; font-size: 14px; cursor: grab; flex-shrink: 0; }
+.drag-handle { color: var(--faint); font-size: 14px; cursor: grab; flex-shrink: 0; }
 .toggle { cursor: pointer; flex-shrink: 0; }
-.conn-type-name { flex: 1; font-size: 13px; color: #1e293b; font-family: monospace; }
+.conn-type-name { flex: 1; font-size: 13px; color: var(--text); font-family: monospace; }
 .count-badge {
   font-size: 11px; padding: 1px 6px; border-radius: 10px;
-  background: #dbeafe; color: #1e40af; font-weight: 600;
+  background: var(--type-soft); color: var(--type-text); font-weight: 600;
 }
 </style>

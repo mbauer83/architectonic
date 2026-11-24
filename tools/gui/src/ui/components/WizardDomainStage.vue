@@ -122,28 +122,28 @@ watch(() => props.domain, () => { resetToTypeChoice(); questionnaireStarted.valu
 <style scoped>
 .wizard-stage { display: flex; flex-direction: column; gap: 14px; }
 .questionnaire-cta {
-  text-align: left; padding: 12px 16px; border: 1px solid #bfdbfe; border-radius: 8px;
-  background: #eff6ff; color: #1d4ed8; font-size: 13px; font-weight: 600; cursor: pointer;
+  text-align: left; padding: 12px 16px; border: 1px solid var(--accent-border); border-radius: 8px;
+  background: var(--accent-soft); color: var(--accent-strong); font-size: 13px; font-weight: 600; cursor: pointer;
 }
-.questionnaire-cta:hover { background: #dbeafe; }
-.stage-hint { color: #4b5563; font-size: 13px; margin: 0; }
+.questionnaire-cta:hover { background: var(--type-soft); }
+.stage-hint { color: var(--text-2); font-size: 13px; margin: 0; }
 .guidance-empty-hint {
-  font-size: 12px; color: #92400e; background: #fffbeb; border: 1px solid #fde68a;
+  font-size: 12px; color: var(--warn-text); background: var(--warn-soft); border: 1px solid var(--warn-border);
   border-radius: 6px; padding: 8px 10px; margin: 0;
 }
 .type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
 .type-btn {
   display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 10px 12px;
-  border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer;
 }
-.type-btn:hover { border-color: #93c5fd; }
+.type-btn:hover { border-color: var(--accent-border); }
 .type-name { font-weight: 600; font-size: 13px; }
 /* Fixed clamp with the full text in the button's title attribute — expanding in place on hover
  * would reflow the whole grid under the cursor. */
 .type-hint {
-  font-size: 12px; color: #6b7280;
+  font-size: 12px; color: var(--muted);
   display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
 }
-.btn-link { align-self: flex-start; background: none; border: none; color: #2563eb; cursor: pointer; padding: 0; font-size: 12px; text-decoration: underline; }
+.btn-link { align-self: flex-start; background: none; border: none; color: var(--accent); cursor: pointer; padding: 0; font-size: 12px; text-decoration: underline; }
 .stage-body { display: flex; flex-direction: column; gap: 14px; }
 </style>

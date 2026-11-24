@@ -39,6 +39,10 @@ const excludedIds = computed(() => new Set(props.context.entities.map(e => e.art
 <style scoped>
 .member-picker { display: grid; gap: .4rem; max-height: 20rem; overflow: auto; padding: .75rem; }
 input { width: 100%; }
-button { text-align: start; cursor: grab; }
+button {
+  text-align: start; cursor: grab; padding: 3px 6px; border: 1px solid var(--border); border-radius: 4px;
+  background: var(--surface); color: var(--text);
+}
+button:hover:not(:disabled) { background: var(--hover); }
 p { margin: 0; font-size: .85em; }
 </style>

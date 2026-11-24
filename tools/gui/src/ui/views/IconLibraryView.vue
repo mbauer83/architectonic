@@ -92,11 +92,12 @@ const added = (): void => {
 .page-head h1 { margin: 0 12px 0 0; font-size: 22px; }
 .page-head input[type=search] {
   flex: 1; min-width: 200px; padding: 6px 10px;
-  border: 1px solid #e5e7eb; border-radius: 6px;
+  border: 1px solid var(--border); border-radius: 6px;
 }
-.retired { font-size: 13px; color: #374151; }
-.primary { padding: 6px 12px; border-radius: 6px; border: none; background: #2563eb; color: #fff; cursor: pointer; }
+.retired { font-size: 13px; color: var(--text-2); }
+.primary { padding: 6px 12px; border-radius: 6px; border: none; background: var(--accent); color: var(--on-accent);
+  cursor: pointer; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
-.error { color: #dc2626; }
-.empty { color: #6b7280; }
+.error { color: var(--danger); }
+.empty { color: var(--muted); }
 </style>

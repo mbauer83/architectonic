@@ -46,11 +46,11 @@ defineProps<{ title: string; rows: readonly EntityReferenceRow[] }>()
 </template>
 
 <style scoped>
-.card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; }
+.card { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); }
 .reference-card { padding: 14px 16px; margin-bottom: 24px; }
-.section-title { font-size: 14px; font-weight: 700; margin: 0 0 10px; color: #111827; }
+.section-title { font-size: 14px; font-weight: 700; margin: 0 0 10px; color: var(--text); }
 .reference-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .reference-item { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.reference-title { font-size: 13px; font-weight: 600; color: #1d4ed8; }
-.reference-meta { font-size: 12px; color: #64748b; }
+.reference-title { font-size: 13px; font-weight: 600; color: var(--accent-strong); }
+.reference-meta { font-size: 12px; color: var(--muted); }
 </style>

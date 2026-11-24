@@ -274,12 +274,13 @@ defineExpose({ resetActiveEntity })
 
 <style scoped>
 .entity-stage { display: flex; flex-direction: column; gap: 14px; }
-.active-entity { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #f3f4f6; padding-top: 12px; }
-.active-entity-label { font-size: 13px; color: #374151; }
-.suggestions-title { font-size: 13px; font-weight: 600; margin: 0; color: #374151; }
-.btn-link { align-self: flex-start; background: none; border: none; color: #2563eb; cursor: pointer; padding: 0; font-size: 12px; text-decoration: underline; }
-.btn-link--danger { color: #dc2626; margin-left: 8px; }
+.active-entity {
+  display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--hair); padding-top: 12px; }
+.active-entity-label { font-size: 13px; color: var(--text-2); }
+.suggestions-title { font-size: 13px; font-weight: 600; margin: 0; color: var(--text-2); }
+.btn-link { align-self: flex-start; background: none; border: none; color: var(--accent); cursor: pointer; padding: 0; font-size: 12px; text-decoration: underline; }
+.btn-link--danger { color: var(--danger); margin-left: 8px; }
 .stage-actions { display: flex; gap: 16px; }
-.state-msg { font-size: 12px; color: #6b7280; }
-.state-msg--error { color: #dc2626; }
+.state-msg { font-size: 12px; color: var(--muted); }
+.state-msg--error { color: var(--danger); }
 </style>

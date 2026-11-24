@@ -253,42 +253,42 @@ const confirmAdd = () => {
 </template>
 
 <style scoped>
-.state-msg { color: #6b7280; padding: 4px 0; font-size: 13px; }
+.state-msg { color: var(--muted); padding: 4px 0; font-size: 13px; }
 .add-meta { margin-bottom: 6px; }
-.state-msg--error { color: #dc2626; }
-.mult-label { font-size: 11px; color: #6b7280; white-space: nowrap; }
+.state-msg--error { color: var(--danger); }
+.mult-label { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .mult-input {
-  width: 52px; padding: 4px 6px; border-radius: 4px; border: 1px solid #d1d5db;
+  width: 52px; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-strong);
   font-size: 11px; font-family: monospace; outline: none;
 }
-.mult-input:focus { border-color: #2563eb; }
-.mult-sep { color: #9ca3af; font-size: 11px; margin: 0 2px; }
-.mult-hint { font-size: 10px; color: #9ca3af; margin-left: 4px; }
+.mult-input:focus { border-color: var(--accent); }
+.mult-sep { color: var(--faint); font-size: 11px; margin: 0 2px; }
+.mult-hint { font-size: 10px; color: var(--faint); margin-left: 4px; }
 
-.add-form { margin-top: 8px; padding: 10px; background: #f9fafb; border-radius: 6px; }
+.add-form { margin-top: 8px; padding: 10px; background: var(--hover); border-radius: 6px; }
 .add-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
 .add-row--mult { align-items: center; gap: 4px; }
 .conn-type-select {
-  flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid #d1d5db;
-  font-size: 12px; outline: none; background: white;
+  flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-strong);
+  font-size: 12px; outline: none; background: var(--surface);
 }
-.conn-type-select:focus { border-color: #2563eb; }
+.conn-type-select:focus { border-color: var(--accent); }
 .desc-input {
-  flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid #d1d5db;
+  flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-strong);
   font-size: 12px; outline: none;
 }
-.desc-input:focus { border-color: #2563eb; }
+.desc-input:focus { border-color: var(--accent); }
 .add-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px; }
 .add-confirm-btn {
-  padding: 6px 14px; background: #2563eb; color: white; border: none;
+  padding: 6px 14px; background: var(--accent); color: var(--on-accent); border: none;
   border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
 }
 .add-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.add-confirm-btn:hover:not(:disabled) { background: #1d4ed8; }
+.add-confirm-btn:hover:not(:disabled) { background: var(--accent-strong); }
 .cancel-btn {
-  padding: 6px 14px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db;
+  padding: 6px 14px; background: var(--soft); color: var(--text-2); border: 1px solid var(--border-strong);
   border-radius: 6px; font-size: 13px; cursor: pointer;
 }
-.cancel-btn:hover { background: #e5e7eb; }
-.selected-target { font-size: 12px; color: #374151; margin-bottom: 4px; }
+.cancel-btn:hover { background: var(--border); }
+.selected-target { font-size: 12px; color: var(--text-2); margin-bottom: 4px; }
 </style>

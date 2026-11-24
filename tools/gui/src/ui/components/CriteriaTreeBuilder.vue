@@ -261,35 +261,36 @@ const atCap = computed(() => atDepthCap(props.depth))
 
 <style scoped>
 .group-box { border-radius: 8px; padding: 10px; margin: 6px 0; }
-.group-box.nested { border: 1px solid #d1d5db; background: #f9fafb; }
+.group-box.nested { border: 1px solid var(--border-strong); background: var(--hover); }
 .group-box.root { padding: 0; }
-.group-box.highlighted, .incident-box.highlighted { outline: 2px solid #dc2626; outline-offset: 2px; }
+.group-box.highlighted, .incident-box.highlighted { outline: 2px solid var(--danger); outline-offset: 2px; }
 .group-controls { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
-.match-line { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #6b7280; }
+.match-line { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
 .conj-select {
-  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; border: 1px solid #6366f1;
-  color: #4338ca; background: #eef2ff;
+  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--indigo);
+  color: var(--indigo-text); background: var(--indigo-soft);
 }
 .not-toggle {
-  appearance: none; border: 1px solid #d1d5db; border-radius: 99px; background: #fff;
-  color: #9ca3af; font-size: 10.5px; font-weight: 700; padding: 3px 9px; cursor: pointer;
+  appearance: none; border: 1px solid var(--border-strong); border-radius: 99px; background: var(--surface);
+  color: var(--faint); font-size: 10.5px; font-weight: 700; padding: 3px 9px; cursor: pointer;
 }
-.not-toggle.on { background: #fee2e2; color: #991b1b; border-color: transparent; }
+.not-toggle.on { background: var(--danger-soft); color: var(--danger-strong); border-color: transparent; }
 .icon-btn {
-  appearance: none; border: none; background: none; color: #9ca3af; cursor: pointer;
+  appearance: none; border: none; background: none; color: var(--faint); cursor: pointer;
   font-size: 15px; line-height: 1; padding: 2px 5px; border-radius: 5px;
 }
-.icon-btn:hover { background: #fee2e2; color: #991b1b; }
-.depth-tag { font-size: 11px; color: #9ca3af; background: #f3f4f6; padding: 2px 8px; border-radius: 99px; }
-.connector { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; color: #9ca3af; margin: 2px 0 2px 4px; }
-.incident-box { border: 1px solid #d1d5db; border-radius: 7px; padding: 8px; margin: 5px 0; background: #fff; }
+.icon-btn:hover { background: var(--danger-soft); color: var(--danger-strong); }
+.depth-tag { font-size: 11px; color: var(--faint); background: var(--soft); padding: 2px 8px; border-radius: 99px; }
+.connector { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; color: var(--faint); margin: 2px 0 2px 4px; }
+.incident-box {
+  border: 1px solid var(--border-strong); border-radius: 7px; padding: 8px; margin: 5px 0; background: var(--surface); }
 .incident-head { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; flex-wrap: wrap; }
-.incident-sub { margin: 8px 0 0 16px; padding-left: 10px; border-left: 2px solid #d1d5db; }
-.sub-label { display: block; font-size: 11px; color: #9ca3af; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin: 6px 0 4px; }
+.incident-sub { margin: 8px 0 0 16px; padding-left: 10px; border-left: 2px solid var(--border-strong); }
+.sub-label { display: block; font-size: 11px; color: var(--faint); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin: 6px 0 4px; }
 .add-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .add-btn {
-  appearance: none; border: 1px dashed #d1d5db; background: #fff; color: #6b7280;
+  appearance: none; border: 1px dashed var(--border-strong); background: var(--surface); color: var(--muted);
   border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
 }
-.add-btn:hover { border-color: #6366f1; color: #4338ca; }
+.add-btn:hover { border-color: var(--indigo); color: var(--indigo-text); }
 </style>

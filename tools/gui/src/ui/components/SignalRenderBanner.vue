@@ -47,11 +47,11 @@ const emit = defineEmits<{ export: [] }>()
   font-size: 12px; padding: 6px 12px; margin-bottom: 8px; border-radius: 6px;
   background: #1e293b; color: #f8fafc;
 }
-.signal-banner--unavailable { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+.signal-banner--unavailable { background: var(--warn-soft); color: var(--warn-text); border: 1px solid var(--warn); }
 .signal-basis { font-family: monospace; margin-right: 4px; }
 .export-btn {
-  margin-left: auto; padding: 2px 10px; border: 1px solid #cbd5e1; border-radius: 4px;
-  background: white; color: #1e293b; font-size: 11px; cursor: pointer;
+  margin-left: auto; padding: 2px 10px; border: 1px solid var(--border-strong); border-radius: 4px;
+  background: var(--surface); color: var(--text); font-size: 11px; cursor: pointer;
 }
-.export-btn:hover { background: #f1f5f9; }
+.export-btn:hover { background: var(--soft); }
 </style>

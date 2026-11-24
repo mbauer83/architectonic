@@ -148,17 +148,19 @@ const submit = async (dryRun: boolean): Promise<void> => {
 <style scoped>
 .add-form {
   display: flex; flex-direction: column; gap: 8px; padding: 12px;
-  border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
 }
-.field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; font-weight: 600; color: #374151; }
+.field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; font-weight: 600; color: var(--text-2); }
 .field input, .field select {
-  font-weight: 400; padding: 5px 8px; border: 1px solid #e5e7eb;
+  font-weight: 400; padding: 5px 8px; border: 1px solid var(--border);
   border-radius: 6px; font-size: 13px;
 }
-.notes { margin: 0; padding-left: 18px; font-size: 12px; color: #92400e; }
-.refusal { margin: 0; font-size: 12px; color: #dc2626; }
+.notes { margin: 0; padding-left: 18px; font-size: 12px; color: var(--warn-text); }
+.refusal { margin: 0; font-size: 12px; color: var(--danger); }
 .actions { display: flex; gap: 8px; }
-.actions button { padding: 5px 12px; border-radius: 6px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; }
-.actions .primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+.actions button {
+  padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface);
+  cursor: pointer; }
+.actions .primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .actions button:disabled { opacity: .5; cursor: not-allowed; }
 </style>

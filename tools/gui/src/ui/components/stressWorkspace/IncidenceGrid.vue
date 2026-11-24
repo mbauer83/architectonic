@@ -181,8 +181,8 @@ const toggle = (stressor: string, component: string) => {
   width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--border-strong);
   background: var(--surface); cursor: pointer; font-size: 12px; line-height: 1;
 }
-.tick[aria-pressed="true"] { background: #1e293b; color: #fff; border-color: #1e293b; }
-.tick.note::after { content: '•'; color: #f59e0b; position: relative; top: -6px; }
+.tick[aria-pressed="true"] { background: var(--inverse); color: var(--on-inverse); border-color: var(--inverse); }
+.tick.note::after { content: '•'; color: var(--warn); position: relative; top: -6px; }
 .note-btn {
   border: none;
   background: none;

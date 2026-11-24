@@ -370,11 +370,11 @@ const status = computed(() => {
 
 <style scoped>
 .page { max-width: 100%; }
-.err { color: #dc2626; }
-.hint { margin: 10px 0; font-size: 12.5px; color: #6b7280; }
+.err { color: var(--danger); }
+.hint { margin: 10px 0; font-size: 12.5px; color: var(--muted); }
 .canvas-frame {
   position: relative;
-  border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;
-  height: clamp(420px, 74vh, 940px); background: #fafafa;
+  border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  height: clamp(420px, 74vh, 940px); background: var(--paper);
 }
 </style>

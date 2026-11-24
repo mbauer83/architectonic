@@ -242,19 +242,19 @@ const materializeTarget = computed(() => {
 
 <style scoped>
 .layered-view { padding: 0 0 24px; }
-.page-title { font-size: 16px; padding: 12px 16px 0; margin: 0; color: #374151; }
-.stale-banner { background: #fef3c7; color: #92400e; padding: 8px 16px; font-size: 12.5px; }
+.page-title { font-size: 16px; padding: 12px 16px 0; margin: 0; color: var(--text-2); }
+.stale-banner { background: var(--warn-soft); color: var(--warn-text); padding: 8px 16px; font-size: 12.5px; }
 .stale-banner-title { margin: 0 0 6px; font-weight: 600; }
 .stale-finding-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .stale-finding { display: flex; gap: 10px; align-items: center; }
 .stale-finding-desc { flex: 1; }
-.stale-banner button { border: 1px solid #d1d5db; background: white; border-radius: 5px; padding: 2px 8px; cursor: pointer; }
-.legend { display: flex; gap: 16px; padding: 8px 16px; font-size: 12px; color: #374151; }
+.stale-banner button { border: 1px solid var(--border-strong); background: var(--surface); border-radius: 5px; padding: 2px 8px; cursor: pointer; }
+.legend { display: flex; gap: 16px; padding: 8px 16px; font-size: 12px; color: var(--text-2); }
 .legend-entry { display: inline-flex; align-items: center; gap: 4px; }
-.legend-swatch { width: 20px; height: 0; border-top: 2px dashed #9ca3af; display: inline-block; }
+.legend-swatch { width: 20px; height: 0; border-top: 2px dashed var(--faint); display: inline-block; }
 .legend-swatch--certain { border-top-style: dashed; }
 .legend-swatch--potential { border-top-style: dotted; }
-.graph-svg { width: 100%; height: 400px; background: #fafafa; }
+.graph-svg { width: 100%; height: 400px; background: var(--paper); }
 .derived-edge { cursor: pointer; }
-.rendered-entities { padding: 4px 16px; font-size: 12px; color: #374151; columns: 3; }
+.rendered-entities { padding: 4px 16px; font-size: 12px; color: var(--text-2); columns: 3; }
 </style>

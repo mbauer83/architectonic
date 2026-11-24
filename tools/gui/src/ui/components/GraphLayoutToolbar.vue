@@ -108,17 +108,17 @@ const emit = defineEmits<{
 .spacing-controls {
   display: inline-flex; align-items: center; gap: 4px; margin-left: 12px; flex-shrink: 0;
 }
-.spacing-label { font-size: 11.5px; color: #6b7280; }
+.spacing-label { font-size: 11.5px; color: var(--muted); }
 .spacing-btn {
-  font-size: 11.5px; padding: 3px 10px; border: 1px solid #d1d5db; border-radius: 5px;
-  background: white; cursor: pointer; color: #374151;
+  font-size: 11.5px; padding: 3px 10px; border: 1px solid var(--border-strong); border-radius: 5px;
+  background: var(--surface); cursor: pointer; color: var(--text-2);
 }
 /* Hover is excluded on the selected button and given its own darker shade there. A bare
    `:hover` rule outranks the single-class active rule, so hovering the selected button
    restored the pale hover background while the active rule's white text stayed — the
    label disappeared for as long as the pointer rested on it. */
-.spacing-btn:hover:not(:disabled):not(.spacing-btn--active) { background: #f3f4f6; }
-.spacing-btn:disabled { color: #c4c8cf; cursor: not-allowed; }
-.spacing-btn--active { background: #2563eb; color: white; border-color: #2563eb; }
-.spacing-btn--active:hover:not(:disabled) { background: #1d4ed8; }
+.spacing-btn:hover:not(:disabled):not(.spacing-btn--active) { background: var(--soft); }
+.spacing-btn:disabled { color: var(--faint); cursor: not-allowed; }
+.spacing-btn--active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.spacing-btn--active:hover:not(:disabled) { background: var(--accent-strong); }
 </style>

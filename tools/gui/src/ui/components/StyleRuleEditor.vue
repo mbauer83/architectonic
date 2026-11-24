@@ -136,18 +136,19 @@ const onDefaultStyleChange = (capability: string, token: string) => {
 <style scoped>
 .rule-list { display: flex; flex-direction: column; gap: 8px; }
 .add-row { margin-top: 8px; }
-.add-btn { appearance: none; border: 1px dashed #d1d5db; background: #fff; color: #6b7280; border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
-.add-btn:hover { border-color: #6366f1; color: #4338ca; }
-.card { border: 1px solid #d1d5db; border-radius: 10px; padding: 12px; margin-top: 12px; }
+.add-btn { appearance: none; border: 1px dashed var(--border-strong); background: var(--surface); color: var(--muted); border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.add-btn:hover { border-color: var(--indigo); color: var(--indigo-text); }
+.card { border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px; margin-top: 12px; }
 .default-row {
   display: grid; grid-template-columns: 140px auto; align-items: center;
   column-gap: 16px; margin: 6px 0; font-size: 12.5px;
 }
-.default-row > span:first-child { color: #374151; }
+.default-row > span:first-child { color: var(--text-2); }
 .legend-header { display: flex; align-items: center; justify-content: space-between; }
-.pill { font-size: 11px; font-weight: 600; color: #6b7280; background: #f3f4f6; border-radius: 99px; padding: 2px 8px; }
+.pill { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--soft); border-radius: 99px;
+  padding: 2px 8px; }
 .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
 .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0,0,0,.15); }
-.placeholder { font-size: 12.5px; color: #6b7280; margin: 4px 0; }
+.placeholder { font-size: 12.5px; color: var(--muted); margin: 4px 0; }
 </style>

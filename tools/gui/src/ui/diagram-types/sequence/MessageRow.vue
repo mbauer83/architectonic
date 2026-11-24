@@ -141,24 +141,24 @@ const hasAdvanced = (m: Message) => m.activate_target || m.deactivate_target
 </template>
 
 <style scoped>
-.msg-row { display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; }
+.msg-row { display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
 .msg-main { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .msg-order { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
-.drag-handle { cursor: grab; color: #94a3b8; font-size: 14px; line-height: 1; }
-.msg-idx { font-size: 10px; color: #94a3b8; }
+.drag-handle { cursor: grab; color: var(--faint); font-size: 14px; line-height: 1; }
+.msg-idx { font-size: 10px; color: var(--faint); }
 .endpoint-sel { width: 100px; }
 .arrow-sel { width: 90px; }
 .msg-label { flex: 1; min-width: 80px; }
 .msg-actions { display: flex; gap: 4px; flex-shrink: 0; }
-.adv-btn { min-width: 24px; height: 24px; border: 1px solid #cbd5e1; background: #fff; border-radius: 5px; cursor: pointer; font-size: 12px; color: #94a3b8; }
-.adv-btn.active { color: #2563eb; border-color: #93c5fd; background: #eff6ff; }
-.mini-btn { min-width: 24px; height: 24px; border: 1px solid #cbd5e1; background: #fff; border-radius: 5px; cursor: pointer; font-size: 14px; color: #374151; }
-.msg-advanced { display: flex; gap: 16px; padding: 4px 8px; background: #f8fafc; border-radius: 4px; }
-.adv-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #475569; cursor: pointer; }
-.msg-warn { font-size: 11px; color: #f59e0b; }
+.adv-btn { min-width: 24px; height: 24px; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 5px; cursor: pointer; font-size: 12px; color: var(--faint); }
+.adv-btn.active { color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
+.mini-btn { min-width: 24px; height: 24px; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 5px; cursor: pointer; font-size: 14px; color: var(--text-2); }
+.msg-advanced { display: flex; gap: 16px; padding: 4px 8px; background: var(--canvas); border-radius: 4px; }
+.adv-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-2); cursor: pointer; }
+.msg-warn { font-size: 11px; color: var(--warn); }
 .inp {
-  padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 5px;
-  font-size: 12px; background: white; color: #1e293b; outline: none; box-sizing: border-box;
+  padding: 4px 6px; border: 1px solid var(--border-strong); border-radius: 5px;
+  font-size: 12px; background: var(--surface); color: var(--text); outline: none; box-sizing: border-box;
 }
-.inp:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px #bfdbfe; }
+.inp:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-ring); }
 </style>

@@ -250,16 +250,16 @@ const executeDelete = () => { void router.push(backTo.value) }
 </template>
 
 <style scoped>
-.state-msg { color: #6b7280; padding: 4px 0; }
-.state-msg--error { color: #dc2626; }
+.state-msg { color: var(--muted); padding: 4px 0; }
+.state-msg--error { color: var(--danger); }
 
-.card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; }
+.card { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); }
 .content-card { padding: 16px 20px; margin-bottom: 24px; overflow-x: auto; }
 
 .markdown-body :deep(p) { margin: 1rem 0 1.7rem 0; }
 .markdown-body :deep(ul) { padding-left: 1.5rem; }
 .markdown-body :deep(table) { inline-size: 100%; border-collapse: collapse; margin-block: 2rem; min-inline-size: max-content; }
-.markdown-body :deep(th), .markdown-body :deep(td) { padding-inline: 1.25rem; padding-block: 0.75rem; text-align: start; border-bottom: 1px solid var(--border-color, #eee); }
+.markdown-body :deep(th), .markdown-body :deep(td) { padding-inline: 1.25rem; padding-block: 0.75rem; text-align: start; border-bottom: 1px solid var(--border)); }
 
 /* Connections — [INCOMING] [SYMMETRIC] [OUTGOING] */
 .connections-section { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }

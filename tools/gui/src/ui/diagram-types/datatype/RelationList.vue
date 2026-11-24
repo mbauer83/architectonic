@@ -55,9 +55,9 @@ const addConnDefault = () => {
 <style scoped>
 .rl { display: flex; flex-direction: column; gap: 4px; }
 .rl-hdr { display: flex; align-items: center; justify-content: space-between; }
-.rl-title { font-size: 12px; font-weight: 600; color: #374151; }
-.add-btn { font-size: 11px; padding: 2px 8px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; }
-.add-btn:hover:not(:disabled) { background: #f1f5f9; }
+.rl-title { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.add-btn { font-size: 11px; padding: 2px 8px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--surface); cursor: pointer; }
+.add-btn:hover:not(:disabled) { background: var(--soft); }
 .add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.rl-empty { font-size: 11px; color: #9ca3af; padding: 4px 0; }
+.rl-empty { font-size: 11px; color: var(--faint); padding: 4px 0; }
 </style>

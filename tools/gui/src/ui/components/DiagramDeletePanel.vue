@@ -118,22 +118,24 @@ const executeDelete = () => {
 </template>
 
 <style scoped>
-.state { color: #6b7280; } .err { color: #dc2626; }
+.state { color: var(--muted); } .err { color: var(--danger); }
 .state-block { white-space: pre-wrap; overflow-x: auto; }
-.delete-panel { margin-top: 16px; padding: 16px; background: #fff7f7; border: 1px solid #fecaca; border-radius: 8px; }
-.delete-title { font-size: 14px; font-weight: 700; color: #991b1b; margin-bottom: 6px; }
-.delete-text { font-size: 13px; color: #7f1d1d; margin-bottom: 10px; }
+.delete-panel { margin-top: 16px; padding: 16px; background: var(--danger-soft); border: 1px solid var(--danger-border);
+  border-radius: 8px; }
+.delete-title { font-size: 14px; font-weight: 700; color: var(--danger-strong); margin-bottom: 6px; }
+.delete-text { font-size: 13px; color: var(--danger-strong); margin-bottom: 10px; }
 .preview-warnings { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
-.preview-warn { font-size: 12px; color: #92400e; background: #fef3c7; padding: 4px 8px; border-radius: 4px; }
+.preview-warn {
+  font-size: 12px; color: var(--warn-text); background: var(--warn-soft); padding: 4px 8px; border-radius: 4px; }
 .delete-preview {
-  font-size: 11px; color: #374151; white-space: pre-wrap; max-height: 260px; overflow-y: auto;
-  font-family: monospace; background: white; border: 1px solid #fecaca; border-radius: 6px; padding: 10px; margin-bottom: 10px;
+  font-size: 11px; color: var(--text-2); white-space: pre-wrap; max-height: 260px; overflow-y: auto;
+  font-family: monospace; background: var(--surface); border: 1px solid var(--danger-border); border-radius: 6px; padding: 10px; margin-bottom: 10px;
 }
 .delete-actions { display: flex; gap: 8px; justify-content: flex-end; }
-.toggle-btn { padding: 5px 14px; border-radius: 6px; border: 1px solid #d1d5db; background: white; font-size: 13px; cursor: pointer; color: #374151; } .toggle-btn:hover { background: #f9fafb; }
+.toggle-btn { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface); font-size: 13px; cursor: pointer; color: var(--text-2); } .toggle-btn:hover { background: var(--hover); }
 .delete-confirm-btn {
-  padding: 5px 16px; background: #dc2626; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; color: white; cursor: pointer;
+  padding: 5px 16px; background: var(--danger); border: none; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--on-accent); cursor: pointer;
 }
-.delete-confirm-btn:hover:not(:disabled) { background: #b91c1c; }
+.delete-confirm-btn:hover:not(:disabled) { background: var(--danger-strong); }
 .delete-confirm-btn:disabled { opacity: .5; cursor: not-allowed; }
 </style>

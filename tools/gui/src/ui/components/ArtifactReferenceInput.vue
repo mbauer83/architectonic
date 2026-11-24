@@ -411,8 +411,8 @@ onMounted(() => {
 <style scoped>
 .reference-picker {
   width: min(820px, calc(100vw - 32px));
-  background: white;
-  border: 1px solid #dbe3ee;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.22);
   padding: 18px;
@@ -428,28 +428,28 @@ onMounted(() => {
 .reference-picker__header h3 {
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text);
   margin-bottom: 4px;
 }
 
 .reference-picker__header p {
   font-size: 12px;
-  color: #64748b;
+  color: var(--muted);
 }
 
 .reference-picker__close {
   border: 0;
   background: transparent;
-  color: #64748b;
+  color: var(--muted);
   cursor: pointer;
   font-size: 22px;
   line-height: 1;
 }
 
 .reference-picker__section-hint {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #1e40af;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  color: var(--type-text);
   border-radius: 8px;
   padding: 7px 11px;
   font-size: 12px;
@@ -459,15 +459,15 @@ onMounted(() => {
 .reference-picker__input {
   width: 100%;
   padding: 11px 13px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   border-radius: 10px;
   font-size: 14px;
 }
 
 .reference-picker__input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
 .reference-picker__dropdown {
@@ -479,9 +479,9 @@ onMounted(() => {
 
 .reference-picker__filters,
 .reference-picker__results {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--canvas);
 }
 
 .reference-picker__filters {
@@ -501,7 +501,7 @@ onMounted(() => {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #475569;
+  color: var(--text-2);
 }
 
 .reference-picker__nav {
@@ -510,9 +510,9 @@ onMounted(() => {
 }
 
 .nav-btn {
-  border: 1px solid #cbd5e1;
-  background: white;
-  color: #334155;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-2);
   border-radius: 8px;
   padding: 7px 10px;
   font-size: 12px;
@@ -526,9 +526,9 @@ onMounted(() => {
 }
 
 .nav-btn--primary {
-  background: #dbeafe;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
+  background: var(--type-soft);
+  border-color: var(--accent-border);
+  color: var(--accent-strong);
 }
 
 .reference-picker__chips {
@@ -538,12 +538,12 @@ onMounted(() => {
 }
 
 .chip {
-  border: 1px solid #cbd5e1;
-  background: white;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
   border-radius: 999px;
   padding: 7px 12px;
   font-size: 12px;
-  color: #334155;
+  color: var(--text-2);
   cursor: pointer;
 }
 
@@ -552,15 +552,15 @@ onMounted(() => {
 }
 
 .chip--active {
-  background: #0f172a;
-  border-color: #0f172a;
-  color: white;
+  background: var(--inverse);
+  border-color: var(--inverse);
+  color: var(--on-inverse);
 }
 
 .chip--suggested:not(.chip--active) {
-  border-color: #93c5fd;
-  background: #eff6ff;
-  color: #1e40af;
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--type-text);
 }
 
 .reference-picker__summary {
@@ -569,7 +569,7 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 12px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--muted);
 }
 
 .reference-picker__results {
@@ -580,7 +580,7 @@ onMounted(() => {
 }
 
 .reference-picker__state {
-  color: #64748b;
+  color: var(--muted);
   font-size: 13px;
   padding: 8px 4px;
 }
@@ -593,8 +593,8 @@ onMounted(() => {
 }
 
 .result-card {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px 12px;
 }
@@ -618,7 +618,7 @@ onMounted(() => {
   display: block;
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text);
   margin-bottom: 6px;
 }
 
@@ -632,22 +632,22 @@ onMounted(() => {
   display: inline-flex;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--type-soft);
+  color: var(--accent-strong);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .badge--muted {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--soft);
+  color: var(--text-2);
 }
 
 .result-card__toggle {
   border: 0;
   background: transparent;
-  color: #64748b;
+  color: var(--muted);
   cursor: pointer;
   font-size: 16px;
 }
@@ -655,7 +655,7 @@ onMounted(() => {
 .result-card__path {
   margin-top: 8px;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--faint);
   word-break: break-all;
 }
 
@@ -667,9 +667,9 @@ onMounted(() => {
 }
 
 .section-chip {
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
   border-radius: 999px;
   padding: 5px 9px;
   font-size: 11px;

@@ -40,9 +40,9 @@ const emit = defineEmits<{ 'update:modelValue': [value: SelectionMode] }>()
 <style scoped>
 .mode-switch {
   display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
-  padding: 6px 0; font-size: 12.5px; color: #374151;
+  padding: 6px 0; font-size: 12.5px; color: var(--text-2);
 }
 .mode-label { font-weight: 600; }
 .mode-option { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
-.mode-hint { color: #9ca3af; font-size: 11.5px; }
+.mode-hint { color: var(--faint); font-size: 11.5px; }
 </style>

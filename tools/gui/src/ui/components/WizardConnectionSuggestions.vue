@@ -104,21 +104,21 @@ const rows = computed(() => props.suggestions.map((suggestion) => ({
   /* flex-start, not center: an expanded guidance disclosure grows the row, and the actions should
      stay beside the summary they act on rather than drifting down with it. */
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-  padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fafafa;
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--hover);
 }
 .suggestion-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.suggestion-summary { font-size: 13px; color: #374151; }
-.conn-guidance { font-size: 12px; color: #6b7280; }
+.suggestion-summary { font-size: 13px; color: var(--text-2); }
+.conn-guidance { font-size: 12px; color: var(--muted); }
 .conn-guidance summary { cursor: pointer; }
 .conn-guidance__text { margin: 4px 0 0; }
-.conn-guidance__text--never { color: #b45309; }
+.conn-guidance__text--never { color: var(--warn-text); }
 .suggestion-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .suggestion-actions button {
   font-size: 12px; padding: 4px 10px; border-radius: 5px; cursor: pointer; border: 1px solid transparent;
 }
 .suggestion-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-accept { background: #16a34a; color: white; }
-.btn-later { background: white; border-color: #d1d5db; color: #4b5563; }
-.btn-dismiss { background: white; border-color: #fecaca; color: #dc2626; }
-.suggestion-empty { color: #9ca3af; font-size: 13px; }
+.btn-accept { background: var(--ok); color: var(--on-accent); }
+.btn-later { background: var(--surface); border-color: var(--border-strong); color: var(--text-2); }
+.btn-dismiss { background: var(--surface); border-color: var(--danger-border); color: var(--danger); }
+.suggestion-empty { color: var(--faint); font-size: 13px; }
 </style>

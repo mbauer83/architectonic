@@ -254,22 +254,22 @@ const onLayoutChange = (raw: string) => {
 </template>
 
 <style scoped>
-.field { display: block; margin: 8px 0; font-size: 12.5px; font-weight: 600; color: #6b7280; }
-.empty-hint { font-size: 13px; color: #6b7280; background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 8px; padding: 10px 12px; }
+.field { display: block; margin: 8px 0; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.empty-hint { font-size: 13px; color: var(--muted); background: var(--hover); border: 1px dashed var(--border-strong); border-radius: 8px; padding: 10px 12px; }
 .representation-field { margin: 8px 0; }
-.field-label { display: block; font-size: 12.5px; font-weight: 600; color: #6b7280; margin-bottom: 3px; }
+.field-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 3px; }
 .representation-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .representation-row .inp, .representation-row .btn { min-height: 32px; margin-top: 0; }
-.inp { display: block; padding: 6px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; font-family: inherit; background: #fff; box-sizing: border-box; margin-top: 3px; }
+.inp { display: block; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-strong); font-size: 13px; font-family: inherit; background: var(--surface); box-sizing: border-box; margin-top: 3px; }
 .budget-inp { max-width: 140px; }
 select.inp { cursor: pointer; min-width: 160px; }
 .column-row { display: flex; gap: 6px; margin: 4px 0; align-items: center; }
 .column-row .inp { flex: 1; margin-top: 0; }
-.btn { appearance: none; border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 6px; padding: 6px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
-.btn:hover { border-color: #6366f1; color: #4338ca; }
-.btn--danger:hover { border-color: #dc2626; color: #b91c1c; background: #fef2f2; }
-.icon-btn { appearance: none; border: none; background: none; color: #9ca3af; cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 5px; border-radius: 5px; }
-.icon-btn:hover { background: #fee2e2; color: #991b1b; }
-.add-btn { appearance: none; border: 1px dashed #d1d5db; background: #fff; color: #6b7280; border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 8px; }
-.add-btn:hover { border-color: #6366f1; color: #4338ca; }
+.btn { appearance: none; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); border-radius: 6px; padding: 6px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.btn:hover { border-color: var(--indigo); color: var(--indigo-text); }
+.btn--danger:hover { border-color: var(--danger); color: var(--danger-strong); background: var(--danger-soft); }
+.icon-btn { appearance: none; border: none; background: none; color: var(--faint); cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 5px; border-radius: 5px; }
+.icon-btn:hover { background: var(--danger-soft); color: var(--danger-strong); }
+.add-btn { appearance: none; border: 1px dashed var(--border-strong); background: var(--surface); color: var(--muted); border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+.add-btn:hover { border-color: var(--indigo); color: var(--indigo-text); }
 </style>

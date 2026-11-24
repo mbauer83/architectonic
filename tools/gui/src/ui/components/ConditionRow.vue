@@ -219,23 +219,24 @@ const onListBindingChange = (patch: { binding?: string; project?: string }) => {
 
 <style scoped>
 .row {
-  display: flex; gap: 6px; align-items: center; background: #fff; border: 1px solid #d1d5db;
+  display: flex; gap: 6px; align-items: center; background: var(--surface); border: 1px solid var(--border-strong);
   border-radius: 7px; padding: 6px 8px; margin: 5px 0; flex-wrap: wrap;
 }
-.row.highlighted { outline: 2px solid #dc2626; outline-offset: 2px; }
-.inp { padding: 4px 6px; border-radius: 5px; border: 1px solid #d1d5db; font-size: 12.5px; font-family: inherit; }
+.row.highlighted { outline: 2px solid var(--danger); outline-offset: 2px; }
+.inp { padding: 4px 6px; border-radius: 5px; border: 1px solid var(--border-strong); font-size: 12.5px;
+  font-family: inherit; }
 .attr { min-width: 118px; }
 .cmp { min-width: 80px; }
 .val { min-width: 90px; flex: 1; }
 .not-toggle {
-  appearance: none; border: 1px solid #d1d5db; border-radius: 99px; background: #fff;
-  color: #9ca3af; font-size: 10.5px; font-weight: 700; padding: 3px 9px; cursor: pointer;
+  appearance: none; border: 1px solid var(--border-strong); border-radius: 99px; background: var(--surface);
+  color: var(--faint); font-size: 10.5px; font-weight: 700; padding: 3px 9px; cursor: pointer;
 }
-.not-toggle.on { background: #fee2e2; color: #991b1b; border-color: transparent; }
+.not-toggle.on { background: var(--danger-soft); color: var(--danger-strong); border-color: transparent; }
 .icon-btn {
-  appearance: none; border: none; background: none; color: #9ca3af; cursor: pointer;
+  appearance: none; border: none; background: none; color: var(--faint); cursor: pointer;
   font-size: 15px; line-height: 1; padding: 2px 5px; border-radius: 5px;
 }
-.icon-btn:hover { background: #fee2e2; color: #991b1b; }
-.inline-issue { flex-basis: 100%; font-size: 11px; color: #b45309; }
+.icon-btn:hover { background: var(--danger-soft); color: var(--danger-strong); }
+.inline-issue { flex-basis: 100%; font-size: 11px; color: var(--warn-text); }
 </style>

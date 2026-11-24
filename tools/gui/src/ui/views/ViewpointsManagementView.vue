@@ -353,27 +353,28 @@ const focusIssue = (issue: ViewpointValidationIssue) => {
 
 <style scoped>
 .page { padding: 20px 28px; max-width: 980px; }
-.error { color: #991b1b; background: #fee2e2; padding: 8px 12px; border-radius: 6px; }
+.error { color: var(--danger-strong); background: var(--danger-soft); padding: 8px 12px; border-radius: 6px; }
 .save-error { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
-.retry-btn { appearance: none; border: 1px solid #991b1b; border-radius: 6px; background: #fff; color: #991b1b; font-size: 12px; padding: 3px 10px; cursor: pointer; flex-shrink: 0; }
-.retry-btn:hover { background: #fef2f2; }
-.primary-btn { background: #6366f1; color: #fff; border: none; border-radius: 7px; padding: 8px 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px; }
+.retry-btn { appearance: none; border: 1px solid var(--danger-strong); border-radius: 6px; background: var(--surface); color: var(--danger-strong); font-size: 12px; padding: 3px 10px; cursor: pointer; flex-shrink: 0; }
+.retry-btn:hover { background: var(--danger-soft); }
+.primary-btn { background: var(--indigo); color: var(--on-accent); border: none; border-radius: 7px; padding: 8px 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px; }
 .primary-btn:disabled { opacity: .5; cursor: not-allowed; }
 .save-as-btn {
-  background: #fff; color: #4338ca; border: 1px solid #c7d2fe; border-radius: 7px;
+  background: var(--surface); color: var(--indigo-text); border: 1px solid var(--indigo-border); border-radius: 7px;
   padding: 8px 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px; margin-left: 8px;
 }
-.save-as-btn:hover:not(:disabled) { background: #eef2ff; }
+.save-as-btn:hover:not(:disabled) { background: var(--indigo-soft); }
 .save-as-btn:disabled { opacity: .5; cursor: not-allowed; }
 .save-row { margin-top: 20px; display: flex; align-items: center; }
-.back-btn { appearance: none; border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 6px; padding: 5px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
-.back-btn:hover { border-color: #6366f1; color: #4338ca; }
+.back-btn { appearance: none; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); border-radius: 6px; padding: 5px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.back-btn:hover { border-color: var(--indigo); color: var(--indigo-text); }
 .editor-topbar { display: flex; align-items: center; justify-content: space-between; }
-.help-link { font-size: 12.5px; color: #6b7280; text-decoration: none; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px 10px; }
-.help-link:hover { color: #4338ca; border-color: #c7d2fe; }
+.help-link { font-size: 12.5px; color: var(--muted); text-decoration: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; }
+.help-link:hover { color: var(--indigo-text); border-color: var(--indigo-border); }
 .cancel-btn {
-  appearance: none; background: #fff; color: #6b7280; border: 1px solid #d1d5db; border-radius: 7px;
+  appearance: none; background: var(--surface); color: var(--muted); border: 1px solid var(--border-strong);
+  border-radius: 7px;
   padding: 8px 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px; margin-left: 8px;
 }
-.cancel-btn:hover:not(:disabled) { border-color: #9ca3af; color: #374151; }
+.cancel-btn:hover:not(:disabled) { border-color: var(--faint); color: var(--text-2); }
 </style>

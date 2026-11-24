@@ -167,56 +167,56 @@ const friendlyName = (id: string) => {
   flex: 1;
   padding: 9px 14px;
   border-radius: 6px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   font-size: 14px;
   outline: none;
 }
-.search-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+.search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
 .search-btn {
   padding: 9px 20px;
-  background: #2563eb;
-  color: white;
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
 }
-.search-btn:hover { background: #1d4ed8; }
+.search-btn:hover { background: var(--accent-strong); }
 
-.state-msg { color: #6b7280; }
-.state-msg--error { color: #dc2626; }
+.state-msg { color: var(--muted); }
+.state-msg--error { color: var(--danger); }
 
-.result-count { font-size: 13px; color: #6b7280; margin-bottom: 12px; }
+.result-count { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
 
 .result-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 
-.card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; padding: 14px 16px; }
+.card { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); padding: 14px 16px; }
 
 .result-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
 .result-name { font-weight: 600; font-size: 14px; }
-.score { font-size: 11px; color: #9ca3af; font-family: monospace; }
+.score { font-size: 11px; color: var(--faint); font-family: monospace; }
 
 .result-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
 .kind-chip { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
-  padding: 0.1rem 0.4rem; border-radius: 999px; background: #eef1f5; color: #445; }
-.result-type { font-size: 12px; color: #374151; }
-.result-id { font-size: 11px; color: #9ca3af; }
+  padding: 0.1rem 0.4rem; border-radius: 999px; background: var(--soft); color: var(--text-2); }
+.result-type { font-size: 12px; color: var(--text-2); }
+.result-id { font-size: 11px; color: var(--faint); }
 .mono { font-family: monospace; }
 
 .global-chip {
   display: inline-block;
-  background: #fef3c7; color: #92400e;
-  border: 1px solid #fde68a; border-radius: 3px;
+  background: var(--warn-soft); color: var(--warn-text);
+  border: 1px solid var(--warn-border); border-radius: 3px;
   padding: 0 5px; font-size: 10px; font-weight: 600;
 }
 /* Quieter than the enterprise chip on purpose: it marks a hit as *less* settled, and a loud badge
    would draw the eye to the least committed thing on the page. */
 .note-chip {
   display: inline-block;
-  background: #f3f4f6; color: #6b7280;
-  border: 1px solid #e5e7eb; border-radius: 3px;
+  background: var(--soft); color: var(--muted);
+  border: 1px solid var(--border); border-radius: 3px;
   padding: 0 5px; font-size: 10px; font-weight: 600;
 }
-.untyped { font-size: 12px; color: #9ca3af; }
+.untyped { font-size: 12px; color: var(--faint); }
 </style>

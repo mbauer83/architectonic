@@ -95,5 +95,5 @@ const run = async () => {
 .side { border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
 .side small { display: block; color: var(--muted); font-size: 11px; }
 .foot { color: var(--muted); font-size: 11.5px; margin-top: 10px; }
-.err { color: #b91c1c; }
+.err { color: var(--danger-strong); }
 </style>

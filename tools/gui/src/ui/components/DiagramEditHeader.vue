@@ -60,15 +60,15 @@ const emit = defineEmits<{ back: []; preview: []; save: [] }>()
 <style scoped>
 .page-hdr { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .hdr-actions { display: flex; gap: 8px; margin-left: auto; }
-.back-link { font-size: 13px; color: #6b7280; background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0; }
-.back-link:hover { color: #374151; }
+.back-link { font-size: 13px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0; }
+.back-link:hover { color: var(--text-2); }
 .hdr-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .pg-title { font-size: 20px; font-weight: 700; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.faded { color: #9ca3af; font-weight: 400; }
-.type-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; background: #dbeafe; color: #1e40af; font-weight: 500; flex-shrink: 0; }
-.btn-preview { padding: 7px 12px; background: #f3f4f6; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; }
-.btn-preview:hover:not(:disabled) { background: #eff6ff; }
-.btn-save { padding: 7px 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
-.btn-save:hover:not(:disabled) { background: #1d4ed8; }
+.faded { color: var(--faint); font-weight: 400; }
+.type-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; background: var(--type-soft); color: var(--type-text); font-weight: 500; flex-shrink: 0; }
+.btn-preview { padding: 7px 12px; background: var(--soft); color: var(--accent-strong); border: 1px solid var(--accent-border); border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; }
+.btn-preview:hover:not(:disabled) { background: var(--accent-soft); }
+.btn-save { padding: 7px 12px; background: var(--accent); color: var(--on-accent); border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-save:hover:not(:disabled) { background: var(--accent-strong); }
 .btn-preview:disabled, .btn-save:disabled { opacity: .5; cursor: not-allowed; }
 </style>

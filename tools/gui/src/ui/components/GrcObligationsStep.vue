@@ -106,19 +106,21 @@ const addObligation = async () => {
 <style scoped>
 .step-body { display: flex; flex-direction: column; gap: 12px; }
 .add-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.add-input { flex: 1; min-width: 200px; font-size: 13px; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
-.cite-input { width: 220px; font-size: 13px; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.add-input { flex: 1; min-width: 200px; font-size: 13px; padding: 7px 10px; border: 1px solid var(--border-strong); border-radius: 6px; }
+.cite-input {
+  width: 220px; font-size: 13px; padding: 7px 10px; border: 1px solid var(--border-strong); border-radius: 6px; }
 .add-btn {
   font-size: 13px; padding: 7px 14px; border: none; border-radius: 6px;
-  background: #2563eb; color: #fff; font-weight: 600; cursor: pointer;
+  background: var(--accent); color: var(--on-accent); font-weight: 600; cursor: pointer;
 }
 .add-btn:disabled { opacity: 0.5; cursor: default; }
-.empty { color: #94a3b8; font-size: 13px; }
+.empty { color: var(--faint); font-size: 13px; }
 .node-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .node-name { font-size: 13px; font-weight: 500; }
-.citation { font-size: 12px; color: #475569; }
-.link-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; flex-wrap: wrap; }
+.citation { font-size: 12px; color: var(--text-2); }
+.link-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; flex-wrap: wrap; }
 .link-chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
-.chip { font-size: 11px; background: #eef2ff; color: #3730a3; padding: 2px 8px; border-radius: 10px; }
-.relation-select { font-size: 12px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 5px; }
+.chip {
+  font-size: 11px; background: var(--indigo-soft); color: var(--indigo-text); padding: 2px 8px; border-radius: 10px; }
+.relation-select { font-size: 12px; padding: 4px 8px; border: 1px solid var(--border-strong); border-radius: 5px; }
 </style>

@@ -33,9 +33,10 @@ const display = computed(() => (props.typedError ? executionErrorDisplay(props.t
 </template>
 
 <style scoped>
-.exec-error { color: #991b1b; background: #fee2e2; padding: 10px 14px; border-radius: 8px; margin: 8px 0; }
+.exec-error {
+  color: var(--danger-strong); background: var(--danger-soft); padding: 10px 14px; border-radius: 8px; margin: 8px 0; }
 .exec-error-title { font-weight: 700; margin: 0 0 4px; font-size: 13px; }
 .exec-error-detail { margin: 0 0 8px; font-size: 12.5px; }
-.retry-btn { appearance: none; border: 1px solid #991b1b; border-radius: 6px; background: #fff; color: #991b1b; font-size: 12px; padding: 3px 10px; cursor: pointer; }
-.retry-btn:hover { background: #fef2f2; }
+.retry-btn { appearance: none; border: 1px solid var(--danger-strong); border-radius: 6px; background: var(--surface); color: var(--danger-strong); font-size: 12px; padding: 3px 10px; cursor: pointer; }
+.retry-btn:hover { background: var(--danger-soft); }
 </style>

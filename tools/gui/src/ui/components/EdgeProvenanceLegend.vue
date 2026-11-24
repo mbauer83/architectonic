@@ -62,8 +62,8 @@ const entries = computed((): readonly Entry[] => {
 <style scoped>
 .edge-legend {
   display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
-  padding: 4px 16px; background: white; border-bottom: 1px solid #e5e7eb;
-  font-size: 11px; color: #374151;
+  padding: 4px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+  font-size: 11px; color: var(--text-2);
 }
 .edge-legend-entry { display: inline-flex; align-items: center; gap: 4px; }
 </style>

@@ -226,21 +226,21 @@ watch(() => props.groups, resetView)
 
 <style scoped>
 .treemap-card {
-  background: white; border: 1px solid #e5e7eb; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
   overflow: hidden; min-height: 620px; position: relative;
 }
 .treemap-topbar, .treemap-controls { display: flex; align-items: center; }
 .treemap-topbar {
   justify-content: space-between; gap: 14px; padding: 10px 14px;
-  border-bottom: 1px solid #e5e7eb; background: #f8fafc;
+  border-bottom: 1px solid var(--border); background: var(--canvas);
 }
-.treemap-note { font-size: 12px; color: #6b7280; }
+.treemap-note { font-size: 12px; color: var(--muted); }
 .treemap-controls { gap: 6px; }
 .control-btn {
-  min-width: 34px; padding: 6px 9px; border: 1px solid #d1d5db; border-radius: 6px;
-  background: white; color: #374151; cursor: pointer; font-size: 12px;
+  min-width: 34px; padding: 6px 9px; border: 1px solid var(--border-strong); border-radius: 6px;
+  background: var(--surface); color: var(--text-2); cursor: pointer; font-size: 12px;
 }
-.control-btn:hover { background: #f3f4f6; }
+.control-btn:hover { background: var(--soft); }
 .treemap-svg { display: block; width: 100%; height: 620px; cursor: grab; }
 .treemap-svg:active { cursor: grabbing; }
 .interaction-bg { fill: #fff; }
@@ -258,9 +258,9 @@ watch(() => props.groups, resetView)
   min-width: 220px;
   max-width: 260px;
   padding: 10px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--overlay);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
   pointer-events: none;
 }

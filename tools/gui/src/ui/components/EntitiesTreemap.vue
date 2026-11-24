@@ -75,10 +75,10 @@ const entityFor = (key: string): EntitySummary | undefined => byId.value.get(key
 </template>
 
 <style scoped>
-.leaf-glyph { color: #1f2937; fill: none; }
+.leaf-glyph { color: var(--text); fill: none; }
 .tooltip-head { display: flex; gap: 10px; align-items: center; margin-bottom: 6px; }
-.tooltip-glyph { color: #1f2937; fill: none; flex: 0 0 auto; }
-.tooltip-name { font-size: 13px; font-weight: 600; color: #111827; }
-.tooltip-type { font-size: 11px; color: #6b7280; }
-.tooltip-id { font-size: 11px; color: #6b7280; font-family: monospace; word-break: break-all; }
+.tooltip-glyph { color: var(--text); fill: none; flex: 0 0 auto; }
+.tooltip-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.tooltip-type { font-size: 11px; color: var(--muted); }
+.tooltip-id { font-size: 11px; color: var(--muted); font-family: monospace; word-break: break-all; }
 </style>

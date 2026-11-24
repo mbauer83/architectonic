@@ -117,23 +117,23 @@ onMounted(() => {
 .wiz { padding: 20px 24px; max-width: 900px; }
 .wiz-header { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
 .wiz-title { font-size: 20px; font-weight: 700; margin: 0; }
-.wiz-error { padding: 10px 14px; background: #fef2f2; color: #b91c1c; border-radius: 6px; margin-bottom: 12px; font-size: 13px; }
-.wiz-hint { color: #64748b; font-size: 14px; }
-.stepper { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+.wiz-error { padding: 10px 14px; background: var(--danger-soft); color: var(--danger-strong); border-radius: 6px; margin-bottom: 12px; font-size: 13px; }
+.wiz-hint { color: var(--muted); font-size: 14px; }
+.stepper { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
 .step-tab {
   display: flex; align-items: center; gap: 6px;
-  padding: 6px 12px; border: 1px solid #e2e8f0; border-radius: 6px;
-  background: #fff; color: #475569; font-size: 13px; cursor: pointer;
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface); color: var(--text-2); font-size: 13px; cursor: pointer;
 }
-.step-tab--active { background: #2563eb; color: #fff; border-color: #2563eb; }
-.step-tab--done:not(.step-tab--active) { border-color: #86efac; }
+.step-tab--active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.step-tab--done:not(.step-tab--active) { border-color: var(--ok-border); }
 .step-num {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; border-radius: 50%; background: #e2e8f0; color: #475569; font-size: 11px;
+  width: 18px; height: 18px; border-radius: 50%; background: var(--border); color: var(--text-2); font-size: 11px;
 }
 .step-tab--active .step-num { background: rgba(255,255,255,0.3); color: #fff; }
-.guidance { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
-.guidance-what { font-size: 14px; font-weight: 600; color: #075985; margin: 0 0 4px; }
-.guidance-why { font-size: 13px; color: #0c4a6e; margin: 0 0 4px; }
-.guidance-how { font-size: 12px; color: #0369a1; margin: 0; }
+.guidance { background: var(--info-soft); border: 1px solid var(--info-border); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+.guidance-what { font-size: 14px; font-weight: 600; color: var(--info-text); margin: 0 0 4px; }
+.guidance-why { font-size: 13px; color: var(--info-text); margin: 0 0 4px; }
+.guidance-how { font-size: 12px; color: var(--info-text); margin: 0; }
 </style>

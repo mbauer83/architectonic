@@ -307,43 +307,43 @@ const saveAs = () => {
 <style scoped>
 .page { padding: 20px 28px; max-width: 1100px; }
 .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.subtitle { color: #6b7280; font-size: 13px; margin: 2px 0 12px; max-width: 640px; }
+.subtitle { color: var(--muted); font-size: 13px; margin: 2px 0 12px; max-width: 640px; }
 .back-link {
-  font-size: 13px; color: #4338ca; text-decoration: none;
-  border: 1px solid #c7d2fe; border-radius: 6px; padding: 5px 12px; white-space: nowrap;
+  font-size: 13px; color: var(--indigo-text); text-decoration: none;
+  border: 1px solid var(--indigo-border); border-radius: 6px; padding: 5px 12px; white-space: nowrap;
 }
-.back-link:hover { background: #eef2ff; }
-.tabs { display: flex; gap: 6px; border-bottom: 1px solid #e5e7eb; margin-bottom: 14px; }
+.back-link:hover { background: var(--indigo-soft); }
+.tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
 .tabs button {
   appearance: none; border: none; background: none; padding: 8px 14px;
-  font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent;
+  font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
 }
-.tabs button.active { color: #4338ca; border-bottom-color: #6366f1; }
-.preview { color: #4b5563; font-size: 13px; display: flex; align-items: center; gap: 10px; min-height: 20px; }
+.tabs button.active { color: var(--indigo-text); border-bottom-color: var(--indigo); }
+.preview { color: var(--text-2); font-size: 13px; display: flex; align-items: center; gap: 10px; min-height: 20px; }
 .count-chip {
-  background: #eef2ff; color: #4338ca; border-radius: 999px;
+  background: var(--indigo-soft); color: var(--indigo-text); border-radius: 999px;
   padding: 2px 10px; font-size: 12px; font-weight: 600;
 }
 .actions { margin-top: 16px; display: flex; align-items: center; gap: 10px; }
 .primary-btn {
-  background: #6366f1; color: #fff; border: none; border-radius: 7px;
+  background: var(--indigo); color: var(--on-accent); border: none; border-radius: 7px;
   padding: 8px 18px; font-weight: 600; cursor: pointer;
 }
 .ghost-btn {
-  background: #fff; color: #374151; border: 1px solid #d1d5db;
+  background: var(--surface); color: var(--text-2); border: 1px solid var(--border-strong);
   border-radius: 7px; padding: 8px 16px; font-weight: 600; cursor: pointer;
 }
-.ghost-btn:hover { border-color: #9ca3af; }
+.ghost-btn:hover { border-color: var(--faint); }
 .save-as-btn {
-  background: #fff; color: #4338ca; border: 1px solid #c7d2fe;
+  background: var(--surface); color: var(--indigo-text); border: 1px solid var(--indigo-border);
   border-radius: 7px; padding: 8px 16px; font-weight: 600; cursor: pointer;
 }
-.save-as-btn:hover { background: #eef2ff; }
-.write-block-note { color: #6b7280; font-size: 12.5px; }
-.result { margin-top: 22px; border-top: 1px solid #e5e7eb; padding-top: 14px; }
+.save-as-btn:hover { background: var(--indigo-soft); }
+.write-block-note { color: var(--muted); font-size: 12.5px; }
+.result { margin-top: 22px; border-top: 1px solid var(--border); padding-top: 14px; }
 .stale-note {
-  background: #fffbeb; color: #92400e; border: 1px solid #fde68a;
+  background: var(--warn-soft); color: var(--warn-text); border: 1px solid var(--warn-border);
   border-radius: 6px; padding: 8px 12px; font-size: 13px;
 }
-.loading { color: #6b7280; }
+.loading { color: var(--muted); }
 </style>

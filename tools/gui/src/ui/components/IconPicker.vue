@@ -205,30 +205,31 @@ const onFile = async (event: Event): Promise<void> => {
 <style scoped>
 .icon-picker {
   display: flex; flex-direction: column; gap: 8px; padding: 10px; margin: 0 10px 8px;
-  border: 1px solid #ddd6fe; border-radius: 8px; background: #faf5ff; font-size: 12px;
+  border: 1px solid var(--violet-border); border-radius: 8px; background: var(--violet-soft); font-size: 12px;
 }
 .ip-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.ip-scope, .ip-style { display: flex; flex-wrap: wrap; gap: 10px; color: #374151; }
-.ip-close { border: none; background: none; cursor: pointer; color: #9ca3af; font-size: 16px; line-height: 1; }
-.ip-search { padding: 5px 8px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 12px; }
+.ip-scope, .ip-style { display: flex; flex-wrap: wrap; gap: 10px; color: var(--text-2); }
+.ip-close { border: none; background: none; cursor: pointer; color: var(--faint); font-size: 16px; line-height: 1; }
+.ip-search { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
 .ip-list {
   list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px;
   max-height: 180px; overflow-y: auto;
 }
-.ip-section { padding: 4px 2px 2px; font-size: 11px; font-weight: 600; color: #6b7280; }
+.ip-section { padding: 4px 2px 2px; font-size: 11px; font-weight: 600; color: var(--muted); }
 .ip-entry {
   display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 6px; border: 1px solid transparent;
-  border-radius: 6px; background: #fff; cursor: pointer; text-align: left;
+  border-radius: 6px; background: var(--surface); cursor: pointer; text-align: left;
 }
-.ip-entry:hover { border-color: #ddd6fe; }
-.ip-entry--stated { border-color: #7c3aed; }
-.ip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1f2937; }
-.ip-empty { color: #9ca3af; padding: 4px 2px; }
+.ip-entry:hover { border-color: var(--violet-border); }
+.ip-entry--stated { border-color: var(--violet); }
+.ip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.ip-empty { color: var(--faint); padding: 4px 2px; }
 .ip-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.ip-upload { color: #6d28d9; cursor: pointer; font-weight: 600; }
+.ip-upload { color: var(--violet-text); cursor: pointer; font-weight: 600; }
 .ip-upload input { display: none; }
 .ip-clear {
-  border: 1px solid #fecaca; background: #fff; color: #dc2626; border-radius: 5px; padding: 2px 8px; cursor: pointer;
+  border: 1px solid var(--danger-border); background: var(--surface); color: var(--danger); border-radius: 5px;
+  padding: 2px 8px; cursor: pointer;
 }
-.ip-err { color: #dc2626; }
+.ip-err { color: var(--danger); }
 </style>

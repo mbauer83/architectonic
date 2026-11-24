@@ -68,18 +68,18 @@ const emit = defineEmits<{ recheck: []; seal: [] }>()
 .step-body { display: flex; flex-direction: column; gap: 12px; }
 .add-btn {
   align-self: flex-start; font-size: 13px; padding: 7px 14px; border: none; border-radius: 6px;
-  background: #2563eb; color: #fff; font-weight: 600; cursor: pointer;
+  background: var(--accent); color: var(--on-accent); font-weight: 600; cursor: pointer;
 }
 .add-btn:disabled { opacity: 0.5; cursor: default; }
 .review { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
 .review-status { font-size: 14px; font-weight: 600; margin: 0; }
-.review-status--ok { color: #15803d; }
-.review-status--gap { color: #b45309; }
-.gap-list { margin: 0; padding-left: 20px; font-size: 13px; color: #475569; }
+.review-status--ok { color: var(--ok-text); }
+.review-status--gap { color: var(--warn-text); }
+.gap-list { margin: 0; padding-left: 20px; font-size: 13px; color: var(--text-2); }
 .seal-btn {
   align-self: flex-start; font-size: 13px; padding: 8px 18px; border: none; border-radius: 6px;
-  background: #15803d; color: #fff; font-weight: 600; cursor: pointer;
+  background: var(--ok); color: var(--on-accent); font-weight: 600; cursor: pointer;
 }
 .seal-btn:disabled { opacity: 0.5; cursor: default; }
-.seal-note { font-size: 12px; color: #94a3b8; margin: 0; }
+.seal-note { font-size: 12px; color: var(--faint); margin: 0; }
 </style>

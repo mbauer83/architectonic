@@ -74,7 +74,7 @@ const description = `Materialized from a derived relationship (${props.hops ?? '
 
 <style scoped>
 .materialize-backdrop { position: fixed; inset: 0; background: rgba(17, 24, 39, .4); display: flex; align-items: center; justify-content: center; z-index: 60; }
-.materialize-panel { background: #fff; border-radius: 10px; padding: 20px 24px; min-width: 380px; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,.2); }
+.materialize-panel { background: var(--surface); border-radius: 10px; padding: 20px 24px; min-width: 380px; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,.2); }
 .materialize-panel h2 { font-size: 15px; margin: 0 0 8px; }
-.materialize-hint { font-size: 12px; color: #6b7280; margin: 0 0 12px; }
+.materialize-hint { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
 </style>

@@ -169,30 +169,30 @@ watch(() => props.artifactId, loadAdmissible, { immediate: true })
 
 <style scoped>
 .signal-ingest {
-  background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #1e293b;
+  background: var(--canvas); border: 1px solid var(--border); border-left: 4px solid #1e293b;
   border-radius: 6px; padding: 10px 14px; margin-top: 12px;
 }
 .panel-title {
   display: flex; align-items: center; gap: 8px;
-  font-size: 12px; font-weight: 600; color: #374151;
+  font-size: 12px; font-weight: 600; color: var(--text-2);
 }
 .toggle {
   margin-left: auto; font-size: 11px; padding: 2px 8px; cursor: pointer;
-  background: #fff; color: #2563eb; border: 1px solid #cbd5e1; border-radius: 4px;
+  background: var(--surface); color: var(--accent); border: 1px solid var(--border-strong); border-radius: 4px;
 }
-.hint { font-size: 11px; color: #64748b; margin: 8px 0; }
+.hint { font-size: 11px; color: var(--muted); margin: 8px 0; }
 .json-input {
   width: 100%; font-family: ui-monospace, monospace; font-size: 11px;
-  padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 6px;
+  padding: 7px 9px; border: 1px solid var(--border-strong); border-radius: 6px; margin-bottom: 6px;
 }
 .actions { display: flex; gap: 8px; align-items: center; }
-.idempotency-note { flex: 1; font-size: 10px; color: #64748b; line-height: 1.35; }
+.idempotency-note { flex: 1; font-size: 10px; color: var(--muted); line-height: 1.35; }
 .submit {
   font-size: 12px; padding: 6px 14px; border: none; border-radius: 6px;
-  background: #2563eb; color: #fff; font-weight: 600; cursor: pointer;
+  background: var(--accent); color: var(--on-accent); font-weight: 600; cursor: pointer;
 }
 .submit:disabled { opacity: 0.5; cursor: default; }
 .msg { font-size: 11px; margin: 8px 0 0; padding: 6px 8px; border-radius: 4px; }
-.msg--error { background: #fdecea; color: #8a1c12; }
-.msg--ok { background: #eef7ee; color: #2c5f2e; }
+.msg--error { background: var(--danger-soft); color: var(--danger-strong); }
+.msg--ok { background: var(--ok-soft); color: var(--ok-text); }
 </style>

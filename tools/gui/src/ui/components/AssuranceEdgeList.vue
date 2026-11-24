@@ -82,24 +82,24 @@ function endpointType(edge: AssuranceEdge): string | undefined {
 <style scoped>
 .detail-section {
   padding: 12px 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--hair);
 }
 .section-label {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #6b7280;
+  color: var(--muted);
   margin-bottom: 8px;
 }
 .edge-group { margin-bottom: 6px; }
 .edge-group-header {
   font-size: 11px;
   font-weight: 500;
-  background: #f1f5f9;
+  background: var(--soft);
   padding: 1px 5px;
   border-radius: 3px;
-  color: #475569;
+  color: var(--text-2);
   display: inline-block;
   margin-bottom: 2px;
 }
@@ -117,29 +117,29 @@ function endpointType(edge: AssuranceEdge): string | undefined {
   gap: 6px;
   font-size: 12px;
   font-family: monospace;
-  color: #374151;
+  color: var(--text-2);
 }
-.edge-arrow { color: #9ca3af; }
+.edge-arrow { color: var(--faint); }
 .edge-endpoint {
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #2563eb;
+  color: var(--accent);
   text-decoration: none;
 }
 .edge-endpoint:hover { text-decoration: underline; }
-.edge-node-type { font-size: 10px; color: #9ca3af; }
+.edge-node-type { font-size: 10px; color: var(--faint); }
 .edge-delete-btn {
   margin-left: auto;
   border: none;
   background: transparent;
-  color: #9ca3af;
+  color: var(--faint);
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
   padding: 0 4px;
 }
-.edge-delete-btn:hover { color: #dc2626; }
+.edge-delete-btn:hover { color: var(--danger); }
 .edge-delete-btn:disabled { cursor: default; opacity: 0.4; }
 </style>

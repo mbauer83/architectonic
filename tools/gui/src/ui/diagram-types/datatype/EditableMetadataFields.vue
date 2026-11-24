@@ -150,23 +150,24 @@ const save = () => {
 <style scoped>
 .emeta { margin-top: 4px; }
 .emeta-hdr { display: flex; align-items: center; justify-content: space-between; }
-.emeta-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; }
-.emeta-edit { border: none; background: none; cursor: pointer; color: #9ca3af; font-size: 13px; }
-.emeta-edit:hover { color: #374151; }
+.emeta-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.emeta-edit { border: none; background: none; cursor: pointer; color: var(--faint); font-size: 13px; }
+.emeta-edit:hover { color: var(--text-2); }
 .emeta-fields {
   display: grid; grid-template-columns: auto 1fr; gap: 6px 10px;
   margin: 8px 0 0; font-size: 12px; align-items: start;
 }
-.emeta-fields dt { color: #6b7280; font-weight: 500; padding-top: 4px; }
-.emeta-fields dd { margin: 0; color: #111827; word-break: break-word; }
-.emeta-empty { grid-column: 1 / -1; color: #9ca3af; }
+.emeta-fields dt { color: var(--muted); font-weight: 500; padding-top: 4px; }
+.emeta-fields dd { margin: 0; color: var(--text); word-break: break-word; }
+.emeta-empty { grid-column: 1 / -1; color: var(--faint); }
 .emeta-input {
-  width: 100%; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px;
+  width: 100%; padding: 4px 6px; border: 1px solid var(--border-strong); border-radius: 4px;
   font: inherit; font-size: 12px; box-sizing: border-box; resize: vertical;
 }
-.emeta-input:focus { outline: none; border-color: #2563eb; }
+.emeta-input:focus { outline: none; border-color: var(--accent); }
 .emeta-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; }
 .emeta-actions button { padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; }
-.emeta-cancel { border: 1px solid #d1d5db; background: white; color: #374151; }
-.emeta-save { border: 0; background: #2563eb; color: white; }
+.emeta-cancel { border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); }
+.emeta-save { border: 0; background: var(--accent); color: var(--on-accent); }
 </style>

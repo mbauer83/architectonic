@@ -61,16 +61,16 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.candidate-panel { padding: 10px 16px; border-bottom: 1px solid #e5e7eb; font-size: 12.5px; }
-.candidate-panel h3 { margin: 0 0 6px; font-size: 12.5px; color: #374151; }
+.candidate-panel { padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+.candidate-panel h3 { margin: 0 0 6px; font-size: 12.5px; color: var(--text-2); }
 .candidate-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .candidate-row { display: flex; align-items: center; gap: 8px; }
-.candidate-type { font-family: monospace; color: #374151; }
+.candidate-type { font-family: monospace; color: var(--text-2); }
 .candidate-certainty { padding: 1px 6px; border-radius: 4px; font-size: 11px; }
-.certainty--certain { background: #dcfce7; color: #166534; }
-.certainty--potential { background: #fef3c7; color: #92400e; }
-.candidate-hops { color: #6b7280; font-size: 11px; }
-.decision-btn { padding: 2px 8px; border-radius: 4px; border: 1px solid #d1d5db; background: #fee2e2; color: #991b1b; font-size: 11px; cursor: pointer; }
-.decision-btn--accepted { background: #dcfce7; color: #166534; }
-.link-btn { border: none; background: none; color: #2563eb; font-size: 11px; cursor: pointer; padding: 0; }
+.certainty--certain { background: var(--ok-soft); color: var(--ok-text); }
+.certainty--potential { background: var(--warn-soft); color: var(--warn-text); }
+.candidate-hops { color: var(--muted); font-size: 11px; }
+.decision-btn { padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-strong); background: var(--danger-soft); color: var(--danger-strong); font-size: 11px; cursor: pointer; }
+.decision-btn--accepted { background: var(--ok-soft); color: var(--ok-text); }
+.link-btn { border: none; background: none; color: var(--accent); font-size: 11px; cursor: pointer; padding: 0; }
 </style>

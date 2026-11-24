@@ -186,22 +186,22 @@ watch(step, (s) => { void loadGuidance(s.guidanceTopic) })
 <style scoped>
 .wiz { padding: 20px; max-width: 80ch; }
 .wiz-title { font-size: 20px; margin: 0 0 12px; }
-.wiz-note { font-size: 13px; color: #4b5563; }
+.wiz-note { font-size: 13px; color: var(--text-2); }
 .wiz-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
 .wiz-step {
   font-size: 12px;
   padding: 5px 10px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
-  background: #f8fafc;
+  background: var(--canvas);
   cursor: pointer;
 }
-.wiz-step-active { border-color: #2563eb; background: #eff6ff; font-weight: 600; }
+.wiz-step-active { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
 .wiz-guidance {
   font-size: 13px;
-  color: #374151;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  color: var(--text-2);
+  background: var(--canvas);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 10px 12px;
   margin-bottom: 14px;
@@ -212,8 +212,8 @@ watch(step, (s) => { void loadGuidance(s.guidanceTopic) })
 .wiz-chip {
   display: inline-block;
   font-size: 12px;
-  background: #eef2ff;
-  color: #3730a3;
+  background: var(--indigo-soft);
+  color: var(--indigo-text);
   border-radius: 4px;
   padding: 2px 7px;
   margin: 0 4px;

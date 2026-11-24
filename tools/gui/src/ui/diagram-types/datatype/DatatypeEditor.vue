@@ -155,10 +155,11 @@ watch(
 
 <style scoped>
 .dte { display: flex; flex-direction: column; gap: 12px; }
-.dte-section { display: flex; flex-direction: column; gap: 6px; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+.dte-section { display: flex; flex-direction: column; gap: 6px; padding: 10px; background: var(--canvas); border: 1px solid var(--border); border-radius: 8px; }
 .dte-hdr { display: flex; align-items: center; justify-content: space-between; }
-.dte-title { font-size: 12px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: .04em; }
-.dte-add-btn { font-size: 11px; padding: 2px 8px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; }
-.dte-add-btn:hover { background: #f1f5f9; }
-.dte-empty { font-size: 11px; color: #9ca3af; }
+.dte-title {
+  font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; }
+.dte-add-btn { font-size: 11px; padding: 2px 8px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--surface); cursor: pointer; }
+.dte-add-btn:hover { background: var(--soft); }
+.dte-empty { font-size: 11px; color: var(--faint); }
 </style>

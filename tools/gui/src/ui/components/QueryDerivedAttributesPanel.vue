@@ -193,16 +193,16 @@ const ofAttributeOptions = (head: DerivedOfHead) => (head === 'connection' ? con
 
 <style scoped>
 .panel { margin: 16px 0; }
-.empty-state { font-size: 12.5px; color: #6b7280; background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 8px; padding: 10px 12px; }
-.derived-row { border: 1px solid #d1d5db; border-radius: 8px; padding: 10px; margin: 8px 0; }
-.derived-row.highlighted { outline: 2px solid #dc2626; outline-offset: 2px; }
+.empty-state { font-size: 12.5px; color: var(--muted); background: var(--hover); border: 1px dashed var(--border-strong); border-radius: 8px; padding: 10px 12px; }
+.derived-row { border: 1px solid var(--border-strong); border-radius: 8px; padding: 10px; margin: 8px 0; }
+.derived-row.highlighted { outline: 2px solid var(--danger); outline-offset: 2px; }
 .derived-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; font-size: 12.5px; }
 .derived-sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; margin: 6px 0; }
-.inp { font-size: 12.5px; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; }
+.inp { font-size: 12.5px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-strong); }
 .inp.name { min-width: 140px; font-weight: 600; }
 .inp.hops { width: 140px; }
-.icon-btn { appearance: none; border: none; background: none; color: #9ca3af; cursor: pointer; font-size: 15px; margin-left: auto; }
-.icon-btn:hover { color: #991b1b; }
-.add-btn { appearance: none; border: 1px dashed #d1d5db; background: #fff; color: #6b7280; border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
-.add-btn:hover { border-color: #6366f1; color: #4338ca; }
+.icon-btn { appearance: none; border: none; background: none; color: var(--faint); cursor: pointer; font-size: 15px; margin-left: auto; }
+.icon-btn:hover { color: var(--danger-strong); }
+.add-btn { appearance: none; border: 1px dashed var(--border-strong); background: var(--surface); color: var(--muted); border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.add-btn:hover { border-color: var(--indigo); color: var(--indigo-text); }
 </style>

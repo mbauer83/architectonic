@@ -69,5 +69,6 @@ const value = (e: Event) => (e.target as HTMLSelectElement).value
 </template>
 
 <style scoped>
-.inp { font-size: 12.5px; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; background: #fff; }
+.inp { font-size: 12.5px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-strong);
+  background: var(--surface); }
 </style>

@@ -135,9 +135,9 @@ const activeDomainOptions = computed(() =>
 
 <style scoped>
 .page-title { font-size: 22px; font-weight: 600; margin-bottom: 20px; }
-.section-title { font-size: 16px; font-weight: 600; margin: 28px 0 12px; color: #374151; }
-.state-msg { color: #6b7280; padding: 12px 0; }
-.state-msg--error { color: #dc2626; }
+.section-title { font-size: 16px; font-weight: 600; margin: 28px 0 12px; color: var(--text-2); }
+.state-msg { color: var(--muted); padding: 12px 0; }
+.state-msg--error { color: var(--danger); }
 
 /* ── Two-repo cards ──────────────────────────────────────────── */
 .repo-cards {
@@ -149,15 +149,15 @@ const activeDomainOptions = computed(() =>
 @media (max-width: 640px) { .repo-cards { grid-template-columns: 1fr; } }
 
 .repo-card {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.repo-card--global { border-color: #fde68a; background: #fffdf5; }
+.repo-card--global { border-color: var(--warn-border); background: var(--warn-soft); }
 .repo-card--empty { opacity: .85; }
 
 .repo-card__header { display: flex; align-items: center; gap: 10px; }
@@ -167,16 +167,16 @@ const activeDomainOptions = computed(() =>
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .07em;
-  color: #475569;
+  color: var(--text-2);
 }
-.repo-label--global { color: #92400e; }
+.repo-label--global { color: var(--warn-text); }
 
 .repo-stats { display: flex; gap: 20px; flex-wrap: wrap; }
 .repo-stat { display: flex; flex-direction: column; }
-.stat-num { font-size: 26px; font-weight: 700; color: #1e293b; line-height: 1.1; }
-.stat-label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; }
+.stat-num { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.1; }
+.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 
-.repo-empty { font-size: 13px; color: #92400e; font-style: italic; }
+.repo-empty { font-size: 13px; color: var(--warn-text); font-style: italic; }
 
 /* ── Domain grid ─────────────────────────────────────────────── */
 .domain-grid {
@@ -185,9 +185,9 @@ const activeDomainOptions = computed(() =>
   gap: 12px;
 }
 .card {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   padding: 16px 20px;
 }
 .card--domain {
@@ -210,6 +210,6 @@ const activeDomainOptions = computed(() =>
 .domain--technology  { border-left-color: #c3e1b4; }
 
 .conn-table { border-collapse: collapse; }
-.conn-type { padding: 4px 16px 4px 0; font-family: monospace; font-size: 12px; color: #374151; }
-.conn-count { padding: 4px 8px; font-weight: 600; color: #1e293b; }
+.conn-type { padding: 4px 16px 4px 0; font-family: monospace; font-size: 12px; color: var(--text-2); }
+.conn-count { padding: 4px 8px; font-weight: 600; color: var(--text); }
 </style>

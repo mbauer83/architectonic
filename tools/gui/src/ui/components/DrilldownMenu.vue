@@ -60,16 +60,16 @@ const label = (name: string): string => {
 <style scoped>
 .dd-overlay { position: fixed; inset: 0; z-index: 40; }
 .dd-menu {
-  position: fixed; z-index: 41; background: white; border: 1px solid #e5e7eb;
+  position: fixed; z-index: 41; background: var(--surface); border: 1px solid var(--border);
   border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.12); min-width: 190px; overflow: hidden;
 }
 .dd-head {
   padding: 6px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
-  color: #9ca3af; border-bottom: 1px solid #f3f4f6;
+  color: var(--faint); border-bottom: 1px solid var(--hair);
 }
 .dd-opt {
   display: block; width: 100%; text-align: left; padding: 7px 12px;
-  background: none; border: none; font-size: 13px; cursor: pointer; color: #374151;
+  background: none; border: none; font-size: 13px; cursor: pointer; color: var(--text-2);
 }
-.dd-opt:hover { background: #f9fafb; }
+.dd-opt:hover { background: var(--hover); }
 </style>

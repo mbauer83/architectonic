@@ -76,19 +76,19 @@ const show = computed(() =>
 </template>
 
 <style scoped>
-.provenance { padding: 12px 16px; border-top: 1px solid #eef2f7; }
+.provenance { padding: 12px 16px; border-top: 1px solid var(--border); }
 .section-label {
   font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .04em; color: #94a3b8; margin-bottom: 8px;
+  letter-spacing: .04em; color: var(--faint); margin-bottom: 8px;
 }
 .provenance-row { display: flex; gap: 10px; align-items: baseline; margin-bottom: 6px; font-size: 12px; }
-.provenance-label { color: #64748b; min-width: 84px; flex-shrink: 0; }
+.provenance-label { color: var(--muted); min-width: 84px; flex-shrink: 0; }
 .provenance-borrowers { display: flex; flex-direction: column; gap: 4px; }
 .provenance-analysis { display: inline-flex; gap: 6px; align-items: baseline; text-decoration: none; }
 .provenance-analysis:hover .provenance-name { text-decoration: underline; }
 .provenance-method {
-  font-size: 10px; font-weight: 700; color: #1d4ed8;
-  background: #eff6ff; border-radius: 3px; padding: 1px 5px;
+  font-size: 10px; font-weight: 700; color: var(--accent-strong);
+  background: var(--accent-soft); border-radius: 3px; padding: 1px 5px;
 }
-.provenance-name { color: #111827; }
+.provenance-name { color: var(--text); }
 </style>

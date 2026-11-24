@@ -96,14 +96,20 @@ const ROUTES = [
   '/diagrams', '/documents', '/search?q=graph', '/assurance', '/graph',
 ]
 
-for (const route of ROUTES) {
-  test(`every control on ${route} is legible`, async ({ page }) => {
-    await page.goto(route, { waitUntil: 'load' })
-    await page.waitForTimeout(1500)
+// In both themes: a colour pair that holds on light can fail on dark, and the reverse.
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(`in the ${colorScheme} theme`, () => {
+    test.use({ colorScheme })
+    for (const route of ROUTES) {
+      test(`every control on ${route} is legible`, async ({ page }) => {
+        await page.goto(route, { waitUntil: 'load' })
+        await page.waitForTimeout(1500)
 
-    const findings = await sweepWithHover(page)
+        const findings = await sweepWithHover(page)
 
-    expect(findings, `controls below the ${FLOOR}:1 floor:\n${describe(findings)}`).toEqual([])
+        expect(findings, `controls below the ${FLOOR}:1 floor:\n${describe(findings)}`).toEqual([])
+      })
+    }
   })
 }
 

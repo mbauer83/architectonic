@@ -134,26 +134,26 @@ function toggleLifeline(note: Note, llId: string) {
 <style scoped>
 .notes-panel { display: flex; flex-direction: column; gap: 8px; }
 .notes-header { display: flex; align-items: center; justify-content: space-between; font-weight: 650; font-size: 12px; }
-.list-hint { font-size: 12px; color: #9ca3af; margin: 0; }
-.note-card { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid #dbe3ef; border-radius: 8px; background: #fff; }
+.list-hint { font-size: 12px; color: var(--faint); margin: 0; }
+.note-card { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .note-top { display: flex; align-items: center; gap: 6px; }
 .place-sel { width: 90px; }
 .rm-btn { flex-shrink: 0; }
 .note-text { width: 100%; resize: vertical; font-family: inherit; }
 .ll-select { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.field-label { font-size: 11px; color: #64748b; flex-shrink: 0; }
+.field-label { font-size: 11px; color: var(--muted); flex-shrink: 0; }
 .ll-chip {
   font-size: 11px; padding: 2px 8px; border-radius: 12px; cursor: pointer;
-  border: 1px solid #cbd5e1; background: #f8fafc; color: #475569;
+  border: 1px solid var(--border-strong); background: var(--canvas); color: var(--text-2);
 }
-.ll-chip.selected { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+.ll-chip.selected { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-strong); }
 .anchor-row { display: flex; align-items: center; gap: 6px; }
 .anchor-sel { flex: 1; }
-.mini-btn { min-width: 24px; height: 24px; border: 1px solid #cbd5e1; background: #fff; border-radius: 5px; cursor: pointer; font-size: 14px; color: #374151; }
+.mini-btn { min-width: 24px; height: 24px; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 5px; cursor: pointer; font-size: 14px; color: var(--text-2); }
 .mini-btn:disabled { opacity: .45; cursor: not-allowed; }
 .inp {
-  padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 5px;
-  font-size: 12px; background: white; color: #1e293b; outline: none; box-sizing: border-box;
+  padding: 4px 6px; border: 1px solid var(--border-strong); border-radius: 5px;
+  font-size: 12px; background: var(--surface); color: var(--text); outline: none; box-sizing: border-box;
 }
-.inp:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px #bfdbfe; }
+.inp:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-ring); }
 </style>

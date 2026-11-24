@@ -86,26 +86,27 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.entity-panel { padding: 10px; border-top: 1px solid #f3f4f6; background: #fafafa; }
-.empty-msg { font-size: 12px; color: #9ca3af; }
+.entity-panel { padding: 10px; border-top: 1px solid var(--hair); background: var(--hover); }
+.empty-msg { font-size: 12px; color: var(--faint); }
 .conn-type-block + .conn-type-block { margin-top: 8px; }
 .conn-type-label {
-  font-size: 10px; font-weight: 700; color: #6366f1; text-transform: uppercase;
+  font-size: 10px; font-weight: 700; color: var(--indigo); text-transform: uppercase;
   letter-spacing: .04em; margin-bottom: 4px;
 }
 .conn-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .conn-col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.col-header { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
-.col-header--included { color: #059669; }
+.col-header {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.col-header--included { color: var(--ok); }
 .conn-entry {
   display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; padding: 6px 8px; border-radius: 6px;
   font-size: 12px; border: none; background: none; cursor: pointer;
 }
-.conn-entry--included { background: #ecfdf5; color: #1f2937; }
-.conn-entry--included:hover { background: #d1fae5; }
-.conn-entry--excluded { background: #fff; color: #6b7280; border: 1px solid #e5e7eb; }
-.conn-entry--excluded:hover { background: #f9fafb; color: #1f2937; }
-.dir-arrow { color: #6b7280; flex-shrink: 0; }
-.col-empty { font-size: 11px; color: #d1d5db; padding: 6px 8px; }
+.conn-entry--included { background: var(--ok-soft); color: var(--text); }
+.conn-entry--included:hover { background: var(--ok-soft); }
+.conn-entry--excluded { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+.conn-entry--excluded:hover { background: var(--hover); color: var(--text); }
+.dir-arrow { color: var(--muted); flex-shrink: 0; }
+.col-empty { font-size: 11px; color: var(--faint); padding: 6px 8px; }
 .other-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>

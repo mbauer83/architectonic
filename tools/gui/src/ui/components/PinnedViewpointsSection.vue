@@ -45,13 +45,13 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.section-title { font-size: 16px; font-weight: 600; margin: 28px 0 12px; color: #374151; }
+.section-title { font-size: 16px; font-weight: 600; margin: 28px 0 12px; color: var(--text-2); }
 .pinned-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
 .pinned-card {
-  background: white; border-radius: 8px; border: 1px solid #e5e7eb; padding: 12px 16px;
+  background: var(--surface); border-radius: 8px; border: 1px solid var(--border); padding: 12px 16px;
   display: flex; flex-direction: column; gap: 2px; color: inherit;
 }
 .pinned-card:hover { text-decoration: none; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
 .pinned-name { font-weight: 500; font-size: 13px; }
-.pinned-slug { font-size: 11px; color: #6b7280; font-family: monospace; }
+.pinned-slug { font-size: 11px; color: var(--muted); font-family: monospace; }
 </style>

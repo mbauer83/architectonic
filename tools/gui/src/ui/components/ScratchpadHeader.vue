@@ -79,16 +79,16 @@ const emit = defineEmits<{
 <style scoped>
 .bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .title { font-size: 20px; margin: 0 0 2px; }
-.sub { margin: 0; font-size: 12px; color: #6b7280; }
+.sub { margin: 0; font-size: 12px; color: var(--muted); }
 .mono { font-family: ui-monospace, monospace; }
-.dot { margin: 0 6px; color: #d1d5db; }
+.dot { margin: 0 6px; color: var(--faint); }
 .actions { display: flex; align-items: center; gap: 8px; }
 .actions button {
-  padding: 5px 12px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff;
-  font-size: 13px; cursor: pointer; color: #374151;
+  padding: 5px 12px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface);
+  font-size: 13px; cursor: pointer; color: var(--text-2);
 }
 .actions button:disabled { opacity: .45; cursor: default; }
-.actions button:not(:disabled):hover { background: #f9fafb; }
-.state { font-size: 12px; color: #6b7280; min-width: 96px; text-align: right; }
-.state.err { color: #dc2626; }
+.actions button:not(:disabled):hover { background: var(--hover); }
+.state { font-size: 12px; color: var(--muted); min-width: 96px; text-align: right; }
+.state.err { color: var(--danger); }
 </style>

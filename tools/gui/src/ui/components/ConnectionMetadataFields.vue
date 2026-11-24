@@ -92,12 +92,12 @@ const setValue = (key: string, value: string) => emit('update:values', { ...prop
 .conn-meta__spec, .conn-meta__row {
   display: grid; grid-template-columns: 130px 1fr; gap: 8px; font-size: 12px;
 }
-.conn-meta__spec { align-items: center; color: #4b5563; }
-.conn-meta__row { align-items: start; color: #374151; }
+.conn-meta__spec { align-items: center; color: var(--text-2); }
+.conn-meta__row { align-items: start; color: var(--text-2); }
 .conn-meta__spec select {
-  padding: 6px; border: 1px solid #d1d5db; border-radius: 5px; background: white; font: inherit;
+  padding: 6px; border: 1px solid var(--border-strong); border-radius: 5px; background: var(--surface); font: inherit;
 }
 .conn-meta__props { display: grid; gap: 8px; }
-.conn-meta__heading { font-size: 12px; font-weight: 600; color: #374151; }
-.conn-meta__req { color: #dc2626; }
+.conn-meta__heading { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.conn-meta__req { color: var(--danger); }
 </style>
