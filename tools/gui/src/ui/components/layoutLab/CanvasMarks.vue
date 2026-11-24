@@ -65,8 +65,8 @@ const overlapping = computed((): Extent[] => {
 
 <style scoped>
 .canvas-marks rect { vector-effect: non-scaling-stroke; pointer-events: none; }
-.mark-hidden { fill: none; stroke: #d97706; stroke-width: 1.5px; stroke-dasharray: 4 3; }
+.mark-hidden { fill: none; stroke: var(--paper-warn); stroke-width: 1.5px; stroke-dasharray: 4 3; }
 .mark-overlap {
-  fill: #dc2626; fill-opacity: 0.08; stroke: #dc2626; stroke-width: 1.5px; stroke-dasharray: 2 2;
+  fill: var(--paper-error); fill-opacity: 0.08; stroke: var(--paper-error); stroke-width: 1.5px; stroke-dasharray: 2 2;
 }
 </style>

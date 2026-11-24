@@ -35,7 +35,8 @@ describe('the theme tokens', () => {
   })
 
   it('keep the diagram paper and the layer colours out of the dark theme', () => {
-    const paperOrLayer = (name: string) => ['--paper', '--on-paper'].includes(name) || name.startsWith('--domain-')
+    const paperOrLayer = (name: string) =>
+      name === '--on-paper' || name.startsWith('--paper') || name.startsWith('--domain-')
     const themed = [...chosenDark.keys()].filter(paperOrLayer)
     expect(themed).toEqual([])
     expect(light.get('--paper')).toBe('#fafafa')

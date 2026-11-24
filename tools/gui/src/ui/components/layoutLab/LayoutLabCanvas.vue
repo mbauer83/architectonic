@@ -329,7 +329,7 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
 .lab-line-label--movable { pointer-events: bounding-box; cursor: move; }
 .lab-grip { fill: transparent; stroke: none; pointer-events: all; cursor: move; }
 /* A box moves by its title band, which shows its whole width under the pointer; its body selects. */
-.lab-box > .lab-grip:hover { fill: rgba(37, 99, 235, 0.09); }
+.lab-box > .lab-grip:hover { fill: var(--paper-accent-hover); }
 .lab-body { fill: transparent; stroke: none; pointer-events: all; cursor: default; }
 /* While a shape is dragged, it is drawn see-through, so what it is passing over — and the lines into
    what it covers — stay in sight until it is dropped. */

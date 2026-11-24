@@ -73,15 +73,15 @@ const resizable = computed((): Extent | null =>
 </template>
 
 <style scoped>
-.lab-handles__frame { fill: none; stroke: var(--accent); stroke-width: 1.5px; pointer-events: none; }
+.lab-handles__frame { fill: none; stroke: var(--paper-accent); stroke-width: 1.5px; pointer-events: none; }
 .lab-handles__frame, .lab-handles__handle, .lab-rectangle { vector-effect: non-scaling-stroke; }
-.lab-handles__handle { fill: #fff; stroke: var(--accent); stroke-width: 1.5px; }
+.lab-handles__handle { fill: var(--paper-handle); stroke: var(--paper-accent); stroke-width: 1.5px; }
 .lab-handles__handle--n, .lab-handles__handle--s { cursor: ns-resize; }
 .lab-handles__handle--e, .lab-handles__handle--w { cursor: ew-resize; }
 .lab-handles__handle--ne, .lab-handles__handle--sw { cursor: nesw-resize; }
 .lab-handles__handle--nw, .lab-handles__handle--se { cursor: nwse-resize; }
 /* The rectangle that selects what it encloses: dashed, so it reads as a gesture, not a shape. */
 .lab-rectangle {
-  fill: rgba(37, 99, 235, 0.06); stroke: var(--accent); stroke-width: 1px; stroke-dasharray: 4 3; pointer-events: none;
+  fill: var(--paper-accent-soft); stroke: var(--paper-accent); stroke-width: 1px; stroke-dasharray: 4 3; pointer-events: none;
 }
 </style>

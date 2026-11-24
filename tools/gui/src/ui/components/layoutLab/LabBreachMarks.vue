@@ -66,8 +66,8 @@ defineProps<{ marks: readonly BreachMark[]; tagSize: number }>()
 /* A breach is an annotation, never line styling: a pale halo far wider than any line round the
    stretch that breaks the rule, or a dashed frame round each end, and the rule's name in a tag of its
    own set off the line, with a dotted leader back to it. */
-.lab-breach-mark { --breach: #dc2626; }
-.lab-breach-mark.lab-breach--soft { --breach: #d97706; }
+.lab-breach-mark { --breach: var(--paper-error); }
+.lab-breach-mark.lab-breach--soft { --breach: var(--paper-warn); }
 .lab-breach-halo {
   fill: none; stroke: var(--breach); stroke-width: 16px; stroke-linecap: round; stroke-linejoin: round; opacity: 0.16;
 }
@@ -75,7 +75,7 @@ defineProps<{ marks: readonly BreachMark[]; tagSize: number }>()
 .lab-breach-halo, .lab-breach-frame { pointer-events: stroke; }
 .lab-breach-frame { fill: none; stroke: var(--breach); stroke-width: 2px; stroke-dasharray: 5 3; opacity: 0.8; }
 .lab-breach-leader { stroke: var(--breach); stroke-width: 1px; stroke-dasharray: 1 2; pointer-events: none; }
-.lab-breach-tag-box { fill: #fff; stroke: var(--breach); stroke-width: 1px; pointer-events: none; }
+.lab-breach-tag-box { fill: var(--paper-handle); stroke: var(--breach); stroke-width: 1px; pointer-events: none; }
 .lab-breach-tag {
   fill: var(--breach); text-anchor: middle; font-family: system-ui, sans-serif; font-weight: 600; pointer-events: none;
 }

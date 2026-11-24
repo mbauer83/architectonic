@@ -112,18 +112,18 @@ const leaderLine = computed(() => {
 /* The sketch kit's route handles: the selected course in the accent colour, green diamonds at the
    ends, white bends and segment handles outlined in the accent colour. */
 .lab-line-handles__course {
-  fill: none; stroke: #2563eb; stroke-width: 2px; opacity: 0.55; pointer-events: stroke;
+  fill: none; stroke: var(--paper-accent); stroke-width: 2px; opacity: 0.55; pointer-events: stroke;
   vector-effect: non-scaling-stroke;
 }
-.lab-line-handles__end { fill: #16a34a; stroke: #fff; stroke-width: 1px; cursor: move; }
-.lab-line-handles__bend { fill: #fff; stroke: #2563eb; stroke-width: 1.5px; cursor: move; }
-.lab-line-handles__bend.is-picked { fill: #2563eb; }
-.lab-line-handles__segment { fill: #fff; stroke: #2563eb; stroke-width: 1.5px; }
+.lab-line-handles__end { fill: var(--paper-ok); stroke: var(--paper-handle); stroke-width: 1px; cursor: move; }
+.lab-line-handles__bend { fill: var(--paper-handle); stroke: var(--paper-accent); stroke-width: 1.5px; cursor: move; }
+.lab-line-handles__bend.is-picked { fill: var(--paper-accent); }
+.lab-line-handles__segment { fill: var(--paper-handle); stroke: var(--paper-accent); stroke-width: 1.5px; }
 .lab-line-handles__segment.is-level { cursor: ns-resize; }
 .lab-line-handles__segment.is-upright { cursor: ew-resize; }
 .lab-line-handles__end, .lab-line-handles__bend, .lab-line-handles__segment { vector-effect: non-scaling-stroke; }
 .lab-line-handles__leader {
-  stroke: #2563eb; stroke-width: 1px; stroke-dasharray: 2 2; pointer-events: none; vector-effect: non-scaling-stroke;
+  stroke: var(--paper-accent); stroke-width: 1px; stroke-dasharray: 2 2; pointer-events: none; vector-effect: non-scaling-stroke;
 }
-.lab-line-handles__anchor { fill: #2563eb; pointer-events: none; }
+.lab-line-handles__anchor { fill: var(--paper-accent); pointer-events: none; }
 </style>
