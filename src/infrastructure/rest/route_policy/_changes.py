@@ -34,7 +34,7 @@ CHANGE_ROWS: tuple[RouteRow, ...] = (
         # An action segment, not a `PATCH`: rebasing is not a field update. It re-applies the change
         # to the artifact as it stands and records what it was proven against, which is a thing done
         # to a change rather than a change to it.
-        "POST", "/api/changes/{artifact_id}/rebase", "subresource", "changes_rebase_change",
+        "POST", "/api/changes/{artifact_id}/rebase", "operation", "changes_rebase_change",
         TYPED, identity_parameters=_CHANGE, mutation_domain="repository",
     ),
     RouteRow(

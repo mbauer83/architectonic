@@ -53,6 +53,8 @@ _ACTION_SEGMENTS: dict[str, frozenset[str]] = {
     "export-render": frozenset({"POST"}),
     "model-this": frozenset({"POST"}),
     "plan": frozenset({"POST"}),
+    # Writes a candidate's drifted operations again against the model as it stands now.
+    "rebase": frozenset({"POST"}),
     "preview": frozenset({"POST"}),
     "reload": frozenset({"POST"}),
     "rename": frozenset({"POST"}),

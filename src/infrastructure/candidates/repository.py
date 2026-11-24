@@ -93,3 +93,8 @@ class CandidateArchitectureStore:
             application_order(candidate.changes, beneath=sets_beneath(stack))
             write_atomic(self.path(candidate.id), dump_candidate(candidate))
             return version
+
+    def delete(self, ref: str) -> None:
+        """Remove the candidate's file. Whether anything still depends on it is the caller's to ask."""
+        with self._locked(ref):
+            self.path(ref).unlink()

@@ -4,19 +4,22 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.candidates.repository import CandidateConflict
-from src.infrastructure.candidates.service import CandidateService
+from src.infrastructure.candidates.service import CandidateService, document_writer
 from src.infrastructure.rest.contracts.candidates import (
     AnalysisIncidence,
     AnalysisProgress,
+    AnalysisStart,
+    AnalysisStarted,
     CandidateComparison,
     CandidateCreate,
     CandidateEdit,
     CandidateList,
     CandidateOperation,
+    CandidateRebase,
     CandidateResponse,
     CandidateSelection,
     CandidateStanding,
@@ -113,6 +116,57 @@ def changes_record_operation(artifact_id: str, body: CandidateOperation) -> dict
     with _refusals():
         return s.authorized_write(
             "changes_record_operation", _service().record, artifact_id, body.based_on, body.operation,
+        )
+
+
+@router.delete(
+    "/api/change-sets/{artifact_id}",
+    operation_id="changes_delete_candidate",
+    tags=[TAG_CHANGES],
+    summary="Delete a candidate nothing stacks on and no analysis starts from",
+    response_model=None,
+    responses={**WRITE_RESPONSES, **READ_RESPONSES},
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def changes_delete_candidate(artifact_id: str) -> Response:
+    """Refused with 409, saying why, while a candidate stacks on it or an analysis names it as its naive."""
+    with _refusals():
+        s.authorized_write("changes_delete_candidate", _service().delete, artifact_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/api/change-sets/{artifact_id}/rebase",
+    operation_id="changes_rebase_candidate",
+    tags=[TAG_CHANGES],
+    summary="Re-base a candidate's drifted operations on the current model",
+    response_model=CandidateResponse,
+    responses=WRITE_RESPONSES,
+)
+def changes_rebase_candidate(artifact_id: str, body: CandidateRebase) -> dict[str, Any]:
+    """Each drifted operation keeps what it asks for and is written against the model as it stands now."""
+    with _refusals():
+        return s.authorized_write("changes_rebase_candidate", _service().rebase, artifact_id, body.based_on)
+
+
+@router.post(
+    "/api/stress-analyses",
+    operation_id="documents_start_stress_analysis",
+    tags=[TAG_DOCUMENTS],
+    summary="Start a stress analysis and its naive architecture",
+    response_model=AnalysisStarted,
+    responses=WRITE_RESPONSES,
+)
+def documents_start_stress_analysis(
+    body: AnalysisStart, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
+    """One write: the naive architecture and the document naming it are both written, or neither is."""
+    repo_root, _registry, verifier = s.get_write_deps(catalogs)
+    with _refusals():
+        return s.authorized_write(
+            "documents_start_stress_analysis", _service().start, body.title, body.naive,
+            document_writer(repo_root, verifier, s.clear_caches),
+            question=body.question, scope_diagram=body.scope_diagram,
         )
 
 

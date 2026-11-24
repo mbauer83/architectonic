@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
+from dataclasses import replace
 from typing import Any, Protocol
 
 from pydantic_core import to_jsonable_python
@@ -13,6 +14,7 @@ from src.application.change_sets.composition import compose
 from src.application.change_sets.operations import ConnectionAddress, CreateEntity
 from src.application.change_sets.reading import ModelReading, RecordedReading
 from src.application.change_sets.recorded_form import operation_to_mapping
+from src.application.change_sets.recording import rebased
 from src.application.change_sets.stacking import descendants, sets_beneath, stack_of
 from src.application.change_sets.standing import standing_of
 from src.application.modeling.edit_field_values import current_entity_values
@@ -95,6 +97,25 @@ def reading_beneath(
     stack = stack_of(candidate, store.find)
     live = live_reading(stack, registry, also)
     return compose(ChangeSet((), candidate.changes.repository_revision), live, beneath=sets_beneath(stack))
+
+
+def rebase(
+    candidate: CandidateArchitecture, store: CandidateLookup, registry: ArtifactRegistry, revision: str,
+) -> CandidateArchitecture:
+    """*candidate* with every drifted operation written again against the model at *revision*.
+
+    Which operations drifted is standing's to say, read here exactly as `standing_report` reads it; a
+    conflicting one has nothing to apply to and is left for its author, with its reason, to drop.
+    """
+    stack = stack_of(candidate, store.find)
+    live = live_reading(stack, registry)
+    beneath = sets_beneath(stack)
+    drifted = [item.operation for item in standing_of(candidate.changes, live, beneath=beneath)
+               if item.standing == "drifted"]
+    if not drifted:
+        return candidate
+    now = rebased(candidate, drifted, compose(ChangeSet((), revision), live, beneath=beneath))
+    return replace(now, changes=ChangeSet(now.changes.operations, revision))
 
 
 def standing_report(
