@@ -24,6 +24,7 @@ import { chosenBy, toggled } from '../../../domain/layout/lab/labSelection'
 import type { ArrangementSession } from '../../composables/useArrangementSession'
 import { isAdditive } from '../../lib/additiveClick'
 import type { Lift } from './labPaintOrder'
+import { followingPointer, pointOnPicture } from './pointerOnPicture'
 
 /** How far a press travels before it is a drag rather than a click. */
 const TRAVEL = 4
@@ -60,25 +61,7 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
   let pressed: Pressed | null = null
   let sweep: Sweep | null = null
 
-  const pointIn = (event: PointerEvent): Point => {
-    const matrix = svg.value?.getScreenCTM()
-    if (!matrix) return { x: event.clientX, y: event.clientY }
-    const inverse = matrix.inverse()
-    return {
-      x: inverse.a * event.clientX + inverse.c * event.clientY + inverse.e,
-      y: inverse.b * event.clientX + inverse.d * event.clientY + inverse.f,
-    }
-  }
-
-  // Followed on the window, not by pointer capture: pressing a shape paints it in front, which moves
-  // its node, and a moved node loses its capture — the release then landed nowhere.
-  const follow = (on: boolean) => {
-    const followed = [['pointermove', drag], ['pointerup', release], ['pointercancel', release]] as const
-    for (const [type, listener] of followed) {
-      if (on) window.addEventListener(type, listener)
-      else window.removeEventListener(type, listener)
-    }
-  }
+  const pointIn = (event: PointerEvent): Point => pointOnPicture(svg.value, event)
 
   /** Select *alias* alone, without moving it: a press on a shape of a picture that is only read. */
   const select = (event: PointerEvent, alias: string) => {
@@ -172,6 +155,7 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
   }
 
   const clear = () => { selection.value = [] }
+  const follow = followingPointer(drag, release)
 
   return { selection, selected, rectangle, lifted, dragging, press, select, sweepFrom, drag, release, clear }
 }
