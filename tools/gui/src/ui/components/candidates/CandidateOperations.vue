@@ -4,7 +4,9 @@
  * on the candidate page and on a stress analysis's Naive architecture and Adaptations tabs; *role* is
  * what its reader calls the candidate. The canvas marks the same comparison; a row
  * selected here frames its element there. A row's card shows the element's fields, base against
- * candidate: changed rows highlighted with the base struck through, unchanged rows greyed.
+ * candidate: changed rows highlighted with the base struck through, unchanged rows greyed. A comparison
+ * of several candidates reads each *fixed* to their common base: the base is named, not chosen, and
+ * nothing is sketched there.
  */
 import { computed, ref } from 'vue'
 import type { ChangeDifference } from '../../../domain/schemas/candidates'
@@ -12,12 +14,14 @@ import { chosenIds } from '../../../domain/candidates/candidateCanvas'
 import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
 
-const props = defineProps<{ candidates: Candidates; role: string; nameOf: (id: string) => string }>()
+const props = defineProps<{ candidates: Candidates; role: string; nameOf: (id: string) => string; fixed?: boolean }>()
 const emit = defineEmits<{ frame: [target: string | null]; sketch: [id: string] }>()
 
 const summary = computed(() =>
   props.candidates.all.value.find((one) => one.id === props.candidates.selected.value) ?? null)
 const comparison = computed(() => props.candidates.comparison.value)
+const baseLabel = computed(() => props.candidates.choices.value
+  .find((one) => one.value === props.candidates.against.value)?.label ?? props.candidates.against.value)
 const onBranch = computed(() => {
   const id = summary.value?.id
   const base = props.candidates.against.value
@@ -82,7 +86,7 @@ const cardRows = (row: ChangeDifference) => {
         <span class="stack-of">{{ stackLine(summary.id, candidates.all.value) }}</span>
       </div>
       <button
-        v-if="summary.state === 'draft'"
+        v-if="summary.state === 'draft' && !fixed"
         type="button"
         class="btn btn-sm"
         data-testid="sketch"
@@ -92,7 +96,8 @@ const cardRows = (row: ChangeDifference) => {
       </button>
     </div>
     <div class="reads">
-      <label>against
+      <span v-if="fixed">against {{ baseLabel }}</span>
+      <label v-else>against
         <select
           :value="candidates.against.value"
           data-testid="against"

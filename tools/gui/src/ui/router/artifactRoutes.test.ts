@@ -7,6 +7,7 @@ import {
   assuranceAnalysisMethodRoute,
   assuranceNodeDetailRoute,
   assuranceVulnerabilityRoute,
+  candidateCompareRoute,
   candidateDetailRoute,
   candidateListRoute,
   diagramDetailRoute,
@@ -53,6 +54,14 @@ describe('canonical route builders', () => {
   it('addresses a candidate architecture by path, beside the list of them', () => {
     expect(candidateListRoute()).toBe('/candidates')
     expect(candidateDetailRoute('CAND@1.ab.queue')).toBe('/candidates/CAND%401.ab.queue')
+  })
+
+  it('addresses a comparison of candidates by its operands, which a candidate id cannot shadow', () => {
+    expect(candidateCompareRoute(['CAND@1.ab.a', 'CAND@2.cd.b'], 'DIA@3.ef.map')).toEqual({
+      path: '/candidates/compare', query: { candidate: ['CAND@1.ab.a', 'CAND@2.cd.b'], diagram: 'DIA@3.ef.map' },
+    })
+    expect(candidateCompareRoute(['CAND@1.ab.a']).query).toEqual({ candidate: ['CAND@1.ab.a'] })
+    expect(() => candidateDetailRoute('compare')).toThrow(UnaddressableIdentityError)
   })
 
   it('addresses a viewpoint projection by the viewpoint slug', () => {

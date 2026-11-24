@@ -23,7 +23,7 @@ import { encodeIdentitySegment as encodeSegment } from '../../domain/identitySeg
  * as an identifier. `/assurance/analyses/new/stpa` is the create surface; an analysis whose id
  * were `new` would address the same URL and lose.
  */
-const RESERVED_SEGMENTS: ReadonlySet<string> = new Set(['new', 'edit', 'groups', 'query', 'graph'])
+const RESERVED_SEGMENTS: ReadonlySet<string> = new Set(['new', 'edit', 'groups', 'query', 'graph', 'compare'])
 
 /** An identifier that cannot be spelled as a path segment without changing what the URL means. */
 export class UnaddressableIdentityError extends Error {
@@ -71,6 +71,9 @@ export const ROUTE_TEMPLATES = {
   changeList: '/changes',
   /** Candidate architectures: proposed changes to the model, read and sketched before any commit. */
   candidateList: '/candidates',
+  /** Several candidate architectures side by side against one common base. Addresses no stored
+   * thing: which candidates, and the base, are operands of the comparison and stay in the query. */
+  candidateCompare: '/candidates/compare',
   /** One candidate architecture: its operations against a base, sketched on a diagram. */
   candidateDetail: '/candidates/:artifactId',
   documentList: '/documents',
@@ -151,6 +154,11 @@ export const stressAnalysisStartRoute = (): string => ROUTE_TEMPLATES.stressAnal
 
 export const candidateListRoute = (): string => ROUTE_TEMPLATES.candidateList
 export const candidateDetailRoute = (artifactId: string): string => `/candidates/${seg(artifactId)}`
+/** The comparison of *ids*, each a repeated `candidate` key, on the diagram *diagram* if one is named. */
+export const candidateCompareRoute = (
+  ids: readonly string[], diagram = '',
+): { path: string; query: Record<string, string | string[]> } =>
+  ({ path: ROUTE_TEMPLATES.candidateCompare, query: { candidate: [...ids], ...(diagram ? { diagram } : {}) } })
 
 export const diagramListRoute = (): string => ROUTE_TEMPLATES.diagramList
 export const layoutLabRoute = (artifactId = ''): string =>

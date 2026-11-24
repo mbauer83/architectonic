@@ -63,6 +63,8 @@ export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>>
   'ui/views/CandidateArchitectureView.vue#diagram': 'presentation',
   // Carried whole to a candidate stacked on the one being read, so it opens on the same diagram.
   'ui/views/CandidateArchitectureView.vue#*': 'presentation',
+  // The diagram compared candidates are drawn on: the comparison is the same on any diagram.
+  'ui/views/CandidateComparisonView.vue#diagram': 'presentation',
   // The diagram reader's reading — `focus`, `reach`, `view` — so a reading is a link. What is being
   // looked at on the one diagram the path addresses, not which diagram: the page is the same without it.
   'ui/composables/useReadingAddress.ts#*': 'presentation',
@@ -77,6 +79,12 @@ export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>>
   'ui/components/ArtifactHomeSelect.vue#group': 'operation-input',
   'ui/views/ViewpointsManagementView.vue#seedEntityCriteria': 'operation-input',
   'ui/views/EphemeralViewpointQueryView.vue#slug': 'operation-input',
+  // A comparison of candidate architectures addresses no stored thing: which candidates (`candidate`,
+  // repeated) and the base they are read against are its operands, so a comparison is a link.
+  'ui/views/CandidateComparisonView.vue#candidate': 'operation-input',
+  'ui/views/CandidateComparisonView.vue#base': 'operation-input',
+  // Adding or dropping a candidate, or choosing the base or the diagram, rewrites the query it keeps.
+  'ui/views/CandidateComparisonView.vue#*': 'operation-input',
   // The graph explorer's viewpoint half owns the address for `viewpoint`, `param.*` and the
   // verification pins, so the uses sit with that composable rather than with the view.
   'ui/composables/useGraphViewpointExploration.ts#viewpoint': 'operation-input',
