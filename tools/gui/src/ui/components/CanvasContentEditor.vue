@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, ref } from 'vue'
+import { computed, inject, nextTick, ref, watch } from 'vue'
 import { Effect } from 'effect'
 import type { DiagramContext } from '../../domain'
 import { canvasMembers } from '../../domain/layout/canvasComposition'
@@ -10,12 +10,16 @@ import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import { elementAt, useContentGestures } from '../composables/useContentGestures'
 import CanvasElementForm from './CanvasElementForm.vue'
 import CanvasSelectionMenu from './CanvasSelectionMenu.vue'
+import CanvasLineMenu from './CanvasLineMenu.vue'
+import { asksForTheMenu, isOnALine, selectedLineMiddle } from './lineMenuPlace'
 import { type CanvasWords, DIAGRAM_WORDS } from './canvasWords'
 
 const props = defineProps<{
   editing: DiagramEditing
   context: DiagramContext
   selection?: string | null
+  /** The line selected on the canvas, by its place on the picture: its menu is the line's. */
+  line?: number | null
   /** Every shape selected: two or more open the selection's menu rather than an element's. */
   selectedShapes?: readonly string[]
   /** What deleting means here; the diagram page's words when absent. */
@@ -26,7 +30,8 @@ const several = computed(() => props.selectedShapes ?? [])
 const svc = inject(modelServiceKey)!
 const host = ref<HTMLElement | null>(null)
 const field = ref<HTMLInputElement | null>(null)
-const mode = ref<'create' | 'element' | 'selection' | 'rename' | 'delete' | 'target' | 'relation' | null>(null)
+const mode = ref<'create' | 'element' | 'selection' | 'line' | 'rename' | 'delete' | 'target' | 'relation' | null>(
+  null)
 const at = ref({ x: 0, y: 0 })
 const source = ref('')
 const target = ref('')
@@ -61,6 +66,10 @@ function menu(event: MouseEvent) {
   event.preventDefault()
   position(event.clientX, event.clientY)
   source.value = elementAt(event)?.dataset.alias ?? ''
+  if (props.line != null && isOnALine(event.target)) {
+    mode.value = 'line'
+    return
+  }
   const onSelection = several.value.length > 1 && (!source.value || several.value.includes(source.value))
   mode.value = onSelection ? 'selection' : selected.value ? 'element' : 'create'
 }
@@ -159,13 +168,23 @@ function editLine(index: number) {
   }
   mode.value = 'relation'
 }
-const { touchedLine, focusCanvas, up, release, moving } = useContentGestures(
+// A line's menu belongs to the line it was opened on: another line picked, or none, closes it.
+watch(() => props.line, () => { if (mode.value === 'line') mode.value = null })
+const { focusCanvas, up, release, moving } = useContentGestures(
   host, props.editing, source, position, rename, editLine, pair,
 )
 function key(e: KeyboardEvent) {
   if (e.key === 'Escape' && mode.value) {
     e.stopPropagation()
     mode.value = null
+  }
+  // The menu key, or Shift+F10, on a selected line opens its menu at the middle of it (02·9, Q35).
+  if (asksForTheMenu(e) && props.line != null) {
+    e.preventDefault()
+    const middle = selectedLineMiddle(host.value) ?? { x: 40, y: 40 }
+    position(middle.x, middle.y)
+    mode.value = 'line'
+    void nextTick(() => document.querySelector<HTMLElement>('.canvas-pop [role="menuitem"]')?.focus())
   }
   if (e.key === 'F2' && props.selection) {
     e.preventDefault()
@@ -178,9 +197,10 @@ function key(e: KeyboardEvent) {
 }
 function double(e: MouseEvent) {
   position(e.clientX, e.clientY)
-  const line = (e.target as Element).closest<SVGElement>('[data-relation]')
-  if (line) editLine(Number(line.dataset.relation))
-  else {
+  // A double press on a label opens its relation; on a line it adds a bend, which the canvas does.
+  const label = (e.target as Element).closest<SVGElement>('.lab-line-label[data-relation]')
+  if (label) editLine(Number(label.dataset.relation))
+  else if (!(e.target as Element).closest('[data-relation], .lab-line-handles')) {
     const alias = elementAt(e)?.dataset.alias
     if (alias) void rename(alias)
   }
@@ -209,13 +229,6 @@ function double(e: MouseEvent) {
     >
       {{ several.length > 1 ? `${several.length} items selected` : '' }}
     </p>
-    <button
-      v-if="touchedLine !== null"
-      type="button"
-      @click="editLine(touchedLine)"
-    >
-      Edit selected relationship
-    </button>
     <Teleport to="body">
       <div
         v-if="mode"
@@ -243,6 +256,13 @@ function double(e: MouseEvent) {
           :editing="editing"
           :selection="several"
           :words="words"
+          @done="mode = null"
+        />
+        <CanvasLineMenu
+          v-else-if="mode === 'line' && line != null"
+          :editing="editing"
+          :line="line"
+          @edit="editLine(line)"
           @done="mode = null"
         />
         <template v-else-if="mode === 'element'">

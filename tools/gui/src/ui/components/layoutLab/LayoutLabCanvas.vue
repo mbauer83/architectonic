@@ -3,6 +3,7 @@
  * The lab's picture: boxes, elements and lines drawn from the real geometry where they are now, in the
  * one paint order of `labPaintOrder`, with the rule breaches over them and handles on the selected
  * shape. Press and drag a shape to move it; a box carries what it holds. Drag a handle to resize.
+ * Press a line, or where it ends on an element's edge, to select it and shape it (`useLineGesture`).
  */
 import { computed, ref, watch } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
@@ -16,8 +17,11 @@ import type { DrawnRelation, DrawnShape, Piece } from './labPieces'
 import { drawnRelations, drawnShapes, pieceOf } from './labPieces'
 import LabDrawn from './LabDrawn'
 import CanvasMarks from './CanvasMarks.vue'
+import LabBreachMarks from './LabBreachMarks.vue'
 import LabSelection from './LabSelection.vue'
+import LabLineHandles from './LabLineHandles.vue'
 import { useLabGesture } from './useLabGesture'
+import { useLineGesture } from './useLineGesture'
 
 /** *readonly*: a press picks a shape and nothing moves. The default slot draws over the picture. */
 const props = defineProps<{ session: ArrangementSession; showBreaches?: boolean; readonly?: boolean }>()
@@ -63,20 +67,6 @@ watch(drawnExtent, (now) => {
 }, { immediate: true })
 watch(() => gesture.dragging.value, (dragging) => { if (!dragging) view.value = grown(drawnExtent.value) })
 
-defineExpose({
-  /** Whether anything is selected; and clearing it, as Escape's first step does. */
-  hasSelection: computed(() => gesture.selection.value.length > 0),
-  /** The one shape selected, or null when none or several are; and every shape selected. */
-  selected: gesture.selected,
-  selection: gesture.selection,
-  clearSelection: () => gesture.clear(),
-  /** Begin a selection rectangle from a press beside the picture, on the page's empty paper: not a control. */
-  sweepFrom: (event: PointerEvent) => {
-    if (!(event.target instanceof Element && event.target.closest('button, a, input, select, textarea'))) {
-      gesture.sweepFrom(event)
-    }
-  },
-})
 
 const viewBox = computed(() => {
   const extent = view.value
@@ -96,6 +86,40 @@ const pixel = computed((): number => {
 const HANDLE_PIXELS = 9
 const TAG_PIXELS = 11
 const handleSide = computed((): number => HANDLE_PIXELS * pixel.value)
+
+/** A line selected is the selection: picking one lets go of the shapes, and picking a shape the line. */
+const lineGesture = useLineGesture(props.session, svg, pixel, () => gesture.clear())
+watch(() => gesture.selection.value, (now) => { if (now.length > 0) lineGesture.clear() })
+const pressShape = (event: PointerEvent, alias: string) => {
+  if (!lineGesture.pressNearAnEnd(event)) gesture.press(event, alias)
+}
+const sweep = (event: PointerEvent) => {
+  if (event.button === 0) lineGesture.clear()
+  gesture.sweepFrom(event)
+}
+const selectedLine = computed(() => {
+  const routed = lineGesture.routed.value
+  return lineGesture.line.value === null || !routed ? null : { line: lineGesture.line.value, course: routed.course }
+})
+
+defineExpose({
+  /** Whether anything is selected; and clearing it, as Escape's first step does. */
+  hasSelection: computed(() => gesture.selection.value.length > 0 || lineGesture.line.value !== null),
+  /** The one shape selected, or null when none or several are; and every shape selected. */
+  selected: gesture.selected,
+  selection: gesture.selection,
+  /** The line selected, by its place on the picture; null when none is. */
+  selectedLine: lineGesture.line,
+  clearSelection: () => { gesture.clear(); lineGesture.clear() },
+  /** Delete on a picked bend removes it, as one step; answers whether there was one. */
+  removePickedBend: () => lineGesture.removePickedBend(),
+  /** Begin a selection rectangle from a press beside the picture, on the page's empty paper: not a control. */
+  sweepFrom: (event: PointerEvent) => {
+    if (!(event.target instanceof Element && event.target.closest('button, a, input, select, textarea'))) {
+      sweep(event)
+    }
+  },
+})
 const tagSize = computed((): number => TAG_PIXELS * pixel.value)
 
 const aspect = computed(() => {
@@ -122,7 +146,10 @@ const shapes = computed((): ReadonlyMap<string, DrawnShape> => {
 })
 const lines = computed((): ReadonlyMap<number, DrawnRelation> => {
   const drawn = geometry.value
-  return drawn ? drawnRelations(drawn, props.session.courses.value, props.session.routes.value === null) : new Map()
+  const anchors = new Map([...props.session.arrangement.value?.routes ?? []]
+    .flatMap(([key, route]) => (route.label ? [[key, route.label] as const] : [])))
+  return drawn ? drawnRelations(drawn, props.session.courses.value, props.session.routes.value === null, anchors)
+    : new Map()
 })
 
 /** The picture back to front (`labPaintOrder`): shapes by nesting, then lines, then labels. */
@@ -168,7 +195,7 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
     :viewBox="viewBox"
     :style="{ aspectRatio: aspect }"
     data-testid="layout-lab-canvas"
-    @pointerdown="readonly ? gesture.clear() : gesture.sweepFrom($event)"
+    @pointerdown="readonly ? gesture.clear() : sweep($event)"
   >
     <LabDrawn
       v-if="geometry"
@@ -186,7 +213,7 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
         :class="[piece.shape.isBox ? 'lab-box' : 'lab-element', { 'lab-carried': piece.shape.alias === carried }]"
         :data-alias="piece.shape.alias"
         data-painted="shape"
-        @pointerdown="readonly ? pick($event, piece.shape.alias) : gesture.press($event, piece.shape.alias)"
+        @pointerdown="readonly ? pick($event, piece.shape.alias) : pressShape($event, piece.shape.alias)"
       >
         <LabDrawn
           :nodes="[piece.shape.drawing.drawing]"
@@ -215,6 +242,12 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
         :data-relation="piece.relation"
         data-painted="line"
       >
+        <polyline
+          v-if="!readonly"
+          class="lab-line-hit"
+          :points="pointsAttribute(session.courses.value.get(piece.relation) ?? [])"
+          @pointerdown="lineGesture.pressLine($event, piece.relation)"
+        />
         <LabDrawn
           v-if="piece.drawn.asDrawn"
           :nodes="[piece.drawn.asDrawn]"
@@ -231,9 +264,10 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
       </g>
       <g
         v-else
-        class="lab-line-label"
+        :class="['lab-line-label', { 'lab-line-label--movable': !readonly }]"
         :data-relation="piece.relation"
         data-painted="label"
+        @pointerdown="readonly || lineGesture.pressLabel($event, piece.relation)"
       >
         <LabDrawn
           :nodes="piece.label.texts"
@@ -242,56 +276,11 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
       </g>
     </template>
 
-    <g
+    <LabBreachMarks
       v-if="showBreaches"
-      class="lab-breaches"
-    >
-      <g
-        v-for="mark in marks"
-        :key="mark.key"
-        :class="`lab-breach-mark lab-breach--${mark.breach.tier}`"
-        :data-rule="mark.breach.rule"
-      >
-        <title>{{ mark.tag }} ({{ mark.breach.tier }})</title>
-        <polyline
-          v-if="mark.breach.at.length >= 2"
-          :points="pointsAttribute(mark.breach.at)"
-          class="lab-breach-halo"
-        />
-        <rect
-          v-for="(extent, end) in mark.frames"
-          :key="end"
-          :x="extent.left - 3"
-          :y="extent.top - 3"
-          :width="widthOf(extent) + 6"
-          :height="heightOf(extent) + 6"
-          class="lab-breach-frame"
-        />
-        <template v-if="mark.label">
-          <line
-            class="lab-breach-leader"
-            :x1="mark.label.leader[0].x"
-            :y1="mark.label.leader[0].y"
-            :x2="mark.label.leader[1].x"
-            :y2="mark.label.leader[1].y"
-          />
-          <rect
-            class="lab-breach-tag-box"
-            :x="mark.label.box.left"
-            :y="mark.label.box.top"
-            :width="widthOf(mark.label.box)"
-            :height="heightOf(mark.label.box)"
-            :rx="tagSize / 3"
-          />
-          <text
-            class="lab-breach-tag"
-            :x="mark.label.at.x"
-            :y="mark.label.at.y"
-            :font-size="tagSize"
-          >{{ mark.tag }}</text>
-        </template>
-      </g>
-    </g>
+      :marks="marks"
+      :tag-size="tagSize"
+    />
 
     <CanvasMarks
       :session="session"
@@ -308,6 +297,22 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
       :readonly="readonly"
       @handle="(event, handle) => gesture.press(event, gesture.selected.value ?? '', handle)"
     />
+
+    <LabLineHandles
+      v-if="!readonly && selectedLine"
+      :line="selectedLine.line"
+      :course="selectedLine.course"
+      :bends="lineGesture.bends.value"
+      :picked="lineGesture.bend.value"
+      :anchor="lineGesture.stated.value.label ?? null"
+      :leader="lineGesture.movingLabel.value"
+      :handle-side="handleSide"
+      @end="lineGesture.pressEnd"
+      @segment="lineGesture.pressSegment"
+      @bend="lineGesture.pressBend"
+      @remove-bend="lineGesture.doublePress"
+      @add-bend="lineGesture.doublePress"
+    />
   </svg>
 </template>
 
@@ -318,6 +323,10 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
 /* The picture is the canvas: no frame of its own, which is the page's to draw for its mode. */
 .lab-canvas { touch-action: none; user-select: none; }
 .lab-backdrop, .lab-line, .lab-line-label, .lab-box :deep(g), .lab-element :deep(g) { pointer-events: none; }
+/* A line is pressed along a band wider than its stroke; a label is moved by its text. */
+.lab-line-hit { fill: none; stroke: transparent; stroke-width: 10px; pointer-events: stroke; cursor: pointer; }
+.lab-line-hit { vector-effect: non-scaling-stroke; }
+.lab-line-label--movable { pointer-events: bounding-box; cursor: move; }
 .lab-grip { fill: transparent; stroke: none; pointer-events: all; cursor: move; }
 /* A box moves by its title band, which shows its whole width under the pointer; its body selects. */
 .lab-box > .lab-grip:hover { fill: rgba(37, 99, 235, 0.09); }
@@ -325,20 +334,4 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
 /* While a shape is dragged, it is drawn see-through, so what it is passing over — and the lines into
    what it covers — stay in sight until it is dropped. */
 .lab-carried { opacity: 0.55; }
-/* A breach is an annotation, never line styling: a pale halo far wider than any line round the
-   stretch that breaks the rule, or a dashed frame round each end, and the rule's name in a tag of its
-   own set off the line, with a dotted leader back to it. */
-.lab-breach-mark { --breach: #dc2626; }
-.lab-breach-mark.lab-breach--soft { --breach: #d97706; }
-.lab-breach-halo {
-  fill: none; stroke: var(--breach); stroke-width: 16px; stroke-linecap: round; stroke-linejoin: round; opacity: 0.16;
-}
-.lab-breach-halo, .lab-breach-frame, .lab-breach-leader, .lab-breach-tag-box { vector-effect: non-scaling-stroke; }
-.lab-breach-halo, .lab-breach-frame { pointer-events: stroke; }
-.lab-breach-frame { fill: none; stroke: var(--breach); stroke-width: 2px; stroke-dasharray: 5 3; opacity: 0.8; }
-.lab-breach-leader { stroke: var(--breach); stroke-width: 1px; stroke-dasharray: 1 2; pointer-events: none; }
-.lab-breach-tag-box { fill: #fff; stroke: var(--breach); stroke-width: 1px; pointer-events: none; }
-.lab-breach-tag {
-  fill: var(--breach); text-anchor: middle; font-family: system-ui, sans-serif; font-weight: 600; pointer-events: none;
-}
 </style>

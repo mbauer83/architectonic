@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Extent } from '../geometry'
 import type { LayoutGeometry } from '../../schemas/diagramLayoutGeometry'
-import { arrangedBy, arrangedUnits, layoutOf, layoutPatchBetween, patchIsEmpty } from '../arrangementLayout'
+import { arrangedBy, arrangedUnits, layoutOf, layoutPatchBetween, patchIsEmpty, shapedLines } from '../arrangementLayout'
 import { drawnArrangement, moved, resized } from '../lab/labArrangement'
 import { placementOf } from '../lab/labRouting'
 import { LINE_DRAWING, SHAPE_DRAWING } from '../lab/__tests__/labDrawingFixtures'
@@ -92,5 +92,29 @@ describe('what an edit arranged', () => {
   it('counts nothing once a move is undone', () => {
     const there = moved(geometry, drawn, 'C', 30, 20)
     expect(arrangedUnits(geometry, drawn, moved(geometry, there, 'C', -30, -20))).toEqual([])
+  })
+})
+
+describe('a line\'s stated route', () => {
+  const bent = { ...drawn, routes: new Map([['r', {
+    from: { side: 'right' as const, at: 0.5 }, to: { side: 'left' as const, at: 0.5 }, via: [[300, 60], [300, 150], [360, 150], [360, 60]] as const,
+  }]]) }
+
+  it('is written under relations by its key, read back, and patched like any other entry', () => {
+    const written = layoutOf(geometry, bent)
+    expect(written.relations).toEqual({ r: bent.routes.get('r') })
+    expect(arrangedBy(geometry, written).routes.get('r')).toEqual(bent.routes.get('r'))
+    const patch = layoutPatchBetween(layoutOf(geometry, drawn), written)
+    expect(patch.relations).toEqual({ r: { value: bent.routes.get('r'), based_on: null } })
+    expect(patchIsEmpty(layoutPatchBetween(written, written))).toBe(true)
+    expect(shapedLines(geometry, drawn, bent)).toEqual([0])
+  })
+
+  it('moves bends and all when both its ends move together, and stays attached when one does', () => {
+    const geometryBoth = { ...geometry, relations: [{ ...geometry.relations[0], source: 'A', target: 'B' }] }
+    const together = moved(geometryBoth, bent, 'G', 10, 5)
+    expect(together.routes.get('r')?.via?.[0]).toEqual([310, 65])
+    const one = moved(geometry, bent, 'C', 0, 30)
+    expect(one.routes.get('r')?.via?.at(-1)).toEqual([360, 90])
   })
 })

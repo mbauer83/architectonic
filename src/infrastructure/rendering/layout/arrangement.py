@@ -217,7 +217,9 @@ class _Arranging:
     def routing(self) -> RoutingInput:
         """What the router is asked: the scene as arranged, and every relation no stated route decides.
 
-        A relation whose whole route the layout states runs it, and is a fixed line to the others.
+        A relation whose layout states its bends between two stated ports runs that course, and is a fixed
+        line to the others. One that states only its ports is routed between them: its bends are unstated,
+        so they are the router's, and the route goes round whatever lies between (a straightened line).
         """
         extents: dict[str, Extent] = {**self.boxes, **self.elements}
         keyed = self._keyed()
@@ -228,7 +230,7 @@ class _Arranging:
             key, turned = keyed.get(index, ("", False))
             source, target = relation.ends[::-1] if turned else relation.ends
             routes[index] = self._layout.relations.get(key, Route())
-            stated = course_of(routes[index], extents[source], extents[target])
+            stated = course_of(routes[index], extents[source], extents[target]) if routes[index].via else None
             if stated is not None:
                 courses[index] = stated[::-1] if turned else stated
             else:

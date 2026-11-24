@@ -259,6 +259,7 @@ const executeDelete = () => {
                   :editing="edit.editing"
                   :context="contextQuery.data.value"
                   :selection="editCanvas?.selected"
+                  :line="editCanvas?.selectedLine"
                   :selected-shapes="editCanvas?.selection"
                 >
                   <LayoutLabCanvas

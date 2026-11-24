@@ -10,12 +10,19 @@
  */
 import type { Extent, Point } from '../geometry'
 import { unionOf, widthOf } from '../geometry'
+import { reattached } from '../attachment'
+import type { Route } from '../orthogonal'
 import type { GeometryBox, LayoutGeometry, MeasuredWord } from '../../schemas/diagramLayoutGeometry'
 
-/** What has been moved or resized: every element where it is now, and each box stated by size. */
+/**
+ * What has been moved, resized or shaped: every element where it is now, each box stated by size, and
+ * each drawn relation's stated route by relation key — the ports, bends and label anchor the user set,
+ * which the router keeps.
+ */
 export interface Arrangement {
   readonly elements: ReadonlyMap<string, Extent>
   readonly stated: ReadonlyMap<string, Extent>
+  readonly routes: ReadonlyMap<string, Route>
 }
 
 /** The least room kept either side of a box's title. */
@@ -35,6 +42,7 @@ export const translated = (extent: Extent, dx: number, dy: number): Extent => ({
 export const drawnArrangement = (geometry: LayoutGeometry): Arrangement => ({
   elements: new Map(geometry.elements.map((element) => [element.alias, element.extent])),
   stated: new Map(),
+  routes: new Map(),
 })
 
 /** Every shape's alias under the box it is drawn directly inside; `null` for the canvas. */
@@ -118,7 +126,35 @@ export const movedTogether = (
   const carried = new Set(aliases.flatMap((alias) => [alias, ...descendantsOf(geometry, alias)]))
   const shift = (entries: ReadonlyMap<string, Extent>): Map<string, Extent> =>
     new Map([...entries].map(([key, extent]) => [key, carried.has(key) ? translated(extent, dx, dy) : extent]))
-  return { elements: shift(arrangement.elements), stated: shift(arrangement.stated) }
+  const elements = shift(arrangement.elements)
+  return {
+    elements, stated: shift(arrangement.stated),
+    routes: routesFollowing(geometry, arrangement.routes, elements, carried, [dx, dy]),
+  }
+}
+
+/**
+ * *routes* once the shapes *changed* have moved, by *shift* where they were only moved, to where
+ * *elements* says: a stated route whose two ends moved together moves with them, bends and all; one
+ * with a single end among them keeps its shape and stays attached (`reattached`, I3 then I4). A route
+ * that states no bends has nothing to carry: its ports ride on their elements.
+ */
+const routesFollowing = (
+  geometry: LayoutGeometry, routes: ReadonlyMap<string, Route>, elements: ReadonlyMap<string, Extent>,
+  changed: ReadonlySet<string>, shift: readonly [number, number] | null,
+): ReadonlyMap<string, Route> => {
+  if (routes.size === 0) return routes
+  const ends = new Map(geometry.relations.flatMap((one) => (one.key === undefined ? [] : [[one.key, one] as const])))
+  return new Map([...routes].map(([key, route]) => {
+    const relation = ends.get(key)
+    if (!relation || !route.via?.length) return [key, route]
+    const [sourceMoved, targetMoved] = [changed.has(relation.source), changed.has(relation.target)]
+    if (sourceMoved && targetMoved && shift) {
+      return [key, { ...route, via: route.via.map(([x, y]) => [x + shift[0], y + shift[1]] as const) }]
+    }
+    const [source, target] = [elements.get(relation.source), elements.get(relation.target)]
+    return [key, (sourceMoved || targetMoved) && source && target ? reattached(route, source, target) : route]
+  }))
 }
 
 /** *arrangement* with the shape *alias* moved by (dx, dy): a box carries everything it holds. */
@@ -137,10 +173,14 @@ export const placedAt = (
 /** *arrangement* with the shape *alias* given *extent*: an element's own size, a box's stated size. */
 export const resized = (
   geometry: LayoutGeometry, arrangement: Arrangement, alias: string, extent: Extent,
-): Arrangement =>
-  geometry.boxes.some((box) => box.alias === alias)
-    ? { ...arrangement, stated: new Map([...arrangement.stated, [alias, extent]]) }
-    : { ...arrangement, elements: new Map([...arrangement.elements, [alias, extent]]) }
+): Arrangement => {
+  if (geometry.boxes.some((box) => box.alias === alias)) {
+    return { ...arrangement, stated: new Map([...arrangement.stated, [alias, extent]]) }
+  }
+  const elements = new Map([...arrangement.elements, [alias, extent]])
+  const routes = routesFollowing(geometry, arrangement.routes, elements, new Set([alias]), null)
+  return { ...arrangement, elements, routes }
+}
 
 export type Handle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
 
