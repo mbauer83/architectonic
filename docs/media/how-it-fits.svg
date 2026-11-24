@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 590" width="900" height="590" role="img" aria-labelledby="t d">
+  <title id="t">How Architectonic fits an organisation</title>
+  <desc id="d">Planning, modelling and deciding feed forward into the architecture knowledge graph; building, running and assurance read guidance from it and feed their findings back. Every write, from anyone, goes through one write path behind the graph's interfaces (MCP, REST and the web interface) and is saved to an engagement repository or, as a promotion or proposed change, reaches the enterprise repository by pull request and review. Everyone reads.</desc>
+  <style>
+  svg { --surface: #ffffff; --fg: #1b2330; --muted: #5b6676; --line: #c9d0da; --graph: #eef3fb; --band: #dde7f7;
+    --accent: #c2410c; --write: #1d4ed8; color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; }
+  @media (prefers-color-scheme: dark) {
+    svg { --surface: #161b22; --fg: #e6edf3; --muted: #9aa5b4; --line: #3a4453; --graph: #1c2635; --band: #24324a;
+      --accent: #fb923c; --write: #7aa2ff; }
+  }
+  .zone { fill: var(--surface); stroke: var(--line); }
+  .graph { fill: var(--graph); stroke: var(--line); }
+  .band { fill: var(--band); stroke: none; }
+  .repo { fill: var(--surface); stroke: currentColor; stroke-width: 1.2; }
+  .chip { fill: var(--surface); stroke: var(--line); }
+  .t { fill: currentColor; font-size: 13px; }
+  .h { fill: currentColor; font-size: 14px; font-weight: 600; }
+  .s { fill: var(--muted); font-size: 12px; }
+  .bl { fill: var(--write); font-size: 12px; font-weight: 600; letter-spacing: .08em; }
+  .a { fill: var(--accent); font-size: 12px; font-weight: 500; }
+  .w { fill: var(--write); font-size: 12px; font-weight: 500; }
+  .ln { stroke: currentColor; stroke-width: 1.4; fill: none; }
+  .ff { stroke: var(--write); stroke-width: 2.4; fill: none; }
+  .fb { stroke: var(--accent); stroke-width: 2.4; fill: none; }
+  .mk { fill: currentColor; }
+  .mka { fill: var(--accent); }
+  .mkw { fill: var(--write); }
+</style>
+  <rect class="zone" x="0" y="0" width="900" height="590" rx="8" stroke="none"/>
+      <defs>
+        <marker id="p-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk" d="M0 0 L10 5 L0 10 z"/></marker>
+        <marker id="p-arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mka" d="M0 0 L10 5 L0 10 z"/></marker>
+        <marker id="p-arW" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mkw" d="M0 0 L10 5 L0 10 z"/></marker>
+      </defs>
+      <rect class="zone" x="330" y="14" width="240" height="50" rx="6"/>
+      <text class="h" x="450" y="36" text-anchor="middle">Ask &amp; check</text>
+      <text class="s" x="450" y="54" text-anchor="middle">any question, any time</text>
+      <rect class="band" x="320" y="96" width="260" height="22"/>
+      <text class="bl" x="450" y="111" text-anchor="middle">MCP · REST</text>
+      <rect class="band" x="286" y="118" width="22" height="330"/>
+      <text class="bl" x="301" y="340" text-anchor="middle" transform="rotate(-90 301 340)">MCP · REST</text>
+      <rect class="band" x="592" y="118" width="22" height="330"/>
+      <text class="bl" x="607" y="360" text-anchor="middle" transform="rotate(90 607 360)">MCP · REST</text>
+      <rect class="graph" x="320" y="128" width="260" height="320" rx="8"/>
+      <text class="h" x="450" y="152" text-anchor="middle">Architecture knowledge graph</text>
+      <rect class="repo" x="345" y="166" width="210" height="64" rx="4"/>
+      <text class="h" x="450" y="190" text-anchor="middle">Enterprise repository</text>
+      <text class="s" x="450" y="207" text-anchor="middle">company-wide guides, standards</text>
+      <text class="s" x="450" y="222" text-anchor="middle">and facts, referenced by all</text>
+      <rect class="chip" x="372" y="262" width="156" height="34" rx="17"/>
+      <text class="t" x="450" y="284" text-anchor="middle">one write path</text>
+      <line class="fb" x1="450" y1="260" x2="450" y2="234" marker-end="url(#p-arA)"/>
+      <text class="a" x="462" y="252">PR + review</text>
+      <line class="fb" x1="420" y1="298" x2="420" y2="334" marker-end="url(#p-arA)"/>
+      <text class="a" x="408" y="322" text-anchor="end">save</text>
+      <line class="fb" x1="480" y1="336" x2="480" y2="300" marker-end="url(#p-arA)"/>
+      <text class="a" x="492" y="322">promote</text>
+      <rect class="repo" x="353" y="346" width="210" height="80" rx="4"/>
+      <rect class="repo" x="349" y="342" width="210" height="80" rx="4"/>
+      <rect class="repo" x="345" y="338" width="210" height="80" rx="4"/>
+      <text class="h" x="450" y="366" text-anchor="middle">Engagement repositories</text>
+      <text class="s" x="450" y="384" text-anchor="middle">team and project work,</text>
+      <text class="s" x="450" y="400" text-anchor="middle">and drafts for the enterprise</text>
+      <line class="ln" x1="450" y1="126" x2="450" y2="68" marker-end="url(#p-ar)"/>
+      <rect class="zone" x="20" y="128" width="190" height="320" rx="6"/>
+      <text class="h" x="115" y="154" text-anchor="middle">Plan, model &amp; decide</text>
+      <text class="s" x="115" y="171" text-anchor="middle">feedforward into the graph</text>
+      <rect class="chip" x="40" y="186" width="150" height="30" rx="4"/><text class="t" x="115" y="206" text-anchor="middle">Strategy, capabilities</text>
+      <rect class="chip" x="40" y="224" width="150" height="30" rx="4"/><text class="t" x="115" y="244" text-anchor="middle">Team topology</text>
+      <rect class="chip" x="40" y="262" width="150" height="30" rx="4"/><text class="t" x="115" y="282" text-anchor="middle">Roadmap, features</text>
+      <rect class="chip" x="40" y="300" width="150" height="30" rx="4"/><text class="t" x="115" y="320" text-anchor="middle">Solution, specs, sign-off</text>
+      <line class="ff" x1="212" y1="279" x2="370" y2="279" marker-end="url(#p-arW)"/>
+      <text class="w" x="248" y="251" text-anchor="middle">plan, model,</text>
+      <text class="w" x="248" y="266" text-anchor="middle">decide</text>
+      <line class="ln" x1="318" y1="400" x2="212" y2="400" marker-end="url(#p-ar)"/>
+      <text class="t" x="248" y="390" text-anchor="middle">informed</text>
+      <rect class="zone" x="690" y="128" width="190" height="320" rx="6"/>
+      <text class="h" x="785" y="154" text-anchor="middle">Build, run &amp; assure</text>
+      <text class="s" x="785" y="171" text-anchor="middle">feedback into the graph</text>
+      <rect class="chip" x="710" y="186" width="150" height="30" rx="4"/><text class="t" x="785" y="206" text-anchor="middle">Code, tests, reviews</text>
+      <rect class="chip" x="710" y="224" width="150" height="30" rx="4"/><text class="t" x="785" y="244" text-anchor="middle">Deploy, operate</text>
+      <rect class="chip" x="710" y="262" width="150" height="30" rx="4"/><text class="t" x="785" y="282" text-anchor="middle">Secure</text>
+      <rect class="chip" x="710" y="300" width="150" height="30" rx="4"/><text class="t" x="785" y="320" text-anchor="middle">Conform, audit</text>
+      <line class="ln" x1="582" y1="186" x2="688" y2="186" marker-end="url(#p-ar)"/>
+      <text class="t" x="652" y="176" text-anchor="middle">guidance</text>
+      <line class="fb" x1="688" y1="279" x2="530" y2="279" marker-end="url(#p-arA)"/>
+      <text class="a" x="652" y="266" text-anchor="middle">findings</text>
+      <g>
+        <line class="ff" x1="40" y1="500" x2="72" y2="500"/><text class="s" x="80" y="504">feedforward into the graph</text>
+        <line class="ln" x1="270" y1="500" x2="302" y2="500"/><text class="s" x="310" y="504">read from the graph</text>
+        <line class="fb" x1="500" y1="500" x2="532" y2="500"/><text class="s" x="540" y="504">feedback into the graph</text>
+        <rect class="band" x="700" y="492" width="32" height="16"/><text class="s" x="740" y="504">interfaces</text>
+      </g>
+      <line class="ln" x1="40" y1="534" x2="860" y2="534" stroke-opacity=".25"/>
+      <text class="t" x="450" y="556" text-anchor="middle"><tspan font-weight="600">Who:</tspan> leadership · product owners &amp; managers · architects · technical leads · engineers · (Dev)Ops · security · conformance · coding agents</text>
+      <text class="s" x="450" y="574" text-anchor="middle">in any activity, through the web interface, the REST API or an agent over MCP. Everyone reads; write access where granted.</text>
+
+    </svg>

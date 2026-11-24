@@ -22,6 +22,12 @@ edit in a browser, while AI agents edit through MCP tools — with safety, secur
 
 [Quickstart](#quickstart) · [Documentation](docs/index.md) · [Why it exists](docs/01-motivation.md) · [Assurance](docs/04-assurance/index.md)
 
+<!-- media: docs/media/how-it-fits.svg — drawn by hand, not captured -->
+![Planning feeds forward into the architecture knowledge graph; building, running and assurance read guidance from it and feed findings back. Every write goes through one write path behind MCP, REST and the web interface, lands in an engagement repository, and reaches the enterprise repository by pull request and review. Everyone reads.](docs/media/how-it-fits.svg)
+
+Leadership, product, architecture, engineering, operations, security and conformance work in one model,
+through the browser, the REST API or their agents over MCP.
+
 Sketch work before refining it.
 
 <!-- media: docs/media/scratchpad-hero.png — seeded demo workspace, 1440×945 @2x; see tools/media/seed_scratchpad_hero.py -->

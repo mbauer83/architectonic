@@ -30,6 +30,7 @@ _MANIFEST = _MEDIA / "manifest.json"
 #: exactly the loss this gate exists to catch.
 _HAND_AUTHORED = frozenset({
     "assurance-why-motivation-chain.svg",
+    "how-it-fits.svg",
     "motivation-core-trade-off.svg",
     "motivation-forces.svg",
     "motivation-goals-outcomes.svg",
