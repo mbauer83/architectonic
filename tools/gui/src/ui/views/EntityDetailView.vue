@@ -259,7 +259,7 @@ const executeDelete = () => { void router.push(backTo.value) }
 .markdown-body :deep(p) { margin: 1rem 0 1.7rem 0; }
 .markdown-body :deep(ul) { padding-left: 1.5rem; }
 .markdown-body :deep(table) { inline-size: 100%; border-collapse: collapse; margin-block: 2rem; min-inline-size: max-content; }
-.markdown-body :deep(th), .markdown-body :deep(td) { padding-inline: 1.25rem; padding-block: 0.75rem; text-align: start; border-bottom: 1px solid var(--border)); }
+.markdown-body :deep(th), .markdown-body :deep(td) { padding-inline: 1.25rem; padding-block: 0.75rem; text-align: start; border-bottom: 1px solid var(--border); }
 
 /* Connections — [INCOMING] [SYMMETRIC] [OUTGOING] */
 .connections-section { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }

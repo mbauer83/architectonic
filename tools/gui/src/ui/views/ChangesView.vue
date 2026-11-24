@@ -272,7 +272,7 @@ onMounted(load)
 .changes-error { color: var(--danger-strong); margin: 0 0 1rem; }
 .changes-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
 .changes-row {
-  border: 1px solid var(--border, var(--border-strong));
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.75rem 0.9rem;
   display: grid;

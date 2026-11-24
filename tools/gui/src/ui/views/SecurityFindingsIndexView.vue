@@ -136,15 +136,15 @@ onMounted(load)
 <style scoped>
 .findings-index { padding: 1rem 1.25rem; max-width: 68rem; }
 header h1 { margin: 0 0 0.25rem; font-size: 1.25rem; }
-.lede { margin: 0 0 1rem; color: var(--muted, #666); font-size: 0.9rem; }
+.lede { margin: 0 0 1rem; color: var(--muted); font-size: 0.9rem; }
 .status { padding: 0.5rem 0.75rem; border-radius: 4px; font-size: 0.9rem; }
 .status.error { background: var(--danger-soft); color: var(--danger-strong); }
 .status.withheld { background: var(--warn-soft); color: var(--warn-text); }
 .status.empty { background: var(--soft); color: var(--text-2); }
 .status code { background: var(--soft); border-radius: 3px; padding: 0 0.25rem; }
 table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-th { text-align: left; font-weight: 600; color: var(--muted, #666);
-  border-bottom: 1px solid var(--border, var(--border)); padding: 0.3rem 0.4rem; }
-td { padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--hair)); }
+th { text-align: left; font-weight: 600; color: var(--muted);
+  border-bottom: 1px solid var(--border); padding: 0.3rem 0.4rem; }
+td { padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--hair); }
 td:not(:first-child), th:not(:first-child) { width: 7rem; text-align: right; }
 </style>
