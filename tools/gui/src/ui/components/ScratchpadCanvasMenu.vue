@@ -16,6 +16,8 @@
  */
 import { computed, nextTick, ref, watch } from 'vue'
 import EntityPickerInput from './EntityPickerInput.vue'
+import CanvasMenu from './CanvasMenu.vue'
+import type { CanvasMenuItem } from './canvasMenu'
 import type { EntityDisplayInfo } from '../../domain'
 
 const props = defineProps<{
@@ -46,7 +48,7 @@ const root = ref<HTMLElement | null>(null)
 // Every open starts on the actions, never on whatever the last one ended in.
 watch(() => props.at, (at) => {
   searching.value = false
-  if (at) void nextTick(() => root.value?.focus())
+  if (at) void nextTick(() => root.value?.querySelector<HTMLElement>('[role="menuitem"]')?.focus())
 })
 
 /** `fixedEntityTypes` narrows the picker to what this frame permits — the same permitted set the
@@ -58,14 +60,27 @@ const heading = computed(() =>
   props.areaLabel ? `Add to ${props.areaLabel}` : 'Add here',
 )
 
-/** Arrow keys walk the entries, because a `menu` that only answered Tab would be a menu in name.
- * The menu itself holds focus until an entry is reached, so the first press lands on the first. */
-const move = (step: number): void => {
-  const entries = [...(root.value?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])]
-  if (!entries.length) return
-  const here = entries.indexOf(window.document.activeElement as HTMLElement)
-  const next = here < 0 ? (step > 0 ? 0 : entries.length - 1) : (here + step + entries.length) % entries.length
-  entries[next]?.focus()
+/** The entries, drawn by the canvas menu every canvas opens; the lift acts on a selection made on the
+ * canvas, so it belongs beside the thing it acts on rather than on a toolbar. */
+const items = computed((): readonly CanvasMenuItem[] => [
+  { id: 'new-note', label: 'New note', hint: 'or double-click', testid: 'menu-new-note' },
+  { id: 'add-existing', label: 'Add existing element…', hint: 'bind what the model already has',
+    testid: 'menu-add-existing' },
+  ...props.canFocus
+    ? [{
+      id: 'focus', testid: 'menu-focus',
+      label: props.focused ? 'Leave focus' : `Focus ${props.areaLabel}`,
+      hint: props.focused ? 'show the whole canvas again' : 'fit the view to it; the rest fades back',
+    }]
+    : [],
+  { id: 'lift', label: 'Lift into the model…', testid: 'menu-lift',
+    hint: props.selectionSize ? `${props.selectionSize} selected` : 'everything on this scratchpad' },
+])
+const choose = (id: string) => {
+  if (id === 'new-note') emit('new-note')
+  else if (id === 'add-existing') searching.value = true
+  else if (id === 'focus') emit('focus-area')
+  else if (id === 'lift') emit('lift')
 }
 </script>
 
@@ -74,77 +89,30 @@ const move = (step: number): void => {
     v-if="at"
     ref="root"
     class="menu"
-    role="menu"
-    tabindex="-1"
-    aria-label="Add to the canvas"
     data-testid="canvas-menu"
     :class="{ wide: searching }"
     :style="{ left: `${at.x}px`, top: `${at.y}px` }"
     @keydown.esc.stop="emit('close')"
-    @keydown.down.prevent="move(1)"
-    @keydown.up.prevent="move(-1)"
     @pointerdown.stop
     @contextmenu.prevent.stop
   >
-    <p class="heading">
-      {{ heading }}
-    </p>
-
-    <template v-if="!searching">
-      <button
-        type="button"
-        class="entry"
-        role="menuitem"
-        data-testid="menu-new-note"
-        @click="emit('new-note')"
-      >
-        New note
-        <span class="hint">or double-click</span>
-      </button>
-      <button
-        type="button"
-        class="entry"
-        role="menuitem"
-        data-testid="menu-add-existing"
-        @click="searching = true"
-      >
-        Add existing element…
-        <span class="hint">bind what the model already has</span>
-      </button>
-      <button
-        v-if="canFocus"
-        type="button"
-        class="entry"
-        role="menuitem"
-        data-testid="menu-focus"
-        @click="emit('focus-area')"
-      >
-        {{ focused ? 'Leave focus' : `Focus ${areaLabel}` }}
-        <span class="hint">{{
-          focused ? 'show the whole canvas again' : 'fit the view to it; the rest fades back'
-        }}</span>
-      </button>
-      <!-- Here rather than on a toolbar: lift acts on a selection made on the canvas, so the act
-           belongs beside the thing it acts on. -->
-      <button
-        type="button"
-        class="entry"
-        role="menuitem"
-        data-testid="menu-lift"
-        @click="emit('lift')"
-      >
-        Lift into the model…
-        <span class="hint">{{
-          selectionSize ? `${selectionSize} selected` : 'everything on this scratchpad'
-        }}</span>
-      </button>
-    </template>
+    <CanvasMenu
+      v-if="!searching"
+      :heading="heading"
+      label="Add to the canvas"
+      :items="items"
+      @choose="choose"
+      @close="emit('close')"
+    />
 
     <div
       v-else
       class="search"
       data-testid="menu-search"
     >
+      <p class="heading">
+        {{ heading }}
+      </p>
       <EntityPickerInput
         placeholder="Search the model by name or id…"
         widenable-to="none"
@@ -166,18 +134,12 @@ const move = (step: number): void => {
 .menu {
   position: absolute; z-index: 6; min-width: 220px; outline: none;
   background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.12); font-size: 12.5px;
+  box-shadow: var(--shadow); font-size: 12.5px;
 }
 .menu.wide { width: 380px; }
 .heading {
   margin: 2px 6px 6px; font-size: 11px; text-transform: uppercase;
   letter-spacing: .05em; color: var(--faint);
 }
-.entry {
-  display: block; width: 100%; text-align: left; border: none; background: none;
-  padding: 6px 8px; border-radius: 5px; cursor: pointer; color: var(--text); font-size: 12.5px;
-}
-.entry:hover, .entry:focus-visible { background: var(--soft); }
-.hint { display: block; color: var(--faint); font-size: 11px; }
 .scoped { margin: 6px 2px 0; color: var(--faint); font-size: 11px; }
 </style>

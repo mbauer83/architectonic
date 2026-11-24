@@ -109,7 +109,7 @@ test('undo on the sketching canvas takes the recorded operation back out of the 
   await page.getByTestId('sketch').click()
   const service = page.getByTestId('candidate-canvas').locator(`g.lab-element[data-alias="${SERVICE_ALIAS}"] .lab-grip`)
   await service.click({ button: 'right', force: true })
-  await page.getByRole('dialog', { name: 'element' }).getByRole('button', { name: 'Rename' }).click()
+  await page.getByRole('dialog', { name: 'element' }).getByRole('menuitem', { name: 'Rename' }).click()
   await page.getByRole('dialog', { name: 'rename' }).getByLabel('Name').fill('Promotion Review Service')
   await page.getByRole('button', { name: 'Keep rename' }).click()
   const operations = page.getByTestId('candidate-operations').locator('tr.oprow')
@@ -207,7 +207,7 @@ test('a rename on the sketching canvas is saved to the candidate, and renaming i
   const service = page.getByTestId('candidate-canvas').locator(`g.lab-element[data-alias="${SERVICE_ALIAS}"] .lab-grip`)
   const rename = async (name: string) => {
     await service.click({ button: 'right', force: true })
-    await page.getByRole('dialog', { name: 'element' }).getByRole('button', { name: 'Rename' }).click()
+    await page.getByRole('dialog', { name: 'element' }).getByRole('menuitem', { name: 'Rename' }).click()
     await page.getByRole('dialog', { name: 'rename' }).getByLabel('Name').fill(name)
     await page.getByRole('button', { name: 'Keep rename' }).click()
   }

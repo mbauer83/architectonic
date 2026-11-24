@@ -11,9 +11,11 @@ import { LEAST_TO_ALIGN, LEAST_TO_DISTRIBUTE } from '../../domain/layout/layoutI
 import { alignedSelection, distributedSelection, elementsOf } from '../../domain/layout/lab/labSelection'
 import type { DiagramEditing } from '../composables/useDiagramEditing'
 import type { CanvasWords } from './canvasWords'
+import CanvasMenu from './CanvasMenu.vue'
+import type { CanvasMenuItem } from './canvasMenu'
 
 const props = defineProps<{ editing: DiagramEditing; selection: readonly string[]; words: CanvasWords }>()
-const emit = defineEmits<{ done: [] }>()
+const emit = defineEmits<{ done: []; close: [] }>()
 
 const EDGES: readonly (readonly [AlignEdge, string])[] = [
   ['left', 'Left edges'], ['centre_x', 'Centres'], ['right', 'Right edges'],
@@ -40,74 +42,43 @@ const remove = () => {
   props.editing.remove(props.selection)
   emit('done')
 }
+
+const heading = computed(() => page.value === 'top' ? `${props.selection.length} selected`
+  : `${page.value === 'align' ? 'Align' : 'Distribute'} ${elements.value} elements`)
+const items = computed((): readonly CanvasMenuItem[] => {
+  if (page.value === 'align') {
+    return [...EDGES.map(([edge, name]) => ({ id: edge, label: name })), { id: 'back', label: '‹ Back', divider: true }]
+  }
+  if (page.value === 'distribute') {
+    return [...AXES.map(([axis, name]) => ({ id: axis, label: name, hint: 'equal gaps, the outer two stay' })),
+      { id: 'back', label: '‹ Back', divider: true }]
+  }
+  return [
+    { id: 'align', label: 'Align ▸', hint: 'left · centres · right · top · middles · bottoms',
+      disabled: elements.value < LEAST_TO_ALIGN },
+    ...elements.value >= LEAST_TO_DISTRIBUTE
+      ? [{ id: 'distribute', label: 'Distribute ▸', hint: 'horizontally · vertically' }] : [],
+    ...props.words.removeEntry
+      ? [{ id: 'remove', label: props.words.removeEntry, hint: props.words.removeHint, shortcut: props.words.removeKey,
+        divider: true }]
+      : [],
+  ]
+})
+const choose = (id: string) => {
+  if (id === 'back') page.value = 'top'
+  else if (id === 'align' || id === 'distribute') page.value = id
+  else if (id === 'remove') remove()
+  else if (page.value === 'align') align(id as AlignEdge)
+  else distribute(id as DistributeAxis)
+}
 </script>
 
 <template>
-  <div
-    class="selection-menu"
-    role="menu"
-    :aria-label="page === 'top' ? 'Selection' : page === 'align' ? 'Align' : 'Distribute'"
-  >
-    <template v-if="page === 'top'">
-      <strong>{{ selection.length }} selected</strong>
-      <button
-        role="menuitem"
-        :disabled="elements < LEAST_TO_ALIGN"
-        title="left · centres · right · top · middles · bottoms"
-        @click="page = 'align'"
-      >
-        Align ▸
-      </button>
-      <button
-        v-if="elements >= LEAST_TO_DISTRIBUTE"
-        role="menuitem"
-        title="horizontally · vertically"
-        @click="page = 'distribute'"
-      >
-        Distribute ▸
-      </button>
-      <button
-        v-if="words.removeEntry"
-        role="menuitem"
-        @click="remove"
-      >
-        {{ words.removeEntry }}
-      </button>
-    </template>
-    <template v-else>
-      <strong>{{ page === 'align' ? 'Align' : 'Distribute' }} {{ elements }} elements</strong>
-      <template v-if="page === 'align'">
-        <button
-          v-for="[edge, name] in EDGES"
-          :key="edge"
-          role="menuitem"
-          @click="align(edge)"
-        >
-          {{ name }}
-        </button>
-      </template>
-      <template v-else>
-        <button
-          v-for="[axis, name] in AXES"
-          :key="axis"
-          role="menuitem"
-          title="equal gaps, the outer two stay"
-          @click="distribute(axis)"
-        >
-          {{ name }}
-        </button>
-      </template>
-      <button
-        role="menuitem"
-        @click="page = 'top'"
-      >
-        ‹ Back
-      </button>
-    </template>
-  </div>
+  <CanvasMenu
+    :heading="heading"
+    :label="page === 'top' ? 'Selection' : page === 'align' ? 'Align' : 'Distribute'"
+    :items="items"
+    @choose="choose"
+    @close="emit('close')"
+  />
 </template>
-
-<style scoped>
-.selection-menu button,
-.selection-menu strong { display: block; margin-block: 0.25rem; }
-</style>

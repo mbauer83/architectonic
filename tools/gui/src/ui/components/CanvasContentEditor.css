@@ -1,26 +1,3 @@
-.canvas-pop {
-  position: fixed;
-  z-index: 100;
-  padding: 0.8rem;
-  width: 286px;
-  max-height: min(350px, 90vh);
-  overflow: auto;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: 0 5px 20px #0003;
-}
-.canvas-pop label,
-.canvas-pop button,
-.canvas-pop input,
-.canvas-pop select {
-  display: block;
-  margin-block: 0.25rem;
-}
-.close {
-  float: right;
-}
 .live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .content-canvas :deep(.lab-line path),
 .content-canvas :deep(.lab-line-label text) {
