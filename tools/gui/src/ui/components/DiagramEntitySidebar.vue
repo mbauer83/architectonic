@@ -6,7 +6,7 @@ import { entityDetailRoute, entityGraphRoute } from '../router/artifactRoutes'
  * a selected entity). All selection *state* is owned by `useDiagramSvgSelection` in the
  * parent view — this component only renders it and emits the click/edit intents back up.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { DiagramConnection, RenderedEntityDetail, DiagramContextEntity } from '../../domain'
 import type { DiagramViewerExtension } from '../lib/diagramViewerExtensions'
 import type { QueryHandle } from '../composables/useQuery'
@@ -51,6 +51,8 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   'select-entity': [id: string]
+  /** A row of the list chosen, by a click or by Enter in the find field. */
+  find: [id: string]
   'clear-connection': []
   'clear-sub-part': []
   'update:edgeLabelInput': [value: string]
@@ -59,6 +61,20 @@ const emit = defineEmits<{
   'entity-meta-save': [payload: { classifierId: string; patch: Record<string, unknown> }]
   'entity-edited': []
 }>()
+
+/** Find on this diagram (owner, Q21): the list narrowed to the names that contain what is typed. */
+const filter = ref('')
+const listed = computed(() => {
+  const wanted = filter.value.trim().toLowerCase()
+  return wanted ? props.entities.filter((entity) => entity.name.toLowerCase().includes(wanted)) : props.entities
+})
+const chooseFirst = () => { if (listed.value[0]) emit('find', listed.value[0].artifact_id) }
+/** Escape clears the text first and keeps the key (Q40); the selection waits for the next press. */
+const clearFilter = (event: KeyboardEvent) => {
+  if (!filter.value) return
+  event.stopPropagation()
+  filter.value = ''
+}
 
 /**
  * What the selected element says it corresponds to in the model.
@@ -96,18 +112,32 @@ const selectedIsDiagramOnly = computed(() => {
       class="sb-hdr"
     >
       <span class="sb-title">Entities</span>
-      <span class="sb-count">{{ entities.length }}</span>
+      <span class="sb-count">{{ filter ? `${listed.length} of ` : '' }}{{ entities.length }}</span>
+    </div>
+    <div
+      v-if="!listFolded"
+      class="sb-search"
+    >
+      <input
+        v-model="filter"
+        type="search"
+        placeholder="Find on this diagram…"
+        aria-label="Find an element on this diagram"
+        data-testid="diagram-find"
+        @keydown.enter.prevent="chooseFirst"
+        @keydown.esc="clearFilter"
+      >
     </div>
     <ul
       v-if="!listFolded"
       class="ent-list"
     >
       <li
-        v-for="e in entities"
+        v-for="e in listed"
         :key="e.artifact_id"
         class="ent-item"
         :class="{ 'ent--active': selectedId === e.artifact_id }"
-        @click="emit('select-entity', e.artifact_id)"
+        @click="emit('find', e.artifact_id)"
       >
         <span
           class="ent-glyph"

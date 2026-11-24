@@ -197,84 +197,87 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
     data-testid="layout-lab-canvas"
     @pointerdown="readonly ? gesture.clear() : sweep($event)"
   >
-    <LabDrawn
-      v-if="geometry"
-      class="lab-backdrop"
-      :nodes="geometry.backdrop"
-      :transform="backdropTransform"
-    />
+    <!-- The picture itself, without the marks and handles drawn over it: what the overview shows. -->
+    <g data-picture-drawing>
+      <LabDrawn
+        v-if="geometry"
+        class="lab-backdrop"
+        :nodes="geometry.backdrop"
+        :transform="backdropTransform"
+      />
 
-    <template
-      v-for="piece in pieces"
-      :key="piece.key"
-    >
-      <g
-        v-if="piece.kind === 'shape'"
-        :class="[piece.shape.isBox ? 'lab-box' : 'lab-element', { 'lab-carried': piece.shape.alias === carried }]"
-        :data-alias="piece.shape.alias"
-        data-painted="shape"
-        @pointerdown="readonly ? pick($event, piece.shape.alias) : pressShape($event, piece.shape.alias)"
+      <template
+        v-for="piece in pieces"
+        :key="piece.key"
       >
-        <LabDrawn
-          :nodes="[piece.shape.drawing.drawing]"
-          :transform="piece.shape.drawing.transform"
-        />
-        <rect
-          v-if="piece.shape.body"
-          class="lab-body"
-          :x="piece.shape.body.left"
-          :y="piece.shape.body.top"
-          :width="widthOf(piece.shape.body)"
-          :height="heightOf(piece.shape.body)"
-          @pointerdown="readonly ? pick($event, piece.shape.alias) : gesture.sweepFrom($event, piece.shape.alias)"
-        />
-        <rect
-          class="lab-grip"
-          :x="piece.shape.region.left"
-          :y="piece.shape.region.top"
-          :width="widthOf(piece.shape.region)"
-          :height="heightOf(piece.shape.region)"
-        />
-      </g>
-      <g
-        v-else-if="piece.kind === 'line'"
-        class="lab-line"
-        :data-relation="piece.relation"
-        data-painted="line"
-      >
-        <polyline
-          v-if="!readonly"
-          class="lab-line-hit"
-          :points="pointsAttribute(session.courses.value.get(piece.relation) ?? [])"
-          @pointerdown="lineGesture.pressLine($event, piece.relation)"
-        />
-        <LabDrawn
-          v-if="piece.drawn.asDrawn"
-          :nodes="[piece.drawn.asDrawn]"
-        />
-        <template v-else>
-          <LabDrawn :nodes="[piece.drawn.along.line]" />
+        <g
+          v-if="piece.kind === 'shape'"
+          :class="[piece.shape.isBox ? 'lab-box' : 'lab-element', { 'lab-carried': piece.shape.alias === carried }]"
+          :data-alias="piece.shape.alias"
+          data-painted="shape"
+          @pointerdown="readonly ? pick($event, piece.shape.alias) : pressShape($event, piece.shape.alias)"
+        >
           <LabDrawn
-            v-for="(end, side) in piece.drawn.along.ends"
-            :key="side"
-            :nodes="end.marks"
-            :transform="end.transform"
+            :nodes="[piece.shape.drawing.drawing]"
+            :transform="piece.shape.drawing.transform"
           />
-        </template>
-      </g>
-      <g
-        v-else
-        :class="['lab-line-label', { 'lab-line-label--movable': !readonly }]"
-        :data-relation="piece.relation"
-        data-painted="label"
-        @pointerdown="readonly || lineGesture.pressLabel($event, piece.relation)"
-      >
-        <LabDrawn
-          :nodes="piece.label.texts"
-          :transform="piece.label.transform"
-        />
-      </g>
-    </template>
+          <rect
+            v-if="piece.shape.body"
+            class="lab-body"
+            :x="piece.shape.body.left"
+            :y="piece.shape.body.top"
+            :width="widthOf(piece.shape.body)"
+            :height="heightOf(piece.shape.body)"
+            @pointerdown="readonly ? pick($event, piece.shape.alias) : gesture.sweepFrom($event, piece.shape.alias)"
+          />
+          <rect
+            class="lab-grip"
+            :x="piece.shape.region.left"
+            :y="piece.shape.region.top"
+            :width="widthOf(piece.shape.region)"
+            :height="heightOf(piece.shape.region)"
+          />
+        </g>
+        <g
+          v-else-if="piece.kind === 'line'"
+          class="lab-line"
+          :data-relation="piece.relation"
+          data-painted="line"
+        >
+          <polyline
+            v-if="!readonly"
+            class="lab-line-hit"
+            :points="pointsAttribute(session.courses.value.get(piece.relation) ?? [])"
+            @pointerdown="lineGesture.pressLine($event, piece.relation)"
+          />
+          <LabDrawn
+            v-if="piece.drawn.asDrawn"
+            :nodes="[piece.drawn.asDrawn]"
+          />
+          <template v-else>
+            <LabDrawn :nodes="[piece.drawn.along.line]" />
+            <LabDrawn
+              v-for="(end, side) in piece.drawn.along.ends"
+              :key="side"
+              :nodes="end.marks"
+              :transform="end.transform"
+            />
+          </template>
+        </g>
+        <g
+          v-else
+          :class="['lab-line-label', { 'lab-line-label--movable': !readonly }]"
+          :data-relation="piece.relation"
+          data-painted="label"
+          @pointerdown="readonly || lineGesture.pressLabel($event, piece.relation)"
+        >
+          <LabDrawn
+            :nodes="piece.label.texts"
+            :transform="piece.label.transform"
+          />
+        </g>
+      </template>
+    </g>
 
     <LabBreachMarks
       v-if="showBreaches"

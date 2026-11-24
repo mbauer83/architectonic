@@ -15,6 +15,9 @@ import type { Ref } from 'vue'
 import type { ModelService } from '../../application/ModelService'
 import { SMALLEST_ELEMENT, movedTogether, resized, resizedExtent } from '../../domain/layout/lab/labArrangement'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
+import type { Extent } from '../../domain/layout/geometry'
+import { extentOfMarks, type OverviewMark } from '../lib/diagramOverview'
+import { useEditPanel } from './useEditPanel'
 import { useDiagramEditing } from './useDiagramEditing'
 
 /** How far an arrow moves or resizes a shape: the grid, or one pixel with Shift. */
@@ -48,7 +51,11 @@ const isTyping = (target: EventTarget | null): boolean =>
 export function useDiagramEditMode(
   svc: ModelService,
   diagramId: Ref<string>,
-  parts: { canvas: Ref<CanvasHandle | null>; bar: Ref<EditBarHandle | null>; membership: () => DrawnMembership | null },
+  parts: {
+    canvas: Ref<CanvasHandle | null>; bar: Ref<EditBarHandle | null>; membership: () => DrawnMembership | null
+    /** Show a part of the picture in the window (`F`); and whether the diagram is too large to see whole. */
+    frame: (extent: Extent) => void; large: () => boolean
+  },
   onLeft: () => void,
   toast: Toast,
 ) {
@@ -58,10 +65,21 @@ export function useDiagramEditMode(
   const spaceHeld = ref(false)
   const told = new Set<string>()
   const session = editing.session
+  const panel = useEditPanel(parts.large)
+
+  /** The shapes selected, where they are now: what the overview marks and `F` frames. */
+  const marks = computed((): OverviewMark[] => {
+    const where = session.placement.value
+    return where ? (parts.canvas.value?.selection ?? []).flatMap((alias) => {
+      const extent = where.elements.get(alias) ?? where.boxes.get(alias)
+      return extent ? [{ id: alias, extent, selected: true }] : []
+    }) : []
+  })
+  const selectionExtent = computed(() => extentOfMarks(marks.value))
 
   const enter = async () => {
     leaving.value = false
-    if (await editing.open()) active.value = true
+    if (await editing.open()) { active.value = true; panel.opened() }
     else {
       const why = editing.error.value ?? 'its picture could not be read'
       toast(`This diagram cannot be arranged here: ${why}`, 'error')
@@ -130,6 +148,9 @@ export function useDiagramEditMode(
     } else if (event.key in ARROWS && parts.canvas.value?.selection.length) {
       event.preventDefault()
       nudge(parts.canvas.value.selection, ARROWS[event.key], event.shiftKey ? 1 : GRID, event.altKey)
+    } else if (key === 'f' && !command && selectionExtent.value) {
+      event.preventDefault()
+      parts.frame(selectionExtent.value)
     } else if (event.key === ' ') {
       event.preventDefault()
       spaceHeld.value = true
@@ -166,7 +187,7 @@ export function useDiagramEditMode(
   })
 
   return {
-    editing, session, active, leaving, spaceHeld,
+    editing, session, active, leaving, spaceHeld, panel, marks,
     canUndo: computed(() => session.history.value.length > 0),
     canRedo: computed(() => session.future.value.length > 0),
     enter, done, saveAndExit, discardAndExit, keepEditing, panPress,

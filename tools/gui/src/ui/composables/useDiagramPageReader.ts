@@ -9,6 +9,8 @@ import type { useFittedPanZoom } from './useFittedPanZoom'
 import { useDiagramReader } from './useDiagramReader'
 import { useReadingAddress } from './useReadingAddress'
 import { useReadingKeyboard } from './useReadingKeyboard'
+import { drawnExtentOf } from '../lib/svgExtent'
+import { extentOfMarks, type OverviewMark } from '../lib/diagramOverview'
 
 /**
  * The diagram reader as the diagram page mounts it: the reading (`useDiagramReader`), its address
@@ -38,7 +40,26 @@ export function useDiagramPageReader(options: {
     for (const id of ids.slice(1)) selection.selectEntity(id, true)
   }
 
-  const frame = () => { const extent = reader.readingExtent(); if (extent) panZoom.frame(extent) }
+  const drawnAt = (id: string) => drawnExtentOf(selection.nodeElements.value.get(id) ?? [])
+
+  /** Find an element (owner, Q21): select it and glide the window to it at a size it reads at. */
+  const find = (id: string) => {
+    selection.selectEntity(id)
+    const extent = drawnAt(id)
+    if (extent) panZoom.goTo(extent)
+  }
+
+  /** Where the reading is, for the overview to mark and for its names to be written over a small picture. */
+  const marks = computed((): OverviewMark[] => {
+    const focus = new Set(reader.focus.value)
+    const ids = [...focus, ...reader.reached.value.incoming, ...reader.reached.value.outgoing]
+    return [...new Set(ids)].flatMap((id) => {
+      const extent = drawnAt(id)
+      return extent ? [{ id, extent, selected: focus.has(id), name: entityById.value.get(id)?.name ?? id }] : []
+    })
+  })
+  /** `F`: the window fitted to the reading, the same elements the overview marks. */
+  const frame = () => { const extent = extentOfMarks(marks.value); if (extent) panZoom.frame(extent) }
   const address = useReadingAddress({
     route: options.route, router: options.router,
     ready: computed(() => options.viewing.value && selection.nodeElements.value.size > 0),
@@ -92,7 +113,7 @@ export function useDiagramPageReader(options: {
     : {}))
 
   return {
-    reading: reader.reading, panel, hostAttributes, onKeydown: keyboard.onKeydown,
+    reading: reader.reading, panel, hostAttributes, onKeydown: keyboard.onKeydown, find, marks,
     /** What the Reading panel asks for, by its event names. */
     panelEvents: {
       'update:reach': (reach: typeof reader.reach.value) => { reader.reach.value = reach },

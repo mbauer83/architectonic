@@ -3,13 +3,11 @@ import { Effect, Exit } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type { DiagramContext } from '../../domain'
 import type { DerivedNeighbor } from '../../domain/schemas/entities'
-import type { Extent } from '../../domain/layout/geometry'
 import { DEFAULT_REACH, reachOf, type Reach, type ReadingRelation } from '../../domain/diagramReading'
 import { derivedOf, notDrawnOf } from '../../domain/diagramReadingLists'
-import { unionOf } from '../../domain/layout/geometry'
 import { paintReading, type FlowOf } from '../lib/diagramReadingPaint'
-import { pictureExtentOf } from '../lib/svgExtent'
 import { onReducedMotionChange, readerPrefersReducedMotion } from '../lib/motionPreference'
+import { rememberFlag, rememberedFlag } from '../lib/rememberedFlag'
 
 /** What the reader needs of the picture's selection: the selected entities and what everything is drawn as. */
 export interface ReaderSelection {
@@ -21,10 +19,6 @@ export interface ReaderSelection {
 
 /** The flow toggle is remembered per browser: a reader who wants it on wants it on everywhere. */
 const FLOW_KEY = 'arch_diagram_reading_flow'
-const remembered = (): boolean => { try { return localStorage.getItem(FLOW_KEY) === '1' } catch { return false } }
-const remember = (on: boolean): void => {
-  try { localStorage.setItem(FLOW_KEY, on ? '1' : '0') } catch { /* storage refused: remembered for this page only */ }
-}
 
 /**
  * The diagram reader (B97) on a diagram page in view mode: select, and the rest steps back.
@@ -45,7 +39,7 @@ export function useDiagramReader(options: {
 }) {
   const { svc, context, viewing, selection } = options
   const reach = ref<Reach>(DEFAULT_REACH)
-  const flowOn = ref(remembered())
+  const flowOn = ref(rememberedFlag(FLOW_KEY) ?? false)
   const reducedMotion = ref(readerPrefersReducedMotion())
   onUnmounted(onReducedMotionChange((reduced) => { reducedMotion.value = reduced }))
 
@@ -118,24 +112,15 @@ export function useDiagramReader(options: {
     paintReading(svg, selection.nodeElements.value, selection.edgeElements.value, paint)
   }, { flush: 'post' })
 
-  /** The part of the picture the reading covers: the selection and what it reaches. */
-  const readingExtent = (): Extent | null => {
-    const ids = [...focus.value, ...reached.value.incoming, ...reached.value.outgoing]
-    const extents = ids.flatMap((id) => selection.nodeElements.value.get(id) ?? [])
-      .flatMap((element) => pictureExtentOf(element) ?? [])
-      .filter((extent) => extent.right > extent.left || extent.bottom > extent.top)
-    return extents.length > 0 ? unionOf(extents) : null
-  }
-
   return {
-    reach, reading, focus, reached, notDrawn, derived, readingExtent,
+    reach, reading, focus, reached, notDrawn, derived,
     flowOn: computed(() => flowOn.value),
     reducedMotion: computed(() => reducedMotion.value),
     /** Latch the flow on or off. Unavailable under reduced motion, where the arrowheads carry direction. */
     toggleFlow: () => {
       if (reducedMotion.value) return
       flowOn.value = !flowOn.value
-      remember(flowOn.value)
+      rememberFlag(FLOW_KEY, flowOn.value)
     },
   }
 }

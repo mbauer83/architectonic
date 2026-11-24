@@ -3,7 +3,8 @@ import { usePanTranslateStyle } from './usePanCanvasStyle'
 import { usePanGesture } from './usePanGesture'
 import { useWheelZoom } from './useWheelZoom'
 import type { ReadingView } from '../../domain/diagramReading'
-import type { Extent } from '../../domain/layout/geometry'
+import type { Extent, Point } from '../../domain/layout/geometry'
+import { motionAllowed } from '../lib/motionPreference'
 
 /**
  * Fit-to-viewport framing for a rendered SVG inside `containerRef`, with `svgContainer` pointing at
@@ -16,6 +17,11 @@ import type { Extent } from '../../domain/layout/geometry'
  * two apart is what stops fit-to-content becoming a second mode of one composable, switched by a
  * flag — the gestures they genuinely share now live in one place instead.
  */
+/** How long a glide to another part of the picture takes. */
+const GLIDE_MS = 340
+/** The scale a part of the picture is shown at when it is gone to: its text at a size that reads. */
+const READABLE = 0.7
+
 export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgContainer: Ref<HTMLElement | null>) {
   const scale = ref(1)
   const tx = ref(0)
@@ -52,6 +58,11 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     // PlantUML also states the size inline, and an inline style beats the attributes.
     svgEl.style.width = `${width}px`
     svgEl.style.height = `${height}px`
+    // And no cap of the canvas's own may shrink it below that: the edit canvas states a `max-height`
+    // for use outside a viewport, and here it drew the picture smaller than the scale every window
+    // reading (the overview, framing, revealing) reckons with.
+    svgEl.style.maxWidth = 'none'
+    svgEl.style.maxHeight = 'none'
   }
 
   // Every zoom is a resize of the SVG. Watched rather than done at the two call sites, so a future
@@ -156,14 +167,68 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     ty.value = rect.height / 2 - (view.y - origin.y) * scale.value
   }
 
-  /** Fit the window to a part of the picture, never closer than its natural size. */
-  const frame = (extent: Extent, padding = 40) => {
+  /** A picture point's place in the window, in pixels from the window's top left. */
+  const toWindow = (point: Point): Point => {
+    const origin = pictureOrigin()
+    return { x: tx.value + (point.x - origin.x) * scale.value, y: ty.value + (point.y - origin.y) * scale.value }
+  }
+
+  /** The part of the picture a window of *width* × *height* pixels shows. */
+  const windowExtent = (width: number, height: number): Extent => {
+    const origin = pictureOrigin()
+    const left = origin.x - tx.value / scale.value
+    const top = origin.y - ty.value / scale.value
+    return { left, top, right: left + width / scale.value, bottom: top + height / scale.value }
+  }
+
+  /**
+   * Move the window to the one a reading names, travelling there over a third of a second so the
+   * reader sees where it went; at once where motion is not allowed. A later move replaces this one.
+   */
+  let gliding = 0
+  const stopGliding = () => { if (gliding) cancelAnimationFrame(gliding); gliding = 0 }
+  const glide = (view: ReadingView, ms = GLIDE_MS) => {
+    const from = windowView()
+    stopGliding()
+    if (!from || !motionAllowed()) { showView(view); return }
+    const start = performance.now()
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / ms)
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
+      showView({
+        x: from.x + (view.x - from.x) * eased,
+        y: from.y + (view.y - from.y) * eased,
+        // The zoom travels evenly in ratio, not in percent, so zooming in reads as smooth as zooming out.
+        percent: from.percent * (view.percent / from.percent) ** eased,
+      })
+      gliding = t < 1 ? requestAnimationFrame(step) : 0
+    }
+    gliding = requestAnimationFrame(step)
+  }
+
+  /** A part of the picture's centre, and the scale at which it just fits the window inside *padding*. */
+  const fitting = (extent: Extent, padding: number): { x: number; y: number; fits: number } | null => {
     const rect = containerRef.value?.getBoundingClientRect()
     const width = extent.right - extent.left
     const height = extent.bottom - extent.top
-    if (!rect || width <= 0 || height <= 0) return
-    const fitted = Math.min((rect.width - padding * 2) / width, (rect.height - padding * 2) / height, 1)
-    showView({ x: extent.left + width / 2, y: extent.top + height / 2, percent: Math.max(fitted, 0.05) * 100 })
+    if (!rect || width <= 0 || height <= 0) return null
+    const fits = Math.min((rect.width - padding * 2) / width, (rect.height - padding * 2) / height)
+    return { x: extent.left + width / 2, y: extent.top + height / 2, fits: Math.max(fits, 0.05) }
+  }
+
+  /** Fit the window to a part of the picture, never closer than its natural size. */
+  const frame = (extent: Extent, padding = 40) => {
+    const at = fitting(extent, padding)
+    if (at) showView({ x: at.x, y: at.y, percent: Math.min(at.fits, 1) * 100 })
+  }
+
+  /**
+   * Glide to a part of the picture and show it at a size it can be read at: never smaller than
+   * `READABLE`, closer only if the window already was, and farther only as far as the part needs to fit.
+   */
+  const goTo = (extent: Extent, padding = 40) => {
+    const at = fitting(extent, padding)
+    if (at) glide({ x: at.x, y: at.y, percent: Math.min(Math.max(scale.value, READABLE), at.fits) * 100 })
   }
 
   /** Move the window by the least that brings a part of the picture *margin* pixels inside it. */
@@ -189,10 +254,10 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     resizeObserver.observe(el)
   })
 
-  onUnmounted(() => resizeObserver?.disconnect())
+  onUnmounted(() => { resizeObserver?.disconnect(); stopGliding() })
 
   return {
-    scale, tx, ty, canvasStyle, isTransformed, onMouseDown, resetView, fitDiagramToViewport,
-    windowView, showView, frame, reveal,
+    scale, tx, ty, fitScale, canvasStyle, isTransformed, onMouseDown, resetView, fitDiagramToViewport,
+    windowView, showView, glide, goTo, frame, reveal, toWindow, windowExtent,
   }
 }

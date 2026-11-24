@@ -303,6 +303,7 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
             :edge-label-error="selection.edgeLabelMutation.errorMessage.value"
             :witness-chain="witnessChainDisplay"
             @select-entity="selection.selectEntity($event)"
+            @find="selection.selectEntity($event)"
             @clear-connection="selection.clearConnection()"
             @clear-sub-part="selection.clearSubPart()"
             @update:edge-label-input="selection.edgeLabelInput.value = $event"
