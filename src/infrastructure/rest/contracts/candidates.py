@@ -190,3 +190,20 @@ class AnalysisIncidence(Closed):
     adaptations: list[Fields]
     incidence: list[Fields]
     coupling: list[CouplingPair]
+
+
+class CandidateApply(Closed):
+    """Write a candidate's operations onto the model; a dry run answers what would be written."""
+
+    dry_run: bool = True
+
+
+class CandidateApplication(NullsOmitted):
+    candidate: str
+    dry_run: bool
+    integrated: bool = Field(description="Whether the operations were written and the candidate integrated.")
+    refusal: str | None = Field(None, description="Why the candidate cannot be applied, in the refusing rule's words.")
+    operation_id: str | None = Field(None, description="The write's operation, when one ran.")
+    standing: list[OperationStanding] = Field(
+        description="Each operation's standing; those already there are skipped, the rest are written.",
+    )

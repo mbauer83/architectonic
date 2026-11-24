@@ -1312,6 +1312,29 @@ export interface paths {
         patch: operations["changes_edit_candidate"];
         trace?: never;
     };
+    "/api/change-sets/{artifact_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply a candidate's operations to the model in one write
+         * @description Refused with 409 while an operation conflicts or has drifted; operations already there are skipped.
+         *
+         *     All operations land or none do. On success the candidate is integrated. A dry run answers the
+         *     refusal instead of raising it.
+         */
+        post: operations["changes_apply_candidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/change-sets/{artifact_id}/diff": {
         parameters: {
             query?: never;
@@ -5831,6 +5854,44 @@ export interface components {
              * @enum {string}
              */
             severity: "ontology" | "entity-id";
+        };
+        /** CandidateApplication */
+        CandidateApplication: {
+            /** Candidate */
+            candidate: string;
+            /** Dry Run */
+            dry_run: boolean;
+            /**
+             * Integrated
+             * @description Whether the operations were written and the candidate integrated.
+             */
+            integrated: boolean;
+            /**
+             * Operation Id
+             * @description The write's operation, when one ran.
+             */
+            operation_id?: string;
+            /**
+             * Refusal
+             * @description Why the candidate cannot be applied, in the refusing rule's words.
+             */
+            refusal?: string;
+            /**
+             * Standing
+             * @description Each operation's standing; those already there are skipped, the rest are written.
+             */
+            standing: components["schemas"]["OperationStanding"][];
+        };
+        /**
+         * CandidateApply
+         * @description Write a candidate's operations onto the model; a dry run answers what would be written.
+         */
+        CandidateApply: {
+            /**
+             * Dry Run
+             * @default true
+             */
+            dry_run: boolean;
         };
         /** CandidateComparison */
         CandidateComparison: {
@@ -18281,6 +18342,95 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CandidateResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_apply_candidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateApply"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateApplication"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */

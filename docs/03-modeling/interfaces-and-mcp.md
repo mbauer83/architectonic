@@ -101,6 +101,7 @@ looking entirely normal. See
 | Other | `artifact_rebase_change` | Write | Bring a local change onto the enterprise artifact as it stands now, naming it by its own artifact_id (from artifact_list_changes). |
 | Other | `artifact_submit_changes` | Write | Submit local changes for review upstream, naming them by their own artifact_ids (from artifact_list_changes) in the order they are to be replayed. |
 | Other | `artifact_viewpoint` | Destructive | Create/edit/delete a ViewpointDefinition in the engagement repo's own catalog — the same validate/persist path a GUI builder's save flow uses. |
+| Other | `change_set_apply` | Destructive | Write a candidate's operations onto the model in one transaction, all or none, and mark it integrated; refused while one conflicts or has drifted. |
 | Other | `change_set_create` | Write | Create an engagement candidate with a name and optional parent, scope, operations or scope diagram. |
 | Other | `change_set_delete` | Destructive | Delete a candidate; refused while another candidate stacks on it or an analysis starts from it. |
 | Other | `change_set_edit` | Destructive | Patch the named candidate fields using the version returned by the last read. |

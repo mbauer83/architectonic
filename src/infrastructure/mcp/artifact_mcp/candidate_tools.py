@@ -72,6 +72,11 @@ def change_set_rebase(artifact_id: str, based_on: str, repo_root: str | None = N
     return _service(repo_root).rebase(artifact_id, based_on)
 
 
+def change_set_apply(artifact_id: str, dry_run: bool = True, repo_root: str | None = None) -> dict[str, Any]:
+    """Write a candidate's operations onto the model in one transaction, all or none, and mark it integrated; refused while one conflicts or has drifted."""  # noqa: E501
+    return _service(repo_root).apply(artifact_id, dry_run=dry_run)
+
+
 def analysis_start(
     title: str,
     naive: dict[str, Any],
@@ -117,7 +122,9 @@ def register_candidate_read_tools(mcp: MCPServer) -> None:
 
 
 def register_candidate_write_tools(mcp: MCPServer) -> None:
-    for tool in (change_set_create, change_set_edit, change_set_rebase, change_set_delete, analysis_start):
+    for tool in (
+        change_set_create, change_set_edit, change_set_rebase, change_set_apply, change_set_delete, analysis_start,
+    ):
         register_mutation_tool(
             mcp,
             tool,

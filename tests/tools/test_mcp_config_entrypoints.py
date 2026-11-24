@@ -252,6 +252,8 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "change_set_edit": (False, True, False, False),
         # Rewrites the base of each drifted operation, so what the candidate held before is replaced.
         "change_set_rebase": (False, True, False, False),
+        # Writes the candidate's operations, removals among them, onto the model.
+        "change_set_apply": (False, True, False, False),
         "change_set_delete": (False, True, False, False),
         # Creates a candidate and a document, and nothing else.
         "analysis_start": (False, False, False, False),

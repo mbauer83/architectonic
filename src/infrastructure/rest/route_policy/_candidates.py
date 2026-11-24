@@ -12,6 +12,8 @@ CANDIDATE_ROWS = (
              identity_parameters=("artifact_id",), mutation_domain="repository"),
     RouteRow("DELETE", "/api/change-sets/{artifact_id}", "detail", "changes_delete_candidate", BODYLESS,
              identity_parameters=("artifact_id",), mutation_domain="repository"),
+    RouteRow("POST", "/api/change-sets/{artifact_id}/apply", "operation", "changes_apply_candidate", TYPED,
+             identity_parameters=("artifact_id",), mutation_domain="repository"),
     RouteRow("POST", "/api/change-sets/{artifact_id}/rebase", "operation", "changes_rebase_candidate", TYPED,
              identity_parameters=("artifact_id",), mutation_domain="repository"),
     RouteRow("POST", "/api/change-sets/{artifact_id}/operations", "subresource", "changes_record_operation", TYPED,
