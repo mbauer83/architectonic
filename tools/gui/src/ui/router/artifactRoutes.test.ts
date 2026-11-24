@@ -7,6 +7,8 @@ import {
   assuranceAnalysisMethodRoute,
   assuranceNodeDetailRoute,
   assuranceVulnerabilityRoute,
+  candidateDetailRoute,
+  candidateListRoute,
   diagramDetailRoute,
   diagramEditRoute,
   encodeIdentitySegment,
@@ -46,6 +48,11 @@ describe('canonical route builders', () => {
   it('addresses a diagram and its edit surface by path', () => {
     expect(diagramDetailRoute('CC@1.xy.map')).toBe('/diagrams/CC%401.xy.map')
     expect(diagramEditRoute('CC@1.xy.map')).toBe('/diagrams/CC%401.xy.map/edit')
+  })
+
+  it('addresses a candidate architecture by path, beside the list of them', () => {
+    expect(candidateListRoute()).toBe('/candidates')
+    expect(candidateDetailRoute('CAND@1.ab.queue')).toBe('/candidates/CAND%401.ab.queue')
   })
 
   it('addresses a viewpoint projection by the viewpoint slug', () => {

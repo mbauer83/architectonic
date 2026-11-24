@@ -11,21 +11,22 @@ import { modelServiceKey, toastKey } from '../keys'
 import { stableEntityId } from '../../domain/artifactId'
 import type { WorkspaceTab } from '../../domain/stressAnalysis/analysisProgress'
 import { cell } from '../../domain/stressAnalysis/analysisRows'
-import type { Marks } from '../../domain/stressAnalysis/workspaceMarks'
-import { diffMarks, framedMarks, hitMarks } from '../../domain/stressAnalysis/workspaceMarks'
+import type { Marks } from '../../domain/candidates/canvasMarks'
+import { diffMarks, framedMarks } from '../../domain/candidates/canvasMarks'
+import { hitMarks } from '../../domain/stressAnalysis/workspaceMarks'
 import { documentDetailRoute } from '../router/artifactRoutes'
 import { useStressAnalysis } from '../composables/useStressAnalysis'
 import { useAnalysisEdits } from '../composables/useAnalysisEdits'
 import { useCandidates } from '../composables/useCandidates'
-import WorkspaceCanvas from '../components/stressWorkspace/WorkspaceCanvas.vue'
+import MarkedCanvas from '../components/candidates/MarkedCanvas.vue'
 import WhatIsLeft from '../components/stressWorkspace/WhatIsLeft.vue'
 import StressorsTab from '../components/stressWorkspace/StressorsTab.vue'
 import EndStatesTab from '../components/stressWorkspace/EndStatesTab.vue'
 import AdaptationsTab from '../components/stressWorkspace/AdaptationsTab.vue'
 import IntegrationTab from '../components/stressWorkspace/IntegrationTab.vue'
-import CandidateOperations from '../components/stressWorkspace/CandidateOperations.vue'
-import CandidateCanvas from '../components/stressWorkspace/CandidateCanvas.vue'
-import ModelMovedBanner from '../components/stressWorkspace/ModelMovedBanner.vue'
+import CandidateOperations from '../components/candidates/CandidateOperations.vue'
+import CandidateCanvas from '../components/candidates/CandidateCanvas.vue'
+import ModelMovedBanner from '../components/candidates/ModelMovedBanner.vue'
 
 const svc = inject(modelServiceKey)!
 const toast = inject(toastKey, () => undefined)
@@ -34,7 +35,9 @@ const router = useRouter()
 const documentId = computed(() => String(route.params.artifactId))
 const analysis = useStressAnalysis(svc, () => documentId.value)
 const edits = useAnalysisEdits(analysis, toast)
-const candidates = useCandidates(svc, () => analysis.naiveId.value, () => analysis.scopeDiagram.value)
+const candidates = useCandidates(svc, {
+  root: () => analysis.naiveId.value, scopeDiagram: () => analysis.scopeDiagram.value,
+})
 
 const TABS: readonly WorkspaceTab[] = ['naive', 'stressors', 'end-states', 'adaptations', 'integration']
 const tab = computed<WorkspaceTab>({
@@ -47,7 +50,7 @@ const tabs = computed(() => [
   { id: 'end-states' as const, label: 'End states', count: String(analysis.endStates.value.length) },
   {
     id: 'adaptations' as const, label: 'Adaptations',
-    count: String(Math.max(candidates.inAnalysis.value.length - 1, 0)),
+    count: String(Math.max(candidates.inStack.value.length - 1, 0)),
   },
   { id: 'integration' as const, label: 'Integration', count: '' },
 ])
@@ -126,7 +129,7 @@ const openRow = (target: WorkspaceTab, row: string) => {
 watch([tab, () => analysis.naiveId.value, () => candidates.all.value], async ([now, naive]) => {
   framed.value = null
   if (now === 'naive' && naive) await candidates.select(naive)
-  const first = candidates.inAnalysis.value.find((one) => one.id !== naive)
+  const first = candidates.inStack.value.find((one) => one.id !== naive)
   if (now === 'adaptations' && first && (!candidates.selected.value || candidates.selected.value === naive)) {
     await candidates.select(first.id)
   }
@@ -140,7 +143,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="stress-ws page">
+  <div class="workbench page">
     <div class="page-hdr">
       <RouterLink
         class="back"
@@ -208,7 +211,7 @@ onMounted(async () => {
         <CandidateOperations
           v-if="tab === 'naive' && candidates.selected.value === analysis.naiveId.value"
           :candidates="candidates"
-          :naive-id="analysis.naiveId.value"
+          role="naive architecture · the initial candidate"
           :name-of="analysis.nameOf"
           @frame="framed = $event && stableEntityId($event)"
           @sketch="sketching = $event"
@@ -262,12 +265,13 @@ onMounted(async () => {
           @recorded="recorded"
           @done="doneSketching"
         />
-        <WorkspaceCanvas
+        <MarkedCanvas
           v-else
           :diagram-id="analysis.scopeDiagram.value"
           :drawing="drawing"
           :marks="marks"
           :hint="hint"
+          empty-text="No diagram to draw: this analysis has no scope diagram."
           @pick="pick"
         />
         <p
@@ -297,4 +301,4 @@ onMounted(async () => {
 .legend { font-size: 11.5px; color: var(--text-2); margin: 4px 2px; }
 @media (max-width: 1100px) { .ws { grid-template-columns: minmax(0, 1fr); } }
 </style>
-<style src="../components/stressWorkspace/workspace.css"></style>
+<style src="../components/candidates/workbench.css"></style>

@@ -9,7 +9,7 @@
 import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
 import type { DiagramContext } from '../../../domain'
-import type { Marks } from '../../../domain/stressAnalysis/workspaceMarks'
+import type { Marks } from '../../../domain/candidates/canvasMarks'
 import { stableEntityId } from '../../../domain/artifactId'
 import { modelServiceKey } from '../../keys'
 import { formatEffectError } from '../../lib/errors'
@@ -20,7 +20,7 @@ import { useFittedPanZoom } from '../../composables/useFittedPanZoom'
 import CanvasContentEditor from '../CanvasContentEditor.vue'
 import { CANDIDATE_WORDS } from '../canvasWords'
 import LayoutLabCanvas from '../layoutLab/LayoutLabCanvas.vue'
-import WorkspaceMarksLayer from './WorkspaceMarksLayer.vue'
+import CanvasMarksLayer from './CanvasMarksLayer.vue'
 
 /** *changed*: the candidate against its base, as the operations table reads it (~ and − on model elements). */
 const props = defineProps<{ candidateId: string; name: string; role: string; diagramId: string; changed: Marks }>()
@@ -152,7 +152,7 @@ onMounted(async () => {
               ref="canvas"
               :session="editing.session"
             >
-              <WorkspaceMarksLayer
+              <CanvasMarksLayer
                 :session="editing.session"
                 :entity-of="entityOf"
                 :marks="marks"

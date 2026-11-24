@@ -59,6 +59,10 @@ export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>>
   'ui/views/AssuranceBrowseView.vue#node_id': 'presentation',
   // Which of the workspace's tables is open: the analysis is the same whichever tab shows it.
   'ui/views/StressWorkspaceView.vue#tab': 'presentation',
+  // The diagram a candidate is drawn and sketched on: the candidate is the same on any diagram.
+  'ui/views/CandidateArchitectureView.vue#diagram': 'presentation',
+  // Carried whole to a candidate stacked on the one being read, so it opens on the same diagram.
+  'ui/views/CandidateArchitectureView.vue#*': 'presentation',
   // The diagram reader's reading — `focus`, `reach`, `view` — so a reading is a link. What is being
   // looked at on the one diagram the path addresses, not which diagram: the page is the same without it.
   'ui/composables/useReadingAddress.ts#*': 'presentation',

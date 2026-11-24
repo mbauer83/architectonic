@@ -1,24 +1,23 @@
 <script setup lang="ts">
 /**
  * One candidate's operations against the base chosen in *against* (06·6, F15, Q39): the same component
- * on the Naive architecture tab and the Adaptations tab. The canvas marks the same comparison; a row
+ * on the candidate page and on a stress analysis's Naive architecture and Adaptations tabs; *role* is
+ * what its reader calls the candidate. The canvas marks the same comparison; a row
  * selected here frames its element there. A row's card shows the element's fields, base against
  * candidate: changed rows highlighted with the base struck through, unchanged rows greyed.
  */
 import { computed, ref } from 'vue'
 import type { ChangeDifference } from '../../../domain/schemas/candidates'
-import { chosenIds } from '../../../domain/stressAnalysis/candidateCanvas'
-import { chainOf, stackLine } from '../../../domain/stressAnalysis/candidateStack'
+import { chosenIds } from '../../../domain/candidates/candidateCanvas'
+import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
 
-const props = defineProps<{ candidates: Candidates; naiveId: string; nameOf: (id: string) => string }>()
+const props = defineProps<{ candidates: Candidates; role: string; nameOf: (id: string) => string }>()
 const emit = defineEmits<{ frame: [target: string | null]; sketch: [id: string] }>()
 
 const summary = computed(() =>
   props.candidates.all.value.find((one) => one.id === props.candidates.selected.value) ?? null)
 const comparison = computed(() => props.candidates.comparison.value)
-const role = computed(() =>
-  summary.value?.id === props.naiveId ? 'naive architecture · the initial candidate' : 'adaptation')
 const onBranch = computed(() => {
   const id = summary.value?.id
   const base = props.candidates.against.value
@@ -26,7 +25,7 @@ const onBranch = computed(() => {
 })
 
 const entityFields = computed(() => new Map((comparison.value?.view.entities ?? []).map((one) => [one.id, one.fields])))
-/** An element by name: as this candidate composes it, else as the naive architecture has it. */
+/** An element by name: as this candidate composes it, else as its reader names it. */
 const nameIn = (id: string): string => {
   const named = entityFields.value.get(id)?.name
   return typeof named === 'string' ? named : props.nameOf(id)

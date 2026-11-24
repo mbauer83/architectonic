@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
- * The workspace's marks, drawn inside the diagram canvas over the elements they are about: what steps
- * back, what the focus hits, what a candidate changed. Shared by the reading canvas and the sketching
+ * A canvas's marks, drawn inside the diagram canvas over the elements they are about: what steps
+ * back, what a candidate changed, what its reader marks besides. Shared by the reading canvas and the sketching
  * canvas, so a mark looks the same on both.
  */
 import { computed } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
 import { heightOf, widthOf } from '../../../domain/layout/geometry'
-import type { Marks } from '../../../domain/stressAnalysis/workspaceMarks'
+import type { Marks } from '../../../domain/candidates/canvasMarks'
 import type { ArrangementSession } from '../../composables/useArrangementSession'
 
 const props = defineProps<{

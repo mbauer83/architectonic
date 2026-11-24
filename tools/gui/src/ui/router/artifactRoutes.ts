@@ -69,6 +69,10 @@ export const ROUTE_TEMPLATES = {
   graphExplore: '/graph',
   /** What this repository has changed in content it does not own. */
   changeList: '/changes',
+  /** Candidate architectures: proposed changes to the model, read and sketched before any commit. */
+  candidateList: '/candidates',
+  /** One candidate architecture: its operations against a base, sketched on a diagram. */
+  candidateDetail: '/candidates/:artifactId',
   documentList: '/documents',
   documentCreate: '/documents/new',
   documentGroups: '/documents/groups',
@@ -144,6 +148,9 @@ export const documentCreateRoute = (): string => ROUTE_TEMPLATES.documentCreate
 export const documentDetailRoute = (artifactId: string): string => `/documents/${seg(artifactId)}`
 export const stressAnalysisWorkspaceRoute = (artifactId: string): string => `/documents/${seg(artifactId)}/workspace`
 export const stressAnalysisStartRoute = (): string => ROUTE_TEMPLATES.stressAnalysisStart
+
+export const candidateListRoute = (): string => ROUTE_TEMPLATES.candidateList
+export const candidateDetailRoute = (artifactId: string): string => `/candidates/${seg(artifactId)}`
 
 export const diagramListRoute = (): string => ROUTE_TEMPLATES.diagramList
 export const layoutLabRoute = (artifactId = ''): string =>

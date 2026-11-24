@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CandidateSummary } from '../schemas/candidates'
-import { analysisCandidates, baseChoices, chainOf, defaultBase, descendantsOf, stackLine } from './candidateStack'
+import { baseChoices, chainOf, defaultBase, descendantsOf, rootOf, stackFrom, stackLine } from './candidateStack'
 
 const candidate = (id: string, parent: string | null = null): CandidateSummary =>
   ({ id, name: `${id} name`, state: 'draft', parent })
@@ -23,8 +23,15 @@ describe('a candidate stack', () => {
     expect([...descendantsOf('bounded', ALL)]).toEqual([])
   })
 
-  it('holds the naive architecture and what stacks on it, the naive first', () => {
-    expect(analysisCandidates('naive', ALL).map((one) => one.id)).toEqual(['naive', 'queue', 'drift', 'bounded'])
+  it('holds a root and what stacks on it, the root first', () => {
+    expect(stackFrom('naive', ALL).map((one) => one.id)).toEqual(['naive', 'queue', 'drift', 'bounded'])
+    expect(stackFrom('unknown', ALL)).toEqual([])
+  })
+
+  it('finds the root a candidate stacks on, which is the candidate itself for one on the model', () => {
+    expect(rootOf('bounded', ALL)).toBe('naive')
+    expect(rootOf('naive', ALL)).toBe('naive')
+    expect(rootOf('unknown', ALL)).toBe('unknown')
   })
 
   it('says what a candidate stacks on, down to the model', () => {
@@ -32,10 +39,10 @@ describe('a candidate stack', () => {
     expect(stackLine('naive', ALL)).toBe('stacks on the current model')
   })
 
-  it('offers as a base the model and every other candidate of the analysis not stacked on it', () => {
-    const inAnalysis = analysisCandidates('naive', ALL)
-    expect(baseChoices('queue', inAnalysis, ALL).map((one) => one.value)).toEqual(['model', 'naive', 'drift'])
-    expect(baseChoices('naive', inAnalysis, ALL).map((one) => one.value)).toEqual(['model'])
+  it('offers as a base the model and every other candidate of the stack not stacked on it', () => {
+    const inStack = stackFrom('naive', ALL)
+    expect(baseChoices('queue', inStack, ALL).map((one) => one.value)).toEqual(['model', 'naive', 'drift'])
+    expect(baseChoices('naive', inStack, ALL).map((one) => one.value)).toEqual(['model'])
   })
 
   it('compares with the parent by default, and with the model for a candidate on nothing', () => {

@@ -14,9 +14,9 @@ import { modelServiceKey } from '../keys'
 import { formatEffectError } from '../lib/errors'
 import { stressAnalysisWorkspaceRoute } from '../router/artifactRoutes'
 import { LARGE_SCOPE, useAnalysisScope } from '../composables/useAnalysisScope'
-import WorkspaceCanvas from '../components/stressWorkspace/WorkspaceCanvas.vue'
-import type { Marks } from '../../domain/stressAnalysis/workspaceMarks'
-import { framedMarks } from '../../domain/stressAnalysis/workspaceMarks'
+import MarkedCanvas from '../components/candidates/MarkedCanvas.vue'
+import type { Marks } from '../../domain/candidates/canvasMarks'
+import { framedMarks } from '../../domain/candidates/canvasMarks'
 
 type Origin = 'model' | 'existing' | 'empty'
 
@@ -77,7 +77,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="stress-ws page">
+  <div class="workbench page">
     <div class="page-hdr">
       <RouterLink
         class="back"
@@ -255,7 +255,7 @@ onMounted(async () => {
         </button>
       </section>
       <section aria-label="Canvas">
-        <WorkspaceCanvas
+        <MarkedCanvas
           :diagram-id="scope.diagramId.value"
           :drawing="origin === 'empty' ? null : scope.drawing.value"
           :marks="marks"
@@ -263,6 +263,7 @@ onMounted(async () => {
           :hint="scope.wholeDiagram.value
             ? 'The scope · what is outside it steps back'
             : 'Press elements to put them in the scope'"
+          empty-text="No diagram to draw: choose a scope diagram."
           @pick="scope.press"
         />
       </section>
@@ -341,4 +342,4 @@ onMounted(async () => {
 .origin select { margin-top: 4px; font-size: 12px; }
 .err { color: var(--danger-strong); }
 </style>
-<style src="../components/stressWorkspace/workspace.css"></style>
+<style src="../components/candidates/workbench.css"></style>
