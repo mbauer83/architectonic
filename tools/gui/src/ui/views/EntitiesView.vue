@@ -24,12 +24,7 @@ import EntityGroupNavTree from '../components/EntityGroupNavTree.vue'
 import ViewpointTablePage from '../components/ViewpointTablePage.vue'
 import DataTable from '../components/DataTable.vue'
 import type { DataTableColumn, SortDirection } from '../components/DataTable.types'
-import {
-  friendlyEntityId,
-  getEntityConnectionTotal,
-  getDomainLabel,
-  domainStyle,
-} from '../lib/domains'
+import { domainStyle, friendlyEntityId, getDomainLabel, getEntityConnectionTotal } from '../lib/domains'
 import { formatLastModified, lastModifiedTitle } from '../lib/lastModified'
 import { entityCreateRoute, entityDetailRoute, filtersToEntityCriteriaMapping, isServerSortKey, sortEntityRows } from './EntitiesView.helpers'
 
