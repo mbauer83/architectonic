@@ -5,7 +5,8 @@
  * candidate drawn on a diagram the reader chooses — marked with what it changes, or sketched with the
  * diagram editor. The same components a stress analysis reads its candidates with; nothing here knows
  * of analyses. The diagram is presentation (`?diagram=`): a candidate records operations on the
- * model, not on any one picture of it.
+ * model, not on any one picture of it. *Compare with…* opens a comparison holding this candidate,
+ * on the same diagram, for others to be added to.
  */
 import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -15,7 +16,7 @@ import { stableEntityId } from '../../domain/artifactId'
 import type { Marks } from '../../domain/candidates/canvasMarks'
 import { diffMarks, framedMarks } from '../../domain/candidates/canvasMarks'
 import { modelServiceKey, toastKey } from '../keys'
-import { candidateDetailRoute, candidateListRoute } from '../router/artifactRoutes'
+import { candidateCompareRoute, candidateDetailRoute, candidateListRoute } from '../router/artifactRoutes'
 import { useCandidates } from '../composables/useCandidates'
 import { useCandidateApply } from '../composables/useCandidateApply'
 import ApplyCandidate from '../components/candidates/ApplyCandidate.vue'
@@ -137,6 +138,14 @@ onMounted(async () => {
       >
         New candidate on top…
       </button>
+      <RouterLink
+        v-if="summary"
+        class="btn btn-sm"
+        data-testid="compare-with"
+        :to="candidateCompareRoute([candidateId], diagramId)"
+      >
+        Compare with…
+      </RouterLink>
       <button
         v-if="summary && applicable"
         type="button"
@@ -288,6 +297,7 @@ onMounted(async () => {
 .page-hdr { display: flex; gap: 10px; align-items: center; }
 .page-hdr h1 { flex: 1; font-size: 20px; margin: 0; }
 .back { color: var(--muted); text-decoration: none; font-size: 13px; }
+.page-hdr a.btn { text-decoration: none; }
 .meta { display: flex; gap: 10px; align-items: center; margin: 8px 0 8px; font-size: 12px; color: var(--muted); }
 .meta select { font: inherit; margin-left: 4px; max-width: 320px; }
 .badge { background: var(--accent-soft); color: var(--accent-strong); border-radius: 3px; padding: 2px 8px; }

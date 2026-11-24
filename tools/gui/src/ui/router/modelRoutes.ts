@@ -42,6 +42,7 @@ export const modelRoutes: RouteRecordRaw[] = [
   { path: ROUTE_TEMPLATES.scratchpadDetail, component: () => import('../views/ScratchpadDetailView.vue') },
   { path: ROUTE_TEMPLATES.changeList, component: () => import('../views/ChangesView.vue') },
   { path: ROUTE_TEMPLATES.candidateList, component: () => import('../views/CandidateArchitecturesView.vue') },
+  { path: ROUTE_TEMPLATES.candidateCompare, component: () => import('../views/CandidateComparisonView.vue') },
   { path: ROUTE_TEMPLATES.candidateDetail, component: () => import('../views/CandidateArchitectureView.vue') },
   { path: ROUTE_TEMPLATES.documentList, component: () => import('../views/DocumentsView.vue') },
   { path: ROUTE_TEMPLATES.documentCreate, component: () => import('../views/DocumentCreateView.vue') },

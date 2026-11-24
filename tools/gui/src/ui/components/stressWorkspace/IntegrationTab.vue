@@ -11,6 +11,7 @@ import type { IntegrationCheck } from '../../../domain/schemas/candidates'
 import { modelServiceKey } from '../../keys'
 import { formatEffectError } from '../../lib/errors'
 import type { Candidates } from '../../composables/useCandidates'
+import CandidateOverlaps from '../candidates/CandidateOverlaps.vue'
 
 const props = defineProps<{ candidates: Candidates; nameOf: (id: string) => string }>()
 const svc = inject(modelServiceKey)!
@@ -19,8 +20,6 @@ const offered = computed(() => props.candidates.inStack.value.filter((one) => on
 const check = shallowRef<IntegrationCheck | null>(null)
 const error = ref<string | null>(null)
 const nameOfSet = (id: string): string => props.candidates.all.value.find((one) => one.id === id)?.name ?? id
-const operationWords = (operation: Readonly<Record<string, unknown>>): string =>
-  [operation.op, operation.field, operation.value].filter((part) => part !== undefined).map(String).join(' · ')
 
 const run = async () => {
   try {
@@ -49,29 +48,13 @@ const run = async () => {
     >
       Check for overlaps
     </button>
-    <div
-      v-for="(overlap, index) in check?.overlaps ?? []"
-      :key="index"
-      class="conf"
-    >
-      <h4>{{ overlap.kind }}: {{ nameOf(overlap.subject) }}</h4>
-      <div class="sides">
-        <div
-          v-for="party in overlap.parties"
-          :key="party.set_id"
-          class="side"
-        >
-          <small>{{ nameOfSet(party.set_id) }}</small>
-          {{ operationWords(party.operation) }}
-        </div>
-      </div>
-    </div>
-    <p
-      v-if="check && !check.overlaps.length"
-      class="lead"
-    >
-      No overlaps between the offered candidates.
-    </p>
+    <CandidateOverlaps
+      v-if="check"
+      :check="check"
+      :name-of="nameOf"
+      :name-of-set="nameOfSet"
+      none-text="No overlaps between the offered candidates."
+    />
     <p
       v-if="error"
       class="err"
@@ -89,11 +72,6 @@ const run = async () => {
 <style scoped>
 .integration { padding: 8px 10px; font-size: 12.5px; }
 .lead { color: var(--text-2); margin: 0 0 8px; }
-.conf { border: 1px solid var(--border); border-radius: 8px; margin: 8px 0; padding: 8px 10px; }
-.conf h4 { font-size: 13px; margin: 0 0 4px; }
-.sides { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.side { border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
-.side small { display: block; color: var(--muted); font-size: 11px; }
 .foot { color: var(--muted); font-size: 11.5px; margin-top: 10px; }
 .err { color: var(--danger-strong); }
 </style>

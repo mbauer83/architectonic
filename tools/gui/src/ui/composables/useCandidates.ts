@@ -5,7 +5,7 @@
  * the root and its scope diagram; the candidate pages supply none and read the selected candidate's
  * own stack, down to the candidate that stacks on the model.
  */
-import { computed, ref, shallowRef } from 'vue'
+import { type ShallowRef, computed, ref, shallowRef } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type { CandidateComparison, CandidateSummary } from '../../domain/schemas/candidates'
@@ -17,6 +17,8 @@ export interface CandidateReading {
   readonly root?: () => string
   /** The stored diagram whose drawing a comparison carries; none for no drawing. */
   readonly scopeDiagram: () => string
+  /** Every candidate, held with other readings so that several of them list once; by default its own. */
+  readonly all?: ShallowRef<readonly CandidateSummary[]>
 }
 
 /** What the composable reads and writes through: the model service's candidate half. */
@@ -24,7 +26,7 @@ export type CandidateAccess = Pick<ModelService,
   'listCandidates' | 'createCandidate' | 'readCandidate' | 'rebaseCandidate' | 'compareCandidate' | 'deleteCandidate'>
 
 export function useCandidates(svc: CandidateAccess, reading: CandidateReading) {
-  const all = shallowRef<readonly CandidateSummary[]>([])
+  const all = reading.all ?? shallowRef<readonly CandidateSummary[]>([])
   const selected = ref<string | null>(null)
   const against = ref('model')
   const comparison = shallowRef<CandidateComparison | null>(null)
@@ -40,10 +42,11 @@ export function useCandidates(svc: CandidateAccess, reading: CandidateReading) {
 
   const compare = async (): Promise<void> => {
     const id = selected.value
+    const base = against.value
     if (!id) return
     try {
-      const read = await Effect.runPromise(svc.compareCandidate(id, against.value, reading.scopeDiagram() || undefined))
-      if (selected.value === id) comparison.value = read
+      const read = await Effect.runPromise(svc.compareCandidate(id, base, reading.scopeDiagram() || undefined))
+      if (selected.value === id && against.value === base) comparison.value = read
       error.value = null
     } catch (failure) {
       failed(failure)
@@ -58,11 +61,11 @@ export function useCandidates(svc: CandidateAccess, reading: CandidateReading) {
     }
   }
 
-  /** Read *id*, against its parent. */
-  const select = async (id: string): Promise<void> => {
+  /** Read *id* against *base*: by default its parent. */
+  const select = async (id: string, base = defaultBase(id, all.value)): Promise<void> => {
     if (selected.value !== id) comparison.value = null
     selected.value = id
-    against.value = defaultBase(id, all.value)
+    against.value = base
     await compare()
   }
 

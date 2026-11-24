@@ -4,7 +4,7 @@
  * listed under the scope its root was started over, each candidate below what it stacks on, with its
  * state and how many operations it records. A new candidate starts from what a diagram draws, on top
  * of an existing candidate, or empty. Deleting one asks first; the server refuses while another
- * stacks on it or an analysis starts from it, and says so.
+ * stacks on it or an analysis starts from it, and says so. Two or more ticked are compared.
  */
 import { computed, inject, onMounted, ref, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
@@ -12,7 +12,7 @@ import { Effect } from 'effect'
 import type { DiagramSummary } from '../../domain'
 import { scopeLabel } from '../../domain/candidates/candidateCatalog'
 import { modelServiceKey, toastKey } from '../keys'
-import { candidateDetailRoute } from '../router/artifactRoutes'
+import { candidateCompareRoute, candidateDetailRoute } from '../router/artifactRoutes'
 import { useCandidateCatalog } from '../composables/useCandidateCatalog'
 
 type Origin = 'diagram' | 'parent' | 'empty'
@@ -31,6 +31,9 @@ const parent = ref('')
 const busy = ref(false)
 
 const all = computed(() => catalog.candidates.all.value)
+/** The candidates ticked for a comparison, in the order they were ticked. */
+const ticked = ref<string[]>([])
+const compare = () => router.push(candidateCompareRoute(ticked.value))
 const canCreate = computed(() => name.value.trim() !== '' && !busy.value
   && (origin.value !== 'diagram' || diagram.value !== '') && (origin.value !== 'parent' || parent.value !== ''))
 
@@ -64,6 +67,15 @@ onMounted(async () => {
   <div class="workbench page">
     <div class="page-hdr">
       <h1>Candidate architectures</h1>
+      <button
+        type="button"
+        class="btn"
+        data-testid="compare-candidates"
+        :disabled="ticked.length < 2"
+        @click="compare"
+      >
+        Compare{{ ticked.length ? ` ${ticked.length}` : '' }}…
+      </button>
       <button
         v-if="!creating"
         type="button"
@@ -181,13 +193,22 @@ onMounted(async () => {
     >
       <h2>{{ scopeLabel(group.scope) }}</h2>
       <table class="tbl">
-        <thead><tr><th>Candidate</th><th>State</th><th>Operations</th><th /></tr></thead>
+        <thead><tr><th class="tick" /><th>Candidate</th><th>State</th><th>Operations</th><th /></tr></thead>
         <tbody>
           <tr
             v-for="row in group.rows"
             :key="row.candidate.id"
             :data-candidate="row.candidate.id"
           >
+            <td class="tick">
+              <input
+                v-model="ticked"
+                type="checkbox"
+                :value="row.candidate.id"
+                :aria-label="`Compare ${row.candidate.name}`"
+                data-testid="tick-candidate"
+              >
+            </td>
             <td>
               <span
                 class="ind"
@@ -238,5 +259,6 @@ onMounted(async () => {
 .ind { color: var(--faint); font-family: ui-monospace, monospace; }
 .state { font-size: 11px; font-weight: 600; color: var(--text-2); }
 .row-acts { text-align: right; }
+.tbl .tick { width: 24px; padding-right: 0; }
 </style>
 <style src="../components/candidates/workbench.css"></style>

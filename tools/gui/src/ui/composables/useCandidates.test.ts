@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { shallowRef } from 'vue'
 import { Effect } from 'effect'
 import { NetworkError } from '../../domain/errors'
 import type { CandidateComparison, CandidateSummary } from '../../domain/schemas/candidates'
@@ -66,6 +67,28 @@ describe('useCandidates', () => {
     expect(candidates.choices.value.map((one) => one.value)).toEqual(['model', 'naive', 'queue'])
     await candidates.compareWith('model')
     expect(calls).toEqual(['compare bounded queue -', 'compare bounded model -'])
+  })
+
+  it('reads a candidate against a base its caller chooses, over a list shared with other readings', async () => {
+    const { access, calls } = fakeAccess(ALL)
+    const all = shallowRef<readonly CandidateSummary[]>([])
+    const one = useCandidates(access, { scopeDiagram: () => '', all })
+    const other = useCandidates(access, { scopeDiagram: () => '', all })
+    await one.load()
+    expect(other.all.value.map((each) => each.id)).toContain('bounded')
+    await other.select('bounded', 'naive')
+    expect(other.against.value).toBe('naive')
+    expect(calls).toEqual(['compare bounded naive -'])
+  })
+
+  it('keeps no comparison read against a base it has since moved away from', async () => {
+    const { access } = fakeAccess(ALL)
+    const candidates = useCandidates(access, { scopeDiagram: () => '' })
+    await candidates.load()
+    const first = candidates.select('bounded', 'naive')
+    candidates.against.value = 'model'
+    await first
+    expect(candidates.comparison.value).toBeNull()
   })
 
   it('creates a candidate from a diagram, and stacks one on another and reads it', async () => {
