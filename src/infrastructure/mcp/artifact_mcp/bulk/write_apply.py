@@ -213,6 +213,15 @@ def _apply_single_edit(
             dry_run=False,
             **_changes(item, "entity"),
         )
+    if op == "delete_entity":
+        # Refused while anything still names the entity — a connection, a diagram, a reference.
+        return artifact_write_ops.delete_entity(
+            repo_root=staged_root,
+            registry=registry,
+            clear_repo_caches=clear_repo_caches,
+            artifact_id=expand_artifact_id(registry, str(item["artifact_id"])),
+            dry_run=False,
+        )
     source_entity = expand_artifact_id(registry, str(item["source_entity"]))
     target_entity = expand_artifact_id(registry, str(item["target_entity"]))
     if item.get("operation", "update") == "remove":
