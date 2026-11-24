@@ -3,11 +3,9 @@ import { Effect, Exit } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type { DiagramContext } from '../../domain'
 import type { DerivedNeighbor } from '../../domain/schemas/entities'
-import type { Extent } from '../../domain/layout/geometry'
 import { DEFAULT_REACH, reachOf, type Reach, type ReadingRelation } from '../../domain/diagramReading'
 import { derivedOf, notDrawnOf } from '../../domain/diagramReadingLists'
 import { paintReading, type FlowOf } from '../lib/diagramReadingPaint'
-import { drawnExtentOf } from '../lib/svgExtent'
 import { onReducedMotionChange, readerPrefersReducedMotion } from '../lib/motionPreference'
 
 /** What the reader needs of the picture's selection: the selected entities and what everything is drawn as. */
@@ -117,14 +115,8 @@ export function useDiagramReader(options: {
     paintReading(svg, selection.nodeElements.value, selection.edgeElements.value, paint)
   }, { flush: 'post' })
 
-  /** The part of the picture the reading covers: the selection and what it reaches. */
-  const readingExtent = (): Extent | null => {
-    const ids = [...focus.value, ...reached.value.incoming, ...reached.value.outgoing]
-    return drawnExtentOf(ids.flatMap((id) => selection.nodeElements.value.get(id) ?? []))
-  }
-
   return {
-    reach, reading, focus, reached, notDrawn, derived, readingExtent,
+    reach, reading, focus, reached, notDrawn, derived,
     flowOn: computed(() => flowOn.value),
     reducedMotion: computed(() => reducedMotion.value),
     /** Latch the flow on or off. Unavailable under reduced motion, where the arrowheads carry direction. */

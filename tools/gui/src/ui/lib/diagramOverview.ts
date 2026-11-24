@@ -1,5 +1,5 @@
 import type { Extent } from '../../domain/layout/geometry'
-import { heightOf, widthOf } from '../../domain/layout/geometry'
+import { heightOf, unionOf, widthOf } from '../../domain/layout/geometry'
 
 /**
  * The overview of a diagram (D13, owner Q20 and F10): a small copy of the whole picture with the
@@ -19,6 +19,10 @@ export interface OverviewMark {
   /** The element's name, for the names written at screen size over a small picture (04·6). */
   readonly name?: string
 }
+
+/** The part of the picture the marks cover: what `F` frames. Null where nothing is marked. */
+export const extentOfMarks = (marks: readonly OverviewMark[]): Extent | null =>
+  (marks.length > 0 ? unionOf(marks.map((mark) => mark.extent)) : null)
 
 export interface OverviewShape {
   readonly kind: 'strip' | 'corner'

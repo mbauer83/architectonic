@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import {
-  drawingCopyOf, markExtent, overviewShapeOf, pictureBoxOf, pictureTextSizeOf, windowShowsAll,
+  drawingCopyOf, extentOfMarks, markExtent, overviewShapeOf, pictureBoxOf, pictureTextSizeOf, windowShowsAll,
 } from './diagramOverview'
 
 const extent = (left: number, top: number, right: number, bottom: number) => ({ left, top, right, bottom })
@@ -36,6 +36,17 @@ describe('the overview hides while it has nothing to tell', () => {
     const picture = extent(0, 0, 1000, 500)
     expect(windowShowsAll(extent(-20, -10, 1020, 510), picture)).toBe(true)
     expect(windowShowsAll(extent(100, 0, 1000, 500), picture)).toBe(false)
+  })
+})
+
+describe('what F frames', () => {
+  it('is the part of the picture every mark covers, and nothing without marks', () => {
+    const marks = [
+      { id: 'a', extent: extent(0, 0, 10, 10), selected: true },
+      { id: 'b', extent: extent(500, 40, 520, 60), selected: false },
+    ]
+    expect(extentOfMarks(marks)).toEqual(extent(0, 0, 520, 60))
+    expect(extentOfMarks([])).toBeNull()
   })
 })
 

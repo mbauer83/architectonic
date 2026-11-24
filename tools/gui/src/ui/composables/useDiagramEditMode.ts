@@ -16,8 +16,7 @@ import type { ModelService } from '../../application/ModelService'
 import { SMALLEST_ELEMENT, movedTogether, resized, resizedExtent } from '../../domain/layout/lab/labArrangement'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import type { Extent } from '../../domain/layout/geometry'
-import { unionOf } from '../../domain/layout/geometry'
-import type { OverviewMark } from '../lib/diagramOverview'
+import { extentOfMarks, type OverviewMark } from '../lib/diagramOverview'
 import { useEditPanel } from './useEditPanel'
 import { useDiagramEditing } from './useDiagramEditing'
 
@@ -76,6 +75,7 @@ export function useDiagramEditMode(
       return extent ? [{ id: alias, extent, selected: true }] : []
     }) : []
   })
+  const selectionExtent = computed(() => extentOfMarks(marks.value))
 
   const enter = async () => {
     leaving.value = false
@@ -148,9 +148,9 @@ export function useDiagramEditMode(
     } else if (event.key in ARROWS && parts.canvas.value?.selection.length) {
       event.preventDefault()
       nudge(parts.canvas.value.selection, ARROWS[event.key], event.shiftKey ? 1 : GRID, event.altKey)
-    } else if (key === 'f' && !command && marks.value.length > 0) {
+    } else if (key === 'f' && !command && selectionExtent.value) {
       event.preventDefault()
-      parts.frame(unionOf(marks.value.map((mark) => mark.extent)))
+      parts.frame(selectionExtent.value)
     } else if (event.key === ' ') {
       event.preventDefault()
       spaceHeld.value = true
