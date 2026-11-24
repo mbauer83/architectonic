@@ -231,14 +231,18 @@ def overrides_colour(line: str) -> bool:
 
 
 def _restyled_label(label: str, label_lines: tuple[str, ...], ink: str | None) -> str:
-    """The quoted label with *label_lines* as a smaller second block, replacing any previous one."""
+    """The quoted label with *label_lines* as a smaller second block, replacing any previous one.
+
+    Each line carries its own `<size:10>…</size>`: PlantUML reads creole markup one label line at a
+    time, so a size opened on the first line closes at its end, and every later line was drawn at the
+    label's full size with a literal `</size>` printed after it.
+    """
     base = label.split(_APPENDED, 1)[0]
     if not label_lines:
         return base
     tint = f"<color:#{ink}>" if ink else ""
     close = "</color>" if ink else ""
-    rendered = "\\n".join(f"{tint}{line}{close}" for line in label_lines)
-    return f"{base}{_APPENDED}{rendered}</size>"
+    return base + "".join(f"{_APPENDED}{tint}{line}{close}</size>" for line in label_lines)
 
 
 def restyled_declaration(
