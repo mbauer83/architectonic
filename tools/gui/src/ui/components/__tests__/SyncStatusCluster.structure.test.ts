@@ -23,6 +23,11 @@ describe('SyncStatusCluster structure', () => {
     expect(template).toContain('Proposed changes')
   })
 
+  it('opens the candidate architectures page beside it', () => {
+    expect(template).toContain(':to="candidateListRoute()"')
+    expect(template).toContain('Candidate architectures')
+  })
+
   it('never disables the control that holds the destination', () => {
     expect(template).not.toContain(':disabled="!hasActions"')
     expect(template).toContain('v-if="menuOpen"')

@@ -6,7 +6,7 @@
  */
 import { computed, ref } from 'vue'
 import type { OperationStanding } from '../../../domain/schemas/candidates'
-import { hasMoved, modelMoved, movedSentence } from '../../../domain/stressAnalysis/modelMoved'
+import { hasMoved, modelMoved, movedSentence } from '../../../domain/candidates/modelMoved'
 
 const props = defineProps<{ name: string; standing: readonly OperationStanding[]; busy?: boolean }>()
 const emit = defineEmits<{ rebase: [] }>()

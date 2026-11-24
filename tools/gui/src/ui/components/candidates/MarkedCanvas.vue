@@ -1,21 +1,22 @@
 <script setup lang="ts">
 /**
- * The workspace's picture: the scope diagram drawn by the diagram canvas (`LayoutLabCanvas`), read
- * only, with the workspace's marks over it — what the focus hits, and a candidate against its base.
- * A press on an element answers `pick` with its entity id, which is how a tick is made on the picture.
+ * A diagram drawn by the diagram canvas (`LayoutLabCanvas`), read only, with its reader's marks over
+ * it: a candidate against its base, and whatever else the reader marks (a stress analysis marks what
+ * its focus hits). A press on an element answers `pick` with its entity id, which is how a stress
+ * analysis makes a tick on the picture.
  */
 import { computed, inject, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
 import type { DiagramContext } from '../../../domain'
 import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
-import type { Marks } from '../../../domain/stressAnalysis/workspaceMarks'
+import type { Marks } from '../../../domain/candidates/canvasMarks'
 import { modelServiceKey } from '../../keys'
 import { useArrangementSession } from '../../composables/useArrangementSession'
 import { useDrawnEntities } from '../../composables/useDrawnEntities'
 import { useFittedPanZoom } from '../../composables/useFittedPanZoom'
 import LayoutLabCanvas from '../layoutLab/LayoutLabCanvas.vue'
 import DiagramViewportControls from '../DiagramViewportControls.vue'
-import WorkspaceMarksLayer from './WorkspaceMarksLayer.vue'
+import CanvasMarksLayer from './CanvasMarksLayer.vue'
 
 const props = defineProps<{
   diagramId: string
@@ -24,6 +25,8 @@ const props = defineProps<{
   /** Elements outside what is being looked at, by stable id: drawn stepped back. */
   dimmed?: ReadonlySet<string>
   hint: string
+  /** What is said where there is no drawing. */
+  emptyText?: string
 }>()
 const emit = defineEmits<{ pick: [stableId: string] }>()
 const svc = inject(modelServiceKey)!
@@ -75,7 +78,7 @@ const tagSize = computed(() => 12 / Math.max(panZoom.scale.value, 0.05))
           readonly
           @pick="pick"
         >
-          <WorkspaceMarksLayer
+          <CanvasMarksLayer
             :session="session"
             :entity-of="entityOf"
             :marks="marks"
@@ -88,7 +91,7 @@ const tagSize = computed(() => 12 / Math.max(panZoom.scale.value, 0.05))
         v-else
         class="no-img"
       >
-        No diagram to draw: this analysis has no scope diagram.
+        {{ emptyText ?? 'No diagram to draw.' }}
       </p>
     </div>
     <DiagramViewportControls

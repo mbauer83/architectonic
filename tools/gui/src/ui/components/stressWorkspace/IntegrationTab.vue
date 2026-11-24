@@ -15,7 +15,7 @@ import type { Candidates } from '../../composables/useCandidates'
 const props = defineProps<{ candidates: Candidates; nameOf: (id: string) => string }>()
 const svc = inject(modelServiceKey)!
 
-const offered = computed(() => props.candidates.inAnalysis.value.filter((one) => one.state === 'candidate'))
+const offered = computed(() => props.candidates.inStack.value.filter((one) => one.state === 'candidate'))
 const check = shallowRef<IntegrationCheck | null>(null)
 const error = ref<string | null>(null)
 const nameOfSet = (id: string): string => props.candidates.all.value.find((one) => one.id === id)?.name ?? id

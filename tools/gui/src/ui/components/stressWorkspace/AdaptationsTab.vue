@@ -7,16 +7,16 @@
  */
 import { computed, ref } from 'vue'
 import { cell, cellIds, endStateName } from '../../../domain/stressAnalysis/analysisRows'
-import { chainOf, stackLine } from '../../../domain/stressAnalysis/candidateStack'
+import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
-import CandidateOperations from './CandidateOperations.vue'
+import CandidateOperations from '../candidates/CandidateOperations.vue'
 
 const props = defineProps<{ analysis: StressAnalysis; candidates: Candidates }>()
 const emit = defineEmits<{ frame: [target: string | null]; sketch: [id: string] }>()
 
 const adaptations = computed(() =>
-  props.candidates.inAnalysis.value.filter((one) => one.id !== props.analysis.naiveId.value))
+  props.candidates.inStack.value.filter((one) => one.id !== props.analysis.naiveId.value))
 const answers = (id: string): string => props.analysis.adaptations.value
   .filter((row) => cell(row, 'candidate_architecture') === id)
   .flatMap((row) => cellIds(row, 'end_states'))
@@ -121,7 +121,7 @@ const create = async () => {
     <CandidateOperations
       v-if="candidates.selected.value && candidates.selected.value !== analysis.naiveId.value"
       :candidates="candidates"
-      :naive-id="analysis.naiveId.value"
+      role="adaptation"
       :name-of="analysis.nameOf"
       @frame="emit('frame', $event)"
       @sketch="emit('sketch', $event)"

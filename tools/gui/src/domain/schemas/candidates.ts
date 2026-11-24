@@ -7,7 +7,7 @@ import { WriteVerificationSchema } from './write-results'
  * `/api/documents/{id}/progress|incidence|tables`).
  *
  * A candidate's record and an operation are served as open field maps: the server reads the recorded
- * form strictly, and the client states what it writes in `domain/stressAnalysis/candidateOperations`.
+ * form strictly, and the client states what it writes in `domain/candidates/candidateCanvas`.
  */
 const FieldsSchema = Schema.Record({ key: Schema.String, value: Schema.Unknown })
 

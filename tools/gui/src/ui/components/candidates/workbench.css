@@ -1,0 +1,21 @@
+/* The candidate pages' and the stress-analysis workspace's shared controls, under the `workbench` root
+   class so nothing else is touched. */
+.workbench .btn {
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2);
+  border-radius: 6px; padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.workbench .btn:hover:not(:disabled) { background: var(--hover); }
+.workbench .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.workbench .btn-sm { padding: 3px 9px; font-size: 12px; }
+.workbench .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.workbench .btn-primary:hover:not(:disabled) { background: var(--accent-strong); }
+.workbench .btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-strong); }
+.workbench .card { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.workbench .tabs { display: flex; border-bottom: 1px solid var(--border); }
+.workbench .tab {
+  flex: 1; border: none; background: none; padding: 8px 6px 6px; font: inherit; font-size: 13px; color: var(--text-2);
+  cursor: pointer; border-bottom: 2px solid transparent; line-height: 1.25;
+}
+.workbench .tab small { display: block; font-size: 11px; color: var(--muted); }
+.workbench .tab[aria-selected="true"] { color: var(--accent-strong); font-weight: 600; border-bottom-color: var(--accent); }
+.workbench .warnline { display: block; font-size: 11.5px; color: var(--warn-text); }
