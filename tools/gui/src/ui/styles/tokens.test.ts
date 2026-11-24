@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 const css = readFileSync(join(import.meta.dirname, 'tokens.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
 
 const declarations = (body: string): Map<string, string> =>
-  new Map([...body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1]!, m[2]!.trim()]))
+  new Map([...body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]))
 
 const blockAfter = (opener: string): Map<string, string> => {
   const start = css.indexOf(opener)

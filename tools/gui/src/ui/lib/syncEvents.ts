@@ -1,4 +1,4 @@
-import { isRecord } from './errors'
+import { isRecord } from '../../domain/records'
 
 /** Typed guards for the SSE sync-event payloads the app shell consumes. */
 

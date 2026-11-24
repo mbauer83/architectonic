@@ -31,7 +31,7 @@ export function overlayStrokes(
   const strokes = Array.from(group.querySelectorAll<SVGGeometryElement>('path, line, polyline'))
   return strokes.flatMap((stroke) => {
     if (stroke.closest('[data-entity-id]') || stroke.hasAttribute(OVERLAY)) return []
-    const copy = document.createElementNS('http://www.w3.org/2000/svg', stroke.tagName.toLowerCase()) as SVGElement
+    const copy = document.createElementNS('http://www.w3.org/2000/svg', stroke.tagName.toLowerCase())
     for (const attr of Array.from(stroke.attributes)) {
       if (!NOT_COPIED.includes(attr.name)) copy.setAttribute(attr.name, attr.value)
     }

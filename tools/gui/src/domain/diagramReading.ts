@@ -144,7 +144,7 @@ const viewFrom = (text: string): ReadingView | null => {
 }
 
 const single = (value: unknown): string | undefined => {
-  const first = Array.isArray(value) ? value[0] : value
+  const first: unknown = Array.isArray(value) ? (value as unknown[])[0] : value
   return typeof first === 'string' ? first : undefined
 }
 

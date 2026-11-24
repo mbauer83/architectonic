@@ -1,9 +1,8 @@
 import { Either, Schema } from 'effect'
 import { type ErrorBody, ErrorBodySchema } from '../../domain/schemas/errors'
 import type { WriteVerification } from '../../domain/schemas/write-results'
+import { isRecord } from '../../domain/records'
 
-export const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
 
 /** The raw JSON text a failed `fetch` call's body carries, whichever adapter shape wraps
  * it — an `Error`-like value's `.message` (the network adapter's convention: the response

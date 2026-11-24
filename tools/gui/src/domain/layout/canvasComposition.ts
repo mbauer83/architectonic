@@ -10,6 +10,8 @@ import { stableConnectionId, stableEntityId } from '../artifactId'
 
 import type { DiagramContext } from '..'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
+import { isRecord } from '../records'
+
 
 interface Content {
   readonly addedTypes?: ReadonlyMap<string, string>
@@ -43,7 +45,8 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
   )
   const entities = { ...drawn.diagram_entities }
   if (state.overlays?.length) {
-    const prior = Array.isArray(entities._connections) ? entities._connections : []
+    const stored: unknown = entities._connections
+    const prior = Array.isArray(stored) ? (stored as unknown[]).filter(isRecord) : []
     const overrides = new Map(state.overlays.map((row) => [row.artifact_id, row]))
     entities._connections = [
       ...prior.map((row) => {

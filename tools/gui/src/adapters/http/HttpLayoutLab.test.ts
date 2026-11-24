@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { labPicture, layoutLabIsOn } from './HttpLayoutLab'
 
 const answering = (body: string, status = 200, type = 'application/json') =>
-  vi.fn<typeof fetch>(async () => new Response(body, { status, headers: { 'Content-Type': type } }))
+  vi.fn<typeof fetch>(() => Promise.resolve(new Response(body, { status, headers: { 'Content-Type': type } })))
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -20,7 +20,8 @@ describe('whether the lab is on, which decides the menu entry', () => {
     const fetch = answering('{"enabled": true}')
     vi.stubGlobal('fetch', fetch)
     expect(await layoutLabIsOn()).toBe(true)
-    expect(String(fetch.mock.calls[0][0])).toMatch(/\/lab\/layout$/)
+    const url = fetch.mock.calls[0][0]
+    expect(typeof url === 'string' ? url : url instanceof URL ? url.href : url.url).toMatch(/\/lab\/layout$/)
   })
 
   it('is off when the route is not served', async () => {
@@ -34,7 +35,7 @@ describe('whether the lab is on, which decides the menu entry', () => {
   })
 
   it('is off when the backend cannot be reached', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('network down') }))
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new TypeError('network down'))))
     expect(await layoutLabIsOn()).toBe(false)
   })
 })
@@ -47,7 +48,8 @@ describe('the lab reads', () => {
     expect(await Effect.runPromise(labPicture('ARC@1.a.test', layout))).toBe('<svg/>')
     const init = fetch.mock.calls[0][1]
     expect(init?.method).toBe('POST')
-    expect(JSON.parse(String(init?.body))).toEqual({ layout })
+    expect(typeof init?.body).toBe('string')
+    expect(JSON.parse(init?.body as string)).toEqual({ layout })
   })
 
   it('carries a plain refusal sentence, and a body that is not an envelope as it is', async () => {

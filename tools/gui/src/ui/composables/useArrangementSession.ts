@@ -194,7 +194,7 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
     const shown = routes.value
     const samePicture = !next.picture || next.picture === drawnPicture.value
     if (!samePicture) {
-      drawnPicture.value = next.picture as LayoutGeometry
+      drawnPicture.value = next.picture
       reshaped.value = new Map()
     }
     state.value = next

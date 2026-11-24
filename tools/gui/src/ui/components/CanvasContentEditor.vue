@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isRecord } from '../../domain/records'
 import { computed, inject, nextTick, ref, watch } from 'vue'
 import { Effect } from 'effect'
 import type { DiagramContext } from '../../domain'
@@ -154,9 +155,11 @@ function editLine(index: number) {
   kind.value = record.conn_type
   const pending = props.editing.session.state.value
   const prior = props.context.diagram.extra?.connections
-  const overlays = [...(Array.isArray(prior) ? prior : []), ...(pending?.overlays ?? [])]
+  const stored = Array.isArray(prior) ? (prior as unknown[]).filter(isRecord) : []
+  const overlays = [...stored, ...(pending?.overlays ?? [])]
   const overlay = overlays.reverse().find(r => stableConnectionId(String(r.artifact_id ?? r.connection_id)) === row.key)
-  label.value = String(overlay?.label ?? record.edge_label_override ?? '')
+  const stated = overlay?.label ?? record.edge_label_override
+  label.value = typeof stated === 'string' ? stated : ''
   description.value = record.content_text
   srcCount.value = record.src_multiplicity ?? ''
   tgtCount.value = record.tgt_multiplicity ?? ''
@@ -171,7 +174,7 @@ function editLine(index: number) {
 // A line's menu belongs to the line it was opened on: another line picked, or none, closes it.
 watch(() => props.line, () => { if (mode.value === 'line') mode.value = null })
 const { focusCanvas, up, release, moving } = useContentGestures(
-  host, props.editing, source, position, rename, editLine, pair,
+  host, props.editing, source, position, (alias) => void rename(alias), editLine, (alias) => void pair(alias),
 )
 function key(e: KeyboardEvent) {
   if (e.key === 'Escape' && mode.value) {
