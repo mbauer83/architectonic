@@ -1,17 +1,24 @@
 <script setup lang="ts">
-import { isRecord } from '../../domain/records'
-import { computed, inject, nextTick, ref, watch } from 'vue'
-import { Effect } from 'effect'
-import type { DiagramContext } from '../../domain'
+import { computed, inject, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import type { DiagramContext, EntityDisplayInfo } from '../../domain'
 import { canvasMembers } from '../../domain/layout/canvasComposition'
-import { connectionId, stableConnectionId } from '../../domain/artifactId'
 import { modelServiceKey } from '../keys'
 import type { DiagramEditing } from '../composables/useDiagramEditing'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import { elementAt, useContentGestures } from '../composables/useContentGestures'
+import { useCanvasPopover } from '../composables/useCanvasPopover'
+import { useCanvasRelation } from '../composables/useCanvasRelation'
 import CanvasElementForm from './CanvasElementForm.vue'
 import CanvasSelectionMenu from './CanvasSelectionMenu.vue'
 import CanvasLineMenu from './CanvasLineMenu.vue'
+import CanvasMenu from './CanvasMenu.vue'
+import CanvasConnectTarget from './CanvasConnectTarget.vue'
+import CanvasRelationForm from './CanvasRelationForm.vue'
+import CanvasRenameForm from './CanvasRenameForm.vue'
+import CanvasDeleteConfirm from './CanvasDeleteConfirm.vue'
+import { elementMenuItems } from './canvasElementMenu'
+import { entityDetailRoute } from '../router/artifactRoutes'
 import { asksForTheMenu, isOnALine, selectedLineMiddle } from './lineMenuPlace'
 import { type CanvasWords, DIAGRAM_WORDS } from './canvasWords'
 
@@ -29,33 +36,51 @@ const props = defineProps<{
 const words = computed(() => props.words ?? DIAGRAM_WORDS)
 const several = computed(() => props.selectedShapes ?? [])
 const svc = inject(modelServiceKey)!
+const router = useRouter()
 const host = ref<HTMLElement | null>(null)
-const field = ref<HTMLInputElement | null>(null)
-const mode = ref<'create' | 'element' | 'selection' | 'line' | 'rename' | 'delete' | 'target' | 'relation' | null>(
-  null)
-const at = ref({ x: 0, y: 0 })
+const pop = ref<HTMLElement | null>(null)
+const { mode, at, error, width, position, close } = useCanvasPopover(host, pop)
 const source = ref('')
 const target = ref('')
-const name = ref('')
-const usages = ref<number | null>(null)
-const options = ref<readonly string[]>([])
-const kind = ref('')
-const label = ref('')
-const srcCount = ref('')
-const tgtCount = ref('')
-const description = ref('')
-const error = ref('')
-const currentLine = ref('')
 const members = computed(() => canvasMembers(
   props.context, props.editing.session.state.value, props.editing.session.geometry.value,
 ))
 const selected = computed(() => members.value.find((e) => e.alias === source.value))
-function position(x: number, y: number) {
-  at.value = {
-    x: Math.max(4, Math.min(x, window.innerWidth - 300)),
-    y: Math.max(4, Math.min(y, window.innerHeight - 355)),
+const nameOf = (alias: string) => members.value.find((e) => e.alias === alias)?.name ?? alias
+const drafted = computed(() => props.editing.session.state.value?.commands?.some(
+  (c) => c.op === 'model.element.create' && c.artifact_id === selected.value?.id) ?? false)
+
+async function apply(c: CanvasCommand, overlay?: Record<string, unknown>) {
+  if (await props.editing.propose(c, overlay)) close(true)
+  else error.value = props.editing.error.value ?? 'The drawing has changed. Try again.'
+}
+const relation = useCanvasRelation(
+  svc, props.editing, () => props.context, members, { source, target },
+  () => { mode.value = 'relation' }, (message) => { error.value = message }, (c, overlay) => void apply(c, overlay),
+)
+const { kind, label, srcCount, tgtCount, description, options, currentLine } = relation
+
+function rename(alias: string) {
+  source.value = alias
+  if (selected.value) mode.value = 'rename'
+}
+function onElement(choice: string) {
+  const el = selected.value
+  if (!el) return
+  if (choice === 'rename') rename(source.value)
+  else if (choice === 'connect') mode.value = 'target'
+  else if (choice === 'delete') mode.value = 'delete'
+  else if (choice === 'open') {
+    window.open(router.resolve(entityDetailRoute(el.id)).href, '_blank', 'noopener')
+    close()
+  } else if (choice === 'remove') {
+    props.editing.remove([source.value])
+    close(true)
   }
-  error.value = ''
+}
+const addFound = (entity: EntityDisplayInfo) => {
+  void props.editing.add(entity.artifact_id, entity.name, entity.artifact_type)
+  close(true)
 }
 const dropMember = (event: DragEvent) => {
   const id = event.dataTransfer?.getData('application/x-architectonic-entity')
@@ -74,138 +99,46 @@ function menu(event: MouseEvent) {
   const onSelection = several.value.length > 1 && (!source.value || several.value.includes(source.value))
   mode.value = onSelection ? 'selection' : selected.value ? 'element' : 'create'
 }
-async function rename(alias: string) {
-  source.value = alias
-  const el = selected.value
-  if (!el) return
-  name.value = el.name
-  usages.value = null
-  mode.value = 'rename'
-  await nextTick()
-  field.value?.select()
-  if (
-    props.editing.session.state.value?.commands?.some(
-      (c) => c.op === 'model.element.create' && c.artifact_id === el.id,
-    )
-  ) {
-    usages.value = 0
-    return
-  }
-  try {
-    const entity = await Effect.runPromise(svc.getEntity(el.id))
-    if (selected.value?.id === el.id)
-      usages.value = entity.referenced_in_diagrams.filter(
-        (d) => d.artifact_id !== props.context.diagram.artifact_id,
-      ).length
-  } catch (e) {
-    error.value = String(e)
-  }
-}
-async function apply(c: CanvasCommand, overlay?: Record<string, unknown>) {
-  if (await props.editing.propose(c, overlay)) mode.value = null
-  else error.value = props.editing.error.value ?? 'The drawing has changed. Try again.'
-}
-async function pair(alias: string) {
-  const from = selected.value
-  const to = members.value.find((e) => e.alias === alias)
-  if (!from || !to) return
-  target.value = alias
-  options.value = []
-  kind.value = ''
-  label.value = ''
-  description.value = ''
-  srcCount.value = ''
-  tgtCount.value = ''
-  currentLine.value = ''
-  mode.value = 'relation'
-  try {
-    const permitted = await Effect.runPromise(svc.getOntologyPair(from.type, to.type))
-    if (target.value !== alias || source.value !== from.alias) return
-    options.value = [...new Set([...permitted.connection_types, ...permitted.symmetric])]
-    kind.value = options.value[0] ?? ''
-  } catch (e) {
-    error.value = String(e)
-  }
-}
-function saveRelation() {
-  const from = selected.value
-  const to = members.value.find((e) => e.alias === target.value)
-  if (!from || !to || !kind.value) return
-  const id = currentLine.value || connectionId(from.id, kind.value, to.id)
-  void apply(
-    {
-      op: currentLine.value ? 'model.relation.edit' : 'model.relation.create',
-      artifact_id: id,
-      description: description.value,
-      src_multiplicity: srcCount.value,
-      tgt_multiplicity: tgtCount.value,
-    },
-    { artifact_id: id, label: label.value, include_multiplicity: true, include_description: true },
-  )
-}
-function editLine(index: number) {
-  const row = props.editing.session.geometry.value?.relations.find((r) => r.index === index)
-  if (!row) return
-  const record = props.context.connections.find((c) => c.edge_key === row.key)
-  if (!record) return
-  source.value = row.source
-  target.value = row.target
-  currentLine.value = record.artifact_id
-  options.value = [record.conn_type]
-  kind.value = record.conn_type
-  const pending = props.editing.session.state.value
-  const prior = props.context.diagram.extra?.connections
-  const stored = Array.isArray(prior) ? (prior as unknown[]).filter(isRecord) : []
-  const overlays = [...stored, ...(pending?.overlays ?? [])]
-  const overlay = overlays.reverse().find(r => stableConnectionId(String(r.artifact_id ?? r.connection_id)) === row.key)
-  const stated = overlay?.label ?? record.edge_label_override
-  label.value = typeof stated === 'string' ? stated : ''
-  description.value = record.content_text
-  srcCount.value = record.src_multiplicity ?? ''
-  tgtCount.value = record.tgt_multiplicity ?? ''
-  const edit = pending?.commands?.find(c => c.artifact_id === record.artifact_id && c.op === 'model.relation.edit')
-  if (edit && 'src_multiplicity' in edit) {
-    description.value = edit.description
-    srcCount.value = edit.src_multiplicity
-    tgtCount.value = edit.tgt_multiplicity
-  }
-  mode.value = 'relation'
-}
 // A line's menu belongs to the line it was opened on: another line picked, or none, closes it.
-watch(() => props.line, () => { if (mode.value === 'line') mode.value = null })
+watch(() => props.line, () => { if (mode.value === 'line') close() })
 const { focusCanvas, up, release, moving } = useContentGestures(
-  host, props.editing, source, position, (alias) => void rename(alias), editLine, (alias) => void pair(alias),
+  host, props.editing, source, position, rename, relation.editLine, (alias) => void relation.pair(alias),
 )
+const cornerOf = (alias: string) =>
+  host.value?.querySelector(`[data-alias="${CSS.escape(alias)}"]`)?.getBoundingClientRect()
 function key(e: KeyboardEvent) {
   if (e.key === 'Escape' && mode.value) {
     e.stopPropagation()
-    mode.value = null
+    close(true)
   }
-  // The menu key, or Shift+F10, on a selected line opens its menu at the middle of it (02·9, Q35).
+  // The menu key, or Shift+F10: a selected line's menu at its middle (02·9, Q35), else the selection's.
   if (asksForTheMenu(e) && props.line != null) {
     e.preventDefault()
     const middle = selectedLineMiddle(host.value) ?? { x: 40, y: 40 }
     position(middle.x, middle.y)
     mode.value = 'line'
-    void nextTick(() => document.querySelector<HTMLElement>('.canvas-pop [role="menuitem"]')?.focus())
+  } else if (asksForTheMenu(e) && props.selection) {
+    e.preventDefault()
+    const box = cornerOf(props.selection)
+    position(box?.right ?? 40, box?.top ?? 40)
+    source.value = props.selection
+    mode.value = several.value.length > 1 ? 'selection' : 'element'
   }
   if (e.key === 'F2' && props.selection) {
     e.preventDefault()
-    const el = host.value
-      ?.querySelector(`[data-alias="${CSS.escape(props.selection)}"]`)
-      ?.getBoundingClientRect()
-    if (el) position(el.left, el.top)
-    void rename(props.selection)
+    const box = cornerOf(props.selection)
+    if (box) position(box.left, box.top)
+    rename(props.selection)
   }
 }
 function double(e: MouseEvent) {
   position(e.clientX, e.clientY)
   // A double press on a label opens its relation; on a line it adds a bend, which the canvas does.
-  const label = (e.target as Element).closest<SVGElement>('.lab-line-label[data-relation]')
-  if (label) editLine(Number(label.dataset.relation))
+  const line = (e.target as Element).closest<SVGElement>('.lab-line-label[data-relation]')
+  if (line) relation.editLine(Number(line.dataset.relation))
   else if (!(e.target as Element).closest('[data-relation], .lab-line-handles')) {
     const alias = elementAt(e)?.dataset.alias
-    if (alias) void rename(alias)
+    if (alias) rename(alias)
   }
 }
 </script>
@@ -235,114 +168,87 @@ function double(e: MouseEvent) {
     <Teleport to="body">
       <div
         v-if="mode"
+        ref="pop"
         class="canvas-pop"
+        :class="width"
         role="dialog"
+        tabindex="-1"
         :aria-label="mode"
         :style="{ left: at.x + 'px', top: at.y + 'px' }"
-        @keydown.esc.stop="mode = null"
+        @keydown.esc.stop="close(true)"
       >
-        <button
-          type="button"
-          class="close"
-          aria-label="Close"
-          @click="mode = null"
-        >
-          ×
-        </button>
         <CanvasElementForm
           v-if="mode === 'create'"
           :context="context"
           @apply="apply"
+          @add="addFound"
+          @cancel="close(true)"
         />
         <CanvasSelectionMenu
           v-else-if="mode === 'selection'"
           :editing="editing"
           :selection="several"
           :words="words"
-          @done="mode = null"
+          @done="close(true)"
+          @close="close(true)"
         />
         <CanvasLineMenu
           v-else-if="mode === 'line' && line != null"
           :editing="editing"
           :line="line"
-          @edit="editLine(line)"
-          @done="mode = null"
+          @edit="relation.editLine(line)"
+          @done="close(true)"
+          @close="close(true)"
         />
-        <template v-else-if="mode === 'element'">
-          <strong>{{ selected?.name }}</strong> <button @click="rename(source)">
-            Rename
-          </button><button @click="mode = 'target'">
-            Connect to…
-          </button>
-          <button
-            v-if="words.removeEntry"
-            @click="editing.remove([source]); mode = null"
-          >
-            {{ words.removeEntry }}
-          </button>
-          <button @click="mode = 'delete'">
-            {{ words.deleteEntry }}
-          </button>
-        </template>
-        <template v-else-if="mode === 'target'">
-          <strong>Connect to…</strong>
-          <button
-            v-for="m in members.filter((m) => m.alias !== source)"
-            :key="m.alias"
-            @click="pair(m.alias)"
-          >
-            {{ m.name }}
-          </button>
-        </template>
-        <form
+        <CanvasMenu
+          v-else-if="mode === 'element' && selected"
+          :heading="selected.name"
+          :type="selected.type"
+          :label="`${selected.name}: element`"
+          :items="elementMenuItems(words, drafted)"
+          @choose="onElement"
+          @close="close(true)"
+        />
+        <CanvasConnectTarget
+          v-else-if="mode === 'target' && selected"
+          :from="selected.name"
+          :members="members.filter((m) => m.alias !== source)"
+          @pick="relation.pair"
+        />
+        <CanvasRenameForm
           v-else-if="mode === 'rename' && selected"
-          @submit.prevent="
-            apply({ op: 'model.element.rename', artifact_id: selected.id, name: name.trim() })
-          "
-        >
-          <label>Name <input
-            ref="field"
-            v-model="name"
-            required
-            autofocus
-          ></label>
-          <p v-if="usages !== null">
-            {{ usages ? 'Also renamed on ' + usages + ' other diagrams' : 'No other diagram draws it' }}
-          </p>
-          <button type="submit">
-            Keep rename
-          </button>
-        </form>
-        <template v-else-if="mode === 'delete' && selected">
-          <p>{{ words.deleteQuestion(selected.name) }}</p>
-          <button @click="apply({ op: 'model.element.delete', artifact_id: selected.id })">
-            {{ words.deleteConfirm }}
-          </button>
-        </template>
-        <form
+          :key="selected.id"
+          :element="selected"
+          :diagram-id="context.diagram.artifact_id"
+          :drafted="drafted"
+          @apply="apply"
+          @cancel="close(true)"
+          @failed="error = $event"
+        />
+        <CanvasDeleteConfirm
+          v-else-if="mode === 'delete' && selected"
+          :name="selected.name"
+          :words="words"
+          @confirm="apply({ op: 'model.element.delete', artifact_id: selected.id })"
+          @remove="onElement('remove')"
+          @cancel="close(true)"
+        />
+        <CanvasRelationForm
           v-else-if="mode === 'relation'"
-          @submit.prevent="saveRelation"
-        >
-          <label>Relationship
-            <select v-model="kind">
-              <option
-                v-for="k in options"
-                :key="k"
-              >{{ k }}</option>
-            </select></label>
-          <label>Source cardinality <input v-model="srcCount"></label>
-          <label>Target cardinality <input v-model="tgtCount"></label>
-          <label>Description <input v-model="description"></label>
-          <label>Diagram label <input v-model="label"></label>
-          <button
-            :disabled="!kind"
-            type="submit"
-          >
-            Keep relationship
-          </button>
-        </form>
+          v-model:kind="kind"
+          v-model:src-count="srcCount"
+          v-model:tgt-count="tgtCount"
+          v-model:description="description"
+          v-model:label="label"
+          :title="`${nameOf(source)} → ${nameOf(target)}`"
+          :options="options"
+          :editing="Boolean(currentLine)"
+          @keep="relation.keep"
+          @cancel="close(true)"
+        />
         <p
           v-if="error"
+          class="cp-alert"
           role="alert"
         >
           {{ error }}
@@ -352,3 +258,4 @@ function double(e: MouseEvent) {
   </div>
 </template>
 <style scoped src="./CanvasContentEditor.css"></style>
+<style src="./canvasPopover.css"></style>

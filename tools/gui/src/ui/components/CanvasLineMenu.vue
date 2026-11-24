@@ -10,9 +10,11 @@ import type { Route, Side } from '../../domain/layout/orthogonal'
 import type { End } from '../../domain/layout/lab/labRouteEdits'
 import { lineAt, straightened, withEndAt, withRouteStated } from '../../domain/layout/lab/labRouteEdits'
 import type { DiagramEditing } from '../composables/useDiagramEditing'
+import CanvasMenu from './CanvasMenu.vue'
+import type { CanvasMenuItem } from './canvasMenu'
 
 const props = defineProps<{ editing: DiagramEditing; line: number }>()
-const emit = defineEmits<{ edit: []; done: [] }>()
+const emit = defineEmits<{ edit: []; done: []; close: [] }>()
 
 const SIDES: readonly Side[] = ['top', 'right', 'bottom', 'left']
 const session = props.editing.session
@@ -46,72 +48,56 @@ const moveEnd = (end: End, side: Side) => {
   })
   emit('done')
 }
+
+const capital = (side: Side) => side[0].toUpperCase() + side.slice(1)
+const heading = computed(() => {
+  const one = relation.value
+  if (!one) return ''
+  return page.value === 'top' ? `${nameOf(one.source)} → ${nameOf(one.target)}` : 'Move end to side'
+})
+const items = computed((): readonly CanvasMenuItem[] => {
+  const one = relation.value
+  if (!one) return []
+  if (page.value === 'top') {
+    return [
+      { id: 'edit', label: 'Edit relation…', hint: 'its type, cardinalities, description and label' },
+      { id: 'straighten', label: 'Straighten', hint: 'remove every bend; routed round anything in the way',
+        disabled: !stated.value.via?.length },
+      { id: 'sides', label: 'Move end to side ▸', hint: 'either end, to any side of its element',
+        disabled: one.key === undefined },
+    ]
+  }
+  const ends = (['from', 'to'] as const).flatMap((end) => {
+    const now = sideNow(end)
+    return SIDES.map((side, at): CanvasMenuItem => ({
+      id: `${end}:${side}`, label: capital(side), shortcut: side === now ? 'now' : undefined,
+      caption: at === 0
+        ? `${end === 'from' ? 'Source' : 'Target'} end · ${nameOf(end === 'from' ? one.source : one.target)}`
+          + (now ? ` · now ${now}` : '')
+        : undefined,
+      attrs: { 'data-end': end, 'data-side': side, 'aria-current': side === now ? 'true' : undefined },
+    }))
+  })
+  return [...ends, { id: 'back', label: '‹ Back', divider: true }]
+})
+const choose = (id: string) => {
+  if (id === 'edit') emit('edit')
+  else if (id === 'straighten') straighten()
+  else if (id === 'sides') page.value = 'sides'
+  else if (id === 'back') page.value = 'top'
+  else {
+    const [end, side] = id.split(':') as [End, Side]
+    moveEnd(end, side)
+  }
+}
 </script>
 
 <template>
-  <div
-    class="line-menu"
-    role="menu"
-    :aria-label="page === 'top' ? 'Relation' : 'Move end to side'"
-  >
-    <template v-if="page === 'top' && relation">
-      <strong>{{ nameOf(relation.source) }} → {{ nameOf(relation.target) }}</strong>
-      <button
-        role="menuitem"
-        @click="emit('edit')"
-      >
-        Edit relation…
-      </button>
-      <button
-        role="menuitem"
-        :disabled="!stated.via?.length"
-        title="remove every bend; routed round anything in the way"
-        @click="straighten"
-      >
-        Straighten
-      </button>
-      <button
-        role="menuitem"
-        :disabled="relation.key === undefined"
-        title="either end, to any side of its element"
-        @click="page = 'sides'"
-      >
-        Move end to side ▸
-      </button>
-    </template>
-    <template v-else-if="relation">
-      <template
-        v-for="end in (['from', 'to'] as const)"
-        :key="end"
-      >
-        <p class="line-menu__end">
-          {{ end === 'from' ? 'Source' : 'Target' }} end ·
-          {{ nameOf(end === 'from' ? relation.source : relation.target) }}
-        </p>
-        <button
-          v-for="side in SIDES"
-          :key="side"
-          role="menuitem"
-          :aria-current="side === sideNow(end) ? 'true' : undefined"
-          :data-end="end"
-          :data-side="side"
-          @click="moveEnd(end, side)"
-        >
-          {{ side[0].toUpperCase() + side.slice(1) }}{{ side === sideNow(end) ? ' · now' : '' }}
-        </button>
-      </template>
-      <button
-        role="menuitem"
-        @click="page = 'top'"
-      >
-        ‹ Back
-      </button>
-    </template>
-  </div>
+  <CanvasMenu
+    :heading="heading"
+    :label="page === 'top' ? 'Relation' : 'Move end to side'"
+    :items="items"
+    @choose="choose"
+    @close="emit('close')"
+  />
 </template>
-
-<style scoped>
-.line-menu button,
-.line-menu strong { display: block; margin-block: 0.25rem; }
-.line-menu__end { margin: 0.5rem 0 0.1rem; font-size: 0.85em; opacity: 0.8; }
-</style>

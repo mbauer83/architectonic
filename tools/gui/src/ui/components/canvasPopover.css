@@ -1,0 +1,56 @@
+/* The surface every popover of in-canvas editing sits on, and the form parts they share (sketch 03):
+   menus, the add-here picker, and the short forms behind them. Not scoped: the parts are drawn by the
+   editor's child components, and every rule is under `.canvas-pop`. Interface chrome, so theme tokens
+   throughout; marks on the diagram are the canvas's and are not styled here. */
+.canvas-pop {
+  position: fixed; z-index: 100; box-sizing: border-box;
+  min-width: 220px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); overflow-y: auto;
+  padding: 6px; background: var(--surface); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 8px; box-shadow: var(--shadow);
+  font-size: 12.5px; line-height: 1.35; outline: none;
+}
+.canvas-pop--wide { width: 380px; }
+.canvas-pop--form { width: 360px; }
+.canvas-pop--dialog { width: 480px; }
+.canvas-pop p { margin: 0; }
+.canvas-pop kbd {
+  font: 11px ui-monospace, monospace; padding: 0 4px; border: 1px solid var(--border-strong);
+  border-bottom-width: 2px; border-radius: 3px; background: var(--surface); color: var(--text-2);
+  white-space: nowrap;
+}
+.canvas-pop .cp-input {
+  box-sizing: border-box; width: 100%; padding: 5px 8px; font: inherit; font-size: 13px; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 5px;
+}
+.canvas-pop .cp-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-ring); }
+.canvas-pop .cp-form { display: flex; flex-direction: column; gap: 6px; padding: 4px 6px; }
+.canvas-pop .cp-title { margin: 0 0 2px; font-size: 13px; font-weight: 600; color: var(--text); }
+.canvas-pop .cp-section {
+  margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--hair); font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+}
+.canvas-pop .cp-field { display: grid; grid-template-columns: 110px 1fr; gap: 6px; align-items: center; font-size: 12px; }
+.canvas-pop .cp-field > span:first-child { color: var(--muted); }
+.canvas-pop .cp-note { font-size: 11.5px; color: var(--muted); }
+.canvas-pop .cp-row-end { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; margin-top: 4px; }
+.canvas-pop .cp-btn {
+  padding: 4px 12px; font: inherit; font-size: 12.5px; font-weight: 500; color: var(--text-2); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px; white-space: nowrap;
+}
+.canvas-pop .cp-btn:hover:not(:disabled) { background: var(--hover); }
+.canvas-pop .cp-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.canvas-pop .cp-btn:disabled { opacity: .45; cursor: default; }
+.canvas-pop .cp-btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.canvas-pop .cp-btn--primary:hover:not(:disabled) { background: var(--accent-strong); }
+.canvas-pop .cp-btn--primary kbd { background: transparent; color: inherit; border-color: currentColor; margin-left: 4px; }
+.canvas-pop .cp-btn--danger {
+  background: var(--danger-soft); border-color: var(--danger-border); color: var(--danger-strong); font-weight: 600;
+}
+.canvas-pop .cp-btn--danger:hover:not(:disabled) { background: var(--danger-soft); border-color: var(--danger-strong); }
+.canvas-pop .cp-btn--sm { padding: 2px 8px; font-size: 12px; }
+.canvas-pop .cp-btn--start { margin-right: auto; }
+.canvas-pop .cp-type { display: inline-flex; gap: 6px; align-items: center; justify-self: start; }
+.canvas-pop .cp-alert {
+  margin-top: 6px; padding: 5px 8px; border-radius: 5px; font-size: 12px;
+  background: var(--danger-soft); color: var(--danger-strong); border: 1px solid var(--danger-border);
+}
