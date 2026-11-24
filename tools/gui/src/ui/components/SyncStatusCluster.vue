@@ -4,8 +4,7 @@
  * menu housing engagement Save, enterprise Save/Submit/Discard, and the Promote
  * entry point. The verbs are fail-closed behind the reducer's authority handling.
  *
- * The menu also opens the Proposed changes page, and beside it the Candidate architectures page:
- * changes to the model proposed and sketched before anything is committed. That destination is not on the
+ * The menu also opens the Proposed changes page. That destination is not on the
  * artifact axis the left navigation is for — Browse, Documents, Diagrams and the
  * rest are classes of artifact, while this is the state of the enterprise-change
  * workflow, which is what this cluster owns. It is a destination and not an
@@ -19,7 +18,6 @@ import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import type { EnterpriseSyncStatus, SyncAuthority } from '../../domain'
 import { reduceCluster, type ClusterAction } from './SyncStatusCluster.helpers'
-import { candidateListRoute } from '../router/artifactRoutes'
 
 type SaveMode = 'engagement-save' | 'enterprise-save' | 'enterprise-submit' | 'enterprise-withdraw'
 
@@ -134,15 +132,6 @@ const closeMenu = () => {
           @click="menuOpen = false"
         >
           Proposed changes
-        </RouterLink>
-        <RouterLink
-          class="cluster__menu-item"
-          role="menuitem"
-          :to="candidateListRoute()"
-          title="Changes to the model proposed and sketched as candidates, before any is committed"
-          @click="menuOpen = false"
-        >
-          Candidate architectures
         </RouterLink>
         <hr
           v-if="hasActions"

@@ -33,7 +33,11 @@ export function useDocumentsListState(svc: ModelService) {
   const groupsState = useQuery<GroupList, RepoError>()
   const loading = ref(false)
   const error = ref<string | null>(null)
-  const docTypeFilter = ref('')
+  /** The type the list is narrowed to, kept in the address so a narrowed list can be linked. */
+  const docTypeFilter = computed({
+    get: () => (typeof route.query.doc_type === 'string' ? route.query.doc_type : ''),
+    set: (value: string) => { void router.replace({ query: { ...route.query, doc_type: value || undefined }, hash: route.hash }) },
+  })
   const titleFilter = ref('')
   const showArchivedGroups = ref(false)
 
@@ -98,7 +102,7 @@ export function useDocumentsListState(svc: ModelService) {
   const loadGroups = () => groupsState.run(svc.listGroups('document-collection'))
 
   // The facet writes the URL; the derived tier updates reactively, then we refetch.
-  watch(tier, () => { load() })
+  watch([tier, docTypeFilter], () => { load() })
 
   let refreshEventSource: EventSource | null = null
   onMounted(() => {

@@ -10,6 +10,7 @@ import type { RepoError } from '../../ports/repositoryErrors'
 import { useQuery } from '../composables/useQuery'
 import IconLibraryAddForm from '../components/IconLibraryAddForm.vue'
 import IconLibraryCard from '../components/IconLibraryCard.vue'
+import DiagramLibraryTabs from '../components/DiagramLibraryTabs.vue'
 
 const svc = inject(modelServiceKey)!
 const library = useQuery<IconList, RepoError>()
@@ -35,6 +36,7 @@ const added = (): void => {
 
 <template>
   <div class="page">
+    <DiagramLibraryTabs />
     <header class="page-head">
       <h1>Icons</h1>
       <input

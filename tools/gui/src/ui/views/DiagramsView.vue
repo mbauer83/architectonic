@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { createRouteInside, diagramCreateRoute, diagramDetailRoute, matrixCreateRoute } from '../router/artifactRoutes'
 import ArtifactBadges from '../components/ArtifactBadges.vue'
+import DiagramLibraryTabs from '../components/DiagramLibraryTabs.vue'
 import { computed, inject, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { DiagramTypeSummary } from '../../domain'
@@ -82,6 +83,7 @@ const diagramTypeLabel = (diagramType: string): string => {
       />
     </aside>
     <section class="content">
+      <DiagramLibraryTabs />
       <div class="page-header">
         <h1 class="page-title">
           Diagrams

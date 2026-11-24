@@ -8,6 +8,7 @@ import { searchHitRoute, searchHitTypeLabel } from '../lib/searchNavigation'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import SyncStatusCluster from './SyncStatusCluster.vue'
 import PreferencesMenu from './PreferencesMenu.vue'
+import PlanMenu from './PlanMenu.vue'
 import type { EnterpriseSyncStatus, SearchHit, SyncAuthority } from '../../domain'
 import { readErrorMessage } from '../lib/errors'
 import { layoutLabIsOn } from '../../adapters/http/HttpLayoutLab'
@@ -33,6 +34,8 @@ const router = useRouter()
 const viewpointDriven = computed(() => Boolean(route.query.viewpoint))
 
 const browseTo = computed(() => browseTarget(route.path, route.query))
+// The icon library is a tab of the diagram library, so Diagrams is the current section there too.
+const iconsOpen = computed(() => route.path.startsWith('/icons'))
 
 const searchQuery = ref('')
 type SearchDropdownHit = SearchHit | {
@@ -141,18 +144,16 @@ onMounted(async () => { layoutLabOn.value = await layoutLabIsOn() })
       >
         Browse
       </RouterLink>
-      <RouterLink to="/scratchpads">
-        Scratchpads
-      </RouterLink>
       <RouterLink to="/documents">
         Documents
       </RouterLink>
-      <RouterLink to="/diagrams">
+      <RouterLink
+        to="/diagrams"
+        :class="{ 'nav__link--forced-active': iconsOpen }"
+      >
         Diagrams
       </RouterLink>
-      <RouterLink to="/icons">
-        Icons
-      </RouterLink>
+      <PlanMenu />
       <RouterLink
         to="/viewpoints"
         :class="{ 'nav__link--forced-active': viewpointDriven }"

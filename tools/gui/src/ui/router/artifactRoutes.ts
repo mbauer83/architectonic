@@ -153,6 +153,7 @@ export const candidateListRoute = (): string => ROUTE_TEMPLATES.candidateList
 export const candidateDetailRoute = (artifactId: string): string => `/candidates/${seg(artifactId)}`
 
 export const diagramListRoute = (): string => ROUTE_TEMPLATES.diagramList
+export const iconLibraryRoute = (): string => ROUTE_TEMPLATES.iconLibrary
 export const layoutLabRoute = (artifactId = ''): string =>
   artifactId ? `/layout-lab/${seg(artifactId)}` : ROUTE_TEMPLATES.layoutLab
 export const diagramCreateRoute = (): string => ROUTE_TEMPLATES.diagramCreate

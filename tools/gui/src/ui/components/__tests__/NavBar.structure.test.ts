@@ -19,6 +19,13 @@ describe('NavBar structure', () => {
     for (const label of ['Browse', 'Documents', 'Diagrams', 'Viewpoints', 'Assurance']) {
       expect(template).toContain(label)
     }
+    expect(template).toContain('<PlanMenu />')
+  })
+
+  it('reaches icons through the diagram library, not an entry of their own', () => {
+    const nav = template.slice(template.indexOf('aria-label="Primary"'), template.indexOf('</nav>'))
+    expect(nav).not.toContain('to="/icons"')
+    expect(nav).not.toContain('to="/scratchpads"')
   })
 
   it('carries one axis: a class of artifact, never a workflow state', () => {

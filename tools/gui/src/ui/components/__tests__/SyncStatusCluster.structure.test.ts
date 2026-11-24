@@ -23,9 +23,10 @@ describe('SyncStatusCluster structure', () => {
     expect(template).toContain('Proposed changes')
   })
 
-  it('opens the candidate architectures page beside it', () => {
-    expect(template).toContain(':to="candidateListRoute()"')
-    expect(template).toContain('Candidate architectures')
+  it('leaves candidate architectures to the Plan menu', () => {
+    // Candidates are artifacts a reader plans with, not workflow state; they moved to the primary
+    // navigation's Plan menu, where they were looked for.
+    expect(template).not.toContain('Candidate architectures')
   })
 
   it('never disables the control that holds the destination', () => {

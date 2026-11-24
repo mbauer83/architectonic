@@ -90,7 +90,6 @@ const {
             <select
               v-model="docTypeFilter"
               class="toolbar-select"
-              @change="load"
             >
               <option value="">All</option>
               <option
