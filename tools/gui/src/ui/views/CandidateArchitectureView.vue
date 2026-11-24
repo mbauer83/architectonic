@@ -17,6 +17,8 @@ import { diffMarks, framedMarks } from '../../domain/candidates/canvasMarks'
 import { modelServiceKey, toastKey } from '../keys'
 import { candidateDetailRoute, candidateListRoute } from '../router/artifactRoutes'
 import { useCandidates } from '../composables/useCandidates'
+import { useCandidateApply } from '../composables/useCandidateApply'
+import ApplyCandidate from '../components/candidates/ApplyCandidate.vue'
 import CandidateOperations from '../components/candidates/CandidateOperations.vue'
 import CandidateCanvas from '../components/candidates/CandidateCanvas.vue'
 import MarkedCanvas from '../components/candidates/MarkedCanvas.vue'
@@ -67,6 +69,14 @@ const rebase = async () => {
   rebasing.value = false
 }
 
+const apply = useCandidateApply(svc)
+const applicable = computed(() => summary.value?.state === 'draft' || summary.value?.state === 'candidate')
+const applied = async () => {
+  toast(`Applied ${summary.value?.name ?? candidateId.value} to the model; it is integrated.`)
+  await candidates.load()
+  await candidates.compareWith(candidates.against.value)
+}
+
 const stacking = ref(false)
 const stackName = ref('')
 const stackOn = async () => {
@@ -89,6 +99,7 @@ const remove = async () => {
 const read = async () => {
   sketching.value = false
   framed.value = null
+  apply.close()
   await candidates.select(candidateId.value)
 }
 watch(candidateId, read)
@@ -125,6 +136,16 @@ onMounted(async () => {
         @click="stacking = true"
       >
         New candidate on top…
+      </button>
+      <button
+        v-if="summary && applicable"
+        type="button"
+        class="btn btn-sm"
+        data-testid="apply-to-model"
+        :disabled="apply.busy.value"
+        @click="apply.open(candidateId)"
+      >
+        Apply to the model…
       </button>
       <button
         v-if="summary"
@@ -191,6 +212,19 @@ onMounted(async () => {
       role="alert"
     >
       {{ candidates.error.value }}
+    </p>
+    <ApplyCandidate
+      v-if="summary && apply.preview.value?.candidate === summary.id"
+      :apply="apply"
+      :name="summary.name"
+      @applied="applied"
+    />
+    <p
+      v-else-if="apply.error.value"
+      class="err"
+      role="alert"
+    >
+      {{ apply.error.value }}
     </p>
     <ModelMovedBanner
       v-if="summary && candidates.comparison.value?.candidate === summary.id"
