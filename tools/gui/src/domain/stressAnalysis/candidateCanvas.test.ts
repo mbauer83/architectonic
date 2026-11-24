@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { commandsOf, editsOf, operationsOf } from './candidateCanvas'
+import { chosenIds, commandsOf, editsOf, operationsOf } from './candidateCanvas'
 
 const SERVICE = 'SRV@1712870400.Uv9Wx9.repository-promotion-service'
 const ARTIFACTS = 'PRC@1712870400.0Rz5Ex.promote-artifacts'
@@ -39,6 +39,21 @@ describe('a candidate drawn when its canvas opens', () => {
     ] } })
     expect(commandsOf(operations).map((command) => [command.op, command.artifact_id])).toEqual([
       ['model.element.create', QUEUE], ['model.element.rename', SERVICE], ['model.relation.create', ACCESS],
+    ])
+  })
+
+  it('redraws a relation to what the candidate created, its end resolved through the composed view', () => {
+    const operations = operationsOf({ changes: { operations: [
+      { op: 'create_entity', ref: 'q', artifact_id: QUEUE, fields: { artifact_type: 'data-object', name: 'Queue', group: 'g' } },
+      { op: 'add_connection', source_entity: ARTIFACTS, connection_type: 'archimate-access', target_entity: '$ref:q', fields: {} },
+    ] } })
+    const chosen = chosenIds({ entities: [
+      { id: '$ref:q', fields: {}, artifact_id: QUEUE }, { id: ARTIFACTS, fields: {} },
+    ] })
+
+    expect(chosen).toEqual(new Map([['$ref:q', QUEUE]]))
+    expect(commandsOf(operations, chosen).map((command) => command.artifact_id)).toEqual([
+      QUEUE, `${ARTIFACTS}---${QUEUE}@@archimate-access`,
     ])
   })
 

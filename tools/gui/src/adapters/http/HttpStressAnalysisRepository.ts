@@ -1,11 +1,12 @@
 import { Effect } from 'effect'
 import {
-  AnalysisIncidenceSchema, AnalysisProgressSchema, CandidateComparisonSchema, CandidateListSchema,
+  AnalysisIncidenceSchema, AnalysisProgressSchema, AnalysisStartedSchema, CandidateComparisonSchema,
+  CandidateListSchema,
   CandidateResponseSchema, DocumentTablesSchema, DocumentTableWriteSchema, IntegrationCheckSchema,
 } from '../../domain/schemas/candidates'
 import { encodeIdentitySegment } from '../../domain/identitySegments'
 import type { StressAnalysisRepository } from '../../ports/StressAnalysisRepository'
-import { buildUrl, fetchJson, patchJson, postJson } from './httpTransport'
+import { buildUrl, deleteNoContent, fetchJson, patchJson, postJson } from './httpTransport'
 
 const candidateUrl = (id: string, part = '', query?: Record<string, string | undefined>): string =>
   buildUrl(`/change-sets/${encodeIdentitySegment(id)}${part}`, query)
@@ -17,6 +18,10 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
     .pipe(Effect.map((envelope) => envelope.candidates)),
   createCandidate: (record, diagram) =>
     postJson(buildUrl('/change-sets'), { record, ...(diagram ? { diagram } : {}) }, CandidateResponseSchema),
+  startAnalysis: (start) => postJson(buildUrl('/stress-analyses'), start, AnalysisStartedSchema),
+  deleteCandidate: (id) => deleteNoContent(candidateUrl(id)),
+  rebaseCandidate: (id, basedOn) =>
+    postJson(candidateUrl(id, '/rebase'), { based_on: basedOn }, CandidateResponseSchema),
   readCandidate: (id) => fetchJson(candidateUrl(id), CandidateResponseSchema),
   editCandidate: (id, basedOn, patch) =>
     patchJson(candidateUrl(id), { based_on: basedOn, patch }, CandidateResponseSchema),

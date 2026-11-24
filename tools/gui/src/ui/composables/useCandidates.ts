@@ -52,6 +52,19 @@ export function useCandidates(svc: ModelService, naiveId: () => string, scopeDia
     await compare()
   }
 
+  /** Write *id*'s drifted operations again against the model as it stands now, then read it again. */
+  const rebase = async (id: string): Promise<boolean> => {
+    try {
+      const { version } = await Effect.runPromise(svc.readCandidate(id))
+      await Effect.runPromise(svc.rebaseCandidate(id, version))
+      await compare()
+      return true
+    } catch (failure) {
+      error.value = formatEffectError(failure)
+      return false
+    }
+  }
+
   /** A new candidate stacked on *parent* (*New candidate on top…*); answers its id. */
   const stackOn = async (parent: string, name: string): Promise<string | null> => {
     try {
@@ -66,7 +79,7 @@ export function useCandidates(svc: ModelService, naiveId: () => string, scopeDia
     }
   }
 
-  return { all, selected, against, comparison, error, inAnalysis, choices, load, select, compareWith, stackOn }
+  return { all, selected, against, comparison, error, inAnalysis, choices, load, select, compareWith, stackOn, rebase }
 }
 
 export type Candidates = ReturnType<typeof useCandidates>

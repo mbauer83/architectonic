@@ -25,6 +25,12 @@ export const CandidateListSchema = Schema.Struct({ candidates: Schema.Array(Cand
 export const CandidateResponseSchema = Schema.Struct({ record: FieldsSchema, version: Schema.String })
 export type CandidateResponse = typeof CandidateResponseSchema.Type
 
+/** A started analysis: its document, and the naive architecture it was started with. */
+export const AnalysisStartedSchema = Schema.Struct({
+  document: Schema.String, naive_candidate: CandidateResponseSchema,
+})
+export type AnalysisStarted = typeof AnalysisStartedSchema.Type
+
 const ConnectionKeySchema = Schema.Struct({
   source_entity: Schema.String,
   connection_type: Schema.String,
@@ -32,7 +38,10 @@ const ConnectionKeySchema = Schema.Struct({
 })
 export type ConnectionKey = typeof ConnectionKeySchema.Type
 
-const ScopedEntitySchema = Schema.Struct({ id: Schema.String, fields: FieldsSchema })
+/** *artifact_id*: the id chosen for an entity the stack creates, which the view names by its reference. */
+const ScopedEntitySchema = Schema.Struct({
+  id: Schema.String, fields: FieldsSchema, artifact_id: Schema.optional(Schema.String),
+})
 const ScopedConnectionSchema = Schema.Struct({ ...ConnectionKeySchema.fields, fields: FieldsSchema })
 export type ScopedEntity = typeof ScopedEntitySchema.Type
 export type ScopedConnection = typeof ScopedConnectionSchema.Type

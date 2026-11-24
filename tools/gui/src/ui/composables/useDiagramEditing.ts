@@ -65,7 +65,10 @@ export function useDiagramEditing(
     session.open(geometry, carried ? { arrangement: arrangedBy(geometry, carried), byHand: true } : saved.value)
   }
 
-  /** Open on the picture as stored; *commands* are content already proposed elsewhere, drawn at once. */
+  /**
+   * Open on the picture as stored; *commands* are content already proposed elsewhere, drawn at once and
+   * not undoable: they are where the session starts, as the stored picture is.
+   */
   const open = async (commands: readonly CanvasCommand[] = []): Promise<boolean> => {
     loading.value = true
     error.value = null
@@ -74,7 +77,7 @@ export function useDiagramEditing(
       await reopen()
       const now = session.state.value
       loading.value = false
-      return commands.length === 0 || !now || await preview({ ...now, commands }, now)
+      return commands.length === 0 || !now || await preview({ ...now, commands }, now, false)
     } catch (failure) {
       error.value = failure instanceof Error ? failure.message : String(failure)
       return false
@@ -266,7 +269,8 @@ export function useDiagramEditing(
     await preview({ ...now, additions, addedTypes: type ? new Map(now.addedTypes).set(id, type) : now.addedTypes }, now)
   }
 
-  const preview = async (next: ArrangementState, previous: ArrangementState) => {
+  /** Draw *next*'s content: as one undoable step, or (*undoable* false) as the state the session opens on. */
+  const preview = async (next: ArrangementState, previous: ArrangementState, undoable = true) => {
     const drawn = savedMembers.value
     if (!drawn || loading.value || saving.value) return false
     loading.value = true
@@ -279,7 +283,8 @@ export function useDiagramEditing(
       }))
       if (session.state.value !== previous) return false
       const arrangement = carried ? arrangedBy(picture, picture.layout ?? carried) : drawnArrangement(picture)
-      session.step({ ...next, picture, arrangement })
+      if (undoable) session.step({ ...next, picture, arrangement })
+      else session.open(picture, { ...next, arrangement })
       return true
     } catch (failure) {
       error.value = failure instanceof Error ? failure.message : String(failure)

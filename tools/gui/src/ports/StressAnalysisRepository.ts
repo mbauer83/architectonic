@@ -1,6 +1,6 @@
 import type { Effect } from 'effect'
 import type {
-  AnalysisIncidence, AnalysisProgress, CandidateComparison, CandidateResponse, CandidateSummary,
+  AnalysisIncidence, AnalysisProgress, AnalysisStarted, CandidateComparison, CandidateResponse, CandidateSummary,
   DocumentTables, DocumentTableWrite, IntegrationCheck,
 } from '../domain/schemas/candidates'
 import type { RepoError } from './repositoryErrors'
@@ -16,6 +16,18 @@ export interface StressAnalysisRepository {
   readonly createCandidate: (
     record: Readonly<Record<string, unknown>>, diagram?: string,
   ) => Effect.Effect<CandidateResponse, RepoError>
+  /**
+   * Start an analysis in one write: the naive architecture (*naive*: its name, and its scope or parent)
+   * and the document naming it. A refusal leaves neither.
+   */
+  readonly startAnalysis: (start: {
+    readonly title: string; readonly question?: string; readonly naive: Readonly<Record<string, unknown>>
+    readonly scope_diagram?: string
+  }) => Effect.Effect<AnalysisStarted, RepoError>
+  /** Delete a candidate; refused (409, saying why) while one stacks on it or an analysis starts from it. */
+  readonly deleteCandidate: (id: string) => Effect.Effect<void, RepoError>
+  /** Write each drifted operation again against the model as it stands now, keeping what it asks for. */
+  readonly rebaseCandidate: (id: string, basedOn: string) => Effect.Effect<CandidateResponse, RepoError>
   readonly readCandidate: (id: string) => Effect.Effect<CandidateResponse, RepoError>
   readonly editCandidate: (
     id: string, basedOn: string, patch: Readonly<Record<string, unknown>>,
