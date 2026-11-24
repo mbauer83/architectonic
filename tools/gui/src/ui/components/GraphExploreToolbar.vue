@@ -133,15 +133,15 @@ const open = ref(false)
 .graph-toolbar--floating { display: flex; }
 .toolbar-disclosure {
   width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
-  background: rgb(255 255 255 / 92%); border: 1px solid #d1d5db; border-radius: 6px;
-  font-size: 15px; line-height: 1; cursor: pointer; color: #374151; flex-shrink: 0;
+  background: var(--overlay); border: 1px solid var(--border-strong); border-radius: 6px;
+  font-size: 15px; line-height: 1; cursor: pointer; color: var(--text-2); flex-shrink: 0;
 }
-.toolbar-disclosure:hover { background: #fff; }
+.toolbar-disclosure:hover { background: var(--surface); }
 
 .spacing-controls { display: flex; align-items: center; gap: 4px; }
-.spacing-label { font-size: 11px; color: #6b7280; margin-right: 4px; }
+.spacing-label { font-size: 11px; color: var(--muted); margin-right: 4px; }
 .neighbour-toggle {
-  display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #374151;
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-2);
   cursor: pointer; white-space: nowrap;
 }
 </style>

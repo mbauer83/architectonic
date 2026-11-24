@@ -296,12 +296,12 @@ onMounted(load)
 
 <style scoped>
 .assurance-diagram-panel { display: flex; flex-direction: column; gap: 12px; }
-.panel-state { color: #64748b; font-size: 13px; }
-.panel-error { color: #dc2626; font-size: 13px; }
+.panel-state { color: var(--muted); font-size: 13px; }
+.panel-error { color: var(--danger); font-size: 13px; }
 .diagram-content { min-width: 0; }
 .img-container {
-  position: relative; overflow: hidden; background: #f8fafc;
-  border: 1px solid #e2e8f0; border-radius: 8px;
+  position: relative; overflow: hidden; background: var(--paper);
+  border: 1px solid var(--border); border-radius: 8px;
   min-height: 360px; height: clamp(380px, 70vh, 900px);
   cursor: grab; user-select: none;
 }
@@ -310,7 +310,7 @@ onMounted(load)
    anything the element does not cover. */
 .img-container:fullscreen {
   width: 100vw; height: 100vh; max-height: none;
-  border: none; border-radius: 0; background: #f8fafc;
+  border: none; border-radius: 0; background: var(--paper);
 }
 .svg-wrap :deep(svg) { display: block; max-width: none; }
 .svg-wrap :deep([data-assurance-node-id]),
@@ -332,21 +332,21 @@ onMounted(load)
 .svg-wrap :deep(.svg-assurance-selected) text { font-weight: 700; }
 .uca-matrix-wrap { overflow-x: auto; }
 .uca-matrix { width: 100%; border-collapse: collapse; font-size: 12px; }
-.uca-matrix th, .uca-matrix td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: top; min-width: 130px; }
-.uca-matrix thead th { background: #f1f5f9; }
-.node-link { border: 0; background: none; padding: 0; color: #1d4ed8; cursor: pointer; font-weight: 600; text-align: left; }
-.uca-chip { display: block; width: 100%; border: 1px solid #bfdbfe; border-radius: 5px; background: #eff6ff; color: #1e3a8a; padding: 6px; text-align: left; cursor: pointer; margin-bottom: 4px; }
-.empty-cell, .empty-matrix { color: #94a3b8; }
-.diagram-fallback { border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px; background: #f8fafc; }
-.fallback-note { margin: 0 0 12px; color: #64748b; font-size: 12px; }
+.uca-matrix th, .uca-matrix td { border: 1px solid var(--border-strong); padding: 8px; text-align: left; vertical-align: top; min-width: 130px; }
+.uca-matrix thead th { background: var(--soft); }
+.node-link { border: 0; background: none; padding: 0; color: var(--accent-strong); cursor: pointer; font-weight: 600; text-align: left; }
+.uca-chip { display: block; width: 100%; border: 1px solid var(--accent-border); border-radius: 5px; background: var(--accent-soft); color: var(--type-text); padding: 6px; text-align: left; cursor: pointer; margin-bottom: 4px; }
+.empty-cell, .empty-matrix { color: var(--faint); }
+.diagram-fallback { border: 1px solid var(--border); border-radius: 6px; padding: 14px; background: var(--canvas); }
+.fallback-note { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
 .fallback-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.fallback-columns h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; color: #475569; }
-.fallback-item { display: flex; flex-direction: column; gap: 2px; width: 100%; margin-bottom: 6px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 5px; background: #fff; text-align: left; cursor: pointer; }
-.fallback-item span { color: #64748b; font-size: 11px; }
-.fallback-item--selected { border-color: #2563eb; background: #eff6ff; }
+.fallback-columns h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; color: var(--text-2); }
+.fallback-item { display: flex; flex-direction: column; gap: 2px; width: 100%; margin-bottom: 6px; padding: 8px; border: 1px solid var(--border-strong); border-radius: 5px; background: var(--surface); text-align: left; cursor: pointer; }
+.fallback-item span { color: var(--muted); font-size: 11px; }
+.fallback-item--selected { border-color: var(--accent); background: var(--accent-soft); }
 .puml-toggle { margin-top: 10px; }
-.puml-toggle-btn { font-size: 12px; color: #6b7280; background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
-.puml-source { font-size: 11px; background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 6px; overflow-x: auto; white-space: pre; margin: 8px 0 0; }
+.puml-toggle-btn { font-size: 12px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
+.puml-source { font-size: 11px; background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; white-space: pre; margin: 8px 0 0; }
 @media (max-width: 900px) {
   .fallback-columns { grid-template-columns: 1fr; }
 }

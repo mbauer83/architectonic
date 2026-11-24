@@ -320,36 +320,36 @@ onMounted(load)
 
 <style scoped>
 .analysis-picker { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.ap-label { font-size: 12px; font-weight: 600; color: #475569; }
+.ap-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
 .ap-select {
   font-size: 13px;
   padding: 5px 10px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: #fff;
-  color: #1e293b;
+  background: var(--surface);
+  color: var(--text);
   min-width: 200px;
 }
 .ap-new-btn {
   font-size: 12px;
   padding: 5px 10px;
-  border: 1px dashed #93c5fd;
+  border: 1px dashed var(--accent-border);
   border-radius: 6px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
   cursor: pointer;
 }
-.ap-new-btn:hover { background: #dbeafe; }
+.ap-new-btn:hover { background: var(--type-soft); }
 .ap-manage-btn {
   font-size: 12px;
   padding: 5px 10px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: #fff;
-  color: #475569;
+  background: var(--surface);
+  color: var(--text-2);
   cursor: pointer;
 }
-.ap-manage-btn:hover { background: #f1f5f9; }
+.ap-manage-btn:hover { background: var(--soft); }
 .ap-manage {
   display: flex;
   align-items: center;
@@ -358,22 +358,22 @@ onMounted(load)
   width: 100%;
   margin-top: 6px;
   padding: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--canvas);
+  border: 1px solid var(--border);
   border-radius: 6px;
 }
-.ap-manage-label { font-size: 12px; font-weight: 600; color: #475569; }
+.ap-manage-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
 .ap-delete {
   font-size: 12px;
   padding: 5px 12px;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--danger-border);
   border-radius: 5px;
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--danger-soft);
+  color: var(--danger-strong);
   font-weight: 600;
   cursor: pointer;
 }
-.ap-delete:hover { background: #fee2e2; }
+.ap-delete:hover { background: var(--danger-soft); }
 .ap-delete:disabled { opacity: 0.5; cursor: default; }
 .ap-form {
   display: flex;
@@ -383,14 +383,14 @@ onMounted(load)
   width: 100%;
   margin-top: 6px;
   padding: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--canvas);
+  border: 1px solid var(--border);
   border-radius: 6px;
 }
 .ap-input {
   font-size: 12px;
   padding: 5px 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
 }
 .ap-form-actions { display: flex; gap: 6px; }
@@ -399,8 +399,8 @@ onMounted(load)
   padding: 5px 12px;
   border: none;
   border-radius: 5px;
-  background: #2563eb;
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
   font-weight: 600;
   cursor: pointer;
 }
@@ -408,21 +408,21 @@ onMounted(load)
 .ap-cancel {
   font-size: 12px;
   padding: 5px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 5px;
-  background: #fff;
-  color: #374151;
+  background: var(--surface);
+  color: var(--text-2);
   cursor: pointer;
 }
-.ap-error { font-size: 12px; color: #b91c1c; width: 100%; margin: 4px 0 0; }
+.ap-error { font-size: 12px; color: var(--danger-strong); width: 100%; margin: 4px 0 0; }
 .ap-anchor { display: flex; flex-direction: column; gap: 4px; width: 100%; }
 .ap-anchor-chip {
   display: flex; align-items: center; gap: 8px;
-  padding: 5px 8px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 5px;
+  padding: 5px 8px; background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 5px;
 }
-.ap-anchor-name { font-size: 12px; font-weight: 600; color: #1e293b; }
+.ap-anchor-name { font-size: 12px; font-weight: 600; color: var(--text); }
 .ap-anchor-change {
-  font-size: 11px; padding: 2px 8px; border: 1px solid #cbd5e1; border-radius: 4px;
-  background: #fff; color: #475569; cursor: pointer;
+  font-size: 11px; padding: 2px 8px; border: 1px solid var(--border-strong); border-radius: 4px;
+  background: var(--surface); color: var(--text-2); cursor: pointer;
 }
 </style>

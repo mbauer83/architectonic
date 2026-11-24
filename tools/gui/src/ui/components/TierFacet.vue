@@ -37,20 +37,20 @@ const options = computed(() => tierFacetOptions(props.allowed))
 <style scoped>
 .tier-facet {
   display: inline-flex;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   overflow: hidden;
 }
 .tier-option {
   border: none;
-  background: #fff;
-  color: #374151;
+  background: var(--surface);
+  color: var(--text-2);
   font-size: 12px;
   font-weight: 600;
   padding: 4px 12px;
   cursor: pointer;
 }
-.tier-option + .tier-option { border-left: 1px solid #d1d5db; }
-.tier-option.active { background: #1f2937; color: #fff; }
-.tier-option:hover:not(.active) { background: #f3f4f6; }
+.tier-option + .tier-option { border-left: 1px solid var(--border-strong); }
+.tier-option.active { background: var(--inverse); color: var(--on-inverse); }
+.tier-option:hover:not(.active) { background: var(--soft); }
 </style>

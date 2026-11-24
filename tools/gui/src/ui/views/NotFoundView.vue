@@ -49,12 +49,12 @@ const LINKS = [
 
 <style scoped>
 .not-found { max-width: 640px; margin: 48px auto; }
-.nf-title { font-size: 20px; font-weight: 700; color: #1e293b; margin: 0 0 10px; }
+.nf-title { font-size: 20px; font-weight: 700; color: var(--text); margin: 0 0 10px; }
 .nf-path { margin: 0 0 14px; }
 .nf-path code {
-  font-size: 12px; background: #f1f5f9; border: 1px solid #e2e8f0;
-  border-radius: 4px; padding: 2px 6px; color: #334155; word-break: break-all;
+  font-size: 12px; background: var(--soft); border: 1px solid var(--border);
+  border-radius: 4px; padding: 2px 6px; color: var(--text-2); word-break: break-all;
 }
-.nf-body { font-size: 13px; color: #475569; margin: 0 0 16px; }
+.nf-body { font-size: 13px; color: var(--text-2); margin: 0 0 16px; }
 .nf-links { display: flex; flex-wrap: wrap; gap: 16px; list-style: none; padding: 0; margin: 0; font-size: 13px; }
 </style>

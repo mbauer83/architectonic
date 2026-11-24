@@ -132,26 +132,26 @@ const create = async (): Promise<void> => {
 <style scoped>
 .page { max-width: 900px; }
 h1 { font-size: 20px; margin: 0 0 4px; }
-.lead { margin: 0 0 20px; color: #6b7280; font-size: 13px; max-width: 62ch; }
+.lead { margin: 0 0 20px; color: var(--muted); font-size: 13px; max-width: 62ch; }
 .new { display: flex; gap: 8px; margin-bottom: 18px; }
-.new input { flex: 1; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
-.new select { padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+.new input { flex: 1; padding: 7px 10px; border: 1px solid var(--border-strong); border-radius: 6px; font-size: 13px; }
+.new select { padding: 7px 10px; border: 1px solid var(--border-strong); border-radius: 6px; font-size: 13px; }
 .new button {
-  padding: 7px 14px; border: 1px solid #2563eb; border-radius: 6px; background: #2563eb;
-  color: #fff; font-size: 13px; cursor: pointer;
+  padding: 7px 14px; border: 1px solid var(--accent); border-radius: 6px; background: var(--accent);
+  color: var(--on-accent); font-size: 13px; cursor: pointer;
 }
 .new button:disabled { opacity: .5; cursor: default; }
 .list { list-style: none; padding: 0; margin: 0; }
 .row {
   display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
-  padding: 11px 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px;
-  text-decoration: none; color: inherit; background: #fff;
+  padding: 11px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;
+  text-decoration: none; color: inherit; background: var(--surface);
 }
-.row:hover { border-color: #c7d2fe; background: #f8faff; }
+.row:hover { border-color: var(--indigo-border); background: var(--canvas); }
 .name { font-size: 14px; font-weight: 500; }
-.meta { font-size: 12px; color: #6b7280; }
+.meta { font-size: 12px; color: var(--muted); }
 .mono { font-family: ui-monospace, monospace; }
-.dot { margin: 0 6px; color: #d1d5db; }
-.state { color: #6b7280; font-size: 13px; }
-.err { color: #dc2626; font-size: 13px; }
+.dot { margin: 0 6px; color: var(--faint); }
+.state { color: var(--muted); font-size: 13px; }
+.err { color: var(--danger); font-size: 13px; }
 </style>

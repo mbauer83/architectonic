@@ -164,17 +164,18 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
 .page { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
 .hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .pg-title { font-size: 20px; font-weight: 600; margin: 0; }
-.count { color: #6b7280; font-weight: 400; font-size: 14px; }
+.count { color: var(--muted); font-weight: 400; font-size: 14px; }
 .hdr-actions { display: flex; align-items: center; gap: 14px; }
-.back-link { font-size: 13px; color: #6b7280; text-decoration: none; }
-.back-link:hover { color: #374151; }
-.view-as-link { font-size: 13px; color: #4338ca; text-decoration: none; border: 1px solid #c7d2fe; border-radius: 6px; padding: 4px 10px; }
-.view-as-link:hover { background: #eef2ff; }
-.state-msg { color: #9ca3af; font-size: 14px; padding: 24px 0; }
-.state-msg--error { color: #dc2626; }
-.matrix-scroll { overflow: auto; max-height: clamp(300px, 65vh, 800px); border: 1px solid #e5e7eb; border-radius: 8px; }
+.back-link { font-size: 13px; color: var(--muted); text-decoration: none; }
+.back-link:hover { color: var(--text-2); }
+.view-as-link { font-size: 13px; color: var(--indigo-text); text-decoration: none; border: 1px solid var(--indigo-border); border-radius: 6px; padding: 4px 10px; }
+.view-as-link:hover { background: var(--indigo-soft); }
+.state-msg { color: var(--faint); font-size: 14px; padding: 24px 0; }
+.state-msg--error { color: var(--danger); }
+.matrix-scroll {
+  overflow: auto; max-height: clamp(300px, 65vh, 800px); border: 1px solid var(--border); border-radius: 8px; }
 .matrix-table { border-collapse: collapse; font-size: 12px; }
-.matrix-table th, .matrix-table td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: center; white-space: nowrap; }
-.matrix-table thead th { position: sticky; top: 0; background: #f9fafb; z-index: 1; }
-.matrix-table tbody th { position: sticky; left: 0; background: #f9fafb; text-align: left; z-index: 1; }
+.matrix-table th, .matrix-table td { border: 1px solid var(--border); padding: 6px 8px; text-align: center; white-space: nowrap; }
+.matrix-table thead th { position: sticky; top: 0; background: var(--hover); z-index: 1; }
+.matrix-table tbody th { position: sticky; left: 0; background: var(--hover); text-align: left; z-index: 1; }
 </style>

@@ -71,22 +71,23 @@ defineProps<{
 </template>
 
 <style scoped>
-.card { background: white; border-radius: 8px; border: 1px solid #e5e7eb; padding: 20px; }
+.card { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); padding: 20px; }
 .preview-title {
   font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
-  color: #374151; margin-bottom: 12px;
+  color: var(--text-2); margin-bottom: 12px;
 }
-.preview-meta { font-size: 12px; color: #6b7280; margin-bottom: 8px; display: flex; flex-direction: column; gap: 2px; }
-.preview-path { color: #9ca3af; }
+.preview-meta {
+  font-size: 12px; color: var(--muted); margin-bottom: 8px; display: flex; flex-direction: column; gap: 2px; }
+.preview-path { color: var(--faint); }
 .mono { font-family: monospace; }
 /* Was an inline `style` attribute on the `<ul>`, which scoped styles exist to avoid. */
 .preview-issues { margin-top: 4px; font-size: 12px; margin-bottom: 0; padding-left: 18px; }
 .preview-content {
-  font-size: 11px; color: #374151; white-space: pre-wrap; max-height: 400px; overflow-y: auto;
-  font-family: monospace; margin-top: 12px; background: #f9fafb; border-radius: 6px; padding: 10px;
+  font-size: 11px; color: var(--text-2); white-space: pre-wrap; max-height: 400px; overflow-y: auto;
+  font-family: monospace; margin-top: 12px; background: var(--hover); border-radius: 6px; padding: 10px;
 }
 /* Copied verbatim from the view this came out of: lifting a pane must not restyle it. */
-.state-msg { font-size: 13px; color: #6b7280; padding: 4px 0; }
-.state-msg--error { color: #dc2626; }
-.state-msg--ok { color: #16a34a; }
+.state-msg { font-size: 13px; color: var(--muted); padding: 4px 0; }
+.state-msg--error { color: var(--danger); }
+.state-msg--ok { color: var(--ok); }
 </style>

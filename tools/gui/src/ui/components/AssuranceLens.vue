@@ -80,30 +80,30 @@ watch(() => props.artifactId, (id) => { void load(id) })
 <style scoped>
 .lens-section {
   margin-top: 24px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border);
   padding-top: 16px;
 }
 .lens-title {
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-2);
   margin: 0 0 10px;
 }
 .lens-rollup {
   font-size: 12px;
-  color: #4b5563;
+  color: var(--text-2);
   margin: 0 0 10px;
   padding: 6px 8px;
   border-radius: 6px;
-  background: #f1f5f9;
+  background: var(--soft);
 }
 .lens-rollup-attention {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warn-soft);
+  color: var(--warn-text);
 }
 .lens-limited {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--faint);
   margin: 0 0 8px;
 }
 .lens-list {
@@ -125,19 +125,19 @@ watch(() => props.artifactId, (id) => { void load(id) })
   color: inherit;
   padding: 6px 8px;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid var(--border);
+  background: var(--canvas);
   font-size: 13px;
 }
 .lens-link:hover {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 .lens-badge {
   font-size: 11px;
   font-weight: 500;
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--type-soft);
+  color: var(--accent-strong);
   padding: 2px 7px;
   border-radius: 4px;
   white-space: nowrap;

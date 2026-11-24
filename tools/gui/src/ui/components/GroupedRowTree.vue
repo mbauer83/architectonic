@@ -121,29 +121,29 @@ const keyOf = (row: Record<string, unknown>): string => {
 
 <style scoped>
 .row-tree { padding: 6px 0; }
-.tree-empty { font-size: 13px; color: #6b7280; padding: 12px 16px; }
+.tree-empty { font-size: 13px; color: var(--muted); padding: 12px 16px; }
 .tree-group { margin-bottom: 2px; }
 .group-header {
   display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 16px;
   background: none; border: none; cursor: pointer; text-align: left; font-size: 12.5px;
-  font-weight: 600; color: #374151;
+  font-weight: 600; color: var(--text-2);
 }
-.group-header:hover { background: #f3f4f6; }
-.group-caret { color: #9ca3af; width: 10px; }
+.group-header:hover { background: var(--soft); }
+.group-caret { color: var(--faint); width: 10px; }
 .group-count {
-  font-size: 11px; font-weight: 500; color: #6b7280; background: #f3f4f6;
+  font-size: 11px; font-weight: 500; color: var(--muted); background: var(--soft);
   border-radius: 9px; padding: 1px 7px;
 }
 .group-rows { list-style: none; margin: 0; padding: 0; }
 .tree-row {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
   padding: 4px 16px 4px 38px; background: none; border: none; cursor: pointer;
-  text-align: left; font-size: 12.5px; color: #374151;
+  text-align: left; font-size: 12.5px; color: var(--text-2);
 }
-.tree-row:hover { background: #f3f4f6; }
+.tree-row:hover { background: var(--soft); }
 /* Selected keeps its own text colour rather than inheriting the hover rule, which a
    single-class selected rule would otherwise lose to while the pointer rests on it. */
-.tree-row--selected { background: #eff6ff; color: #1d4ed8; font-weight: 600; }
-.tree-row--selected:hover { background: #dbeafe; color: #1d4ed8; }
-.row-note { font-size: 11px; color: #6b7280; flex-shrink: 0; }
+.tree-row--selected { background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; }
+.tree-row--selected:hover { background: var(--type-soft); color: var(--accent-strong); }
+.row-note { font-size: 11px; color: var(--muted); flex-shrink: 0; }
 </style>

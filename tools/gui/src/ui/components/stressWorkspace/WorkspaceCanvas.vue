@@ -104,10 +104,10 @@ const tagSize = computed(() => 12 / Math.max(panZoom.scale.value, 0.05))
 
 <style scoped>
 .workspace-canvas {
-  position: relative; overflow: hidden; background: var(--paper, #fff);
+  position: relative; overflow: hidden; background: var(--paper);
   border: 1px solid var(--border); border-radius: 8px;
   height: clamp(380px, calc(100vh - 300px), 900px); cursor: grab; user-select: none;
 }
 .svg-wrap :deep(svg) { display: block; max-width: none; }
-.no-img { padding: 60px 40px; text-align: center; color: var(--muted); font-size: 13px; }
+.no-img { padding: 60px 40px; text-align: center; color: var(--on-paper); font-size: 13px; }
 </style>

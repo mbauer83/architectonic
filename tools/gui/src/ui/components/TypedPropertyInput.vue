@@ -138,13 +138,13 @@ const validationError = computed(
    elements, so the input owns its look and stays consistent on every form. */
 .typed-prop-input { flex: 2; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .prop-value {
-  width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px;
-  font-size: 12px; color: #374151; background: white; outline: none; box-sizing: border-box;
+  width: 100%; padding: 6px 8px; border: 1px solid var(--border-strong); border-radius: 6px;
+  font-size: 12px; color: var(--text-2); background: var(--surface); outline: none; box-sizing: border-box;
 }
-.prop-value:focus { border-color: #2563eb; }
+.prop-value:focus { border-color: var(--accent); }
 select.prop-value { cursor: pointer; }
 .prop-value--array { resize: vertical; font-family: inherit; }
 .bool-label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 0; cursor: pointer; }
-.bool-value { font-size: 12px; color: #374151; }
-.prop-validation-error { font-size: 11px; color: #dc2626; }
+.bool-value { font-size: 12px; color: var(--text-2); }
+.prop-validation-error { font-size: 11px; color: var(--danger); }
 </style>

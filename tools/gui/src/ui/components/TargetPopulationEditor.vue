@@ -82,15 +82,16 @@ const remove = (type: string) => {
 
 <style scoped>
 .target-population { margin-top: 14px; }
-.hint { font-size: 12px; color: #6b7280; margin: 2px 0 6px; }
+.hint { font-size: 12px; color: var(--muted); margin: 2px 0 6px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .chip {
   display: inline-flex; align-items: center; gap: 4px; font-size: 12px;
-  background: #eef2ff; color: #3730a3; border-radius: 9999px; padding: 2px 8px;
+  background: var(--indigo-soft); color: var(--indigo-text); border-radius: 9999px; padding: 2px 8px;
 }
-.chip-remove { border: none; background: none; cursor: pointer; color: #6366f1; padding: 0; }
-.undeclared { font-size: 12px; color: #9ca3af; font-style: italic; }
+.chip-remove { border: none; background: none; cursor: pointer; color: var(--indigo); padding: 0; }
+.undeclared { font-size: 12px; color: var(--faint); font-style: italic; }
 .add-row { display: flex; gap: 6px; align-items: center; }
-.inp { padding: 4px 6px; border-radius: 5px; border: 1px solid #d1d5db; font-size: 12.5px; min-width: 220px; }
-.btn { font-size: 12px; padding: 4px 10px; border: 1px solid #d1d5db; border-radius: 5px; background: white; cursor: pointer; }
+.inp {
+  padding: 4px 6px; border-radius: 5px; border: 1px solid var(--border-strong); font-size: 12.5px; min-width: 220px; }
+.btn { font-size: 12px; padding: 4px 10px; border: 1px solid var(--border-strong); border-radius: 5px; background: var(--surface); cursor: pointer; }
 </style>

@@ -114,26 +114,26 @@ function onDrop(targetIndex: number) {
 <style scoped>
 .ll-strip { display: flex; flex-direction: column; gap: 8px; }
 .ll-header { display: flex; align-items: center; justify-content: space-between; font-weight: 650; font-size: 12px; }
-.ll-empty { font-size: 12px; color: #9ca3af; margin: 0; }
+.ll-empty { font-size: 12px; color: var(--faint); margin: 0; }
 .ll-list { display: flex; flex-direction: column; gap: 6px; }
 .ll-card {
   display: flex; flex-direction: column; gap: 6px; padding: 8px 10px;
-  border: 1px solid #dbe3ef; border-radius: 8px; background: #fff; cursor: default;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: default;
 }
-.ll-card.drag-over { border-color: #3b82f6; }
+.ll-card.drag-over { border-color: var(--accent); }
 .ll-card-top { display: flex; align-items: center; gap: 4px; }
-.drag-handle { cursor: grab; color: #94a3b8; font-size: 14px; flex-shrink: 0; }
+.drag-handle { cursor: grab; color: var(--faint); font-size: 14px; flex-shrink: 0; }
 .ll-label { flex: 1; min-width: 0; }
 .ll-type { width: 90px; flex-shrink: 0; font-size: 11px; }
 .rm-btn { flex-shrink: 0; }
 .mini-btn {
-  min-width: 24px; height: 24px; border: 1px solid #cbd5e1; background: #fff;
-  border-radius: 5px; cursor: pointer; font-size: 14px; color: #374151;
+  min-width: 24px; height: 24px; border: 1px solid var(--border-strong); background: var(--surface);
+  border-radius: 5px; cursor: pointer; font-size: 14px; color: var(--text-2);
 }
-.mini-btn:hover { background: #f1f5f9; }
+.mini-btn:hover { background: var(--soft); }
 .inp {
-  padding: 4px 7px; border: 1px solid #cbd5e1; border-radius: 5px;
-  font-size: 12px; background: white; color: #1e293b; outline: none; box-sizing: border-box;
+  padding: 4px 7px; border: 1px solid var(--border-strong); border-radius: 5px;
+  font-size: 12px; background: var(--surface); color: var(--text); outline: none; box-sizing: border-box;
 }
-.inp:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px #bfdbfe; }
+.inp:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-ring); }
 </style>

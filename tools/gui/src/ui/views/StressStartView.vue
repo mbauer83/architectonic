@@ -317,7 +317,7 @@ onMounted(async () => {
   height: 20px;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 11px;
 }
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 4px; }
@@ -350,6 +350,6 @@ onMounted(async () => {
 }
 .origin small { display: block; color: var(--muted); font-size: 11.5px; }
 .origin select { margin-top: 4px; font-size: 12px; }
-.err { color: #b91c1c; }
+.err { color: var(--danger-strong); }
 </style>
 <style src="../components/stressWorkspace/workspace.css"></style>

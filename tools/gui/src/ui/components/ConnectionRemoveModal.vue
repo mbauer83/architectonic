@@ -113,28 +113,28 @@ const confirmRemove = () => {
 </template>
 
 <style scoped>
-.state-msg { color: #6b7280; padding: 4px 0; font-size: 13px; }
-.state-msg--error { color: #dc2626; }
+.state-msg { color: var(--muted); padding: 4px 0; font-size: 13px; }
+.state-msg--error { color: var(--danger); }
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100;
   display: flex; align-items: center; justify-content: center;
 }
 .modal {
-  background: white; border-radius: 10px; padding: 24px; max-width: 480px;
+  background: var(--surface); border-radius: 10px; padding: 24px; max-width: 480px;
   width: 90%; box-shadow: 0 8px 24px rgba(0,0,0,.2);
 }
 .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-.modal-desc { font-size: 13px; color: #374151; margin-bottom: 12px; word-break: break-all; }
-.modal-warn { font-size: 13px; color: #b45309; margin-bottom: 8px; }
+.modal-desc { font-size: 13px; color: var(--text-2); margin-bottom: 12px; word-break: break-all; }
+.modal-warn { font-size: 13px; color: var(--warn-text); margin-bottom: 8px; }
 .diagram-ref-list { list-style: disc; padding-left: 20px; font-size: 13px; margin-bottom: 12px; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 .modal-btn {
   padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500;
   cursor: pointer; border: none;
 }
-.modal-btn--cancel { background: #f3f4f6; color: #374151; }
-.modal-btn--cancel:hover { background: #e5e7eb; }
-.modal-btn--danger { background: #dc2626; color: white; }
-.modal-btn--danger:hover:not(:disabled) { background: #b91c1c; }
+.modal-btn--cancel { background: var(--soft); color: var(--text-2); }
+.modal-btn--cancel:hover { background: var(--border); }
+.modal-btn--danger { background: var(--danger); color: var(--on-accent); }
+.modal-btn--danger:hover:not(:disabled) { background: var(--danger-strong); }
 .modal-btn--danger:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

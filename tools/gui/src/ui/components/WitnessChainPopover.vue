@@ -70,13 +70,15 @@ watch(
 
 <style scoped>
 .witness-popover {
-  position: absolute; z-index: 40; background: white; border: 1px solid #d1d5db; border-radius: 8px;
+  position: absolute; z-index: 40; background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 8px;
   padding: 12px 14px; box-shadow: 0 8px 24px rgba(0, 0, 0, .15); max-width: 420px; font-size: 12.5px;
 }
-.state-msg { color: #6b7280; }
-.chain-prose { color: #374151; line-height: 1.6; margin: 0 0 8px; }
-.chain-entity { color: #2563eb; font-weight: 600; }
-.chain-arrow { color: #6b7280; }
-.chain-broken { color: #92400e; background: #fef3c7; padding: 6px 8px; border-radius: 6px; margin: 0 0 8px; }
-.chain-close { padding: 4px 10px; border-radius: 6px; border: 1px solid #d1d5db; background: white; font-size: 12px; cursor: pointer; }
+.state-msg { color: var(--muted); }
+.chain-prose { color: var(--text-2); line-height: 1.6; margin: 0 0 8px; }
+.chain-entity { color: var(--accent); font-weight: 600; }
+.chain-arrow { color: var(--muted); }
+.chain-broken {
+  color: var(--warn-text); background: var(--warn-soft); padding: 6px 8px; border-radius: 6px; margin: 0 0 8px; }
+.chain-close { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface); font-size: 12px; cursor: pointer; }
 </style>

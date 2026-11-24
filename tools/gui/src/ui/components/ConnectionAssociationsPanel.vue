@@ -116,31 +116,31 @@ const removeAssociation = (entityId: string) => {
 </template>
 
 <style scoped>
-.state-msg { color: #6b7280; padding: 4px 0; font-size: 13px; }
-.state-msg--error { color: #dc2626; }
+.state-msg { color: var(--muted); padding: 4px 0; font-size: 13px; }
+.state-msg--error { color: var(--danger); }
 .assoc-panel {
-  margin-left: 12px; padding: 6px 10px; background: #f0f9ff;
-  border-radius: 6px; border: 1px solid #bae6fd; font-size: 12px;
+  margin-left: 12px; padding: 6px 10px; background: var(--info-soft);
+  border-radius: 6px; border: 1px solid var(--info-border); font-size: 12px;
 }
 .assoc-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; align-items: center; }
 .assoc-chip {
   display: inline-flex; align-items: center; gap: 2px;
-  background: #dbeafe; border: 1px solid #93c5fd; border-radius: 12px;
+  background: var(--type-soft); border: 1px solid var(--accent-border); border-radius: 12px;
   padding: 1px 6px; font-size: 11px;
 }
-.assoc-chip-link { color: #1d4ed8; text-decoration: none; }
+.assoc-chip-link { color: var(--accent-strong); text-decoration: none; }
 .assoc-chip-link:hover { text-decoration: underline; }
 .assoc-chip-remove {
-  background: none; border: none; color: #64748b; cursor: pointer;
+  background: none; border: none; color: var(--muted); cursor: pointer;
   padding: 0 1px; font-size: 12px; line-height: 1;
 }
-.assoc-chip-remove:hover { color: #dc2626; }
-.assoc-empty { color: #94a3b8; font-style: italic; }
+.assoc-chip-remove:hover { color: var(--danger); }
+.assoc-empty { color: var(--faint); font-style: italic; }
 .assoc-add-row { display: flex; gap: 4px; align-items: center; }
 .assoc-add-btn {
-  padding: 4px 8px; background: #2563eb; color: white; border: none;
+  padding: 4px 8px; background: var(--accent); color: var(--on-accent); border: none;
   border-radius: 4px; font-size: 12px; cursor: pointer; flex-shrink: 0;
 }
 .assoc-add-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.assoc-add-btn:hover:not(:disabled) { background: #1d4ed8; }
+.assoc-add-btn:hover:not(:disabled) { background: var(--accent-strong); }
 </style>

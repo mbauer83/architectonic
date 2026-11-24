@@ -108,7 +108,8 @@ const setOpenTokens = (raw: string) => {
 <style scoped>
 .vp-pc-set { display: flex; flex-wrap: wrap; gap: 4px 14px; border: 0; margin: 0; padding: 0; }
 .vp-pc-check {
-  display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 400; color: #374151;
+  display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 400; color: var(--text-2);
 }
-.vp-pc-input { padding: 6px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; font-family: inherit; }
+.vp-pc-input {
+  padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-strong); font-size: 13px; font-family: inherit; }
 </style>

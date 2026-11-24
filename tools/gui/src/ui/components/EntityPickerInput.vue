@@ -451,45 +451,4 @@ watch([selectedDomains, selectedEntityTypes], scheduleSearch)
   </div>
 </template>
 
-<style scoped>
-.ep { position: relative; }
-.ep-inp { width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; outline: none; box-sizing: border-box; }
-.ep-inp:focus { border-color: #2563eb; box-shadow: 0 0 0 2px #bfdbfe; }
-
-.ep-drop {
-  position: fixed; z-index: 1000;
-  background: white; border: 1px solid #d1d5db; border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.13); overflow-y: auto;
-}
-
-
-.ep-stage { padding: 10px 10px 6px; border-bottom: 1px solid #f3f4f6; background: #f8fafc; }
-.ep-stage-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.ep-stage-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #475569; }
-.ep-nav { display: flex; gap: 6px; }
-.nav-btn { border: 1px solid #cbd5e1; background: white; color: #334155; border-radius: 6px; padding: 4px 9px; font-size: 11px; font-weight: 600; cursor: pointer; }
-.nav-btn:hover { background: #f8fafc; }
-.nav-btn--fwd { background: #dbeafe; border-color: #bfdbfe; color: #1d4ed8; }
-.nav-btn--fwd:hover { background: #bfdbfe; }
-
-.ep-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { border: 1px solid #cbd5e1; background: white; border-radius: 999px; padding: 5px 11px; font-size: 12px; color: #334155; cursor: pointer; outline: none; }
-.chip:hover:not(.chip--fixed), .chip:focus:not(.chip--fixed) { border-color: #2563eb; color: #1d4ed8; }
-.chip--sm { font-size: 11px; padding: 4px 9px; }
-.chip--on { background: #0f172a; border-color: #0f172a; color: white; }
-.chip--fixed { opacity: .6; cursor: default; }
-.chip--implied { border-style: dashed; border-color: #6366f1; color: #4338ca; background: #eef2ff; }
-
-.ep-summary { margin-top: 7px; font-size: 11px; color: #64748b; }
-
-.ep-results { margin: 0; padding: 4px 0; list-style: none; }
-.ep-result { display: flex; align-items: center; gap: 8px; padding: 7px 10px; cursor: pointer; outline: none; }
-.ep-result:hover, .ep-result:focus, .ep-result--hi { background: #eff6ff; }
-.ep-sentinel { height: 24px; font-size: 11px; color: #9ca3af; text-align: center; line-height: 24px; }
-.ep-glyph { flex-shrink: 0; color: #4b5563; display: flex; align-items: center; }
-.ep-name { flex: 1; font-weight: 500; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ep-meta { font-size: 11px; color: #9ca3af; white-space: nowrap; }
-.ep-state { font-size: 12px; color: #9ca3af; padding: 10px 12px; }
-.ep-note { font-size: 10.5px; color: #94a3b8; padding: 3px 10px; font-style: italic; }
-.ep-divider { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; padding: 6px 10px 2px; border-top: 1px solid #e5e7eb; margin-top: 4px; }
-</style>
+<style scoped src="./EntityPickerInput.css"></style>

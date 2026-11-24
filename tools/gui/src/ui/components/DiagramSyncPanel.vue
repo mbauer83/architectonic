@@ -126,18 +126,20 @@ const executeSync = () => {
 </template>
 
 <style scoped>
-.state { color: #6b7280; } .err { color: #dc2626; }
+.state { color: var(--muted); } .err { color: var(--danger); }
 .state-block { white-space: pre-wrap; overflow-x: auto; }
-.sync-panel { margin-top: 16px; padding: 16px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; }
-.sync-title { font-size: 14px; font-weight: 700; color: #0c4a6e; margin-bottom: 6px; }
-.sync-text { font-size: 13px; color: #0369a1; margin-bottom: 10px; }
-.sync-removed { font-size: 13px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 2px; }
-.sync-uptodate { font-size: 13px; color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; }
+.sync-panel { margin-top: 16px; padding: 16px; background: var(--info-soft); border: 1px solid var(--info-border);
+  border-radius: 8px; }
+.sync-title { font-size: 14px; font-weight: 700; color: var(--info-text); margin-bottom: 6px; }
+.sync-text { font-size: 13px; color: var(--info-text); margin-bottom: 10px; }
+.sync-removed { font-size: 13px; color: var(--warn-text); background: var(--warn-soft); border: 1px solid var(--warn-border); border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 2px; }
+.sync-uptodate { font-size: 13px; color: var(--ok-text); background: var(--ok-soft); border: 1px solid var(--ok-border); border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; }
 .preview-warnings { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
-.preview-warn { font-size: 12px; color: #92400e; background: #fef3c7; padding: 4px 8px; border-radius: 4px; }
+.preview-warn {
+  font-size: 12px; color: var(--warn-text); background: var(--warn-soft); padding: 4px 8px; border-radius: 4px; }
 .sync-actions { display: flex; gap: 8px; justify-content: flex-end; }
-.toggle-btn { padding: 5px 14px; border-radius: 6px; border: 1px solid #d1d5db; background: white; font-size: 13px; cursor: pointer; color: #374151; } .toggle-btn:hover { background: #f9fafb; }
-.sync-confirm-btn { padding: 5px 16px; background: #2563eb; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; color: white; cursor: pointer; }
-.sync-confirm-btn:hover:not(:disabled) { background: #1d4ed8; }
+.toggle-btn { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface); font-size: 13px; cursor: pointer; color: var(--text-2); } .toggle-btn:hover { background: var(--hover); }
+.sync-confirm-btn { padding: 5px 16px; background: var(--accent); border: none; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--on-accent); cursor: pointer; }
+.sync-confirm-btn:hover:not(:disabled) { background: var(--accent-strong); }
 .sync-confirm-btn:disabled { opacity: .5; cursor: not-allowed; }
 </style>

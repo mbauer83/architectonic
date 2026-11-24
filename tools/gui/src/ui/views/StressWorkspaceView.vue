@@ -270,7 +270,7 @@ onMounted(async () => {
 .badge { background: var(--accent-soft); color: var(--accent-strong); border-radius: 3px; padding: 2px 8px; }
 .mono { font-family: ui-monospace, monospace; }
 .question { color: var(--muted); font-size: 12.5px; margin: 2px 0 10px; }
-.err { color: #b91c1c; font-size: 12.5px; }
+.err { color: var(--danger-strong); font-size: 12.5px; }
 .ws { display: grid; grid-template-columns: minmax(440px, 46%) minmax(0, 1fr); gap: 12px; align-items: start; }
 .pane { min-width: 0; }
 .legend { font-size: 11.5px; color: var(--text-2); margin: 4px 2px; }

@@ -70,12 +70,12 @@ defineProps<{
 </template>
 
 <style scoped>
-.ep-fixed-row { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: #f0f9ff; border-bottom: 1px solid #bae6fd; font-size: 12px; flex-wrap: wrap; }
-.ep-fixed-row--types { background: #f5f3ff; border-bottom-color: #c4b5fd; }
-.ep-fixed-label { font-size: 10px; font-weight: 700; color: #0369a1; flex-shrink: 0; text-transform: uppercase; letter-spacing: .05em; }
-.ep-fixed-row--types .ep-fixed-label { color: #6d28d9; }
-.ep-fixed-chip { background: #e0f2fe; border: 1px solid #7dd3fc; color: #0369a1; border-radius: 999px; padding: 2px 9px; font-size: 11px; cursor: default; }
-.ep-fixed-chip--type { background: #ede9fe; border-color: #a78bfa; color: #6d28d9; }
+.ep-fixed-row { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--info-soft); border-bottom: 1px solid var(--info-border); font-size: 12px; flex-wrap: wrap; }
+.ep-fixed-row--types { background: var(--violet-soft); border-bottom-color: var(--violet-border); }
+.ep-fixed-label { font-size: 10px; font-weight: 700; color: var(--info-text); flex-shrink: 0; text-transform: uppercase; letter-spacing: .05em; }
+.ep-fixed-row--types .ep-fixed-label { color: var(--violet-text); }
+.ep-fixed-chip { background: var(--info-soft); border: 1px solid var(--info-border); color: var(--info-text); border-radius: 999px; padding: 2px 9px; font-size: 11px; cursor: default; }
+.ep-fixed-chip--type { background: var(--violet-soft); border-color: var(--violet-border); color: var(--violet-text); }
 .ep-fixed-set { display: flex; flex-wrap: wrap; gap: 4px; }
-.ep-fixed-lock { color: #94a3b8; font-size: 10px; }
+.ep-fixed-lock { color: var(--faint); font-size: 10px; }
 </style>

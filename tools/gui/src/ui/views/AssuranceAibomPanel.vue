@@ -255,37 +255,38 @@ function download() {
 <style scoped>
 .aibom { display: flex; flex-direction: column; gap: 16px; }
 .hint-note {
-  font-size: 13px; color: #475569; background: #f8fafc;
-  border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin: 0;
+  font-size: 13px; color: var(--text-2); background: var(--canvas);
+  border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin: 0;
 }
-.wiz-error { padding: 10px 14px; background: #fef2f2; color: #b91c1c; border-radius: 6px; font-size: 13px; }
+.wiz-error { padding: 10px 14px; background: var(--danger-soft); color: var(--danger-strong); border-radius: 6px;
+  font-size: 13px; }
 .block {
-  border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;
+  border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
   display: flex; flex-direction: column; gap: 10px;
 }
 .block-title { font-size: 14px; font-weight: 700; margin: 0; }
 .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .add-btn {
   font-size: 13px; padding: 7px 14px; border: none; border-radius: 6px;
-  background: #2563eb; color: #fff; font-weight: 600; cursor: pointer;
+  background: var(--accent); color: var(--on-accent); font-weight: 600; cursor: pointer;
 }
-.add-btn--ghost { background: #fff; color: #2563eb; border: 1px solid #cbd5e1; }
+.add-btn--ghost { background: var(--surface); color: var(--accent); border: 1px solid var(--border-strong); }
 .add-btn:disabled { opacity: 0.5; cursor: default; }
-.empty { color: #94a3b8; font-size: 13px; margin: 0; }
-.dim { color: #94a3b8; font-size: 12px; }
+.empty { color: var(--faint); font-size: 13px; margin: 0; }
+.dim { color: var(--faint); font-size: 12px; }
 .grid { border-collapse: collapse; font-size: 12px; width: 100%; }
-.grid th, .grid td { border: 1px solid #e2e8f0; padding: 6px 10px; text-align: left; }
-.grid th { background: #f8fafc; font-weight: 600; }
+.grid th, .grid td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+.grid th { background: var(--canvas); font-weight: 600; }
 .badge {
   font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600;
   margin-right: 4px; display: inline-block;
 }
-.band--high { background: #dcfce7; color: #15803d; }
-.band--medium { background: #fef9c3; color: #854d0e; }
-.band--low { background: #fee2e2; color: #b91c1c; }
+.band--high { background: var(--ok-soft); color: var(--ok-text); }
+.band--medium { background: var(--warn-soft); color: var(--warn-text); }
+.band--low { background: var(--danger-soft); color: var(--danger-strong); }
 .export { display: flex; flex-direction: column; gap: 8px; }
 .export-json {
-  background: #0f172a; color: #e2e8f0; font-size: 11px; padding: 10px 12px;
+  background: var(--code-bg); color: var(--code-text); font-size: 11px; padding: 10px 12px;
   border-radius: 6px; overflow: auto; max-height: 320px; margin: 0;
 }
 </style>

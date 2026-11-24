@@ -34,9 +34,9 @@ const entries = computed(() => distanceLegend(props.depths))
 <style scoped>
 .hop-legend {
   display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
-  padding: 6px 16px; background: white; border-bottom: 1px solid #e5e7eb;
+  padding: 6px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
 }
-.hop-chip { font-size: 10px; font-weight: 500; color: white; padding: 2px 8px; border-radius: 9999px; }
-.hop-chip--anchor { color: #1e293b; background: white; border: 3px double #1e293b; }
-.hop-chip--unranked { color: #64748b; background: white; border: 1px dashed #94a3b8; }
+.hop-chip { font-size: 10px; font-weight: 500; color: var(--on-accent); padding: 2px 8px; border-radius: 9999px; }
+.hop-chip--anchor { color: var(--text); background: var(--surface); border: 3px double #1e293b; }
+.hop-chip--unranked { color: var(--muted); background: var(--surface); border: 1px dashed #94a3b8; }
 </style>

@@ -31,7 +31,7 @@ defineProps<{
 
 <style scoped>
 .aggregation-banner {
-  font-size: 12px; color: #1e40af; background: #eff6ff; border: 1px solid #bfdbfe;
+  font-size: 12px; color: var(--type-text); background: var(--accent-soft); border: 1px solid var(--accent-border);
   border-radius: 7px; padding: 7px 11px; margin: 6px 0;
 }
 </style>

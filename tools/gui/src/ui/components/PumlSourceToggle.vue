@@ -26,12 +26,14 @@ const open = ref(false)
 <style scoped>
 .src-row { margin-top: 16px; }
 .toggle-btn {
-  padding: 5px 14px; border-radius: 6px; border: 1px solid #d1d5db; background: white; font-size: 13px;
-  cursor: pointer; color: #374151; margin-bottom: 8px;
+  padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface);
+  font-size: 13px;
+  cursor: pointer; color: var(--text-2); margin-bottom: 8px;
 }
-.toggle-btn:hover { background: #f9fafb; }
+.toggle-btn:hover { background: var(--hover); }
 .puml-src {
-  background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; font-size: 12px; line-height: 1.5;
+  background: var(--code-bg); color: var(--code-text); padding: 16px; border-radius: 8px; font-size: 12px;
+  line-height: 1.5;
   overflow-x: auto; white-space: pre;
 }
 </style>

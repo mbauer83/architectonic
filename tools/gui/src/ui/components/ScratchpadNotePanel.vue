@@ -277,40 +277,42 @@ const onLinkType = (connectionType: string): void => {
 <style scoped>
 .panel {
   position: absolute; top: 14px; left: 14px; width: 300px; z-index: 4;
-  background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px;
   box-shadow: 0 4px 14px rgba(0,0,0,.08); font-size: 12.5px;
 }
 .title { font-size: 13.5px; margin: 0 0 8px; font-weight: 600; }
-.hint { color: #6b7280; margin: 0 0 10px; font-size: 11.5px; }
-.tied { margin: 0; color: #059669; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.tied code { font-size: 11px; color: #374151; word-break: break-all; }
+.hint { color: var(--muted); margin: 0 0 10px; font-size: 11.5px; }
+.tied { margin: 0; color: var(--ok); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tied code { font-size: 11px; color: var(--text-2); word-break: break-all; }
 .tied button, .verdict button {
-  padding: 2px 8px; border: 1px solid #d1d5db; border-radius: 5px; background: #fff;
-  font-size: 11px; cursor: pointer; color: #374151;
+  padding: 2px 8px; border: 1px solid var(--border-strong); border-radius: 5px; background: var(--surface);
+  font-size: 11px; cursor: pointer; color: var(--text-2);
 }
-.verdict button.primary { border-color: #2563eb; color: #2563eb; font-weight: 600; }
+.verdict button.primary { border-color: var(--accent); color: var(--accent); font-weight: 600; }
 /* The link panel's own actions sit directly in the panel rather than inside a verdict row, and
    had no rule at all — "Reverse the link" was rendering as a bare browser button. */
 .panel > button {
-  padding: 4px 10px; margin-right: 6px; border: 1px solid #d1d5db; border-radius: 5px;
-  background: #fff; font-size: 11.5px; cursor: pointer; color: #374151;
+  padding: 4px 10px; margin-right: 6px; border: 1px solid var(--border-strong); border-radius: 5px;
+  background: var(--surface); font-size: 11.5px; cursor: pointer; color: var(--text-2);
 }
-.panel > button.primary { border-color: #2563eb; color: #2563eb; font-weight: 600; }
-.panel > button.danger { border-color: #fca5a5; color: #b91c1c; }
-.panel > button.danger:hover { background: #fee2e2; }
+.panel > button.primary { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.panel > button.danger { border-color: var(--danger-border); color: var(--danger-strong); }
+.panel > button.danger:hover { background: var(--danger-soft); }
 .field { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-.field span { color: #6b7280; }
-.field select { flex: 1; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 5px; font-size: 12px; }
+.field span { color: var(--muted); }
+.field select {
+  flex: 1; padding: 4px 6px; border: 1px solid var(--border-strong); border-radius: 5px; font-size: 12px; }
 .field.body { align-items: flex-start; }
 .field textarea {
-  flex: 1; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 5px;
+  flex: 1; padding: 4px 6px; border: 1px solid var(--border-strong); border-radius: 5px;
   font-size: 12px; font-family: inherit; resize: vertical;
 }
-.verdicts { border-top: 1px solid #f0f0f2; margin-top: 10px; padding-top: 8px; }
-.verdicts h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #9ca3af; margin: 0 0 6px; }
+.verdicts { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 8px; }
+.verdicts h3 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); margin: 0 0 6px; }
 .verdict { margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.verdict .msg { flex: 1 1 100%; color: #6b7280; font-size: 11.5px; }
-.verdict.refused .msg { color: #dc2626; }
-.verdict.narrowed .msg { color: #d97706; }
-.verdict.permitted .msg { color: #059669; }
+.verdict .msg { flex: 1 1 100%; color: var(--muted); font-size: 11.5px; }
+.verdict.refused .msg { color: var(--danger); }
+.verdict.narrowed .msg { color: var(--warn); }
+.verdict.permitted .msg { color: var(--ok); }
 </style>

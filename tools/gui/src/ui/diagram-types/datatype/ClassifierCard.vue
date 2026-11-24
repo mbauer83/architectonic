@@ -199,23 +199,24 @@ const onKindChange = (e: Event) => {
 </template>
 
 <style scoped>
-.cls-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; background: #fff; display: flex; flex-direction: column; gap: 6px; }
-.card-section { display: flex; flex-direction: column; gap: 5px; padding-top: 6px; border-top: 1px solid #f1f5f9; }
+.cls-card { border: 1px solid var(--border); border-radius: 6px; padding: 8px; background: var(--surface); display: flex; flex-direction: column; gap: 6px; }
+.card-section { display: flex; flex-direction: column; gap: 5px; padding-top: 6px; border-top: 1px solid var(--hair); }
 .card-section:first-child { padding-top: 0; border-top: 0; }
 .cls-hdr { display: flex; gap: 4px; align-items: center; }
-.usage-count { margin-left: auto; font-size: 10px; color: #6b7280; white-space: nowrap; }
-.kind-sel { font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 4px; background: #f1f5f9; }
-.label-in { flex: 1; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; }
-.abstract-chk { font-size: 10px; color: #6b7280; display: flex; align-items: center; gap: 2px; cursor: pointer; white-space: nowrap; }
-.del-btn { border: none; background: none; cursor: pointer; color: #9ca3af; font-size: 14px; padding: 0 2px; }
-.del-btn:hover { color: #ef4444; }
+.usage-count { margin-left: auto; font-size: 10px; color: var(--muted); white-space: nowrap; }
+.kind-sel { font-size: 11px; border: 1px solid var(--border-strong); border-radius: 4px; padding: 2px 4px;
+  background: var(--soft); }
+.label-in { flex: 1; font-size: 12px; border: 1px solid var(--border-strong); border-radius: 4px; padding: 2px 6px; }
+.abstract-chk { font-size: 10px; color: var(--muted); display: flex; align-items: center; gap: 2px; cursor: pointer; white-space: nowrap; }
+.del-btn { border: none; background: none; cursor: pointer; color: var(--faint); font-size: 14px; padding: 0 2px; }
+.del-btn:hover { color: var(--danger); }
 .dob-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.section-title { font-size: 11px; font-weight: 600; color: #374151; white-space: nowrap; }
-.field-label { font-size: 10px; color: #6b7280; white-space: nowrap; }
+.section-title { font-size: 11px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.field-label { font-size: 10px; color: var(--muted); white-space: nowrap; }
 .attrs-section, .lits-section { display: flex; flex-direction: column; gap: 4px; }
 .section-row { display: flex; align-items: center; gap: 6px; }
-.add-btn { font-size: 11px; padding: 1px 6px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; }
-.add-btn:hover { background: #f1f5f9; }
+.add-btn { font-size: 11px; padding: 1px 6px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--surface); cursor: pointer; }
+.add-btn:hover { background: var(--soft); }
 .lit-row { display: flex; gap: 4px; align-items: center; }
-.lit-in { flex: 1; font-size: 11px; border: 1px solid #e2e8f0; border-radius: 3px; padding: 1px 4px; }
+.lit-in { flex: 1; font-size: 11px; border: 1px solid var(--border); border-radius: 3px; padding: 1px 4px; }
 </style>

@@ -88,7 +88,8 @@ const onChoose = (levelId: string, value: string): void => {
 
 <style scoped>
 .field { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-.field span { color: #6b7280; }
-.field select { flex: 1; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 5px; font-size: 12px; }
-.required { color: #b91c1c; text-decoration: none; margin-left: 2px; }
+.field span { color: var(--muted); }
+.field select {
+  flex: 1; padding: 4px 6px; border: 1px solid var(--border-strong); border-radius: 5px; font-size: 12px; }
+.required { color: var(--danger-strong); text-decoration: none; margin-left: 2px; }
 </style>

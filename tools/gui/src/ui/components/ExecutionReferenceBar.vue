@@ -46,8 +46,8 @@ const mismatch = computed(() =>
 
 <style scoped>
 .reference-mismatch {
-  padding: 4px 16px; background: #fef3c7; border-bottom: 1px solid #fde68a;
-  color: #92400e; font-size: 12px;
+  padding: 4px 16px; background: var(--warn-soft); border-bottom: 1px solid var(--warn-border);
+  color: var(--warn-text); font-size: 12px;
 }
-.link-actions-bar { padding: 4px 16px; background: white; border-bottom: 1px solid #e5e7eb; }
+.link-actions-bar { padding: 4px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
 </style>

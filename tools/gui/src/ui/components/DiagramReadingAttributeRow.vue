@@ -174,14 +174,14 @@ const gradientLabel = (gradient: string): string =>
 .attr { padding: 0.15rem 0; }
 .attr__row { display: flex; align-items: baseline; gap: 0.5rem; }
 .attr__name { font-family: ui-monospace, monospace; }
-.attr__type, .attr__presence, .attr__rows, .attr__values { color: #6b7280; font-size: 0.8rem; }
-.attr__presence--none { color: #d97706; }
+.attr__type, .attr__presence, .attr__rows, .attr__values { color: var(--muted); font-size: 0.8rem; }
+.attr__presence--none { color: var(--warn); }
 /* The controls are one group pushed to the right, rather than each control finding its own way there:
    "no colour" is a `span` where a colour choice is a `label`, so a `:first-of-type` rule aligned the
    choices and left the absences stranded mid-row. */
 .attr__controls { display: inline-flex; align-items: baseline; gap: 0.75rem; margin-left: auto; }
 .attr__control { display: inline-flex; align-items: baseline; gap: 0.2rem; cursor: pointer; }
-.attr__control--absent { color: #9ca3af; cursor: default; font-size: 0.8rem; }
+.attr__control--absent { color: var(--faint); cursor: default; font-size: 0.8rem; }
 .key { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding: 0.1rem 0 0.3rem; }
 .key__step { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
 /* The gradient choice sits above the swatches it produces, so a reader sees the cause over the
@@ -213,10 +213,10 @@ const gradientLabel = (gradient: string): string =>
 /* White on a light panel is invisible, and this swatch is white by definition — the unset member is
    the one value that takes no place on the scale, so it is outlined to be seen at all. */
 .key__swatch--unset { outline: 1px dashed currentcolor; outline-offset: 1px; }
-.key__note { color: #9ca3af; font-size: 0.75rem; }
+.key__note { color: var(--faint); font-size: 0.75rem; }
 .key__revert {
-  font: inherit; font-size: 0.75rem; color: #6b7280; background: none; border: none;
+  font: inherit; font-size: 0.75rem; color: var(--muted); background: none; border: none;
   padding: 0; text-decoration: underline; cursor: pointer;
 }
-.key__revert:hover { color: #374151; }
+.key__revert:hover { color: var(--text-2); }
 </style>

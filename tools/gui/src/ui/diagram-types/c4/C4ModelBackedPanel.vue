@@ -214,48 +214,48 @@ const navToEntity = (id: string) =>
 
 <style scoped>
 .mbp { display: flex; flex-direction: column; gap: 0; }
-.mbp-section { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; }
+.mbp-section { padding: 8px 10px; border-bottom: 1px solid var(--hair); }
 .mbp-sec-hdr { display: flex; align-items: center; gap: 5px; padding-bottom: 6px; }
 .mbp-sec-title {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .06em; color: #6b7280;
+  letter-spacing: .06em; color: var(--muted);
 }
-.mbp-count { font-size: 10px; color: #9ca3af; }
+.mbp-count { font-size: 10px; color: var(--faint); }
 .mbp-ro-badge {
   font-size: 9px; padding: 1px 5px; border-radius: 3px;
-  background: #f3f4f6; color: #9ca3af; margin-left: auto;
+  background: var(--soft); color: var(--faint); margin-left: auto;
 }
 .mbp-group-lbl {
-  font-size: 10px; font-weight: 600; color: #2563eb;
+  font-size: 10px; font-weight: 600; color: var(--accent);
   text-transform: uppercase; letter-spacing: .04em; padding: 4px 0 2px;
 }
 .mbp-entity-row { display: flex; align-items: center; gap: 5px; padding: 3px 0; font-size: 12px; }
-.mbp-entity-row--scope .mbp-name { font-weight: 600; color: #1e293b; }
+.mbp-entity-row--scope .mbp-name { font-weight: 600; color: var(--text); }
 .mbp-entity-row--excl { opacity: 0.45; }
-.mbp-glyph { flex-shrink: 0; color: #6b7280; }
-.mbp-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #374151; }
+.mbp-glyph { flex-shrink: 0; color: var(--muted); }
+.mbp-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
 .mbp-excl-badge {
   font-size: 9px; padding: 1px 5px; border-radius: 3px;
-  background: #fee2e2; color: #dc2626; flex-shrink: 0;
+  background: var(--danger-soft); color: var(--danger); flex-shrink: 0;
 }
 .mbp-link-btn {
   background: none; border: none; cursor: pointer;
-  color: #9ca3af; font-size: 11px; padding: 0 2px; flex-shrink: 0;
+  color: var(--faint); font-size: 11px; padding: 0 2px; flex-shrink: 0;
 }
-.mbp-link-btn:hover { color: #2563eb; }
+.mbp-link-btn:hover { color: var(--accent); }
 .mbp-excl-btn {
-  background: none; border: 1px solid #e5e7eb; border-radius: 3px;
-  cursor: pointer; color: #6b7280; font-size: 11px; padding: 1px 5px; flex-shrink: 0;
+  background: none; border: 1px solid var(--border); border-radius: 3px;
+  cursor: pointer; color: var(--muted); font-size: 11px; padding: 1px 5px; flex-shrink: 0;
 }
-.mbp-excl-btn:hover { border-color: #dc2626; color: #dc2626; }
-.mbp-empty { font-size: 11px; color: #9ca3af; padding: 4px 0; }
+.mbp-excl-btn:hover { border-color: var(--danger); color: var(--danger); }
+.mbp-empty { font-size: 11px; color: var(--faint); padding: 4px 0; }
 .mbp-conn-row {
   display: flex; align-items: center; gap: 4px;
   font-size: 11px; padding: 2px 0; overflow: hidden;
 }
 .mbp-conn-ep {
-  color: #374151; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text-2); overflow: hidden; text-overflow: ellipsis;
   white-space: nowrap; max-width: 35%; flex-shrink: 1;
 }
-.mbp-conn-label { color: #6b7280; white-space: nowrap; flex-shrink: 0; }
+.mbp-conn-label { color: var(--muted); white-space: nowrap; flex-shrink: 0; }
 </style>

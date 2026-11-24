@@ -132,12 +132,13 @@ const setMode = (next: MatrixAxisMode) => {
 </template>
 
 <style scoped>
-.mode-toggle { display: inline-flex; border: 1px solid #d1d5db; border-radius: 99px; overflow: hidden; margin-bottom: 12px; }
-.mode-toggle button { appearance: none; border: none; background: #fff; color: #6b7280; font-size: 12px; font-weight: 700; padding: 5px 14px; cursor: pointer; }
-.mode-toggle button.sel { background: #6366f1; color: #fff; }
+.mode-toggle { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 99px; overflow: hidden; margin-bottom: 12px; }
+.mode-toggle button { appearance: none; border: none; background: var(--surface); color: var(--muted); font-size: 12px; font-weight: 700; padding: 5px 14px; cursor: pointer; }
+.mode-toggle button.sel { background: var(--indigo); color: var(--on-accent); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #6b7280; }
-.inp { padding: 5px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; font-family: inherit; }
-.builder-title { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
-.note { grid-column: 1 / -1; font-size: 12px; color: #6b7280; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.inp {
+  padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border-strong); font-size: 13px; font-family: inherit; }
+.builder-title { font-size: 11px; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.note { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
 </style>

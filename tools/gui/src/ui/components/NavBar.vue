@@ -7,6 +7,7 @@ import { modelServiceKey } from '../keys'
 import { searchHitRoute, searchHitTypeLabel } from '../lib/searchNavigation'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import SyncStatusCluster from './SyncStatusCluster.vue'
+import PreferencesMenu from './PreferencesMenu.vue'
 import type { EnterpriseSyncStatus, SearchHit, SyncAuthority } from '../../domain'
 import { readErrorMessage } from '../lib/errors'
 import { layoutLabIsOn } from '../../adapters/http/HttpLayoutLab'
@@ -220,13 +221,14 @@ onMounted(async () => { layoutLabOn.value = await layoutLabIsOn() })
           </button>
         </div>
       </form>
+      <PreferencesMenu />
     </div>
   </header>
 </template>
 
 <style scoped>
-.nav { display: flex; align-items: center; gap: 20px; padding: 0 24px; height: 48px; background: #1e293b; color: #f8fafc; position: sticky; top: 0; z-index: 10; }
-.nav__brand { font-weight: 600; font-size: 15px; color: #f8fafc; white-space: nowrap; flex-shrink: 0; }
+.nav { display: flex; align-items: center; gap: 20px; padding: 0 24px; height: 48px; background: var(--nav); color: var(--nav-text); position: sticky; top: 0; z-index: 10; }
+.nav__brand { font-weight: 600; font-size: 15px; color: var(--nav-text); white-space: nowrap; flex-shrink: 0; }
 .nav__brand:hover { text-decoration: none; color: #93c5fd; }
 /* Shrink order: the status landmark gives way first, then search; the primary links keep their
    size. It used to be the other way round, and what "the links truncate first" costs depends on
@@ -235,23 +237,24 @@ onMounted(async () => { layoutLabOn.value = await layoutLabIsOn() })
    no way in. A status sentence losing its tail still reads; a destination that is not drawn is
    gone. */
 .nav__links { display: flex; gap: 4px; flex-wrap: nowrap; flex-shrink: 0; }
-.nav__links a { color: #b0bec5; font-size: 13px; padding: 4px 8px; border-radius: 4px; white-space: nowrap; }
-.nav__links a.router-link-active { color: #f8fafc; font-weight: 500; background: #2d3f55; }
-.nav__links a:hover { color: #f1f5f9; text-decoration: none; background: #263347; }
-.nav__links a.nav__link--suppressed.router-link-active { color: #b0bec5; font-weight: 400; background: transparent; }
-.nav__links a.nav__link--forced-active { color: #f8fafc; font-weight: 500; background: #2d3f55; }
+.nav__links a { color: var(--nav-link); font-size: 13px; padding: 4px 8px; border-radius: 4px; white-space: nowrap; }
+.nav__links a.router-link-active { color: var(--nav-text); font-weight: 500; background: var(--nav-active); }
+.nav__links a:hover { color: var(--nav-text); text-decoration: none; background: var(--nav-hover); }
+.nav__links a.nav__link--suppressed.router-link-active {
+  color: var(--nav-link); font-weight: 400; background: transparent; }
+.nav__links a.nav__link--forced-active { color: var(--nav-text); font-weight: 500; background: var(--nav-active); }
 .nav__workflow { margin-inline-start: auto; display: flex; align-items: center; gap: 12px; min-width: 0; }
 .nav__search { display: flex; align-items: center; min-width: 0; position: relative; }
-.nav__search-input { width: clamp(140px, 18vw, 260px); min-width: 88px; max-width: 100%; padding: 5px 10px; border-radius: 5px; border: 1px solid #334155; background: #0f172a; color: #f1f5f9; font-size: 13px; outline: none; transition: width .2s, border-color .15s; }
-.nav__search-input::placeholder { color: #64748b; }
-.nav__search-input:focus { width: clamp(180px, 22vw, 340px); border-color: #475569; background: #1e293b; }
+.nav__search-input { width: clamp(140px, 18vw, 260px); min-width: 88px; max-width: 100%; padding: 5px 10px; border-radius: 5px; border: 1px solid var(--nav-field-border); background: var(--nav-field); color: var(--nav-text); font-size: 13px; outline: none; transition: width .2s, border-color .15s; }
+.nav__search-input::placeholder { color: var(--nav-link); }
+.nav__search-input:focus { width: clamp(180px, 22vw, 340px); border-color: var(--nav-link); background: var(--nav); }
 .nav__search-input::-webkit-search-cancel-button { display: none; }
-.nav__search-dropdown { position: absolute; top: calc(100% + 4px); right: 0; width: 100%; min-width: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.18); max-height: 320px; overflow-y: auto; z-index: 100; }
-.nav__search-item { display: flex; align-items: flex-start; gap: 7px; width: 100%; padding: 8px 12px; border: none; background: none; cursor: pointer; text-align: left; font-size: 13px; color: #1a1a1a; }
-.nav__search-item:hover { background: #f1f5f9; }
-.nav__search-item-glyph { flex-shrink: 0; color: #6b7280; margin-top: 1px; }
+.nav__search-dropdown { position: absolute; top: calc(100% + 4px); right: 0; width: 100%; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.18); max-height: 320px; overflow-y: auto; z-index: 100; }
+.nav__search-item { display: flex; align-items: flex-start; gap: 7px; width: 100%; padding: 8px 12px; border: none; background: none; cursor: pointer; text-align: left; font-size: 13px; color: var(--text); }
+.nav__search-item:hover { background: var(--soft); }
+.nav__search-item-glyph { flex-shrink: 0; color: var(--muted); margin-top: 1px; }
 .nav__search-item-name { flex: 1; font-weight: 500; }
-.nav__search-item-type { font-size: 11px; color: #64748b; white-space: nowrap; flex-shrink: 0; }
+.nav__search-item-type { font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
 @media (max-width: 1060px) {
   .nav { gap: 12px; padding: 0 16px; }
   /* Past this width the search gives up its floor rather than push a destination off the bar. */

@@ -94,9 +94,10 @@ const canAddNote = computed(() => model.lifelines.value.length > 0)
 .seq-editor { display: flex; flex-direction: column; gap: 14px; }
 .seq-optional { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 2px; }
 .opt-btn {
-  font-size: 12px; color: #6b7280; background: none; border: 1px dashed #cbd5e1;
+  font-size: 12px; color: var(--muted); background: none; border: 1px dashed var(--border-strong);
   border-radius: 5px; padding: 4px 10px; cursor: pointer;
 }
-.opt-btn:hover:not(:disabled) { color: #2563eb; border-color: #93c5fd; background: #eff6ff; }
+.opt-btn:hover:not(:disabled) {
+  color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
 .opt-btn:disabled { opacity: .5; cursor: not-allowed; }
 </style>

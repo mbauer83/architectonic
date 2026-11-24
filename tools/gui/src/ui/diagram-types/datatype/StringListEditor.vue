@@ -67,11 +67,11 @@ function remove(index: number) {
 <style scoped>
 .sle { display: flex; flex-direction: column; gap: 3px; }
 .sle-hdr { display: flex; align-items: center; justify-content: space-between; }
-.sle-label { font-size: 10px; color: #6b7280; }
-.sle-add { font-size: 10px; padding: 0 6px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; }
-.sle-add:hover { background: #f1f5f9; }
+.sle-label { font-size: 10px; color: var(--muted); }
+.sle-add { font-size: 10px; padding: 0 6px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--surface); cursor: pointer; }
+.sle-add:hover { background: var(--soft); }
 .sle-row { display: flex; gap: 4px; align-items: center; }
-.sle-in { flex: 1; font-size: 11px; border: 1px solid #e2e8f0; border-radius: 3px; padding: 1px 4px; }
-.sle-del { border: none; background: none; cursor: pointer; color: #9ca3af; font-size: 13px; padding: 0 2px; }
-.sle-del:hover { color: #ef4444; }
+.sle-in { flex: 1; font-size: 11px; border: 1px solid var(--border); border-radius: 3px; padding: 1px 4px; }
+.sle-del { border: none; background: none; cursor: pointer; color: var(--faint); font-size: 13px; padding: 0 2px; }
+.sle-del:hover { color: var(--danger); }
 </style>

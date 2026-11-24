@@ -93,17 +93,18 @@ const otherNames = (self: TracePatternNode): string[] =>
 .panel { margin: 16px 0; }
 .head { display: flex; align-items: center; gap: 12px; }
 .link-btn {
-  appearance: none; border: none; background: none; color: #4338ca;
+  appearance: none; border: none; background: none; color: var(--indigo-text);
   cursor: pointer; font-size: 12px; font-weight: 600;
 }
 .empty-state {
-  font-size: 12.5px; color: #6b7280; background: #f9fafb;
-  border: 1px dashed #d1d5db; border-radius: 8px; padding: 10px 12px;
+  font-size: 12.5px; color: var(--muted); background: var(--hover);
+  border: 1px dashed var(--border-strong); border-radius: 8px; padding: 10px 12px;
 }
 .add-btn {
-  appearance: none; border: 1px dashed #d1d5db; background: #fff; color: #6b7280;
+  appearance: none; border: 1px dashed var(--border-strong); background: var(--surface); color: var(--muted);
   border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
 }
-.add-btn:hover { border-color: #6366f1; color: #4338ca; }
-.cap-warn { font-size: 12px; color: #92400e; background: #fef3c7; padding: 4px 10px; border-radius: 4px; }
+.add-btn:hover { border-color: var(--indigo); color: var(--indigo-text); }
+.cap-warn {
+  font-size: 12px; color: var(--warn-text); background: var(--warn-soft); padding: 4px 10px; border-radius: 4px; }
 </style>

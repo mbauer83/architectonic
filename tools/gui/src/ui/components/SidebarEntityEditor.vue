@@ -121,30 +121,30 @@ const edit = useEntityEditForm({
 
 <style scoped>
 .see { font-size: 12px; }
-.det-content { line-height: 1.5; color: #374151; margin-bottom: 8px; max-height: 220px; overflow-y: auto; }
+.det-content { line-height: 1.5; color: var(--text-2); margin-bottom: 8px; max-height: 220px; overflow-y: auto; }
 .det-content :deep(p) { margin: 0.35rem 0; }
 .det-content :deep(h1), .det-content :deep(h2), .det-content :deep(h3) { margin-top: 0; }
 .see-edit {
-  border: 1px solid #c7d2fe; background: #eef2ff; color: #4338ca;
+  border: 1px solid var(--indigo-border); background: var(--indigo-soft); color: var(--indigo-text);
   border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer;
 }
-.see-edit:hover { background: #e0e7ff; }
+.see-edit:hover { background: var(--indigo-soft); }
 .see-form { display: grid; gap: 10px; }
 .see-field { display: grid; gap: 4px; }
-.see-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; }
+.see-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .see-input {
-  width: 100%; padding: 5px 7px; border: 1px solid #d1d5db; border-radius: 5px;
+  width: 100%; padding: 5px 7px; border: 1px solid var(--border-strong); border-radius: 5px;
   font: inherit; font-size: 12px; box-sizing: border-box; resize: vertical;
 }
-.see-input:focus { outline: none; border-color: #2563eb; }
+.see-input:focus { outline: none; border-color: var(--accent); }
 .see-props { display: grid; gap: 6px; }
 .see-prop { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; }
-.see-prop-key { font-size: 12px; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.see-req { color: #dc2626; }
-.see-err { font-size: 12px; color: #dc2626; }
+.see-prop-key { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.see-req { color: var(--danger); }
+.see-err { font-size: 12px; color: var(--danger); }
 .see-actions { display: flex; justify-content: flex-end; gap: 6px; }
 .see-actions button { padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; }
-.see-cancel { border: 1px solid #d1d5db; background: white; color: #374151; }
-.see-save { border: 0; background: #2563eb; color: white; }
+.see-cancel { border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); }
+.see-save { border: 0; background: var(--accent); color: var(--on-accent); }
 .see-save:disabled { opacity: .5; cursor: not-allowed; }
 </style>

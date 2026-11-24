@@ -100,11 +100,12 @@ const gradient = computed(() => {
 </template>
 
 <style scoped>
-.value-line { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #6b7280; margin-top: 8px; }
-.inp { padding: 4px 6px; border-radius: 5px; border: 1px solid #d1d5db; font-size: 12.5px; font-family: inherit; }
+.value-line { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+.inp { padding: 4px 6px; border-radius: 5px; border: 1px solid var(--border-strong); font-size: 12.5px;
+  font-family: inherit; }
 .scale-attr { min-width: 220px; }
-.scale-attr--unknown { border-color: #dc2626; }
-.attr-warning { color: #dc2626; font-size: 11.5px; }
+.scale-attr--unknown { border-color: var(--danger); }
+.attr-warning { color: var(--danger); font-size: 11.5px; }
 .bound-input { width: 90px; }
 .gradient-preview { height: 10px; max-width: 280px; border-radius: 5px; border: 1px solid rgba(0,0,0,.1); margin-top: 6px; }
 </style>

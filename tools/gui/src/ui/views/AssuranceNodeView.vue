@@ -72,19 +72,19 @@ const loadState = ref<LoadState>('pending')
   gap: 12px;
   padding: 4px 0 14px;
 }
-.back-link { font-size: 13px; color: #6b7280; text-decoration: none; }
-.back-link:hover { color: #374151; }
-.page-title { font-size: 14px; font-weight: 600; color: #374151; }
-.page-node-id { font-size: 12px; color: #6b7280; background: #f3f4f6; padding: 1px 6px; border-radius: 4px; }
+.back-link { font-size: 13px; color: var(--muted); text-decoration: none; }
+.back-link:hover { color: var(--text-2); }
+.page-title { font-size: 14px; font-weight: 600; color: var(--text-2); }
+.page-node-id { font-size: 12px; color: var(--muted); background: var(--soft); padding: 1px 6px; border-radius: 4px; }
 
 .page-banner { font-size: 13px; padding: 14px 16px; border-radius: 8px; }
-.page-banner--missing { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+.page-banner--missing { background: var(--soft); color: var(--text-2); border: 1px solid var(--border-strong); }
 .page-banner--missing a { margin-left: 6px; }
-.page-banner--locked { background: #fef9c3; color: #854d0e; border: 1px solid #facc15; }
+.page-banner--locked { background: var(--warn-soft); color: var(--warn-text); border: 1px solid var(--warn); }
 
 .detail-frame {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
 }

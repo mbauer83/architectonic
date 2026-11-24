@@ -67,13 +67,14 @@ const title = computed(() =>
 <style scoped>
 .icon-chip {
   width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0; padding: 1px; cursor: pointer;
-  border: 1px dashed #e5e7eb; background: none; color: #9ca3af;
+  border: 1px dashed var(--border); background: none; color: var(--faint);
   display: inline-flex; align-items: center; justify-content: center;
 }
 .icon-chip__placeholder {
   opacity: .55; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round;
 }
-.icon-chip:hover, .icon-chip:focus-visible, .icon-chip.expanded { border-color: #a78bfa; color: #6d28d9; }
+.icon-chip:hover, .icon-chip:focus-visible, .icon-chip.expanded {
+  border-color: var(--violet-border); color: var(--violet-text); }
 .icon-chip:hover .icon-chip__placeholder, .icon-chip:focus-visible .icon-chip__placeholder,
 .icon-chip.expanded .icon-chip__placeholder { opacity: 1; }
 .icon-chip--set { border-style: solid; border-color: #ede9fe; }

@@ -298,10 +298,10 @@ const edgeCardPos = (e: GraphEdge, frac: number) => edgeCardPosFor(props.nodes, 
 .canvas-frame { flex: 1; display: flex; flex-direction: column; position: relative; min-height: 0; }
 /* A fullscreen element is composited over the browser's own backdrop, which is black; without a
    background of its own the graph would be drawn on it. */
-.canvas-frame:fullscreen { background: #fff; }
+.canvas-frame:fullscreen { background: var(--paper); }
 .canvas-notice {
   position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 6;
-  background: #fef3c7; border: 1px solid #f59e0b; color: #92400e;
+  background: var(--warn-soft); border: 1px solid var(--warn); color: var(--warn-text);
   font-size: 12px; padding: 4px 12px; border-radius: 6px; max-width: 80%;
 }
 .canvas-loading {
@@ -313,11 +313,11 @@ const edgeCardPos = (e: GraphEdge, frac: number) => edgeCardPosFor(props.nodes, 
   gap: 4px; z-index: 5;
 }
 .zoom-btn {
-  width: 30px; height: 30px; border: 1px solid #d1d5db; border-radius: 6px; background: white;
-  cursor: pointer; font-size: 15px; color: #374151; line-height: 1;
+  width: 30px; height: 30px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface);
+  cursor: pointer; font-size: 15px; color: var(--text-2); line-height: 1;
   box-shadow: 0 1px 2px rgba(0,0,0,.08);
 }
-.zoom-btn:hover { background: #f3f4f6; }
+.zoom-btn:hover { background: var(--soft); }
 .graph-svg { flex: 1; cursor: grab; user-select: none; }
 .graph-svg:active { cursor: grabbing; }
 .graph-node { cursor: pointer; }

@@ -77,27 +77,28 @@ const contentHtml = computed(() =>
 
 <style scoped>
 .detail-field { margin-bottom: 12px; }
-.detail-field label { display: block; font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
-.detail-value { font-size: 13px; color: #1e293b; }
+.detail-field label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+.detail-value { font-size: 13px; color: var(--text); }
 .detail-type { display: inline-flex; align-items: center; gap: 8px; }
-.detail-glyph { color: #374151; fill: none; flex: 0 0 auto; }
+.detail-glyph { color: var(--text-2); fill: none; flex: 0 0 auto; }
 .detail-link { font-weight: 600; }
-.id-value { font-size: 11px; color: #9ca3af; word-break: break-all; }
+.id-value { font-size: 11px; color: var(--faint); word-break: break-all; }
 .mono { font-family: monospace; }
 .detail-content { margin-top: 16px; }
-.detail-content label { display: block; font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
-.content-body { font-size: 13px; line-height: 1.5; color: #374151; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+.detail-content label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.content-body { font-size: 13px; line-height: 1.5; color: var(--text-2); max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
 .content-body :deep(p) { margin: 0.5rem 0; }
 .detail-explore { margin-top: 12px; }
-.explore-link { font-size: 12px; color: #2563eb; font-weight: 500; }
+.explore-link { font-size: 12px; color: var(--accent); font-weight: 500; }
 .domain-badge, .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
-.domain--motivation  { background: #d8c1e4; color: #252327; }
-.domain--strategy    { background: #efbd5d; color: #252327; }
-.domain--business    { background: #f4de7f; color: #252327; }
-.domain--common      { background: #e8e5d3; color: #252327; }
-.domain--application { background: #b6d7e1; color: #252327; }
-.domain--technology  { background: #c3e1b4; color: #252327; }
-.status--draft       { background: #f3f4f6; color: #6b7280; }
-.status--active      { background: #dcfce7; color: #166534; }
-.status--deprecated  { background: #fee2e2; color: #991b1b; }
+/* Restated from `shared.css` because `.detail-value` here outranks the global badge colours. */
+.domain--motivation  { background: var(--domain-motivation); color: var(--on-domain); }
+.domain--strategy    { background: var(--domain-strategy); color: var(--on-domain); }
+.domain--business    { background: var(--domain-business); color: var(--on-domain); }
+.domain--common      { background: var(--domain-common); color: var(--on-domain); }
+.domain--application { background: var(--domain-application); color: var(--on-domain); }
+.domain--technology  { background: var(--domain-technology); color: var(--on-domain); }
+.status--draft       { background: var(--soft); color: var(--muted); }
+.status--active      { background: var(--ok-soft); color: var(--ok-text); }
+.status--deprecated  { background: var(--danger-soft); color: var(--danger-strong); }
 </style>

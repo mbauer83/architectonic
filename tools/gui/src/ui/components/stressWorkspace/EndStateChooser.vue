@@ -131,13 +131,13 @@ defineExpose({ show })
 .es-pick .none { color: var(--muted); }
 .es-menu {
   position: absolute; z-index: 30; right: 0; top: calc(100% + 4px); width: 250px; padding: 6px;
-  background: var(--surface); border: 1px solid var(--border-strong, var(--border)); border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 6px;
   box-shadow: 0 6px 18px #0002;
 }
 .es-field { width: 100%; font: inherit; font-size: 12px; padding: 3px 6px; }
 .es-menu ul { list-style: none; margin: 4px 0 0; padding: 0; max-height: 200px; overflow: auto; font-size: 12px; }
 .es-menu li { padding: 3px 6px; border-radius: 4px; cursor: pointer; }
-.es-menu li.active { background: var(--accent-soft, #eff6ff); color: var(--accent-strong, #1d4ed8); }
+.es-menu li.active { background: var(--accent-soft); color: var(--accent-strong); }
 .es-menu li.empty { color: var(--muted); cursor: default; }
 .es-menu .rid { color: var(--muted); font-family: ui-monospace, monospace; font-size: 11px; }
 .es-menu kbd {

@@ -86,8 +86,8 @@ const isCleared = computed(() => props.modelValue === null || props.modelValue =
   display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
 }
 .swatch.sel { outline: 2px solid #111827; outline-offset: 1px; }
-.swatch--none { background: #fff; color: #9ca3af; font-size: 10px; line-height: 1; }
+.swatch--none { background: var(--surface); color: var(--faint); font-size: 10px; line-height: 1; }
 .swatch--custom { background: conic-gradient(#ef4444, #f59e0b, #84cc16, #06b6d4, #6366f1, #d946ef, #ef4444); }
 .swatch--custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-.swatch-label { font-size: 8.5px; color: #6b7280; line-height: 1.1; max-width: 44px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.swatch-label { font-size: 8.5px; color: var(--muted); line-height: 1.1; max-width: 44px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>

@@ -139,39 +139,41 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px; vertical-align: top; }
+td {
+  text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
 .def-main { max-width: 380px; }
-.def-name { display: block; font-weight: 600; color: #111827; }
-.def-slug { font-weight: 400; color: #9ca3af; font-size: 12px; }
-.rep-badge { color: #6366f1; margin-right: 2px; }
-.needs-input { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; background: #fef3c7; color: #92400e; border-radius: 99px; padding: 1px 7px; margin-left: 6px; vertical-align: middle; }
+.def-name { display: block; font-weight: 600; color: var(--text); }
+.def-slug { font-weight: 400; color: var(--faint); font-size: 12px; }
+.rep-badge { color: var(--indigo); margin-right: 2px; }
+.needs-input { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; background: var(--warn-soft); color: var(--warn-text); border-radius: 99px; padding: 1px 7px; margin-left: 6px; vertical-align: middle; }
 .broken-refs {
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
-  background: #fee2e2; color: #991b1b; border-radius: 99px; padding: 1px 7px;
+  background: var(--danger-soft); color: var(--danger-strong); border-radius: 99px; padding: 1px 7px;
   margin-left: 6px; vertical-align: middle; white-space: nowrap;
 }
-.def-desc { display: block; font-size: 12px; color: #6b7280; margin-top: 2px; }
+.def-desc { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
 .tier-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
-.tier-engagement { background: #dcfce7; color: #166534; }
-.tier-enterprise { background: #dbeafe; color: #1e40af; }
-.tier-module { background: #f3f4f6; color: #6b7280; }
+.tier-engagement { background: var(--ok-soft); color: var(--ok-text); }
+.tier-enterprise { background: var(--type-soft); color: var(--type-text); }
+.tier-module { background: var(--soft); color: var(--muted); }
 .fork-tag { font-size: 11px; padding: 2px 8px; border-radius: 99px; margin-left: 4px; white-space: nowrap; }
-.fork-current { background: #f3f4f6; color: #6b7280; }
-.fork-stale { background: #fef3c7; color: #92400e; }
-.fork-origin-missing { background: #fee2e2; color: #991b1b; }
+.fork-current { background: var(--soft); color: var(--muted); }
+.fork-stale { background: var(--warn-soft); color: var(--warn-text); }
+.fork-origin-missing { background: var(--danger-soft); color: var(--danger-strong); }
 /* #9ca3af, not #d1d5db: the unpinned star is a control, and at the paler grey it sat at a
    1.35 contrast ratio against the row — legible only if you already knew it was there. */
-.pin-btn { border: none; background: none; cursor: pointer; font-size: 15px; color: #9ca3af; padding: 0 4px; }
-.pin-btn:hover { color: #6b7280; }
-.pin-btn--active { color: #d97706; }
+.pin-btn { border: none; background: none; cursor: pointer; font-size: 15px; color: var(--faint); padding: 0 4px; }
+.pin-btn:hover { color: var(--muted); }
+.pin-btn--active { color: var(--warn); }
 .scope-cell { max-width: 260px; }
-.scope-toggle { appearance: none; border: none; background: none; color: #374151; font-size: 12.5px; cursor: pointer; padding: 0; text-align: left; }
-.scope-toggle:hover { color: #4338ca; }
-.scope-full { display: block; font-size: 11.5px; color: #6b7280; margin-top: 3px; }
+.scope-toggle { appearance: none; border: none; background: none; color: var(--text-2); font-size: 12.5px; cursor: pointer; padding: 0; text-align: left; }
+.scope-toggle:hover { color: var(--indigo-text); }
+.scope-full { display: block; font-size: 11.5px; color: var(--muted); margin-top: 3px; }
 .actions-cell { white-space: nowrap; }
 .row-actions { display: flex; align-items: center; gap: 6px; }
-.btn { appearance: none; border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 6px; padding: 5px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
-.btn:hover:not(:disabled) { border-color: #6366f1; color: #4338ca; }
+.btn { appearance: none; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); border-radius: 6px; padding: 5px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.btn:hover:not(:disabled) { border-color: var(--indigo); color: var(--indigo-text); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn--danger:hover:not(:disabled) { border-color: #dc2626; color: #b91c1c; background: #fef2f2; }
+.btn--danger:hover:not(:disabled) {
+  border-color: var(--danger); color: var(--danger-strong); background: var(--danger-soft); }
 </style>

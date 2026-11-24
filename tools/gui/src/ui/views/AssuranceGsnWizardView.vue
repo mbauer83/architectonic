@@ -321,14 +321,15 @@ watch(stepKey, () => { void loadGuidance() }, { immediate: true })
 .wizard { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
 .wizard-header { display: flex; justify-content: space-between; gap: 24px; align-items: start; }
 h1 { margin: 0; font-size: 24px; } h2 { margin-top: 0; font-size: 18px; }
-.wizard-header p, .hint { color: #64748b; }
+.wizard-header p, .hint { color: var(--muted); }
 .steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 20px 0; }
-.steps button { border: 1px solid #cbd5e1; background: #fff; padding: 7px 10px; border-radius: 6px; }
-.steps button.active { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
-.panel, .guidance { border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin-bottom: 14px; }
-.guidance { background: #f8fafc; font-size: 13px; }
+.steps button {
+  border: 1px solid var(--border-strong); background: var(--surface); padding: 7px 10px; border-radius: 6px; }
+.steps button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+.panel, .guidance { border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-bottom: 14px; }
+.guidance { background: var(--canvas); font-size: 13px; }
 .panel button { margin: 8px 8px 0 0; padding: 8px 12px; }
-.svg { overflow: auto; background: #fff; border: 1px solid #e2e8f0; padding: 12px; margin: 12px 0; }
+.svg { overflow: auto; background: var(--surface); border: 1px solid var(--border); padding: 12px; margin: 12px 0; }
 .svg :deep(svg) { max-width: 100%; height: auto; }
-.ok { color: #166534; } .warning { color: #92400e; } .error { color: #b91c1c; }
+.ok { color: var(--ok-text); } .warning { color: var(--warn-text); } .error { color: var(--danger-strong); }
 </style>

@@ -60,10 +60,10 @@ const select = (current: Record<string, string>, field: string, value: string): 
 <style scoped>
 .filter-bar {
   display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 16px;
-  border-bottom: 1px solid #e5e7eb; background: white;
+  border-bottom: 1px solid var(--border); background: var(--surface);
 }
 .filter-select {
-  font-size: 12px; padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 5px;
-  background: white; color: #374151;
+  font-size: 12px; padding: 4px 8px; border: 1px solid var(--border-strong); border-radius: 5px;
+  background: var(--surface); color: var(--text-2);
 }
 </style>

@@ -215,18 +215,19 @@ const inferredType = (binding: QueryBindingNode) => resultTypeStringFor(binding,
 
 <style scoped>
 .panel { margin: 16px 0; }
-.empty-state { font-size: 12.5px; color: #6b7280; background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 8px; padding: 10px 12px; }
-.binding-row { border: 1px solid #d1d5db; border-radius: 8px; padding: 10px; margin: 8px 0; }
-.binding-row.highlighted { outline: 2px solid #dc2626; outline-offset: 2px; }
+.empty-state { font-size: 12.5px; color: var(--muted); background: var(--hover); border: 1px dashed var(--border-strong); border-radius: 8px; padding: 10px 12px; }
+.binding-row { border: 1px solid var(--border-strong); border-radius: 8px; padding: 10px; margin: 8px 0; }
+.binding-row.highlighted { outline: 2px solid var(--danger); outline-offset: 2px; }
 .binding-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
 .binding-sub { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; margin: 6px 0; }
-.sub-label { font-size: 11px; color: #9ca3af; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-.inp { font-size: 12.5px; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; }
+.sub-label { font-size: 11px; color: var(--faint); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.inp { font-size: 12.5px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-strong); }
 .inp.name { min-width: 160px; font-weight: 600; }
-.inferred-type { font-size: 11px; color: #4338ca; background: #eef2ff; padding: 2px 8px; border-radius: 99px; font-family: monospace; }
-.icon-btn { appearance: none; border: none; background: none; color: #9ca3af; cursor: pointer; font-size: 15px; margin-left: auto; }
-.icon-btn:hover { color: #991b1b; }
-.empty-hint { font-size: 12px; color: #92400e; background: #fef3c7; padding: 2px 8px; border-radius: 4px; }
-.add-btn { appearance: none; border: 1px dashed #d1d5db; background: #fff; color: #6b7280; border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
-.add-btn:hover { border-color: #6366f1; color: #4338ca; }
+.inferred-type { font-size: 11px; color: var(--indigo-text); background: var(--indigo-soft); padding: 2px 8px; border-radius: 99px; font-family: monospace; }
+.icon-btn { appearance: none; border: none; background: none; color: var(--faint); cursor: pointer; font-size: 15px; margin-left: auto; }
+.icon-btn:hover { color: var(--danger-strong); }
+.empty-hint {
+  font-size: 12px; color: var(--warn-text); background: var(--warn-soft); padding: 2px 8px; border-radius: 4px; }
+.add-btn { appearance: none; border: 1px dashed var(--border-strong); background: var(--surface); color: var(--muted); border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.add-btn:hover { border-color: var(--indigo); color: var(--indigo-text); }
 </style>

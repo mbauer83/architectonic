@@ -193,28 +193,28 @@ const propEnumValues = (schema: unknown): string[] => {
 <style scoped>
 .type-section { display: grid; gap: 8px; }
 .type-section__header { display: flex; align-items: center; justify-content: space-between; font-weight: 650; font-size: 12px; }
-.type-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid #dbe3ef; border-radius: 8px; background: #fff; }
+.type-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .card-top { display: flex; align-items: center; gap: 6px; }
 .card-picker { flex: 1; min-width: 0; }
 .rm-btn { flex-shrink: 0; }
 .card-label { width: 100%; box-sizing: border-box; }
 .card-props { display: flex; flex-wrap: wrap; gap: 8px; }
 .prop-field { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 120px; }
-.prop-label { font-size: 11px; font-weight: 600; color: #475569; }
+.prop-label { font-size: 11px; font-weight: 600; color: var(--text-2); }
 .toggle-row { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 4px 0; }
-.toggle-label { font-size: 12px; color: #374151; }
-.mini-btn { min-width: 28px; height: 28px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; cursor: pointer; font-size: 14px; color: #374151; }
+.toggle-label { font-size: 12px; color: var(--text-2); }
+.mini-btn { min-width: 28px; height: 28px; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 6px; cursor: pointer; font-size: 14px; color: var(--text-2); }
 .mini-btn:disabled { opacity: .45; cursor: not-allowed; }
 .inp {
   width: 100%;
   padding: 5px 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   font-size: 13px;
-  background: white;
-  color: #1e293b;
+  background: var(--surface);
+  color: var(--text);
   outline: none;
   box-sizing: border-box;
 }
-.inp:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px #bfdbfe; }
+.inp:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-ring); }
 </style>

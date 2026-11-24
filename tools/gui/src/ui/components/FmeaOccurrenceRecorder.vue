@@ -166,20 +166,20 @@ async function save() {
 </template>
 
 <style scoped>
-.occ { display: grid; gap: 8px; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;
-  background: white; text-align: left; font-size: 12px; }
-.occ__lead { margin: 0; color: #4b5563; }
-.occ__facts { border-left: 3px solid #e5e7eb; padding-left: 8px; color: #374151; }
+.occ { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--border-strong); border-radius: 6px;
+  background: var(--surface); text-align: left; font-size: 12px; }
+.occ__lead { margin: 0; color: var(--text-2); }
+.occ__facts { border-left: 3px solid var(--border); padding-left: 8px; color: var(--text-2); }
 .occ__facts-heading { font-weight: 600; }
 .occ__facts ul { margin: 4px 0 0; padding-left: 16px; }
 .occ__row { display: grid; grid-template-columns: 90px 1fr; gap: 8px; align-items: center; }
 .occ__row--wide { align-items: start; }
-.occ__value, .occ__justification { padding: 6px; border: 1px solid #d1d5db; border-radius: 5px;
-  font: inherit; background: white; }
-.occ__error { margin: 0; color: #b91c1c; }
+.occ__value, .occ__justification { padding: 6px; border: 1px solid var(--border-strong); border-radius: 5px;
+  font: inherit; background: var(--surface); }
+.occ__error { margin: 0; color: var(--danger-strong); }
 .occ__actions { display: flex; gap: 8px; justify-content: flex-end; }
-.occ__actions button { padding: 6px 10px; border-radius: 5px; border: 1px solid #d1d5db;
-  background: white; font: inherit; cursor: pointer; }
-.occ__save { border-color: #1d4ed8; color: #1d4ed8; font-weight: 600; }
+.occ__actions button { padding: 6px 10px; border-radius: 5px; border: 1px solid var(--border-strong);
+  background: var(--surface); font: inherit; cursor: pointer; }
+.occ__save { border-color: var(--accent-strong); color: var(--accent-strong); font-weight: 600; }
 .occ__save:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

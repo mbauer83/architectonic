@@ -469,20 +469,20 @@ const showExpandBadge = (n: GraphNode) =>
    sidebar past the right edge of the viewport. */
 .graph-canvas {
   flex: 1; min-width: 0; display: flex; flex-direction: column;
-  background: #fafafa; position: relative;
+  background: var(--paper); position: relative;
 }
 .canvas-header {
   display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px;
-  border-bottom: 1px solid #e5e7eb; background: white;
+  border-bottom: 1px solid var(--border); background: var(--surface);
 }
-.back-link { font-size: 13px; color: #6b7280; }
-.back-link:hover { color: #374151; }
-.canvas-title { font-size: 14px; font-weight: 600; color: #374151; margin-right: auto; }
-.view-as-link { font-size: 12px; color: #4338ca; text-decoration: none; border: 1px solid #c7d2fe; border-radius: 6px; padding: 3px 9px; margin-right: 10px; }
-.view-as-link:hover { background: #eef2ff; }
+.back-link { font-size: 13px; color: var(--muted); }
+.back-link:hover { color: var(--text-2); }
+.canvas-title { font-size: 14px; font-weight: 600; color: var(--text-2); margin-right: auto; }
+.view-as-link { font-size: 12px; color: var(--indigo-text); text-decoration: none; border: 1px solid var(--indigo-border); border-radius: 6px; padding: 3px 9px; margin-right: 10px; }
+.view-as-link:hover { background: var(--indigo-soft); }
 
 .snapshot-error {
-  margin: 0; padding: 8px 16px; font-size: 13px; color: #b91c1c; background: #fef2f2;
+  margin: 0; padding: 8px 16px; font-size: 13px; color: var(--danger-strong); background: var(--danger-soft);
 }
 
 .mono { font-family: monospace; }

@@ -268,11 +268,11 @@ onMounted(load)
 <style scoped>
 .changes-page { padding: 1rem 1.25rem; max-width: 60rem; }
 .changes-title { font-size: 1.4rem; margin: 0 0 0.35rem; }
-.changes-intro, .changes-note { color: var(--muted-fg, #555); margin: 0 0 1rem; }
-.changes-error { color: var(--error-fg, #a11); margin: 0 0 1rem; }
+.changes-intro, .changes-note { color: var(--muted); margin: 0 0 1rem; }
+.changes-error { color: var(--danger-strong); margin: 0 0 1rem; }
 .changes-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
 .changes-row {
-  border: 1px solid var(--border, #d8d8d8);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.75rem 0.9rem;
   display: grid;
@@ -282,10 +282,10 @@ onMounted(load)
 .changes-row__link { font-weight: 600; }
 .changes-row__kind {
   font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em;
-  color: var(--muted-fg, #666);
+  color: var(--muted);
 }
 .changes-row__fields, .changes-row__state, .changes-row__condition { margin: 0; font-size: 0.9rem; }
-.changes-row__condition { color: var(--warning-fg, #8a5a00); }
+.changes-row__condition { color: var(--warn-text); }
 .changes-row__divergence {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -293,10 +293,10 @@ onMounted(load)
   margin: 0.35rem 0 0;
   font-size: 0.85rem;
 }
-.changes-row__field { font-weight: 600; color: var(--muted-fg, #555); }
+.changes-row__field { font-weight: 600; color: var(--muted); }
 .changes-row__values { margin: 0; display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; }
 .changes-row__value { flex: 1 1 18rem; min-width: 0; }
-.changes-row__value--theirs { color: var(--muted-fg, #666); text-decoration: line-through; }
+.changes-row__value--theirs { color: var(--muted); text-decoration: line-through; }
 .changes-row__value--clamped {
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -306,26 +306,26 @@ onMounted(load)
 }
 .changes-row__expand {
   background: none; border: 0; padding: 0;
-  color: var(--link-fg, #2563eb); cursor: pointer; font: inherit; text-decoration: underline;
+  color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline;
 }
-.changes-row__value--mine { color: var(--fg, #111); }
-.changes-row__arrow { color: var(--muted-fg, #888); }
+.changes-row__value--mine { color: var(--text); }
+.changes-row__arrow { color: var(--muted); }
 /* The same treatment the entity delete panel's cancel gives a reversible-looking action: this
    ends a change rather than deleting an artifact, so it is not the red one. */
 .changes-row__actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
-.changes-row__rebased { margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--muted-fg, #555); }
+.changes-row__rebased { margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--muted); }
 .changes-row__discard {
   justify-self: start;
   margin-top: 0.5rem;
   padding: 7px 16px;
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: var(--soft);
+  color: var(--text-2);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   font-size: 13px;
   cursor: pointer;
 }
-.changes-row__discard:hover:not(:disabled) { background: #e5e7eb; }
+.changes-row__discard:hover:not(:disabled) { background: var(--border); }
 .changes-row__discard:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* The one action on this page that reaches outside the repository, so it is the one that reads as
@@ -339,16 +339,16 @@ onMounted(load)
 }
 .changes-submit__button {
   padding: 8px 18px;
-  background: #1f2937;
-  color: #f9fafb;
+  background: var(--inverse);
+  color: var(--on-inverse);
   border: 1px solid #1f2937;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
-.changes-submit__button:hover:not(:disabled) { background: #111827; }
+.changes-submit__button:hover:not(:disabled) { background: var(--inverse-hover); }
 .changes-submit__button:disabled { opacity: 0.5; cursor: not-allowed; }
-.changes-submit__hint { color: #6b7280; font-size: 13px; }
-.changes-note--done { color: #065f46; }
+.changes-submit__hint { color: var(--muted); font-size: 13px; }
+.changes-note--done { color: var(--ok-text); }
 </style>

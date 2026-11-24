@@ -76,8 +76,8 @@ provide(toastKey, addToast)
 
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.5; color: #1a1a1a; background: #f5f5f5; }
-a { color: #2563eb; text-decoration: none; }
+body { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.5; color: var(--text); background: var(--bg); }
+a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 pre, code { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 13px; }
 </style>

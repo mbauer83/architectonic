@@ -151,8 +151,8 @@ const groups = computed(() => [
 .graph-filter {
   /* As the layout groups beside it: wrap rather than squash. */
   flex-shrink: 0;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   font-size: 12px;
 }
@@ -165,27 +165,27 @@ const groups = computed(() => [
 .disclosure {
   border: none;
   background: none;
-  color: #374151;
+  color: var(--text-2);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   padding: 2px 0;
 }
 .chevron { margin-right: 4px; }
-.count { color: #b45309; font-weight: 600; }
-.shown { color: #6b7280; font-weight: 500; margin-left: 4px; }
+.count { color: var(--warn-text); font-weight: 600; }
+.shown { color: var(--muted); font-weight: 500; margin-left: 4px; }
 .reset {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: #fff;
-  color: #374151;
+  background: var(--surface);
+  color: var(--text-2);
   font-size: 11px;
   padding: 2px 8px;
   cursor: pointer;
 }
-.reset:hover { background: #f3f4f6; }
+.reset:hover { background: var(--soft); }
 .body {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border);
   padding: 8px;
   max-height: 40vh;
   overflow-y: auto;
@@ -193,7 +193,7 @@ const groups = computed(() => [
 .group + .group { margin-top: 10px; }
 .heading {
   margin: 0 0 4px;
-  color: #6b7280;
+  color: var(--muted);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -202,7 +202,7 @@ const groups = computed(() => [
 .level + .level { margin-top: 6px; }
 .level-label {
   margin: 0 0 3px;
-  color: #374151;
+  color: var(--text-2);
   font-weight: 600;
 }
 .values {
@@ -211,18 +211,18 @@ const groups = computed(() => [
   gap: 4px;
 }
 .value {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
-  background: #fff;
-  color: #374151;
+  background: var(--surface);
+  color: var(--text-2);
   font-size: 11px;
   padding: 2px 10px;
   cursor: pointer;
 }
-.value:hover { background: #f3f4f6; }
+.value:hover { background: var(--soft); }
 .value.excluded {
-  background: #f3f4f6;
-  color: #9ca3af;
+  background: var(--soft);
+  color: var(--faint);
   text-decoration: line-through;
   border-style: dashed;
 }

@@ -44,7 +44,7 @@ const isEntityLink = computed(() => props.source === 'name' && value.value !== n
 </template>
 
 <style scoped>
-.vp-col-unavailable { color: #9ca3af; }
-.cell-link { color: #2563eb; text-decoration: none; }
+.vp-col-unavailable { color: var(--faint); }
+.cell-link { color: var(--accent); text-decoration: none; }
 .cell-link:hover { text-decoration: underline; }
 </style>

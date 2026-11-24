@@ -70,12 +70,12 @@ const remove = (id: string) => {
 <style scoped>
 .entity-ref { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .ref-chip {
-  display: inline-flex; align-items: center; gap: 5px; background: #eef2ff; color: #4338ca;
+  display: inline-flex; align-items: center; gap: 5px; background: var(--indigo-soft); color: var(--indigo-text);
   border-radius: 999px; padding: 2px 4px 2px 10px; font-size: 12px; font-weight: 500;
 }
 .ref-chip-x {
-  appearance: none; border: none; background: none; color: #6366f1; cursor: pointer;
+  appearance: none; border: none; background: none; color: var(--indigo); cursor: pointer;
   font-size: 12px; line-height: 1; padding: 2px 4px; border-radius: 999px;
 }
-.ref-chip-x:hover { background: #c7d2fe; color: #3730a3; }
+.ref-chip-x:hover { background: var(--indigo-border); color: var(--indigo-text); }
 </style>

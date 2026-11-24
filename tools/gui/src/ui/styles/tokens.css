@@ -1,0 +1,83 @@
+/* The interface's colours, once. Every component reads these rather than writing a colour of its own,
+   so the interface follows the theme: the system setting by default, or the reader's choice in
+   Preferences, which `themePreference.ts` writes as `data-theme` on the root element.
+
+   The diagram stays on light paper in both themes: `--paper`, and `--on-paper` for a line of text the
+   interface writes on it, have no dark value, and the picture, its canvas and every export keep the
+   colours they were drawn in. The ArchiMate layer colours are the picture's too, and keep theirs.
+
+   The dark values appear twice — for the system setting and for an explicit choice — because CSS has
+   no way to name one block from two selectors with a media query between them.
+   `tokens.test.ts` holds the two copies equal. */
+:root {
+  --domain-motivation: #d8c1e4; --domain-strategy: #efbd5d; --domain-common: #e8e5d3;
+  --domain-business: #f4de7f; --domain-application: #b6d7e1; --domain-technology: #c3e1b4;
+  --on-domain: #252327;
+  --paper: #fafafa; --on-paper: #6b7280;
+
+  /* Surfaces, text and lines. */
+  --bg: #f5f5f5; --surface: #fff; --canvas: #f8fafc; --overlay: rgb(255 255 255 / 92%);
+  --text: #1a1a1a; --text-2: #374151; --muted: #6b7280; --faint: #9ca3af;
+  --border: #e5e7eb; --border-strong: #d1d5db; --hair: #f3f4f6; --hover: #f9fafb; --soft: #f3f4f6;
+  /* What is selected, what acts, the frame of a canvas being edited. */
+  --accent: #2563eb; --accent-strong: #1d4ed8; --accent-soft: #eff6ff; --accent-border: #bfdbfe;
+  --accent-ring: rgb(37 99 235 / 18%); --on-accent: #fff;
+  --type-soft: #dbeafe; --type-text: #1e40af;
+  /* A control that is on, drawn in the text colour: dark on light, light on dark. */
+  --inverse: #1e293b; --inverse-hover: #334155; --on-inverse: #fff;
+  /* The navigation bar, which is dark in both themes. */
+  --nav: #1e293b; --nav-text: #f8fafc; --nav-link: #b0bec5; --nav-active: #2d3f55; --nav-hover: #263347;
+  --nav-field: #0f172a; --nav-field-border: #334155;
+  /* States. */
+  --danger: #dc2626; --danger-strong: #b91c1c; --danger-soft: #fef2f2; --danger-border: #fecaca;
+  --warn: #d97706; --warn-text: #92400e; --warn-soft: #fef3c7; --warn-border: #fde68a;
+  --ok: #16a34a; --ok-text: #166534; --ok-soft: #dcfce7; --ok-border: #bbf7d0;
+  --info-text: #0369a1; --info-soft: #f0f9ff; --info-border: #bae6fd;
+  --indigo: #6366f1; --indigo-text: #4338ca; --indigo-soft: #eef2ff; --indigo-border: #c7d2fe;
+  --violet: #7c3aed; --violet-text: #6d28d9; --violet-soft: #f5f3ff; --violet-border: #ddd6fe;
+  --code-bg: #1e293b; --code-text: #e2e8f0;
+  --shadow: 0 8px 24px rgb(0 0 0 / 12%);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f172a; --surface: #1e293b; --canvas: #0b1220; --overlay: rgb(30 41 59 / 92%);
+    --text: #f1f5f9; --text-2: #cbd5e1; --muted: #94a3b8; --faint: #64748b;
+    --border: #334155; --border-strong: #475569; --hair: #273449; --hover: #263347; --soft: #273449;
+    --accent: #60a5fa; --accent-strong: #93c5fd; --accent-soft: #172a46; --accent-border: #1d4ed8;
+    --accent-ring: rgb(96 165 250 / 28%); --on-accent: #0b1220;
+    --type-soft: #172a46; --type-text: #93c5fd;
+    --inverse: #e2e8f0; --inverse-hover: #f8fafc; --on-inverse: #0f172a;
+    --nav: #0b1220; --nav-active: #1e293b; --nav-hover: #1a2638;
+    --danger: #f87171; --danger-strong: #fca5a5; --danger-soft: #3b1518; --danger-border: #7f1d1d;
+    --warn: #fbbf24; --warn-text: #fcd34d; --warn-soft: #3a2a0b; --warn-border: #78540c;
+    --ok: #4ade80; --ok-text: #86efac; --ok-soft: #0f2e1c; --ok-border: #166534;
+    --info-text: #7dd3fc; --info-soft: #0c2a3d; --info-border: #075985;
+    --indigo: #818cf8; --indigo-text: #a5b4fc; --indigo-soft: #1e1b4b; --indigo-border: #3730a3;
+    --violet: #a78bfa; --violet-text: #c4b5fd; --violet-soft: #261a45; --violet-border: #5b21b6;
+    --code-bg: #0b1220; --code-text: #e2e8f0;
+    --shadow: 0 8px 24px rgb(0 0 0 / 50%);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f172a; --surface: #1e293b; --canvas: #0b1220; --overlay: rgb(30 41 59 / 92%);
+  --text: #f1f5f9; --text-2: #cbd5e1; --muted: #94a3b8; --faint: #64748b;
+  --border: #334155; --border-strong: #475569; --hair: #273449; --hover: #263347; --soft: #273449;
+  --accent: #60a5fa; --accent-strong: #93c5fd; --accent-soft: #172a46; --accent-border: #1d4ed8;
+  --accent-ring: rgb(96 165 250 / 28%); --on-accent: #0b1220;
+  --type-soft: #172a46; --type-text: #93c5fd;
+  --inverse: #e2e8f0; --inverse-hover: #f8fafc; --on-inverse: #0f172a;
+  --nav: #0b1220; --nav-active: #1e293b; --nav-hover: #1a2638;
+  --danger: #f87171; --danger-strong: #fca5a5; --danger-soft: #3b1518; --danger-border: #7f1d1d;
+  --warn: #fbbf24; --warn-text: #fcd34d; --warn-soft: #3a2a0b; --warn-border: #78540c;
+  --ok: #4ade80; --ok-text: #86efac; --ok-soft: #0f2e1c; --ok-border: #166534;
+  --info-text: #7dd3fc; --info-soft: #0c2a3d; --info-border: #075985;
+  --indigo: #818cf8; --indigo-text: #a5b4fc; --indigo-soft: #1e1b4b; --indigo-border: #3730a3;
+  --violet: #a78bfa; --violet-text: #c4b5fd; --violet-soft: #261a45; --violet-border: #5b21b6;
+  --code-bg: #0b1220; --code-text: #e2e8f0;
+  --shadow: 0 8px 24px rgb(0 0 0 / 50%);
+  color-scheme: dark;
+}

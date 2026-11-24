@@ -164,18 +164,21 @@ const save = () => {
 </template>
 
 <style scoped>
-.edit-form { margin: 4px 0 8px; padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; }
-.field-label { display: grid; gap: 4px; font-size: 11px; color: #4b5563; }
-.description { resize: vertical; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 5px; font: inherit; }
-.multiplicity-row { display: flex; gap: 8px; align-items: end; margin-top: 8px; color: #9ca3af; }
-.multiplicity-row label { display: grid; gap: 3px; font-size: 11px; color: #4b5563; }
-.multiplicity { width: 96px; padding: 5px 7px; border: 1px solid #d1d5db; border-radius: 5px; font: 12px monospace; }
-.properties { margin-top: 10px; border-top: 1px solid #e5e7eb; padding-top: 8px; }
-.error { color: #dc2626; }
+.edit-form {
+  margin: 4px 0 8px; padding: 10px; background: var(--hover); border: 1px solid var(--border); border-radius: 6px; }
+.field-label { display: grid; gap: 4px; font-size: 11px; color: var(--text-2); }
+.description {
+  resize: vertical; padding: 6px 8px; border: 1px solid var(--border-strong); border-radius: 5px; font: inherit; }
+.multiplicity-row { display: flex; gap: 8px; align-items: end; margin-top: 8px; color: var(--faint); }
+.multiplicity-row label { display: grid; gap: 3px; font-size: 11px; color: var(--text-2); }
+.multiplicity {
+  width: 96px; padding: 5px 7px; border: 1px solid var(--border-strong); border-radius: 5px; font: 12px monospace; }
+.properties { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+.error { color: var(--danger); }
 .actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
 .actions button { padding: 6px 12px; border-radius: 5px; cursor: pointer; }
-.cancel { border: 1px solid #d1d5db; background: white; color: #374151; }
-.save { border: 0; background: #2563eb; color: white; }
+.cancel { border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); }
+.save { border: 0; background: var(--accent); color: var(--on-accent); }
 .save:disabled { opacity: .5; cursor: not-allowed; }
 .error { margin-top: 6px; font-size: 12px; }
 </style>

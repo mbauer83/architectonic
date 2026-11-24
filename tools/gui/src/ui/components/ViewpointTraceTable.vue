@@ -92,33 +92,33 @@ const derivationNote = computed(() => traceDerivationNote(props.table))
 
 <style scoped>
 .vp-trace { margin-top: 18px; }
-.vp-trace-note { font-size: 12px; color: #6b7280; margin: 0 0 8px; }
-.vp-trace-note--warn { color: #92400e; }
+.vp-trace-note { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+.vp-trace-note--warn { color: var(--warn-text); }
 
 .vp-trace-table {
-  width: 100%; border-collapse: collapse; background: white;
-  border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;
+  width: 100%; border-collapse: collapse; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
 }
 .vp-trace-table th, .vp-trace-table td { padding: 10px 14px; text-align: left; vertical-align: top; }
 .vp-trace-table th {
-  background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-size: 11px;
-  font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #6b7280;
+  background: var(--hover); border-bottom: 1px solid var(--border); font-size: 11px;
+  font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
 }
-.vp-trace-table td { border-bottom: 1px solid #f3f4f6; font-size: 13px; }
+.vp-trace-table td { border-bottom: 1px solid var(--hair); font-size: 13px; }
 .vp-trace-table tr:last-child td { border-bottom: 0; }
 
 .vp-trace-role {
   display: block; font-size: 9px; font-weight: 400;
-  text-transform: none; letter-spacing: 0; color: #9ca3af;
+  text-transform: none; letter-spacing: 0; color: var(--faint);
 }
-.vp-trace-type { display: block; font-size: 11px; color: #9ca3af; }
-.vp-trace-detail { display: block; font-size: 11px; color: #6b7280; }
+.vp-trace-type { display: block; font-size: 11px; color: var(--faint); }
+.vp-trace-detail { display: block; font-size: 11px; color: var(--muted); }
 
 .vp-trace-verdict, .vp-trace-cell {
   display: inline-block; padding: 1px 8px; border-radius: 10px;
   font-size: 11px; font-weight: 600;
 }
-.vp-trace-verdict--negative, .vp-trace-cell--negative { background: #fef2f2; color: #b91c1c; }
-.vp-trace-verdict--positive, .vp-trace-cell--positive { background: #f0fdf4; color: #15803d; }
-.vp-trace-verdict--neutral, .vp-trace-cell--neutral { background: #f3f4f6; color: #4b5563; }
+.vp-trace-verdict--negative, .vp-trace-cell--negative { background: var(--danger-soft); color: var(--danger-strong); }
+.vp-trace-verdict--positive, .vp-trace-cell--positive { background: var(--ok-soft); color: var(--ok-text); }
+.vp-trace-verdict--neutral, .vp-trace-cell--neutral { background: var(--soft); color: var(--text-2); }
 </style>

@@ -169,24 +169,24 @@ defineExpose({
 
 <style scoped>
 .markdown-editor {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   overflow: hidden;
-  background: white;
+  background: var(--surface);
 }
 
 .markdown-editor__tabs {
   display: flex;
   gap: 2px;
   padding: 6px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--canvas);
+  border-bottom: 1px solid var(--border);
 }
 
 .markdown-editor__tab {
   border: 0;
   background: transparent;
-  color: #64748b;
+  color: var(--muted);
   padding: 6px 10px;
   border-radius: 6px;
   font-size: 12px;
@@ -195,8 +195,8 @@ defineExpose({
 }
 
 .markdown-editor__tab--active {
-  background: white;
-  color: #0f172a;
+  background: var(--surface);
+  color: var(--text);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
@@ -214,14 +214,14 @@ defineExpose({
   position: absolute;
   top: 12px;
   left: 12px;
-  color: #94a3b8;
+  color: var(--faint);
   pointer-events: none;
   font-size: 13px;
 }
 
 .markdown-editor__preview {
   padding: 16px;
-  color: #1f2937;
+  color: var(--text);
   line-height: 1.65;
 }
 
@@ -229,7 +229,7 @@ defineExpose({
 .markdown-editor__preview :deep(h2),
 .markdown-editor__preview :deep(h3) {
   margin: 0 0 12px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .markdown-editor__preview :deep(p),
@@ -239,7 +239,7 @@ defineExpose({
 }
 
 .markdown-editor__preview :deep(code) {
-  background: #f1f5f9;
+  background: var(--soft);
   padding: 1px 4px;
   border-radius: 4px;
 }

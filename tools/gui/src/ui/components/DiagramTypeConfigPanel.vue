@@ -65,5 +65,5 @@ const ownTypes = computed(() => {
 </template>
 
 <style scoped>
-.kind-panel { display: grid; gap: 14px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+.kind-panel { display: grid; gap: 14px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--canvas); }
 </style>

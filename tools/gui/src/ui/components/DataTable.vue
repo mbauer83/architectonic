@@ -175,23 +175,23 @@ const hasRows = computed(() => props.rows.length > 0)
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--surface);
 }
 .data-table th,
 .data-table td { padding: 10px 14px; text-align: left; }
 .data-table th {
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--hover);
+  border-bottom: 1px solid var(--border);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .05em;
-  color: #6b7280;
+  color: var(--muted);
   white-space: nowrap;
 }
-.data-table td { border-bottom: 1px solid #f3f4f6; font-size: 13px; }
+.data-table td { border-bottom: 1px solid var(--hair); font-size: 13px; }
 .data-table tr:last-child td { border-bottom: 0; }
-.data-table__row:hover td { background: #f9fafb; }
+.data-table__row:hover td { background: var(--hover); }
 .data-table__th--right, .data-table__td--right { text-align: right; }
 
 .data-table__sort {
@@ -202,7 +202,7 @@ const hasRows = computed(() => props.rows.length > 0)
   cursor: pointer;
   font: inherit;
 }
-.data-table__sort:hover { color: #374151; }
+.data-table__sort:hover { color: var(--text-2); }
 .data-table__subheader {
   display: block;
   margin-top: 2px;
@@ -210,7 +210,7 @@ const hasRows = computed(() => props.rows.length > 0)
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
-  color: #9ca3af;
+  color: var(--faint);
 }
 .data-table__note {
   display: block;
@@ -219,11 +219,11 @@ const hasRows = computed(() => props.rows.length > 0)
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
-  color: #9ca3af;
+  color: var(--faint);
 }
 .data-table__row--clickable { cursor: pointer; }
-.data-table__row--clickable:hover td { background: #f0f9ff; }
-.data-table__row--selected td { background: #eff6ff; }
-.data-table__row--selected td:first-child { box-shadow: inset 3px 0 0 #2563eb; }
-.data-table__empty { color: #9ca3af; font-size: 13px; }
+.data-table__row--clickable:hover td { background: var(--info-soft); }
+.data-table__row--selected td { background: var(--accent-soft); }
+.data-table__row--selected td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.data-table__empty { color: var(--faint); font-size: 13px; }
 </style>

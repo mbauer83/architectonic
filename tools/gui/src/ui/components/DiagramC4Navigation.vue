@@ -82,23 +82,23 @@ const crossAxisRows = computed(() =>
 .c4-up-banner {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   padding: 7px 12px; margin-bottom: 8px;
-  background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px;
+  background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 6px;
   position: sticky; top: 0; z-index: 10;
 }
-.c4-scope-name { font-size: 12px; color: #1e40af; font-weight: 500; }
-.c4-sep { font-size: 11px; color: #9ca3af; }
+.c4-scope-name { font-size: 12px; color: var(--type-text); font-weight: 500; }
+.c4-sep { font-size: 11px; color: var(--faint); }
 .c4-up-link {
-  font-size: 12px; color: #1d4ed8; text-decoration: none; font-weight: 600;
-  padding: 2px 8px; background: white; border: 1px solid #bfdbfe; border-radius: 4px;
+  font-size: 12px; color: var(--accent-strong); text-decoration: none; font-weight: 600;
+  padding: 2px 8px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: 4px;
 }
-.c4-up-link:hover { background: #dbeafe; text-decoration: none; }
+.c4-up-link:hover { background: var(--type-soft); text-decoration: none; }
 .c4-child-nav {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   padding: 5px 10px; margin-bottom: 10px;
-  background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px;
+  background: var(--canvas); border: 1px solid var(--border); border-radius: 6px;
 }
 .c4-level-badge { padding: 2px 8px; border-radius: 4px; background: #0ea5e9; color: white; font-size: 11px; font-weight: 700; }
-.c4-nav-dir { font-size: 11px; font-weight: 700; color: #6b7280; white-space: nowrap; }
-.c4-nav-link { font-size: 12px; color: #0369a1; text-decoration: none; padding: 2px 8px; border: 1px solid #bae6fd; border-radius: 4px; background: white; }
-.c4-nav-link:hover { background: #e0f2fe; text-decoration: none; }
+.c4-nav-dir { font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.c4-nav-link { font-size: 12px; color: var(--info-text); text-decoration: none; padding: 2px 8px; border: 1px solid var(--info-border); border-radius: 4px; background: var(--surface); }
+.c4-nav-link:hover { background: var(--info-soft); text-decoration: none; }
 </style>

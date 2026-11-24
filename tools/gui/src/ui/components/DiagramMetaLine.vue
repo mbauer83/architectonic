@@ -23,9 +23,10 @@ defineProps<{ detail: DiagramDetail; editing: boolean }>()
 
 <style scoped>
 .meta { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 12px; }
-.faded { color: #9ca3af; } .mono { font-family: monospace; }
+.faded { color: var(--faint); } .mono { font-family: monospace; }
 .type-badge {
-  padding: 2px 8px; border-radius: 4px; font-size: 11px; background: #dbeafe; color: #1e40af; font-weight: 500;
+  padding: 2px 8px; border-radius: 4px; font-size: 11px; background: var(--type-soft); color: var(--type-text);
+  font-weight: 500;
 }
 .editing-note { color: var(--accent-strong); font-weight: 600; }
 .editing-note kbd {

@@ -93,9 +93,9 @@ function onDrop(targetIndex: number) {
 <style scoped>
 .msg-list { display: flex; flex-direction: column; gap: 6px; }
 .msg-list-header { display: flex; align-items: center; justify-content: space-between; font-weight: 650; font-size: 12px; }
-.list-hint { font-size: 12px; color: #9ca3af; margin: 0; }
+.list-hint { font-size: 12px; color: var(--faint); margin: 0; }
 .msg-drag-wrapper { border-radius: 6px; }
-.msg-drag-wrapper.drag-over { outline: 2px solid #93c5fd; outline-offset: 1px; }
-.mini-btn { min-width: 24px; height: 24px; border: 1px solid #cbd5e1; background: #fff; border-radius: 5px; cursor: pointer; font-size: 14px; color: #374151; }
+.msg-drag-wrapper.drag-over { outline: 2px solid var(--accent-border); outline-offset: 1px; }
+.mini-btn { min-width: 24px; height: 24px; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 5px; cursor: pointer; font-size: 14px; color: var(--text-2); }
 .mini-btn:disabled { opacity: .45; cursor: not-allowed; }
 </style>

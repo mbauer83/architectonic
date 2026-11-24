@@ -95,21 +95,21 @@ async function modelAndBind() {
 </template>
 
 <style scoped>
-.model-this { border: 1px solid #fcd34d; background: #fffbeb; border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
-.mt-title { font-size: 13px; font-weight: 700; color: #b45309; margin: 0; }
-.mt-hint { font-size: 12px; color: #92400e; margin: 0; }
+.model-this { border: 1px solid var(--warn-border); background: var(--warn-soft); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.mt-title { font-size: 13px; font-weight: 700; color: var(--warn-text); margin: 0; }
+.mt-hint { font-size: 12px; color: var(--warn-text); margin: 0; }
 .mt-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.mt-label { font-size: 12px; color: #475569; display: flex; align-items: center; gap: 6px; }
-.mt-select { font-size: 12px; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 5px; }
-.mt-input { flex: 1; min-width: 160px; font-size: 12px; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 5px; }
-.mt-check { font-size: 12px; color: #475569; display: flex; align-items: center; gap: 6px; }
+.mt-label { font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
+.mt-select { font-size: 12px; padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: 5px; }
+.mt-input { flex: 1; min-width: 160px; font-size: 12px; padding: 6px 8px; border: 1px solid var(--border-strong); border-radius: 5px; }
+.mt-check { font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
 .mt-btn {
   align-self: flex-start; font-size: 12px; padding: 6px 14px; border: none; border-radius: 6px;
   background: #b45309; color: #fff; font-weight: 600; cursor: pointer;
 }
 .mt-btn:disabled { opacity: 0.5; cursor: default; }
 .mt-outcome { font-size: 12px; margin: 0; font-weight: 600; }
-.mt-outcome--bound { color: #15803d; }
-.mt-outcome--task { color: #1d4ed8; }
-.mt-outcome--error { color: #b91c1c; }
+.mt-outcome--bound { color: var(--ok-text); }
+.mt-outcome--task { color: var(--accent-strong); }
+.mt-outcome--error { color: var(--danger-strong); }
 </style>

@@ -165,19 +165,19 @@ const move = (step: number): void => {
 <style scoped>
 .menu {
   position: absolute; z-index: 6; min-width: 220px; outline: none;
-  background: #fff; border: 1px solid #d1d5db; border-radius: 8px; padding: 6px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px;
   box-shadow: 0 8px 24px rgba(0,0,0,.12); font-size: 12.5px;
 }
 .menu.wide { width: 380px; }
 .heading {
   margin: 2px 6px 6px; font-size: 11px; text-transform: uppercase;
-  letter-spacing: .05em; color: #9ca3af;
+  letter-spacing: .05em; color: var(--faint);
 }
 .entry {
   display: block; width: 100%; text-align: left; border: none; background: none;
-  padding: 6px 8px; border-radius: 5px; cursor: pointer; color: #1f2328; font-size: 12.5px;
+  padding: 6px 8px; border-radius: 5px; cursor: pointer; color: var(--text); font-size: 12.5px;
 }
-.entry:hover, .entry:focus-visible { background: #f3f4f6; }
-.hint { display: block; color: #9ca3af; font-size: 11px; }
-.scoped { margin: 6px 2px 0; color: #9ca3af; font-size: 11px; }
+.entry:hover, .entry:focus-visible { background: var(--soft); }
+.hint { display: block; color: var(--faint); font-size: 11px; }
+.scoped { margin: 6px 2px 0; color: var(--faint); font-size: 11px; }
 </style>

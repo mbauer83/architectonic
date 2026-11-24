@@ -61,19 +61,19 @@ const choose = (format: 'png' | 'svg') => {
 <style scoped>
 .dl-wrap { position: relative; display: inline-block; }
 .dl-btn {
-  padding: 3px 8px; border-radius: 4px; border: 1px solid #d1d5db;
-  background: white; font-size: 12px; cursor: pointer; color: #6b7280; line-height: 1.4;
+  padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border-strong);
+  background: var(--surface); font-size: 12px; cursor: pointer; color: var(--muted); line-height: 1.4;
 }
-.dl-btn:hover { background: #f9fafb; color: #374151; }
+.dl-btn:hover { background: var(--hover); color: var(--text-2); }
 .dl-overlay { position: fixed; inset: 0; z-index: 10; }
 .dl-dropdown {
   position: absolute; right: 0; top: calc(100% + 4px); z-index: 11;
-  background: white; border: 1px solid #e5e7eb; border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0,0,0,.1); min-width: 90px; overflow: hidden;
 }
 .dl-opt {
   display: block; width: 100%; text-align: left; padding: 7px 12px;
-  background: none; border: none; font-size: 13px; cursor: pointer; color: #374151;
+  background: none; border: none; font-size: 13px; cursor: pointer; color: var(--text-2);
 }
-.dl-opt:hover { background: #f9fafb; }
+.dl-opt:hover { background: var(--hover); }
 </style>

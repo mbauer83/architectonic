@@ -292,32 +292,34 @@ const input = (e: Event) => (e.target as HTMLInputElement).value
 </template>
 
 <style scoped>
-.pattern { border: 1px solid #d1d5db; border-radius: 8px; padding: 10px; margin: 8px 0; }
-.pattern.highlighted { outline: 2px solid #dc2626; outline-offset: 2px; }
+.pattern { border: 1px solid var(--border-strong); border-radius: 8px; padding: 10px; margin: 8px 0; }
+.pattern.highlighted { outline: 2px solid var(--danger); outline-offset: 2px; }
 .pattern-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; }
 .applies { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 8px 0; font-size: 12px; }
 .chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px;
-  border: 1px solid #e5e7eb; border-radius: 12px; color: #374151;
+  border: 1px solid var(--border); border-radius: 12px; color: var(--text-2);
 }
 .sub { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; font-size: 12.5px; }
 .edges { margin: 6px 0 6px 12px; }
 .edge-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 4px 0; font-size: 12.5px; }
-.lbl { color: #6b7280; font-weight: 600; font-size: 12px; }
-.inp { font-size: 12.5px; padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db; background: #fff; }
+.lbl { color: var(--muted); font-weight: 600; font-size: 12px; }
+.inp { font-size: 12.5px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-strong);
+  background: var(--surface); }
 .inp.name { min-width: 150px; font-weight: 600; }
 .inp.label { min-width: 130px; }
 .inp.hops { width: 64px; }
-.check { display: inline-flex; align-items: center; gap: 6px; color: #374151; cursor: pointer; }
+.check { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); cursor: pointer; }
 .icon-btn {
-  appearance: none; border: none; background: none; color: #9ca3af;
+  appearance: none; border: none; background: none; color: var(--faint);
   cursor: pointer; font-size: 15px; margin-left: auto;
 }
-.icon-btn:hover { color: #991b1b; }
+.icon-btn:hover { color: var(--danger-strong); }
 .add-btn {
-  appearance: none; border: 1px dashed #d1d5db; background: #fff; color: #6b7280;
+  appearance: none; border: 1px dashed var(--border-strong); background: var(--surface); color: var(--muted);
   border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
 }
-.add-btn:hover { border-color: #6366f1; color: #4338ca; }
-.cap-warn { font-size: 12px; color: #92400e; background: #fef3c7; padding: 4px 10px; border-radius: 4px; }
+.add-btn:hover { border-color: var(--indigo); color: var(--indigo-text); }
+.cap-warn {
+  font-size: 12px; color: var(--warn-text); background: var(--warn-soft); padding: 4px 10px; border-radius: 4px; }
 </style>

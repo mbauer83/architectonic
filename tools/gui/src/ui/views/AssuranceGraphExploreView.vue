@@ -325,36 +325,37 @@ const retry = () => {
    sidebar past the right edge of the viewport. */
 .graph-canvas {
   flex: 1; min-width: 0; display: flex; flex-direction: column;
-  background: #fafafa; position: relative;
+  background: var(--paper); position: relative;
 }
 .canvas-header {
   display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px;
-  border-bottom: 1px solid #e5e7eb; background: white;
+  border-bottom: 1px solid var(--border); background: var(--surface);
 }
-.back-link { font-size: 13px; color: #6b7280; }
-.back-link:hover { color: #374151; }
-.canvas-title { font-size: 14px; font-weight: 600; color: #374151; }
-.canvas-hint { font-size: 12px; color: #6b7280; margin-right: auto; }
+.back-link { font-size: 13px; color: var(--muted); }
+.back-link:hover { color: var(--text-2); }
+.canvas-title { font-size: 14px; font-weight: 600; color: var(--text-2); }
+.canvas-hint { font-size: 12px; color: var(--muted); margin-right: auto; }
 
 .panel-banner { font-size: 13px; padding: 10px 16px; }
-.panel-banner--locked { background: #fef9c3; color: #854d0e; border-bottom: 1px solid #facc15; }
-.panel-banner--error { background: #fee2e2; color: #991b1b; border-bottom: 1px solid #fca5a5; }
+.panel-banner--locked { background: var(--warn-soft); color: var(--warn-text); border-bottom: 1px solid var(--warn); }
+.panel-banner--error {
+  background: var(--danger-soft); color: var(--danger-strong); border-bottom: 1px solid var(--danger-border); }
 .retry-btn {
-  margin-left: 8px; padding: 2px 10px; border: 1px solid #d1d5db; border-radius: 4px;
-  background: white; font-size: 12px; cursor: pointer; color: #374151;
+  margin-left: 8px; padding: 2px 10px; border: 1px solid var(--border-strong); border-radius: 4px;
+  background: var(--surface); font-size: 12px; cursor: pointer; color: var(--text-2);
 }
-.retry-btn:hover { background: #f3f4f6; }
+.retry-btn:hover { background: var(--soft); }
 
 .graph-sidebar {
-  width: 320px; background: white; border-left: 1px solid #e5e7eb;
+  width: 320px; background: var(--surface); border-left: 1px solid var(--border);
   overflow-y: auto; flex-shrink: 0;
 }
-.sidebar-title { font-size: 14px; font-weight: 600; color: #374151; margin: 16px; }
-.sidebar-empty { font-size: 13px; color: #6b7280; margin: 0 16px; }
+.sidebar-title { font-size: 14px; font-weight: 600; color: var(--text-2); margin: 16px; }
+.sidebar-empty { font-size: 13px; color: var(--muted); margin: 0 16px; }
 .edge-summary {
   display: flex; flex-direction: column; gap: 4px; margin: 0 16px;
-  font-size: 12px; color: #374151;
+  font-size: 12px; color: var(--text-2);
 }
-.edge-conn-type { color: #6b7280; font-style: italic; }
+.edge-conn-type { color: var(--muted); font-style: italic; }
 .mono { font-family: monospace; }
 </style>

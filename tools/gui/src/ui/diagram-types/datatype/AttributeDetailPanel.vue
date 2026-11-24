@@ -70,17 +70,17 @@ const onSave = (patch: Record<string, unknown>) => {
 </template>
 
 <style scoped>
-.ent-det { border-top: 1px solid #e5e7eb; padding: 12px; }
+.ent-det { border-top: 1px solid var(--border); padding: 12px; }
 .det-hdr { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.det-name { font-weight: 600; font-size: 14px; color: #111827; }
-.det-close { border: none; background: none; font-size: 18px; line-height: 1; cursor: pointer; color: #9ca3af; }
-.det-close:hover { color: #374151; }
+.det-name { font-weight: 600; font-size: 14px; color: var(--text); }
+.det-close { border: none; background: none; font-size: 18px; line-height: 1; cursor: pointer; color: var(--faint); }
+.det-close:hover { color: var(--text-2); }
 .det-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
-.chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #374151; }
-.chip-type { background: #e0e7ff; color: #3730a3; }
-.chip-key { background: #fef3c7; color: #92400e; }
+.chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--soft); color: var(--text-2); }
+.chip-type { background: var(--indigo-soft); color: var(--indigo-text); }
+.chip-key { background: var(--warn-soft); color: var(--warn-text); }
 .attr-struct { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; margin: 0 0 4px; font-size: 12px; }
-.attr-struct dt { color: #6b7280; font-weight: 500; }
-.attr-struct dd { margin: 0; color: #111827; word-break: break-word; }
-.attr-owner { margin-top: 10px; font-size: 11px; color: #9ca3af; }
+.attr-struct dt { color: var(--muted); font-weight: 500; }
+.attr-struct dd { margin: 0; color: var(--text); word-break: break-word; }
+.attr-owner { margin-top: 10px; font-size: 11px; color: var(--faint); }
 </style>

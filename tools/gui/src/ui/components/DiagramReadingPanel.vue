@@ -296,38 +296,38 @@ const pick = (step: ColourStep, colour: string) => emit(
 </template>
 
 <style scoped>
-.reading { border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; font-size: 0.85rem; }
-.reading--active { border-color: #2563eb; }
+.reading { border: 1px solid var(--border); border-radius: 6px; background: var(--surface); font-size: 0.85rem; }
+.reading--active { border-color: var(--accent); }
 .reading__toggle {
   display: flex; align-items: baseline; gap: 0.5rem; width: 100%; padding: 0.4rem 0.6rem;
   background: none; border: none; cursor: pointer; text-align: left; font: inherit;
 }
 .reading__title { font-weight: 600; }
-.reading__summary { color: #2563eb; }
-.reading__hint, .reading__busy, .type__drawn, .type__summary { color: #6b7280; font-size: 0.8rem; }
+.reading__summary { color: var(--accent); }
+.reading__hint, .reading__busy, .type__drawn, .type__summary { color: var(--muted); font-size: 0.8rem; }
 .reading__busy { margin-left: auto; }
 .reading__body { padding: 0 0.6rem 0.6rem; }
-.reading__note { color: #6b7280; margin: 0.2rem 0; }
+.reading__note { color: var(--muted); margin: 0.2rem 0; }
 .chev { display: inline-block; transition: transform 0.12s; }
 .chev--open { transform: rotate(90deg); }
 .marks {
   display: inline-flex; align-items: baseline; gap: 0.3rem; padding: 0.35rem 0 0.4rem;
-  cursor: pointer; font-size: 0.8rem; color: #374151;
+  cursor: pointer; font-size: 0.8rem; color: var(--text-2);
 }
 /* A labelled pair rather than a checkbox: "keep" and "remove" are both positive descriptions of a
    picture, and a checkbox would have to name one of them as the absence of the other. */
 .kinds { display: flex; align-items: center; gap: 0.35rem; padding: 0 0 0.45rem; flex-wrap: wrap; }
-.kinds__label { color: #6b7280; font-size: 0.8rem; }
+.kinds__label { color: var(--muted); font-size: 0.8rem; }
 .kinds__choice {
-  padding: 0.15rem 0.45rem; font: inherit; font-size: 0.78rem; color: #374151; cursor: pointer;
-  background: #fff; border: 1px solid #e5e7eb; border-radius: 4px;
+  padding: 0.15rem 0.45rem; font: inherit; font-size: 0.78rem; color: var(--text-2); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
 }
-.kinds__choice--on { border-color: #2563eb; color: #1d4ed8; background: #eff6ff; }
-.across { border-top: 1px solid #f3f4f6; padding-bottom: 0.2rem; }
-.across__head { margin: 0.35rem 0 0.1rem; font-size: 0.8rem; color: #6b7280; }
-.across__disputed { margin: 0.2rem 0 0 1.2rem; font-size: 0.75rem; color: #d97706; }
+.kinds__choice--on { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-soft); }
+.across { border-top: 1px solid var(--hair); padding-bottom: 0.2rem; }
+.across__head { margin: 0.35rem 0 0.1rem; font-size: 0.8rem; color: var(--muted); }
+.across__disputed { margin: 0.2rem 0 0 1.2rem; font-size: 0.75rem; color: var(--warn); }
 .attrs--across { margin-left: 1.2rem; }
-.type { border-top: 1px solid #f3f4f6; }
+.type { border-top: 1px solid var(--hair); }
 .type__head {
   display: flex; align-items: baseline; gap: 0.5rem; width: 100%; padding: 0.35rem 0;
   background: none; border: none; cursor: pointer; text-align: left; font: inherit;

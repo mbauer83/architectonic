@@ -61,21 +61,21 @@ const emit = defineEmits<{ include: [entity: EntityDisplayInfo] }>()
 
 <style scoped>
 .entity-panel {
-  padding: 6px 8px 8px 26px; background: #fbfbfc; border-bottom: 1px solid #f1f3f5;
+  padding: 6px 8px 8px 26px; background: var(--hover); border-bottom: 1px solid var(--hair);
 }
-.entity-panel--related { background: #fcfcfd; }
-.empty-msg { font-size: 11px; color: #9ca3af; font-style: italic; }
+.entity-panel--related { background: var(--hover); }
+.empty-msg { font-size: 11px; color: var(--faint); font-style: italic; }
 .related-list { display: flex; flex-direction: column; gap: 3px; }
 .related-row { display: flex; align-items: center; gap: 6px; min-height: 22px; }
 .dd-glyph { display: inline-flex; align-items: center; flex-shrink: 0; }
 .related-name {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 12px; color: #374151;
+  font-size: 12px; color: var(--text-2);
 }
-.related-domain { font-size: 10px; color: #9ca3af; }
+.related-domain { font-size: 10px; color: var(--faint); }
 .include-btn {
-  width: 20px; height: 20px; border-radius: 4px; border: 1px solid #d1d5db;
-  background: white; color: #374151; cursor: pointer; line-height: 1; flex-shrink: 0;
+  width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border-strong);
+  background: var(--surface); color: var(--text-2); cursor: pointer; line-height: 1; flex-shrink: 0;
 }
-.include-btn:hover { border-color: #86efac; color: #15803d; }
+.include-btn:hover { border-color: var(--ok-border); color: var(--ok-text); }
 </style>

@@ -28,7 +28,7 @@ defineProps<{ tier: Tier }>()
   border-radius: 99px;
   white-space: nowrap;
 }
-.tier-engagement { background: #dcfce7; color: #166534; }
-.tier-enterprise { background: #dbeafe; color: #1e40af; }
-.tier-module { background: #f3f4f6; color: #6b7280; }
+.tier-engagement { background: var(--ok-soft); color: var(--ok-text); }
+.tier-enterprise { background: var(--type-soft); color: var(--type-text); }
+.tier-module { background: var(--soft); color: var(--muted); }
 </style>

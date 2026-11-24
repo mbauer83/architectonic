@@ -239,25 +239,26 @@ const handleConnectionsChange = (updated: DiagramConnection[]) => {
 <style scoped>
 .scope-section {
   display: flex; flex-direction: column; gap: 8px;
-  padding: 12px; border: 2px solid #bfdbfe; border-radius: 8px; background: #eff6ff;
+  padding: 12px; border: 2px solid var(--accent-border); border-radius: 8px; background: var(--accent-soft);
 }
 .scope-hdr { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.scope-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #1d4ed8; }
-.scope-hint { font-size: 11px; color: #6b7280; flex: 1; }
+.scope-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--accent-strong); }
+.scope-hint { font-size: 11px; color: var(--muted); flex: 1; }
 .mode-badge {
   font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap;
 }
-.mode-badge.model-backed { background: #d1fae5; color: #065f46; }
-.mode-badge.standalone { background: #fef3c7; color: #92400e; }
+.mode-badge.model-backed { background: var(--ok-soft); color: var(--ok-text); }
+.mode-badge.standalone { background: var(--warn-soft); color: var(--warn-text); }
 .scope-empty { display: flex; flex-direction: column; gap: 8px; }
-.scope-empty-label { font-size: 12px; color: #374151; }
+.scope-empty-label { font-size: 12px; color: var(--text-2); }
 .scope-picker { width: 100%; }
-.scope-cancel-btn { align-self: flex-start; padding: 4px 10px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; color: #374151; }
-.scope-cancel-btn:hover { background: #f9fafb; }
-.scope-card { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: white; border: 1px solid #bfdbfe; border-radius: 6px; }
+.scope-cancel-btn { align-self: flex-start; padding: 4px 10px; font-size: 12px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); cursor: pointer; color: var(--text-2); }
+.scope-cancel-btn:hover { background: var(--hover); }
+.scope-card { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: var(--surface); border: 1px solid var(--accent-border); border-radius: 6px; }
 .scope-card-body { display: flex; align-items: center; gap: 8px; }
-.scope-entity-name { font-size: 14px; font-weight: 700; color: #1e293b; }
-.scope-type-badge { font-size: 11px; padding: 2px 7px; border-radius: 4px; background: #dbeafe; color: #1d4ed8; font-weight: 500; }
-.scope-change-btn { padding: 4px 10px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; color: #374151; }
-.scope-change-btn:hover { background: #f9fafb; }
+.scope-entity-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.scope-type-badge { font-size: 11px; padding: 2px 7px; border-radius: 4px; background: var(--type-soft); color: var(--accent-strong); font-weight: 500; }
+.scope-change-btn { padding: 4px 10px; font-size: 12px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); cursor: pointer; color: var(--text-2); }
+.scope-change-btn:hover { background: var(--hover); }
 </style>

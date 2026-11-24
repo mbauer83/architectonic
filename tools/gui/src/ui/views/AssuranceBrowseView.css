@@ -1,0 +1,147 @@
+.browse-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+.browse-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.browse-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.browse-title { font-size: 20px; font-weight: 700; margin: 0; }
+.browse-header-actions { display: flex; gap: 8px; }
+.btn-create {
+  padding: 6px 14px;
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-create:hover { background: var(--accent-strong); }
+.reload-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--text-2);
+  border: 1px solid var(--border-strong);
+  font-size: 13px;
+  cursor: pointer;
+}
+.reload-btn:hover:not(:disabled) { background: var(--border); }
+.reload-btn:disabled { opacity: 0.5; cursor: default; }
+.browse-analysis-row { margin-top: 10px; }
+.visibility-note { font-size: 12px; color: var(--faint); margin: 6px 0 0; }
+.browse-error {
+  padding: 24px;
+  color: var(--danger-strong);
+  background: var(--danger-soft);
+  border-radius: 8px;
+  margin: 16px 24px;
+  font-size: 14px;
+}
+.browse-body { display: flex; flex: 1; overflow: hidden; }
+.browse-list-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  min-width: 0;
+}
+.browse-body--split .browse-list-panel { max-width: 400px; }
+.browse-detail-panel { flex: 1; overflow: hidden; min-width: 0; display: flex; flex-direction: column; }
+.panel-error {
+  padding: 8px 16px;
+  background: var(--danger-soft);
+  color: var(--danger-strong);
+  font-size: 13px;
+  border-bottom: 1px solid var(--danger-border);
+  flex-shrink: 0;
+}
+.panel-section { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.panel-title { font-size: 15px; font-weight: 600; margin: 0; }
+.panel-body { flex: 1; overflow-y: auto; padding: 16px; }
+.panel-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--faint);
+  cursor: pointer;
+  padding: 2px 6px;
+  line-height: 1;
+}
+.panel-close:hover { color: var(--text-2); }
+.panel-detail-actions { display: flex; gap: 8px; }
+.btn-edit, .btn-add-edge, .btn-delete {
+  padding: 5px 12px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid;
+}
+.btn-edit { background: var(--info-soft); color: var(--info-text); border-color: var(--info-border); }
+.btn-edit:hover { background: var(--info-soft); }
+.btn-add-edge { background: var(--ok-soft); color: var(--ok-text); border-color: var(--ok-border); }
+.btn-add-edge:hover { background: var(--ok-soft); }
+.btn-delete { background: var(--danger-soft); color: var(--danger-strong); border-color: var(--danger-border); }
+.btn-delete:hover:not(:disabled) { background: var(--danger-soft); }
+.btn-delete:disabled { opacity: 0.5; cursor: default; }
+.list-toolbar {
+  display: flex; align-items: center; gap: 10px; padding: 8px 16px 0;
+}
+.view-toggle { display: inline-flex; gap: 4px; }
+.toggle-btn {
+  font-size: 11.5px; padding: 3px 10px; border: 1px solid var(--border-strong); border-radius: 5px;
+  background: var(--surface); cursor: pointer; color: var(--text-2);
+}
+.toggle-btn:hover:not(.toggle-btn--active) { background: var(--soft); }
+/* Selected keeps its own colours through hover, as elsewhere: a bare :hover rule would
+   otherwise restore the pale background while the white label stayed. */
+.toggle-btn--active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.toggle-btn--active:hover { background: var(--accent-strong); }
+
+.node-name--link { color: var(--accent-strong); text-decoration: none; }
+.node-name--link:hover { text-decoration: underline; }
+.node-status, .node-concern { font-size: 11.5px; color: var(--text-2); }
+/* The direction breakdown reads as a gloss on the total, not a second number. */
+.conn-split { margin-left: 6px; font-size: 11px; color: var(--muted); }
+
+.list-count {
+  padding: 6px 16px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--hair); flex-shrink: 0; }
+.list-loading { padding: 24px 16px; color: var(--muted); font-size: 14px; }
+.node-table-scroll { overflow-y: auto; flex: 1; }
+.stamp { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.node-type-badge {
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--type-soft);
+  color: var(--accent-strong);
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.node-name { font-weight: 500; }
+.node-tlp { font-size: 11px; font-weight: 600; }
+.node-binding { font-size: 11px; padding: 1px 6px; border-radius: 3px; }
+.node-binding--bound { background: var(--ok-soft); color: var(--ok-text); }
+.node-binding--unbound { background: var(--danger-soft); color: var(--danger-strong); }

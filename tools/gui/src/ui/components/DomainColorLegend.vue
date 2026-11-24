@@ -37,8 +37,8 @@ const entries = computed(() => {
 <style scoped>
 .domain-legend {
   display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
-  padding: 4px 16px; background: white; border-bottom: 1px solid #e5e7eb;
-  font-size: 11px; color: #374151;
+  padding: 4px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+  font-size: 11px; color: var(--text-2);
 }
 .domain-chip { display: inline-flex; align-items: center; gap: 4px; }
 .domain-swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0,0,0,.15); }

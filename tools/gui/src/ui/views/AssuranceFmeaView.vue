@@ -72,6 +72,6 @@ watch(chosen, (value) => {
 <style scoped>
 .fmea-page { padding: 20px; }
 .fmea-title { font-size: 20px; margin: 0 0 8px; }
-.fmea-note { font-size: 13px; color: #4b5563; margin: 0 0 12px; max-width: 70ch; }
-.fmea-note--scope { color: #6b7280; }
+.fmea-note { font-size: 13px; color: var(--text-2); margin: 0 0 12px; max-width: 70ch; }
+.fmea-note--scope { color: var(--muted); }
 </style>

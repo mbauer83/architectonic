@@ -83,21 +83,21 @@ const onClear = () => {
 .aep { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .aep-badge {
   display: inline-flex; align-items: center; gap: 4px;
-  background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px;
-  padding: 2px 8px; font-size: 11px; color: #1d4ed8; max-width: 200px;
+  background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 12px;
+  padding: 2px 8px; font-size: 11px; color: var(--accent-strong); max-width: 200px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .aep-clear {
-  border: none; background: none; cursor: pointer; color: #6b7280;
+  border: none; background: none; cursor: pointer; color: var(--muted);
   padding: 0; line-height: 1; font-size: 13px; flex-shrink: 0;
 }
-.aep-clear:hover { color: #ef4444; }
+.aep-clear:hover { color: var(--danger); }
 .aep-map-btn {
-  font-size: 11px; color: #6b7280; background: none; border: 1px dashed #cbd5e1;
+  font-size: 11px; color: var(--muted); background: none; border: 1px dashed var(--border-strong);
   border-radius: 4px; padding: 2px 6px; cursor: pointer;
 }
-.aep-map-btn:hover { color: #2563eb; border-color: #2563eb; }
+.aep-map-btn:hover { color: var(--accent); border-color: var(--accent); }
 .aep-cancel {
-  font-size: 11px; color: #9ca3af; background: none; border: none; cursor: pointer; padding: 2px 4px;
+  font-size: 11px; color: var(--faint); background: none; border: none; cursor: pointer; padding: 2px 4px;
 }
 </style>

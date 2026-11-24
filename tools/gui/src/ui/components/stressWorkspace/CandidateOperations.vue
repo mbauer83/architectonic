@@ -209,9 +209,9 @@ const cardRows = (row: ChangeDifference) => {
 .fname { color: var(--muted); }
 .field s { color: var(--warn-text); }
 .standing { font-size: 11px; font-weight: 600; padding: 0 5px; border-radius: 3px; background: var(--soft); }
-.standing--applies { background: #dcfce7; color: #166534; }
+.standing--applies { background: var(--ok-soft); color: var(--ok-text); }
 .standing--drifted { background: var(--warn-soft); color: var(--warn-text); }
-.standing--conflicting { background: #fee2e2; color: #991b1b; }
+.standing--conflicting { background: var(--danger-soft); color: var(--danger-strong); }
 .fcard {
   position: absolute; left: 100%; top: 0; z-index: 40; width: 340px; background: var(--surface);
   border: 1px solid var(--border-strong);
@@ -232,5 +232,5 @@ const cardRows = (row: ChangeDifference) => {
 .fcard tr.chg td { background: var(--warn-soft); color: var(--text); }
 .fcard tr.chg td:first-child { box-shadow: inset 3px 0 0 var(--warn-text); font-weight: 600; }
 .fcard .was { text-decoration: line-through; color: var(--warn-text); }
-.err { color: #b91c1c; padding: 6px 10px; font-size: 12px; }
+.err { color: var(--danger-strong); padding: 6px 10px; font-size: 12px; }
 </style>

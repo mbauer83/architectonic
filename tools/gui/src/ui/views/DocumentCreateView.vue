@@ -484,31 +484,31 @@ const insertReference = (markdownLink: string) => {
 <style scoped>
 .create-page { max-width: 980px; margin: 0 auto; }
 .page-header { display: flex; gap: 16px; align-items: center; margin-bottom: 20px; }
-.back-link { border: 0; background: transparent; color: #64748b; cursor: pointer; padding: 0; font-size: 13px; }
+.back-link { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 0; font-size: 13px; }
 .page-title { font-size: 22px; font-weight: 600; }
-.card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-.form-field span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; }
+.form-field span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
 .form-control {
   padding: 9px 11px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   font-size: 13px;
 }
 .form-control--invalid {
-  border-color: #dc2626;
-  background: #fef2f2;
+  border-color: var(--danger);
+  background: var(--danger-soft);
 }
 .field-error {
-  color: #dc2626;
+  color: var(--danger);
   font-size: 12px;
 }
 .editor-toolbar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
 .secondary-btn {
   border: 0;
-  background: #e2e8f0;
-  color: #0f172a;
+  background: var(--border);
+  color: var(--text);
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 12px;
@@ -518,22 +518,22 @@ const insertReference = (markdownLink: string) => {
 .actions { display: flex; justify-content: flex-end; }
 .submit-btn {
   border: 0;
-  background: #2563eb;
-  color: white;
+  background: var(--accent);
+  color: var(--on-accent);
   border-radius: 8px;
   padding: 10px 16px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
-.state-msg { color: #64748b; margin-bottom: 12px; }
-.state-msg--error { color: #dc2626; }
+.state-msg { color: var(--muted); margin-bottom: 12px; }
+.state-msg--error { color: var(--danger); }
 .warnings-block { margin-bottom: 12px; }
-.warn { font-size: 12px; color: #b45309; margin-bottom: 4px; }
+.warn { font-size: 12px; color: var(--warn-text); margin-bottom: 4px; }
 .issue-list {
   margin: 0 0 12px;
   padding-left: 18px;
-  color: #991b1b;
+  color: var(--danger-strong);
   font-size: 13px;
 }
 .overlay {
@@ -546,12 +546,12 @@ const insertReference = (markdownLink: string) => {
 }
 
 .type-switch-warning {
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
+  background: var(--warn-soft);
+  border: 1px solid var(--warn);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 12px;
-  color: #92400e;
+  color: var(--warn-text);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -560,7 +560,7 @@ const insertReference = (markdownLink: string) => {
 
 .dirty-hint {
   font-size: 12px;
-  color: #64748b;
+  color: var(--muted);
   margin-bottom: 10px;
 }
 
@@ -568,14 +568,14 @@ const insertReference = (markdownLink: string) => {
   border: none;
   background: none;
   cursor: pointer;
-  color: #2563eb;
+  color: var(--accent);
   font-size: 12px;
   padding: 0;
   text-decoration: underline;
 }
 
 .link-btn.warn {
-  color: #b45309;
+  color: var(--warn-text);
 }
 
 .link-btn:hover {
@@ -590,21 +590,21 @@ const insertReference = (markdownLink: string) => {
   line-height: 1.6;
 }
 .entity-connection-hint--required {
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
-  color: #991b1b;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-strong);
 }
 .entity-connection-hint--suggested {
-  background: #eff6ff;
-  border: 1px solid #93c5fd;
-  color: #1e40af;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  color: var(--type-text);
 }
 .section-hints {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
   margin-bottom: 14px;
-  background: #f8fafc;
+  background: var(--canvas);
 }
 .section-hint {
   display: flex;
@@ -614,12 +614,12 @@ const insertReference = (markdownLink: string) => {
   padding: 4px 0;
 }
 .section-hint + .section-hint {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border);
 }
 .section-hint__name {
   font-size: 12px;
   font-weight: 700;
-  color: #334155;
+  color: var(--text-2);
 }
 .entity-connection-hint--inline {
   margin-bottom: 0;

@@ -45,14 +45,15 @@ defineProps<{ bindings: readonly ElementCorrespondence[] }>()
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #6b7280;
+  color: var(--muted);
   margin: 0 0 4px;
   font-weight: 600;
 }
 .det-bindings-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
 .det-bindings-list li { display: flex; align-items: baseline; gap: 6px; font-size: 12px; }
-.chip { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 500; background: #f3f4f6; color: #374151; }
-.chip-kind { background: #e0e7ff; color: #3730a3; flex: 0 0 auto; }
-.det-binding-link { color: #1d4ed8; text-decoration: none; }
+.chip { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 500; background: var(--soft);
+  color: var(--text-2); }
+.chip-kind { background: var(--indigo-soft); color: var(--indigo-text); flex: 0 0 auto; }
+.det-binding-link { color: var(--accent-strong); text-decoration: none; }
 .det-binding-link:hover { text-decoration: underline; }
 </style>

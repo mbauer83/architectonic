@@ -65,8 +65,8 @@ const copy = (kind: 'live' | 'verified') => {
 <style scoped>
 .link-actions { display: inline-flex; gap: 6px; }
 .link-btn {
-  font-size: 11.5px; padding: 3px 10px; border: 1px solid #d1d5db; border-radius: 5px;
-  background: white; cursor: pointer; color: #374151; white-space: nowrap;
+  font-size: 11.5px; padding: 3px 10px; border: 1px solid var(--border-strong); border-radius: 5px;
+  background: var(--surface); cursor: pointer; color: var(--text-2); white-space: nowrap;
 }
-.link-btn:hover { background: #f9fafb; }
+.link-btn:hover { background: var(--hover); }
 </style>

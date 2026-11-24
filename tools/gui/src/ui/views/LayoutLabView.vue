@@ -262,28 +262,29 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .lab__header h1 { font-size: 20px; }
-.lab__note { color: #475569; margin-bottom: 12px; }
-.lab__off { padding: 12px 16px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; }
+.lab__note { color: var(--text-2); margin-bottom: 12px; }
+.lab__off { padding: 12px 16px; background: var(--warn-soft); border: 1px solid var(--warn); border-radius: 6px; }
 .lab__toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
 .lab__toolbar select { margin-left: 6px; max-width: 360px; }
-.lab__toolbar button { padding: 4px 10px; border: 1px solid #cbd5e1; border-radius: 4px; }
-.lab__toolbar button { background: #fff; cursor: pointer; }
+.lab__toolbar button { padding: 4px 10px; border: 1px solid var(--border-strong); border-radius: 4px; }
+.lab__toolbar button { background: var(--surface); cursor: pointer; }
 .lab__toolbar button:disabled { opacity: 0.5; cursor: default; }
-.lab__counts { display: inline-flex; gap: 6px; color: #475569; }
+.lab__counts { display: inline-flex; gap: 6px; color: var(--text-2); }
 .lab__count { padding: 1px 8px; border-radius: 10px; font-weight: 600; }
 .lab__breach-toggle[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); }
-.lab__count--hard { background: #fee2e2; color: #991b1b; }
-.lab__count--soft { background: #fef3c7; color: #92400e; }
-.lab__timing { color: #64748b; font-size: 12px; }
-.lab__error { color: #b91c1c; }
+.lab__count--hard { background: var(--danger-soft); color: var(--danger-strong); }
+.lab__count--soft { background: var(--warn-soft); color: var(--warn-text); }
+.lab__timing { color: var(--muted); font-size: 12px; }
+.lab__error { color: var(--danger-strong); }
 /* Always being edited, so framed as a canvas in edit mode is. */
 .lab__canvas { border: 2px solid var(--accent); border-radius: 6px; }
 .lab__panels { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 12px; }
-.lab__panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; min-width: 0; }
+.lab__panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px; min-width: 0; }
 .lab__panel h2 { font-size: 14px; margin: 4px 0 8px; }
 .lab__server { max-width: 100%; height: auto; }
 .lab__breaches { list-style: none; max-height: 240px; overflow: auto; font-size: 12px; }
-.lab__breach--hard strong { color: #b91c1c; }
-.lab__breach--soft strong { color: #b45309; }
-.lab__json { max-height: 240px; overflow: auto; font-size: 11px; background: #f8fafc; padding: 6px; }
+.lab__breach--hard strong { color: var(--danger-strong); }
+.lab__breach--soft strong { color: var(--warn-text); }
+.lab__json { max-height: 240px; overflow: auto; font-size: 11px; background: var(--canvas); padding: 6px; }
 </style>

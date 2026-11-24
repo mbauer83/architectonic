@@ -179,20 +179,20 @@ watch(anchorId, load, { immediate: true })
 <style scoped>
 .findings-view { padding: 1rem 1.25rem; max-width: 68rem; }
 header h1 { margin: 0 0 0.25rem; font-size: 1.25rem; }
-.anchor { margin: 0 0 1rem; color: var(--muted, #666); font-size: 0.9rem; }
+.anchor { margin: 0 0 1rem; color: var(--muted); font-size: 0.9rem; }
 .status { padding: 0.5rem 0.75rem; border-radius: 4px; font-size: 0.9rem; }
-.status.error { background: #fdecea; color: #8a1c12; }
-.status.withheld { background: #fff6e5; color: #7a5200; }
-.status.empty { background: #f3f4f6; color: #444; }
-.summary { color: var(--muted, #666); font-size: 0.9rem; margin: 0.5rem 0 1rem; }
-.component { border: 1px solid var(--border, #e2e4e8); border-radius: 6px;
+.status.error { background: var(--danger-soft); color: var(--danger-strong); }
+.status.withheld { background: var(--warn-soft); color: var(--warn-text); }
+.status.empty { background: var(--soft); color: var(--text-2); }
+.summary { color: var(--muted); font-size: 0.9rem; margin: 0.5rem 0 1rem; }
+.component { border: 1px solid var(--border); border-radius: 6px;
   padding: 0.75rem 1rem; margin-bottom: 1rem; }
 .component h2 { margin: 0; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-.purl { margin: 0.15rem 0 0.6rem; font-size: 0.8rem; color: var(--muted, #666); }
+.purl { margin: 0.15rem 0 0.6rem; font-size: 0.8rem; color: var(--muted); }
 .directness { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
-  padding: 0.1rem 0.4rem; border-radius: 999px; background: #eef1f5; color: #445; }
-.directness--direct { background: #e5efff; color: #1a4a8a; }
-.directness--transitive { background: #f1eefe; color: #4b3a8a; }
+  padding: 0.1rem 0.4rem; border-radius: 999px; background: var(--soft); color: var(--text-2); }
+.directness--direct { background: var(--accent-soft); color: var(--type-text); }
+.directness--transitive { background: var(--violet-soft); color: var(--violet-text); }
 table { width: 100%; border-collapse: collapse; font-size: 0.9rem;
   table-layout: fixed; }
 .col-severity { width: 7.5rem; }
@@ -200,12 +200,12 @@ table { width: 100%; border-collapse: collapse; font-size: 0.9rem;
 .col-applicability { width: 9rem; }
 /* Fixed layout will not grow for a long id, so wrap instead of overflowing. */
 tbody td:first-child { overflow-wrap: anywhere; }
-th { text-align: left; font-weight: 600; color: var(--muted, #666);
-  border-bottom: 1px solid var(--border, #e2e4e8); padding: 0.3rem 0.4rem; }
-td { padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--border-soft, #f0f1f4); }
-.band { font-size: 0.75rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: #eef1f5; }
-.band--critical { background: #fde0dd; color: #8a1020; }
-.band--high { background: #fdecea; color: #8a1c12; }
-.band--medium { background: #fff6e5; color: #7a5200; }
-.band--low { background: #eef7ee; color: #2c5f2e; }
+th { text-align: left; font-weight: 600; color: var(--muted);
+  border-bottom: 1px solid var(--border); padding: 0.3rem 0.4rem; }
+td { padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--hair); }
+.band { font-size: 0.75rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: var(--soft); }
+.band--critical { background: var(--danger-soft); color: var(--danger-strong); }
+.band--high { background: var(--danger-soft); color: var(--danger-strong); }
+.band--medium { background: var(--warn-soft); color: var(--warn-text); }
+.band--low { background: var(--ok-soft); color: var(--ok-text); }
 </style>

@@ -65,7 +65,7 @@ const openNode = (nodeId: string) =>
 
 <style scoped>
 .leaf-dot { stroke: rgba(255, 255, 255, .85); stroke-width: 1; }
-.tooltip-name { font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 2px; }
-.tooltip-type { font-size: 11px; color: #6b7280; margin-bottom: 6px; }
-.tooltip-id { font-size: 11px; color: #6b7280; font-family: monospace; word-break: break-all; }
+.tooltip-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.tooltip-type { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.tooltip-id { font-size: 11px; color: var(--muted); font-family: monospace; word-break: break-all; }
 </style>

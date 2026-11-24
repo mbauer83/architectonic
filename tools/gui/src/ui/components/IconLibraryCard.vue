@@ -251,32 +251,32 @@ const remove = (): Promise<void> => run(svc.deleteIcon(props.icon.artifact_id), 
 <style scoped>
 .card {
   display: flex; flex-direction: column; gap: 8px; padding: 10px;
-  border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
 }
 .card--retired { opacity: .7; }
 .head { display: flex; gap: 10px; align-items: flex-start; }
 .head img { object-fit: contain; flex-shrink: 0; }
 .text { flex: 1; min-width: 0; }
-.text h3 { margin: 0; font-size: 14px; color: #1f2937; }
-.attribution, .meta, .usage { margin: 2px 0 0; font-size: 11px; color: #6b7280; overflow-wrap: anywhere; }
-.usage a { color: #4f46e5; }
-.usage a + a::before { content: ', '; color: #6b7280; }
+.text h3 { margin: 0; font-size: 14px; color: var(--text); }
+.attribution, .meta, .usage { margin: 2px 0 0; font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
+.usage a { color: var(--indigo-text); }
+.usage a + a::before { content: ', '; color: var(--muted); }
 .badge {
-  font-size: 10px; font-weight: 700; color: #1d4ed8;
-  background: #dbeafe; border-radius: 999px; padding: 2px 7px;
+  font-size: 10px; font-weight: 700; color: var(--accent-strong);
+  background: var(--type-soft); border-radius: 999px; padding: 2px 7px;
 }
-.badge--retired { color: #92400e; background: #fef3c7; }
+.badge--retired { color: var(--warn-text); background: var(--warn-soft); }
 .actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .actions button {
   padding: 3px 9px; font-size: 12px; border-radius: 5px;
-  border: 1px solid #d1d5db; background: #fff; cursor: pointer;
+  border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer;
 }
-.actions .primary { background: #2563eb; border-color: #2563eb; color: #fff; }
-.actions .danger { color: #dc2626; border-color: #fecaca; }
+.actions .primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.actions .danger { color: var(--danger); border-color: var(--danger-border); }
 .actions button:disabled { opacity: .5; cursor: not-allowed; }
 .form { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
-.form label { display: flex; flex-direction: column; gap: 2px; font-weight: 600; color: #374151; }
-.form input, .form select { font-weight: 400; padding: 4px 7px; border: 1px solid #e5e7eb; border-radius: 5px; }
-.plan { margin: 0; padding-left: 18px; color: #374151; }
-.message { margin: 0; font-size: 12px; color: #dc2626; }
+.form label { display: flex; flex-direction: column; gap: 2px; font-weight: 600; color: var(--text-2); }
+.form input, .form select { font-weight: 400; padding: 4px 7px; border: 1px solid var(--border); border-radius: 5px; }
+.plan { margin: 0; padding-left: 18px; color: var(--text-2); }
+.message { margin: 0; font-size: 12px; color: var(--danger); }
 </style>

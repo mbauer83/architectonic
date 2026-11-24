@@ -118,26 +118,26 @@ const hasChildren = (node: NavTreeNode): boolean => (node.children?.length ?? 0)
 
 <style scoped>
 .nav-tree { list-style: none; margin: 0; padding: 0; }
-.nav-tree__empty { font-size: 12px; color: #6b7280; padding: 6px 14px; margin: 0; }
+.nav-tree__empty { font-size: 12px; color: var(--muted); padding: 6px 14px; margin: 0; }
 .nav-tree__row { display: flex; align-items: center; gap: 4px; padding-right: 10px; }
-.nav-tree__row:hover { background: #f3f4f6; }
-.nav-tree__row--selected { background: #eff6ff; }
+.nav-tree__row:hover { background: var(--soft); }
+.nav-tree__row--selected { background: var(--accent-soft); }
 .nav-tree__caret {
-  background: none; border: none; cursor: pointer; color: #9ca3af;
+  background: none; border: none; cursor: pointer; color: var(--faint);
   width: 14px; flex-shrink: 0; padding: 0; font-size: 10px; line-height: 1;
 }
 .nav-tree__caret--none { cursor: default; }
 .nav-tree__label {
   flex: 1; min-width: 0; text-align: left; background: none; border: none;
-  font-size: 12.5px; color: #374151; text-decoration: none;
+  font-size: 12.5px; color: var(--text-2); text-decoration: none;
   padding: 4px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .nav-tree__label--heading { cursor: pointer; font-weight: 600; }
 .nav-tree__label--link { cursor: pointer; }
-.nav-tree__label--link:hover { color: #1d4ed8; }
-.nav-tree__row--selected .nav-tree__label { color: #1d4ed8; font-weight: 600; }
+.nav-tree__label--link:hover { color: var(--accent-strong); }
+.nav-tree__row--selected .nav-tree__label { color: var(--accent-strong); font-weight: 600; }
 .nav-tree__badge {
-  font-size: 10px; font-weight: 600; color: #6b7280; background: #f1f5f9;
+  font-size: 10px; font-weight: 600; color: var(--muted); background: var(--soft);
   border-radius: 8px; padding: 1px 6px; flex-shrink: 0;
 }
 </style>

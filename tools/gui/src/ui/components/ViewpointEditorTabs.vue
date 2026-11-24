@@ -49,9 +49,9 @@ const emit = defineEmits<{ 'update:activeTab': [value: EditorTab] }>()
 </template>
 
 <style scoped>
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid #d1d5db; margin: 12px 0; }
-.tabs button { appearance: none; border: none; background: none; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #9ca3af; cursor: pointer; border-bottom: 2px solid transparent; }
-.tabs button.sel { color: #4338ca; border-color: #6366f1; }
-.tabs button.inactive { color: #c4c8cf; font-style: italic; }
-.tabs button.inactive.sel { color: #8189a0; border-color: #c4c8cf; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border-strong); margin: 12px 0; }
+.tabs button { appearance: none; border: none; background: none; padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--faint); cursor: pointer; border-bottom: 2px solid transparent; }
+.tabs button.sel { color: var(--indigo-text); border-color: var(--indigo); }
+.tabs button.inactive { color: var(--faint); font-style: italic; }
+.tabs button.inactive.sel { color: var(--muted); border-color: var(--border-strong); }
 </style>

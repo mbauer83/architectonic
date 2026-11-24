@@ -112,18 +112,19 @@ const submit = async (key: string): Promise<void> => {
 </template>
 
 <style scoped>
-.own-icons { padding: 10px 12px; border-top: 1px solid #f3f4f6; font-size: 12px; }
+.own-icons { padding: 10px 12px; border-top: 1px solid var(--hair); font-size: 12px; }
 .own-icons h3 {
-  margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #6b7280;
+  margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
 }
 ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 li img { object-fit: contain; }
-.name { flex: 1; min-width: 0; color: #1f2937; }
+.name { flex: 1; min-width: 0; color: var(--text); }
 button {
-  padding: 2px 8px; border: 1px solid #d1d5db; border-radius: 5px; background: #fff; cursor: pointer; font-size: 12px;
+  padding: 2px 8px; border: 1px solid var(--border-strong); border-radius: 5px; background: var(--surface);
+  cursor: pointer; font-size: 12px;
 }
 .share { display: flex; gap: 6px; flex: 1 0 100%; }
-.share input { flex: 1; padding: 3px 7px; border: 1px solid #e5e7eb; border-radius: 5px; }
-.message { margin: 6px 0 0; color: #dc2626; }
+.share input { flex: 1; padding: 3px 7px; border: 1px solid var(--border); border-radius: 5px; }
+.message { margin: 6px 0 0; color: var(--danger); }
 </style>

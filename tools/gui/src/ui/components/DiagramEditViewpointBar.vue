@@ -67,12 +67,12 @@ const viewpointName = () => findViewpointBySlug(props.viewpoints, props.viewpoin
 
 <style scoped>
 .viewpoint-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-.viewpoint-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-size: 12px; font-weight: 500; }
-.viewpoint-chip-version { color: #6366f1; font-weight: 400; }
-.viewpoint-chip-dismiss { background: none; border: none; cursor: pointer; color: #6366f1; font-size: 14px; line-height: 1; padding: 0 0 0 2px; }
-.viewpoint-chip-dismiss:hover { color: #3730a3; }
-.viewpoint-stale { font-size: 12px; color: #b45309; display: inline-flex; align-items: center; gap: 6px; }
-.viewpoint-repin-btn { font-size: 12px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 5px; padding: 2px 8px; cursor: pointer; }
-.viewpoint-repin-btn:hover { background: #fef3c7; }
-.viewpoint-hide-toggle { font-size: 12px; color: #6b7280; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.viewpoint-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; background: var(--indigo-soft); color: var(--indigo-text); font-size: 12px; font-weight: 500; }
+.viewpoint-chip-version { color: var(--indigo); font-weight: 400; }
+.viewpoint-chip-dismiss { background: none; border: none; cursor: pointer; color: var(--indigo); font-size: 14px; line-height: 1; padding: 0 0 0 2px; }
+.viewpoint-chip-dismiss:hover { color: var(--indigo-text); }
+.viewpoint-stale { font-size: 12px; color: var(--warn-text); display: inline-flex; align-items: center; gap: 6px; }
+.viewpoint-repin-btn { font-size: 12px; color: var(--warn-text); background: var(--warn-soft); border: 1px solid var(--warn-border); border-radius: 5px; padding: 2px 8px; cursor: pointer; }
+.viewpoint-repin-btn:hover { background: var(--warn-soft); }
+.viewpoint-hide-toggle { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
 </style>

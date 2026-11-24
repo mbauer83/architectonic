@@ -307,7 +307,7 @@ defineExpose({ resetView })
 <style scoped>
 .sp-viewport {
   position: relative; overflow: hidden; height: 100%; width: 100%;
-  background: #fafafa; touch-action: none; cursor: grab; user-select: none;
+  background: var(--paper); touch-action: none; cursor: grab; user-select: none;
 }
 .sp-viewport:active { cursor: grabbing; }
 .sp-underlay, .sp-layer {

@@ -51,13 +51,13 @@ watch(() => props.viewpoints, (viewpoints) => {
 .viewpoint-select {
   max-width: 260px;
   padding: 5px 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: white;
+  background: var(--surface);
   font-size: 12px;
-  color: #374151;
+  color: var(--text-2);
   outline: none;
   cursor: pointer;
 }
-.viewpoint-select:focus { border-color: #2563eb; }
+.viewpoint-select:focus { border-color: var(--accent); }
 </style>

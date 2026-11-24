@@ -78,13 +78,13 @@ const setItem = (index: number, value: string): void => commit(items.value.map((
 .array-row { display: flex; gap: 6px; align-items: flex-start; }
 .array-controls { display: flex; gap: 2px; }
 .array-btn {
-  width: 22px; height: 30px; border: 1px solid #d1d5db; border-radius: 4px; background: white;
-  cursor: pointer; font-size: 12px; color: #374151; line-height: 1;
+  width: 22px; height: 30px; border: 1px solid var(--border-strong); border-radius: 4px; background: var(--surface);
+  cursor: pointer; font-size: 12px; color: var(--text-2); line-height: 1;
 }
 .array-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.array-btn--remove { border-color: #fecaca; color: #dc2626; }
+.array-btn--remove { border-color: var(--danger-border); color: var(--danger); }
 .array-add {
-  align-self: flex-start; font-size: 12px; color: #2563eb; background: none;
+  align-self: flex-start; font-size: 12px; color: var(--accent); background: none;
   border: none; cursor: pointer; padding: 2px 0;
 }
 .array-add:hover { text-decoration: underline; }

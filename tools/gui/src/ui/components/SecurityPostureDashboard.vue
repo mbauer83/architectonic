@@ -228,13 +228,13 @@ async function submitVex() {
 
 <style scoped>
 .posture { display: flex; flex-direction: column; gap: 12px; }
-.posture-hint { font-size: 12px; color: #64748b; margin: 0; }
+.posture-hint { font-size: 12px; color: var(--muted); margin: 0; }
 .posture-note {
-  font-size: 12px; color: #92400e; background: #fef3c7;
-  border: 1px solid #f59e0b; border-radius: 6px; padding: 6px 10px;
+  font-size: 12px; color: var(--warn-text); background: var(--warn-soft);
+  border: 1px solid var(--warn); border-radius: 6px; padding: 6px 10px;
 }
-.posture-error { font-size: 12px; color: #b91c1c; }
-.posture-header { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #475569; }
+.posture-error { font-size: 12px; color: var(--danger-strong); }
+.posture-header { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-2); }
 .classification-chip {
   background: #1e293b; color: #f8fafc; border-radius: 4px;
   padding: 1px 8px; font-size: 11px; font-weight: 600;
@@ -244,24 +244,24 @@ async function submitVex() {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 8px; margin: 0;
 }
-.metric { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; }
-.metric dt { font-size: 11px; color: #64748b; }
-.metric dd { margin: 2px 0 0; font-size: 15px; font-weight: 600; color: #0f172a; }
+.metric { background: var(--canvas); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; }
+.metric dt { font-size: 11px; color: var(--muted); }
+.metric dd { margin: 2px 0 0; font-size: 15px; font-weight: 600; color: var(--text); }
 .pair { margin-right: 8px; font-size: 13px; }
 .vex-form {
   display: flex; flex-direction: column; gap: 6px;
-  border-top: 1px solid #e2e8f0; padding-top: 10px;
+  border-top: 1px solid var(--border); padding-top: 10px;
 }
-.vex-title { font-size: 12px; font-weight: 600; color: #374151; }
+.vex-title { font-size: 12px; font-weight: 600; color: var(--text-2); }
 .vex-row { display: flex; gap: 6px; }
 .vex-input {
-  font-size: 12px; padding: 5px 8px; border: 1px solid #d1d5db;
+  font-size: 12px; padding: 5px 8px; border: 1px solid var(--border-strong);
   border-radius: 5px; width: 100%; box-sizing: border-box;
 }
-.vex-ok { font-size: 12px; color: #15803d; }
+.vex-ok { font-size: 12px; color: var(--ok-text); }
 .vex-submit {
   align-self: flex-start; padding: 5px 14px; font-size: 12px;
-  background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer;
+  background: var(--accent); color: var(--on-accent); border: none; border-radius: 5px; cursor: pointer;
 }
 .vex-submit:disabled { opacity: 0.5; }
 </style>

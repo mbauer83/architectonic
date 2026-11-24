@@ -94,14 +94,14 @@ const emit = defineEmits<{ sync: []; delete: []; edit: []; done: [] }>()
 
 <style scoped>
 .page-hdr { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.back { font-size: 13px; color: #6b7280; } .back:hover { color: #374151; text-decoration: none; }
+.back { font-size: 13px; color: var(--muted); } .back:hover { color: var(--text-2); text-decoration: none; }
 .pg-title { font-size: 20px; font-weight: 700; flex: 1; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .promote-btn {
-  padding: 5px 16px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px;
-  font-size: 13px; font-weight: 500; color: #92400e; text-decoration: none; flex-shrink: 0;
+  padding: 5px 16px; background: var(--warn-soft); border: 1px solid var(--warn-border); border-radius: 6px;
+  font-size: 13px; font-weight: 500; color: var(--warn-text); text-decoration: none; flex-shrink: 0;
 }
-.promote-btn:hover { background: #fde68a; text-decoration: none; }
-.edit-btn { padding: 5px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-weight: 500; color: #374151; text-decoration: none; flex-shrink: 0; } .edit-btn:hover { background: #e5e7eb; }
+.promote-btn:hover { background: var(--warn-border); text-decoration: none; }
+.edit-btn { padding: 5px 16px; background: var(--soft); border: 1px solid var(--border-strong); border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text-2); text-decoration: none; flex-shrink: 0; } .edit-btn:hover { background: var(--border); }
 .edit-btn { cursor: pointer; }
 .done-btn {
   padding: 5px 16px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 6px;
@@ -112,8 +112,8 @@ const emit = defineEmits<{ sync: []; delete: []; edit: []; done: [] }>()
   font: 10px ui-monospace, monospace; padding: 0 4px; margin-left: 4px; border: 1px solid var(--border-strong);
   border-bottom-width: 2px; border-radius: 3px; background: var(--surface); font-weight: 400;
 }
-.sync-btn { padding: 5px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 13px; font-weight: 600; color: #1d4ed8; cursor: pointer; flex-shrink: 0; }
-.sync-btn:hover { background: #dbeafe; }
-.delete-btn { padding: 5px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; font-size: 13px; font-weight: 600; color: #b91c1c; cursor: pointer; flex-shrink: 0; }
-.delete-btn:hover { background: #fee2e2; }
+.sync-btn { padding: 5px 16px; background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--accent-strong); cursor: pointer; flex-shrink: 0; }
+.sync-btn:hover { background: var(--type-soft); }
+.delete-btn { padding: 5px 16px; background: var(--danger-soft); border: 1px solid var(--danger-border); border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--danger-strong); cursor: pointer; flex-shrink: 0; }
+.delete-btn:hover { background: var(--danger-soft); }
 </style>

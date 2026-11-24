@@ -32,11 +32,11 @@ defineProps<{
 .entity-type-tag {
   font-family: monospace;
   font-size: 11px;
-  background: rgba(0, 0, 0, .06);
+  background: var(--soft);
   border-radius: 3px;
   padding: 1px 4px;
 }
 .entity-type-tag--required {
-  background: rgba(220, 38, 38, .1);
+  background: var(--danger-soft);
 }
 </style>

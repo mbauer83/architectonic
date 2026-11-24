@@ -178,32 +178,32 @@ const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode
 
 <style scoped>
 .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.back-link { font-size: 13px; color: #6b7280; }
-.back-link:hover { color: #374151; }
+.back-link { font-size: 13px; color: var(--muted); }
+.back-link:hover { color: var(--text-2); }
 .top-actions { display: flex; gap: 8px; align-items: center; }
 
 .graph-btn {
-  padding: 6px 14px; border-radius: 6px; background: #1e293b; color: #f8fafc;
+  padding: 6px 14px; border-radius: 6px; background: var(--inverse); color: var(--on-inverse);
   font-size: 13px; font-weight: 500;
 }
-.graph-btn:hover { background: #334155; text-decoration: none; }
+.graph-btn:hover { background: var(--inverse-hover); text-decoration: none; }
 
 .edit-btn {
-  padding: 6px 14px; border-radius: 6px; background: #f3f4f6; color: #374151;
-  border: 1px solid #d1d5db; font-size: 13px; font-weight: 500; cursor: pointer;
+  padding: 6px 14px; border-radius: 6px; background: var(--soft); color: var(--text-2);
+  border: 1px solid var(--border-strong); font-size: 13px; font-weight: 500; cursor: pointer;
 }
-.edit-btn:hover { background: #e5e7eb; }
+.edit-btn:hover { background: var(--border); }
 .delete-btn {
-  padding: 6px 14px; border-radius: 6px; background: #fef2f2; color: #b91c1c;
-  border: 1px solid #fecaca; font-size: 13px; font-weight: 500; cursor: pointer;
+  padding: 6px 14px; border-radius: 6px; background: var(--danger-soft); color: var(--danger-strong);
+  border: 1px solid var(--danger-border); font-size: 13px; font-weight: 500; cursor: pointer;
 }
-.delete-btn:hover { background: #fee2e2; }
+.delete-btn:hover { background: var(--danger-soft); }
 
 .promote-btn {
-  padding: 6px 14px; border-radius: 6px; background: #fef3c7; color: #92400e;
-  border: 1px solid #fde68a; font-size: 13px; font-weight: 500;
+  padding: 6px 14px; border-radius: 6px; background: var(--warn-soft); color: var(--warn-text);
+  border: 1px solid var(--warn-border); font-size: 13px; font-weight: 500;
 }
-.promote-btn:hover { background: #fde68a; text-decoration: none; }
+.promote-btn:hover { background: var(--warn-border); text-decoration: none; }
 
 .edit-btn--admin {
   background: #7c2d12; color: #fed7aa; border-color: #ea580c;
@@ -212,8 +212,8 @@ const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode
 
 .global-badge {
   display: inline-block;
-  background: #fef3c7; color: #92400e;
-  border: 1px solid #fde68a; border-radius: 4px;
+  background: var(--warn-soft); color: var(--warn-text);
+  border: 1px solid var(--warn-border); border-radius: 4px;
   padding: 2px 8px; font-size: 11px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .05em;
 }
@@ -222,49 +222,36 @@ const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode
 .entity-title-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
 .entity-name { font-size: 22px; font-weight: 700; }
 .edit-name-input {
-  font-size: 20px; font-weight: 600; border: 1px solid #d1d5db; border-radius: 6px;
+  font-size: 20px; font-weight: 600; border: 1px solid var(--border-strong); border-radius: 6px;
   padding: 4px 10px; outline: none; flex: 1;
 }
-.edit-name-input:focus { border-color: #2563eb; }
+.edit-name-input:focus { border-color: var(--accent); }
 .edit-status-select {
-  padding: 3px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 12px; outline: none;
+  padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-strong); font-size: 12px; outline: none;
 }
 
-.meta-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #374151; margin-bottom: 6px; }
+.meta-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); margin-bottom: 6px; }
 .meta-type { display: inline-flex; align-items: center; gap: 8px; }
-.meta-glyph { color: #374151; fill: none; flex: 0 0 auto; }
-.sep { color: #9ca3af; }
-.specialization-badge { font-style: italic; color: #6d28d9; }
-.artifact-id { font-size: 11px; color: #9ca3af; }
+.meta-glyph { color: var(--text-2); fill: none; flex: 0 0 auto; }
+.sep { color: var(--faint); }
+.specialization-badge { font-style: italic; color: var(--violet-text); }
+.artifact-id { font-size: 11px; color: var(--faint); }
 .mono { font-family: monospace; }
 
 .cancel-btn {
-  padding: 7px 16px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db;
+  padding: 7px 16px; background: var(--soft); color: var(--text-2); border: 1px solid var(--border-strong);
   border-radius: 6px; font-size: 13px; cursor: pointer;
 }
-.cancel-btn:hover:not(:disabled) { background: #e5e7eb; }
+.cancel-btn:hover:not(:disabled) { background: var(--border); }
 .preview-btn {
-  padding: 7px 16px; background: #f3f4f6; color: #1d4ed8; border: 1px solid #bfdbfe;
+  padding: 7px 16px; background: var(--soft); color: var(--accent-strong); border: 1px solid var(--accent-border);
   border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500;
 }
-.preview-btn:hover:not(:disabled) { background: #eff6ff; }
+.preview-btn:hover:not(:disabled) { background: var(--accent-soft); }
 .save-btn {
-  padding: 7px 16px; background: #2563eb; color: white; border: none;
+  padding: 7px 16px; background: var(--accent); color: var(--on-accent); border: none;
   border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;
 }
-.save-btn:hover:not(:disabled) { background: #1d4ed8; }
+.save-btn:hover:not(:disabled) { background: var(--accent-strong); }
 .cancel-btn:disabled, .preview-btn:disabled, .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.domain-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
-.domain--motivation { background: #d8c1e4; color: #252327; }
-.domain--strategy   { background: #efbd5d; color: #252327; }
-.domain--business   { background: #f4de7f; color: #252327; }
-.domain--common     { background: #e8e5d3; color: #252327; }
-.domain--application{ background: #b6d7e1; color: #252327; }
-.domain--technology { background: #c3e1b4; color: #252327; }
-
-.status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
-.status--draft      { background: #f3f4f6; color: #6b7280; }
-.status--active     { background: #dcfce7; color: #166534; }
-.status--deprecated { background: #fee2e2; color: #991b1b; }
 </style>

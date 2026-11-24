@@ -98,30 +98,30 @@ onMounted(async () => {
 
 <style scoped>
 .diagrams-view { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
-.back-link { font-size: 13px; color: #64748b; display: block; margin-bottom: 16px; }
+.back-link { font-size: 13px; color: var(--muted); display: block; margin-bottom: 16px; }
 .diagrams-title { font-size: 22px; font-weight: 700; margin: 0 0 6px; }
-.diagrams-subtitle { color: #64748b; font-size: 14px; margin: 0 0 28px; }
-.state-msg { color: #64748b; font-size: 14px; }
-.state-error { color: #dc2626; font-size: 14px; }
+.diagrams-subtitle { color: var(--muted); font-size: 14px; margin: 0 0 28px; }
+.state-msg { color: var(--muted); font-size: 14px; }
+.state-error { color: var(--danger); font-size: 14px; }
 
 .analysis-group { margin-bottom: 28px; }
 .analysis-group__header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
-.analysis-group__name { font-size: 15px; font-weight: 700; margin: 0; color: #111827; }
+.analysis-group__name { font-size: 15px; font-weight: 700; margin: 0; color: var(--text); }
 .analysis-group__method {
-  font-size: 11px; font-weight: 600; color: #1d4ed8;
-  background: #eff6ff; border-radius: 4px; padding: 1px 6px;
+  font-size: 11px; font-weight: 600; color: var(--accent-strong);
+  background: var(--accent-soft); border-radius: 4px; padding: 1px 6px;
 }
-.analysis-group__id { font-size: 11px; color: #9ca3af; }
+.analysis-group__id { font-size: 11px; color: var(--faint); }
 
 .diagram-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
 .diagram-card {
   display: flex; flex-direction: column; gap: 6px;
   padding: 16px;
-  border: 1px solid #e2e8f0; border-radius: 8px;
-  background: #fff; color: inherit; text-decoration: none;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: inherit; text-decoration: none;
 }
-.diagram-card:hover { border-color: #2563eb; box-shadow: 0 2px 8px rgba(0, 0, 0, .08); text-decoration: none; }
-.diagram-card__title { font-size: 14px; font-weight: 600; color: #111827; }
-.diagram-card__desc { font-size: 12px; color: #64748b; line-height: 1.4; }
+.diagram-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0, 0, 0, .08); text-decoration: none; }
+.diagram-card__title { font-size: 14px; font-weight: 600; color: var(--text); }
+.diagram-card__desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
 .mono { font-family: monospace; }
 </style>

@@ -62,16 +62,16 @@ const excludedCount = computed(() => excludedRowCount(rows.value))
 
 <style scoped>
 .derived-empty {
-  margin-top: 10px; font-size: 12px; color: #b45309; padding: 8px 10px;
-  background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px;
+  margin-top: 10px; font-size: 12px; color: var(--warn-text); padding: 8px 10px;
+  background: var(--warn-soft); border: 1px solid var(--warn-border); border-radius: 6px;
 }
 .derived-list {
-  margin-top: 10px; border: 1px solid #e5e7eb; border-radius: 6px;
-  padding: 8px 10px; background: #f9fafb;
+  margin-top: 10px; border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 10px; background: var(--hover);
 }
-.derived-hdr { font-size: 11px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+.derived-hdr { font-size: 11px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
 .derived-excluded-badge {
-  background: #fee2e2; color: #b91c1c; border-radius: 3px;
+  background: var(--danger-soft); color: var(--danger-strong); border-radius: 3px;
   padding: 1px 5px; font-size: 10px; margin-left: 4px;
 }
 .derived-item {
@@ -80,7 +80,8 @@ const excludedCount = computed(() => excludedRowCount(rows.value))
 .derived-item input[type=checkbox] { cursor: pointer; }
 .derived-item-fixed { cursor: default; }
 .derived-item-fixed input[type=checkbox] { cursor: default; }
-.derived-name { color: #1e293b; font-weight: 500; }
-.derived-type { color: #9ca3af; font-size: 11px; }
-.derived-scope-tag { background: #e0e7ff; color: #3730a3; border-radius: 3px; padding: 1px 5px; font-size: 10px; }
+.derived-name { color: var(--text); font-weight: 500; }
+.derived-type { color: var(--faint); font-size: 11px; }
+.derived-scope-tag {
+  background: var(--indigo-soft); color: var(--indigo-text); border-radius: 3px; padding: 1px 5px; font-size: 10px; }
 </style>

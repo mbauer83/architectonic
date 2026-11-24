@@ -275,21 +275,24 @@ const testRun = async () => {
 </template>
 
 <style scoped>
-.empty-state { font-size: 13px; color: #6b7280; background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 8px; padding: 14px 16px; }
-.error { color: #991b1b; background: #fee2e2; padding: 8px 12px; border-radius: 6px; }
-.inp { padding: 5px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 12.5px; font-family: inherit; background: #fff; box-sizing: border-box; }
+.empty-state { font-size: 13px; color: var(--muted); background: var(--hover); border: 1px dashed var(--border-strong); border-radius: 8px; padding: 14px 16px; }
+.error { color: var(--danger-strong); background: var(--danger-soft); padding: 8px 12px; border-radius: 6px; }
+.inp { padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border-strong); font-size: 12.5px; font-family: inherit; background: var(--surface); box-sizing: border-box; }
 select.inp { cursor: pointer; max-width: 100%; }
-.check { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #374151; cursor: pointer; }
+.check {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-2); cursor: pointer; }
 .check input { margin: 0; cursor: pointer; }
-.num-field { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #6b7280; font-weight: 600; }
+.num-field {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); font-weight: 600; }
 .conn-controls { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin: 8px 0; }
-.summary-panel { margin-top: 12px; padding: 10px 14px; border-radius: 8px; background: #eef2ff; color: #4338ca; font-size: 13px; }
+.summary-panel { margin-top: 12px; padding: 10px 14px; border-radius: 8px; background: var(--indigo-soft); color: var(--indigo-text); font-size: 13px; }
 .preview-counts { margin-left: 6px; font-weight: 600; }
 .test-run-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
-.test-run-counts { font-size: 12.5px; color: #374151; }
-.test-run-warning { font-size: 12px; color: #92400e; background: #fef3c7; padding: 2px 8px; border-radius: 4px; }
-.btn { appearance: none; border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 6px; padding: 5px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
-.btn:hover:not(:disabled) { border-color: #6366f1; color: #4338ca; }
+.test-run-counts { font-size: 12.5px; color: var(--text-2); }
+.test-run-warning {
+  font-size: 12px; color: var(--warn-text); background: var(--warn-soft); padding: 2px 8px; border-radius: 4px; }
+.btn { appearance: none; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); border-radius: 6px; padding: 5px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.btn:hover:not(:disabled) { border-color: var(--indigo); color: var(--indigo-text); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .hops-input { width: 72px; }
 </style>

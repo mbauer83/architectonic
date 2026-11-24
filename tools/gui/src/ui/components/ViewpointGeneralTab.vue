@@ -126,11 +126,11 @@ const toggleContent = (value: (typeof VALID_CONTENTS)[number]) => {
 </template>
 
 <style scoped>
-.field { display: block; margin: 8px 0; font-size: 12.5px; font-weight: 600; color: #6b7280; }
-.inp { display: block; width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; font-family: inherit; box-sizing: border-box; margin-top: 3px; }
-fieldset { border: 1px solid #d1d5db; border-radius: 8px; margin: 10px 0; padding: 8px 12px; }
-legend { font-size: 12.5px; font-weight: 600; color: #6b7280; padding: 0 4px; }
+.field { display: block; margin: 8px 0; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.inp { display: block; width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-strong); font-size: 13px; font-family: inherit; box-sizing: border-box; margin-top: 3px; }
+fieldset { border: 1px solid var(--border-strong); border-radius: 8px; margin: 10px 0; padding: 8px 12px; }
+legend { font-size: 12.5px; font-weight: 600; color: var(--muted); padding: 0 4px; }
 .check-group { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 4px 2px; }
-.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #374151; font-weight: 500; cursor: pointer; }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); font-weight: 500; cursor: pointer; }
 .check input { margin: 0; cursor: pointer; }
 </style>

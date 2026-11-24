@@ -145,39 +145,40 @@ const toggleRelated = (id: string) => {
 
 <style scoped>
 .entity-list { display: flex; flex-direction: column; gap: 4px; }
-.empty { color: #9ca3af; font-size: 13px; padding: 8px 0; }
-.entity-block { border: 1px solid #e5e7eb; border-radius: 6px; background: white; }
-.entity-block.drag-over { border-color: #2563eb; background: #eff6ff; }
+.empty { color: var(--faint); font-size: 13px; padding: 8px 0; }
+.entity-block { border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
+.entity-block.drag-over { border-color: var(--accent); background: var(--accent-soft); }
 .entity-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; cursor: grab; }
-.drag-handle { color: #9ca3af; font-size: 14px; cursor: grab; flex-shrink: 0; }
-.entity-glyph { display: flex; align-items: center; color: #4b5563; flex-shrink: 0; }
-.entity-name { flex: 1; font-size: 13px; font-weight: 500; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.domain-badge { font-size: 10px; padding: 2px 6px; border-radius: 3px; background: #f3f4f6; color: #6b7280; font-weight: 500; white-space: nowrap; }
+.drag-handle { color: var(--faint); font-size: 14px; cursor: grab; flex-shrink: 0; }
+.entity-glyph { display: flex; align-items: center; color: var(--text-2); flex-shrink: 0; }
+.entity-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.domain-badge { font-size: 10px; padding: 2px 6px; border-radius: 3px; background: var(--soft); color: var(--muted); font-weight: 500; white-space: nowrap; }
 .related-toggle {
   display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px;
-  background: #eff6ff; color: #1d4ed8; font-size: 11px; font-weight: 700; flex-shrink: 0;
+  background: var(--accent-soft); color: var(--accent-strong); font-size: 11px; font-weight: 700; flex-shrink: 0;
   border: none; cursor: pointer;
 }
 .related-toggle:disabled { opacity: .4; cursor: default; }
-.related-toggle--open { background: #dbeafe; }
+.related-toggle--open { background: var(--type-soft); }
 .related-count {
   min-width: 16px; height: 16px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,.75); font-size: 10px; color: #1e40af;
+  background: var(--overlay); font-size: 10px; color: var(--type-text);
 }
-.remove-btn { background: none; border: none; cursor: pointer; color: #9ca3af; font-size: 12px; line-height: 1; padding: 2px 4px; flex-shrink: 0; }
-.remove-btn:hover { color: #dc2626; }
-.related-panel { display: flex; flex-direction: column; gap: 4px; padding: 6px 10px 8px; border-top: 1px solid #f3f4f6; background: #f8fbff; }
+.remove-btn { background: none; border: none; cursor: pointer; color: var(--faint); font-size: 12px; line-height: 1; padding: 2px 4px; flex-shrink: 0; }
+.remove-btn:hover { color: var(--danger); }
+.related-panel { display: flex; flex-direction: column; gap: 4px; padding: 6px 10px 8px; border-top: 1px solid var(--hair); background: var(--canvas); }
 .related-row {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 8px;
-  align-items: center; padding: 5px 8px; border-radius: 6px; background: #fff; border: 1px solid #dbeafe;
+  align-items: center; padding: 5px 8px; border-radius: 6px; background: var(--surface);
+  border: 1px solid var(--accent-border);
 }
-.rel-glyph { display: flex; align-items: center; color: #4b5563; }
-.rel-name { font-size: 12px; font-weight: 500; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rel-domain { font-size: 11px; color: #9ca3af; white-space: nowrap; }
+.rel-glyph { display: flex; align-items: center; color: var(--text-2); }
+.rel-name { font-size: 12px; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rel-domain { font-size: 11px; color: var(--faint); white-space: nowrap; }
 .rel-add {
-  width: 20px; height: 20px; border-radius: 999px; background: #dcfce7; color: #16a34a;
+  width: 20px; height: 20px; border-radius: 999px; background: var(--ok-soft); color: var(--ok);
   font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
   border: none; cursor: pointer;
 }
-.rel-add:hover { background: #bbf7d0; }
+.rel-add:hover { background: var(--ok-border); }
 </style>

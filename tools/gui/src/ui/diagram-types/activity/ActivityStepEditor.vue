@@ -121,7 +121,7 @@ const removeStep = (id: string) => {
 .step-editor { display: flex; flex-direction: column; gap: 8px; }
 .editor-header { display: flex; align-items: center; justify-content: space-between; font-weight: 650; flex-wrap: wrap; gap: 4px; }
 .add-btns { display: flex; gap: 4px; flex-wrap: wrap; }
-.add-btn { padding: 3px 8px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.add-btn { padding: 3px 8px; border: 1px solid var(--border-strong); background: var(--surface); border-radius: 6px; cursor: pointer; font-size: 12px; }
 .add-btn:disabled { opacity: .45; cursor: not-allowed; }
-.empty-msg { font-size: 12px; color: #9ca3af; margin: 0; }
+.empty-msg { font-size: 12px; color: var(--faint); margin: 0; }
 </style>

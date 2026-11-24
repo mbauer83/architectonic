@@ -176,7 +176,7 @@ watch(() => props.analysisId, () => { void load() })
 .fmea-empty,
 .fmea-locked {
   font-size: 13px;
-  color: #4b5563;
+  color: var(--text-2);
   margin: 0 0 12px;
   max-width: 70ch;
 }
@@ -187,7 +187,7 @@ watch(() => props.analysisId, () => { void load() })
 }
 .fmea-table th,
 .fmea-table td {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   padding: 6px 8px;
   text-align: left;
   vertical-align: top;
@@ -207,19 +207,19 @@ watch(() => props.analysisId, () => { void load() })
 }
 .fmea-element-link:hover,
 .fmea-element-link:focus-visible {
-  color: #2563eb;
+  color: var(--accent);
   text-decoration: underline;
 }
 /* The id is demoted, never dropped: it is what an analyst quotes in a review. */
 .fmea-element-id {
   display: block;
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--faint);
   font-family: monospace;
 }
 .fmea-nominated {
   display: block;
   font-size: 11px;
-  color: #6b7280;
+  color: var(--muted);
 }
 </style>
