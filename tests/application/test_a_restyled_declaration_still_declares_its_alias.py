@@ -25,6 +25,7 @@ import pytest
 
 from src.application.puml_alias_declarations import (
     declared_aliases,
+    label_declared_on,
     restyled_declaration,
 )
 
@@ -149,6 +150,31 @@ class TestWhatTheRestyleActuallyDoes:
         assert '"Name\\n' in restyled
         assert "investment_level: 4" in restyled
         assert "severity: major" in restyled
+
+    def test_every_appended_line_is_sized_on_its_own(self) -> None:
+        """PlantUML reads creole markup one label line at a time: a `<size:10>` opened on the first
+        appended line closes at its end. The second attribute a reader printed was drawn at the label's
+        full size, followed by a literal `</size>`."""
+        line = 'rectangle "Name" <<capability>> as CAP_a'
+
+        restyled = restyled_declaration(
+            line, ink="f5f5f5", label_lines=("investment_level: 4", "severity: major")
+        )
+
+        appended = restyled.split('"Name', 1)[1].split('"', 1)[0].split("\\n")[1:]
+        assert appended == [
+            "<size:10><color:#f5f5f5>investment_level: 4</color></size>",
+            "<size:10><color:#f5f5f5>severity: major</color></size>",
+        ]
+
+    def test_a_restyle_of_several_lines_is_replaced_whole(self) -> None:
+        line = 'rectangle "Name" <<capability>> as CAP_a'
+
+        once = restyled_declaration(line, label_lines=("investment_level: 4", "severity: major"))
+        twice = restyled_declaration(once, label_lines=("owner: platform",))
+
+        assert twice == restyled_declaration(line, label_lines=("owner: platform",))
+        assert label_declared_on(twice) == "Name"
 
     def test_a_second_restyle_replaces_the_first_rather_than_stacking(self) -> None:
         """A reader changing their choice must not accumulate lines from every choice they made."""
