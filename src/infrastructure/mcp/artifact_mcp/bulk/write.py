@@ -40,6 +40,11 @@ from .write_refusals import (
     unknown_op_items,
 )
 
+#: What applying a change set adds to the tool's vocabulary: an entity removal, applied after every
+#: other item so that the connections the set removes are gone first. The public tool leaves removal
+#: to `artifact_bulk_delete`; a change set needs both in one transaction, so it writes through here.
+CHANGE_SET_OPS = KNOWN_OPS | {"delete_entity"}
+
 
 def artifact_bulk_write(
     *,
@@ -50,10 +55,26 @@ def artifact_bulk_write(
     auto_sync_diagrams: bool = False,
     return_mode: BulkWriteReturnMode = "summary",
 ) -> dict[str, object]:
-    operation, reused_result = operation_registry.begin(
-        tool_name="artifact_bulk_write",
-        idempotency_key=idempotency_key,
+    return write_batch(
+        items=items, accepted_ops=KNOWN_OPS, tool_name="artifact_bulk_write", dry_run=dry_run,
+        repo_root=repo_root, idempotency_key=idempotency_key, auto_sync_diagrams=auto_sync_diagrams,
+        return_mode=return_mode,
     )
+
+
+def write_batch(
+    *,
+    items: list[dict[str, Any]],
+    accepted_ops: frozenset[str],
+    tool_name: str,
+    dry_run: bool,
+    repo_root: str | None,
+    idempotency_key: str | None = None,
+    auto_sync_diagrams: bool = False,
+    return_mode: BulkWriteReturnMode = "summary",
+) -> dict[str, object]:
+    """Stage *items*, verify the repository as a whole, and commit all of them or none."""
+    operation, reused_result = operation_registry.begin(tool_name=tool_name, idempotency_key=idempotency_key)
 
     # `return_mode` shapes the reply and nothing else, so a replayed batch is re-shaped rather than
     # re-run: an idempotency key names one logical batch, not one level of detail.
@@ -68,10 +89,11 @@ def artifact_bulk_write(
     creates_doc = [(index, item) for index, item in indexed if item.get("op") == "create_document"]
     creates_con = [(index, item) for index, item in indexed if item.get("op") == "add_connection"]
     edits = [(index, item) for index, item in indexed if item.get("op") in {"edit_entity", "edit_connection"}]
+    removals = [(index, item) for index, item in indexed if item.get("op") == "delete_entity"]
     unknown = [
         (index, item)
         for index, item in indexed
-        if item.get("op") not in KNOWN_OPS or unknown_item_fields(item)
+        if item.get("op") not in accepted_ops or unknown_item_fields(item)
     ]
     if unknown:
         payload = build_write_payload(
@@ -98,6 +120,7 @@ def artifact_bulk_write(
             creates_doc=creates_doc,
             creates_con=creates_con,
             edits=edits,
+            removals=removals,
             staged_root=staged_root,
             live_root=live_root,
             dry_run=dry_run,
@@ -117,6 +140,7 @@ def _execute_staged(
     creates_doc: list[tuple[int, dict[str, Any]]],
     creates_con: list[tuple[int, dict[str, Any]]],
     edits: list[tuple[int, dict[str, Any]]],
+    removals: list[tuple[int, dict[str, Any]]],
     staged_root: Path,
     live_root: Path,
     dry_run: bool,
@@ -181,6 +205,19 @@ def _execute_staged(
                 live_root=live_root,
                 staged_root=staged_root,
                 touched_paths=changed_paths,
+            ),
+        )
+        # Last: an entity is removed only once the connections the batch removes from it are gone.
+        skipped = apply_edits(
+            removals,
+            results=results,
+            clear_repo_caches=clear_repo_caches,
+            staged_root=staged_root,
+            dry_run=dry_run,
+            operation_id=operation_id,
+            skipped=skipped,
+            current_registry=lambda: staged_registry(
+                live_root=live_root, staged_root=staged_root, touched_paths=changed_paths,
             ),
         )
 

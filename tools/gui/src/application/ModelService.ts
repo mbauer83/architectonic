@@ -185,6 +185,7 @@ export const makeModelService = (repo: ModelRepository) =>
     listCandidates: () => repo.listCandidates(),
     createCandidate: (...args: Parameters<ModelRepository['createCandidate']>) => repo.createCandidate(...args),
     readCandidate: (id: string) => repo.readCandidate(id),
+    applyCandidate: (id: string, dryRun: boolean) => repo.applyCandidate(id, dryRun),
     startAnalysis: (...args: Parameters<ModelRepository['startAnalysis']>) => repo.startAnalysis(...args),
     deleteCandidate: (id: string) => repo.deleteCandidate(id),
     rebaseCandidate: (...args: Parameters<ModelRepository['rebaseCandidate']>) => repo.rebaseCandidate(...args),

@@ -7,12 +7,14 @@ from typing import Any, TypeAlias
 
 from src.application.artifacts.document_table_rows import tables_of_stored_document
 from src.application.change_sets.base import record_revision
+from src.application.change_sets.candidate_apply import application_of
 from src.application.change_sets.candidate_reads import (
     comparison,
     read_view,
     reading_beneath,
     rebase,
     standing_report,
+    wire_standing,
 )
 from src.application.change_sets.candidate_recorded_form import from_mapping, to_mapping
 from src.application.change_sets.candidate_work import conflicts_between
@@ -29,6 +31,7 @@ from src.application.verification.artifact_verifier_registry import ArtifactRegi
 from src.application.viewpoints.placed_occurrences import resolve_placed_entities
 from src.domain.repository.repo_default_stress_analysis import NAIVE_CANDIDATE, STRESS_ANALYSIS
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
+from src.infrastructure.candidates.apply import write_operations
 from src.infrastructure.candidates.repository import KIND, CandidateArchitectureStore, CandidateConflict
 from src.infrastructure.rendering.layout.diagram_geometry import stored_geometry
 from src.infrastructure.write.artifact_write.document import create_document
@@ -139,6 +142,28 @@ class CandidateService:
         candidate = self.store.require(ref)
         moved = rebase(candidate, self.store, self.registry, self.index.read_model_version().etag)
         return self.save(to_mapping(moved), based_on, ref=ref)
+
+    def apply(self, ref: str, *, dry_run: bool) -> dict[str, Any]:
+        """Write the candidate's operations onto the model in one transaction, then mark it integrated.
+
+        A dry run answers what would be written and the refusal, if any. A real apply that is refused
+        raises it, and leaves both the model and the candidate as they were.
+        """
+        candidate = self.store.require(ref)
+        version = record_revision(to_mapping(candidate))
+        application = application_of(candidate, self.store, self.registry)
+        written = None if application.refusal else write_operations(application, self.root, dry_run=dry_run)
+        refusal = application.refusal or (written.refusal if written else None)
+        if refusal and not dry_run:
+            raise CandidateConflict(refusal)
+        integrated = bool(written and written.committed)
+        if integrated:
+            self.save(to_mapping(application.integrated), version, ref=ref)
+        return {
+            "candidate": ref, "dry_run": dry_run, "integrated": integrated, "refusal": refusal,
+            "operation_id": written.operation_id if written else None,
+            "standing": wire_standing(application.standing),
+        }
 
     def edit(self, ref: str, based_on: str, patch: Mapping[str, Any]) -> dict[str, Any]:
         current = self.read(ref)

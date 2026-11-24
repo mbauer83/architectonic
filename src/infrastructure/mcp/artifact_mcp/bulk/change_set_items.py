@@ -13,7 +13,9 @@ round trip, which passes every written item back through the decoder's own check
 
 **Removal is split across two tools today.** A connection can be removed by the bulk write
 (`edit_connection` with `operation: remove`); an entity only by the bulk delete. So a set translates
-to two lists, and `delete_connection` is accepted on the way in as the same removal.
+to two lists, and `delete_connection` is accepted on the way in as the same removal. Applying a
+candidate writes both lists as one batch through the bulk write's core (`write.write_batch`), so a set
+is never two transactions.
 
 **What does not translate is refused, in a sentence**, rather than approximated:
 `create_document` and the document and diagram deletes have no operation in a set; a create without

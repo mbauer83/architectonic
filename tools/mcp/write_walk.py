@@ -572,6 +572,13 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"]},
     ),
     WriteCall(
+        # A dry run: the walk's candidate holds no operations, so the answer is the refusal that says
+        # so. That proves the transport and the queue; the write itself is the infrastructure tests'.
+        "change_set_apply",
+        lambda c: {"artifact_id": c.created["candidate"], "dry_run": True},
+        mutates=False,
+    ),
+    WriteCall(
         "analysis_start",
         lambda _c: {"title": "MCP Walk Stress Analysis", "naive": {"name": "Walk naive architecture"}},
     ),

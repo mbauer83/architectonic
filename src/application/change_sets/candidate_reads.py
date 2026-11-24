@@ -16,7 +16,7 @@ from src.application.change_sets.reading import ModelReading, RecordedReading
 from src.application.change_sets.recorded_form import operation_to_mapping
 from src.application.change_sets.recording import rebased
 from src.application.change_sets.stacking import descendants, sets_beneath, stack_of
-from src.application.change_sets.standing import standing_of
+from src.application.change_sets.standing import OperationStanding, standing_of
 from src.application.modeling.edit_field_values import current_entity_values
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.domain.artifact_id import canonical_entity_key
@@ -129,7 +129,12 @@ def standing_report(
 def _standing(
     candidate: CandidateArchitecture, stack: tuple[CandidateArchitecture, ...], live: RecordedReading,
 ) -> list[dict[str, Any]]:
+    return wire_standing(standing_of(candidate.changes, live, beneath=sets_beneath(stack)))
+
+
+def wire_standing(standing: Iterable[OperationStanding]) -> list[dict[str, Any]]:
+    """Each operation's standing as the transports answer it: the operation, its position, the reason."""
     return to_jsonable_python([
         {"operation": operation_to_mapping(item.operation), "standing": item.standing, "reason": item.reason}
-        for item in standing_of(candidate.changes, live, beneath=sets_beneath(stack))
+        for item in standing
     ])

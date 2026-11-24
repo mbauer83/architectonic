@@ -14,6 +14,8 @@ from src.infrastructure.rest.contracts.candidates import (
     AnalysisProgress,
     AnalysisStart,
     AnalysisStarted,
+    CandidateApplication,
+    CandidateApply,
     CandidateComparison,
     CandidateCreate,
     CandidateEdit,
@@ -147,6 +149,25 @@ def changes_rebase_candidate(artifact_id: str, body: CandidateRebase) -> dict[st
     """Each drifted operation keeps what it asks for and is written against the model as it stands now."""
     with _refusals():
         return s.authorized_write("changes_rebase_candidate", _service().rebase, artifact_id, body.based_on)
+
+
+@router.post(
+    "/api/change-sets/{artifact_id}/apply",
+    operation_id="changes_apply_candidate",
+    tags=[TAG_CHANGES],
+    summary="Apply a candidate's operations to the model in one write",
+    response_model=CandidateApplication,
+    response_model_exclude_none=True,
+    responses=WRITE_RESPONSES,
+)
+def changes_apply_candidate(artifact_id: str, body: CandidateApply) -> dict[str, Any]:
+    """Refused with 409 while an operation conflicts or has drifted; operations already there are skipped.
+
+    All operations land or none do. On success the candidate is integrated. A dry run answers the
+    refusal instead of raising it.
+    """
+    with _refusals():
+        return s.authorized_write("changes_apply_candidate", _service().apply, artifact_id, dry_run=body.dry_run)
 
 
 @router.post(

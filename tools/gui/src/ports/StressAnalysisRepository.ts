@@ -1,6 +1,7 @@
 import type { Effect } from 'effect'
 import type {
-  AnalysisIncidence, AnalysisProgress, AnalysisStarted, CandidateComparison, CandidateResponse, CandidateSummary,
+  AnalysisIncidence, AnalysisProgress, AnalysisStarted, CandidateApplication, CandidateComparison, CandidateResponse,
+  CandidateSummary,
   DocumentTables, DocumentTableWrite, IntegrationCheck,
 } from '../domain/schemas/candidates'
 import type { RepoError } from './repositoryErrors'
@@ -28,6 +29,11 @@ export interface StressAnalysisRepository {
   readonly deleteCandidate: (id: string) => Effect.Effect<void, RepoError>
   /** Write each drifted operation again against the model as it stands now, keeping what it asks for. */
   readonly rebaseCandidate: (id: string, basedOn: string) => Effect.Effect<CandidateResponse, RepoError>
+  /**
+   * Write the candidate's operations onto the model in one write, all or none, and integrate it. A dry
+   * run answers what would be written and the refusal; a refused apply answers 409, saying why.
+   */
+  readonly applyCandidate: (id: string, dryRun: boolean) => Effect.Effect<CandidateApplication, RepoError>
   readonly readCandidate: (id: string) => Effect.Effect<CandidateResponse, RepoError>
   readonly editCandidate: (
     id: string, basedOn: string, patch: Readonly<Record<string, unknown>>,

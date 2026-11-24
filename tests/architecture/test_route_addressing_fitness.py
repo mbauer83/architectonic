@@ -40,6 +40,8 @@ def document() -> dict[str, Any]:
 #: ``cleanup-broken-refs`` or reject ``members``.
 _ACTION_SEGMENTS: dict[str, frozenset[str]] = {
     "allocate": frozenset({"POST"}),
+    # Writes a candidate's operations onto the model in one transaction.
+    "apply": frozenset({"POST"}),
     "archive": frozenset({"POST"}),
     # Applies layout intents (align, distribute, straighten, return to automatic) to a diagram.
     "arrange": frozenset({"POST"}),

@@ -80,6 +80,20 @@ export const CandidateComparisonSchema = Schema.Struct({
 })
 export type CandidateComparison = typeof CandidateComparisonSchema.Type
 
+/**
+ * A candidate applied to the model, or a dry run of it: each operation's standing, whether it was
+ * integrated, and the refusal when it cannot be. All operations land in one write, or none do.
+ */
+export const CandidateApplicationSchema = Schema.Struct({
+  candidate: Schema.String,
+  dry_run: Schema.Boolean,
+  integrated: Schema.Boolean,
+  refusal: Schema.optional(Schema.String),
+  operation_id: Schema.optional(Schema.String),
+  standing: Schema.Array(OperationStandingSchema),
+})
+export type CandidateApplication = typeof CandidateApplicationSchema.Type
+
 /** Structural overlaps between offered candidates: the same subject touched by more than one. */
 export const IntegrationCheckSchema = Schema.Struct({
   candidates: Schema.Array(Schema.String),

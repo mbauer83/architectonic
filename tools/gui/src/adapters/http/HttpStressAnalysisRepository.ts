@@ -1,6 +1,7 @@
 import { Effect } from 'effect'
 import {
-  AnalysisIncidenceSchema, AnalysisProgressSchema, AnalysisStartedSchema, CandidateComparisonSchema,
+  AnalysisIncidenceSchema, AnalysisProgressSchema, AnalysisStartedSchema, CandidateApplicationSchema,
+  CandidateComparisonSchema,
   CandidateListSchema,
   CandidateResponseSchema, DocumentTablesSchema, DocumentTableWriteSchema, IntegrationCheckSchema,
 } from '../../domain/schemas/candidates'
@@ -22,6 +23,8 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
   deleteCandidate: (id) => deleteNoContent(candidateUrl(id)),
   rebaseCandidate: (id, basedOn) =>
     postJson(candidateUrl(id, '/rebase'), { based_on: basedOn }, CandidateResponseSchema),
+  applyCandidate: (id, dryRun) =>
+    postJson(candidateUrl(id, '/apply'), { dry_run: dryRun }, CandidateApplicationSchema),
   readCandidate: (id) => fetchJson(candidateUrl(id), CandidateResponseSchema),
   editCandidate: (id, basedOn, patch) =>
     patchJson(candidateUrl(id), { based_on: basedOn, patch }, CandidateResponseSchema),
