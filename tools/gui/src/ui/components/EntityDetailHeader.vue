@@ -254,17 +254,4 @@ const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode
 }
 .save-btn:hover:not(:disabled) { background: var(--accent-strong); }
 .cancel-btn:disabled, .preview-btn:disabled, .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.domain-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
-.domain--motivation { background: #d8c1e4; color: #252327; }
-.domain--strategy   { background: #efbd5d; color: #252327; }
-.domain--business   { background: #f4de7f; color: #252327; }
-.domain--common     { background: #e8e5d3; color: #252327; }
-.domain--application{ background: #b6d7e1; color: #252327; }
-.domain--technology { background: #c3e1b4; color: #252327; }
-
-.status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
-.status--draft      { background: var(--soft); color: var(--muted); }
-.status--active     { background: var(--ok-soft); color: var(--ok-text); }
-.status--deprecated { background: var(--danger-soft); color: var(--danger-strong); }
 </style>

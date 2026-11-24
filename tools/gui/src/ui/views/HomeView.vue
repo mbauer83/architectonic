@@ -202,12 +202,12 @@ const activeDomainOptions = computed(() =>
 .domain-name { font-weight: 500; font-size: 13px; }
 .domain-count { font-size: 20px; font-weight: 700; }
 
-.domain--motivation  { border-left-color: #d8c1e4; }
-.domain--strategy    { border-left-color: #efbd5d; }
-.domain--business    { border-left-color: #f4de7f; }
-.domain--common      { border-left-color: #e8e5d3; }
-.domain--application { border-left-color: #b6d7e1; }
-.domain--technology  { border-left-color: #c3e1b4; }
+.domain--motivation  { border-left-color: var(--domain-motivation); }
+.domain--strategy    { border-left-color: var(--domain-strategy); }
+.domain--business    { border-left-color: var(--domain-business); }
+.domain--common      { border-left-color: var(--domain-common); }
+.domain--application { border-left-color: var(--domain-application); }
+.domain--technology  { border-left-color: var(--domain-technology); }
 
 .conn-table { border-collapse: collapse; }
 .conn-type { padding: 4px 16px 4px 0; font-family: monospace; font-size: 12px; color: var(--text-2); }

@@ -263,8 +263,4 @@ const diagramTypeLabel = (diagramType: string): string => {
   padding: 2px 8px; border-radius: 4px; font-size: 11px;
   background: var(--type-soft); color: var(--type-text); font-weight: 500;
 }
-.status-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
-.status--draft { background: var(--soft); color: var(--muted); }
-.status--active { background: var(--ok-soft); color: var(--ok-text); }
-.status--deprecated { background: var(--danger-soft); color: var(--danger-strong); }
 </style>

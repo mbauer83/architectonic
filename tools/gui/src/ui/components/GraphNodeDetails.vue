@@ -91,12 +91,13 @@ const contentHtml = computed(() =>
 .detail-explore { margin-top: 12px; }
 .explore-link { font-size: 12px; color: var(--accent); font-weight: 500; }
 .domain-badge, .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
-.domain--motivation  { background: #d8c1e4; color: #252327; }
-.domain--strategy    { background: #efbd5d; color: #252327; }
-.domain--business    { background: #f4de7f; color: #252327; }
-.domain--common      { background: #e8e5d3; color: #252327; }
-.domain--application { background: #b6d7e1; color: #252327; }
-.domain--technology  { background: #c3e1b4; color: #252327; }
+/* Restated from `shared.css` because `.detail-value` here outranks the global badge colours. */
+.domain--motivation  { background: var(--domain-motivation); color: var(--on-domain); }
+.domain--strategy    { background: var(--domain-strategy); color: var(--on-domain); }
+.domain--business    { background: var(--domain-business); color: var(--on-domain); }
+.domain--common      { background: var(--domain-common); color: var(--on-domain); }
+.domain--application { background: var(--domain-application); color: var(--on-domain); }
+.domain--technology  { background: var(--domain-technology); color: var(--on-domain); }
 .status--draft       { background: var(--soft); color: var(--muted); }
 .status--active      { background: var(--ok-soft); color: var(--ok-text); }
 .status--deprecated  { background: var(--danger-soft); color: var(--danger-strong); }
