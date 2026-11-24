@@ -6,9 +6,8 @@ import type { DerivedNeighbor } from '../../domain/schemas/entities'
 import type { Extent } from '../../domain/layout/geometry'
 import { DEFAULT_REACH, reachOf, type Reach, type ReadingRelation } from '../../domain/diagramReading'
 import { derivedOf, notDrawnOf } from '../../domain/diagramReadingLists'
-import { unionOf } from '../../domain/layout/geometry'
 import { paintReading, type FlowOf } from '../lib/diagramReadingPaint'
-import { pictureExtentOf } from '../lib/svgExtent'
+import { drawnExtentOf } from '../lib/svgExtent'
 import { onReducedMotionChange, readerPrefersReducedMotion } from '../lib/motionPreference'
 
 /** What the reader needs of the picture's selection: the selected entities and what everything is drawn as. */
@@ -121,10 +120,7 @@ export function useDiagramReader(options: {
   /** The part of the picture the reading covers: the selection and what it reaches. */
   const readingExtent = (): Extent | null => {
     const ids = [...focus.value, ...reached.value.incoming, ...reached.value.outgoing]
-    const extents = ids.flatMap((id) => selection.nodeElements.value.get(id) ?? [])
-      .flatMap((element) => pictureExtentOf(element) ?? [])
-      .filter((extent) => extent.right > extent.left || extent.bottom > extent.top)
-    return extents.length > 0 ? unionOf(extents) : null
+    return drawnExtentOf(ids.flatMap((id) => selection.nodeElements.value.get(id) ?? []))
   }
 
   return {

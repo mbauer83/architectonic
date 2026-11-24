@@ -1,4 +1,5 @@
 import type { Extent } from '../../domain/layout/geometry'
+import { unionOf } from '../../domain/layout/geometry'
 
 /**
  * Where an element of a rendered picture is drawn, in the picture's own units; null where the browser
@@ -14,4 +15,11 @@ export const pictureExtentOf = (element: Element): Extent | null => {
     const box = getBBox.call(element)
     return { left: box.x, top: box.y, right: box.x + box.width, bottom: box.y + box.height }
   } catch { return null }
+}
+
+/** Where a set of drawn elements is, together; null where none of them is drawn. */
+export const drawnExtentOf = (elements: readonly Element[]): Extent | null => {
+  const extents = elements.flatMap((element) => pictureExtentOf(element) ?? [])
+    .filter((extent) => extent.right > extent.left || extent.bottom > extent.top)
+  return extents.length > 0 ? unionOf(extents) : null
 }

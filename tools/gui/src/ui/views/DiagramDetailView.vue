@@ -26,8 +26,9 @@ import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import DiagramDetailHeader from '../components/DiagramDetailHeader.vue'
 import DiagramC4Navigation from '../components/DiagramC4Navigation.vue'
 import CanvasContentEditor from '../components/CanvasContentEditor.vue'
-import DiagramMemberPicker from '../components/DiagramMemberPicker.vue'
-import DiagramEntitySidebar from '../components/DiagramEntitySidebar.vue'
+import DiagramPageSidebar from '../components/DiagramPageSidebar.vue'
+import DiagramOverview from '../components/DiagramOverview.vue'
+import DiagramReadingNames from '../components/DiagramReadingNames.vue'
 import FullscreenDock from '../components/FullscreenDock.vue'
 import DiagramSyncPanel from '../components/DiagramSyncPanel.vue'
 import DiagramDeletePanel from '../components/DiagramDeletePanel.vue'
@@ -39,7 +40,6 @@ import LayoutLabCanvas from '../components/layoutLab/LayoutLabCanvas.vue'
 import type { CanvasHandle, EditBarHandle } from '../composables/useDiagramEditMode'
 import { useDiagramEditMode } from '../composables/useDiagramEditMode'
 import { useDiagramPageReader } from '../composables/useDiagramPageReader'
-import DiagramReaderPanel from '../components/DiagramReaderPanel.vue'
 import PumlSourceToggle from '../components/PumlSourceToggle.vue'
 import DiagramMetaLine from '../components/DiagramMetaLine.vue'
 
@@ -130,9 +130,14 @@ const editableMetadataByType = computed<Record<string, EditableMetadataSpec>>(()
 // Edit mode: the same page, the canvas in place of the picture (D15). Leaving reloads the picture,
 // which the server has drawn again from whatever was saved.
 const editCanvas = ref<CanvasHandle | null>(null)
+/** A diagram that fits the window only below this scale is large: its edit panel starts closed (Q22). */
+const LARGE_BELOW = 0.35
 const editBar = ref<EditBarHandle | null>(null)
 const edit = useDiagramEditMode(
-  svc, diagramId, { canvas: editCanvas, bar: editBar, membership: () => membershipOf(detail.value) }, load, toast,
+  svc, diagramId, {
+    canvas: editCanvas, bar: editBar, membership: () => membershipOf(detail.value),
+    frame: (extent) => panZoom.frame(extent), large: () => panZoom.fitScale.value < LARGE_BELOW,
+  }, load, toast,
 )
 const editing = computed(() => edit.active.value)
 watch(editing, () => { void panZoom.fitDiagramToViewport() })
@@ -226,7 +231,7 @@ const executeDelete = () => {
         @update:lens="lens = $event"
       />
 
-      <DiagramSplitLayout>
+      <DiagramSplitLayout :sidebar-collapsed="editing && !edit.panel.open.value">
         <template #canvas>
           <DiagramMatrixView
             v-if="detail?.diagram_type === 'matrix' && matrixHtml"
@@ -293,6 +298,19 @@ const executeDelete = () => {
                 No diagram rendered.
               </div>
             </div>
+            <DiagramOverview
+              :picture="svgContainer"
+              :window-extent="panZoom.windowExtent"
+              :scale="panZoom.scale.value"
+              :show-view="panZoom.showView"
+              :marks="editing ? edit.marks.value : reader.marks.value"
+            />
+            <DiagramReadingNames
+              :marks="reader.marks.value"
+              :picture="svgContainer"
+              :scale="panZoom.scale.value"
+              :to-window="panZoom.toWindow"
+            />
             <DiagramViewportControls
               :is-transformed="panZoom.isTransformed.value"
               :is-fullscreen="fullscreen.isFullscreen.value"
@@ -308,49 +326,17 @@ const executeDelete = () => {
         </template>
 
         <template #sidebar>
-          <FullscreenDock
+          <DiagramPageSidebar
+            :context="contextQuery.data.value"
+            :entities="diagramEntities"
+            :editable-metadata-by-type="editableMetadataByType"
+            :selection="selection"
+            :reader="reader"
+            :edit="edit"
+            :editing="editing"
             :fullscreen-host="containerRef"
             :is-fullscreen="fullscreen.isFullscreen.value"
-            :revealed="selection.hasSelection.value"
-          >
-            <DiagramEntitySidebar
-              :list-folded="reader.reading.value"
-              :entities="diagramEntities"
-              :viewer-extension="selection.viewerExtension.value"
-              :selected-id="selection.selectedId.value"
-              :selected-connection="selection.selectedConnection.value"
-              :selected-sub-part="selection.selectedSubPart.value"
-              :selected-entity-record="selection.selectedEntityRecord.value"
-              :editable-metadata-by-type="editableMetadataByType"
-              :selection-token="selection.selectionToken.value"
-              :entity-query="selection.entityQuery"
-              :edge-label-input="selection.edgeLabelInput.value"
-              :edge-label-error="selection.edgeLabelMutation.errorMessage.value"
-              :metadata-error="selection.metadataMutation.errorMessage.value"
-              @select-entity="selection.selectEntity($event)"
-              @clear-connection="selection.clearConnection()"
-              @clear-sub-part="selection.clearSubPart()"
-              @update:edge-label-input="selection.edgeLabelInput.value = $event"
-              @save-edge-label="selection.saveEdgeLabel()"
-              @sub-part-save="selection.patchEntityMetadata($event)"
-              @entity-meta-save="selection.patchEntityMetadata($event)"
-              @entity-edited="selection.entityEdited()"
-            >
-              <template #lead>
-                <DiagramMemberPicker
-                  v-if="editing && contextQuery.data.value"
-                  :context="contextQuery.data.value"
-                  :busy="edit.editing.loading.value || edit.editing.saving.value"
-                  @add="edit.editing.add"
-                />
-                <DiagramReaderPanel
-                  v-if="reader.reading.value"
-                  v-bind="reader.panel.value"
-                  v-on="reader.panelEvents"
-                />
-              </template>
-            </DiagramEntitySidebar>
-          </FullscreenDock>
+          />
         </template>
       </DiagramSplitLayout>
 

@@ -195,6 +195,45 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
         {{ saving ? 'Saving…' : 'Save' }}
       </button>
     </template>
+    <span class="vr" />
+    <!-- The panel beside the canvas, open or closed (owner, Q22): the panel icon, its right pane
+         filled while the panel is open. -->
+    <button
+      type="button"
+      class="panel-toggle"
+      :class="{ on: edit.panel.open.value }"
+      :aria-expanded="edit.panel.open.value"
+      aria-label="Sidebar"
+      title="Sidebar"
+      data-testid="edit-panel-toggle"
+      @click="edit.panel.toggle()"
+    >
+      <svg
+        viewBox="0 0 20 16"
+        aria-hidden="true"
+      >
+        <rect
+          x="1"
+          y="1"
+          width="18"
+          height="14"
+          rx="2"
+        />
+        <line
+          x1="12.5"
+          y1="1"
+          x2="12.5"
+          y2="15"
+        />
+        <rect
+          class="pane"
+          x="12.5"
+          y="1"
+          width="6.5"
+          height="14"
+        />
+      </svg>
+    </button>
   </div>
 </template>
 
@@ -254,4 +293,14 @@ kbd {
   background: var(--warn-soft); color: var(--warn-text); border: 1px solid var(--warn-border);
 }
 .err { color: var(--danger-strong); }
+.panel-toggle {
+  width: 30px; height: 26px; display: inline-grid; place-items: center; flex: none; cursor: pointer;
+  border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--text-2);
+}
+.panel-toggle svg { width: 18px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.3; }
+.panel-toggle .pane { fill: transparent; stroke: none; }
+.panel-toggle:hover { background: var(--hover); }
+.panel-toggle.on { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-strong); }
+.panel-toggle.on .pane { fill: currentColor; opacity: 0.35; }
+.panel-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 </style>
