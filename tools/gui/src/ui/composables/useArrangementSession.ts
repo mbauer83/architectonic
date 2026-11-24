@@ -153,10 +153,20 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
     if (drawn && where && now) routes.value = timed('full', () => fullPass(drawn, where, now.routes))
   }
 
-  /** The lines whose stated route differs between *before* and *after*, keyed as the router keys them. */
+  /**
+   * The lines whose stated ports or bends differ between *before* and *after*, keyed as the router keys
+   * them: a label moved along its line leaves the line's course alone.
+   */
   const restated = (before: Arrangement, after: Arrangement): ReadonlySet<string> => {
     const drawn = geometry.value
-    return new Set(drawn ? shapedLines(drawn, before, after).map(String) : [])
+    const course = (one: Arrangement, key: string | undefined) => {
+      const route = key === undefined ? undefined : one.routes.get(key)
+      return JSON.stringify([route?.from, route?.to, route?.via])
+    }
+    return new Set(drawn ? shapedLines(drawn, before, after).filter((index) => {
+      const key = drawn.relations.find((one) => one.index === index)?.key
+      return course(before, key) !== course(after, key)
+    }).map(String) : [])
   }
 
   /**

@@ -29,7 +29,9 @@ const ARROWS: Readonly<Record<string, readonly [number, number]>> = {
 export interface CanvasHandle {
   readonly selected: string | null
   readonly selection: readonly string[]
+  readonly selectedLine: number | null
   readonly hasSelection: boolean
+  readonly removePickedBend: () => boolean
   readonly clearSelection: () => void
   readonly sweepFrom: (event: PointerEvent) => void
 }
@@ -119,11 +121,13 @@ export function useDiagramEditMode(
       event.preventDefault()
       session.redo()
     } else if ((event.key === 'Delete' || event.key === 'Backspace') && parts.canvas.value?.hasSelection) {
-      // Remove from the diagram only (owner's standing rule); deleting from the model is a menu command.
+      // A picked bend goes; otherwise the selection is removed from the diagram only (owner's standing
+      // rule) — deleting from the model is a menu command, and a line is not removed here.
       event.preventDefault()
+      if (parts.canvas.value.removePickedBend() || parts.canvas.value.selectedLine !== null) return
       editing.remove(parts.canvas.value.selection)
       parts.canvas.value.clearSelection()
-    } else if (event.key in ARROWS && parts.canvas.value?.hasSelection) {
+    } else if (event.key in ARROWS && parts.canvas.value?.selection.length) {
       event.preventDefault()
       nudge(parts.canvas.value.selection, ARROWS[event.key], event.shiftKey ? 1 : GRID, event.altKey)
     } else if (event.key === ' ') {

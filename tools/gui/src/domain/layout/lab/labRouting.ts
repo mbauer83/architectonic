@@ -185,7 +185,9 @@ const withFixed = (
 }
 
 /** Every line routed afresh, those with stated bends run as stated: what opening a picture asks for. */
-export const fullPass = (geometry: LayoutGeometry, placement: Placement, routes: StatedRoutes = NONE): RoutingResult => {
+export const fullPass = (
+  geometry: LayoutGeometry, placement: Placement, routes: StatedRoutes = NONE,
+): RoutingResult => {
   const fixed = statedCourses(geometry, placement, routes)
   const result = routeAll(sceneOf(geometry, placement, fixed), connectorsOf(geometry, routes, fixed))
   return withFixed(result, geometry, routes, fixed)

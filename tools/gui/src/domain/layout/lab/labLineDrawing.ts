@@ -10,6 +10,7 @@
  */
 import type { Point } from '../geometry'
 import { distanceBetween } from '../geometry'
+import type { LabelAnchor } from '../orthogonal'
 import { pointAlong } from '../orthogonal'
 import type { DrawingNode, LineDrawing, LineEnd } from '../../schemas/diagramLayoutGeometry'
 
@@ -109,11 +110,13 @@ export interface DrawnLine {
 
 /**
  * A line drawn along *course*, which runs from its source: PlantUML's stroke along it, its decorations
- * carried to its ends, its label to the middle of it.
+ * carried to its ends, its label where *anchor* sets it (`label_placement.label_box`), else to the
+ * middle of it.
  */
-export const drawnLine = (drawing: LineDrawing, course: readonly Point[]): DrawnLine => {
+export const drawnLine = (drawing: LineDrawing, course: readonly Point[], anchor?: LabelAnchor): DrawnLine => {
   const [atSource, atTarget] = drawing.ends
-  const labelAt = pointAlong(course, 0.5)
+  const base = pointAlong(course, anchor?.at ?? 0.5)
+  const labelAt = { x: base.x + (anchor?.dx ?? 0), y: base.y + (anchor?.dy ?? 0) }
   const labelShift = (centre: readonly [number, number]): string =>
     `translate(${written(labelAt.x - centre[0])} ${written(labelAt.y - centre[1])})`
   const d = roundedPath(stoppingShort(course, atSource.gap, atTarget.gap))

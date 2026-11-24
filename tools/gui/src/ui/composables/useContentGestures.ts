@@ -1,5 +1,10 @@
-import { onBeforeUnmount, ref, type Ref } from 'vue'
+import { onBeforeUnmount, type Ref } from 'vue'
+import { lineEndNear } from '../../domain/layout/lab/labRouteEdits'
+import { pointOnPicture } from '../components/layoutLab/pointerOnPicture'
 import type { DiagramEditing } from './useDiagramEditing'
+
+/** How near a line's end, on screen, a press picks the line rather than the element's edge (Q33). */
+const NEAR_AN_END = 6
 
 export const elementAt = (event: Event) =>
   event.target instanceof Element ? event.target.closest<SVGGElement>('[data-alias]') : null
@@ -9,7 +14,6 @@ export function useContentGestures(
   position: (x: number, y: number) => void, rename: (alias: string) => void,
   editLine: (index: number) => void, pair: (alias: string) => void,
 ) {
-  const touchedLine = ref<number | null>(null)
   let hold: ReturnType<typeof setTimeout> | undefined
   let down: { alias: string; x: number; y: number; edge: boolean } | null = null
   function release() {
@@ -19,27 +23,19 @@ export function useContentGestures(
   onBeforeUnmount(release)
   function press(e: PointerEvent) {
     if (e.button !== 0) return
+    // A press on a line, or where one ends on an element's edge, is the canvas's: it selects the line
+    // (`useLineGesture`); held without travel it opens the relation, and the edge draws nothing.
     const line = (e.target as Element).closest<SVGElement>('[data-relation]')
-    const svg = host.value?.querySelector('svg')
-    const matrix = svg?.getScreenCTM()
-    const endpoint =
-      matrix &&
-      [...editing.session.courses.value].find(([, points]) => {
-        return [points[0], points.at(-1)].some((point) => {
-          if (!point) return false
-          const screen = new DOMPoint(point.x, point.y).matrixTransform(matrix)
-          return Math.hypot(screen.x - e.clientX, screen.y - e.clientY) <= 5
-        })
-      })
+    const svg = host.value?.querySelector('svg') ?? null
+    const pixel = svg ? 1 / (svg.getScreenCTM()?.a || 1) : 1
+    const endpoint = lineEndNear(editing.session.courses.value, pointOnPicture(svg, e), NEAR_AN_END * pixel)
     if (line || endpoint) {
-      e.stopPropagation()
-      touchedLine.value = endpoint?.[0] ?? Number(line?.dataset.relation)
+      const index = endpoint?.line ?? Number(line?.dataset.relation)
       position(e.clientX, e.clientY)
-      const index = touchedLine.value
+      down = { alias: '', x: e.clientX, y: e.clientY, edge: false }
       hold = setTimeout(() => editLine(index), 550)
       return
     }
-    touchedLine.value = null
     const el = elementAt(e)
     if (!el) return
     const alias = el.dataset.alias ?? ''
@@ -78,5 +74,5 @@ export function useContentGestures(
     if (e.button === 0) host.value?.focus({ preventScroll: true })
     press(e)
   }
-  return { touchedLine, focusCanvas, up, release, moving }
+  return { focusCanvas, up, release, moving }
 }

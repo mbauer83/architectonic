@@ -59,14 +59,19 @@ export const drawnShapes = (
   }))
 }
 
-/** Each line, by its place: PlantUML's own until the first change, then drawn along the router's course. */
+/**
+ * Each line, by its place: PlantUML's own until the first change, then drawn along the router's course,
+ * its label where its stated anchor (by relation key, in *anchors*) sets it.
+ */
 export const drawnRelations = (
   drawn: LayoutGeometry, courses: Courses, asDrawn: boolean,
+  anchors: ReadonlyMap<string, NonNullable<Parameters<typeof drawnLine>[2]>> = new Map(),
 ): ReadonlyMap<number, DrawnRelation> =>
   new Map(drawn.relations.flatMap((relation): [number, DrawnRelation][] => {
     const course = courses.get(relation.index)
     if (!course || course.length < 2) return []
-    const along = drawnLine(relation.drawing, course)
+    const anchor = relation.key === undefined ? undefined : anchors.get(relation.key)
+    const along = drawnLine(relation.drawing, course, anchor)
     return [[relation.index, { asDrawn: asDrawn ? relation.drawing.group : null, along }]]
   }))
 
