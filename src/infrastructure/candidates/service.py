@@ -27,6 +27,7 @@ from src.application.stress_analysis.workspace import analyse
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.viewpoints.placed_occurrences import resolve_placed_entities
+from src.domain.repository.repo_default_stress_analysis import NAIVE_CANDIDATE, STRESS_ANALYSIS
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
 from src.infrastructure.candidates.repository import KIND, CandidateArchitectureStore, CandidateConflict
 from src.infrastructure.rendering.layout.diagram_geometry import stored_geometry
@@ -36,10 +37,6 @@ from src.infrastructure.write.artifact_write.types import WriteResult
 
 #: The analysis document's writer, bound by the transport to its verifier: title, frontmatter, dry run.
 DocumentWriter: TypeAlias = Callable[[str, dict[str, object], bool], WriteResult]
-
-#: The document type an analysis is, and the frontmatter key naming its naive architecture.
-ANALYSIS = "stress-analysis"
-NAIVE = "naive-candidate"
 
 
 class CandidateService:
@@ -95,7 +92,7 @@ class CandidateService:
         record = dict(naive)
         record.setdefault("id", generate_entity_id(str(KIND.id_prefix), str(record.get("name") or "")))
         ref = str(record["id"])
-        frontmatter: dict[str, object] = {NAIVE: ref}
+        frontmatter: dict[str, object] = {NAIVE_CANDIDATE: ref}
         if question:
             frontmatter["question"] = question
         if scope_diagram:
@@ -122,7 +119,8 @@ class CandidateService:
                 f"{ref} cannot be deleted: {', '.join(stacked)} {verb} on it. Delete what stacks on it first."
             )
         naming = sorted(
-            doc.artifact_id for doc in self.index.list_documents(doc_type=ANALYSIS) if doc.extra.get(NAIVE) == ref
+            doc.artifact_id for doc in self.index.list_documents(doc_type=STRESS_ANALYSIS)
+            if doc.extra.get(NAIVE_CANDIDATE) == ref
         )
         if naming:
             raise CandidateConflict(
@@ -168,9 +166,9 @@ class CandidateService:
         doc = self.index.get_document(ref)
         if doc is None:
             raise FileNotFoundError(ref)
-        if doc.doc_type != ANALYSIS:
+        if doc.doc_type != STRESS_ANALYSIS:
             raise ValueError("Select a stress-analysis document.")
-        naive = str(doc.extra.get(NAIVE) or "")
+        naive = str(doc.extra.get(NAIVE_CANDIDATE) or "")
         if not naive:
             raise ValueError("Set naive-candidate on the stress-analysis document.")
         view = read_view(self.store.require(naive), self.store, self.registry)
@@ -211,7 +209,7 @@ def document_writer(
 
     def write(title: str, frontmatter: dict[str, object], dry_run: bool) -> WriteResult:
         return create_document(
-            repo_root=repo_root, verifier=verifier, clear_repo_caches=clear_repo_caches, doc_type=ANALYSIS,
+            repo_root=repo_root, verifier=verifier, clear_repo_caches=clear_repo_caches, doc_type=STRESS_ANALYSIS,
             title=title, body=None, keywords=None, extra_frontmatter=frontmatter, artifact_id=None,
             version="0.1.0", status="draft", last_updated=None, dry_run=dry_run,
         )

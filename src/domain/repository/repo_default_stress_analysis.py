@@ -1,5 +1,9 @@
 """Default stress-analysis document type. Subject and hit ids resolve in the naive candidate."""
 
+#: The document type an analysis is, and the frontmatter key naming its naive candidate.
+STRESS_ANALYSIS = "stress-analysis"
+NAIVE_CANDIDATE = "naive-candidate"
+
 STRESS_ANALYSIS_SCHEMA = {
     "abbreviation": "STRESS",
     "name": "Stress analysis",
@@ -11,7 +15,7 @@ STRESS_ANALYSIS_SCHEMA = {
             "title": {"type": "string"},
             "status": {"type": "string", "enum": ["draft", "accepted", "rejected", "superseded"]},
             "question": {"type": "string"},
-            "naive-candidate": {"type": "string"},
+            NAIVE_CANDIDATE: {"type": "string"},
             "scope-diagram": {"type": "string"},
         },
     },
