@@ -206,14 +206,20 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     gliding = requestAnimationFrame(step)
   }
 
-  /** Fit the window to a part of the picture, never closer than its natural size. */
-  const frame = (extent: Extent, padding = 40) => {
+  /** A part of the picture's centre, and the scale at which it just fits the window inside *padding*. */
+  const fitting = (extent: Extent, padding: number): { x: number; y: number; fits: number } | null => {
     const rect = containerRef.value?.getBoundingClientRect()
     const width = extent.right - extent.left
     const height = extent.bottom - extent.top
-    if (!rect || width <= 0 || height <= 0) return
-    const fitted = Math.min((rect.width - padding * 2) / width, (rect.height - padding * 2) / height, 1)
-    showView({ x: extent.left + width / 2, y: extent.top + height / 2, percent: Math.max(fitted, 0.05) * 100 })
+    if (!rect || width <= 0 || height <= 0) return null
+    const fits = Math.min((rect.width - padding * 2) / width, (rect.height - padding * 2) / height)
+    return { x: extent.left + width / 2, y: extent.top + height / 2, fits: Math.max(fits, 0.05) }
+  }
+
+  /** Fit the window to a part of the picture, never closer than its natural size. */
+  const frame = (extent: Extent, padding = 40) => {
+    const at = fitting(extent, padding)
+    if (at) showView({ x: at.x, y: at.y, percent: Math.min(at.fits, 1) * 100 })
   }
 
   /**
@@ -221,13 +227,8 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
    * `READABLE`, closer only if the window already was, and farther only as far as the part needs to fit.
    */
   const goTo = (extent: Extent, padding = 40) => {
-    const rect = containerRef.value?.getBoundingClientRect()
-    const width = extent.right - extent.left
-    const height = extent.bottom - extent.top
-    if (!rect || width <= 0 || height <= 0) return
-    const fits = Math.min((rect.width - padding * 2) / width, (rect.height - padding * 2) / height)
-    const wanted = Math.min(Math.max(scale.value, READABLE), Math.max(fits, 0.05))
-    glide({ x: extent.left + width / 2, y: extent.top + height / 2, percent: wanted * 100 })
+    const at = fitting(extent, padding)
+    if (at) glide({ x: at.x, y: at.y, percent: Math.min(Math.max(scale.value, READABLE), at.fits) * 100 })
   }
 
   /** Move the window by the least that brings a part of the picture *margin* pixels inside it. */
