@@ -47,11 +47,11 @@ onBeforeUnmount(() => { open.value = false })
       class="prefs__toggle"
       :aria-expanded="open"
       aria-controls="preferences-panel"
+      aria-label="Preferences"
       title="Preferences, kept in this browser"
       @click="open = !open"
     >
       <span aria-hidden="true">⚙</span>
-      <span class="prefs__label">Preferences</span>
     </button>
     <div
       v-if="open"
@@ -106,5 +106,4 @@ onBeforeUnmount(() => { open.value = false })
 .prefs__option { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .prefs__option input { accent-color: var(--accent); }
 .prefs__note { margin-top: 8px; font-size: 11px; color: var(--muted); }
-@media (max-width: 1060px) { .prefs__label { display: none; } }
 </style>
