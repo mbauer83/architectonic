@@ -218,7 +218,7 @@ onMounted(async () => {
           data-testid="draw-on"
           @change="drawOn(($event.target as HTMLSelectElement).value)"
         >
-          <option value="">a view generated from its scope</option>
+          <option value="">its own picture</option>
           <option
             v-for="one in diagrams"
             :key="one.artifact_id"

@@ -53,14 +53,18 @@ const showChanges = ref(true)
 const readContext = async () => {
   context.value = await Effect.runPromise(svc.readCandidatePictureContext(props.candidateId))
 }
+/** How many times the candidate was recorded in: the seed offer asks again whether it is still empty. */
+const recordings = ref(0)
 const recorded = () => {
+  recordings.value += 1
   emit('recorded')
   void readContext().catch(() => undefined)
 }
 /** Where the session started from: read when it opens, so the context read later does not move it. */
 const started = shallowRef<PictureContext['diagram'] | null>(null)
 const editing = useCandidateEditing(svc, () => membershipOf(started.value), () => props.candidateId, recorded)
-const panelOpen = ref(true)
+/** The panel is open to begin with on a picture that starts empty, where finding elements is the first step. */
+const panelOpen = ref(false)
 const canvas = ref<InstanceType<typeof LayoutLabCanvas> | null>(null)
 const entityOf = useDrawnEntities(() => context.value, () => editing.session.geometry.value)
 
@@ -96,6 +100,7 @@ const openCanvas = async () => {
   try {
     await readContext()
     started.value = context.value?.diagram ?? null
+    panelOpen.value = panelOpen.value || !started.value?.entity_ids_used?.length
     if (!(await editing.open())) error.value = editing.error.value ?? 'The canvas could not be opened.'
   } catch (failure) {
     error.value = formatEffectError(failure)
@@ -174,10 +179,7 @@ onMounted(openCanvas)
     >
       {{ error ?? editing.error.value }}
     </p>
-    <div
-      class="sketch-body"
-      :class="{ 'with-panel': panelOpen }"
-    >
+    <div class="sketch-body">
       <div
         ref="containerRef"
         class="img-container editing viewport-host"
@@ -226,6 +228,7 @@ onMounted(openCanvas)
         aria-label="Add from model"
       >
         <CandidateSeed
+          :key="recordings"
           :candidate-id="candidateId"
           @seeded="seeded"
         />
@@ -261,8 +264,11 @@ onMounted(openCanvas)
   position: relative; overflow: hidden; background: var(--paper); border: 1px solid var(--accent);
   box-shadow: inset 0 2px 0 var(--accent); border-radius: 8px; height: clamp(380px, calc(100vh - 340px), 900px);
 }
-.sketch-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-.sketch-body.with-panel { grid-template-columns: minmax(0, 1fr) minmax(220px, 280px); }
-.sketch-panel { overflow: auto; max-height: clamp(380px, calc(100vh - 340px), 900px); }
+/* The panel floats over the canvas's right edge, so the picture keeps the pane's whole width. */
+.sketch-body { position: relative; }
+.sketch-panel {
+  position: absolute; top: 8px; right: 8px; bottom: 8px; width: min(280px, 45%); overflow: auto; z-index: 2;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 14%);
+}
 .svg-wrap :deep(svg) { display: block; max-width: none; }
 </style>

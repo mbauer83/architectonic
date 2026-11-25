@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * What an analysis is, under its title: the kind, its status, what the architecture under evaluation is
- * drawn on and how many elements it holds, and the context the evaluation is made in, where stated.
+ * What an analysis is, under its title: the kind, its status, how many elements the architecture under
+ * evaluation holds and the stored diagram it is drawn on, if any, and the context the evaluation is made in.
  */
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
 
@@ -15,8 +15,9 @@ defineProps<{ analysis: StressAnalysis }>()
     <span
       v-if="analysis.naive.value"
       class="mono"
-    >scope: {{ analysis.drawnOn.value ? analysis.naive.value.drawing?.name : 'a view generated from it' }}
-      ({{ analysis.naive.value.view.entities.length }} elements)</span>
+    >naive architecture: {{ analysis.naive.value.view.entities.length }}
+      {{ analysis.naive.value.view.entities.length === 1 ? 'element' : 'elements' }}{{ analysis.drawnOn.value
+        ? ` · drawn on ${analysis.naive.value.drawing?.name ?? analysis.drawnOn.value}` : '' }}</span>
   </div>
   <p
     v-if="analysis.context.value"

@@ -13,6 +13,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Effect } from 'effect'
 import type { DiagramSummary } from '../../domain'
 import { comparedIds } from '../../domain/candidates/candidateComparison'
+import { stableEntityId } from '../../domain/artifactId'
 import { modelServiceKey, toastKey } from '../keys'
 import { candidateDetailRoute, candidateListRoute } from '../router/artifactRoutes'
 import { useCandidateComparison } from '../composables/useCandidateComparison'
@@ -57,6 +58,16 @@ const integration = useIntegration(svc, (id) => {
   toast(`Integrated into ${integration.name.value}, a new candidate.`)
   void router.push(candidateDetailRoute(id))
 })
+/** An element by its name in the common base, as a comparison's change reads it; its id where none does. */
+const elementName = (id: string): string => {
+  const key = stableEntityId(id)
+  const before = comparison.panes.value.flatMap((pane) => pane.reading.comparison.value?.diff ?? [])
+    .filter((row) => row.kind === 'entity' && stableEntityId(String(row.target)) === key)
+    .map((row) => row.fields.name?.before).find((name) => typeof name === 'string')
+  const read = comparison.panes.value.flatMap((pane) => pane.reading.comparison.value?.view.entities ?? [])
+    .find((one) => stableEntityId(one.artifact_id ?? one.id) === key)?.fields.name
+  return typeof before === 'string' ? before : typeof read === 'string' ? read : id
+}
 const integrate = async () => {
   integrating.value = true
   await integration.choose(comparison.known.value)
@@ -215,7 +226,7 @@ onMounted(async () => {
       </div>
       <IntegrationCards
         :integration="integration"
-        :name-of="(id) => id"
+        :name-of="elementName"
         :name-of-set="comparison.nameOf"
       />
     </section>
