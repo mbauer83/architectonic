@@ -46,7 +46,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 const opened = () => {
-  const session = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
+  const session = useArrangementSession(() => Effect.succeed([]))
   session.open(geometry)
   return session
 }

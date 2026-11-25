@@ -32,7 +32,7 @@ const emit = defineEmits<{ pick: [stableId: string] }>()
 const svc = inject(modelServiceKey)!
 
 // Read only: nothing is moved, so no shape is ever drawn anew and no picture is taken over.
-const session = useArrangementSession(() => Effect.succeed([]), (_, automatic) => automatic)
+const session = useArrangementSession(() => Effect.succeed([]))
 watch(() => props.drawing, (drawing) => {
   if (drawing) session.open(drawing)
   else session.close()

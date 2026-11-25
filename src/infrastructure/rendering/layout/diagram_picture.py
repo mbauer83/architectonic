@@ -75,7 +75,7 @@ def plantuml_drawing(puml_body: str, repo_root: Path, diagram_type: str) -> Rend
 def first_layout_of(
     puml_body: str, frontmatter: Mapping[str, object], repo_root: Path, ontology: DeclaresElementKinds
 ) -> Layout:
-    """The layout a diagram starts from when it is first arranged: PlantUML's picture, widened."""
+    """The layout a diagram starts from when it is first arranged: PlantUML's picture, as drawn."""
     diagram_type = str(frontmatter.get("diagram-type", "archimate"))
     drawing = plantuml_drawing(puml_body, repo_root, diagram_type)
     return first_layout(drawing.picture, joined_to_its_picture(frontmatter, Layout(), ontology))

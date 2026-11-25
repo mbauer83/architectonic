@@ -31,7 +31,7 @@ const geometry: LayoutGeometry = {
 }
 
 const nesting = (verdict: DropVerdict | null = { kind: 'nest', words: 'Nest in B…' }) => {
-  const session = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
+  const session = useArrangementSession(() => Effect.succeed([]))
   session.open(geometry)
   const mode = ref<CanvasPopoverLevel | null>(null)
   const close = vi.fn(() => { mode.value = null })

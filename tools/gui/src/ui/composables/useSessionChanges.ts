@@ -2,15 +2,16 @@
  * What a diagram's edit session would write, read off its state against the last save (owner, F3), and
  * what each step of it did, read off the two states it lies between (`stepName`).
  *
- * Arranging counts one change per element, box or line arranged (sketch 01·6), against the last save or,
- * on a picture still arranged automatically when the session opened, against the picture as it was
- * taken over. Taking the picture over is no change of its own: it is how the first move is written.
+ * The list names each change to what the diagram holds and to the model, and arranging only as the fact
+ * that the layout changed (owner, 2026-11-25): one row, however many shapes and lines moved, read against
+ * the last save or, on a picture still arranged automatically when the session opened, against the
+ * picture as it was taken over. Taking the picture over is no change of its own. Undo and Redo still name
+ * what each step arranged (`stepName`).
  */
 import { computed, type ShallowRef } from 'vue'
 import { arrangedUnits, linesArranged } from '../../domain/layout/arrangementLayout'
 import { stableEntityId } from '../../domain/artifactId'
 import type { Arrangement } from '../../domain/layout/lab/labArrangement'
-import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import { type PendingChange, contentChanges } from '../../domain/layout/sessionChanges'
 import { stepName } from '../../domain/layout/sessionSteps'
 import { boxChanges } from '../../domain/layout/canvasBoxes'
@@ -18,9 +19,12 @@ import type { AuthoredGrouping } from '../../domain/authoredGrouping'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { ArrangementSession, ArrangementState } from './useArrangementSession'
 
+/** The one row arranging adds to the list, whatever was arranged. */
+export const LAYOUT_CHANGED: PendingChange = { key: 'layout', text: 'Layout changed' }
+
 /** What a session's arranging is counted against: the last save, or the picture it took over. */
-export const referenceOf = (geometry: LayoutGeometry, before: ArrangementState, now: ArrangementState): Arrangement =>
-  before.byHand ? before.arrangement : (now.takenOver ?? widenedArrangement(geometry, before.arrangement))
+export const referenceOf = (before: ArrangementState, now: ArrangementState): Arrangement =>
+  before.byHand ? before.arrangement : (now.takenOver ?? before.arrangement)
 
 /** The drawings of *picture* that draw an element, with the element's name in the model. */
 export type MembersOf = (
@@ -79,18 +83,16 @@ export function useSessionChanges(
     const before = saved.value
     if (!geometry || !now || !before) return []
     const content = contentOf(now)
-    if (!now.byHand) {
-      return [...(before.byHand ? [{ key: 'automatic', text: 'Returned to automatic layout' }] : []), ...content]
-    }
-    const arranged = arrangedNames(referenceOf(geometry, before, now), now.arrangement)
-    return [...content, ...arranged.map(({ key, name }) => ({ key, text: `Arranged: ${name}` }))]
+    const layoutChanged = now.byHand
+      ? arrangedNames(referenceOf(before, now), now.arrangement).length > 0 : before.byHand
+    return [...content, ...(layoutChanged ? [LAYOUT_CHANGED] : [])]
   })
 
   /** What the step from *before* to *after* did, in the words of the list. */
   const named = (before: ArrangementState, after: ArrangementState): string => {
     const geometry = session.geometry.value
     const samePicture = !before.picture || !after.picture || before.picture === after.picture
-    const from = geometry && !before.byHand && after.byHand ? referenceOf(geometry, before, after) : before.arrangement
+    const from = geometry && !before.byHand && after.byHand ? referenceOf(before, after) : before.arrangement
     return stepName({
       returnedToAutomatic: before.byHand && !after.byHand,
       before: contentOf(before),

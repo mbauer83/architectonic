@@ -15,7 +15,7 @@ import {
 } from '../labArrangement'
 import { LINE_DRAWING, SHAPE_DRAWING } from './labDrawingFixtures'
 import type { LayoutGeometry } from '../../../schemas/diagramLayoutGeometry'
-import { changedShapes, placementOf, textRegions, widenedArrangement } from '../labRouting'
+import { changedShapes, placementOf, textRegions } from '../labRouting'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 
@@ -97,13 +97,4 @@ describe('the canvas picture as the router sees it', () => {
     expect(textRegions(geometry, placement).get('band:G')).toEqual(at(86, 40, 164, 58))
   })
 
-  it('widens as a first layout does, keeping every element and every member inside its box', () => {
-    const opened = widenedArrangement(geometry, drawnArrangement(geometry))
-    expect([...opened.elements.keys()].sort()).toEqual(['A', 'B', 'C'])
-    const box = fittedBoxes(geometry, opened).get('G') as Extent
-    for (const alias of ['A', 'B']) {
-      const member = opened.elements.get(alias) as Extent
-      expect(member.left >= box.left && member.right <= box.right).toBe(true)
-    }
-  })
 })

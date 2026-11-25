@@ -8,9 +8,10 @@ picture's own terms — aliases, extents, courses — so it can be checked witho
 * a **box** — a grouping of either kind, or an element holding its parts — is what its contents need
   with the renderer's own padding and never narrower than its title, widened to what the layout
   states for it and never narrowed;
-* a **relation** runs the course its stated route completes to; every other one is routed by
-  `routing`, which keeps the hard readability rules, and one no route reaches is named, never drawn
-  through something;
+* a **relation** runs the course its stated route completes to; one that states no route keeps the
+  course the renderer drew wherever nothing that moved touches it (`routing.kept`); every other one is
+  routed by `routing`, which keeps the hard readability rules, and one no route reaches is named, never
+  drawn through something;
 * a **label** sits where its route's anchor says, or beside its route clear of every element, every
   text and every line;
 * **painting** follows containment: a box and everything in it are one unit, siblings in `z` order
@@ -21,14 +22,16 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
-from src.domain.diagrams.layout.layout_block import Placed, Route
+from src.domain.diagrams.layout.layout_block import Layout, Placed, Route
 from src.domain.diagrams.layout.layout_checks import placed_extent
 from src.domain.diagrams.layout.orthogonal import course_of
 from src.domain.diagrams.layout.rendered_picture import DrawnBox, MeasuredWord, RenderedPicture, extent_across
+from src.domain.diagrams.layout.route_quality import square_course
+from src.domain.diagrams.layout.routing.kept import ShownLine, attached, kept_lines
 from src.domain.diagrams.layout.routing.router import route_all
 from src.domain.diagrams.layout.routing.scene import Connector, RoutingScene
 from src.domain.diagrams.layout.text_clearance import padded, text_extent, title_band
@@ -102,13 +105,19 @@ def _wide_enough_for_its_title(needed: Extent, box: DrawnBox) -> Extent:
     return Extent(needed.left - grow, needed.top, needed.right + grow, needed.bottom)
 
 
+def _states_no_course(route: Route) -> bool:
+    """Whether *route* leaves its line wholly to the picture: no port and no bend stated."""
+    return route.source is None and route.target is None and not route.via
+
+
 @dataclass(frozen=True)
 class RoutingInput:
     """What a picture's arrangement asks of the router, and what it keeps to draw the answer."""
 
     scene: RoutingScene
     connectors: tuple[Connector, ...]
-    #: The courses the layout states whole, by the index of the picture's relation.
+    #: The courses the layout states whole, and those kept as the renderer drew them, by the index of
+    #: the picture's relation.
     stated: Mapping[int, tuple[Point, ...]]
     routes: Mapping[int, Route]
     keyed: Mapping[int, tuple[str, bool]]
@@ -220,12 +229,15 @@ class _Arranging:
         A relation whose layout states its bends between two stated ports runs that course, and is a fixed
         line to the others. One that states only its ports is routed between them: its bends are unstated,
         so they are the router's, and the route goes round whatever lies between (a straightened line).
+        One that states neither keeps the course the renderer drew, a fixed line too, unless something
+        that moved touches it (`kept_lines`).
         """
         extents: dict[str, Extent] = {**self.boxes, **self.elements}
         keyed = self._keyed()
         courses: dict[int, tuple[Point, ...]] = {}
         routes: dict[int, Route] = {}
         connectors: list[Connector] = []
+        kept = self._kept(keyed)
         for index, relation in enumerate(self._picture.relations):
             key, turned = keyed.get(index, ("", False))
             source, target = relation.ends[::-1] if turned else relation.ends
@@ -233,6 +245,8 @@ class _Arranging:
             stated = course_of(routes[index], extents[source], extents[target]) if routes[index].via else None
             if stated is not None:
                 courses[index] = stated[::-1] if turned else stated
+            elif index in kept:
+                courses[index] = kept[index]
             else:
                 marks = (bool(relation.first_marks), bool(relation.second_marks))
                 connectors.append(Connector(
@@ -243,6 +257,26 @@ class _Arranging:
             elements=self.elements, boxes=self.boxes, text=self.text(), fixed_lines=list(courses.values()),
         )
         return RoutingInput(scene, tuple(connectors), courses, routes, keyed)
+
+    def _kept(self, keyed: Mapping[int, tuple[str, bool]]) -> dict[int, tuple[Point, ...]]:
+        """The course the renderer drew of each relation that states no route and that nothing moved
+        touches, carried onto its ends' borders (`attached`), by its index, in the picture's order."""
+        lines = [
+            ShownLine(str(index), relation.ends[0], relation.ends[1], square_course(relation.path))
+            for index, relation in enumerate(self._picture.relations)
+            if _states_no_course(self._layout.relations.get(keyed.get(index, ("", False))[0], Route()))
+            and len(relation.path) >= 2  # noqa: PLR2004 — a line has two ends
+        ]
+        if not lines:
+            return {}
+        drawn = _Arranging(self._picture, replace(self._diagram, layout=Layout()))
+        before = RoutingScene(elements=drawn.elements, boxes=drawn.boxes, text=drawn.text())
+        now = RoutingScene(elements=self.elements, boxes=self.boxes, text=self.text())
+        keep = kept_lines(before, now, lines)
+        return {
+            int(line.key): attached(line.course, self._extent_now(line.source), self._extent_now(line.target))
+            for line in lines if line.key in keep
+        }
 
     def relations(self) -> tuple[tuple[ArrangedRelation, ...], tuple[str, ...]]:
         """Every relation's course and label, and the relations no route reaches.

@@ -48,9 +48,7 @@ const SERVICE = { drawResizedShapes: () => Effect.succeed([]) } as unknown as Mo
 const AS_HINTS: ArrangingAids = { snapping: () => 'hints', rectangle: () => 'encloses' }
 
 const opened = (aids: ArrangingAids = AS_HINTS) => {
-  const session = useArrangementSession(
-    (shapes) => SERVICE.drawResizedShapes(geometry.artifact_id, shapes), (_drawn, automatic) => automatic,
-  )
+  const session = useArrangementSession((shapes) => SERVICE.drawResizedShapes(geometry.artifact_id, shapes))
   session.open(geometry)
   const gesture = useLabGesture(session, ref(null), aids)
   /** The layout the arrangement now states, as Save would write it. */

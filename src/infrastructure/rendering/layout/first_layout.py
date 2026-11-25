@@ -1,15 +1,13 @@
-"""The layout first written down for a diagram: the renderer's arrangement, with room made for its lines.
+"""The layout first written down for a diagram: the renderer's arrangement, as it was drawn.
 
-A diagram takes a layout over from the picture the renderer drew of it. Written down as drawn, its
-gaps between boxes are the renderer's, made for curves, and often too narrow for the lines the router
-lays along them. So the first layout is the drawn arrangement **widened** (`routing.widening`): each
-channel too narrow for its lines opened by what it lacks, boxes kept in their order and nesting. That
-happens here, once; afterwards nothing moves that the layout's author did not move, and a channel
-still too narrow is the verifier's to report (W384).
+A diagram takes a layout over from the picture the renderer drew of it, and keeps that picture's lines
+(owner, 2026-11-25): a line nothing moved touches stays as it was drawn (`routing.kept`), so no room has
+to be made for the router before anything moves. Afterwards nothing moves that the layout's author did
+not move, and a channel too narrow for the lines routed along it is the verifier's to report (W384).
 
 Every element is placed at its corner, every box the layout can name — a grouping by its id, a computed
-box by its rule, an element holding its parts as an element — at its corner and size. Relations are
-not stated: every one is routed.
+box by its rule, an element holding its parts as an element — at its corner and size, in whole pixels.
+Relations are not stated.
 """
 
 from __future__ import annotations
@@ -22,7 +20,6 @@ from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.domain.diagrams.layout.layout_block import Layout, Placed
 from src.domain.diagrams.layout.rendered_picture import RenderedPicture
 from src.domain.diagrams.layout.routing.scene import RoutingScene
-from src.domain.diagrams.layout.routing.widening import widened
 from src.infrastructure.rendering.layout.arrangement import routing_input
 from src.infrastructure.rendering.layout.box_identities import box_keys_by_alias
 
@@ -49,14 +46,9 @@ def _written(diagram: LaidOutDiagram, keys: Mapping[str, str], scene: RoutingSce
 
 
 def first_layout(picture: RenderedPicture, diagram: LaidOutDiagram) -> Layout:
-    """The layout that writes *picture*'s arrangement down for *diagram*, its narrow channels widened.
+    """The layout that writes *picture*'s arrangement down for *diagram*, as drawn.
 
-    Whatever *diagram* states already is not consulted: this is the layout a diagram starts from. The
-    arrangement is written down in whole pixels first and widened from there, so the channels measured
-    are the ones the written layout draws.
+    Whatever *diagram* states already is not consulted: this is the layout a diagram starts from.
     """
     unstated = replace(diagram, layout=Layout())
-    keys = box_keys_by_alias(picture, unstated)
-    as_drawn = _written(diagram, keys, routing_input(picture, unstated).scene)
-    asked = routing_input(picture, replace(diagram, layout=as_drawn))
-    return _written(diagram, keys, widened(asked.scene, asked.connectors))
+    return _written(diagram, box_keys_by_alias(picture, unstated), routing_input(picture, unstated).scene)

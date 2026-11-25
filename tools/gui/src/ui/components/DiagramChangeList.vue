@@ -2,7 +2,8 @@
 /**
  * What Save will write (sketch 01·6), in two groups headed in words rather than told apart by colour:
  * **Model** — what every diagram drawing these elements sees — and **Diagram** — what changes on this
- * diagram only. A group with nothing in it is not shown.
+ * diagram only, its arranging as the one line "Layout changed" (owner, 2026-11-25). A group with nothing
+ * in it is not shown.
  */
 import { computed } from 'vue'
 import type { PendingChange } from '../../domain/layout/sessionChanges'

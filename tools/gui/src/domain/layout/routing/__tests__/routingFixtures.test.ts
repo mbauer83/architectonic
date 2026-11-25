@@ -12,12 +12,12 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { Extent } from '../../geometry'
 import type { Port } from '../../orthogonal'
-import { channels, widerBy } from '../../channels'
 import { EAST, SOUTH } from '../graph'
 import { routeAll } from '../router'
 import type { Connector, RoutedConnector, RoutingResult, RoutingScene } from '../scene'
+import { extentOf } from '../scene'
 import { Visibility } from '../visibility'
-import { widened } from '../widening'
+import { attached, keptLines } from '../kept'
 
 type XY = readonly [number, number]
 
@@ -59,11 +59,12 @@ const routing = JSON.parse(
     upright: (number | null)[][]
     joins: number[][]
   }
-  widening: {
-    scene: SceneJson
-    connectors: ConnectorJson[]
-    channels: (Record<string, number | string> & { wider_by: number })[]
-    widened: SceneJson
+  kept: {
+    before: SceneJson
+    now: SceneJson
+    lines: { key: string; source: string; target: string; course: XY[] }[]
+    kept: string[]
+    attached: Record<string, XY[]>
   }
   cases: { name: string; scene: SceneJson; connectors: ConnectorJson[]; result: ResultJson }[]
   quick: { scene: SceneJson; connectors: ConnectorJson[]; previous: Record<string, RoutedJson>; changed: string[]; result: ResultJson }
@@ -143,26 +144,20 @@ describe('the visibility graph is the one the Python router builds', () => {
   })
 })
 
-const sceneAsJson = (scene: RoutingScene): SceneJson => ({
-  elements: Object.fromEntries(scene.elements),
-  boxes: Object.fromEntries(scene.boxes),
-  text: Object.fromEntries(scene.text),
-  fixed_lines: scene.fixedLines.map((line) => line.map((point): XY => [point.x, point.y])),
-})
-
-describe('a first layout makes the room the Python one makes', () => {
-  const { scene, connectors, channels: expected, widened: expectedScene } = routing.widening
-  const arranged = sceneOf(scene)
-  const asked = connectors.map(connectorOf)
-
-  it('finds the same channels, with the same lines along each', () => {
-    const courses = [...routeAll(arranged, asked).routes.values()].map((routed) => routed.course)
-    const found = channels(arranged.boxes, [...arranged.elements.values(), ...arranged.text.values()], courses)
-    expect(found.map((channel) => ({ ...channel, wider_by: widerBy(channel) }))).toEqual(expected)
+describe('a picture keeps the lines the Python one keeps', () => {
+  it('keeps as drawn only the lines nothing that moved touches', () => {
+    const { before, now, lines, kept } = routing.kept
+    const shown = lines.map((line) => ({ ...line, course: line.course.map(([x, y]) => ({ x, y })) }))
+    expect([...keptLines(sceneOf(before), sceneOf(now), shown)].sort()).toEqual(kept)
   })
 
-  it('widens the scene to the same arrangement', () => {
-    expect(sceneAsJson(widened(arranged, asked))).toEqual(expectedScene)
+  it('carries each line onto the borders of its ends as the Python one does', () => {
+    const { now, lines, attached: expected } = routing.kept
+    const scene = sceneOf(now)
+    const carried = Object.fromEntries(lines.map((line) => [line.key, attached(
+      line.course.map(([x, y]) => ({ x, y })), extentOf(scene, line.source), extentOf(scene, line.target),
+    ).map((point): XY => [point.x, point.y])]))
+    expect(carried).toEqual(expected)
   })
 })
 

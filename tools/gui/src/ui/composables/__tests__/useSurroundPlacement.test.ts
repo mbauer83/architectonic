@@ -32,7 +32,7 @@ const geometry: LayoutGeometry = {
 }
 
 const opened = (answers: (placement: SurroundPlacement) => readonly (readonly [number, number])[]) => {
-  const session = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
+  const session = useArrangementSession(() => Effect.succeed([]))
   const place = vi.fn((placement: SurroundPlacement) => Effect.succeed(answers(placement)))
   const placed = useSurroundPlacement(session, place)
   session.open(geometry)

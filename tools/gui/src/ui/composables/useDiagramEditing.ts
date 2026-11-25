@@ -6,8 +6,8 @@
  * arrangement now against the one last saved (`useSessionChanges`). So returning to automatic leaves no
  * arranging change, a move undone leaves none, and the count follows Undo and Redo (owner, F3).
  *
- * Taking a picture over writes it down as a first layout is: PlantUML's arrangement with its narrow
- * gaps widened (`widenedArrangement`), the same rule the server's first layout applies.
+ * Taking a picture over writes it down as a first layout is: PlantUML's arrangement as drawn, its lines
+ * kept, the same rule the server's first layout applies.
  */
 import { ref, shallowRef } from 'vue'
 import { Effect } from 'effect'
@@ -23,7 +23,6 @@ import type { Point } from '../../domain/layout/geometry'
 import { occurrenceItems } from '../../domain/archimateOccurrences'
 import type { PendingChange } from '../../domain/layout/sessionChanges'
 import { addOccurrenceFor } from '../lib/archimateOccurrences'
-import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import { referenceOf, useSessionChanges } from './useSessionChanges'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { membershipOf } from '../../domain/layout/diagramMembership'
@@ -53,10 +52,7 @@ export function useDiagramEditing(
 ) {
   const onMembershipSaved = options.onMembershipSaved ?? (() => {})
   const lens = options.lens ?? (() => undefined)
-  const session = useArrangementSession(
-    (shapes) => svc.drawResizedShapes(diagramId(), shapes),
-    (geometry, automatic) => widenedArrangement(geometry, automatic),
-  )
+  const session = useArrangementSession((shapes) => svc.drawResizedShapes(diagramId(), shapes))
   /** The layout the diagram stored when the session opened or last saved; null while PlantUML arranges it. */
   const stored = shallowRef<StoredLayout | null>(null)
   /** Where the session started from, and where Discard returns to. */
@@ -118,7 +114,7 @@ export function useDiagramEditing(
     const before = saved.value
     const routed = session.routes.value?.routes
     if (!before || !routed) return layout
-    const shown = shownRoutesOfMoved(geometry, referenceOf(geometry, before, now), now.arrangement, routed)
+    const shown = shownRoutesOfMoved(geometry, referenceOf(before, now), now.arrangement, routed)
     return { ...layout, relations: { ...shown, ...layout.relations } }
   }
 

@@ -467,7 +467,10 @@ resized. Pass the whole block as `layout` to `artifact_create_diagram` or `artif
 
 The block is stored, read back and verified, and the diagram is drawn from it: PlantUML draws the
 elements, and they are placed and sized where the layout says. A relation whose route the layout
-states follows it, and every other relation is routed, whether or not its ends moved. A routed line
+states follows it. A relation that states no route keeps the line PlantUML drew while neither of its
+ends has moved from where PlantUML put it and nothing moved now lies across it; every other relation
+is routed. So taking a diagram over in the editor keeps its lines, and moving one element routes only
+the lines it touches. A routed line
 goes round every element and every title band, enters a grouping only to reach something inside it
 and crosses its border once, at a right angle, and stays inside the smallest grouping that holds both
 its ends unless no route exists there. It leaves an end that carries an arrowhead or other decoration

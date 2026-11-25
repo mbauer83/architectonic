@@ -20,7 +20,7 @@ const element = (alias: string, extent: Extent) => ({
   drawing: SHAPE_DRAWING,
 })
 
-/** A beside and above C: the line from A to C turns twice. */
+/** A beside and above C: the line from A to C turns twice, its last run as short as its arrowhead allows. */
 const geometry: LayoutGeometry = {
   artifact_id: 'ARC@1.a.test', name: 'Test', canvas: at(0, 0, 700, 500), backdrop: [],
   surround: { drawn: { left: 0, top: 0, right: 0, bottom: 0 }, parts: [] },
@@ -28,7 +28,7 @@ const geometry: LayoutGeometry = {
   boxes: [],
   relations: [{
     index: 0, key: 'r', source: 'A', target: 'C', decorated: [false, true],
-    course: [[120, 60], [400, 260]], label: '', label_size: undefined, drawing: LINE_DRAWING,
+    course: [[120, 60], [370, 60], [370, 260], [400, 260]], label: '', label_size: undefined, drawing: LINE_DRAWING,
   }],
 }
 
@@ -43,7 +43,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 const opened = () => {
-  const session = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
+  const session = useArrangementSession(() => Effect.succeed([]))
   session.open(geometry)
   session.change((_drawn, now) => now)
   const picked = vi.fn()

@@ -32,7 +32,7 @@ const geometry: LayoutGeometry = {
 }
 
 const opened = () => {
-  const session = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
+  const session = useArrangementSession(() => Effect.succeed([]))
   session.open(geometry)
   const selection = ref<readonly string[]>([])
   return { selection, focus: useCanvasFocus(session, { selection }) }
@@ -47,7 +47,7 @@ describe('the element focus of the edit canvas', () => {
   })
 
   it('announces a shape that draws a draft as one (sketch 03·4)', () => {
-    const session = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
+    const session = useArrangementSession(() => Effect.succeed([]))
     session.open(geometry)
     const focus = useCanvasFocus(session, { selection: ref<readonly string[]>([]) }, (alias) => alias === 'A')
     focus.enter(false)

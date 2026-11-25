@@ -9,8 +9,7 @@ with room to turn: otherwise the run into an arrowhead starts outside the box ho
 A channel narrower than that is where lines end up running along each other or along a border, and
 no router can repair it: the room is the arrangement's.
 
-One reading of channels, for two askers: the widening that gives a first layout its room
-(`routing.widening`), and the picture check that reports a channel still too narrow (W384).
+The picture check that reports a channel too narrow for its lines (W384) reads channels here.
 """
 
 from __future__ import annotations

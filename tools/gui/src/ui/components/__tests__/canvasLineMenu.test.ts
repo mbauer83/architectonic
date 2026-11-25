@@ -47,7 +47,7 @@ afterEach(() => {
 })
 
 const mounted = async (refused: readonly string[] = []) => {
-  const session = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
+  const session = useArrangementSession(() => Effect.succeed([]))
   session.open(geometry)
   session.change((_drawn, now) => withRouteStated(now, 'r', {
     from: { side: 'right', at: 0.5 }, to: { side: 'left', at: 0.5 }, via: [[300, 60], [300, 260]],
