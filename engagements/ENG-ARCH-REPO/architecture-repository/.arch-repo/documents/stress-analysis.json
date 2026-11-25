@@ -21,13 +21,10 @@
           "superseded"
         ]
       },
-      "question": {
-        "type": "string"
-      },
       "naive-candidate": {
         "type": "string"
       },
-      "scope-diagram": {
+      "context": {
         "type": "string"
       }
     }

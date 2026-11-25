@@ -6,6 +6,7 @@ applied_upgrade_steps:
 - default-document-types-ensure
 - default-schemata-ensure
 - modification-stamp-datetime
+- stress-analysis-naive-owns-scope
 - viewpoint-selection-mode-stamp
 format_contract_version: '6'
 required_defaults_policy: strict
