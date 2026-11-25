@@ -12,7 +12,7 @@ import { renderMatrixMarkdown } from '../lib/matrixMarkdown'
 import type { C4Navigation } from '../../domain'
 import {
   buildDrilldownByEntityId, c4NavigationOf, diagramNeedsSvg, editRouteFor, editsOnCanvas,
-  editableMetadataByEntityType, isADifferentDiagram, matrixHtmlOf, viewportHint,
+  editableMetadataByEntityType, isADifferentDiagram, matrixHtmlOf, offersAutomaticLayout, viewportHint,
 } from './DiagramDetailView.helpers'
 import { membershipOf } from '../../domain/layout/diagramMembership'
 import DrilldownMenu from '../components/DrilldownMenu.vue'
@@ -24,6 +24,7 @@ import DiagramViewportControls from '../components/DiagramViewportControls.vue'
 import { useDiagramSvgSelection } from '../composables/useDiagramSvgSelection'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import DiagramDetailHeader from '../components/DiagramDetailHeader.vue'
+import DiagramAutoLayoutDialog from '../components/DiagramAutoLayoutDialog.vue'
 import DiagramC4Navigation from '../components/DiagramC4Navigation.vue'
 import CanvasContentEditor from '../components/CanvasContentEditor.vue'
 import DiagramPageSidebar from '../components/DiagramPageSidebar.vue'
@@ -154,6 +155,15 @@ const reader = useDiagramPageReader({
   viewing: computed(() => !editing.value && svgHtml.value !== null),
 })
 
+/** *Lay out automatically…* on a hand-written diagram (A-02.42): once given up, it is offered for editing. */
+const layingOut = ref(false)
+const laidOut = () => {
+  layingOut.value = false
+  load()
+  toast('Laid out automatically. It is arranged on its canvas from now on.', 'info', 10000,
+    { label: 'Edit', run: () => void edit.enter() })
+}
+
 const executeDelete = () => {
   void router.push(isGlobalDiagram.value ? { path: '/diagrams', query: { tier: 'enterprise' } } : '/diagrams')
 }
@@ -188,11 +198,19 @@ const executeDelete = () => {
       :admin-mode="adminMode"
       :lens="lens"
       :edits-on-canvas="editsOnCanvas(detail)"
+      :lays-out-automatically="offersAutomaticLayout(detail)"
       :editing="editing"
       @sync="syncPanel?.requestSync()"
       @delete="deletePanel?.requestDelete()"
       @edit="edit.enter()"
       @done="edit.done()"
+      @lay-out="layingOut = true"
+    />
+    <DiagramAutoLayoutDialog
+      v-if="layingOut && detail"
+      :detail="detail"
+      @close="layingOut = false"
+      @laid-out="laidOut"
     />
 
     <!-- Only while there is nothing to show. A refresh keeps the rendered canvas mounted, because

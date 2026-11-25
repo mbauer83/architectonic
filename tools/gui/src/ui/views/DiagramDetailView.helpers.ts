@@ -163,20 +163,33 @@ export const matrixHtmlOf = (
 }
 
 /** Where "Edit" goes: a matrix is edited in its own view, everything else in the diagram editor. */
+/** What the page reads of a diagram to decide how it is edited. */
+interface EditedDiagram {
+  readonly diagram_type: string
+  readonly is_global: boolean
+  readonly extra?: Readonly<Record<string, unknown>>
+}
+
+/** An ArchiMate diagram of this engagement: one the canvas can arrange, once its body is the generator's. */
+const isOwnArchimate = (detail: EditedDiagram | null): detail is EditedDiagram =>
+  detail !== null && detail.diagram_type.startsWith('archimate') && !detail.is_global
+
+const isWrittenByHand = (detail: EditedDiagram): boolean => detail.extra?.['manual-layout'] === true
+
 /**
  * Whether a diagram is edited on its canvas, on its own page: an ArchiMate diagram drawn from the
  * model (not one whose hand-written body is kept verbatim), in this engagement. Every other diagram
  * keeps its editor's own page until its sprint.
  */
-export const editsOnCanvas = (
-  detail: {
-    readonly diagram_type: string
-    readonly is_global: boolean
-    readonly extra?: Readonly<Record<string, unknown>>
-  } | null,
-): boolean =>
-  detail !== null && detail.diagram_type.startsWith('archimate') && !detail.is_global
-  && detail.extra?.['manual-layout'] !== true
+export const editsOnCanvas = (detail: EditedDiagram | null): boolean =>
+  isOwnArchimate(detail) && !isWrittenByHand(detail)
+
+/**
+ * Whether the page offers to give a diagram's hand-written body up for a generated one, so it can be
+ * arranged on its canvas (A-02.42): the same diagram, but written by hand.
+ */
+export const offersAutomaticLayout = (detail: EditedDiagram | null): boolean =>
+  isOwnArchimate(detail) && isWrittenByHand(detail)
 
 /** What a diagram draws, as its read states it: what removing from it writes back, less the removed. */
 export const editRouteFor = <T>(

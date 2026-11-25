@@ -84,6 +84,8 @@ export interface ElementDetailsEdit {
 }
 
 export type DiagramReplaceBody = DiagramWriteBody & {
+  /** false gives a hand-written body up: generated from the composition from then on, and arrangeable. */
+  manual_layout?: boolean
   layout_patch?: LayoutPatch
   commands?: readonly CanvasCommand[]
 }

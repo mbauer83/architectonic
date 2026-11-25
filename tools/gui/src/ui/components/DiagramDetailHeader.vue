@@ -22,8 +22,10 @@ withDefaults(defineProps<{
   /** Edited on its canvas, on this page, rather than on the editor's own page. */
   editsOnCanvas?: boolean
   editing?: boolean
-}>(), { lens: () => EMPTY_READING_LENS, editsOnCanvas: false, editing: false })
-const emit = defineEmits<{ sync: []; delete: []; edit: []; done: [] }>()
+  /** Written by hand, and may be given up for a generated body arranged on the canvas. */
+  laysOutAutomatically?: boolean
+}>(), { lens: () => EMPTY_READING_LENS, editsOnCanvas: false, editing: false, laysOutAutomatically: false })
+const emit = defineEmits<{ sync: []; delete: []; edit: []; done: []; 'lay-out': [] }>()
 </script>
 
 <template>
@@ -74,6 +76,16 @@ const emit = defineEmits<{ sync: []; delete: []; edit: []; done: [] }>()
       >
         Edit
       </RouterLink>
+      <button
+        v-if="laysOutAutomatically"
+        type="button"
+        class="edit-btn"
+        data-testid="diagram-lay-out"
+        title="Give the hand-written picture up for a generated one, arranged on the canvas"
+        @click="emit('lay-out')"
+      >
+        Lay out automatically…
+      </button>
       <button
         v-if="!isGlobalDiagram"
         class="sync-btn"
