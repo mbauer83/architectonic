@@ -12,6 +12,7 @@ from src.application.change_sets.candidate_architecture import (
     CandidateArchitecture,
     MalformedCandidateArchitecture,
     refused_transition,
+    refused_while_targeted,
 )
 from src.application.change_sets.candidate_recorded_form import dump_candidate, load_candidate, to_mapping
 from src.application.change_sets.ordering import application_order
@@ -120,7 +121,10 @@ class CandidateArchitectureStore:
                 raise CandidateConflict("A terminal candidate is immutable. Create a new candidate.")
             if refusal := refused_transition(old.state if old else None, candidate.state, applied=applied):
                 raise CandidateConflict(refusal)
-            if old and old.state == "candidate" and old.changes != candidate.changes:
+            if refusal := refused_while_targeted(old, candidate, applied=applied):
+                raise CandidateConflict(refusal)
+            # A candidate in the model as a target state is re-based while offered: its rule is the one above.
+            if old and old.state == "candidate" and not old.target_state and old.changes != candidate.changes:
                 raise CandidateConflict("Return the candidate to draft before changing its operations.")
             stack = stack_of(candidate, self.find)
             application_order(candidate.changes, beneath=sets_beneath(stack))

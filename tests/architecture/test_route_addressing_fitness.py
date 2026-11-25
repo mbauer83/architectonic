@@ -42,6 +42,8 @@ _ACTION_SEGMENTS: dict[str, frozenset[str]] = {
     "allocate": frozenset({"POST"}),
     # Writes a candidate's operations onto the model in one transaction.
     "apply": frozenset({"POST"}),
+    # Writes a candidate into the model as a target state beside the baseline, which it leaves as it is.
+    "apply-as-target-state": frozenset({"POST"}),
     "archive": frozenset({"POST"}),
     # Applies layout intents (align, distribute, straighten, return to automatic) to a diagram.
     "arrange": frozenset({"POST"}),
@@ -56,6 +58,8 @@ _ACTION_SEGMENTS: dict[str, frozenset[str]] = {
     "export-csv": frozenset({"POST"}),
     "export-render": frozenset({"POST"}),
     "model-this": frozenset({"POST"}),
+    # Applies a candidate's kept operations to the originals and takes its target state away.
+    "move-into-baseline": frozenset({"POST"}),
     "plan": frozenset({"POST"}),
     # Writes a candidate's drifted operations again against the model as it stands now.
     "rebase": frozenset({"POST"}),

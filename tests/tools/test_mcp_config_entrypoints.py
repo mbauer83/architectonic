@@ -260,6 +260,10 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "change_set_rebase": (False, True, False, False),
         # Writes the candidate's operations, removals among them, onto the model.
         "change_set_apply": (False, True, False, False),
+        # Creates the target state beside the baseline; the originals and the candidate's operations stay.
+        "change_set_apply_as_target_state": (False, False, False, False),
+        # Applies the kept operations to the originals and removes the copies, the plateaus and the gap.
+        "change_set_move_into_baseline": (False, True, False, False),
         "change_set_delete": (False, True, False, False),
         # Creates a diagram and names it on the candidate, which named none.
         "change_set_save_diagram": (False, False, False, False),

@@ -1366,6 +1366,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/change-sets/{artifact_id}/apply-as-target-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Write a candidate into the model as a target state beside the baseline
+         * @description An added element as a draft, a changed one as "‹name› (target)" with its relations and a trace to the
+         *     original, a Baseline and a Target plateau with a «gap» between them, in one write; the candidate's
+         *     operations are kept unapplied to the originals. Refused with 409 as a direct apply is, and while its
+         *     target state is already in the model. A dry run answers what would be written.
+         */
+        post: operations["changes_apply_candidate_as_target_state"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/change-sets/{artifact_id}/diff": {
         parameters: {
             query?: never;
@@ -1377,6 +1400,28 @@ export interface paths {
         get: operations["changes_compare_candidate"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/change-sets/{artifact_id}/move-into-baseline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a candidate's target state into the baseline
+         * @description The kept operations applied to the originals, the copies' relations moved back, the copies, plateaus
+         *     and gap removed, and the added elements made active — one generated list, refused with 409 while an
+         *     operation conflicts or has drifted. On success the candidate is integrated.
+         */
+        post: operations["changes_move_candidate_into_baseline"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6501,6 +6546,41 @@ export interface components {
             candidates: components["schemas"]["CandidateSummary"][];
         };
         /**
+         * CandidateMove
+         * @description What moving a target state into the baseline writes, or why it would not.
+         */
+        CandidateMove: {
+            /** Candidate */
+            candidate: string;
+            /** Dry Run */
+            dry_run: boolean;
+            /**
+             * Integrated
+             * @description Whether the move was written and the candidate integrated.
+             */
+            integrated: boolean;
+            /**
+             * Operation Id
+             * @description The write's operation, when one ran.
+             */
+            operation_id?: string;
+            /**
+             * Operations
+             * @description The generated operations.
+             */
+            operations?: components["schemas"]["Fields"][];
+            /**
+             * Refusal
+             * @description Why the move is refused, in the refusing rule's words.
+             */
+            refusal?: string;
+            /**
+             * Standing
+             * @description Each generated operation's standing.
+             */
+            standing: components["schemas"]["OperationStanding"][];
+        };
+        /**
          * CandidateOperations
          * @description Edits to record among a candidate's operations, in order, as one write; the server reads each base.
          */
@@ -6621,6 +6701,48 @@ export interface components {
             scope: string[];
             /** State */
             state: string;
+        };
+        /**
+         * CandidateTargetStateApplication
+         * @description What applying a candidate as a target state writes beside the baseline, or why it would not.
+         */
+        CandidateTargetStateApplication: {
+            /**
+             * Applied
+             * @description Whether the target state was written and recorded on the candidate.
+             */
+            applied: boolean;
+            /** Candidate */
+            candidate: string;
+            /** Dry Run */
+            dry_run: boolean;
+            /**
+             * Operation Id
+             * @description The write's operation, when one ran.
+             */
+            operation_id?: string;
+            /**
+             * Operations
+             * @description The generated operations, as written.
+             */
+            operations?: components["schemas"]["Fields"][];
+            /**
+             * Refusal
+             * @description Why the candidate cannot be applied, in the refusing rule's words.
+             */
+            refusal?: string;
+            /**
+             * Standing
+             * @description Each of the candidate's own operations' standing.
+             */
+            standing: components["schemas"]["OperationStanding"][];
+            /** @description Where it stands, or would, once written. */
+            target_state?: components["schemas"]["TargetStateIds"];
+            /**
+             * Unheld
+             * @description Types of elements a plateau may not aggregate, left unheld.
+             */
+            unheld?: string[];
         };
         CanvasCommand: components["schemas"]["CreateElement"] | components["schemas"]["RenameElement"] | components["schemas"]["EditElement"] | components["schemas"]["DeleteElement"] | components["schemas"]["ConnectElements"];
         /** ChangedField */
@@ -14798,6 +14920,41 @@ export interface components {
             target_types: string[];
         };
         /**
+         * TargetStateIds
+         * @description Where a candidate applied as a target state stands in the model, by the ids the application wrote.
+         */
+        TargetStateIds: {
+            /**
+             * Added
+             * @description Each element the candidate adds, by its alias, to its id.
+             */
+            added: {
+                [key: string]: string;
+            };
+            /**
+             * Baseline
+             * @description The Baseline plateau.
+             */
+            baseline: string;
+            /**
+             * Copies
+             * @description Each changed element's id, to its "(target)" copy's.
+             */
+            copies: {
+                [key: string]: string;
+            };
+            /**
+             * Gap
+             * @description The «gap» assessment associated with both plateaus.
+             */
+            gap: string;
+            /**
+             * Target
+             * @description The Target plateau.
+             */
+            target: string;
+        };
+        /**
          * TaxonomyDomainResponse
          * @description One domain and the types found in it.
          *
@@ -19837,6 +19994,95 @@ export interface operations {
             };
         };
     };
+    changes_apply_candidate_as_target_state: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateApply"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateTargetStateApplication"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     changes_compare_candidate: {
         parameters: {
             query?: {
@@ -19875,6 +20121,95 @@ export interface operations {
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_move_candidate_into_baseline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateApply"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateMove"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -117,8 +117,11 @@ def rebase(
                if item.standing == "drifted"]
     if not drifted:
         return candidate
-    now = rebased(candidate, drifted, compose(ChangeSet((), revision), live, beneath=beneath))
-    return replace(now, changes=ChangeSet(now.changes.operations, revision))
+    # Recorded as a draft records, whatever state the candidate is in: which candidates may be re-based is the
+    # caller's to decide (a draft, or one held by its target state), and the state is kept.
+    drafted = replace(candidate, state="draft")
+    now = rebased(drafted, drifted, compose(ChangeSet((), revision), live, beneath=beneath))
+    return replace(now, state=candidate.state, changes=ChangeSet(now.changes.operations, revision))
 
 
 def standing_report(

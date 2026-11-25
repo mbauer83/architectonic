@@ -100,6 +100,11 @@ def _refusal(
 ) -> str | None:
     if candidate.state in TERMINAL:
         return f"{candidate.id} is {candidate.state}, so it is not applied again. Start a new candidate."
+    if candidate.target_state is not None:
+        return (
+            f"{candidate.id} is in the model as a target state, so it is applied by moving that into the "
+            "baseline (change_set_move_into_baseline)."
+        )
     pending = [layer.id for layer in stack[:-1] if layer.state != INTEGRATED]
     if pending:
         return (

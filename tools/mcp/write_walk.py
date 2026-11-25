@@ -609,6 +609,18 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         mutates=False,
     ),
     WriteCall(
+        # Dry runs, as the direct apply's is: the target state and the move are the infrastructure tests'.
+        "change_set_apply_as_target_state",
+        lambda c: {"artifact_id": c.created["candidate"], "dry_run": True},
+        mutates=False,
+    ),
+    WriteCall(
+        # Not in the model as a target state, so the dry run answers why there is nothing to move.
+        "change_set_move_into_baseline",
+        lambda c: {"artifact_id": c.created["candidate"], "dry_run": True},
+        mutates=False,
+    ),
+    WriteCall(
         "analysis_start",
         lambda _c: {"title": "MCP Walk Stress Analysis", "naive": {"name": "Walk naive architecture"}},
         captures=(
