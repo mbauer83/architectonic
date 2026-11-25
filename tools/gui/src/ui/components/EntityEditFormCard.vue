@@ -58,7 +58,10 @@ const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode
         rows="3"
       />
     </div>
-    <EntityHomeSelect v-model="edit.editHome" />
+    <!-- The home selector labels itself; in this form its label reads as every other one does. -->
+    <div class="form-row form-row--home">
+      <EntityHomeSelect v-model="edit.editHome" />
+    </div>
 
     <div class="form-row">
       <label class="form-label">Keywords <span class="form-hint">(comma-separated)</span></label>
@@ -263,6 +266,7 @@ const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode
 .form-row { margin-bottom: 14px; }
 .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
 .form-hint { font-weight: 400; text-transform: none; color: var(--faint); }
+.form-row--home :deep(.home-field__label) { text-transform: uppercase; letter-spacing: .04em; }
 .field-tools { display: flex; justify-content: flex-end; margin-bottom: 6px; }
 .insert-ref-btn {
   padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-strong);
