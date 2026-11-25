@@ -35,7 +35,7 @@ did not.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 
@@ -246,6 +246,7 @@ def apply_reading_lens(
     palette: Sequence[str] = (),
     unset: str | None = None,
     environment: EvaluationEnvironment | None = None,
+    wrapped: Callable[[str, tuple[str, ...]], tuple[str, ...]] | None = None,
 ) -> str:
     """*puml_body* with the reader's colouring and printing applied to the elements it declares.
 
@@ -258,6 +259,9 @@ def apply_reading_lens(
     it. A line whose alias belongs to no drawn entity — a grouping, a junction, a note — is returned
     untouched, which is the honest answer: the lens colours by an attribute, and those elements have
     none.
+
+    *wrapped* breaks an element's printed lines where its caller knows they are too wide, given the
+    alias and the lines; this module measures nothing, so where a line breaks is the caller's answer.
 
     **A body in, a body out.** This returned a record carrying the legends, the styled and unstyled
     counts, and the attributes that said nothing — seven fields of which the route read one. Nobody
@@ -321,7 +325,7 @@ def apply_reading_lens(
         for entity in entities:
             lines = _printed_lines(entity, lens.printed, environment=env)
             if lines and entity.display_alias:
-                labels[entity.display_alias] = lines
+                labels[entity.display_alias] = wrapped(entity.display_alias, lines) if wrapped else lines
 
     # The colour an element takes when the attribute says nothing about it and the reader asked for
     # its kind colouring to go. The *same* colour the unset member takes, resolved through the same
