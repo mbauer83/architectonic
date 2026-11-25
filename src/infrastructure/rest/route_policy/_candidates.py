@@ -20,6 +20,9 @@ CANDIDATE_ROWS = (
     RouteRow("POST", "/api/change-sets/{artifact_id}/move-into-baseline", "operation",
              "changes_move_candidate_into_baseline", TYPED,
              identity_parameters=("artifact_id",), mutation_domain="repository"),
+    RouteRow("POST", "/api/change-sets/{artifact_id}/withdraw-target-state", "operation",
+             "changes_withdraw_candidate_target_state", TYPED,
+             identity_parameters=("artifact_id",), mutation_domain="repository"),
     # The diagram create renders the view with PlantUML, hence `derived-graph`.
     RouteRow("POST", "/api/change-sets/{artifact_id}/save-as-diagram", "operation", "changes_save_candidate_diagram",
              TYPED, identity_parameters=("artifact_id",), mutation_domain="repository", timeout_class="derived-graph"),

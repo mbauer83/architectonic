@@ -621,6 +621,12 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         mutates=False,
     ),
     WriteCall(
+        # Not in the model as a target state, so the dry run answers why there is nothing to withdraw.
+        "change_set_withdraw_target_state",
+        lambda c: {"artifact_id": c.created["candidate"], "dry_run": True},
+        mutates=False,
+    ),
+    WriteCall(
         "analysis_start",
         lambda _c: {"title": "MCP Walk Stress Analysis", "naive": {"name": "Walk naive architecture"}},
         captures=(

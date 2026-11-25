@@ -64,6 +64,8 @@ _ACTION_SEGMENTS: dict[str, frozenset[str]] = {
     # Writes a candidate's drifted operations again against the model as it stands now.
     "rebase": frozenset({"POST"}),
     "preview": frozenset({"POST"}),
+    # Takes a candidate's target state out of the model, leaving the baseline as it was.
+    "withdraw-target-state": frozenset({"POST"}),
     "reload": frozenset({"POST"}),
     "rename": frozenset({"POST"}),
     "replace": frozenset({"POST"}),

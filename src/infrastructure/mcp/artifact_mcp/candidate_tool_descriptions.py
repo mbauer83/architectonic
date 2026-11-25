@@ -102,6 +102,15 @@ CHANGE_SET_MOVE_INTO_BASELINE = (
     "true) answers the generated operations and their standing."
 )
 
+CHANGE_SET_WITHDRAW_TARGET_STATE = (
+    "Withdraw a candidate's target state instead of moving it into the baseline: the \"(target)\" copies with "
+    "their relations and traces, the elements it added, the plateaus and the gap are removed as one generated "
+    "operation list, and the candidate is a draft again (apply it, re-apply it as a target state, reject or "
+    "delete it). Refused while something written since refers to one of those elements: a relation the target "
+    "state did not write, or a diagram drawing one; the refusal names each. dry_run (default true) answers the "
+    "removals and the refusal."
+)
+
 CHANGE_SET_INTEGRATE = (
     "Integrate two or more drafts or offered candidates that stack on the same one into a new draft holding "
     "every operation of each, converging ones once. Each conflict between them (as change_set_check reports "

@@ -1526,6 +1526,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/change-sets/{artifact_id}/withdraw-target-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw a candidate's target state from the model, leaving the baseline as it was
+         * @description The copies with their relations and traces, the added elements, the plateaus and the gap removed as one
+         *     generated list; the candidate is then a draft again, to be applied, re-applied, rejected or deleted. Refused
+         *     with 409 while something written since refers to one of them: a relation the target state did not write, or a
+         *     diagram drawing one, each named. A dry run answers the removals and the refusal.
+         */
+        post: operations["changes_withdraw_candidate_target_state"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/changes": {
         parameters: {
             query?: never;
@@ -6743,6 +6766,37 @@ export interface components {
              * @description Types of elements a plateau may not aggregate, left unheld.
              */
             unheld?: string[];
+        };
+        /**
+         * CandidateWithdrawal
+         * @description What withdrawing a target state removes from the model, or why it would not.
+         */
+        CandidateWithdrawal: {
+            /** Candidate */
+            candidate: string;
+            /** Dry Run */
+            dry_run: boolean;
+            /**
+             * Operation Id
+             * @description The write's operation, when one ran.
+             */
+            operation_id?: string;
+            /**
+             * Operations
+             * @description The generated removals.
+             */
+            operations?: components["schemas"]["Fields"][];
+            /**
+             * Refusal
+             * @description Why the withdrawal is refused: what was written since that refers to the target state.
+             */
+            refusal?: string;
+            /**
+             * Released
+             * @description Whether the target state was taken out and the candidate released as a draft.
+             * @default false
+             */
+            released: boolean;
         };
         CanvasCommand: components["schemas"]["CreateElement"] | components["schemas"]["RenameElement"] | components["schemas"]["EditElement"] | components["schemas"]["DeleteElement"] | components["schemas"]["ConnectElements"];
         /** ChangedField */
@@ -20579,6 +20633,95 @@ export interface operations {
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_withdraw_candidate_target_state: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateApply"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateWithdrawal"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };

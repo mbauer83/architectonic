@@ -264,6 +264,8 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "change_set_apply_as_target_state": (False, False, False, False),
         # Applies the kept operations to the originals and removes the copies, the plateaus and the gap.
         "change_set_move_into_baseline": (False, True, False, False),
+        # Removes the copies, the added elements, the plateaus and the gap again.
+        "change_set_withdraw_target_state": (False, True, False, False),
         "change_set_delete": (False, True, False, False),
         # Creates a diagram and names it on the candidate, which named none.
         "change_set_save_diagram": (False, False, False, False),

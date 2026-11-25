@@ -8,8 +8,17 @@ from typing import Any
 
 from fastapi import APIRouter
 
-from src.infrastructure.candidates.target_state import apply_as_target_state, move_target_into_baseline
-from src.infrastructure.rest.contracts.candidates import CandidateApply, CandidateMove, CandidateTargetStateApplication
+from src.infrastructure.candidates.target_state import (
+    apply_as_target_state,
+    move_target_into_baseline,
+    withdraw_target_state,
+)
+from src.infrastructure.rest.contracts.candidates import (
+    CandidateApply,
+    CandidateMove,
+    CandidateTargetStateApplication,
+    CandidateWithdrawal,
+)
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._candidate_access import refusals, service
 from src.infrastructure.rest.routers._openapi import TAG_CHANGES, WRITE_RESPONSES
@@ -56,5 +65,27 @@ def changes_move_candidate_into_baseline(artifact_id: str, body: CandidateApply)
     with refusals():
         return s.authorized_write(
             "changes_move_candidate_into_baseline", move_target_into_baseline, service(), artifact_id,
+            dry_run=body.dry_run,
+        )
+
+
+@router.post(
+    "/api/change-sets/{artifact_id}/withdraw-target-state",
+    operation_id="changes_withdraw_candidate_target_state",
+    tags=[TAG_CHANGES],
+    summary="Withdraw a candidate's target state from the model, leaving the baseline as it was",
+    response_model=CandidateWithdrawal,
+    response_model_exclude_none=True,
+    responses=WRITE_RESPONSES,
+)
+def changes_withdraw_candidate_target_state(artifact_id: str, body: CandidateApply) -> dict[str, Any]:
+    """The copies with their relations and traces, the added elements, the plateaus and the gap removed as one
+    generated list; the candidate is then a draft again, to be applied, re-applied, rejected or deleted. Refused
+    with 409 while something written since refers to one of them: a relation the target state did not write, or a
+    diagram drawing one, each named. A dry run answers the removals and the refusal.
+    """
+    with refusals():
+        return s.authorized_write(
+            "changes_withdraw_candidate_target_state", withdraw_target_state, service(), artifact_id,
             dry_run=body.dry_run,
         )

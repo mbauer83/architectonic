@@ -283,6 +283,21 @@ class CandidateMove(NullsOmitted):
     operations: list[Fields] = Field(default_factory=list, description="The generated operations.")
 
 
+class CandidateWithdrawal(NullsOmitted):
+    """What withdrawing a target state removes from the model, or why it would not."""
+
+    candidate: str
+    dry_run: bool
+    released: bool = Field(
+        False, description="Whether the target state was taken out and the candidate released as a draft.",
+    )
+    refusal: str | None = Field(
+        None, description="Why the withdrawal is refused: what was written since that refers to the target state.",
+    )
+    operation_id: str | None = Field(None, description="The write's operation, when one ran.")
+    operations: list[Fields] = Field(default_factory=list, description="The generated removals.")
+
+
 class CandidateDiagramSave(Closed):
     """Store the view a candidate drawn on no stored diagram is generated as, and draw the candidate on it."""
 
