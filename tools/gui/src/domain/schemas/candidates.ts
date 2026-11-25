@@ -112,8 +112,7 @@ export const CandidateDiagramSavedSchema = Schema.Struct({
 export type CandidateDiagramSaved = typeof CandidateDiagramSavedSchema.Type
 
 /** What may be done about a conflict between candidates being integrated. */
-export const ResolutionActionSchema = Schema.Literal('take', 'drop', 'merge')
-export type ResolutionAction = typeof ResolutionActionSchema.Type
+export type ResolutionAction = 'take' | 'drop' | 'merge'
 
 /** One conflict settled: by kind and subject as the integration answered it, and the action taken. */
 export interface Resolution {

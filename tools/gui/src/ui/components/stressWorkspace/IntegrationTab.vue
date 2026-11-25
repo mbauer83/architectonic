@@ -182,7 +182,9 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
           type="submit"
           class="btn btn-sm"
           :disabled="integration.busy.value || !merged[conflict.subject]"
-        >Use this value</button>
+        >
+          Use this value
+        </button>
       </form>
       <p class="decide">
         <RouterLink
@@ -195,7 +197,9 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
           class="btn btn-sm"
           data-testid="raise-decision"
           @click="raise(conflict)"
-        >Raise a decision…</button>
+        >
+          Raise a decision…
+        </button>
         <small>A draft ADR with each side as an option; the conflict stays until it is settled here.</small>
       </p>
     </section>
