@@ -63,6 +63,8 @@ def lensed_body(
     catalogs: RuntimeCatalogs,
     repo_root: Path,
     wrapped: Callable[[str, tuple[str, ...]], tuple[str, ...]] | None = None,
+    *,
+    authored: str | None = None,
 ) -> str:
     """The diagram's body with the lens applied, or its authored body when the lens is empty.
 
@@ -75,6 +77,8 @@ def lensed_body(
     dependency the attribute panel takes, which is what lets a test override them and what
     `test_runtime_catalogs_have_one_accessor` requires of a router. It caught this module reading them
     directly.
+
+    *authored* is a body to read instead of the stored one: an editor's unsaved composition of the diagram.
     """
     from src.application.viewpoints.diagram_attribute_panel import (  # noqa: PLC0415
         offers_for_diagram,
@@ -93,7 +97,7 @@ def lensed_body(
     from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file  # noqa: PLC0415
 
-    body = parse_diagram_file(diagram_path).puml_body
+    body = parse_diagram_file(diagram_path).puml_body if authored is None else authored
     if lens.is_empty:
         return body
     repo = s.get_repo()

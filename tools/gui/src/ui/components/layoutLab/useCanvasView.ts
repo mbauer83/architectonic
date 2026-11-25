@@ -12,7 +12,11 @@ import { useElementSize } from '../../composables/useElementSize'
 /** Room round the drawing, so a shape dragged out of it stays in reach. */
 const MARGIN = 40
 
-export function useCanvasView(session: ArrangementSession, svg: Ref<SVGSVGElement | null>, dragging: Ref<boolean>) {
+export function useCanvasView(
+  session: ArrangementSession, svg: Ref<SVGSVGElement | null>, dragging: Ref<boolean>,
+  /** Further parts drawn round the picture — its title, its legend — which the view takes in too. */
+  around: () => readonly Extent[] = () => [],
+) {
   const geometry = computed(() => session.geometry.value)
 
   /** What is drawn now, shapes and lines: the view fits it, not PlantUML's page as such. */
@@ -20,7 +24,7 @@ export function useCanvasView(session: ArrangementSession, svg: Ref<SVGSVGElemen
     const where = session.placement.value
     if (!where) return null
     const lines = extentAround([...session.courses.value.values()].flat())
-    const all = [...where.elements.values(), ...where.boxes.values(), ...(lines ? [lines] : [])]
+    const all = [...where.elements.values(), ...where.boxes.values(), ...(lines ? [lines] : []), ...around()]
     if (all.length === 0) return null
     const drawn = unionOf(all)
     return {

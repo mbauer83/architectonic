@@ -4,10 +4,11 @@ import {
   DiagramLayoutGeometrySchema, DiagramLayoutPatchResultSchema, ShapeDrawingsSchema,
 } from '../../domain/schemas/diagramLayoutGeometry'
 import { encodeIdentitySegment } from '../../domain/identitySegments'
+import { lensParams } from '../../domain/readingLens'
 import { buildUrl, fetchJson, patchJson, postJson } from './httpTransport'
 
-const layoutUrl = (diagramId: string, part = ''): string =>
-  buildUrl(`/diagrams/${encodeIdentitySegment(diagramId)}/layout${part}`)
+const layoutUrl = (diagramId: string, part = '', params?: Parameters<typeof buildUrl>[1]): string =>
+  buildUrl(`/diagrams/${encodeIdentitySegment(diagramId)}/layout${part}`, params)
 
 /** The arranging half of the HTTP adapter, over a diagram's layout routes. */
 export const diagramLayoutMethods = (): DiagramLayoutRepository => ({
@@ -15,9 +16,10 @@ export const diagramLayoutMethods = (): DiagramLayoutRepository => ({
     buildUrl(`/diagram-types/${encodeURIComponent(diagramType)}/entity-types`),
     Schema.Struct({items: Schema.Array(Schema.Struct({artifact_type: Schema.String, domain: Schema.String}))}),
   ).pipe(Effect.map(response => response.items)),
-  previewLayoutGeometry: (diagramId, body) =>
-    postJson(layoutUrl(diagramId, '/geometry/preview'), body, DiagramLayoutGeometrySchema),
-  readLayoutGeometry: (diagramId) => fetchJson(layoutUrl(diagramId, '/geometry'), DiagramLayoutGeometrySchema),
+  previewLayoutGeometry: (diagramId, body, lens) =>
+    postJson(layoutUrl(diagramId, '/geometry/preview', lens && lensParams(lens)), body, DiagramLayoutGeometrySchema),
+  readLayoutGeometry: (diagramId, lens) =>
+    fetchJson(layoutUrl(diagramId, '/geometry', lens && lensParams(lens)), DiagramLayoutGeometrySchema),
   drawResizedShapes: (diagramId, shapes) =>
     postJson(layoutUrl(diagramId, '/preview'), { shapes }, ShapeDrawingsSchema).pipe(
       Effect.map((answer) => answer.drawings),

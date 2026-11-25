@@ -79,7 +79,9 @@ def _diagram_extent_now(drawing: RenderedDrawing, arrangement: Arrangement) -> E
 
 
 def _carried_with(part: Extent, was: Extent, now: Extent) -> Motion:
-    """How something drawn around the diagram moves with it: it keeps to the side or the middle it was at."""
+    """How something drawn around the diagram moves with it: it keeps to the side or the middle it was at.
+
+    The editor's canvas carries the title and the legend by the same rule (`labSurround.ts`, `carriedBy`)."""
     if part.centre.x < was.left:
         dx = now.left - was.left
     elif part.centre.x > was.right:

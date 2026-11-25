@@ -2,7 +2,7 @@
  * The diagram page's window and edit canvas by pointer aids and by keyboard (sketch 01·1–01·3, 02·1, 02·9;
  * Q7, Q8): the zoom cluster and its keys, no double-click reset, E to edit, alignment guides while a shape
  * is dragged and gone after the drop, Tab through the shapes with a focus ring, the leave choice walked
- * by the arrows.
+ * by the arrows, and the reader's legend and title kept on the edit canvas (owner, 2026-11-25).
  *
  * Nothing here saves: every edit is left by Discard and exit.
  */
@@ -85,4 +85,15 @@ test('Enter goes in, Tab walks the shapes with a ring, and the leave choice foll
   await page.keyboard.press('ArrowLeft')
   await expect(page.getByTestId('keep-editing')).toBeFocused()
   await page.getByTestId('discard-and-exit').click()
+})
+
+test('the legend and the title the reader sees stay on the edit canvas', async ({ page }) => {
+  await open(page)
+  await page.getByRole('button', { name: /Display options/ }).click()
+  await page.getByLabel('Explain the notation, in the image').check()
+  await page.getByTestId('diagram-edit').click()
+  await editing(page)
+  const around = page.getByTestId('canvas-surround')
+  await expect(around).toHaveCount(2)
+  await expect(around.locator('text').filter({ hasText: 'element kinds' }).first()).toBeAttached()
 })

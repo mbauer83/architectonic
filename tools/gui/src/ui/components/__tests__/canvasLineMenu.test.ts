@@ -24,6 +24,7 @@ const element = (alias: string, extent: Extent) => ({
 })
 const geometry: LayoutGeometry = {
   artifact_id: 'ARC@1.a.test', name: 'Test', canvas: at(0, 0, 700, 500), backdrop: [],
+  surround: [],
   elements: [element('A', at(20, 40, 120, 80)), element('C', at(400, 240, 500, 280))],
   boxes: [],
   relations: [{

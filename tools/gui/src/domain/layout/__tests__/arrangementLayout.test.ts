@@ -26,6 +26,7 @@ const geometry: LayoutGeometry = {
   name: 'Test',
   canvas: at(0, 0, 600, 400),
   backdrop: [],
+  surround: [],
   elements: [
     element('A', 'APP@1.a', at(20, 40, 120, 80), 'G'),
     element('B', 'APP@2.b', at(140, 40, 240, 80), 'G'),

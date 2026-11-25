@@ -21,6 +21,10 @@ import LabBreachMarks from './LabBreachMarks.vue'
 import LabSelection from './LabSelection.vue'
 import LabLineHandles from './LabLineHandles.vue'
 import LabGuides from './LabGuides.vue'
+import { type CarriedPart, carriedSurround, occupiedBy } from '../../../domain/layout/lab/labSurround'
+import { pointsOf } from '../../../domain/schemas/diagramLayoutGeometry'
+import { drawnArrangement } from '../../../domain/layout/lab/labArrangement'
+import { type Placement, placementOf } from '../../../domain/layout/lab/labRouting'
 import { useCanvasFocus } from './useCanvasFocus'
 import { useCanvasView } from './useCanvasView'
 import { useLabGesture } from './useLabGesture'
@@ -40,7 +44,18 @@ const focus = useCanvasFocus(props.session, gesture)
 
 const geometry = computed(() => props.session.geometry.value)
 const placement = computed(() => props.session.placement.value)
-const { viewBox, pixel, aspect, backdropTransform } = useCanvasView(props.session, svg, gesture.dragging)
+/** The title and the legend, carried with the diagram as it is arranged (`labSurround`). */
+const surround = computed((): CarriedPart[] => {
+  const drawn = geometry.value
+  const where = placement.value
+  if (!drawn || !where) return []
+  const shapes = (at: Placement) => [...at.elements.values(), ...at.boxes.values()]
+  const was = occupiedBy(shapes(placementOf(drawn, drawnArrangement(drawn))),
+    drawn.relations.map((relation) => pointsOf(relation.course)))
+  return carriedSurround(drawn.surround, was, occupiedBy(shapes(where), [...props.session.courses.value.values()]))
+})
+const { viewBox, pixel, aspect, backdropTransform } = useCanvasView(
+  props.session, svg, gesture.dragging, () => surround.value.map((part) => part.extent))
 
 /** A handle is the same size on screen however far the picture is zoomed out to fit. */
 const HANDLE_PIXELS = 9
@@ -155,6 +170,14 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
         class="lab-backdrop"
         :nodes="geometry.backdrop"
         :transform="backdropTransform"
+      />
+      <LabDrawn
+        v-for="(around, index) in surround"
+        :key="`surround-${index}`"
+        class="lab-surround"
+        data-testid="canvas-surround"
+        :nodes="[around.part.drawing]"
+        :transform="`translate(${around.by.x} ${around.by.y})`"
       />
 
       <template
@@ -281,7 +304,9 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
 .lab-canvas { display: block; width: 100%; height: auto; max-height: 85vh; }
 /* The picture is the canvas: no frame of its own, which is the page's to draw for its mode. */
 .lab-canvas { touch-action: none; user-select: none; }
-.lab-backdrop, .lab-line, .lab-line-label, .lab-box :deep(g), .lab-element :deep(g) { pointer-events: none; }
+.lab-backdrop, .lab-surround, .lab-line, .lab-line-label, .lab-box :deep(g), .lab-element :deep(g) {
+  pointer-events: none;
+}
 /* A line is pressed along a band wider than its stroke; a label is moved by its text. */
 .lab-line-hit { fill: none; stroke: transparent; stroke-width: 10px; pointer-events: stroke; cursor: pointer; }
 .lab-line-hit { vector-effect: non-scaling-stroke; }

@@ -163,3 +163,20 @@ def lens_from_query(
         legend=legend,
         element_kind_colouring=_element_kind_colouring(element_kind_colouring),
     )
+
+
+def reading_lens(
+    colour_by: ColourBy = "",
+    printed: Printed = [],  # noqa: B006
+    ramp: Ramp = "",
+    key: Key = [],  # noqa: B006
+    legend: Legend = False,
+    gradient: Gradient = "",
+    element_kind_colouring: ElementKindColouringParameter = "keep",
+) -> ReadingLens:
+    """The reader's lens as a route takes it: the same parameters, as one dependency.
+
+    For the routes that draw a picture to be arranged (`_layout`), so an editor arranges what the reader
+    was reading — the printed attributes, the colouring and the legend — under the declaration above.
+    """
+    return lens_from_query(colour_by, printed, ramp, key, legend, gradient, element_kind_colouring)

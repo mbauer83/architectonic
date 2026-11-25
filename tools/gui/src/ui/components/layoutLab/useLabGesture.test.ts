@@ -24,6 +24,7 @@ const geometry: LayoutGeometry = {
   name: 'Test',
   canvas: at(0, 0, 600, 400),
   backdrop: [],
+  surround: [],
   elements: [
     { alias: 'A', key: 'APP@1.a', label: 'A', extent: at(20, 40, 120, 80), inside: 'G', words: [], outside_label: undefined, drawing: SHAPE_DRAWING },
     { alias: 'B', key: 'APP@2.b', label: 'B', extent: at(140, 40, 240, 80), inside: 'G', words: [], outside_label: undefined, drawing: SHAPE_DRAWING },
