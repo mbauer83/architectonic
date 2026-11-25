@@ -4,9 +4,10 @@
  *
  * Lines are PlantUML's own while the picture is arranged automatically. Arranged by hand, a line stays
  * PlantUML's until something that moved touches it, and only those lines are the router's (`fullPass`,
- * the rule the composer draws a stored layout by): taking a picture over routes nothing. From then on a line keeps the course it was shown with until something moves it: each drag frame, and
- * each change, runs the quick pass over the lines of what moved and the lines whose stated route
- * changed, keeping the rest wherever they still go through nothing. A drop keeps the picture the drag
+ * the rule the composer draws a stored layout by): taking a picture over routes nothing. From then on
+ * a line keeps the course it was shown with until something moves it: each drag frame, and each
+ * change, runs the quick pass over the lines touching what moved and the lines whose stated route
+ * changed, keeping the rest as they were shown (`routing/kept`). A drop keeps the picture the drag
  * showed — the last frame, routed at once if it was still pending — and undo and redo return to the
  * picture each state was shown with. A resized shape is drawn again by the composer (`drawShapes`),
  * one request at a time.

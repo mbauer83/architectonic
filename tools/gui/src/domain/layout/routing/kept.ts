@@ -89,7 +89,9 @@ export const attached = (course: readonly Point[], first: Extent, last: Extent):
   ]
 
 /** The keys of *lines*, shown over *before*, that nothing moved in *now* touches. */
-export const keptLines = (before: RoutingScene, now: RoutingScene, lines: readonly ShownLine[]): ReadonlySet<string> => {
+export const keptLines = (
+  before: RoutingScene, now: RoutingScene, lines: readonly ShownLine[],
+): ReadonlySet<string> => {
   const elements = movedIn(before.elements, now.elements)
   const boxes = movedIn(before.boxes, now.boxes)
   const text = [...movedIn(before.text, now.text).values()]
@@ -102,8 +104,10 @@ export const keptLines = (before: RoutingScene, now: RoutingScene, lines: readon
     const own = (key: string) => key === line.source || key === line.target
     const ends = [extentOf(now, line.source), extentOf(now, line.target)]
     const regions: Moved[] = [
-      ...[...elements].filter(([key]) => !own(key)).map(([, [was, extent]]) => [was, grownOutward(extent, BUFFER)] as const),
-      ...[...boxes].filter(([key, [, box]]) => !own(key) && !ends.some((end) => encloses(box, end))).map(([, one]) => one),
+      ...[...elements].filter(([key]) => !own(key))
+        .map(([, [was, extent]]) => [was, grownOutward(extent, BUFFER)] as const),
+      ...[...boxes].filter(([key, [, box]]) => !own(key) && !ends.some((end) => encloses(box, end)))
+        .map(([, one]) => one),
       ...text,
     ]
     return regions.some(([was, region]) => runsThrough(line.course, region) && !runsThrough(line.course, was))
