@@ -161,6 +161,27 @@ def test_commit_proceeds_and_carries_forward_an_uncommitted_edit_to_a_touched_fi
     assert "legacy.txt" in capsys.readouterr().out
 
 
+def test_commit_on_a_copy_that_is_not_under_git_is_refused_in_a_sentence(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    """A commit pins each repository as a git commit before it writes. A copy outside any git work
+    tree has nothing to pin, so the run is refused as an infrastructure failure, in a sentence and
+    with its exit status, and writes nothing; it never ends in a traceback."""
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
+    repo = tmp_path / "copy"
+    repo.mkdir()
+    (repo / "legacy.txt").write_text("hello", encoding="utf-8")
+
+    exit_code = cli.main_upgrade(["--repo-root", str(repo), "--commit"], registry=_registry())
+
+    assert exit_code == cli.EXIT_INFRASTRUCTURE_FAILURE
+    assert not (repo / "current.txt").exists()
+    said = capsys.readouterr().err
+    assert "has no readable git status" in said
+    assert f"{repo} has no git commit to pin" in said
+    assert "Traceback" not in said
+
+
 def test_commit_refuses_when_backend_serves_target_repo(tmp_path: Path, monkeypatch) -> None:
     repo = tmp_path / "repo"
     _init_repo(repo)

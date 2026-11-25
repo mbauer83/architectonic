@@ -25,6 +25,7 @@ from src.infrastructure.mutation_adapters.git import run_git
 __all__ = [
     "BackendGuardResult",
     "BackendIdentity",
+    "WorktreeStatusUnreadable",
     "check_backend_not_serving",
     "conflicting_dirty_files",
     "dirty_worktree_files",
@@ -32,11 +33,19 @@ __all__ = [
 ]
 
 
+class WorktreeStatusUnreadable(Exception):
+    """Git could not say which files hold uncommitted edits: the root is not under git, or git failed.
+
+    Not a refusal. The note this status feeds is informational, so a copy of a repository that is not
+    under git is upgraded as any other; the caller says plainly that no overlap could be checked.
+    """
+
+
 def dirty_worktree_files(repo_root: Path) -> list[str]:
     """Return every repo-relative path with uncommitted changes; empty if the tree is clean."""
     result = run_git(repo_root, ["status", "--porcelain"], timeout=30)
     if result.returncode != 0:
-        raise RuntimeError(f"git status failed in {repo_root}: {result.stderr.strip()}")
+        raise WorktreeStatusUnreadable(result.stderr.strip() or f"git status exited {result.returncode}")
     lines = [line for line in result.stdout.splitlines() if line.strip()]
     return [line[3:] for line in lines]
 
