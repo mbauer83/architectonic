@@ -145,6 +145,7 @@ const laidOut = () => {
 .promote-btn:hover { background: var(--warn-border); text-decoration: none; }
 .edit-btn { padding: 5px 16px; background: var(--soft); border: 1px solid var(--border-strong); border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text-2); text-decoration: none; flex-shrink: 0; } .edit-btn:hover { background: var(--border); }
 .edit-btn { cursor: pointer; }
+.edit-btn:disabled { color: var(--faint); cursor: not-allowed; } .edit-btn:disabled:hover { background: var(--soft); }
 .done-btn {
   padding: 5px 16px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 6px;
   font-size: 13px; font-weight: 600; color: var(--accent-strong); cursor: pointer; flex-shrink: 0;
