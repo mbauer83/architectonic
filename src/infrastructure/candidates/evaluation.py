@@ -13,8 +13,8 @@ from typing import Any, TypeAlias
 
 from src.application.artifacts.document_part_edits import RowChange, TableRowEdits
 from src.application.artifacts.document_table_edits import row_values
-from src.application.change_sets.stacking import descendants
-from src.application.stress_analysis.evaluation import evaluate, held_out, seed_for
+from src.application.change_sets.stacking import descendants, stack_of
+from src.application.stress_analysis.evaluation import evaluate, held_out, integration_of, seed_for
 from src.application.stress_analysis.rows import held_apart, in_test_set, rows_of
 from src.domain.repository.repo_default_stress_analysis import NAIVE_CANDIDATE, STRESS_ANALYSIS, TEST_SET
 from src.infrastructure.candidates.analysis_reads import analysis_tables
@@ -28,16 +28,20 @@ TableWriter: TypeAlias = Callable[[str, TableRowEdits, bool], WriteResult]
 
 
 def evaluation(service: CandidateService, ref: str) -> dict[str, Any]:
-    """The analysis's test set, its verdicts, the standing of every judged or integrated architecture, and the stage."""
+    """The analysis's test set, its verdicts, the standing of every judged or integrated architecture and of
+    the integration, and the stage."""
     document, naive, tables = analysis_tables(service, ref)
     candidates = service.store.list()
     stacked = descendants(naive, candidates)
     integrated = [one.id for one in candidates if one.id in stacked and one.state == "integrated"]
     design = [row for row in rows_of(tables, "stressors") if not in_test_set(row)]
+    integration = integration_of(
+        integrated, lambda ref: [one.id for one in stack_of(service.store.require(ref), service.store.find)],
+    )
     return {
         "document": document, "naive_candidate": naive, "design_stressors": len(design),
-        **evaluate(tables, integrated=integrated, adapted=bool(stacked), known=[one.id for one in candidates],
-                   frameworks=repository_perspectives(service.root)),
+        **evaluate(tables, integrated=integrated, integration=integration, adapted=bool(stacked),
+                   known=[one.id for one in candidates], frameworks=repository_perspectives(service.root)),
     }
 
 

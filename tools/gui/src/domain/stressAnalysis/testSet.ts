@@ -10,6 +10,18 @@ import { cell, changeRow } from './analysisRows'
 
 /** How a verdict names the naive architecture; any other is named by its candidate id. */
 export const NAIVE = 'naive'
+/** How a verdict names the integration, where candidates were integrated apart and none of them holds it all. */
+export const INTEGRATION = 'integration'
+
+/** An architecture judged against the test set, as its line names it. */
+export const architectureName = (
+  architecture: string, standings: readonly ArchitectureStanding[], nameOf: (candidate: string) => string,
+): string => {
+  if (architecture === NAIVE) return 'Naive architecture'
+  if (architecture !== INTEGRATION) return nameOf(architecture)
+  const integrated = standings.filter((one) => one.integrated).map((one) => nameOf(one.architecture))
+  return `The integration of ${integrated.join(' and ')}`
+}
 
 /** Whether a stressor row is held apart in the test set. A row naming no set is a design stressor. */
 export const inTestSet = (row: DocumentTableRow): boolean => cell(row, 'set') === 'test'

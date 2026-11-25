@@ -12,6 +12,7 @@ import type { Marks } from '../../domain/candidates/canvasMarks'
 import { diffMarks, framedMarks } from '../../domain/candidates/canvasMarks'
 import type { WorkspaceTab } from '../../domain/stressAnalysis/analysisProgress'
 import { cell } from '../../domain/stressAnalysis/analysisRows'
+import { INTEGRATION } from '../../domain/stressAnalysis/testSet'
 import { hitMarks, stressorsTicking } from '../../domain/stressAnalysis/workspaceMarks'
 import type { AnalysisEdits } from './useAnalysisEdits'
 import type { Candidates } from './useCandidates'
@@ -44,7 +45,9 @@ export function useWorkspaceCanvas(
 
   const naiveDrawn = useComposedDrawing(svc, () => analysis.naive.value)
   const candidateDrawn = useComposedDrawing(svc, () => candidates.comparison.value)
-  const drawing = computed(() => (readsCandidate.value ? candidateDrawn.value : null) ?? naiveDrawn.value)
+  // The integration is in the model: it is drawn as the model draws it, without the naive's own changes.
+  const drawing = computed(() => (judging.value === INTEGRATION ? analysis.naive.value?.drawing : null)
+    ?? (readsCandidate.value ? candidateDrawn.value : null) ?? naiveDrawn.value)
 
   const hitsOf = (stressors: readonly string[]): ReadonlyMap<string, readonly string[]> =>
     new Map(stressors.map((id) => [id, analysis.hitsOf(id)]))
@@ -64,6 +67,9 @@ export function useWorkspaceCanvas(
   })
 
   const hint = computed(() => {
+    if (judging.value === INTEGRATION) {
+      return 'The integration is the model as the integrated candidates left it · Scroll to zoom · Drag to pan'
+    }
     if (judging.value) {
       return judgedCandidate.value
         ? 'The candidate being judged, marked with what it changes from the naive · Scroll to zoom'

@@ -15,6 +15,7 @@ import { modelServiceKey, toastKey } from '../keys'
 import { stableEntityId } from '../../domain/artifactId'
 import type { WorkspaceTab } from '../../domain/stressAnalysis/analysisProgress'
 import { cell, cellIds } from '../../domain/stressAnalysis/analysisRows'
+import { INTEGRATION, NAIVE } from '../../domain/stressAnalysis/testSet'
 import { diffMarks } from '../../domain/candidates/canvasMarks'
 import { stackLine } from '../../domain/candidates/candidateStack'
 import { documentDetailRoute } from '../router/artifactRoutes'
@@ -49,13 +50,16 @@ const candidates = useCandidates(svc, { root: () => analysis.naiveId.value, scop
 const testSet = useTestSet(svc, analysis, () => documentId.value, toast)
 /** The test stressor in focus in the judge walk. */
 const judged = ref<string | null>(null)
+/** Whether *judging* names a candidate: not the naive, nor the integration of candidates integrated apart. */
+const isCandidate = (judging: string | null): judging is string =>
+  judging !== null && judging !== NAIVE && judging !== INTEGRATION
 /** The candidate being judged against the test set, read against the naive architecture; none for the naive. */
 const judgedCandidate = computed(() => {
   const judging = testSet.judging.value
-  return judging && judging !== 'naive' && candidates.comparison.value?.candidate === judging ? judging : null
+  return isCandidate(judging) && candidates.comparison.value?.candidate === judging ? judging : null
 })
 watch(() => testSet.judging.value, async (judging) => {
-  if (judging && judging !== 'naive') await candidates.select(judging, analysis.naiveId.value)
+  if (isCandidate(judging)) await candidates.select(judging, analysis.naiveId.value)
   if (!judging) judged.value = null
 })
 

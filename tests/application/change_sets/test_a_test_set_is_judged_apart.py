@@ -14,6 +14,7 @@ from src.application.stress_analysis.evaluation import (
     Standing,
     evaluate,
     held_out,
+    integration_of,
     residuality,
     standing_of,
     verdicts_of,
@@ -97,6 +98,54 @@ class TestTheTestSet:
         assert read["stage"] == {"naive_judged": True, "adapted": True, "integrated": True, "integration_judged": True}
         assert [row["id"] for row in read["stressors"]] == ["S2", "S3", "S4"]
 
+    def test_candidates_integrated_apart_are_judged_together_as_the_integration(self, tmp_path: Path) -> None:
+        tables = _tables(
+            tmp_path,
+            stressors=_stressors(design=1, test=2),
+            survival=[
+                _verdict("S2", "naive", "fails"), _verdict("S3", "naive", "fails"),
+                _verdict("S2", "CAND@1", "survives"), _verdict("S3", "CAND@1", "fails"),
+                _verdict("S2", "integration", "survives"), _verdict("S3", "integration", "degrades"),
+            ],
+        )
+
+        read = evaluate(tables, integrated=["CAND@1", "CAND@2"], integration="integration", adapted=True)
+
+        by = {one["architecture"]: one for one in read["architectures"]}
+        assert list(by) == ["naive", "CAND@1", "CAND@2", "integration"]
+        assert by["integration"]["residuality"] == pytest.approx((1.5 - 0) / 2)
+        assert by["integration"]["strict"] == pytest.approx(1 / 2)
+        assert read["stage"]["integration_judged"] is True
+
+    def test_the_integration_stands_unjudged_until_it_is_judged(self, tmp_path: Path) -> None:
+        tables = _tables(
+            tmp_path, stressors=_stressors(design=1, test=1),
+            survival=[_verdict("S2", "naive", "fails"), _verdict("S2", "CAND@1", "survives")],
+        )
+
+        read = evaluate(tables, integrated=["CAND@1", "CAND@2"], integration="integration", adapted=True)
+
+        by = {one["architecture"]: one for one in read["architectures"]}
+        assert (by["integration"]["judged"], "residuality" in by["integration"]) == (0, False)
+        assert read["stage"]["integration_judged"] is False
+
+
+class TestWhatStandsForTheIntegration:
+    def test_an_integrated_candidate_whose_stack_holds_every_other_one_is_the_integration(self) -> None:
+        stacks = {"CAND@1": ["CAND@1"], "CAND@2": ["CAND@1", "CAND@2"]}
+
+        assert integration_of(["CAND@1", "CAND@2"], stacks.__getitem__) == "CAND@2"
+
+    def test_candidates_integrated_apart_are_stood_for_by_the_integration(self) -> None:
+        stacks = {"CAND@1": ["CAND@1"], "CAND@2": ["CAND@2"]}
+
+        assert integration_of(["CAND@1", "CAND@2"], stacks.__getitem__) == "integration"
+
+    def test_nothing_stands_for_it_while_nothing_is_integrated(self) -> None:
+        assert integration_of([], lambda ref: [ref]) is None
+
+
+class TestWhatTheTestSetCounts:
     def test_a_struck_stressor_leaves_the_denominator_with_its_reason(self, tmp_path: Path) -> None:
         tables = _tables(
             tmp_path,

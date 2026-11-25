@@ -9,7 +9,7 @@
 import { computed, nextTick, ref } from 'vue'
 import type { Verdict } from '../../../domain/schemas/stressEvaluation'
 import { cell } from '../../../domain/stressAnalysis/analysisRows'
-import { NAIVE, procedure } from '../../../domain/stressAnalysis/testSet'
+import { architectureName, procedure } from '../../../domain/stressAnalysis/testSet'
 import type { Candidates } from '../../composables/useCandidates'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import type { TestSet } from '../../composables/useTestSet'
@@ -29,11 +29,10 @@ const emit = defineEmits<{ select: [rowId: string | null] }>()
 const open = ref(false)
 const evaluation = computed(() => props.analysis.evaluation.value)
 const held = computed(() => props.analysis.testStressors.value)
-const nameOf = (architecture: string): string => architecture === NAIVE
-  ? 'Naive architecture'
-  : props.candidates.all.value.find((one) => one.id === architecture)?.name ?? architecture
 /** Each architecture with a line: the naive, the integration, and every candidate judged so far. */
 const standings = computed(() => evaluation.value?.architectures ?? [])
+const nameOf = (architecture: string): string => architectureName(architecture, standings.value,
+  (candidate) => props.candidates.all.value.find((one) => one.id === candidate)?.name ?? candidate)
 const evaluable = computed(() => props.candidates.inStack.value.filter((one) => one.id !== props.analysis.naiveId.value
   && !standings.value.some((standing) => standing.architecture === one.id)))
 const steps = computed(() => (evaluation.value ? procedure(evaluation.value.stage) : []))

@@ -18,7 +18,9 @@ class HeldApartStressor(NullsOmitted):
 class StressVerdict(NullsOmitted):
     id: str = Field(description="The survival row holding the verdict.")
     stressor: str
-    architecture: str = Field(description="`naive`, or the judged candidate's id.")
+    architecture: str = Field(
+        description="`naive`, the judged candidate's id, or `integration` for candidates integrated apart.",
+    )
     verdict: Literal["survives", "degrades", "fails"] | None = Field(
         None, description="Absent on a row that only strikes the stressor.",
     )
@@ -27,7 +29,9 @@ class StressVerdict(NullsOmitted):
 
 
 class ArchitectureStanding(NullsOmitted):
-    architecture: str = Field(description="`naive`, or a candidate's id.")
+    architecture: str = Field(
+        description="`naive`, a candidate's id, or `integration`: the candidates integrated apart, judged together.",
+    )
     integrated: bool = Field(description="Whether this candidate has been integrated into the model.")
     usable: int = Field(description="How many test stressors are usable: the denominator n.")
     judged: int
@@ -60,7 +64,9 @@ class AnalysisEvaluation(NullsOmitted):
     unwritten_perspectives: list[str] = Field(
         description="Perspectives no test stressor is written from, by id; empty while no stressor names a kind.",
     )
-    architectures: list[ArchitectureStanding] = Field(description="The naive first, then integrated, then judged.")
+    architectures: list[ArchitectureStanding] = Field(
+        description="The naive first, then the integrated candidates and the integration, then the judged ones.",
+    )
     stage: EvaluationStage
 
 

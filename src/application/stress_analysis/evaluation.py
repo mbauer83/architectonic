@@ -12,12 +12,16 @@ usable stressor has a verdict on both A and the naive — before that, how many 
 A stressor a judge finds unusable (it cannot be walked, or contradicts itself) is struck, with the
 reason, and leaves the denominator for every architecture. Nothing here is stored: it is read from
 the verdict rows each time.
+
+The coefficient is always shown for the integration. Where one integrated candidate holds every
+other one integrated (they stack), it is the integration; where candidates were integrated apart,
+none of them is, and the integration is judged as an architecture of its own, `integration`.
 """
 from __future__ import annotations
 
 import hashlib
 import random
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, replace
 from fractions import Fraction
 from typing import Any
@@ -25,7 +29,12 @@ from typing import Any
 from src.application.artifacts.document_table_rows import DocumentTables
 from src.application.stress_analysis.rows import Row, in_test_set, rows_of
 from src.domain.artifact_id import canonical_entity_key
-from src.domain.repository.repo_default_stress_analysis import DEGRADES, NAIVE_ARCHITECTURE, SURVIVES
+from src.domain.repository.repo_default_stress_analysis import (
+    DEGRADES,
+    INTEGRATION_ARCHITECTURE,
+    NAIVE_ARCHITECTURE,
+    SURVIVES,
+)
 from src.domain.repository.repo_default_stress_perspectives import (
     STRESS_PERSPECTIVES,
     PerspectiveFramework,
@@ -120,14 +129,23 @@ def _stated(values: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in values.items() if value is not None}
 
 
+def integration_of(integrated: Sequence[str], stack: Callable[[str], Iterable[str]]) -> str | None:
+    """What stands for the integration: the integrated candidate whose *stack* holds every other one, else
+    `integration` where candidates were integrated apart; None while nothing is integrated."""
+    holding = [one for one in integrated if set(integrated) <= {*stack(one), one}]
+    return holding[0] if holding else INTEGRATION_ARCHITECTURE if integrated else None
+
+
 def evaluate(
     tables: DocumentTables, *, integrated: Sequence[str], adapted: bool, known: Sequence[str] = (),
-    frameworks: tuple[PerspectiveFramework, ...] = STRESS_PERSPECTIVES,
+    integration: str | None = None, frameworks: tuple[PerspectiveFramework, ...] = STRESS_PERSPECTIVES,
 ) -> dict[str, Any]:
     """The test set, its verdicts, every judged or integrated architecture's standing, and the procedure's stage.
 
     *integrated* names the candidates of the analysis integrated into the model, whose standing is
-    always shown; *adapted* says whether any candidate adapts the naive architecture yet. *known* are
+    always shown, and *integration* what stands for all of them together (`integration_of`), shown too:
+    the stage counts the integration judged once it is. Without one, the integration is the last
+    integrated candidate. *adapted* says whether any candidate adapts the naive architecture yet. *known* are
     the candidates that exist: a verdict naming one in either spelling of its id is read as naming it
     by the id it is stored under, so one architecture's verdicts are never counted as two. The test
     set's coverage counts the *frameworks*' perspectives.
@@ -142,7 +160,8 @@ def evaluate(
     unusable = struck(verdicts)
     usable = [row["id"] for row in stressors if row["id"] not in unusable]
     judged = [one.architecture for one in verdicts if one.architecture != NAIVE_ARCHITECTURE]
-    shown = dict.fromkeys([NAIVE_ARCHITECTURE, *integrated, *judged])
+    together = integration or (integrated[-1] if integrated else None)
+    shown = dict.fromkeys([NAIVE_ARCHITECTURE, *integrated, *([together] if together else []), *judged])
     standings = {name: standing_of(name, usable, verdicts) for name in shown}
     naive = standings[NAIVE_ARCHITECTURE]
     return {
@@ -159,7 +178,7 @@ def evaluate(
                           for name, standing in standings.items()],
         "stage": {
             "naive_judged": naive.complete, "adapted": adapted, "integrated": bool(integrated),
-            "integration_judged": bool(integrated) and all(standings[name].complete for name in integrated),
+            "integration_judged": together is not None and standings[together].complete,
         },
     }
 

@@ -2313,7 +2313,8 @@ export interface paths {
         };
         /**
          * Read unfinished stress analysis and coverage hints
-         * @description Coverage reads the shipped perspectives (`/api/stress-perspectives`), the one vocabulary of kinds.
+         * @description Coverage reads the perspectives this repository offers (`/api/stress-perspectives`), the one vocabulary of
+         *     kinds.
          */
         get: operations["documents_analysis_progress"];
         put?: never;
@@ -3282,7 +3283,9 @@ export interface paths {
         };
         /**
          * List the perspectives offered to whoever writes stressors
-         * @description Each framework's perspectives with a guiding question; none names an element of any architecture.
+         * @description Each framework's perspectives with a guiding question; none names an element of any architecture. The
+         *     shipped frameworks, with the repository's own from `.arch-repo/stress-perspectives.json` laid over them; 422
+         *     where that file cannot be read.
          */
         get: operations["documents_list_stress_perspectives"];
         put?: never;
@@ -4169,7 +4172,7 @@ export interface components {
         AnalysisEvaluation: {
             /**
              * Architectures
-             * @description The naive first, then integrated, then judged.
+             * @description The naive first, then the integrated candidates and the integration, then the judged ones.
              */
             architectures: components["schemas"]["ArchitectureStanding"][];
             /**
@@ -4278,7 +4281,7 @@ export interface components {
         AnalysisStanding: {
             /**
              * Architecture
-             * @description `naive`, or a candidate's id.
+             * @description `naive`, a candidate's id, or `integration`: the candidates integrated apart, judged together.
              */
             architecture: string;
             /** Degrades */
@@ -4370,7 +4373,7 @@ export interface components {
         ArchitectureStanding: {
             /**
              * Architecture
-             * @description `naive`, or a candidate's id.
+             * @description `naive`, a candidate's id, or `integration`: the candidates integrated apart, judged together.
              */
             architecture: string;
             /** Degrades */
@@ -14169,7 +14172,7 @@ export interface components {
         StressVerdict: {
             /**
              * Architecture
-             * @description `naive`, or the judged candidate's id.
+             * @description `naive`, the judged candidate's id, or `integration` for candidates integrated apart.
              */
             architecture: string;
             /**

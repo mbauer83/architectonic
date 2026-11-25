@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { DocumentTableRow } from '../schemas/candidates'
 import type { ArchitectureStanding } from '../schemas/stressEvaluation'
 import {
-  inTestSet, judgement, procedure, residualityDetail, residualityLine, signed, verdictRow,
+  architectureName, inTestSet, judgement, procedure, residualityDetail, residualityLine, signed, verdictRow,
 } from './testSet'
 
 const row = (row_id: string, values: Record<string, string | boolean>): DocumentTableRow =>
@@ -71,5 +71,18 @@ describe('the test set and its procedure', () => {
     expect(steps.map((step) => [step.label, step.done])).toEqual([
       ['Judge the naive', true], ['Adapt', true], ['Integrate', false], ['Judge the integration', false],
     ])
+  })
+})
+
+describe('an architecture judged against the test set', () => {
+  const NAMES: Readonly<Record<string, string>> = { 'CAND@1': 'Bounded queues', 'CAND@2': 'Second reviewer' }
+  const names = (id: string): string => NAMES[id] ?? id
+  it('is the naive, a candidate by its name, or the integration of what was integrated apart', () => {
+    const standings = [
+      standing({ architecture: 'naive' }), standing({ architecture: 'CAND@1', integrated: true }),
+      standing({ architecture: 'CAND@2', integrated: true }), standing({ architecture: 'CAND@3' }),
+    ]
+    expect(['naive', 'CAND@1', 'integration'].map((one) => architectureName(one, standings, names)))
+      .toEqual(['Naive architecture', 'Bounded queues', 'The integration of Bounded queues and Second reviewer'])
   })
 })
