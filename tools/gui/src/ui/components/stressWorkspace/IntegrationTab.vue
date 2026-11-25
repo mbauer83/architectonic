@@ -52,6 +52,8 @@ const raise = (conflict: IntegrationConflict) => integration.raiseDecision(confl
 /** An element by the name the naive architecture gives it. */
 const nameOf = (id: string): string => props.analysis.nameOf(id)
 const about = (conflict: IntegrationConflict): string => conflictSubject(conflict, nameOf)
+const mergeIn = (conflict: IntegrationConflict) =>
+  integration.resolve(mergedResolution(conflict, merged[conflict.subject] ?? ''), about(conflict))
 
 // Those offered for integration are chosen when the adaptations are first read; the author may change it.
 watch(() => integrable.value.map((one) => one.id).join(' '), () => {
@@ -170,7 +172,7 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
       <form
         v-if="permits(conflict, 'merge')"
         class="merge"
-        @submit.prevent="integration.resolve(mergedResolution(conflict, merged[conflict.subject] ?? ''), about(conflict))"
+        @submit.prevent="mergeIn(conflict)"
       >
         <label>Merged value <input
           v-model="merged[conflict.subject]"

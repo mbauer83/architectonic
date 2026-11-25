@@ -33,9 +33,9 @@ export const createBlockedReason = (
  *
  * A row whose key is blank is not a property — it is an empty row the form leaves lying around for
  * the next one to be typed into — and neither is a row whose value is empty, which states nothing
- * (`isStated`): a schema attribute nobody filled in is not written as an empty row. An ad-hoc type is recorded only where the effective schema does
- * not already declare the attribute: where it does, the schema's type is the answer and repeating
- * it in the request would let the two disagree.
+ * (`isStated`): a schema attribute nobody filled in is not written as an empty row. An ad-hoc type
+ * is recorded only where the effective schema does not already declare the attribute: where it does,
+ * the schema's type is the answer and repeating it in the request would let the two disagree.
  */
 export const propertyRowsForWrite = (
   rows: readonly { key: string; value: string; adHocType: string }[],

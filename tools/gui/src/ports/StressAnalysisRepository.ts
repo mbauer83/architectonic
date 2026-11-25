@@ -1,6 +1,7 @@
 import type { Effect } from 'effect'
 import type {
-  AnalysisIncidence, AnalysisProgress, AnalysisStarted, CandidateApplication, CandidateComparison, CandidateDiagramSaved,
+  AnalysisIncidence, AnalysisProgress, AnalysisStarted, CandidateApplication, CandidateComparison,
+  CandidateDiagramSaved,
   CandidateIntegration, CandidateResponse, Resolution,
   CandidateSummary,
   DocumentTables, DocumentTableWrite, IntegrationCheck,

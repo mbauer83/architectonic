@@ -43,6 +43,11 @@ const drawing = useComposedDrawing(svc, () => candidates.comparison.value)
 const diagramId = computed(() => chosenDiagram.value || candidates.comparison.value?.drawing?.artifact_id || '')
 
 const diagrams = shallowRef<readonly DiagramSummary[]>([])
+/** The ArchiMate diagrams a candidate may be drawn on. */
+const listDiagrams = async () => {
+  const listed = await Effect.runPromise(svc.listDiagrams()).catch(() => null)
+  diagrams.value = (listed?.items ?? []).filter((one) => one.diagram_type.startsWith('archimate'))
+}
 const summary = computed(() => candidates.all.value.find((one) => one.id === candidateId.value) ?? null)
 const loaded = ref(false)
 const drawOn = (id: string) => {
@@ -61,7 +66,6 @@ const nameOf = (id: string): string => id
 /** Drawn on a view generated from its scope: there is a picture, and no stored diagram behind it. */
 const generated = computed(() => !chosenDiagram.value && !!candidates.comparison.value?.drawing
   && !candidates.comparison.value.drawing.artifact_id)
-const changeable = computed(() => summary.value?.state === 'draft' || summary.value?.state === 'candidate')
 /** *Save as diagram* offered: to sketch on the saved diagram, or only to keep the view. */
 const offering = ref<'sketch' | 'keep' | null>(null)
 
@@ -75,16 +79,11 @@ const savedAsDiagram = async (diagram: string) => {
   const then = offering.value
   offering.value = null
   toast(`Saved the view as a diagram; ${summary.value?.name ?? candidateId.value} is drawn on it.`)
-  const [listed] = await Promise.all([
-    Effect.runPromise(svc.listDiagrams()).catch(() => null), candidates.load(),
-  ])
-  if (listed) diagrams.value = listed.items.filter((one) => one.diagram_type.startsWith('archimate'))
+  await Promise.all([listDiagrams(), candidates.load()])
   await candidates.compareWith(candidates.against.value)
   sketching.value = then === 'sketch' && diagramId.value === diagram
 }
-const recorded = async () => {
-  await candidates.compareWith(candidates.against.value)
-}
+const recorded = () => candidates.compareWith(candidates.against.value)
 const doneSketching = async () => {
   sketching.value = false
   await recorded()
@@ -139,11 +138,7 @@ watch(chosenDiagram, async () => {
   await candidates.compareWith(candidates.against.value)
 })
 onMounted(async () => {
-  const [listed] = await Promise.all([
-    Effect.runPromise(svc.listDiagrams()).catch(() => null),
-    candidates.load(),
-  ])
-  diagrams.value = (listed?.items ?? []).filter((one) => one.diagram_type.startsWith('archimate'))
+  await Promise.all([listDiagrams(), candidates.load()])
   await read()
   loaded.value = true
 })
@@ -238,7 +233,7 @@ onMounted(async () => {
         </select>
       </label>
       <button
-        v-if="generated && changeable && !offering"
+        v-if="generated && applicable && !offering"
         type="button"
         class="btn btn-sm"
         data-testid="offer-save-as-diagram"
