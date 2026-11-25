@@ -71,10 +71,15 @@ class LocalCheckoutActions:
     # ── Software ──────────────────────────────────────────────────────────────
 
     def move_checkout(self, tag: str, move: CheckoutMove) -> None:
-        GitCheckout(self.root).move_to(tag, move)
+        GitCheckout(self.root).move_to(tag, move, carry=self._carry)
 
     def restore_checkout(self, commit: str, branch: str | None) -> None:
-        GitCheckout(self.root).restore(commit, branch)
+        GitCheckout(self.root).restore(commit, branch, carry=self._carry)
+
+    @property
+    def _carry(self) -> Path:
+        """Where configuration edits a move sets aside wait — beside the verified assets, in the journal."""
+        return self.assets_dir / "configuration"
 
     def sync_environment(self, selection: DependencySelection) -> None:
         uv_environment.sync(self.root, selection, uv=self.uv)

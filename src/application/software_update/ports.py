@@ -13,6 +13,7 @@ from typing import Protocol
 from src.application.software_update.installation import (
     BackendObservation,
     CheckoutMove,
+    CheckoutRelation,
     DependencySelection,
     GuiProvisioning,
     InstalledSoftware,
@@ -51,6 +52,10 @@ class Checkout(Protocol):
     def verify_tag(self, tag: str) -> SignatureVerdict: ...
 
     def on_main_branch(self) -> bool: ...
+
+    def relation_to(self, commit: str, configuration: tuple[str, ...]) -> CheckoutRelation:
+        """How HEAD stands to *commit*, and which of the locally edited *configuration* files it changes."""
+        ...
 
 
 @dataclass(frozen=True)

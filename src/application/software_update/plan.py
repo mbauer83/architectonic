@@ -23,6 +23,7 @@ from src.application.software_update.decisions import (  # re-exported: importer
 )
 from src.application.software_update.installation import (
     CheckoutMove,
+    CheckoutRelation,
     GuiProvisioning,
     InstallationObservation,
 )
@@ -51,24 +52,27 @@ def plan_update(  # noqa: PLR0911 — a decision table reads as its rows
     *,
     gui_source: GuiProvisioning | None = None,
     current_branch_is_main: bool = True,
+    relation: CheckoutRelation | None = None,
 ) -> PlanningResult:
     software = observation.software
     if software.version is not None and release.version <= software.version:
         return UpToDate(software.version)
 
-    refused = _refusal(observation, release, verification, rehearsal)
+    move: CheckoutMove = "fast_forward" if current_branch_is_main else "detach"
+    refused = _refusal(observation, release, verification, rehearsal) or _checkout_refusal(
+        observation, release, move, relation,
+    )
     if refused is not None:
         return refused
 
     gui = gui_source or plan_steps.gui_provisioning(observation, release)
-    move: CheckoutMove = "fast_forward" if current_branch_is_main else "detach"
     restart = observation.backend.running
     authorize = observation.store.held_open and observation.store.policy == "manual"
     return UpdatePlan(
         release.version, move, gui,
         plan_steps.steps(observation, release, move, gui, restart, authorize),
         plan_steps.questions(observation),
-        plan_steps.notes(observation, gui, verification),
+        (*plan_steps.notes(observation, gui, verification), *_configuration_notes(observation, relation)),
         restart, authorize,
     )
 
@@ -129,7 +133,9 @@ def _refusal(
         listed = ", ".join(observation.software.modified_tracked[:5])
         return UpdateRefused(
             f"the checkout has modified tracked files ({listed})",
-            "commit or stash them; a modified software checkout is a developer's to move",
+            "commit them to a branch of your own or discard them; a modified software checkout is a "
+            "developer's to move. The deployment's own configuration (arch-workspace.yaml, "
+            "config/settings.yaml) is not counted: it stays as uncommitted edits and is carried across",
             "blocked",
         )
     if observation.backend.unhealthy:
@@ -167,3 +173,55 @@ def _refusal(
             "infrastructure_failure",
         )
     return None
+
+
+def _checkout_refusal(
+    observation: InstallationObservation,
+    release: PublishedRelease,
+    move: CheckoutMove,
+    relation: CheckoutRelation | None,
+) -> UpdateRefused | None:
+    """Refuse in the dry run what the move phase would fail on, with the step that resolves it."""
+    hidden = observation.software.hidden_configuration
+    if hidden:
+        listed = " ".join(hidden)
+        return UpdateRefused(
+            f"git is told to ignore changes to {', '.join(hidden)}, so their edits cannot be carried across",
+            f"clear the flag with `git update-index --no-skip-worktree --no-assume-unchanged {listed}` and re-run",
+            "blocked",
+        )
+    if relation is None:
+        return None
+    if move == "fast_forward" and not relation.fast_forwardable:
+        base = (relation.merge_base or "the release's ancestor")[:12]
+        return UpdateRefused(
+            f"`main` has {relation.local_commits} commit(s) that {release.tag} does not contain, so it cannot "
+            "fast-forward",
+            f"if they hold deployment configuration, turn them back into uncommitted edits with "
+            f"`git reset --mixed {base}` (an update carries those across); otherwise move them to a branch of "
+            "your own and reset `main` to that commit",
+            "blocked",
+        )
+    if relation.configuration_conflicts:
+        listed = ", ".join(relation.configuration_conflicts)
+        paths = " ".join(relation.configuration_conflicts)
+        return UpdateRefused(
+            f"{release.tag} changes {listed}, and the local edits to it conflict with that change",
+            f"see the release's change with `git diff HEAD {release.tag} -- {paths}`, "
+            "rework your edits so they touch other lines, and re-run",
+            "blocked",
+        )
+    return None
+
+
+def _configuration_notes(
+    observation: InstallationObservation, relation: CheckoutRelation | None,
+) -> tuple[str, ...]:
+    kept = observation.software.local_configuration
+    if not kept:
+        return ()
+    carried = relation.configuration_changed if relation is not None else ()
+    notes = [f"keeps the local configuration edits to {', '.join(kept)}"]
+    if carried:
+        notes.append(f"the release also changes {', '.join(carried)}: the local edits are merged onto its version")
+    return tuple(notes)

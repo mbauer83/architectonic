@@ -9,6 +9,7 @@ import pytest
 
 from src.application.software_update.installation import (
     BackendObservation,
+    CheckoutRelation,
     DependencySelection,
     InstallationObservation,
     InstalledSoftware,
@@ -65,6 +66,9 @@ class FakeCheckout:
 
     def on_main_branch(self) -> bool:
         return True
+
+    def relation_to(self, commit: str, configuration: tuple[str, ...]) -> CheckoutRelation:
+        return CheckoutRelation(fast_forwardable=True, local_commits=0, merge_base=self.installed.commit)
 
 
 def _observation(software: InstalledSoftware) -> InstallationObservation:

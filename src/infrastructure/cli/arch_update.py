@@ -143,7 +143,7 @@ def _planning_for(
     def plan(rehearsal: RehearsalVerdict | None) -> PlanningResult:
         return plan_update(
             observation, release, verification, rehearsal=rehearsal,
-            gui_source=gui_source, current_branch_is_main=on_main,
+            gui_source=gui_source, current_branch_is_main=on_main, relation=check.relation,
         )
 
     preliminary = plan(None)

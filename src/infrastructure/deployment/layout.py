@@ -12,6 +12,7 @@ import os
 from collections.abc import Mapping
 from pathlib import Path
 
+from src.config.workspace_paths import CONFIG_FILENAME
 from src.domain.deployment.layout import (
     CliSelectors,
     DeploymentManifest,
@@ -24,6 +25,16 @@ from src.domain.deployment.layout_resolution import (
     select_settings_document,
 )
 from src.domain.yaml_documents import parse_yaml
+
+#: The settings document a checkout ships, relative to the source tree: the compatibility default
+#: when no deployment identity names another.
+SOURCE_TREE_SETTINGS = Path("config") / "settings.yaml"
+
+#: Tracked files in a checkout that are the deployment's own configuration rather than software: the
+#: installation guide has the operator edit the workspace file to name the repositories and the port,
+#: and `arch-assurance init` / `use-backend` write the source-tree settings document. An update keeps
+#: their edits instead of counting them as a modified checkout.
+DEPLOYMENT_LOCAL_FILES: tuple[Path, ...] = (Path(CONFIG_FILENAME), SOURCE_TREE_SETTINGS)
 
 
 def source_tree_root() -> Path:
@@ -80,7 +91,7 @@ def resolve_settings_selection(
         cli_settings=cli.settings,
         deployment_root=deployment_root,
         env=environment,
-        source_tree_settings=source_tree_root() / "config" / "settings.yaml",
+        source_tree_settings=source_tree_root() / SOURCE_TREE_SETTINGS,
         cwd=Path.cwd(),
         home=Path.home(),
         canonicalize=_canonicalize,
