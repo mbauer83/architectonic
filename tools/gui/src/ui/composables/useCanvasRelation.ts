@@ -11,6 +11,7 @@ import type { ModelService } from '../../application/ModelService'
 import type { DiagramContext } from '../../domain'
 import { connectionId, stableConnectionId, stableEntityId } from '../../domain/artifactId'
 import { isRecord } from '../../domain/records'
+import { relationsDrawn } from '../../domain/layout/canvasComposition'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import type { DiagramEditing } from './useDiagramEditing'
 
@@ -36,13 +37,6 @@ export function useCanvasRelation(
   const currentLine = ref('')
   const member = (alias: string) => members.value.find((e) => e.alias === alias)
 
-  /** The relations the session already draws or creates, by id: what is not offered again. */
-  const drawnIds = (): ReadonlySet<string> => {
-    const now = editing.session.state.value
-    const created = (now?.commands ?? []).flatMap((c) => (c.op === 'model.relation.create' ? [c.artifact_id] : []))
-    return new Set([...context().connections.map((one) => one.artifact_id), ...now?.drawnRelations ?? [], ...created]
-      .map(stableConnectionId))
-  }
 
   /**
    * A relation from the source to *alias*: offered first those the model holds and this diagram does not
@@ -65,7 +59,7 @@ export function useCanvasRelation(
       ])
       if (ends.target.value !== alias || ends.source.value !== from.alias) return
       const same = (one: string, other: string) => stableEntityId(one) === stableEntityId(other)
-      const drawn = drawnIds()
+      const drawn = relationsDrawn(context(), editing.session.state.value)
       inModel.value = held.filter((one) => same(one.source, from.id) && same(one.target, to.id)
         && !drawn.has(stableConnectionId(one.artifact_id))).map((one) => ({ id: one.artifact_id, type: one.conn_type }))
       const types = [...new Set([...permitted.connection_types, ...permitted.symmetric])]

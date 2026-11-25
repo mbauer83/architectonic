@@ -65,7 +65,10 @@ export function useDiagramReader(options: {
   const notDrawn = computed(() => notDrawnOf({
     selection: focus.value,
     candidates: context.value?.candidate_connections ?? [],
-    drawnRelations: new Set(relations.value.map((relation) => relation.id)),
+    // A relation drawn as one element nested in another is drawn, though not as an arrow among the connections.
+    drawnRelations: new Set([
+      ...relations.value.map((relation) => relation.id), ...context.value?.diagram.connection_ids_used ?? [],
+    ]),
     drawnEntities: new Set((context.value?.entities ?? []).map((entity) => entity.artifact_id)),
     undirected: undirected.value,
     reach: reach.value,
