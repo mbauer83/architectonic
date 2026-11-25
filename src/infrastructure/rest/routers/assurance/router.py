@@ -21,7 +21,11 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from src.application.assurance.edge_catalog import build_edge_catalog
-from src.infrastructure.app_bootstrap import assurance_ontology_module, get_module_registry
+from src.infrastructure.app_bootstrap import (
+    assurance_module_absence_remedy,
+    assurance_ontology_module,
+    get_module_registry,
+)
 from src.infrastructure.rest.contracts.assurance_nodes import AssuranceEdgeCatalogResponse
 from src.infrastructure.rest.contracts.assurance_store import AssuranceStoreStatusResponse
 from src.infrastructure.rest.contracts.errors import ApiError, NotConfiguredDetails
@@ -132,7 +136,7 @@ def assurance_edge_catalog() -> JSONResponse:
             "The assurance module is not configured for this deployment.",
             NotConfiguredDetails(
                 capability="assurance",
-                remedy="Enable the assurance module in config/settings.yaml.",
+                remedy=assurance_module_absence_remedy(),
             ),
         )
     catalog = build_edge_catalog(assurance_ontology_module())

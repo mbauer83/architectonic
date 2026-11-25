@@ -28,13 +28,19 @@ _RELOAD_TIMEOUT_S = 3.0
 
 @dataclass(frozen=True)
 class StoreActivation:
-    """What `activate_store` established: the store opened with the key on record, and its statistics."""
+    """What `activate_store` established: the store opened with the key on record, and its statistics.
+
+    ``backend_unlocked`` is what the workspace's running backend answered to the reload: True when it
+    now holds the store open, False when it is still locked (it cannot read the key in its own
+    environment), None when no backend of this workspace took the reload.
+    """
 
     db_path: Path
     stats: dict[str, Any]
+    backend_unlocked: bool | None = None
 
 
-def notify_backend_reload(*, authorize: bool | None = None) -> None:
+def notify_backend_reload(*, authorize: bool | None = None) -> dict[str, Any] | None:
     """Best-effort POST to *this workspace's* backend to reload the assurance bundle.
 
     ``authorize`` carries the operator's intent to the running process: True where the command grants
@@ -44,13 +50,18 @@ def notify_backend_reload(*, authorize: bool | None = None) -> None:
 
     Which process that is has to be decided by what it serves. Composed from the configured port,
     this call once authorized a neighbouring workspace's backend to open *its* confidential store.
+
+    Returns the store status the backend answered with, or None when no backend of this workspace
+    took the reload. The answer is the only evidence of what the running process now holds: a backend
+    that cannot read the key in its own environment answers ``unlocked: false`` even though the
+    ceremony here succeeded.
     """
     try:
         from src.infrastructure.cli._workspace_backend import workspace_backend_url  # noqa: PLC0415
 
         base_url = workspace_backend_url()
         if base_url is None:
-            return
+            return None
         payload = json.dumps({} if authorize is None else {"authorize": authorize}).encode()
         request = urllib.request.Request(
             f"{base_url}/api/assurance/reload",
@@ -58,10 +69,12 @@ def notify_backend_reload(*, authorize: bool | None = None) -> None:
             method="POST",
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(request, timeout=_RELOAD_TIMEOUT_S):  # noqa: S310 — loopback URL
-            pass
+        with urllib.request.urlopen(request, timeout=_RELOAD_TIMEOUT_S) as response:  # noqa: S310 — loopback URL
+            answer = json.loads(response.read() or b"{}")
     except Exception:  # noqa: BLE001 — no backend running: the policy applies at its next start
         logger.debug("No running backend took the assurance reload", exc_info=True)
+        return None
+    return answer if isinstance(answer, dict) else None
 
 
 def activate_store(db_path: Path) -> StoreActivation:
@@ -83,8 +96,9 @@ def activate_store(db_path: Path) -> StoreActivation:
     accounts.write(accounts.SETUP_GATE, db_path, "1")
     # Authorize the running backend (if any) immediately: under the manual policy a plain reload
     # would re-apply the policy and stay locked, so the ceremony would do nothing.
-    notify_backend_reload(authorize=True)
-    return StoreActivation(db_path=db_path, stats=dict(stats))
+    answer = notify_backend_reload(authorize=True)
+    backend_unlocked = None if answer is None else answer.get("unlocked") is True
+    return StoreActivation(db_path=db_path, stats=dict(stats), backend_unlocked=backend_unlocked)
 
 
 def deactivate_store(db_path: Path) -> None:

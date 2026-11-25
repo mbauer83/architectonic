@@ -149,9 +149,13 @@ class LocalCheckoutActions:
         from src.infrastructure.deployment.layout import resolve_manifest  # noqa: PLC0415
 
         try:
-            activate_store(resolve_manifest().assurance_db_path.path)
+            activation = activate_store(resolve_manifest().assurance_db_path.path)
         except RuntimeError as exc:
             raise UpdateActionError(f"the assurance store could not be re-authorized: {exc}") from exc
+        if activation.backend_unlocked is False:
+            raise UpdateActionError(
+                "the restarted backend answered that the assurance store is still locked: it cannot read the key"
+            )
 
     # ── Verification ──────────────────────────────────────────────────────────
 
