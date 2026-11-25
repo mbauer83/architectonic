@@ -200,6 +200,8 @@ export const makeModelService = (repo: ModelRepository) =>
     recordOperation: (...args: Parameters<ModelRepository['recordOperation']>) => repo.recordOperation(...args),
     compareCandidate: (...args: Parameters<ModelRepository['compareCandidate']>) => repo.compareCandidate(...args),
     checkCandidates: (ids: readonly string[]) => repo.checkCandidates(ids),
+    integrateCandidates: (...args: Parameters<ModelRepository['integrateCandidates']>) =>
+      repo.integrateCandidates(...args),
     readDocumentTables: (documentId: string) => repo.readDocumentTables(documentId),
     editDocumentTable: (...args: Parameters<ModelRepository['editDocumentTable']>) => repo.editDocumentTable(...args),
     readAnalysisProgress: (documentId: string) => repo.readAnalysisProgress(documentId),

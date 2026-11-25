@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import {
   AnalysisIncidenceSchema, AnalysisProgressSchema, AnalysisStartedSchema, CandidateApplicationSchema,
-  CandidateComparisonSchema, CandidateDiagramSavedSchema,
+  CandidateComparisonSchema, CandidateDiagramSavedSchema, CandidateIntegrationSchema,
   CandidateListSchema,
   CandidateResponseSchema, DocumentTablesSchema, DocumentTableWriteSchema, IntegrationCheckSchema,
 } from '../../domain/schemas/candidates'
@@ -41,6 +41,8 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
   compareCandidate: (id, base, diagram) =>
     fetchJson(candidateUrl(id, '/diff', { base, diagram }), CandidateComparisonSchema),
   checkCandidates: (ids) => postJson(buildUrl('/change-set-checks'), { candidates: ids }, IntegrationCheckSchema),
+  integrateCandidates: (integrate) =>
+    postJson(buildUrl('/change-set-integrations'), integrate, CandidateIntegrationSchema),
   readDocumentTables: (documentId) => fetchJson(documentUrl(documentId, '/tables'), DocumentTablesSchema),
   editDocumentTable: (documentId, table, rows) => patchJson(
     documentUrl(documentId, `/tables/${encodeIdentitySegment(table)}`), { rows, dry_run: false },

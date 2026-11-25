@@ -1,7 +1,7 @@
 import type { Effect } from 'effect'
 import type {
   AnalysisIncidence, AnalysisProgress, AnalysisStarted, CandidateApplication, CandidateComparison, CandidateDiagramSaved,
-  CandidateResponse,
+  CandidateIntegration, CandidateResponse, Resolution,
   CandidateSummary,
   DocumentTables, DocumentTableWrite, IntegrationCheck,
 } from '../domain/schemas/candidates'
@@ -62,6 +62,15 @@ export interface StressAnalysisRepository {
   readonly compareCandidate: (
     id: string, base: string, diagram?: string,
   ) => Effect.Effect<CandidateComparison, RepoError>
+  /**
+   * *candidates* integrated into a new draft named *name*, *resolutions* settling their conflicts in order. A
+   * dry run answers the conflicts still standing with the actions each permits; writing while one stands is
+   * refused (409). Nothing reaches the model.
+   */
+  readonly integrateCandidates: (integrate: {
+    readonly candidates: readonly string[]; readonly name: string; readonly resolutions: readonly Resolution[];
+    readonly dry_run: boolean
+  }) => Effect.Effect<CandidateIntegration, RepoError>
   /** Overlaps between the offered candidates (state `candidate`); structural, never a merge. */
   readonly checkCandidates: (ids: readonly string[]) => Effect.Effect<IntegrationCheck, RepoError>
   readonly readDocumentTables: (documentId: string) => Effect.Effect<DocumentTables, RepoError>

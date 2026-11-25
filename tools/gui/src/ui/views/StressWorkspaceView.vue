@@ -269,7 +269,8 @@ onMounted(async () => {
             <IntegrationTab
               v-else-if="tab === 'integration'"
               :candidates="candidates"
-              :name-of="analysis.nameOf"
+              :analysis="analysis"
+              @open="openRow"
             />
           </section>
           <TestSetSection

@@ -111,6 +111,38 @@ export const CandidateDiagramSavedSchema = Schema.Struct({
 })
 export type CandidateDiagramSaved = typeof CandidateDiagramSavedSchema.Type
 
+/** What may be done about a conflict between candidates being integrated. */
+export const ResolutionActionSchema = Schema.Literal('take', 'drop', 'merge')
+export type ResolutionAction = typeof ResolutionActionSchema.Type
+
+/** One conflict settled: by kind and subject as the integration answered it, and the action taken. */
+export interface Resolution {
+  readonly kind: 'same-key' | 'remove-versus-use'
+  readonly subject: string
+  readonly action: ResolutionAction
+  readonly party?: string
+  readonly value?: unknown
+}
+
+/**
+ * Candidates integrated into a new one, or a dry run of it: the conflicts still standing, each with the
+ * actions it permits, how many operations the integration holds, and the new candidate once written.
+ */
+export const CandidateIntegrationSchema = Schema.Struct({
+  candidates: Schema.Array(Schema.String),
+  dry_run: Schema.Boolean,
+  operations: Schema.Number,
+  conflicts: Schema.Array(Schema.Struct({
+    kind: Schema.String,
+    subject: Schema.String,
+    parties: Schema.Array(Schema.Struct({ set_id: Schema.String, operation: FieldsSchema })),
+    actions: Schema.Array(Schema.String),
+  })),
+  integration: Schema.optional(CandidateResponseSchema),
+})
+export type CandidateIntegration = typeof CandidateIntegrationSchema.Type
+export type IntegrationConflict = CandidateIntegration['conflicts'][number]
+
 /** Structural overlaps between offered candidates: the same subject touched by more than one. */
 export const IntegrationCheckSchema = Schema.Struct({
   candidates: Schema.Array(Schema.String),
