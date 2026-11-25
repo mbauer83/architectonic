@@ -1,6 +1,7 @@
 """Candidate architecture records, scoped comparisons and stress-analysis projections."""
 from pydantic import Field, JsonValue, model_serializer
 
+from src.infrastructure.candidate_wire import CandidateHeader, CandidatePatch, RecordedEdit
 from src.infrastructure.rest.contracts.diagram_layout_editing import DiagramLayoutGeometryResponse
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 from src.infrastructure.rest.contracts.wire_shape import Closed
@@ -9,20 +10,36 @@ type Fields = dict[str, JsonValue]
 
 
 class CandidateCreate(Closed):
-    record: Fields
-    diagram: str | None = None
+    """A new candidate: its header, optionally scoped by a diagram, optionally with edits recorded in it."""
+
+    record: CandidateHeader
+    diagram: str | None = Field(
+        None, description="A stored diagram whose entities become the scope. Exclusive with `record.scope`.",
+    )
+    operations: list[RecordedEdit] = Field(
+        default_factory=list, description="Edits recorded in order, as `POST …/operations` records them.",
+    )
 
 
 class CandidateEdit(Closed):
-    based_on: str
-    patch: Fields
+    """Header fields to change, over the version last read."""
+
+    based_on: str = Field(description="The `version` the last read or write of this candidate answered.")
+    patch: CandidatePatch
 
 
-class CandidateOperation(Closed):
-    """An edit to record among a candidate's operations; the server reads its base."""
+class CandidateOperations(Closed):
+    """Edits to record among a candidate's operations, in order, as one write; the server reads each base."""
 
-    based_on: str
-    operation: Fields
+    based_on: str = Field(description="The `version` the last read or write of this candidate answered.")
+    operations: list[RecordedEdit] = Field(
+        min_length=1,
+        description=(
+            "Applied in order, each over the ones before. An edit of a field replaces an earlier edit of it, "
+            "an edit back to the value beneath drops it, and `drop` takes back what the candidate records "
+            "about one thing. Refused (409) unless the candidate is a draft."
+        ),
+    )
 
 
 class CandidateResponse(Closed):
@@ -50,7 +67,7 @@ class AnalysisStart(Closed):
 
     title: str = Field(min_length=1)
     question: str | None = None
-    naive: Fields = Field(description="The naive architecture's record: a name, and its scope or parent.")
+    naive: CandidateHeader = Field(description="The naive architecture's header: a name, and its scope or parent.")
     scope_diagram: str | None = Field(
         None, description="The diagram the analysis is drawn on; its entities scope a naive that states none.",
     )

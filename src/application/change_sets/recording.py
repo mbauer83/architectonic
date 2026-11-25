@@ -217,7 +217,34 @@ def _remove_connection(held: _Set, intent: Intent, beneath: ModelReading) -> tup
     return _Set(kept).put(RemoveConnection(address=address, base=BaseRevision(record_revision(current))))
 
 
-#: One recorder per edit. The six are the operations a change set is made of.
+def _drop(held: _Set, intent: Intent, _: ModelReading) -> tuple[Operation, ...]:
+    """Take back what the set records about one entity or connection — or about one field of it.
+
+    Dropping what the set creates drops the create and everything that names it, as removing it does.
+    Nothing recorded about it is a refusal: a drop that takes back nothing is a mistaken address.
+    """
+    field, key = intent.get("field"), _key(intent)
+    if intent.get("artifact_id"):
+        create = held.creating(str(intent["artifact_id"]))
+        if create is not None and field is None:
+            return held.without(lambda op: op is create or create.reference in entities_used(op))
+        named = str(intent["artifact_id"])
+        subject: str | ConnectionAddress = create.reference if create else canonical_entity_key(named)
+    else:
+        subject = held.address(intent)
+
+    def taken(op: Operation) -> bool:
+        claim = op.claim
+        return claim.subject == subject and (field is None or (claim.field == field and claim.key == (key or "")))
+
+    kept = held.without(taken)
+    if len(kept) == len(held.operations):
+        what = f"{field} of {subject}" if field else str(subject)
+        raise MalformedChangeSet(f"This candidate records nothing about {what}, so there is nothing to drop.")
+    return kept
+
+
+#: One recorder per edit. The six are the operations a change set is made of; `drop` takes one back.
 _RECORDERS: Mapping[str, Callable[[_Set, Intent, ModelReading], tuple[Operation, ...]]] = {
     "create_entity": _create_entity,
     "edit_entity": _edit_entity,
@@ -225,4 +252,5 @@ _RECORDERS: Mapping[str, Callable[[_Set, Intent, ModelReading], tuple[Operation,
     "add_connection": _add_connection,
     "edit_connection": _edit_connection,
     "remove_connection": _remove_connection,
+    "drop": _drop,
 }

@@ -32,7 +32,7 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
   editCandidate: (id, basedOn, patch) =>
     patchJson(candidateUrl(id), { based_on: basedOn, patch }, CandidateResponseSchema),
   recordOperation: (id, basedOn, operation) =>
-    postJson(candidateUrl(id, '/operations'), { based_on: basedOn, operation }, CandidateResponseSchema),
+    postJson(candidateUrl(id, '/operations'), { based_on: basedOn, operations: [operation] }, CandidateResponseSchema),
   compareCandidate: (id, base, diagram) =>
     fetchJson(candidateUrl(id, '/diff', { base, diagram }), CandidateComparisonSchema),
   checkCandidates: (ids) => postJson(buildUrl('/change-set-checks'), { candidates: ids }, IntegrationCheckSchema),

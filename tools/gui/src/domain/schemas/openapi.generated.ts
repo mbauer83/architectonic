@@ -1302,8 +1302,10 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Delete a candidate nothing stacks on and no analysis starts from
-         * @description Refused with 409, saying why, while a candidate stacks on it or an analysis names it as its naive.
+         * Delete a candidate nothing refers to
+         * @description Refused with 409, saying why and what to do first, while a candidate stacks on it, an analysis starts
+         *     from it, an analysis's verdicts or adaptations name it, or it is integrated (kept as the record of what was
+         *     written). A committed deletion answers 204; a dry run answers 200 with the plan.
          */
         delete: operations["changes_delete_candidate"];
         options?: never;
@@ -1362,8 +1364,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Record an edit among a candidate's operations
-         * @description Merged per claim: an edit replaces the one before it, and an edit back to its base drops it.
+         * Record edits among a draft candidate's operations
+         * @description Merged per claim: an edit replaces the one before it, and an edit back to its base drops it. All the
+         *     edits are written or none; the answer is the record and its new version.
          */
         post: operations["changes_record_operation"];
         delete?: never;
@@ -1795,7 +1798,11 @@ export interface paths {
         };
         /** Read a diagram by id */
         get: operations["diagrams_read_diagram"];
-        /** Replace a diagram */
+        /**
+         * Replace a diagram
+         * @description The canvas save: the composition, its layout (whole, or as a patch reconciled with the membership),
+         *     and any model commands, in one write. MCP `artifact_save_diagram` is the same save.
+         */
         put: operations["diagrams_replace_diagram"];
         post?: never;
         /** Remove a diagram */
@@ -2091,8 +2098,8 @@ export interface paths {
         put?: never;
         /**
          * Draw resized shapes of a diagram, writing nothing
-         * @description Each shape drawn by the composer at its new size. Needs nothing of the diagram but its address:
-         *     the drawing, where it was drawn and where it goes all arrive in the request.
+         * @description Each shape drawn by the composer at its new size. The drawing, where it was drawn and where it goes
+         *     all arrive in the request; the address names the diagram they were read from, which must be stored (404).
          */
         post: operations["diagrams_preview_diagram_layout_shapes"];
         delete?: never;
@@ -2114,7 +2121,8 @@ export interface paths {
          * Place the title and legend of a diagram being arranged, writing nothing
          * @description How far each part drawn round the diagram moves, by the composer's own rule (`surround_placement`), so
          *     the editor's canvas shows the title and the legend where the saved picture will. Needs nothing of the
-         *     diagram but its address: where everything is arrives in the request, as the editor holds it.
+         *     diagram but its address, which must be stored (404): where everything is arrives in the request, as the
+         *     editor holds it.
          */
         post: operations["diagrams_preview_diagram_surround"];
         delete?: never;
@@ -3697,6 +3705,36 @@ export interface components {
             /** Tgt Multiplicity */
             tgt_multiplicity?: string | null;
         };
+        /** AddConnectionEdit */
+        AddConnectionEdit: {
+            /**
+             * Connection Type
+             * @description The connection type, e.g. `archimate-serving`.
+             */
+            connection_type: string;
+            /**
+             * Fields
+             * @description What the connection states. Accepted: description, metadata, specializations, src_multiplicity, status, tgt_multiplicity, version.
+             */
+            fields?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "add_connection";
+            /**
+             * Source Entity
+             * @description The connection's source entity, by its id in either spelling.
+             */
+            source_entity: string;
+            /**
+             * Target Entity
+             * @description The connection's target entity, by its id in either spelling.
+             */
+            target_entity: string;
+        };
         /** AddEdgeBody */
         AddEdgeBody: {
             /** Attributes */
@@ -4058,6 +4096,24 @@ export interface components {
             /** Note */
             note: string;
         };
+        /** Align */
+        Align: {
+            /**
+             * Edge
+             * @enum {string}
+             */
+            edge: "left" | "right" | "top" | "bottom" | "centre_x" | "centre_y";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            intent: "align";
+            /**
+             * Keys
+             * @description Element keys, as the geometry read names them.
+             */
+            keys: string[];
+        };
         /**
          * AllocatedIdentifierResponse
          * @description A freshly minted workspace-scoped id for a diagram-owned entity.
@@ -4243,8 +4299,8 @@ export interface components {
          * @description Start a stress analysis: the document and its naive architecture, in one write.
          */
         AnalysisStart: {
-            /** @description The naive architecture's record: a name, and its scope or parent. */
-            naive: components["schemas"]["Fields"];
+            /** @description The naive architecture's header: a name, and its scope or parent. */
+            naive: components["schemas"]["CandidateHeader"];
             /** Question */
             question?: string | null;
             /**
@@ -6117,17 +6173,96 @@ export interface components {
             standing: components["schemas"]["OperationStanding"][];
             view: components["schemas"]["ScopedView"];
         };
-        /** CandidateCreate */
+        /**
+         * CandidateCreate
+         * @description A new candidate: its header, optionally scoped by a diagram, optionally with edits recorded in it.
+         */
         CandidateCreate: {
-            /** Diagram */
+            /**
+             * Diagram
+             * @description A stored diagram whose entities become the scope. Exclusive with `record.scope`.
+             */
             diagram?: string | null;
-            record: components["schemas"]["Fields"];
+            /**
+             * Operations
+             * @description Edits recorded in order, as `POST …/operations` records them.
+             */
+            operations?: (components["schemas"]["CreateEntityEdit"] | components["schemas"]["EditEntityEdit"] | components["schemas"]["RemoveEntityEdit"] | components["schemas"]["AddConnectionEdit"] | components["schemas"]["EditConnectionEdit"] | components["schemas"]["RemoveConnectionEdit"] | components["schemas"]["DropEdit"])[];
+            record: components["schemas"]["CandidateHeader"];
         };
-        /** CandidateEdit */
+        /**
+         * CandidateDeletion
+         * @description What deleting a candidate does: on a dry run, what it would.
+         */
+        CandidateDeletion: {
+            /** Candidate */
+            candidate: string;
+            /** Deleted */
+            deleted: boolean;
+            /** Dry Run */
+            dry_run: boolean;
+            /**
+             * Version
+             * @description The version the deletion was checked against.
+             */
+            version: string;
+        };
+        /**
+         * CandidateEdit
+         * @description Header fields to change, over the version last read.
+         */
         CandidateEdit: {
-            /** Based On */
+            /**
+             * Based On
+             * @description The `version` the last read or write of this candidate answered.
+             */
             based_on: string;
-            patch: components["schemas"]["Fields"];
+            patch: components["schemas"]["CandidatePatch"];
+        };
+        /**
+         * CandidateHeader
+         * @description A candidate as it is created: everything but its operations, which are recorded one edit at a time.
+         */
+        CandidateHeader: {
+            /**
+             * Answers
+             * @description What it answers (end states), as references.
+             */
+            answers?: string[] | null;
+            /**
+             * Id
+             * @description Its id, when the caller chooses one (`CAND@epoch.random.slug`); minted if omitted.
+             */
+            id?: string | null;
+            /**
+             * Name
+             * @description What a reader tells it from its siblings by.
+             */
+            name: string;
+            /**
+             * Parent
+             * @description The candidate it is read on top of, by id in either spelling.
+             */
+            parent?: string | null;
+            /** Rationale */
+            rationale?: string | null;
+            /**
+             * Satisfies
+             * @description What it satisfies (requirements), as references.
+             */
+            satisfies?: string[] | null;
+            /**
+             * Scope
+             * @description The model's entities it is read over without changing them. Exclusive with `diagram`.
+             */
+            scope?: string[] | null;
+            /**
+             * State
+             * @description draft (operations may change) or candidate (offered for integration).
+             * @default draft
+             * @enum {string}
+             */
+            state: "draft" | "candidate";
         };
         /** CandidateList */
         CandidateList: {
@@ -6135,13 +6270,20 @@ export interface components {
             candidates: components["schemas"]["CandidateSummary"][];
         };
         /**
-         * CandidateOperation
-         * @description An edit to record among a candidate's operations; the server reads its base.
+         * CandidateOperations
+         * @description Edits to record among a candidate's operations, in order, as one write; the server reads each base.
          */
-        CandidateOperation: {
-            /** Based On */
+        CandidateOperations: {
+            /**
+             * Based On
+             * @description The `version` the last read or write of this candidate answered.
+             */
             based_on: string;
-            operation: components["schemas"]["Fields"];
+            /**
+             * Operations
+             * @description Applied in order, each over the ones before. An edit of a field replaces an earlier edit of it, an edit back to the value beneath drops it, and `drop` takes back what the candidate records about one thing. Refused (409) unless the candidate is a draft.
+             */
+            operations: (components["schemas"]["CreateEntityEdit"] | components["schemas"]["EditEntityEdit"] | components["schemas"]["RemoveEntityEdit"] | components["schemas"]["AddConnectionEdit"] | components["schemas"]["EditConnectionEdit"] | components["schemas"]["RemoveConnectionEdit"] | components["schemas"]["DropEdit"])[];
         };
         /** CandidateOverlap */
         CandidateOverlap: {
@@ -6151,6 +6293,36 @@ export interface components {
             parties: components["schemas"]["OverlapParty"][];
             /** Subject */
             subject: string;
+        };
+        /**
+         * CandidatePatch
+         * @description Header fields to change; the rest are kept. Operations change by recording edits, not here.
+         */
+        CandidatePatch: {
+            /** Answers */
+            answers?: string[] | null;
+            /**
+             * Changes
+             * @description The operation list exactly as a read of this candidate answered it, to restore it (an undo). To change operations, record edits instead: they are given their bases by the server.
+             */
+            changes?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Name */
+            name?: string | null;
+            /** Parent */
+            parent?: string | null;
+            /** Rationale */
+            rationale?: string | null;
+            /** Satisfies */
+            satisfies?: string[] | null;
+            /** Scope */
+            scope?: string[] | null;
+            /**
+             * State
+             * @description draft <-> candidate; either -> rejected or superseded. integrated only by applying it; the three terminal states do not change.
+             */
+            state?: ("draft" | "candidate" | "integrated" | "rejected" | "superseded") | null;
         };
         /**
          * CandidateRebase
@@ -6483,30 +6655,28 @@ export interface components {
              */
             strategy: "accept_engagement" | "accept_enterprise" | "merge";
         };
-        /** ConnectElements */
+        /**
+         * ConnectElements
+         * @description A relation drawn on the canvas, or one whose details the canvas edits.
+         *
+         *     As `EditElement`'s fields are, each detail is stated or left `None`: an edit changes what it states
+         *     and keeps the rest, and `""` removes a multiplicity or empties the description. A create states what
+         *     the new relation carries; what it leaves `None` it does not carry.
+         */
         ConnectElements: {
             /** Artifact Id */
             artifact_id: string;
-            /**
-             * Description
-             * @default
-             */
-            description: string;
+            /** Description */
+            description?: string | null;
             /**
              * Op
              * @enum {string}
              */
             op: "model.relation.create" | "model.relation.edit";
-            /**
-             * Src Multiplicity
-             * @default
-             */
-            src_multiplicity: string;
-            /**
-             * Tgt Multiplicity
-             * @default
-             */
-            tgt_multiplicity: string;
+            /** Src Multiplicity */
+            src_multiplicity?: string | null;
+            /** Tgt Multiplicity */
+            tgt_multiplicity?: string | null;
         };
         /** ConnectionAssociateBody */
         ConnectionAssociateBody: {
@@ -6867,9 +7037,7 @@ export interface components {
             /** Group */
             group?: string | null;
             /** Grouping Intents */
-            grouping_intents?: {
-                [key: string]: unknown;
-            }[] | null;
+            grouping_intents?: (components["schemas"]["Nest"] | components["schemas"]["Unnest"])[] | null;
             /** Keywords */
             keywords?: string[] | null;
             /** Layout */
@@ -6999,6 +7167,26 @@ export interface components {
              */
             version: string;
         };
+        /** CreateEntityEdit */
+        CreateEntityEdit: {
+            /**
+             * Artifact Id
+             * @description The id the new entity is to have. Omit it and one is minted from the type and name and answered in the record; other edits then name the entity by that id.
+             */
+            artifact_id?: string | null;
+            /**
+             * Fields
+             * @description What the entity states. Required: artifact_type, name, group (a model project's id or slug). Accepted: artifact_type, attribute_types, group, keywords, name, notes, properties, specializations, status, summary, version.
+             */
+            fields: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "create_entity";
+        };
         /**
          * CreateGroupBody
          * @description A create carries the slug: it is the caller's chosen natural key, not a minted id, and the
@@ -7031,6 +7219,26 @@ export interface components {
              * @default []
              */
             type_filter: string[];
+        };
+        /** CreateGrouping */
+        CreateGrouping: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            intent: "create_grouping";
+            /**
+             * Keys
+             * @description Its members.
+             */
+            keys: string[];
+            /** Label */
+            label: string;
+            /**
+             * Parent
+             * @description The grouping it nests in (`g-…`); the canvas when omitted.
+             */
+            parent?: string | null;
         };
         /** CreateIconRequest */
         CreateIconRequest: {
@@ -7314,6 +7522,19 @@ export interface components {
              * @constant
              */
             op: "model.element.delete";
+        };
+        /** DeleteGrouping */
+        DeleteGrouping: {
+            /**
+             * Grouping
+             * @description The grouping (`g-…`); its members and subgroups go to its parent.
+             */
+            grouping: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            intent: "delete_grouping";
         };
         /**
          * DenialDetails
@@ -7997,9 +8218,7 @@ export interface components {
             /** Entity Ids */
             entity_ids: string[];
             /** Grouping Intents */
-            grouping_intents?: {
-                [key: string]: unknown;
-            }[] | null;
+            grouping_intents?: (components["schemas"]["Nest"] | components["schemas"]["Unnest"])[] | null;
             /** Name */
             name: string;
         };
@@ -8059,6 +8278,57 @@ export interface components {
             entity_count: number;
             /** Max Entities */
             max_entities: number;
+        };
+        /**
+         * DiagramReplacement
+         * @description A diagram replaced whole: its composition, its layout, and the model commands saved with it.
+         */
+        DiagramReplacement: {
+            /** Authored Groupings */
+            authored_groupings?: {
+                [key: string]: unknown;
+            }[] | null;
+            /**
+             * Commands
+             * @description Model edits saved in the same write as the diagram: model.element.create / rename / edit / delete, model.relation.create / edit. All land or none do.
+             */
+            commands?: components["schemas"]["CanvasCommand"][];
+            /** Connection Ids */
+            connection_ids: string[];
+            /** Diagram Entities */
+            diagram_entities?: {
+                [key: string]: unknown;
+            } | null;
+            /** Diagram Type */
+            diagram_type: string;
+            /**
+             * Dry Run
+             * @default true
+             */
+            dry_run: boolean;
+            /** Entity Ids */
+            entity_ids: string[];
+            /** Group */
+            group?: string | null;
+            /** Grouping Intents */
+            grouping_intents?: (components["schemas"]["Nest"] | components["schemas"]["Unnest"])[] | null;
+            /** Layout */
+            layout?: {
+                [key: string]: unknown;
+            } | null;
+            layout_patch?: components["schemas"]["LayoutPatch"] | null;
+            /** Name */
+            name: string;
+            /** Status */
+            status?: string | null;
+            /** Tlp */
+            tlp?: string | null;
+            /** Version */
+            version?: string | null;
+            /** Viewpoint */
+            viewpoint?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * DiagramSummary
@@ -8317,6 +8587,24 @@ export interface components {
             hits: components["schemas"]["DisplaySearchHit"][];
             /** Query */
             query: string;
+        };
+        /** Distribute */
+        Distribute: {
+            /**
+             * Axis
+             * @enum {string}
+             */
+            axis: "x" | "y";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            intent: "distribute";
+            /**
+             * Keys
+             * @description Element keys, as the geometry read names them.
+             */
+            keys: string[];
         };
         /**
          * DocumentDetailResponse
@@ -8733,6 +9021,38 @@ export interface components {
             shapes: components["schemas"]["ShapeToDraw"][];
         };
         /**
+         * DropEdit
+         * @description Take back what the candidate records about one thing, whatever it was.
+         */
+        DropEdit: {
+            /**
+             * Artifact Id
+             * @description An entity: drops every operation about it, and for one the candidate creates, the create and every operation that names it.
+             */
+            artifact_id?: string | null;
+            /** Connection Type */
+            connection_type?: string | null;
+            /**
+             * Field
+             * @description Only the edit of this field (and `key`), not the whole thing.
+             */
+            field?: string | null;
+            /** Key */
+            key?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "drop";
+            /**
+             * Source Entity
+             * @description With connection_type and target_entity: a connection.
+             */
+            source_entity?: string | null;
+            /** Target Entity */
+            target_entity?: string | null;
+        };
+        /**
          * DuplicateEdgeDetails
          * @description ``duplicate_edge``: the edge that already connects these two nodes this way.
          *
@@ -8794,60 +9114,40 @@ export interface components {
             /** Tgt Multiplicity */
             tgt_multiplicity?: string | null;
         };
-        /** EditDiagramGuiBody */
-        EditDiagramGuiBody: {
-            /** Authored Groupings */
-            authored_groupings?: {
-                [key: string]: unknown;
-            }[] | null;
+        /** EditConnectionEdit */
+        EditConnectionEdit: {
             /**
-             * Commands
-             * @default []
+             * Connection Type
+             * @description The connection type, e.g. `archimate-serving`.
              */
-            commands: components["schemas"]["CanvasCommand"][];
-            /** Connection Ids */
-            connection_ids: string[];
-            /** Diagram Entities */
-            diagram_entities?: {
-                [key: string]: unknown;
-            } | null;
-            /** Diagram Type */
-            diagram_type: string;
+            connection_type: string;
             /**
-             * Dry Run
-             * @default true
+             * Field
+             * @description The field changed: one of description, metadata, specializations, src_multiplicity, tgt_multiplicity.
              */
-            dry_run: boolean;
-            /** Entity Ids */
-            entity_ids: string[];
-            /** Group */
-            group?: string | null;
-            /** Grouping Intents */
-            grouping_intents?: {
-                [key: string]: unknown;
-            }[] | null;
-            /** Layout */
-            layout?: {
-                [key: string]: unknown;
-            } | null;
-            /** Layout Patch */
-            layout_patch?: {
-                [key: string]: {
-                    [key: string]: unknown;
-                };
-            } | null;
-            /** Name */
-            name: string;
-            /** Status */
-            status?: string | null;
-            /** Tlp */
-            tlp?: string | null;
-            /** Version */
-            version?: string | null;
-            /** Viewpoint */
-            viewpoint?: {
-                [key: string]: unknown;
-            } | null;
+            field: string;
+            /**
+             * Key
+             * @description For a field patched key by key (entity: attribute_types, properties; connection: metadata), the one key changed; omitted for any other field.
+             */
+            key?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "edit_connection";
+            /**
+             * Source Entity
+             * @description The connection's source entity, by its id in either spelling.
+             */
+            source_entity: string;
+            /**
+             * Target Entity
+             * @description The connection's target entity, by its id in either spelling.
+             */
+            target_entity: string;
+            /** @description What the field becomes. For a keyed field, null removes the key. */
+            value: components["schemas"]["JsonValue"];
         };
         /** EditDocumentRequest */
         EditDocumentRequest: {
@@ -8961,6 +9261,31 @@ export interface components {
             summary?: string | null;
             /** Version */
             version?: string | null;
+        };
+        /** EditEntityEdit */
+        EditEntityEdit: {
+            /**
+             * Artifact Id
+             * @description The entity, by its id in either spelling: `PREFIX@epoch.random` or with its slug.
+             */
+            artifact_id: string;
+            /**
+             * Field
+             * @description The field changed: one of attribute_types, group, keywords, name, notes, properties, specializations, status, summary, version.
+             */
+            field: string;
+            /**
+             * Key
+             * @description For a field patched key by key (entity: attribute_types, properties; connection: metadata), the one key changed; omitted for any other field.
+             */
+            key?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "edit_entity";
+            /** @description What the field becomes. For a keyed field, null removes the key. */
+            value: components["schemas"]["JsonValue"];
         };
         /** EditMatrixBody */
         EditMatrixBody: {
@@ -10043,9 +10368,7 @@ export interface components {
             /** Entity Ids */
             entity_ids: string[];
             /** Grouping Intents */
-            grouping_intents?: {
-                [key: string]: unknown;
-            }[] | null;
+            grouping_intents?: (components["schemas"]["Nest"] | components["schemas"]["Unnest"])[] | null;
             /** Name */
             name: string;
             /** Proposed Elements */
@@ -10839,24 +11162,30 @@ export interface components {
             query: string;
         };
         /**
+         * LayoutEntryPatch
+         * @description One entry of the layout: what it becomes, and what the caller read it as.
+         */
+        LayoutEntryPatch: {
+            /** @description What the entry held when it was read (null for absent). When stated and no longer true, the whole patch is refused (409) and nothing is written; omitted, the entry is written whatever it holds. */
+            based_on?: components["schemas"]["JsonValue"];
+            /** @description What the entry becomes, null to remove it. elements and boxes: {x, y, w?, h?} in whole numbers; relations: {from: {side, at}, to: {side, at}, via: [[x, y], …], label: {at, dx, dy}}; z: an integer. */
+            value: components["schemas"]["JsonValue"];
+        };
+        /**
          * LayoutIntentsBody
-         * @description What the editor means, in order. Layout: ``align`` (``keys``, ``edge``), ``distribute`` (``keys``,
-         *     ``axis``), ``straighten`` (``relations``) and ``return_to_automatic`` (``keys``; none for the whole
-         *     layout). Groupings: ``nest`` (``keys``, ``grouping``), ``unnest`` (``keys``), ``create_grouping``
-         *     (``label``, ``keys``, ``parent?``) and ``delete_grouping`` (``grouping``). Layout intents compile to the
+         * @description What the editor means, in order (`diagram_layout_wire.ArrangeIntent`). Layout intents compile to the
          *     patch that states them, checked against the stored layout; grouping intents to the diagram's new
          *     groupings and the layout change that keeps the layout matching them, written in the same edit.
          */
         LayoutIntentsBody: {
             /**
              * Dry Run
+             * @description Answer the patch and groupings that would be written, and write nothing.
              * @default true
              */
             dry_run: boolean;
             /** Intents */
-            intents: {
-                [key: string]: unknown;
-            }[];
+            intents: (components["schemas"]["Align"] | components["schemas"]["Distribute"] | components["schemas"]["Straighten"] | components["schemas"]["ReturnToAutomatic"] | components["schemas"]["Nest"] | components["schemas"]["Unnest"] | components["schemas"]["CreateGrouping"] | components["schemas"]["DeleteGrouping"])[];
         };
         /**
          * LayoutLabelContract
@@ -10875,6 +11204,40 @@ export interface components {
              * @default 0
              */
             dy: number;
+        };
+        /**
+         * LayoutPatch
+         * @description Entries of a diagram's layout block to change, by section and key; the others are kept.
+         */
+        LayoutPatch: {
+            /**
+             * Boxes
+             * @description Box placements (groupings, rule boxes). Entries by layout key (as the geometry read names them); null removes the entry without checking it.
+             */
+            boxes?: {
+                [key: string]: components["schemas"]["LayoutEntryPatch"] | null;
+            } | null;
+            /**
+             * Elements
+             * @description Element placements. Entries by layout key (as the geometry read names them); null removes the entry without checking it.
+             */
+            elements?: {
+                [key: string]: components["schemas"]["LayoutEntryPatch"] | null;
+            } | null;
+            /**
+             * Relations
+             * @description Relation routes. Entries by layout key (as the geometry read names them); null removes the entry without checking it.
+             */
+            relations?: {
+                [key: string]: components["schemas"]["LayoutEntryPatch"] | null;
+            } | null;
+            /**
+             * Z
+             * @description Stacking order of elements and boxes. Entries by layout key (as the geometry read names them); null removes the entry without checking it.
+             */
+            z?: {
+                [key: string]: components["schemas"]["LayoutEntryPatch"] | null;
+            } | null;
         };
         /**
          * LayoutPatchWire
@@ -11579,6 +11942,24 @@ export interface components {
              */
             traversal?: "direct" | "derived";
         };
+        /** Nest */
+        Nest: {
+            /**
+             * Grouping
+             * @description A listed grouping's id (`g-…`).
+             */
+            grouping: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            intent: "nest";
+            /**
+             * Keys
+             * @description What joins the grouping, leaving any other.
+             */
+            keys: string[];
+        };
         /**
          * NoDiagramViewpointResponse
          * @description The artifact pins no viewpoint, so there is no projection and nothing else to say.
@@ -11946,24 +12327,16 @@ export interface components {
         };
         /**
          * PatchLayoutBody
-         * @description Entries of the layout block by section (``elements``, ``boxes``, ``relations``, ``z``) and key.
-         *
-         *     Each entry is ``null`` to remove it, or ``{value, based_on?}``: what it becomes (``null`` removes
-         *     it) and what the caller read it as (``null`` for absent). A ``based_on`` that no longer holds is
-         *     a conflict, and nothing is written.
+         * @description Entries of the layout block to change, by section and key (`diagram_layout_wire.LayoutPatch`).
          */
         PatchLayoutBody: {
             /**
              * Dry Run
+             * @description Answer the layout that would be written, and write nothing.
              * @default true
              */
             dry_run: boolean;
-            /** Patch */
-            patch: {
-                [key: string]: {
-                    [key: string]: unknown;
-                };
-            };
+            patch: components["schemas"]["LayoutPatch"];
         };
         /**
          * PermittedConnectionsByPeer
@@ -12774,6 +13147,42 @@ export interface components {
                 [key: string]: components["schemas"]["RelationNotation"];
             };
         };
+        /** RemoveConnectionEdit */
+        RemoveConnectionEdit: {
+            /**
+             * Connection Type
+             * @description The connection type, e.g. `archimate-serving`.
+             */
+            connection_type: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "remove_connection";
+            /**
+             * Source Entity
+             * @description The connection's source entity, by its id in either spelling.
+             */
+            source_entity: string;
+            /**
+             * Target Entity
+             * @description The connection's target entity, by its id in either spelling.
+             */
+            target_entity: string;
+        };
+        /** RemoveEntityEdit */
+        RemoveEntityEdit: {
+            /**
+             * Artifact Id
+             * @description The entity, by its id in either spelling: `PREFIX@epoch.random` or with its slug.
+             */
+            artifact_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "remove_entity";
+        };
         /**
          * RemovePatchWire
          * @description The ids to remove, per collection — the same closed set, for the same reason.
@@ -12909,6 +13318,19 @@ export interface components {
             connection_type: string;
             /** Target */
             target: string;
+        };
+        /** ReturnToAutomatic */
+        ReturnToAutomatic: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            intent: "return_to_automatic";
+            /**
+             * Keys
+             * @description Element keys; omitted, the whole layout returns to PlantUML's.
+             */
+            keys?: string[] | null;
         };
         /**
          * RouteChangeContract
@@ -13665,6 +14087,19 @@ export interface components {
             /** Value */
             value?: number;
         };
+        /** Straighten */
+        Straighten: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            intent: "straighten";
+            /**
+             * Relations
+             * @description Relation keys, as the geometry read names them.
+             */
+            relations: string[];
+        };
         /** StressPerspective */
         StressPerspective: {
             /** Id */
@@ -14319,6 +14754,19 @@ export interface components {
             kind: "element" | "relationship";
             /** Reason */
             reason: string;
+        };
+        /** Unnest */
+        Unnest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            intent: "unnest";
+            /**
+             * Keys
+             * @description What leaves its grouping for the grouping's parent or the canvas.
+             */
+            keys: string[];
         };
         /** UntouchedElement */
         UntouchedElement: {
@@ -18683,7 +19131,12 @@ export interface operations {
     };
     changes_delete_candidate: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The version last read; a candidate changed since is refused with 409 instead of deleted. */
+                based_on?: string | null;
+                /** @description Answer what the deletion would do and delete nothing (the default). */
+                dry_run?: boolean;
+            };
             header?: never;
             path: {
                 artifact_id: string;
@@ -18692,6 +19145,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Dry-run plan; nothing was deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateDeletion"];
+                };
+            };
             /** @description Successful Response */
             204: {
                 headers: {
@@ -19018,7 +19480,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CandidateOperation"];
+                "application/json": components["schemas"]["CandidateOperations"];
             };
         };
         responses: {
@@ -20759,7 +21221,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["EditDiagramGuiBody"];
+                "application/json": components["schemas"]["DiagramReplacement"];
             };
         };
         responses: {

@@ -20,6 +20,7 @@ from src.application.change_sets.candidate_architecture import (
     refused_transition,
 )
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.candidate_wire import CandidatePatch
 from src.infrastructure.mcp import mcp_artifact_server as model
 from src.infrastructure.mcp.artifact_mcp import candidate_tools as mcp
 from src.infrastructure.rest.routers import candidates, state
@@ -71,13 +72,15 @@ def test_an_edit_to_integrated_is_refused_naming_apply_on_both_surfaces(client: 
     assert client.get(f"/api/change-sets/{ref}").json()["record"]["state"] == "draft"
     version = mcp.change_set_read(ref, repo_root=str(client.root))["version"]  # type: ignore[attr-defined]
     with pytest.raises(ValueError, match="apply"):
-        mcp.change_set_edit(ref, version, {"state": "integrated"}, str(client.root))  # type: ignore[attr-defined]
+        mcp.change_set_edit(ref, version, CandidatePatch(state="integrated"), str(client.root))  # type: ignore[attr-defined]
 
 
 def test_a_new_candidate_cannot_be_born_integrated(client: TestClient) -> None:
     refused = client.post("/api/change-sets", json={"record": {"name": "Born late", "state": "integrated"}})
 
-    assert refused.status_code == 409, refused.text
+    # The request schema admits draft or candidate only; the store refuses it too, for any other caller.
+    assert refused.status_code == 422, refused.text
+    assert refused_transition(None, "integrated") is not None
 
 
 def test_offered_withdrawn_and_set_aside_are_edits_and_a_set_aside_one_stays(client: TestClient) -> None:
@@ -89,6 +92,23 @@ def test_offered_withdrawn_and_set_aside_are_edits_and_a_set_aside_one_stays(cli
     assert _set_state(client, ref, "draft").status_code == 409
 
 
+def test_recording_or_rebasing_an_offered_candidate_is_a_409_that_says_to_return_it_to_draft(
+    client: TestClient,
+) -> None:
+    """Regression: rebasing an offered candidate answered 422 with a sentence about recording."""
+    ref = _create(client)
+    assert _set_state(client, ref, "candidate").status_code == 200
+    version = client.get(f"/api/change-sets/{ref}").json()["version"]
+
+    rebased = client.post(f"/api/change-sets/{ref}/rebase", json={"based_on": version})
+    recorded = client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operations": [
+        {"op": "remove_entity", "artifact_id": "APP@1.x"}]})
+
+    for refused in (rebased, recorded):
+        assert refused.status_code == 409, refused.text
+        assert "Return it to draft" in refused.json()["detail"]["message"]
+
+
 def test_applying_is_the_way_in_to_integrated(client: TestClient) -> None:
     root = client.root  # type: ignore[attr-defined]
     made = model.artifact_create_entity(
@@ -96,8 +116,8 @@ def test_applying_is_the_way_in_to_integrated(client: TestClient) -> None:
     )
     ref = _create(client)
     version = client.get(f"/api/change-sets/{ref}").json()["version"]
-    recorded = client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operation": {
-        "op": "edit_entity", "artifact_id": made["artifact_id"], "field": "name", "value": "Registry"}})
+    recorded = client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operations": [{
+        "op": "edit_entity", "artifact_id": made["artifact_id"], "field": "name", "value": "Registry"}]})
     assert recorded.status_code == 200, recorded.text
 
     applied = client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": False})
@@ -119,8 +139,8 @@ def test_a_rename_during_an_apply_does_not_turn_a_committed_write_into_a_409(
     )
     ref = _create(client)
     version = client.get(f"/api/change-sets/{ref}").json()["version"]
-    client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operation": {
-        "op": "edit_entity", "artifact_id": made["artifact_id"], "field": "name", "value": "Registry"}})
+    client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operations": [{
+        "op": "edit_entity", "artifact_id": made["artifact_id"], "field": "name", "value": "Registry"}]})
     write = candidate_service.write_operations
 
     def write_then_rename(*args: Any, **kwargs: Any) -> Any:

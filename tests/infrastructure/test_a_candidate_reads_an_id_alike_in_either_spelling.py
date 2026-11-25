@@ -65,7 +65,7 @@ def _created(client: TestClient, record: dict[str, Any]) -> dict[str, Any]:
 
 def _record(client: TestClient, ref: str, operation: dict[str, Any]) -> dict[str, Any]:
     version = client.get(f"/api/change-sets/{ref}").json()["version"]
-    recorded = client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operation": operation})
+    recorded = client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operations": [operation]})
     assert recorded.status_code == 200, recorded.text
     return dict(recorded.json())
 

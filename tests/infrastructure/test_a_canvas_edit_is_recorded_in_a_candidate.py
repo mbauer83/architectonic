@@ -21,15 +21,15 @@ def test_an_edit_is_recorded_merged_and_refused_when_stale(tmp_path: Path, monke
         created = client.post("/api/change-sets", json={"record": {"name": "Naive architecture"}}).json()
         path = f"/api/change-sets/{created['record']['id']}/operations"
 
-        first = client.post(path, json={"based_on": created["version"], "operation": CREATE})
+        first = client.post(path, json={"based_on": created["version"], "operations": [CREATE]})
         assert first.status_code == 200, first.text
         rename = {"op": "edit_entity", "artifact_id": QUEUE, "field": "name", "value": "Promotion Queue"}
-        second = client.post(path, json={"based_on": first.json()["version"], "operation": rename})
+        second = client.post(path, json={"based_on": first.json()["version"], "operations": [rename]})
         assert second.status_code == 200, second.text
 
         operations = second.json()["record"]["changes"]["operations"]
         assert [(op["op"], op["fields"]["name"]) for op in operations] == [("create_entity", "Promotion Queue")]
         stale = {**rename, "value": "Bounded Queue"}
-        assert client.post(path, json={"based_on": created["version"], "operation": stale}).status_code == 409
-        unknown = client.post(path, json={"based_on": second.json()["version"], "operation": {"op": "rename"}})
+        assert client.post(path, json={"based_on": created["version"], "operations": [stale]}).status_code == 409
+        unknown = client.post(path, json={"based_on": second.json()["version"], "operations": [{"op": "rename"}]})
         assert unknown.status_code == 422

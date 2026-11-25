@@ -560,6 +560,14 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         ),
     ),
     WriteCall(
+        # One edit, recorded with the base the server reads: a candidate's operations are written this way.
+        "change_set_record",
+        lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"],
+                   "operations": [{"op": "create_entity", "fields": {
+                       "artifact_type": "application-component", "name": "Walk Queue", "group": "uncategorized"}}]},
+        captures=(Capture("candidate_version", _answer_field("version")),),
+    ),
+    WriteCall(
         "change_set_edit",
         lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"],
                    "patch": {"rationale": "Queue promotions while the destination is offline."}},
@@ -572,8 +580,8 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"]},
     ),
     WriteCall(
-        # A dry run: the walk's candidate holds no operations, so the answer is the refusal that says
-        # so. That proves the transport and the queue; the write itself is the infrastructure tests'.
+        # A dry run of the one create the walk recorded. That proves the transport and the queue; the
+        # write itself is the infrastructure tests'.
         "change_set_apply",
         lambda c: {"artifact_id": c.created["candidate"], "dry_run": True},
         mutates=False,
@@ -601,7 +609,7 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         # The candidate the walk made, which nothing stacks on and no analysis names. The naive the
         # start made stays: deleting it is refused while its analysis names it.
         "change_set_delete",
-        lambda c: {"artifact_id": c.created["candidate"]},
+        lambda c: {"artifact_id": c.created["candidate"], "dry_run": False},
     ),
     # ── scratchpads: create → replace → edit → lift → delete, the whole loop an agent has ───────
     #

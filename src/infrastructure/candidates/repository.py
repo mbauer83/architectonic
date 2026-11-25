@@ -34,6 +34,11 @@ class CandidateConflict(ValueError):
     pass
 
 
+class NotStored(ValueError):
+    """What a request names — a candidate, an analysis, a diagram — is not stored. A refusal, with a sentence:
+    a `ValueError`, as the write path's refusals are, so every transport answers it in words (REST as 404)."""
+
+
 class CandidateArchitectureStore:
     def __init__(self, root: Path) -> None:
         self.directory = root.joinpath(*KIND.roots[0])
@@ -76,7 +81,9 @@ class CandidateArchitectureStore:
     def require(self, ref: str) -> CandidateArchitecture:
         found = self.find(ref)
         if found is None:
-            raise FileNotFoundError(ref)
+            raise NotStored(
+                f"No candidate architecture {ref} is stored; change_set_list (GET /api/change-sets) lists them."
+            )
         return found
 
     def list(self) -> list[CandidateArchitecture]:
@@ -125,7 +132,7 @@ class CandidateArchitectureStore:
         on it is the caller's to ask."""
         stored = self.stored_id(ref)
         if stored is None:
-            raise FileNotFoundError(ref)
+            raise NotStored(f"No candidate architecture {ref} is stored.")
         with self._locked(stored):
             current = self.find(stored)
             if based_on is not None and current is not None and record_revision(to_mapping(current)) != based_on:

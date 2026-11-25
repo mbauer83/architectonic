@@ -25,6 +25,7 @@ from src.application.change_sets.recorded_form import operation_to_mapping
 from src.application.change_sets.recorded_form import to_mapping as set_to_mapping
 from src.application.change_sets.recording import recorded
 from src.application.change_sets.stacking import stack_of
+from src.application.identifier_allocator import get_default_allocator
 from src.application.modeling.artifact_write import generate_entity_id
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds
 from src.application.stress_analysis.workspace import analyse
@@ -32,10 +33,17 @@ from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.viewpoints.placed_occurrences import resolve_placed_entities
 from src.domain.artifact_id import canonical_entity_key
+from src.domain.modules.module_types import EntityTypeName
 from src.domain.repository.repo_default_stress_analysis import NAIVE_CANDIDATE, STRESS_ANALYSIS
+from src.infrastructure.app_bootstrap import get_module_registry
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
 from src.infrastructure.candidates.apply import write_operations
-from src.infrastructure.candidates.repository import KIND, CandidateArchitectureStore, CandidateConflict
+from src.infrastructure.candidates.repository import (
+    KIND,
+    CandidateArchitectureStore,
+    CandidateConflict,
+    NotStored,
+)
 from src.infrastructure.rendering.layout.diagram_geometry import stored_geometry
 from src.infrastructure.write.artifact_write.document import create_document
 from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
@@ -79,8 +87,11 @@ class CandidateService:
         notify_paths_changed([self.store.path(candidate.id)])
         return {"record": to_mapping(candidate), "version": version}
 
-    def create(self, record: Mapping[str, Any], diagram: str | None = None) -> dict[str, Any]:
-        body = dict(record)
+    def create(
+        self, record: Mapping[str, Any], diagram: str | None = None, edits: Sequence[Mapping[str, Any]] = (),
+    ) -> dict[str, Any]:
+        """A new candidate from its header, scoped by *diagram* where named, with *edits* recorded, in one write."""
+        body = {key: value for key, value in record.items() if value is not None}
         body.setdefault("state", "draft")
         body.setdefault("changes", set_to_mapping(ChangeSet((), self.index.read_model_version().etag)))
         if diagram:
@@ -88,10 +99,13 @@ class CandidateService:
                 raise ValueError("Select either diagram scope or explicit scope.")
             drawing = self.index.get_diagram(diagram)
             if drawing is None:
-                raise FileNotFoundError(diagram)
+                raise NotStored(f"No diagram {diagram} is stored.")
             # A diagram may draw one entity more than once; the scope is the entities, each once.
             placed = resolve_placed_entities(dict(drawing.extra), self.registry)
             body["scope"] = list(dict.fromkeys(canonical_entity_key(e.artifact_id) for e in placed))
+        if edits:
+            body["id"] = body.get("id") or generate_entity_id(str(KIND.id_prefix), str(body.get("name") or ""))
+            body = to_mapping(self._recorded_all(from_mapping(body), edits))
         return self.save(body, None)
 
     def start(
@@ -185,7 +199,7 @@ class CandidateService:
 
     def rebase(self, ref: str, based_on: str) -> dict[str, Any]:
         """Write each drifted operation again against the model as it stands now. Nothing drifted, nothing changes."""
-        candidate = self.store.require(ref)
+        candidate = _a_draft(self.store.require(ref), "re-based")
         ref = candidate.id
         moved = rebase(candidate, self.store, self.registry, self.index.read_model_version().etag)
         return self.save(to_mapping(moved), based_on, ref=ref)
@@ -238,13 +252,27 @@ class CandidateService:
         current = self.read(ref)
         return self.save(current["record"] | dict(patch), based_on, ref=str(current["record"]["id"]))
 
-    def record(self, ref: str, based_on: str, intent: Mapping[str, Any]) -> dict[str, Any]:
-        """Record an edit among the candidate's operations, its base read from the stack beneath it."""
-        candidate = self.store.require(ref)
-        ref = candidate.id
-        named = [str(intent[part]) for part in ("artifact_id", "source_entity", "target_entity") if part in intent]
-        beneath = reading_beneath(candidate, self.store, self.registry, named)
-        return self.save(to_mapping(recorded(candidate, intent, beneath)), based_on, ref=ref)
+    def record(self, ref: str, based_on: str, edits: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+        """Record *edits* among the candidate's operations, in order, as one write over *based_on*.
+
+        Each edit's base is read from the stack beneath it, with the edits before it in the list laid
+        over: the list reads as the same edits recorded one call each, and all of it is written or none.
+        A create that names no id is given one, minted from its type and name.
+        """
+        candidate = _a_draft(self.store.require(ref), "given new operations")
+        return self.save(to_mapping(self._recorded_all(candidate, edits)), based_on, ref=candidate.id)
+
+    def _recorded_all(
+        self, candidate: CandidateArchitecture, edits: Sequence[Mapping[str, Any]],
+    ) -> CandidateArchitecture:
+        for edit in edits:
+            intent = _with_minted_id(edit)
+            named = [
+                str(intent[part]) for part in ("artifact_id", "source_entity", "target_entity") if intent.get(part)
+            ]
+            beneath = reading_beneath(candidate, self.store, self.registry, named)
+            candidate = recorded(candidate, intent, beneath)
+        return candidate
 
     def compare(
         self, ref: str, base: str, naive: str | None, diagram: str | None, ontology: DeclaresElementKinds,
@@ -253,7 +281,7 @@ class CandidateService:
         if diagram:
             record = self.index.get_diagram(diagram)
             if record is None:
-                raise FileNotFoundError(diagram)
+                raise NotStored(f"No diagram {diagram} is stored.")
             parsed = parse_diagram_file(record.path)
             result["drawing"] = stored_geometry(parsed, record.artifact_id, self.root, ontology)
         return result
@@ -262,7 +290,7 @@ class CandidateService:
         """The analysis document's id, its naive candidate's id and its typed tables; refused for any other document."""
         doc = self.index.get_document(ref)
         if doc is None:
-            raise FileNotFoundError(ref)
+            raise NotStored(f"No document {ref} is stored.")
         if doc.doc_type != STRESS_ANALYSIS:
             raise ValueError("Select a stress-analysis document.")
         naive = str(doc.extra.get(NAIVE_CANDIDATE) or "")
@@ -322,6 +350,33 @@ def document_writer(
         )
 
     return write
+
+
+def _a_draft(candidate: CandidateArchitecture, done: str) -> CandidateArchitecture:
+    """*candidate*, refused (409, a state conflict) unless it is a draft, saying how to make it one."""
+    if candidate.state == "draft":
+        return candidate
+    if candidate.state == "candidate":
+        raise CandidateConflict(
+            f"{candidate.id} is offered (state candidate); only a draft is {done}. Return it to draft first "
+            "(change_set_edit, or PATCH, with state draft)."
+        )
+    raise CandidateConflict(f"{candidate.id} is {candidate.state}, which is final; only a draft is {done}.")
+
+
+def _with_minted_id(edit: Mapping[str, Any]) -> Mapping[str, Any]:
+    """*edit*, or for a create that names no id, the create with one minted as the write path mints one."""
+    if edit.get("op") != "create_entity" or edit.get("artifact_id"):
+        return edit
+    fields = edit.get("fields") or {}
+    info = get_module_registry().find_entity_type(EntityTypeName(str(fields.get("artifact_type") or "")))
+    if info is None:
+        raise ValueError(
+            f"A new entity names its artifact_type, and {fields.get('artifact_type')!r} is not one: see the "
+            "entity types `artifact_help` lists."
+        )
+    minted = get_default_allocator().allocate(prefix=info.prefix, name_hint=str(fields.get("name") or ""))
+    return {**edit, "artifact_id": minted}
 
 
 def _refuse_unwritten(result: WriteResult, *, wrote: bool) -> None:

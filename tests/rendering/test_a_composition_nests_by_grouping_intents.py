@@ -16,8 +16,8 @@ from src.application.artifacts.repository import ArtifactRepository
 from src.domain.artifact_id import stable_id
 from src.domain.repository.frontmatter import parse_frontmatter
 from src.infrastructure.artifact_index import shared_artifact_index
+from src.infrastructure.diagram_composition import DiagramComposition
 from src.infrastructure.rest.routers import state as s
-from src.infrastructure.rest.routers.diagrams._write_bodies import DiagramComposition
 from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
 from tests.support.api_app import build_api_app
 from tests.support.rendered_pictures import RenderedModel, build_rendered_model, plantuml_available

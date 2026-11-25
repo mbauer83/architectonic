@@ -202,6 +202,13 @@ def test_canvas_commands_and_membership_publish_together(model: RenderedModel, c
     assert proposed in client.get(f"/api/diagrams/{artifact_id}").json()["entity_ids_used"]
 
 
+def test_the_drawing_previews_answer_404_for_a_diagram_that_is_not_stored(client: TestClient) -> None:
+    """Regression: both previews ignored the diagram their path names."""
+    drawn = client.post("/api/diagrams/ARC@1.missing/layout/preview", json={"shapes": []})
+
+    assert drawn.status_code == 404, drawn.text
+
+
 def test_a_server_without_plantuml_answers_503_not_a_fault_of_the_request(
     model: RenderedModel, client: TestClient, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

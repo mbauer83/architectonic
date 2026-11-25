@@ -40,7 +40,7 @@ from src.infrastructure.mcp.artifact_mcp.edit_tools import (  # noqa: F401
     artifact_edit_diagram,
     artifact_edit_entity,
 )
-from src.infrastructure.mcp.artifact_mcp.layout_tools import register_layout_tools
+from src.infrastructure.mcp.artifact_mcp.layout_tools import register_layout_read_tools, register_layout_tools
 from src.infrastructure.mcp.artifact_mcp.name_normalization import install_call_tool_normalizer
 from src.infrastructure.mcp.artifact_mcp.scratchpad_tools import (
     register_scratchpad_read_tools,
@@ -93,6 +93,7 @@ register_verify_tools(mcp_read)
 register_scratchpad_read_tools(mcp_read)
 register_change_read_tools(mcp_read)
 register_candidate_read_tools(mcp_read)
+register_layout_read_tools(mcp_read)
 install_call_tool_normalizer(mcp_read)
 
 

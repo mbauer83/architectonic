@@ -222,6 +222,8 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "artifact_edit_diagram": (False, True, False, False),
         # Destructive: return_to_automatic and a patch removing entries discard a stated layout.
         "artifact_arrange_diagram": (False, True, False, False),
+        # Replaces the diagram whole, and may delete or edit elements in the same write.
+        "artifact_replace_diagram": (False, True, False, False),
         "artifact_delete_diagram": (False, True, False, False),
         # create_matrix is also its content-upsert operation when artifact_id already exists.
         "artifact_create_matrix": (False, True, False, False),
@@ -252,6 +254,8 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         # One lifecycle tool spans create through edit/delete.
         "artifact_viewpoint": (False, True, False, False),
         "change_set_create": (False, False, False, False),
+        # An edit replaces what an earlier one of the same field said, and `drop` takes operations back.
+        "change_set_record": (False, True, False, False),
         "change_set_edit": (False, True, False, False),
         # Rewrites the base of each drifted operation, so what the candidate held before is replaced.
         "change_set_rebase": (False, True, False, False),

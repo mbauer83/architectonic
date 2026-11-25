@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.application.modeling.diagram_identities import alias_by_instance
 from src.application.runtime_catalogs import RuntimeCatalogs
@@ -25,6 +25,8 @@ from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import MalformedLayout
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
 from src.domain.ontology_representation.artifact_types import DiagramRecord
+from src.infrastructure.diagram_composition import render_composition
+from src.infrastructure.diagram_layout_wire import ArrangeIntent, LayoutPatch, stated_intents
 from src.infrastructure.rendering.laid_out_rendering import stored_layout
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
 from src.infrastructure.rendering.layout.diagram_geometry import (
@@ -54,7 +56,6 @@ from src.infrastructure.rest.routers._openapi import (
     TAG_DIAGRAMS,
     WRITE_RESPONSES,
 )
-from src.infrastructure.rest.routers.diagrams._composition import render_composition
 from src.infrastructure.rest.routers.diagrams._geometry_proposals import GeometryPreviewBody
 from src.infrastructure.rest.routers.diagrams._lensed_reading import kind_muting, lensed_body, reading_body
 from src.infrastructure.rest.routers.diagrams._reading_lens_request import reading_lens
@@ -123,17 +124,12 @@ class SurroundPlacementBody(BaseModel):
 
 
 class PatchLayoutBody(BaseModel):
-    """Entries of the layout block by section (``elements``, ``boxes``, ``relations``, ``z``) and key.
-
-    Each entry is ``null`` to remove it, or ``{value, based_on?}``: what it becomes (``null`` removes
-    it) and what the caller read it as (``null`` for absent). A ``based_on`` that no longer holds is
-    a conflict, and nothing is written.
-    """
+    """Entries of the layout block to change, by section and key (`diagram_layout_wire.LayoutPatch`)."""
 
     model_config = ConfigDict(extra="forbid")
 
-    patch: dict[str, dict[str, Any]]
-    dry_run: bool = True
+    patch: LayoutPatch
+    dry_run: bool = Field(True, description="Answer the layout that would be written, and write nothing.")
 
 
 def _stored_record(artifact_id: str) -> DiagramRecord:
@@ -234,9 +230,9 @@ def preview_diagram_layout_geometry(
     responses={**READ_RESPONSES, **WRITE_RESPONSES},
 )
 def preview_diagram_layout_shapes(artifact_id: str, body: DrawShapesBody) -> dict[str, object]:
-    """Each shape drawn by the composer at its new size. Needs nothing of the diagram but its address:
-    the drawing, where it was drawn and where it goes all arrive in the request."""
-    _ = artifact_id
+    """Each shape drawn by the composer at its new size. The drawing, where it was drawn and where it goes
+    all arrive in the request; the address names the diagram they were read from, which must be stored (404)."""
+    _stored_record(artifact_id)
     try:
         return {"drawings": [reshaped(shape.model_dump()) for shape in body.shapes]}
     except Unreadable as unreadable:
@@ -252,8 +248,9 @@ def preview_diagram_layout_shapes(artifact_id: str, body: DrawShapesBody) -> dic
 def preview_diagram_surround(artifact_id: str, body: SurroundPlacementBody) -> dict[str, object]:
     """How far each part drawn round the diagram moves, by the composer's own rule (`surround_placement`), so
     the editor's canvas shows the title and the legend where the saved picture will. Needs nothing of the
-    diagram but its address: where everything is arrives in the request, as the editor holds it."""
-    _ = artifact_id
+    diagram but its address, which must be stored (404): where everything is arrives in the request, as the
+    editor holds it."""
+    _stored_record(artifact_id)
     was = _extent(body.drawn)
     now = occupied(
         map(_extent, body.shapes), ([Point(x, y) for x, y in course] for course in body.courses),
@@ -277,22 +274,19 @@ def patch_diagram_layout_gui(artifact_id: str, body: PatchLayoutBody, catalogs: 
 
     return _written_layout(
         "diagrams_patch_diagram_layout", patch_diagram_layout, catalogs,
-        artifact_id=artifact_id, patch=body.patch, dry_run=body.dry_run,
+        artifact_id=artifact_id, patch=body.patch.stated(), dry_run=body.dry_run,
     )
 
 
 class LayoutIntentsBody(BaseModel):
-    """What the editor means, in order. Layout: ``align`` (``keys``, ``edge``), ``distribute`` (``keys``,
-    ``axis``), ``straighten`` (``relations``) and ``return_to_automatic`` (``keys``; none for the whole
-    layout). Groupings: ``nest`` (``keys``, ``grouping``), ``unnest`` (``keys``), ``create_grouping``
-    (``label``, ``keys``, ``parent?``) and ``delete_grouping`` (``grouping``). Layout intents compile to the
+    """What the editor means, in order (`diagram_layout_wire.ArrangeIntent`). Layout intents compile to the
     patch that states them, checked against the stored layout; grouping intents to the diagram's new
     groupings and the layout change that keeps the layout matching them, written in the same edit."""
 
     model_config = ConfigDict(extra="forbid")
 
-    intents: list[dict[str, Any]]
-    dry_run: bool = True
+    intents: list[ArrangeIntent] = Field(min_length=1)
+    dry_run: bool = Field(True, description="Answer the patch and groupings that would be written, and write nothing.")
 
 
 @router.post(
@@ -306,8 +300,9 @@ def arrange_diagram_layout_gui(artifact_id: str, body: LayoutIntentsBody, catalo
     root = _repo_root()
     try:
         with _renderer_available():
-            intents, drawn = read_and_measured(body.intents, _stored_diagram(artifact_id), artifact_id, root,
-                                               catalogs.ontology)
+            intents, drawn = read_and_measured(
+                stated_intents(body.intents), _stored_diagram(artifact_id), artifact_id, root, catalogs.ontology,
+            )
     except ValueError as refusal:  # MalformedLayout is a ValueError
         raise HTTPException(400 if isinstance(refusal, MalformedLayout) else 422, str(refusal)) from refusal
     return _written_layout(

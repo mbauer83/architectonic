@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from src.application.artifacts.document_schema import normalize_document_schema
 from src.domain.artifact_id import stable_id
 from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_SCHEMA
+from src.infrastructure.candidate_wire import CandidateHeader, CandidatePatch
 from src.infrastructure.mcp.artifact_mcp import candidate_tools as mcp
 from src.infrastructure.rest.routers import candidates, state
 from tests.support.api_app import build_api_app
@@ -40,11 +41,11 @@ def test_agents_and_canvas_share_versions_and_composed_diffs(tmp_path: Path, mon
             },
             "state": "candidate",
         }
-        update = mcp.change_set_edit(ref, document["version"], patch, str(root))
+        update = mcp.change_set_edit(ref, document["version"], CandidatePatch(**patch), str(root))
         assert update["version"] != document["version"]
         assert client.patch(path, json={"based_on": document["version"], "patch": {"name": "Stale"}}).status_code == 409
-        assert client.get(path + "/standing").json() == mcp.change_set_read(ref, "standing", repo_root=str(root))
-        diff = mcp.change_set_read(ref, "diff", repo_root=str(root))
+        assert client.get(path + "/standing").json() == mcp.change_set_standing(ref, repo_root=str(root))
+        diff = mcp.change_set_compare(ref, repo_root=str(root))
         assert client.get(path + "/diff").json() == diff
         assert diff["diff"][0]["fields"]["name"] == {"before": None, "after": "Queue"}
         (listed,) = client.get("/api/change-sets").json()["candidates"]
@@ -97,7 +98,8 @@ def test_analysis_reads_the_scoped_naive_candidate_on_both_surfaces(tmp_path: Pa
     )
     monkeypatch.setattr(state, "maybe_engagement_root", lambda: root)
     with TestClient(build_api_app(candidates.router)) as client:
-        naive = mcp.change_set_create({"name": "Queued promotion", "id": naive_id}, diagram, str(root))
+        header = CandidateHeader(name="Queued promotion", id=naive_id)
+        naive = mcp.change_set_create(header, diagram, repo_root=str(root))
         stable_service = stable_id(service)  # scope and view hold an entity by its stable id
         assert stable_service in naive["record"]["scope"]
         ops = [
@@ -124,5 +126,5 @@ def test_analysis_reads_the_scoped_naive_candidate_on_both_surfaces(tmp_path: Pa
         assert progress["coverage"]["by_kind"] == {"outage": 1}
         current = mcp.change_set_read(naive_id, repo_root=str(root))
         original_changes = naive["record"]["changes"]
-        mcp.change_set_edit(naive_id, current["version"], {"changes": original_changes}, str(root))
+        mcp.change_set_edit(naive_id, current["version"], CandidatePatch(changes=original_changes), str(root))
         assert client.get(path + "/incidence").json()["stressors"][0]["missing_elements"] == ["$ref:queue"]

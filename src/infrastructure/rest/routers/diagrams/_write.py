@@ -10,6 +10,13 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
 from src.domain.repository.groups import UNCATEGORIZED
+from src.infrastructure.diagram_composition import (
+    CompositionRefused,
+    DiagramNotStored,
+    DiagramReplacement,
+    render_composition,
+    replace_diagram,
+)
 from src.infrastructure.rest.contracts.diagrams import DiagramPreviewResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
@@ -19,13 +26,10 @@ from src.infrastructure.rest.routers._openapi import (
     WRITE_RESPONSES,
     WriteResultResponse,
 )
-from src.infrastructure.rest.routers.diagrams._composition import render_composition
 from src.infrastructure.rest.routers.diagrams._derived_entities import derived_entity_rows
-from src.infrastructure.rest.routers.diagrams._layout_with_membership import source_and_layout_to_store
 from src.infrastructure.rest.routers.diagrams._write_bodies import (
     CreateDiagramGuiBody,
     DiagramPreviewBody,
-    EditDiagramGuiBody,
     PatchDiagramEntityMetadataBody,
     SyncDiagramToModelBody,
 )
@@ -36,7 +40,6 @@ from src.infrastructure.rest.routers.diagrams._write_responses import (
     SyncDiagramToModelResponse,
     created,
 )
-from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 
 router = APIRouter(responses=WRITE_RESPONSES)
 
@@ -59,6 +62,8 @@ def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depend
         composed = render_composition(body, repo=repo, repo_root=repo_root)
     except DiagramSelectionError as exc:
         raise rejected_input(str(exc), field="diagram_entities") from exc
+    except CompositionRefused as exc:
+        raise rejected_input(str(exc), field=exc.field) from exc
     puml, de = composed.puml, composed.diagram_entities
     image, warnings = render_puml_preview(puml, repo_root, body.diagram_type)
 
@@ -79,7 +84,10 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
 
     repo = s.get_repo()
     repo_root, _, verifier = s.get_write_deps(catalogs)
-    composed = render_composition(body, repo=repo, repo_root=repo_root)
+    try:
+        composed = render_composition(body, repo=repo, repo_root=repo_root)
+    except CompositionRefused as exc:
+        raise rejected_input(str(exc), field=exc.field) from exc
     puml, de, dc = composed.puml, composed.diagram_entities, composed.diagram_connections
     conn_bindings = composed.conn_bindings
     entity_ids_used, connection_ids_used = composed.entity_ids_used, composed.connection_ids_used
@@ -121,41 +129,25 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
 
 @router.put("/api/diagrams/{artifact_id}", tags=[TAG_DIAGRAMS], summary="Replace a diagram",
     response_model=WriteResultResponse, responses=DETAIL_RESPONSES)
-def edit_diagram_gui(artifact_id: str, body: EditDiagramGuiBody,
+def edit_diagram_gui(artifact_id: str, body: DiagramReplacement,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
-    from src.application.candidate_repository import committed_repository
-    from src.infrastructure.write.artifact_write.canvas_commands import canvas_save
-    from src.infrastructure.write.artifact_write.diagram_edit import edit_diagram
-    from src.infrastructure.write.artifact_write.enterprise_edit_arguments import KEYWORDS_UNSET
-
+    """The canvas save: the composition, its layout (whole, or as a patch reconciled with the membership),
+    and any model commands, in one write. MCP `artifact_save_diagram` is the same save."""
     root, _, live_verifier = s.get_write_deps(catalogs)
-
-    def save(repo_root, repo, verifier, clear, dry_run):
-        composed = render_composition(body, repo=repo, repo_root=repo_root)
-        source, layout = source_and_layout_to_store(artifact_id, body, composed, root, catalogs.ontology)
-        return edit_diagram(
-            assert_write_root=assert_engagement_write_root, repo_root=repo_root, verifier=verifier,
-            clear_repo_caches=clear, artifact_id=artifact_id, repo=s.get_repo(), puml=source,
-            name=body.name, group=body.group, keywords=KEYWORDS_UNSET, diagram_entities=composed.diagram_entities,
-            diagram_connections=composed.diagram_connections, entity_ids_used=composed.entity_ids_used,
-            connection_ids_used=composed.connection_ids_used, authored_groupings=body.authored_groupings,
-            layout=layout,
-            version=body.version, status=body.status, tlp=body.tlp, bindings=composed.conn_bindings or None,
-            viewpoint=body.viewpoint, dry_run=dry_run, committed_repo=committed_repository(repo),
-        )
-
-    def replace_diagram():
-        if body.commands:
-            return canvas_save(body.commands, root, catalogs, body.dry_run, s.get_repo(), save, s.clear_caches)
-        return save(root, s.get_repo(), live_verifier, s.clear_caches, body.dry_run)
-
     try:
-        result = s.authorized_write("diagrams_replace_diagram", replace_diagram)
+        result = s.authorized_write(
+            "diagrams_replace_diagram", replace_diagram, artifact_id, body, root=root, catalogs=catalogs,
+            live_repo=s.get_repo(), live_verifier=live_verifier, clear_caches=s.clear_caches,
+        )
     except LayoutConflict as conflict:
         raise HTTPException(409, str(conflict)) from conflict
+    except DiagramNotStored as missing:
+        raise HTTPException(404, str(missing)) from missing
+    except CompositionRefused as refused:
+        raise rejected_input(str(refused), field=refused.field) from refused
     except ValueError as e:
-        raise HTTPException(400, str(e))
+        raise HTTPException(400, str(e)) from e
     return s.write_result_to_dict(result)
 
 

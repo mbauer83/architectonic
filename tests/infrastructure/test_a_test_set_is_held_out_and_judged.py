@@ -149,7 +149,7 @@ def test_verdicts_written_as_rows_read_back_as_residuality_on_every_surface(clie
     by_candidate = client.get(f"/api/change-sets/{adapted}/residuality").json()
     assert [one["document"] for one in by_candidate["analyses"]] == [document]
     assert by_candidate["analyses"][0]["residuality"] == standing["residuality"]
-    assert by_candidate == mcp.change_set_read(adapted, "residuality", repo_root=str(client.root))  # type: ignore[attr-defined]
+    assert by_candidate == mcp.change_set_residuality(adapted, repo_root=str(client.root))  # type: ignore[attr-defined]
 
 
 def test_the_perspectives_are_served_as_declared(client: TestClient) -> None:
