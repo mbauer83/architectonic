@@ -4,8 +4,9 @@
  * editor (`CanvasContentEditor` over `LayoutLabCanvas`), in a candidate's words. A band names what is
  * sketched, what it stacks on, and when it was last saved to the candidate; there is no Save, because
  * every change is recorded as it is made. *Edit details…* opens on the element as the candidate holds it,
- * marking what differs from what it stacks on (`useCandidateDetails`). What the session created or renamed carries a small + or ~. *Undo* (and
- * Ctrl+Z on the canvas) takes back the last step, and with it what that step recorded in the candidate.
+ * marking what differs from what it stacks on (`useCandidateDetails`). What the session created or renamed
+ * carries a small + or ~. *Undo* (and Ctrl+Z on the canvas) takes back the last step, and with it what that
+ * step recorded in the candidate.
  */
 import { computed, inject, onMounted, provide, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'

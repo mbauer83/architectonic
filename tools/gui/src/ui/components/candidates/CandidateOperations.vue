@@ -4,9 +4,9 @@
  * on the candidate page and on a stress analysis's Naive architecture and Adaptations tabs; *role* is
  * what its reader calls the candidate. The canvas marks the same comparison; a row selected here frames
  * its element there, and an element selected there selects its rows here (*framed*). A row's card shows
- * the element's fields, base against candidate: changed rows highlighted with the base struck through, unchanged rows greyed. A comparison
- * of several candidates reads each *fixed* to their common base: the base is named, not chosen, and
- * nothing is sketched there.
+ * the element's fields, base against candidate: changed rows highlighted with the base struck through,
+ * unchanged rows greyed. A comparison of several candidates reads each *fixed* to their common base: the
+ * base is named, not chosen, and nothing is sketched there.
  */
 import { computed, nextTick, ref, watch } from 'vue'
 import { stableEntityId } from '../../../domain/artifactId'
@@ -146,7 +146,8 @@ const cardRows = (row: ChangeDifference) => {
           :key="index"
           class="oprow"
           :class="{
-            sel: index === selectedRow, framed: framedRows.has(index), 'base-only': changeWord(row) === 'only in the base',
+            sel: index === selectedRow, framed: framedRows.has(index),
+            'base-only': changeWord(row) === 'only in the base',
           }"
           @click="select(index, row)"
           @mouseenter="card = index"

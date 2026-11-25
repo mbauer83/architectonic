@@ -159,7 +159,9 @@ const applied = () => {
   text-align: left;
 }
 .link-btn:hover { text-decoration: underline; }
-.choose { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 8px; }
+.choose {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 8px;
+}
 .choose select { margin-left: 4px; max-width: 220px; }
 .err { color: var(--danger-strong); }
 </style>

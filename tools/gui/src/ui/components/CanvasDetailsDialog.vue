@@ -32,7 +32,8 @@ const emit = defineEmits<{ close: [] }>()
 const svc = inject(modelServiceKey)!
 const source = inject(detailsSourceKey, null)
 const held = ref<HeldElement | null>(null)
-const note = computed(() => source?.note ?? 'Kept with this edit session and written when you Save; Undo takes it back.')
+const note = computed(() => source?.note
+  ?? 'Kept with this edit session and written when you Save; Undo takes it back.')
 
 const detail = ref<EntityDetail | null>(null)
 const failed = ref('')

@@ -221,7 +221,9 @@ const keepChooser = (rowId: string, chooser: unknown) => {
 .st:focus-within .m-chooser, .st:hover .m-chooser { visibility: visible; }
 .answer { color: var(--ok-text); }
 .reason-in { flex: 1; min-width: 200px; font: inherit; padding: 2px 6px; }
-.link-btn { border: none; background: none; color: var(--text-2); cursor: text; padding: 0; font: inherit; text-align: left; }
+.link-btn {
+  border: none; background: none; color: var(--text-2); cursor: text; padding: 0; font: inherit; text-align: left;
+}
 .link-btn:hover { text-decoration: underline; }
 .es-f {
   display: flex;
