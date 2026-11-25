@@ -5,6 +5,10 @@
  * over the canvas. Its Save does not write: it keeps the edit in the canvas session (`keep`), as a
  * rename and a `model.element.edit`, so the session's Save writes it with the diagram, Undo takes it
  * back and Discard drops it. Preview asks the write path for a dry run, which writes nothing.
+ *
+ * A host whose session edits something other than the model provides a `DetailsSource`: the form then
+ * opens on the element as that holds it, each field that differs from what it stands on is listed with
+ * the value there, and the note under the heading is the host's.
  */
 import { computed, inject, nextTick, onMounted, provide, ref, watch } from 'vue'
 import { Effect } from 'effect'
@@ -14,6 +18,8 @@ import { entityEditFormKey, useEntityEditForm } from '../composables/useEntityEd
 import type { CanvasCommand, ElementDetailsEdit } from '../../ports/diagramWriteBodies'
 import EntityEditFormCard from './EntityEditFormCard.vue'
 import { withPendingDetails } from '../../domain/layout/canvasComposition'
+import { shownValue, withHeldDetails } from '../../domain/heldDetails'
+import { detailsSourceKey, type HeldElement } from './canvasDetails'
 
 const props = defineProps<{
   artifactId: string
@@ -24,6 +30,9 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ close: [] }>()
 const svc = inject(modelServiceKey)!
+const source = inject(detailsSourceKey, null)
+const held = ref<HeldElement | null>(null)
+const note = computed(() => source?.note ?? 'Kept with this edit session and written when you Save; Undo takes it back.')
 
 const detail = ref<EntityDetail | null>(null)
 const failed = ref('')
@@ -47,7 +56,11 @@ watch(() => edit.editing, (now, was) => { if (was && !now) emit('close') })
 
 onMounted(async () => {
   try {
-    detail.value = withPendingDetails(await Effect.runPromise(svc.getEntity(props.artifactId)), props.pending)
+    const [model, holding] = await Promise.all([
+      Effect.runPromise(svc.getEntity(props.artifactId)), source?.read(props.artifactId) ?? Promise.resolve(null),
+    ])
+    held.value = holding
+    detail.value = withPendingDetails(holding ? withHeldDetails(model, holding.fields) : model, props.pending)
     edit.startEdit()
     await nextTick()
     nameField.value?.focus()
@@ -72,8 +85,24 @@ onMounted(async () => {
       >
         <header class="details__head">
           <h3>Edit details</h3>
-          <p>Kept with this edit session and written when you Save; Undo takes it back.</p>
+          <p>{{ note }}</p>
         </header>
+        <section
+          v-if="held?.differs.length"
+          class="details__beneath"
+          data-testid="details-differs"
+        >
+          <h4>Differs from {{ held.beneath }}</h4>
+          <dl>
+            <template
+              v-for="one in held.differs"
+              :key="one.field"
+            >
+              <dt>{{ one.field }}</dt>
+              <dd>{{ held.beneath }} has <s>{{ shownValue(one.beneath) }}</s></dd>
+            </template>
+          </dl>
+        </section>
         <p
           v-if="failed"
           class="details__error"
@@ -141,6 +170,15 @@ onMounted(async () => {
 .details__row input:focus, .details__row select:focus {
   outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-ring);
 }
+.details__beneath {
+  margin: 0 0 12px; padding: 6px 8px; border-radius: 5px; background: var(--warn-soft);
+  border-left: 3px solid var(--warn-text); font-size: 12px;
+}
+.details__beneath h4 { margin: 0 0 4px; font-size: 12px; }
+.details__beneath dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 0; }
+.details__beneath dt { font-weight: 600; color: var(--text-2); }
+.details__beneath dd { margin: 0; color: var(--text-2); overflow-wrap: anywhere; }
+.details__beneath s { color: var(--warn-text); }
 .details__error {
   padding: 6px 8px; border-radius: 5px; background: var(--danger-soft); color: var(--danger-strong);
   border: 1px solid var(--danger-border);
