@@ -10,7 +10,9 @@ import { computed, onMounted, ref, watch } from 'vue'
 import WithheldNotice from './WithheldNotice.vue'
 import { useFittedPanZoom } from '../composables/useFittedPanZoom'
 import { useFullscreen } from '../composables/useFullscreen'
-import DiagramViewportControls from './DiagramViewportControls.vue'
+import DiagramViewportOverlays from './DiagramViewportOverlays.vue'
+import { useArrowPanning } from '../composables/useArrowPanning'
+import { drawnMarksOf } from '../lib/diagramOverview'
 import { useAssuranceSvgInteractions } from '../composables/useAssuranceSvgInteractions'
 import {
   buildUcaMatrixRows,
@@ -70,10 +72,15 @@ const sanitizedSvg = computed(() => svg.value
 const selectNode = (nodeId: string) => emit('select-node', nodeId)
 const selectEdge = (edge: AssuranceDiagramEdge) => emit('select-edge', edge)
 
-const { attachInteractivity, markSelection } = useAssuranceSvgInteractions({
+const { attachInteractivity, markSelection, nodeElements } = useAssuranceSvgInteractions({
   svgContainer, nodes, edges, nodeRepresentingEdges, nodeAliases,
   onSelectNode: selectNode, onSelectEdge: selectEdge,
 })
+
+useArrowPanning(containerRef, panZoom.panBy)
+/** Every node drawn, named, for the overview to mark the selection and the names to be written (04·1). */
+const drawn = computed(() => drawnMarksOf(nodeElements.value, (id) => nodeNames.value.get(id),
+  new Set(props.selectedNodeId ? [props.selectedNodeId] : [])))
 
 const markCurrentSelection = () =>
   markSelection({ nodeId: props.selectedNodeId, edgeId: props.selectedEdgeId })
@@ -155,7 +162,9 @@ onMounted(load)
         <div
           v-if="sanitizedSvg"
           ref="containerRef"
-          class="img-container"
+          class="img-container viewport-host"
+          tabindex="0"
+          aria-label="Diagram: arrows pan, + and − zoom, 0 fits"
           @mousedown="panZoom.onMouseDown"
         >
           <div
@@ -169,13 +178,14 @@ onMounted(load)
               v-html="sanitizedSvg"
             />
           </div>
-          <DiagramViewportControls
-            :zoom="panZoom"
-            :is-transformed="panZoom.isTransformed.value"
+          <DiagramViewportOverlays
+            :window="panZoom"
+            :picture="svgContainer"
+            :marks="drawn.filter((mark) => mark.selected)"
+            :boxes="drawn"
             :is-fullscreen="fullscreen.isFullscreen.value"
             :can-fullscreen="fullscreen.isSupported"
-            hint="Scroll to zoom · Drag to pan · Click node/edge to inspect · 0 fits"
-            @reset="panZoom.resetView"
+            hint="Scroll to zoom · Drag or arrows to pan · Click node/edge to inspect · 0 fits"
             @toggle-fullscreen="fullscreen.toggle"
           />
         </div>

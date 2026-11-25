@@ -25,6 +25,8 @@ import { detailsSourceKey } from '../canvasDetails'
 import { CANDIDATE_WORDS } from '../canvasWords'
 import LayoutLabCanvas from '../layoutLab/LayoutLabCanvas.vue'
 import CanvasMarksLayer from './CanvasMarksLayer.vue'
+import DiagramViewportOverlays from '../DiagramViewportOverlays.vue'
+import { isTypingIn } from '../../lib/keyboardScheme'
 
 /** *changed*: the candidate against its base, as the operations table reads it (~ and − on model elements). */
 const props = withDefaults(defineProps<{
@@ -64,12 +66,9 @@ const tagSize = computed(() => 14 / Math.max(panZoom.scale.value, 0.05))
 
 const canUndo = computed(() => editing.session.history.value.length > 0)
 const canRedo = computed(() => editing.session.future.value.length > 0)
-const typing = (target: EventTarget | null): boolean =>
-  target instanceof HTMLElement
-  && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
 /** Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y on the canvas, as on the diagram page. */
 const onKey = (event: KeyboardEvent) => {
-  if (!(event.ctrlKey || event.metaKey) || typing(event.target)) return
+  if (!(event.ctrlKey || event.metaKey) || isTypingIn(event.target)) return
   const key = event.key.toLowerCase()
   if (key !== 'z' && key !== 'y') return
   event.preventDefault()
@@ -148,7 +147,7 @@ onMounted(async () => {
     </p>
     <div
       ref="containerRef"
-      class="img-container editing"
+      class="img-container editing viewport-host"
       @keydown="onKey"
     >
       <div
@@ -182,6 +181,11 @@ onMounted(async () => {
           </CanvasContentEditor>
         </div>
       </div>
+      <DiagramViewportOverlays
+        :window="panZoom"
+        :picture="svgContainer"
+        hint="Scroll to zoom · Drag an element to move it · 0 fits"
+      />
     </div>
   </div>
 </template>

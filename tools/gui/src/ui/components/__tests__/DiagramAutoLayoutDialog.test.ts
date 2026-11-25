@@ -38,7 +38,7 @@ const mounted = (svc: Partial<ModelService>) => {
   app = createApp({ render: () => h(DiagramAutoLayoutDialog, { detail: DETAIL, onLaidOut: laidOut, onClose: closed }) })
   app.provide(modelServiceKey, {
     getDiagramSvg: () => Effect.succeed('<svg xmlns="http://www.w3.org/2000/svg"/>'),
-    previewDiagram: () => Effect.succeed(PREVIEW), ...svc,
+    previewDiagram: () => Effect.succeed(PREVIEW), getDiagram: () => Effect.succeed(DETAIL), ...svc,
   } as unknown as ModelService)
   app.mount(host)
   return { laidOut, closed }
@@ -68,6 +68,18 @@ describe('laying a hand-written diagram out automatically', () => {
       connection_ids: ['GOL@1.g---OUT@2.o@@archimate-realization'], manual_layout: false, dry_run: false,
     }))
     expect(laidOut).toHaveBeenCalledOnce()
+  })
+
+  it('refuses to replace a body saved since the page read it, and writes nothing', async () => {
+    const editDiagram = vi.fn(() => Effect.succeed({ ...WRITE, wrote: true }))
+    const changed = { ...DETAIL, puml_source: '@startuml\n\' edited elsewhere\n@enduml' } as DiagramDetail
+    const { laidOut } = mounted({ editDiagram, getDiagram: () => Effect.succeed(changed) })
+    await settle()
+    confirm().click()
+    await settle()
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain('changed since this page read it')
+    expect(editDiagram).not.toHaveBeenCalled()
+    expect(laidOut).not.toHaveBeenCalled()
   })
 
   it('says why when the write refuses, and reports nothing laid out', async () => {

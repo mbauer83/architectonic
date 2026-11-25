@@ -111,7 +111,7 @@ const percent = computed(() => (props.zoom ? `${Math.round(props.zoom.scale.valu
       title="Fit the diagram (0)"
       aria-label="Fit the diagram"
       data-testid="zoom-fit"
-      @click.stop="zoom.resetView()"
+      @click.stop="zoom.fitWhole()"
     >
       ⊙
     </button>

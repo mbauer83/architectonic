@@ -5,6 +5,10 @@ import { useWheelZoom, zoomAbout } from './useWheelZoom'
 import type { ReadingView } from '../../domain/diagramReading'
 import type { Extent, Point } from '../../domain/layout/geometry'
 import { motionAllowed } from '../lib/motionPreference'
+import { drawingExtentOf, topLeftBoxOf } from '../lib/svgExtent'
+import {
+  type Framing, LARGE_BELOW, openingFramingOf, wholeFramingOf, wholeScaleOf,
+} from '../lib/viewportFraming'
 
 /**
  * Fit-to-viewport framing for a rendered SVG inside `containerRef`, with `svgContainer` pointing at
@@ -29,9 +33,14 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
   const fitScale = ref(1)
   const fitTx = ref(0)
   const fitTy = ref(0)
+  /** The scale the whole picture fits the window at; below `LARGE_BELOW` the diagram is large (Q19, Q22). */
+  const wholeScale = ref(1)
+  const large = computed(() => wholeScale.value < LARGE_BELOW)
   let resizeObserver: ResizeObserver | null = null
   const { onMouseDown } = usePanGesture(tx, ty)
-  useWheelZoom(containerRef, { scale, tx, ty })
+  // Out as far as the whole picture, however large it is.
+  const transform = { scale, tx, ty, least: () => wholeScale.value }
+  useWheelZoom(containerRef, transform)
 
   const { canvasStyle } = usePanTranslateStyle(tx, ty)
 
@@ -74,63 +83,44 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     || Math.abs(ty.value - fitTy.value) > 0.5,
   )
 
+  /** The window's size, and the extent of what the picture draws: what every framing is reckoned from. */
+  const framingInputs = (): { window: DOMRect; content: Extent; svg: SVGSVGElement } | null => {
+    const svg = svgContainer.value?.querySelector('svg') as SVGSVGElement | null
+    const window = containerRef.value?.getBoundingClientRect()
+    const content = svg && drawingExtentOf(svg)
+    return svg && window && content ? { window, content, svg } : null
+  }
+
+  const apply = (framing: Framing) => {
+    scale.value = framing.scale
+    tx.value = framing.tx
+    ty.value = framing.ty
+    // Applied here as well as by the watcher above: a re-render arrives as a *new* SVG element at its
+    // natural size, and if the scale happens to be unchanged the watcher never fires.
+    sizeSvgToScale()
+  }
+
+  /** Frame the picture as it opens (`openingFramingOf`): the framing *Reset view* returns to. */
   const fitDiagramToViewport = async () => {
     await nextTick()
-    const container = containerRef.value
-    const svgEl = svgContainer.value?.querySelector('svg') as SVGSVGElement | null
-    if (!container || !svgEl) return
+    const inputs = framingInputs()
+    if (!inputs) return
+    wholeScale.value = wholeScaleOf(inputs.content, inputs.window)
+    // Only a large picture opens on its top-left box, and only it is searched for one.
+    const corner = large.value ? topLeftBoxOf(inputs.svg, inputs.content) ?? undefined : undefined
+    const framing = openingFramingOf(inputs.content, inputs.window, corner)
+    if (!framing) return
+    fitScale.value = framing.scale
+    fitTx.value = framing.tx
+    fitTy.value = framing.ty
+    apply(framing)
+  }
 
-    // The origin keeps a default because the last fallback below does not measure one; the
-    // extent never does, because all three paths assign it before it is read.
-    let contentX = 0, contentY = 0
-    let contentWidth: number, contentHeight: number
-    try {
-      // The whole drawing, not its first group. PlantUML wraps everything in one root `<g>`, so the
-      // two used to agree — but a type that draws its own SVG need not: GSN's first group is a single
-      // connector, whose box is a line with no height, so the fit read "nothing to fit" and the
-      // diagram opened at its natural size, clipped (B89).
-      const bbox = svgEl.getBBox()
-      contentX = bbox.x; contentY = bbox.y
-      contentWidth = bbox.width; contentHeight = bbox.height
-    } catch {
-      const viewBox = svgEl.viewBox?.baseVal
-      if (viewBox && viewBox.width > 0 && viewBox.height > 0) {
-        contentX = viewBox.x; contentY = viewBox.y
-        contentWidth = viewBox.width; contentHeight = viewBox.height
-      } else {
-        const widthAttr = Number(svgEl.getAttribute('width') ?? '')
-        const heightAttr = Number(svgEl.getAttribute('height') ?? '')
-        contentWidth = Number.isFinite(widthAttr) && widthAttr > 0 ? widthAttr : svgEl.clientWidth
-        contentHeight = Number.isFinite(heightAttr) && heightAttr > 0 ? heightAttr : svgEl.clientHeight
-      }
-    }
-    if (!contentWidth || !contentHeight) return
-
-    const rect = container.getBoundingClientRect()
-    const horizontalPadding = 24
-    const topPadding = Math.min(Math.max(rect.height * 0.035, 16), 40)
-    const bottomPadding = 24
-    const availableWidth = Math.max(rect.width - horizontalPadding * 2, 80)
-    const availableHeight = Math.max(rect.height - topPadding - bottomPadding, 80)
-    // Contain-fit when the whole diagram stays legible; otherwise fit to WIDTH at up to
-    // natural size and let the rest scroll — a wide diagram squeezed into the viewport
-    // renders as an illegible strip, which is worse than panning.
-    const LEGIBLE_MIN_SCALE = 0.5
-    const containScale = Math.min(availableWidth / contentWidth, availableHeight / contentHeight)
-    const fittedScale = containScale >= LEGIBLE_MIN_SCALE
-      ? containScale
-      : Math.min(availableWidth / contentWidth, 1)
-    if (!Number.isFinite(fittedScale) || fittedScale <= 0) return
-
-    fitScale.value = fittedScale
-    fitTx.value = (rect.width - contentWidth * fittedScale) / 2 - contentX * fittedScale
-    fitTy.value = topPadding - contentY * fittedScale
-    scale.value = fitScale.value
-    tx.value = fitTx.value
-    ty.value = fitTy.value
-    // Applied here as well as by the watcher above: a re-render arrives as a *new* SVG element at its
-    // natural size, and if the fitted scale happens to be unchanged the watcher never fires.
-    sizeSvgToScale()
+  /** The whole picture in the window, however small that makes it: the `0` key and *Fit the diagram*. */
+  const fitWhole = () => {
+    const inputs = framingInputs()
+    const framing = inputs && wholeFramingOf(inputs.content, inputs.window)
+    if (framing) apply(framing)
   }
 
   const resetView = () => {
@@ -234,7 +224,7 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
   /** The zoom cluster's and the keys' zoom (01·1): by *factor*, about the window's centre. */
   const zoomBy = (factor: number) => {
     const rect = containerRef.value?.getBoundingClientRect()
-    if (rect) zoomAbout({ scale, tx, ty }, factor, { x: rect.width / 2, y: rect.height / 2 })
+    if (rect) zoomAbout(transform, factor, { x: rect.width / 2, y: rect.height / 2 })
   }
 
   /** Move the window by a fraction of its own size: an arrow with nothing to move pans by a fifth (02·9). */
@@ -271,7 +261,7 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
   onUnmounted(() => { resizeObserver?.disconnect(); stopGliding() })
 
   return {
-    scale, tx, ty, fitScale, canvasStyle, isTransformed, onMouseDown, resetView, fitDiagramToViewport,
+    scale, tx, ty, fitScale, large, canvasStyle, isTransformed, onMouseDown, resetView, fitDiagramToViewport, fitWhole,
     windowView, showView, glide, goTo, frame, reveal, toWindow, windowExtent, zoomBy, panBy,
   }
 }

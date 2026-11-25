@@ -16,7 +16,11 @@ import { hiddenElements, overlappingEnds } from './canvasMarks'
  * *order*: the shapes by alias, back to front, as the canvas paints them; *pixel*: one screen pixel;
  * *moving*: a shape is being dragged, and the marks stay as they were until it is dropped.
  */
-const props = defineProps<{ session: ArrangementSession; order: readonly string[]; pixel: number; moving?: boolean }>()
+const props = defineProps<{
+  session: ArrangementSession; order: readonly string[]; pixel: number; moving?: boolean
+  /** A shape's name in the model, as the list of changes names it; absent, the label the picture draws. */
+  nameOf?: (alias: string) => string
+}>()
 
 interface Mark {
   readonly key: string
@@ -27,6 +31,7 @@ interface Mark {
 }
 
 const nameOf = (alias: string): string => {
+  if (props.nameOf) return props.nameOf(alias)
   const drawn = props.session.geometry.value
   return drawn?.elements.find((one) => one.alias === alias)?.label
     ?? drawn?.boxes.find((one) => one.alias === alias)?.label ?? alias

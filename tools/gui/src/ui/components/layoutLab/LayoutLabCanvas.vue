@@ -41,6 +41,8 @@ const props = defineProps<{
   pendingLines?: ReadonlySet<string>
   /** The shapes something beside the canvas points at, by alias: outlined while it does (01·8). */
   outlined?: readonly string[]
+  /** A shape's name in the model, where the page knows it; else the label the picture draws. */
+  nameOf?: (alias: string) => string
 }>()
 const emit = defineEmits<{ pick: [alias: string] }>()
 
@@ -291,6 +293,7 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
       :order="shapeOrder"
       :pixel="pixel"
       :moving="gesture.dragging.value"
+      :name-of="nameOf"
     />
 
     <CanvasDraftMarks

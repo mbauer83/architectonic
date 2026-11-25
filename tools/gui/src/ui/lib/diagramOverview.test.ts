@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import {
-  drawingCopyOf, extentOfMarks, markExtent, overviewShapeOf, pictureBoxOf, pictureTextSizeOf, windowShowsAll,
+  drawingCopyOf, drawnMarksOf, extentOfMarks, markExtent, overviewShapeOf, pictureBoxOf, pictureTextSizeOf,
+  windowShowsAll,
 } from './diagramOverview'
 
 const extent = (left: number, top: number, right: number, bottom: number) => ({ left, top, right, bottom })
@@ -28,6 +29,32 @@ describe('the overview takes the picture\'s shape', () => {
       expect(shape.height).toBeLessThanOrEqual(140)
     }
     expect(wide.width / wide.height).toBeCloseTo(3, 0)
+  })
+
+  it('leaves the zoom cluster in the bottom left corner clear of a strip centred along the bottom', () => {
+    // The cluster spans the first 126 px from the canvas's left edge.
+    for (const canvas of [790, 1100, 1500]) {
+      const shape = overviewShapeOf(extent(0, 0, 34237, 1944), canvas)
+      expect((canvas - shape.width) / 2).toBeGreaterThan(126)
+    }
+  })
+})
+
+describe('every element a viewer found, as a mark', () => {
+  it('marks each where its drawings are, named, the selected ones selected', () => {
+    const drawing = (x: number, y: number) => {
+      const element = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+      Object.assign(element, { getBBox: () => ({ x, y, width: 50, height: 20 }) })
+      return element
+    }
+    const marks = drawnMarksOf(
+      new Map([['a', [drawing(0, 0), drawing(100, 0)]], ['b', [drawing(10, 50)]], ['undrawn', []]]),
+      (id) => (id === 'a' ? 'Alpha' : undefined), new Set(['b']),
+    )
+    expect(marks).toEqual([
+      { id: 'a', name: 'Alpha', selected: false, extent: { left: 0, top: 0, right: 150, bottom: 20 } },
+      { id: 'b', name: 'b', selected: true, extent: { left: 10, top: 50, right: 60, bottom: 70 } },
+    ])
   })
 })
 

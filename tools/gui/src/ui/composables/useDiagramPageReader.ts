@@ -10,7 +10,7 @@ import { useDiagramReader } from './useDiagramReader'
 import { useReadingAddress } from './useReadingAddress'
 import { useReadingKeyboard } from './useReadingKeyboard'
 import { drawnExtentOf } from '../lib/svgExtent'
-import { extentOfMarks, type OverviewMark } from '../lib/diagramOverview'
+import { drawnMarksOf, extentOfMarks, type OverviewMark } from '../lib/diagramOverview'
 import { DRAFT_STATUS } from '../../domain/layout/canvasComposition'
 
 /** The class an element a Reading panel row points at carries on the picture. */
@@ -62,6 +62,9 @@ export function useDiagramPageReader(options: {
       return extent ? [{ id, extent, selected: focus.has(id), name: entityById.value.get(id)?.name ?? id }] : []
     })
   })
+  /** Every element the picture draws, named, for its names to be written over a small picture (04·1). */
+  const boxes = computed((): OverviewMark[] => (options.viewing.value
+    ? drawnMarksOf(selection.nodeElements.value, (id) => entityById.value.get(id)?.name) : []))
   /** `F`: the window fitted to the reading, the same elements the overview marks. */
   const frame = () => { const extent = extentOfMarks(marks.value); if (extent) panZoom.frame(extent) }
   const address = useReadingAddress({
@@ -126,7 +129,7 @@ export function useDiagramPageReader(options: {
     : {}))
 
   return {
-    reading: reader.reading, panel, hostAttributes, onKeydown: keyboard.onKeydown, find, marks,
+    reading: reader.reading, panel, hostAttributes, onKeydown: keyboard.onKeydown, find, marks, boxes,
     /** What the Reading panel asks for, by its event names. */
     panelEvents: {
       'update:reach': (reach: typeof reader.reach.value) => { reader.reach.value = reach },

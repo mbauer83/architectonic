@@ -15,7 +15,7 @@ import { useArrangementSession } from '../../composables/useArrangementSession'
 import { useDrawnEntities } from '../../composables/useDrawnEntities'
 import { useFittedPanZoom } from '../../composables/useFittedPanZoom'
 import LayoutLabCanvas from '../layoutLab/LayoutLabCanvas.vue'
-import DiagramViewportControls from '../DiagramViewportControls.vue'
+import DiagramViewportOverlays from '../DiagramViewportOverlays.vue'
 import CanvasMarksLayer from './CanvasMarksLayer.vue'
 
 const props = defineProps<{
@@ -93,14 +93,10 @@ const tagSize = computed(() => 12 / Math.max(panZoom.scale.value, 0.05))
         {{ emptyText ?? 'No diagram to draw.' }}
       </p>
     </div>
-    <DiagramViewportControls
-      :zoom="panZoom"
-      :is-transformed="panZoom.isTransformed.value"
-      :is-fullscreen="false"
-      :can-fullscreen="false"
+    <DiagramViewportOverlays
+      :window="panZoom"
+      :picture="svgContainer"
       :hint="hint"
-      @reset="panZoom.resetView"
-      @toggle-fullscreen="() => {}"
     />
   </div>
 </template>

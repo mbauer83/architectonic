@@ -1,5 +1,6 @@
 import type { Extent } from '../../domain/layout/geometry'
 import { heightOf, unionOf, widthOf } from '../../domain/layout/geometry'
+import { drawnExtentOf } from './svgExtent'
 
 /**
  * The overview of a diagram (D13, owner Q20 and F10): a small copy of the whole picture with the
@@ -20,6 +21,19 @@ export interface OverviewMark {
   readonly name?: string
 }
 
+/**
+ * Every element *drawn* maps to its drawings, as a mark where the picture draws it: named by *nameOf*,
+ * and selected where *selected* holds it. What the overview marks and the screen names are written from,
+ * on any picture whose elements a viewer has found.
+ */
+export const drawnMarksOf = (
+  drawn: ReadonlyMap<string, readonly Element[]>, nameOf: (id: string) => string | undefined,
+  selected: ReadonlySet<string> = new Set(),
+): OverviewMark[] => [...drawn].flatMap(([id, elements]) => {
+  const extent = drawnExtentOf(elements)
+  return extent ? [{ id, extent, selected: selected.has(id), name: nameOf(id) ?? id }] : []
+})
+
 /** The part of the picture the marks cover: what `F` frames. Null where nothing is marked. */
 export const extentOfMarks = (marks: readonly OverviewMark[]): Extent | null =>
   (marks.length > 0 ? unionOf(marks.map((mark) => mark.extent)) : null)
@@ -32,8 +46,9 @@ export interface OverviewShape {
 
 /** Wider than this, a picture is shown as a strip. */
 const STRIP_ASPECT = 4
-/** The strip's room, and its gutter from the canvas's sides; the corner map's room. */
-const STRIP = { width: 900, minHeight: 34, maxHeight: 96, gutter: 24 }
+/** The strip's room, and its gutter across the canvas: half of it each side, so the zoom cluster in the bottom left
+ * corner stays clear of a strip centred along the bottom; the corner map's room. */
+const STRIP = { width: 900, minHeight: 34, maxHeight: 96, gutter: 290 }
 const CORNER = { width: 220, height: 140, min: 60 }
 
 /** The overview's shape and size for *picture* in a canvas *canvasWidth* pixels wide. */

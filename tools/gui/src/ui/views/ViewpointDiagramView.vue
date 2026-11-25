@@ -16,7 +16,11 @@ import { useViewpointParameterPrompt } from '../composables/useViewpointParamete
 import { executionTitleFor } from './ViewpointsManagementView.helpers'
 import { useFittedPanZoom } from '../composables/useFittedPanZoom'
 import { useFullscreen } from '../composables/useFullscreen'
-import DiagramViewportControls from '../components/DiagramViewportControls.vue'
+import DiagramViewportOverlays from '../components/DiagramViewportOverlays.vue'
+import ViewpointSaveAsDiagram from '../components/ViewpointSaveAsDiagram.vue'
+import { diagramDetailRoute } from '../router/artifactRoutes'
+import { useArrowPanning } from '../composables/useArrowPanning'
+import { drawnMarksOf } from '../lib/diagramOverview'
 import { useDiagramSvgSelection, type DiagramSvgSelectionDetail } from '../composables/useDiagramSvgSelection'
 import { useSelectedConnectionWitnessChain } from '../composables/useSelectedConnectionWitnessChain'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
@@ -71,6 +75,8 @@ watch(isExecuting, (active) => {
   loadingElapsedSeconds.value = 0
   if (active) loadingTicker = setInterval(() => { loadingElapsedSeconds.value += 1 }, 1000)
 })
+/** Whether *Save as diagram* is open over the picture. */
+const savingAsDiagram = ref(false)
 const entityAliases = ref<Readonly<Record<string, string>>>({})
 
 const presentation = computed(() => {
@@ -112,6 +118,11 @@ const { display: witnessChainDisplay } = useSelectedConnectionWitnessChain(svc, 
 const containerRef = ref<HTMLElement | null>(null)
 const panZoom = useFittedPanZoom(containerRef, svgContainer)
 const fullscreen = useFullscreen(containerRef)
+useArrowPanning(containerRef, panZoom.panBy)
+/** Every element drawn, named, for the overview to mark the selection and the names to be written (04·1). */
+const drawn = computed(() => drawnMarksOf(selection.nodeElements.value,
+  (id) => diagramEntities.value.find((entity) => entity.artifact_id === id)?.name,
+  new Set(selection.selectedIds.value)))
 // Entering or leaving fullscreen is a framing request: re-fit even when the view has been
 // transformed, since the whole point of the gesture is to see the diagram against the new space.
 watch(fullscreen.isFullscreen, () => { void panZoom.fitDiagramToViewport() })
@@ -178,6 +189,15 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
         {{ executionTitleFor(slug, definitions) }} <span class="count">— diagram</span>
       </h1>
       <div class="hdr-actions">
+        <button
+          v-if="svgHtml && execution.result.value"
+          type="button"
+          class="view-as-link"
+          data-testid="viewpoint-save-as-diagram"
+          @click="savingAsDiagram = true"
+        >
+          Save as diagram…
+        </button>
         <RouterLink
           v-if="!adHoc && slug"
           :to="{ path: '/viewpoints/query', query: { slug } }"
@@ -194,6 +214,14 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
         </RouterLink>
       </div>
     </div>
+
+    <ViewpointSaveAsDiagram
+      v-if="savingAsDiagram && execution.result.value"
+      :name="executionTitleFor(slug, definitions)"
+      :execution="execution.result.value"
+      @saved="router.push(diagramDetailRoute($event))"
+      @cancel="savingAsDiagram = false"
+    />
 
     <ViewpointExecutionDiagnostics
       v-if="!prompt.visible.value && !execution.errorMessage.value && !diagramError"
@@ -262,6 +290,8 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
         <div
           ref="containerRef"
           class="img-container viewport-host"
+          tabindex="0"
+          :aria-label="`Diagram ${executionTitleFor(slug, definitions)}: arrows pan, + and − zoom, 0 fits`"
           @mousedown="panZoom.onMouseDown"
         >
           <div
@@ -274,13 +304,14 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
               v-html="svgHtml"
             />
           </div>
-          <DiagramViewportControls
-            :zoom="panZoom"
-            :is-transformed="panZoom.isTransformed.value"
+          <DiagramViewportOverlays
+            :window="panZoom"
+            :picture="svgContainer"
+            :marks="drawn.filter((mark) => mark.selected)"
+            :boxes="drawn"
             :is-fullscreen="fullscreen.isFullscreen.value"
             :can-fullscreen="fullscreen.isSupported"
-            hint="Scroll to zoom · Drag to pan · Click entity to inspect · 0 fits"
-            @reset="panZoom.resetView"
+            hint="Scroll to zoom · Drag or arrows to pan · Click entity to inspect · 0 fits"
             @toggle-fullscreen="fullscreen.toggle"
           />
         </div>
@@ -322,68 +353,4 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
   </div>
 </template>
 
-<style scoped>
-.viewpoint-loading { display: flex; align-items: center; gap: 10px; }
-.viewpoint-loading__spinner {
-  width: 16px; height: 16px; flex: none; border-radius: 50%;
-  border: 2px solid var(--border-strong); border-top-color: #4b5563;
-  animation: viewpoint-loading-spin 0.8s linear infinite;
-}
-@keyframes viewpoint-loading-spin { to { transform: rotate(360deg); } }
-
-.page { max-width: 100%; padding: 24px 16px; }
-.hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.pg-title { font-size: 20px; font-weight: 600; margin: 0; }
-.count { color: var(--muted); font-weight: 400; font-size: 14px; }
-.hdr-actions { display: flex; align-items: center; gap: 14px; }
-.back-link { font-size: 13px; color: var(--muted); text-decoration: none; }
-.back-link:hover { color: var(--text-2); }
-.view-as-link { font-size: 13px; color: var(--indigo-text); text-decoration: none; border: 1px solid var(--indigo-border); border-radius: 6px; padding: 4px 10px; }
-.view-as-link:hover { background: var(--indigo-soft); }
-.state-msg { color: var(--faint); font-size: 14px; padding: 24px 0; }
-.state-msg--error { color: var(--danger); }
-.diagram-warning { color: var(--warn-text); background: var(--warn-soft); padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 6px; }
-.anchor-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
-.anchor-badge { color: var(--violet-text); background: var(--violet-soft); border: 1px dashed var(--violet); border-radius: 4px; padding: 2px 8px; font-size: 12px; }
-
-.img-container {
-  position: relative; overflow: hidden; background: var(--paper);
-  border: 1px solid var(--border); border-radius: 8px;
-  min-height: 400px; height: clamp(420px, 78vh, 980px);
-  cursor: grab; user-select: none;
-}
-@media (max-width: 800px) { .img-container { height: clamp(360px, 68vh, 820px); } }
-.img-container:active { cursor: grabbing; }
-/* Fullscreen overrides the clamped height, and the browser paints black behind
-   anything the element does not cover. */
-.img-container:fullscreen {
-  width: 100vw; height: 100vh; max-height: none;
-  border: none; border-radius: 0; background: var(--paper);
-}
-.svg-wrap { display: inline-block; padding: 12px; }
-.svg-wrap :deep(svg) { display: block; max-width: none; }
-.svg-wrap :deep([data-entity-id]) { cursor: pointer; }
-/* Group-scoped: the viewer sets `.svg-hovered` on every element the artifact maps to, because
-   `:hover` can only reach the one text run under the pointer. See `useDiagramSvgSelection`. */
-.svg-wrap :deep(.svg-hovered) > :not(title) { opacity: 0.85; }
-.svg-wrap :deep(.svg-hovered) polygon,
-.svg-wrap :deep(.svg-hovered) rect,
-.svg-wrap :deep(.svg-hovered) polyline,
-.svg-wrap :deep(.svg-hovered) ellipse { stroke: #2563eb !important; stroke-width: 2 !important; }
-.svg-wrap :deep(a.svg-hovered) text { fill: #2563eb !important; }
-.svg-wrap :deep(rect.svg-hovered),
-.svg-wrap :deep(polygon.svg-hovered) { stroke: #2563eb !important; stroke-width: 2 !important; }
-.svg-wrap :deep(.svg-selected) polygon,
-.svg-wrap :deep(.svg-selected) rect,
-.svg-wrap :deep(.svg-selected) polyline,
-.svg-wrap :deep(.svg-selected) ellipse { stroke: #2563eb !important; stroke-width: 2.5 !important; }
-.svg-wrap :deep([data-conn-id]) { cursor: pointer; }
-.svg-wrap :deep([data-conn-id]:hover) path,
-.svg-wrap :deep([data-conn-id]:hover) polygon,
-.svg-wrap :deep([data-conn-id]:hover) line,
-.svg-wrap :deep([data-conn-id]:hover) polyline { stroke: #2563eb !important; stroke-width: 2 !important; }
-.svg-wrap :deep(.svg-conn-selected) path,
-.svg-wrap :deep(.svg-conn-selected) polygon,
-.svg-wrap :deep(.svg-conn-selected) line,
-.svg-wrap :deep(.svg-conn-selected) polyline { stroke: #2563eb !important; stroke-width: 2.5 !important; }
-</style>
+<style scoped src="./ViewpointDiagramView.css"></style>

@@ -96,6 +96,25 @@ describe('the range the scale may not leave', () => {
 
     expect(view.scale.value).toBe(0.2)
   })
+
+  it('shrinks as far as a view says its whole picture needs, below the floor', () => {
+    const { container, view } = harness()
+    view.least = () => 0.03
+
+    for (let notch = 0; notch < 60; notch += 1) wheel(container, 100)
+
+    expect(view.scale.value).toBe(0.03)
+  })
+
+  it('zooms in from a whole large picture a step at a time, not to the floor at once', () => {
+    const { container, view } = harness()
+    view.least = () => 0.03
+    view.scale.value = 0.03
+
+    wheel(container, -100)
+
+    expect(view.scale.value).toBeCloseTo(0.03 * 1.15)
+  })
 })
 
 describe('after the viewport goes away', () => {
