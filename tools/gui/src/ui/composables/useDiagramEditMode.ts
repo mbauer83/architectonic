@@ -28,6 +28,7 @@ import { type EditKey, editKeyOf } from './editModeKeys'
 import { useEditingPreferences } from './useEditingPreferences'
 import { useSurroundPlacement } from './useSurroundPlacement'
 import type { ShowToast } from '../keys'
+import { isTypingIn } from '../lib/keyboardScheme'
 
 /** How far the arrows nudge a picked label: two pixels, or one with Shift (02·5). */
 const LABEL_STEP = 2
@@ -59,10 +60,6 @@ export interface EditWindow {
   readonly reveal: (extent: Extent) => void
   readonly panBy: (across: number, down: number) => void
 }
-
-const isTyping = (target: EventTarget | null): boolean =>
-  target instanceof HTMLElement
-  && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
 
 /** Whether *target* is the canvas itself, or a shape on it, rather than a control in its corner. */
 const onTheCanvas = (host: HTMLElement | null, target: EventTarget | null): boolean =>
@@ -240,7 +237,7 @@ export function useDiagramEditMode(
   }
 
   const onKey = (event: KeyboardEvent) => {
-    if (!active.value || isTyping(event.target)) return
+    if (!active.value || isTypingIn(event.target)) return
     const key = editKeyOf(event)
     if (key && perform(key, onTheCanvas(parts.host.value, event.target))) event.preventDefault()
   }

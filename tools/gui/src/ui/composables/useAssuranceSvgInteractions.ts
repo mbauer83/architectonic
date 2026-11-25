@@ -1,4 +1,4 @@
-import { nextTick, onUnmounted, type Ref } from 'vue'
+import { nextTick, onUnmounted, shallowRef, type Ref } from 'vue'
 import { stripMarkerAttributes } from '../lib/svgHitAreas'
 import {
   type AssuranceDiagramEdge,
@@ -50,6 +50,8 @@ export function useAssuranceSvgInteractions(opts: {
   onSelectEdge: (edge: AssuranceDiagramEdge) => void
 }) {
   let controller: AbortController | null = null
+  /** Each node's drawings on the picture, as last tagged: what the window marks and names it by. */
+  const nodeElements = shallowRef<ReadonlyMap<string, readonly Element[]>>(new Map())
 
   /** Mark the selected node or edge, clearing whatever was marked before. Safe to call before
    * the SVG exists or after it is replaced — a re-render simply has nothing marked yet. */
@@ -139,9 +141,15 @@ export function useAssuranceSvgInteractions(opts: {
         opts.onSelectEdge(edge)
       }, { signal })
     }
+    const drawn = new Map<string, Element[]>()
+    for (const group of Array.from(svgElement.querySelectorAll('[data-assurance-node-id]'))) {
+      const id = group.getAttribute('data-assurance-node-id') ?? ''
+      drawn.set(id, [...drawn.get(id) ?? [], group])
+    }
+    nodeElements.value = drawn
   }
 
   onUnmounted(() => controller?.abort())
 
-  return { attachInteractivity, markSelection }
+  return { attachInteractivity, markSelection, nodeElements }
 }

@@ -20,15 +20,13 @@ import DiagramReadingPanel from '../components/DiagramReadingPanel.vue'
 import { useDiagramReadingLens } from '../composables/useDiagramReadingLens'
 import { useFittedPanZoom } from '../composables/useFittedPanZoom'
 import { useFullscreen } from '../composables/useFullscreen'
-import DiagramViewportControls from '../components/DiagramViewportControls.vue'
+import DiagramViewportOverlays from '../components/DiagramViewportOverlays.vue'
 import { useDiagramSvgSelection } from '../composables/useDiagramSvgSelection'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import DiagramDetailHeader from '../components/DiagramDetailHeader.vue'
 import DiagramC4Navigation from '../components/DiagramC4Navigation.vue'
 import CanvasContentEditor from '../components/CanvasContentEditor.vue'
 import DiagramPageSidebar from '../components/DiagramPageSidebar.vue'
-import DiagramOverview from '../components/DiagramOverview.vue'
-import DiagramReadingNames from '../components/DiagramReadingNames.vue'
 import FullscreenDock from '../components/FullscreenDock.vue'
 import DiagramSyncPanel from '../components/DiagramSyncPanel.vue'
 import DiagramDeletePanel from '../components/DiagramDeletePanel.vue'
@@ -130,14 +128,12 @@ const editableMetadataByType = computed<Record<string, EditableMetadataSpec>>(()
 // Edit mode: the same page, the canvas in place of the picture (D15). Leaving reloads the picture,
 // which the server has drawn again from whatever was saved.
 const editCanvas = ref<CanvasHandle | null>(null)
-/** A diagram that fits the window only below this scale is large: its edit panel starts closed (Q22). */
-const LARGE_BELOW = 0.35
 const editBar = ref<EditBarHandle | null>(null)
 const edit = useDiagramEditMode(
   svc, diagramId, {
     canvas: editCanvas, bar: editBar, membership: () => membershipOf(detail.value), lens: () => lens.value,
     context: () => contextQuery.data.value,
-    view: panZoom, host: containerRef, large: () => panZoom.fitScale.value < LARGE_BELOW,
+    view: panZoom, host: containerRef, large: () => panZoom.large.value,
   }, load, toast,
 )
 const editing = computed(() => edit.active.value)
@@ -310,27 +306,16 @@ const executeDelete = () => {
                 No diagram rendered.
               </div>
             </div>
-            <DiagramOverview
+            <DiagramViewportOverlays
+              :window="panZoom"
               :picture="svgContainer"
-              :window-extent="panZoom.windowExtent"
-              :scale="panZoom.scale.value"
-              :show-view="panZoom.showView"
               :marks="editing ? edit.marks.value : reader.marks.value"
-            />
-            <DiagramReadingNames
-              :marks="reader.marks.value"
-              :picture="svgContainer"
-              :scale="panZoom.scale.value"
-              :to-window="panZoom.toWindow"
-            />
-            <DiagramViewportControls
-              :zoom="panZoom"
+              :reading="reader.marks.value"
+              :boxes="reader.boxes.value"
               :edit="!editing && editsOnCanvas(detail) ? edit.enter : null"
-              :is-transformed="panZoom.isTransformed.value"
               :is-fullscreen="fullscreen.isFullscreen.value"
               :can-fullscreen="fullscreen.isSupported"
               :hint="viewportHint(editing)"
-              @reset="panZoom.resetView"
               @toggle-fullscreen="fullscreen.toggle"
             />
           </div>
