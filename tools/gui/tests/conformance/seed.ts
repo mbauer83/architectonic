@@ -1,6 +1,7 @@
 import { Effect } from 'effect'
 import { makeHttpModelRepository } from '../../src/adapters/http/HttpModelRepository'
 import type { ModelRepository } from '../../src/ports/ModelRepository'
+import type { GroupAxis, GroupList } from '../../src/domain/schemas/groups'
 
 /**
  * Identifiers the detail reads need, discovered from the collection reads rather than written down.
@@ -23,7 +24,7 @@ export interface ConformanceSeed {
   readonly documentId: string | null
   readonly diagramTypeKey: string | null
   readonly datatypeTypeId: string | null
-  readonly groupKind: string | null
+  readonly groupKind: GroupAxis | null
   readonly groupSlug: string | null
   readonly viewpointSlug: string | null
   /**
@@ -47,13 +48,17 @@ const runOrNull = async <A>(effect: Effect.Effect<A, unknown>): Promise<A | null
 const first = <A>(items: readonly A[] | null | undefined): A | null =>
   items !== null && items !== undefined && items.length > 0 ? items[0] : null
 
-/** The axis kinds a group list is keyed by, in the order a seed should prefer them. */
-const GROUP_AXES = [
-  'model-projects',
-  'diagram-collections',
-  'document-collections',
-  'analysis-collections',
-] as const
+/**
+ * The axes a group list is asked for, each with the key its answer carries it under, in the order a
+ * seed should prefer them. The ask is singular and the answer plural: asking by the answer's key was
+ * answered with no axes at all, and the "by kind" read then exercised nothing.
+ */
+const GROUP_AXES: readonly (readonly [GroupAxis, keyof GroupList])[] = [
+  ['model-project', 'model-projects'],
+  ['diagram-collection', 'diagram-collections'],
+  ['document-collection', 'document-collections'],
+  ['analysis-collection', 'analysis-collections'],
+]
 
 export const discoverSeed = async (repo: ModelRepository): Promise<ConformanceSeed> => {
   // A wide page on purpose: the delete-preview seed needs an *unreferenced* entity, and in a
@@ -84,7 +89,7 @@ export const discoverSeed = async (repo: ModelRepository): Promise<ConformanceSe
   // body of a different shape, and that would be reported as the harness's own fault.
   const matrix = (diagrams?.items ?? []).find((d) => d.diagram_type.includes('matrix')) ?? null
 
-  const axis = GROUP_AXES.find((kind) => (groups?.[kind] ?? []).length > 0) ?? null
+  const axis = GROUP_AXES.find(([, key]) => (groups?.[key] ?? []).length > 0) ?? null
 
   // Cheapest candidates first: an entity nothing connects to is the only one that *might* also be on
   // no diagram, and the plan itself is the only authority on whether it is.
@@ -112,8 +117,8 @@ export const discoverSeed = async (repo: ModelRepository): Promise<ConformanceSe
     documentId: first(documents?.items)?.artifact_id ?? null,
     diagramTypeKey: first(diagramTypes ?? [])?.key ?? null,
     datatypeTypeId: first(datatypes?.classifiers ?? [])?.type_id ?? null,
-    groupKind: axis,
-    groupSlug: axis === null ? null : (first(groups?.[axis]) ?? null)?.slug ?? null,
+    groupKind: axis?.[0] ?? null,
+    groupSlug: axis === null ? null : (first(groups?.[axis[1]]) ?? null)?.slug ?? null,
     viewpointSlug: first(viewpoints ?? [])?.slug ?? null,
   }
 }

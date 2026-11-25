@@ -5,12 +5,12 @@ import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
 import { useQuery } from '../composables/useQuery'
 import { metaOntologyOptionsForModules } from '../lib/domains'
-import type { GroupList, ModuleSummary } from '../../domain'
+import type { GroupAxis, GroupList, ModuleSummary } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import EntityGroupNavTree from '../components/EntityGroupNavTree.vue'
 import GroupSelector from '../components/GroupSelector.vue'
 
-type Axis = 'model-project' | 'diagram-collection' | 'document-collection' | 'analysis-collection'
+type Axis = GroupAxis
 
 const props = defineProps<{ axis: Axis }>()
 

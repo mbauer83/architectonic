@@ -23,7 +23,7 @@ export interface ReadStep {
   readonly run: (repo: ModelRepository, seed: ConformanceSeed) => Effect.Effect<unknown, unknown>
 }
 
-const need = (seed: ConformanceSeed, key: keyof ConformanceSeed): string => {
+const need = <K extends keyof ConformanceSeed>(seed: ConformanceSeed, key: K): NonNullable<ConformanceSeed[K]> => {
   const value = seed[key]
   if (value === null) throw new Error(`seed ${key} is absent`)
   return value

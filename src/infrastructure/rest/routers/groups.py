@@ -116,7 +116,9 @@ def _axis_entries(
     # and "has no groups" are different answers and a client branches on them differently.
     response_model=GroupListResponse, response_model_exclude_none=True)
 def list_groups(
-    kind: str | None = None,
+    # An axis, or none for all four. Typed so that a misspelt axis is refused rather than answered
+    # with no axes at all — an empty answer reads as "no groups" to a client that asked wrongly.
+    kind: GroupAxis | None = None,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     """Return groups from the registry, optionally filtered by axis."""

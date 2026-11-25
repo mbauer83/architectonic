@@ -18,6 +18,9 @@ export const GroupEntrySchema = Schema.Struct({
 })
 export type GroupEntry = typeof GroupEntrySchema.Type
 
+/** The four collection axes a group belongs to: what a group listing is asked for, by its singular name. */
+export type GroupAxis = 'model-project' | 'diagram-collection' | 'document-collection' | 'analysis-collection'
+
 export const GroupListSchema = Schema.Struct({
   'model-projects': Schema.optional(Schema.Array(GroupEntrySchema)),
   'diagram-collections': Schema.optional(Schema.Array(GroupEntrySchema)),

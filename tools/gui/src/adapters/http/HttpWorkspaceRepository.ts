@@ -50,7 +50,7 @@ export const workspaceMethods = (): WorkspaceMethods => ({
     postJson(buildUrl('/sync/enterprise/withdraw'), { confirm: true }, SyncSaveResultSchema),
   getChanges: (repo) => fetchJson(buildUrl('/sync/changes', { repo }), SyncChangesResultSchema),
 
-  listGroups: (kind?: string) =>
+  listGroups: (kind) =>
     fetchJson(buildUrl('/groups', kind !== undefined ? { kind } : undefined), GroupListSchema),
   createGroup: (body) => postJson(buildUrl('/groups'), body, OperationReport),
   // A POST with an action segment, not a PATCH field: a rename re-files every member and changes the
