@@ -22,6 +22,22 @@ def kind_of(written: str) -> str:
     return written.strip().lower()
 
 
+def kinds_in_use(written: Iterable[str]) -> dict[str, int]:
+    """How many stressors name each kind, kinds that `kind_of` matches counted as one.
+
+    Each is labelled as it was first written, trimmed; an empty kind is no kind.
+    """
+    labels: dict[str, str] = {}
+    counts: dict[str, int] = {}
+    for kind in written:
+        key = kind_of(kind)
+        if not key:
+            continue
+        labels.setdefault(key, kind.strip())
+        counts[key] = counts.get(key, 0) + 1
+    return {labels[key]: count for key, count in counts.items()}
+
+
 @dataclass(frozen=True)
 class Perspective:
     """One angle to look from, and the question that opens it."""

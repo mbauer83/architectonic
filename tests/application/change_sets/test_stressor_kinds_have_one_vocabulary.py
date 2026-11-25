@@ -12,7 +12,11 @@ from src.application.change_sets.candidate_view import CandidateView
 from src.application.stress_analysis.evaluation import evaluate
 from src.application.stress_analysis.workspace import analyse
 from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_SCHEMA
-from src.domain.repository.repo_default_stress_perspectives import STRESS_PERSPECTIVES, unwritten_perspectives
+from src.domain.repository.repo_default_stress_perspectives import (
+    STRESS_PERSPECTIVES,
+    kinds_in_use,
+    unwritten_perspectives,
+)
 from tests.support.typed_table_documents import document_path, document_text, table_of, table_text
 
 SCHEMA = normalize_document_schema("stress-analysis", STRESS_ANALYSIS_SCHEMA)
@@ -67,3 +71,7 @@ def test_the_test_set_reads_the_same_vocabulary_over_its_own_stressors(tmp_path:
     read = evaluate(tables, integrated=[], adapted=False)
 
     assert read["unwritten_perspectives"] == [one for one in EVERY if one != "pestle.legal"]
+
+
+def test_kinds_that_match_are_counted_as_one_under_the_first_spelling() -> None:
+    assert kinds_in_use(["Legal", " legal ", "LEGAL", "batch window", "", "  "]) == {"Legal": 3, "batch window": 1}

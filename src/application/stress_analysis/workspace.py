@@ -12,7 +12,7 @@ from typing import Any
 from src.application.artifacts.document_table_rows import DocumentTables, TypedRow
 from src.application.change_sets.candidate_view import CandidateView
 from src.application.stress_analysis.rows import held_apart, rows_of
-from src.domain.repository.repo_default_stress_perspectives import unwritten_perspectives
+from src.domain.repository.repo_default_stress_perspectives import kinds_in_use, unwritten_perspectives
 
 
 def _incomplete_design_rows(tables: DocumentTables, held: frozenset[str]) -> list[dict[str, str]]:
@@ -64,7 +64,7 @@ def analyse(tables: DocumentTables, naive: CandidateView) -> dict[str, Any]:
             missing[row["id"]].add(subject)
 
     pairs = Counter(pair for components in hits.values() for pair in combinations(sorted(components), 2))
-    counts = Counter(row["kind"] for row in stressors if row.get("kind"))
+    counts = kinds_in_use(str(row.get("kind") or "") for row in stressors)
     grouped = Counter(row["end_state"] for row in stressors if row.get("end_state"))
     adapted = {end for row in adaptations for end in (row.get("end_states") or [])}
     touched = {component for components in hits.values() for component in components}
@@ -86,7 +86,7 @@ def analyse(tables: DocumentTables, naive: CandidateView) -> dict[str, Any]:
             "incomplete_rows": _incomplete_design_rows(tables, held),
         },
         "coverage": {
-            "by_kind": dict(counts), "unwritten_perspectives": unwritten_perspectives(counts),
+            "by_kind": counts, "unwritten_perspectives": unwritten_perspectives(counts),
             "single_stressor_end_states": [row["id"] for row in ends if grouped[row["id"]] == 1],
             "untouched": [
                 {"id": ref, "fan_in": fan_in[ref], "fan_out": fan_out[ref]}
