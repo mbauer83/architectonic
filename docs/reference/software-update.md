@@ -17,6 +17,10 @@ The first release that carries `arch-update` is installed by hand (pull, `uv syn
 `arch-repair upgrade --commit` with the backend stopped). Every release after it is installed with
 this command.
 
+An installation on 0.11.x updates to 0.12.0 with 0.11.x's `arch-update`, which still refuses edited
+configuration files. Follow [Updating from 0.11.x](upgrade-guide.md#updating-from-011x) for that one
+step.
+
 &nbsp;
 
 ## What the dry run checks
@@ -28,6 +32,7 @@ this command.
 | `assets` | each downloaded asset against the digest the release states and the digest in `SHA256SUMS` |
 | `provenance` | whether the build-provenance attestation was verified (not yet in this version) |
 | `rehearsal` | the release's own `arch-repair upgrade` dry run over this deployment's repositories and operational targets, run in a throwaway worktree: how many findings apply automatically, how many block, how many targets could not be inspected |
+| `not applied` | an enterprise tier the migration leaves at its older format because this deployment does not administer it, with the number of pending findings and how its maintainer applies them |
 | `plan` | the steps `--commit` would take, in order |
 | `will ask for` | each credential the restart needs and the environment variable that answers it without a prompt |
 | `refused` | why the update would not run, and what resolves it |
@@ -52,14 +57,17 @@ and after it completes. The installed version runs the first three, then hands o
    question refuses the update and names the variable to set.
 2. **Stop the backend**, when one serves this workspace. A backend serving in the foreground of a
    terminal is not stopped: the update is refused and names the pid.
-3. **Move the checkout** to the release tag by fast-forward on `main`, or detached on another branch.
+3. **Move the checkout** to the release tag by fast-forward on `main`, or detached on another branch,
+   keeping the edits to your configuration files (see [Your configuration](#your-configuration)).
 4. **Sync the environment** with `uv sync --frozen` and the groups and extras the installed
    environment had. The process then re-executes itself as the new version.
 5. **Install the GUI** from the release's bundle, kept beside the previous one until verified. Where
    a release carries no bundle and `npm` is on `PATH`, the GUI is built locally.
 6. **Re-provision pinned assets** (`plantuml.jar`, the embedding model) where their pins moved.
 7. **Migrate** with `arch-repair upgrade --commit`, which takes its safety point first (see
-   [the upgrade guide](upgrade-guide.md#the-safety-point-a-commit-leaves-behind)).
+   [the upgrade guide](upgrade-guide.md#the-safety-point-a-commit-leaves-behind)). Where the backend
+   serves with `--admin-mode`, the migration runs with `--admin-mode` too and upgrades the enterprise
+   tier as well.
 8. **Start the backend** detached on the same port with the same flags.
 9. **Authorize the store** where it was open under the manual policy.
 10. **Verify** that the checkout declares the release and the backend serves it.
@@ -72,6 +80,31 @@ be put back is listed.
 
 The migrated model files appear as changes in a repository that lives inside the checkout, as the
 development layout has it; commit them as you would any model change.
+
+The closing `safety` line is the command that returns every target to the state before the
+migration, with this deployment's `--workspace` and `--settings` already filled in. Stop the backend
+before running it. It refuses while files have changed since the update and lists them; add
+`--discard-later-work` once what you need from them is saved.
+
+&nbsp;
+
+## Your configuration
+
+Two tracked files are this installation's configuration rather than software:
+`arch-workspace.yaml` (the repositories, the backend port) and `config/settings.yaml` (written by
+`arch-assurance init` and `use-backend`, and edited by hand). Leave your edits to them uncommitted.
+
+- The dry run reports them as kept, and they do not count as a modified checkout.
+- A release that leaves the file unchanged moves underneath your edits.
+- A release that changes the file has your edits merged onto its version. When the two touch the
+  same lines, the dry run refuses and names the file; `git diff HEAD <tag> -- <file>` shows the
+  release's change.
+- A file marked `git update-index --skip-worktree` or `--assume-unchanged` hides its edits, so the
+  dry run refuses until the flag is cleared.
+
+Commits of your own on `main` stop a fast-forward. The dry run refuses with the commit `main` and
+the release share: `git reset --mixed <that commit>` turns configuration commits back into
+uncommitted edits. Other work belongs on a branch of its own.
 
 &nbsp;
 

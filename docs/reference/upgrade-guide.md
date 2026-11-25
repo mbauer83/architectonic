@@ -18,6 +18,7 @@ how to run an upgrade safely and what the reports mean.
 - [Docker: upgrade before serving](#docker-upgrade-before-serving)
 - [Reading a report](#reading-a-report)
 - [What a clean report does and does not mean](#what-a-clean-report-does-and-does-not-mean)
+- [Updating from 0.11.x](#updating-from-011x)
 
 &nbsp;
 
@@ -182,7 +183,7 @@ end of the run (`checkpoint_set` in `--json`).
 | Target kind | Recorded as | Returned by |
 |---|---|---|
 | Repository | Its working tree, uncommitted edits and untracked files included, pinned under `refs/arch-repair/pre-upgrade/<set>` in the repository's own git objects | `--restore <set>` |
-| Guidance cache | A copy of the directory | `--restore <set>` |
+| Guidance cache of this deployment (a deployment root's, or `deployment.guidance_cache_root`) | A copy of the directory | `--restore <set>` |
 | Public signals SQLite | A copy of the file and its write-ahead log | `--restore <set>` |
 | SQLCipher assurance store | An encrypted copy of the file and its write-ahead log; the key stays in the OS keychain or vault | `--restore <set>` |
 | Deployment settings document | A copy of the file | `--restore <set>` |
@@ -191,10 +192,23 @@ A repository is not copied. Its snapshot is git objects, so a repository with ma
 costs one object per changed file, and the pinned ref keeps them through garbage collection without
 moving the branch or leaving anything to push.
 
+The default guidance cache, `~/.config/arch-repo/guidance-cache`, belongs to the operating-system
+user and is read by every installation of that user without a cache of its own. It is inspected and
+migrated, but not recorded in a set and not restored: putting it back would roll back the other
+installations too.
+
+The set records the settings document the commit ran with, so a restore reaches the same
+operational targets without naming it again:
+
 ```bash
 uv run arch-repair upgrade --workspace <path> --list-checkpoints   # what is recorded
 uv run arch-repair upgrade --workspace <path> --restore <set>      # every target back as recorded
 ```
+
+After a successful commit the set also records the state the commit left. A `--restore` compares
+the targets with it and refuses while anything changed since — a document written, a candidate
+architecture created, the settings edited — listing each path. Save what you need, then add
+`--discard-later-work`. `arch-update` prints the restore command for the set its migration took.
 
 `--restore` uses the same backend-not-serving gate as `--commit`. Copies live under
 `.arch/upgrade-checkpoints/<set>/` in the workspace, or beside the deployment settings document when
@@ -381,3 +395,36 @@ authoring tools.
 ---
 
 *See also: [CLI & backend](cli-and-backend.md) · [Docker Compose deployment](docker-compose.md) · [Configuration](configuration.md)*
+
+&nbsp;
+
+## Updating from 0.11.x
+
+`arch-update` runs as the installed version until it hands over to the new one, so the step from
+0.11.x to 0.12.0 is checked by 0.11.x's updater. That updater refuses a checkout whose tracked files
+carry edits, which includes an edited `arch-workspace.yaml` or `config/settings.yaml`, and it cannot
+fast-forward a `main` that has commits of your own. 0.12.0 leaves both files unchanged, so the edits
+can stay in place while git is told to ignore them for this one update:
+
+1. **Find your edits.** `git status --short` lists the modified tracked files. Only
+   `arch-workspace.yaml` and `config/settings.yaml` may appear; commit anything else to a branch of
+   your own first.
+2. **Turn configuration commits back into edits.** If you committed configuration on `main`
+   (`git log --oneline v0.11.5..main` lists commits, using your installed version's tag), run
+   `git reset --mixed v0.11.5`.
+3. **Hide the edits from the 0.11.x check** — name only the files step 1 listed:
+
+   ```bash
+   git update-index --skip-worktree arch-workspace.yaml config/settings.yaml
+   ```
+
+4. **Update** as usual: `uv run arch-update` (the plan must show no `refused` line), then
+   `uv run arch-update --commit`.
+5. **Clear the flag** once the update has finished, whether it completed or rolled back:
+
+   ```bash
+   git update-index --no-skip-worktree arch-workspace.yaml config/settings.yaml
+   ```
+
+From 0.12.0 on, `arch-update` keeps these edits itself and refuses an update while either flag is
+still set, naming the command in step 5.
