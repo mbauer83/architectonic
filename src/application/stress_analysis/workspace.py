@@ -1,30 +1,53 @@
-"""Progress, incidence and coverage derived from a document and its current naive architecture."""
+"""Progress, incidence and coverage derived from a document and its current naive architecture.
+
+Every read here is of the design set. The test set is held apart from the work it judges: its
+stressors, their ticks and the verdicts on them appear in none of these reads (see `evaluation`).
+"""
 from __future__ import annotations
 
 from collections import Counter, defaultdict
 from itertools import combinations
 from typing import Any
 
-from src.application.artifacts.document_table_rows import DocumentTables
+from src.application.artifacts.document_table_rows import DocumentTables, TypedRow
 from src.application.change_sets.candidate_view import CandidateView
+from src.application.stress_analysis.rows import held_apart, rows_of
 
 # The categories offered by the stress-analysis workspace.
 STRESSOR_KINDS = ("scale", "organisation", "technology", "actor", "regulation", "time")
 
 
-def _rows(tables: DocumentTables, name: str) -> list[dict[str, Any]]:
-    table = tables.table(name)
+def _incomplete_design_rows(tables: DocumentTables, held: frozenset[str]) -> list[dict[str, str]]:
+    """Each cell of a design row that is required and unstated, or stated and unreadable or unresolved."""
     return [
-        {"id": row.row_id, **{key: cell.value for key, cell in row.cells.items()}}
-        for row in table.rows
-    ] if table else []
+        {"table": table.spec.name, "row": row.row_id, "column": col.name}
+        for table in tables.tables for row in table.rows
+        if not _held_apart_row(table.spec.name, row, held)
+        for col in table.spec.columns
+        if (col.required and not row.cells[col.name].is_stated)
+        or row.cells[col.name].unreadable or row.cells[col.name].unresolved
+    ]
+
+
+def _held_apart_row(table: str, row: TypedRow, held: frozenset[str]) -> bool:
+    """Whether a row belongs to the test set: a verdict, a test stressor, or a tick of one."""
+    match table:
+        case "survival":
+            return True
+        case "stressors":
+            return row.row_id in held
+        case "incidence":
+            return "stressor" in row.cells and row.cells["stressor"].value in held
+        case _:
+            return False
 
 
 def analyse(tables: DocumentTables, naive: CandidateView, *, kinds: tuple[str, ...] = ()) -> dict[str, Any]:
-    stressors = _rows(tables, "stressors")
-    ends = _rows(tables, "end-states")
-    adaptations = _rows(tables, "adaptations")
-    incidence = _rows(tables, "incidence")
+    held = held_apart(tables)
+    stressors = [row for row in rows_of(tables, "stressors") if row["id"] not in held]
+    ends = rows_of(tables, "end-states")
+    adaptations = rows_of(tables, "adaptations")
+    incidence = [tick for tick in rows_of(tables, "incidence") if tick.get("stressor") not in held]
     hits: dict[str, set[str]] = defaultdict(set)
     missing: dict[str, set[str]] = defaultdict(set)
     unexplained = []
@@ -62,12 +85,7 @@ def analyse(tables: DocumentTables, naive: CandidateView, *, kinds: tuple[str, .
                 row["id"] for row in ends if row["id"] not in adapted and not row.get("no_change_reason")
             ],
             "unexplained_hits": unexplained,
-            "incomplete_rows": [
-                {"table": table.spec.name, "row": row.row_id, "column": col.name}
-                for table in tables.tables for row in table.rows for col in table.spec.columns
-                if (col.required and not row.cells[col.name].is_stated)
-                or row.cells[col.name].unreadable or row.cells[col.name].unresolved
-            ],
+            "incomplete_rows": _incomplete_design_rows(tables, held),
         },
         "coverage": {
             "by_kind": dict(counts), "unused_kinds": sorted(set(kinds or STRESSOR_KINDS) - counts.keys()),
