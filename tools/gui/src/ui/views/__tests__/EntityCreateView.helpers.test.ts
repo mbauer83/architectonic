@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  propertyRowsForWrite,
   PREVIEW_FIRST_TITLE,
   QUARANTINE_TITLE,
   REQUIRED_TITLE,
@@ -36,5 +37,15 @@ describe('createBlockedReason', () => {
 
   it('prefers quarantine over both in-form reasons', () => {
     expect(createBlockedReason(true, false, true)).toBe(QUARANTINE_TITLE)
+  })
+})
+
+describe('propertyRowsForWrite', () => {
+  it('writes no row for a schema attribute left empty, which states nothing', () => {
+    const rows = [
+      { key: 'Telemetry', value: '', adHocType: 'string' },
+      { key: 'Owner', value: 'Platform', adHocType: 'string' },
+    ]
+    expect(propertyRowsForWrite(rows, { Telemetry: {} })).toEqual({ props: { Owner: 'Platform' }, adhocTypes: {} })
   })
 })

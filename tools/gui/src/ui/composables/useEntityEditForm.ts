@@ -8,7 +8,7 @@ import { specializationOptionsForEntityType } from '../lib/specializationOptions
 import { NO_QUARANTINE, quarantineFromSchemaInfo } from '../lib/schemaQuarantine'
 import { reconcileRowsWithSchema } from '../lib/schemaPropertyRows'
 import { NO_COLLECTION, homeForMove } from '../components/ArtifactHomeSelect.helpers'
-import { NO_ATTRIBUTES, attributesPatch, type AttributeBaseline } from '../lib/entityPropertiesPatch'
+import { NO_ATTRIBUTES, attributesPatch, statedKeys, type AttributeBaseline } from '../lib/entityPropertiesPatch'
 
 type AdHocType = 'string' | 'integer' | 'number' | 'boolean' | 'array'
 const ADHOC_VALID = new Set<string>(['string', 'integer', 'number', 'boolean', 'array'])
@@ -158,7 +158,8 @@ export function useEntityEditForm(options: {
           )
         : {}
     attributeBaseline = {
-      propertyKeys: Object.keys(d.properties ?? {}),
+      propertyKeys: statedKeys(Object.fromEntries(
+        Object.entries(d.properties ?? {}).map(([key, value]) => [key, toLexical(value)]))),
       attributeTypeKeys: rawAttrTypes && typeof rawAttrTypes === 'object' && !Array.isArray(rawAttrTypes)
         ? Object.keys(rawAttrTypes)
         : [],
