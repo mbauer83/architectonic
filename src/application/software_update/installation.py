@@ -33,18 +33,44 @@ class InstalledSoftware:
     version: ReleaseVersion | None
     commit: str
     branch: str | None
-    #: Tracked files with local modifications, `.arch/` excluded. Empty is what "clean" means here;
-    #: untracked files are allowed and are not listed.
+    #: Tracked files with local modifications, `.arch/` and the deployment's own configuration excluded.
+    #: Empty is what "clean" means here; untracked files are allowed and are not listed.
     modified_tracked: tuple[str, ...]
     #: Whether this version carries an allowed-signers file — the moment one exists, an unsigned tag
     #: is refused.
     signers_file_present: bool
     gui_stamp: str | None
     plantuml_version: str | None
+    #: The deployment's configuration files (`arch-workspace.yaml`, the source-tree settings document)
+    #: that carry local edits. The installation guide tells the operator to edit them, so they are not
+    #: a modified software checkout: an update keeps them, and carries them onto a release that also
+    #: changes one.
+    local_configuration: tuple[str, ...] = ()
+    #: Configuration files git is told to ignore changes to (`--skip-worktree`, `--assume-unchanged`).
+    #: Their edits are invisible to the checks above and to the carry, so an update refuses until the
+    #: flag is cleared.
+    hidden_configuration: tuple[str, ...] = ()
 
     @property
     def clean(self) -> bool:
         return not self.modified_tracked
+
+
+@dataclass(frozen=True)
+class CheckoutRelation:
+    """How the checkout stands to the commit a release names, as the move phase will meet it."""
+
+    #: The release commit descends from HEAD, so the branch can fast-forward to it.
+    fast_forwardable: bool
+    #: Commits on HEAD the release does not contain.
+    local_commits: int
+    #: Where HEAD and the release last met; the point a diverged branch is taken back to.
+    merge_base: str | None
+    #: Locally edited configuration files the release also changes; their edits are carried onto the
+    #: release's version by a three-way merge.
+    configuration_changed: tuple[str, ...] = ()
+    #: Of those, the ones whose edits conflict with the release's change.
+    configuration_conflicts: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

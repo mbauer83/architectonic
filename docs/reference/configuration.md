@@ -151,6 +151,13 @@ guidance:
   # guidance catalog — pass --source to import from somewhere else
   default_source: https://raw.githubusercontent.com/mbauer83/architecture-modeling-guidance/refs/heads/main/guidance.yaml
 
+deployment:
+  # this installation's own guidance cache. Unset, the cache is the operating-system
+  # user's ~/.config/arch-repo/guidance-cache, shared by every installation of that user
+  # without its own; the backend, arch-import-guidance and arch-repair upgrade all read
+  # this one path
+  guidance_cache_root: /srv/arch/guidance-cache
+
 viewpoints:
   execution_max_entities: 500              # hard cap on entities in a viewpoint execution result
   execution_default_entity_limit_mcp: 200  # MCP execute default when no limit argument is given

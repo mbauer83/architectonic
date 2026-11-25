@@ -105,3 +105,43 @@ def test_the_shell_is_always_revalidated_and_the_bundle_is_not_touched(tmp_path:
     etag = client.get("/").headers["etag"]
     assert client.get("/", headers={"if-none-match": etag}).headers.get("cache-control") == "no-cache"
     assert "cache-control" not in client.get("/assets/index-abc.js").headers
+
+
+def test_a_gui_built_after_startup_is_served_without_a_restart(tmp_path: Path) -> None:
+    # The backend used to mount the SPA only if `dist/` existed when it started, so building the GUI
+    # after `arch-backend --daemon` (the installation guide's order) left `/` at 404 until a restart.
+    from src.infrastructure.backend._spa_static import GUI_NOT_BUILT
+
+    dist = tmp_path / "dist"
+    app = FastAPI()
+    app.mount("/", SPAStaticFiles(directory=str(dist), html=True, check_dir=False), name="static")
+    client = TestClient(app)
+
+    before = client.get("/")
+    assert before.status_code == 404
+    assert GUI_NOT_BUILT in before.text
+
+    dist.mkdir()
+    (dist / "index.html").write_text("<html><body><main>app shell</main></body></html>", encoding="utf-8")
+    after = client.get("/entities")
+    assert after.status_code == 200 and "<main>" in after.text
+
+
+def test_the_backend_mounts_the_gui_whether_or_not_it_is_built() -> None:
+    import inspect
+
+    from src.infrastructure.backend import arch_backend_app
+
+    source = inspect.getsource(arch_backend_app._build_app)
+    assert "check_dir=False" in source and "if gui_dist.exists()" not in source
+
+
+def test_an_unknown_api_address_keeps_its_plain_404_before_the_gui_is_built(tmp_path: Path) -> None:
+    from src.infrastructure.backend._spa_static import GUI_NOT_BUILT
+
+    app = FastAPI()
+    app.mount("/", SPAStaticFiles(directory=str(tmp_path / "dist"), html=True, check_dir=False), name="static")
+
+    response = TestClient(app).get("/api/no-such-thing")
+
+    assert response.status_code == 404 and GUI_NOT_BUILT not in response.text

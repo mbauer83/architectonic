@@ -44,14 +44,13 @@ def _dot_version(dot_path: Path | str) -> tuple[int, ...] | None:  # pragma: no 
 
 def _ensure_graphviz_from_source(root: Path, *, force: bool) -> Path:  # pragma: no cover
     tools_dir = root / "tools"
-    output_dir = tools_dir / "graphviz"
+    output_dir = tools_dir / GRAPHVIZ_INSTALL_DIRNAME
     dot_name = "dot.exe" if os.name == "nt" else "dot"
     dot_path = output_dir / "bin" / dot_name
     if dot_path.exists() and not force:
         return dot_path
 
-    archive_path = tools_dir / f"graphviz-{GRAPHVIZ_VERSION}.tar.xz"
-    src_parent = tools_dir / "_graphviz-src"
+    archive_path, src_parent = build_intermediates(tools_dir)
     src_dir = src_parent / f"graphviz-{GRAPHVIZ_VERSION}"
 
     print(f"Downloading Graphviz {GRAPHVIZ_VERSION} source …")
@@ -89,7 +88,25 @@ def _ensure_graphviz_from_source(root: Path, *, force: bool) -> Path:  # pragma:
 
     if not dot_path.exists():
         raise SystemExit(f"Graphviz build completed but dot was not found at {dot_path}")
+    discard_build_intermediates(tools_dir)
     return dot_path
+
+
+#: Where the built Graphviz is installed, under `tools/`; `find_graphviz_dot` looks there first.
+GRAPHVIZ_INSTALL_DIRNAME = "graphviz"
+
+
+def build_intermediates(tools_dir: Path) -> tuple[Path, Path]:
+    """The downloaded source archive and the directory it is built in — neither is needed once
+    `dot` is installed."""
+    return tools_dir / f"graphviz-{GRAPHVIZ_VERSION}.tar.xz", tools_dir / "_graphviz-src"
+
+
+def discard_build_intermediates(tools_dir: Path) -> None:
+    """Remove the archive and the build tree (about 180 MB) after a successful install."""
+    archive, source = build_intermediates(tools_dir)
+    archive.unlink(missing_ok=True)
+    shutil.rmtree(source, ignore_errors=True)
 
 
 # Per-platform install plans, ordered by preference: (package-manager binary, commands to run).

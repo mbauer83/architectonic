@@ -8,6 +8,7 @@ import pytest
 
 from src.application.software_update.installation import (
     BackendObservation,
+    CheckoutRelation,
     DependencySelection,
     InstallationObservation,
     InstalledSoftware,
@@ -173,3 +174,76 @@ def test_a_compose_host_is_planned_in_the_container_driver_s_order_with_nothing_
         "move_checkout", "sync_environment", "stop_backend", "migrate", "start_backend", "verify",
     ]
     assert "docker compose build" in plan.steps[1].description
+
+
+# ── The deployment's own configuration, and how the checkout stands to the release ─────────────────
+#
+# The installation guide has the operator edit `arch-workspace.yaml`, and `arch-assurance` writes
+# `config/settings.yaml`. Both are tracked files; an update refused them as a modified checkout, and a
+# remedy that committed them diverged `main`, which the dry run then planned as a fast-forward.
+
+CONFIGURED = replace(INSTALLED, local_configuration=("arch-workspace.yaml", "config/settings.yaml"))
+
+
+def _relation(**over: object) -> CheckoutRelation:
+    base = CheckoutRelation(fast_forwardable=True, local_commits=0, merge_base="abc123")
+    return replace(base, **over)  # type: ignore[arg-type]
+
+
+def test_configuration_edits_are_kept_not_refused() -> None:
+    plan = plan_update(_observation(software=CONFIGURED), RELEASE, GOOD, CLEAR, relation=_relation())
+
+    assert isinstance(plan, UpdatePlan)
+    assert any("keeps the local configuration edits to arch-workspace.yaml" in note for note in plan.notes)
+
+
+def test_a_release_that_changes_an_edited_file_says_it_will_merge_the_edit() -> None:
+    plan = plan_update(
+        _observation(software=CONFIGURED), RELEASE, GOOD, CLEAR,
+        relation=_relation(configuration_changed=("arch-workspace.yaml",)),
+    )
+
+    assert isinstance(plan, UpdatePlan)
+    assert any("merged onto its version" in note for note in plan.notes)
+
+
+def test_a_conflicting_edit_is_refused_in_the_dry_run() -> None:
+    plan = plan_update(
+        _observation(software=CONFIGURED), RELEASE, GOOD, CLEAR,
+        relation=_relation(
+            configuration_changed=("arch-workspace.yaml",), configuration_conflicts=("arch-workspace.yaml",),
+        ),
+    )
+
+    assert isinstance(plan, UpdateRefused) and plan.outcome == BLOCKED
+    assert "git diff HEAD v0.10.1 -- arch-workspace.yaml" in plan.remedy
+
+
+def test_a_diverged_main_is_refused_in_the_dry_run_not_planned_as_a_fast_forward() -> None:
+    plan = plan_update(
+        _observation(), RELEASE, GOOD, CLEAR,
+        relation=_relation(fast_forwardable=False, local_commits=1, merge_base="0123456789abcdef"),
+    )
+
+    assert isinstance(plan, UpdateRefused) and plan.outcome == BLOCKED
+    assert "cannot fast-forward" in plan.reason
+    assert "git reset --mixed 0123456789ab" in plan.remedy
+
+
+def test_a_diverged_branch_other_than_main_is_detached_onto_the_tag() -> None:
+    plan = plan_update(
+        _observation(), RELEASE, GOOD, CLEAR, current_branch_is_main=False,
+        relation=_relation(fast_forwardable=False, local_commits=3),
+    )
+
+    assert isinstance(plan, UpdatePlan) and plan.checkout_move == "detach"
+
+
+def test_configuration_hidden_from_git_is_refused_with_the_command_that_shows_it_again() -> None:
+    hidden = replace(INSTALLED, hidden_configuration=("arch-workspace.yaml",))
+
+    plan = plan_update(_observation(software=hidden), RELEASE, GOOD, CLEAR, relation=_relation())
+
+    assert isinstance(plan, UpdateRefused)
+    assert "`git update-index --no-skip-worktree arch-workspace.yaml`" in plan.remedy
+    assert "`git update-index --no-assume-unchanged arch-workspace.yaml`" in plan.remedy

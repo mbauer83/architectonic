@@ -48,3 +48,22 @@ the floor — the way through is a dated entry in
 `tools/supplychain/emergency_exceptions.py`, naming one package at one version with a
 justification and the day it stops applying. It refuses to be constructed without those,
 it admits nothing after that day, and it fails the gate until it is removed.
+
+## Cutting a release
+
+A release is a signed tag `v<version>` on a commit whose `pyproject.toml` declares that version and
+which carries `changelog-assets/<version>-detail.md`. Pushing the tag starts
+`.github/workflows/release.yml`, which runs in this order:
+
+1. **CI on the tagged commit.** The release workflow calls `ci.yml` as its first job, so every gate
+   CI runs on `main` runs again on exactly the commit being released.
+2. **Publish**, only when every CI job passed: the GUI is built, bundled and given a `SHA256SUMS`
+   line, both files receive a build-provenance attestation, and the GitHub release is created with
+   the detail file as its notes.
+
+A tag on a commit whose CI fails publishes nothing. Fix the defect on `main`, then move the tag to
+the fixed commit or cut the next patch version; `arch-update` installs only published releases, so
+an unpublished tag reaches no installation.
+
+The tag must be signed by a key listed in `.github/release-signers` of the version installations
+already run; a new key ships in a release before any tag is signed with it.

@@ -127,14 +127,13 @@ credential storage. To use it in Docker, mount credentials or supply
 ## 1. Install Python dependencies
 
 ```bash
-# Core runtime
-uv sync                           # core dependencies
-uv sync --group dev               # + pytest, ruff, zuban  (alias: --dev)
-uv sync --group gui               # + FastAPI / uvicorn for the GUI server
-uv sync --group dev --group gui   # full local developer setup
+# Everything the backend, the MCP bridges and the CLI need, plus the dev tooling
+uv sync
 
-# All dependency groups (dev tooling etc.). The assurance-store dependencies are part
-# of the CORE dependencies (the host still needs libsqlcipher-dev for the store itself)
+# Runtime only, without pytest, ruff and zuban
+uv sync --no-dev
+
+# All dependency groups
 uv sync --all-groups
 
 # Cloud archive backends (optional — pick what you need)
@@ -142,6 +141,11 @@ uv sync --extra s3-archive        # + boto3 for S3 Object Lock archive
 uv sync --extra azure-archive     # + azure-storage-blob + azure-identity for Azure archive
 uv sync --extra cloud-archive     # both S3 and Azure
 ```
+
+The web server, the assurance store's Python bindings and every other runtime dependency are core
+dependencies, so a plain `uv sync` is enough to run everything below. The store itself also needs
+`libsqlcipher-dev` on the host. The `gui` group still exists so that `uv sync --group gui` keeps
+working where it is written; it adds nothing the core does not already install.
 
 &nbsp;
 
@@ -170,17 +174,26 @@ context for the bundled jar and the JRE is in
 
 ## 3. Initialize the workspace
 
-An `arch-workspace.yaml` at the workspace root declares the two repositories. The simplest
-form keeps a single explicit engagement:
+An `arch-workspace.yaml` at the workspace root declares the two repositories. The checkout ships
+one that resolves the bundled self-model and clones the public demo enterprise repository, so
+`uv run arch-init` works on a fresh clone as it is.
+
+To work on your own repositories, edit that file. A repository is declared in one of two forms:
+
+- `local:` names a directory that already holds an architecture repository (a `model/` directory,
+  or `projects/<slug>/model/`). `arch-init` does not create one.
+- `git:` names a remote and where to clone it. A new repository starts as an empty remote — a bare
+  repository, or an empty project on your git host — which `arch-init` scaffolds and publishes.
 
 ```yaml
 engagement:
-  local: engagements/ENG-ARCH-REPO/architecture-repository
-  # or git: { url: "https://...", branch: main, path: .arch/repos/engagement }
+  git: { url: "https://git.example.org/arch/engagement.git", branch: main, path: .arch/repos/engagement }
 
 enterprise:
-  local: enterprise-repository
-  # or git: { url: "https://...", branch: main, path: .arch/repos/enterprise }
+  git: { url: "https://git.example.org/arch/enterprise.git", branch: main, path: .arch/repos/enterprise }
+
+backend:
+  port: 8000          # optional: pin the backend's port (see §4)
 ```
 
 Then resolve and validate it:
@@ -188,10 +201,17 @@ Then resolve and validate it:
 ```bash
 uv run arch-init                      # reads arch-workspace.yaml, writes .arch/init-state.yaml
 
-# If a configured git repo exists locally but is still empty / uninitialised
-uv run arch-init --initialize-engagement-repo-if-empty
-uv run arch-init --initialize-enterprise-repo-if-empty
+# Remotes that are still empty: scaffold and publish both in one run
+uv run arch-init --initialize-engagement-repo-if-empty --initialize-enterprise-repo-if-empty
 ```
+
+Pass both flags in one command when both remotes are empty. With one flag, `arch-init` publishes that
+repository and then stops at the other one, reporting the flag it needs.
+
+The edits you make to `arch-workspace.yaml` and `config/settings.yaml` are this installation's
+configuration. Leave them as uncommitted changes: `arch-update` keeps them when it moves the
+checkout to a release, and merges them onto the release's version where the release changes one of
+those files (see [Updating an installation](reference/software-update.md#your-configuration)).
 
 For workspaces that hop between multiple engagement repos, and for `arch-switch-engagement`
 usage, see [CLI & Backend Reference](reference/cli-and-backend.md).
@@ -209,16 +229,27 @@ uv run arch-import-guidance --dry-run    # report what an import would write, wr
 The overlay is read once at bootstrap, so restart the backend afterwards — or import before
 starting it, as the README quickstart does.
 
+The import writes to `~/.config/arch-repo/guidance-cache`, which every installation of the same
+operating-system user reads unless it has its own. To give an installation its own cache, set
+`deployment.guidance_cache_root` in its settings document; the backend, the import and
+`arch-repair upgrade` all use that path. An update never puts the shared cache back to an earlier
+state, because other installations read it.
+
 See [Authoring guidance](05-extensibility/guidance.md) for the format and layering.
 
 &nbsp;
 
 ## 4. Start the backend
 
-`arch-backend` serves the REST API and the MCP endpoints. It also serves the GUI at `/` —
-but **only if the SPA has been built** into `tools/gui/dist/` (see
-[§6](#6-build-and-serve-the-gui)). Without that build, `/` returns nothing and you use the
-APIs or the Vite dev server. The backend never builds or runs the frontend itself.
+`arch-backend` serves the REST API and the MCP endpoints. It also serves the GUI at `/` once
+the SPA has been built into `tools/gui/dist/` (see [§6](#6-build-and-serve-the-gui)); a build made
+while the backend runs is served without a restart. Until then `/` answers 404 with a note that the
+GUI has not been built. The backend never builds or runs the frontend itself.
+
+If you create the assurance store (see [Assurance store setup](#assurance-store-setup)), do it
+before starting the backend. The assurance modules register when the backend starts, so a store
+created afterwards needs `uv run arch-backend --restart --daemon` and `uv run arch-assurance unlock`;
+`arch-assurance init` says so when it finds a backend running.
 
 ```bash
 # Backend: REST API at :8000, MCP at :8000/mcp/{read,write}; GUI at / if built (§6)
@@ -229,6 +260,10 @@ uv run arch-backend --status
 uv run arch-backend --stop
 uv run arch-backend --restart --daemon
 ```
+
+The port is `backend.port` from `arch-workspace.yaml` when set there. Otherwise the backend takes
+8000, or a port derived from its repository paths (8100–8499) when another workspace's backend holds
+8000, and prints the address; see [Configuration](reference/configuration.md).
 
 `--daemon` starts the backend in a new session, redirects stdin from `/dev/null`, and writes
 to `backend.log_path`. This avoids the shell job-control stops that can happen with a raw
@@ -273,15 +308,18 @@ The frontend is a Vue single-page app. It is **not** a runtime service the backe
 you either compile it to static files that the backend serves, or run the Vite dev server
 during development. Pick one:
 
-**Serve the GUI from the backend (production / normal use).** Build once; the backend then
-serves the result at `/`:
+**Serve the GUI from the backend (production / normal use).** Build once; the backend serves the
+result at `/`, whether it was started before or after the build:
 
 ```bash
 cd tools/gui
-npm install
+npm ci                 # installs exactly what package-lock.json names
 npm run build          # → tools/gui/dist/  (served by arch-backend at /)
 cd ../..
 ```
+
+`npm ci` refuses to run on a Node or npm major other than the ones `package.json` declares
+(Node 24, npm 11). With nvm: `nvm install 24 && nvm use 24`.
 
 Re-run `npm run build` after pulling frontend changes. The Docker image performs this build
 automatically, so containerised deployments need no manual step. From release 0.10.0 on,
@@ -293,7 +331,7 @@ proxies API calls to the backend on :8000:
 
 ```bash
 cd tools/gui
-npm install
+npm ci
 npm run dev
 # → open http://localhost:5173  (API + MCP proxied to arch-backend on :8000)
 ```
@@ -376,20 +414,35 @@ The assurance store is an encrypted evidence store for safety analysis (STPA, CA
 governance (GRC), and supply-chain security. It is optional, and the default SQLCipher
 backend needs `libsqlcipher-dev` on the host (see prerequisites above).
 
+Create the store before starting the backend: the assurance modules register when the backend
+starts.
+
 ```bash
 # Create the encrypted database and store the key in the OS credential backend
 uv run arch-assurance init
 
-# Verify the key, set the activation gate, and authorize the running backend
+# Start the backend (§4), then verify the key, set the activation gate, and authorize it
+uv run arch-backend --daemon
 uv run arch-assurance unlock
 
 # Save the recovery key offline (store it in a password manager)
 uv run arch-assurance export-key
-
-# Optional: seed the store with the bundled example content, including signal
-# anchors for the self-model (a working store to explore before authoring)
-uv run arch-assurance seed --with-signals
 ```
+
+`unlock` reports what the running backend answered. When it answers that it is still locked, the
+backend cannot read the key in its own environment — for example it was started without the
+`ARCH_ASSURANCE_MASTER_PASSWORD` the command had — and `unlock` exits 1 and says so. Restart the
+backend from an environment that can read the key and run `unlock` again.
+
+**Example content for the bundled self-model.** The self-model ships an example analysis in
+`.arch-repo/assurance-seed.json`. In the workspace the checkout ships, load it with:
+
+```bash
+uv run arch-assurance seed                  # the analysis that ships with the self-model
+uv run arch-assurance seed --with-signals   # also its signal anchors (queries OSV; needs network)
+```
+
+A repository of your own ships no seed; its store starts empty and needs none.
 
 Whether a *newly started* backend opens the store by itself is the `activation_policy` setting,
 not something `unlock` decides. The shipped default is `manual`: a restarted process starts locked

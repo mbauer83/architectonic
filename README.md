@@ -163,7 +163,7 @@ docker compose -f docker-compose.demo.yml up -d --build
 
 Then open **http://localhost:8000** - the docker image builds the GUI for you. That gives you the bundled self-describing model, the demo
 enterprise tier, authoring guidance imported, and the encrypted assurance store created, unlocked
-and seeded with the analysis that ships with the model — everything the manual route below does,
+and seeded with the analysis that ships with the model — everything the local route below does,
 without a local Python or Java toolchain.
 
 The demo is deliberately standalone: it uses its own image tag, its own volumes and its own compose
@@ -175,7 +175,50 @@ edits that volume copy — never the files in your clone — and survives
 your demo work. See
 [Docker Compose deployment](docs/reference/docker-compose.md) for the production file.
 
+&nbsp;
 
+### Or run it locally
+
+**Prerequisites:** Python 3.14, [`uv`](https://docs.astral.sh/uv/), Java 11+, Graphviz ≥ 2.49.0,
+and Node.js 24 with npm 11 for the GUI build. Per-OS install steps (macOS, Debian/Ubuntu, WSL2) are
+in [Installation & Setup](docs/02-installation.md).
+
+```bash
+# 1. Clone
+git clone https://github.com/mbauer83/architectonic.git
+cd architectonic
+
+# 2. Install dependencies and the diagram runtime
+uv sync
+uv run get-plantuml && uv run check-diagram-runtime   # older Graphviz: uv run get-diagram-runtime
+
+# 3. Build the GUI the backend serves (skip it if you only need REST and MCP)
+( cd tools/gui && npm ci && npm run build )
+
+# 4. Resolve the workspace: the bundled self-model and the public demo enterprise repository
+uv run arch-init
+
+# 5. Import authoring guidance
+uv run arch-import-guidance
+
+# 6. Create the encrypted assurance store and load the analysis that ships with the model
+uv run arch-assurance init
+uv run arch-assurance seed
+
+# 7. Start the backend: REST and the GUI on :8000, MCP at :8000/mcp/{read,write}
+uv run arch-backend --daemon
+
+# 8. Authorize the running backend to open the store
+uv run arch-assurance unlock
+```
+
+Steps 5 and 6 come before the backend starts because both are read when it starts: the guidance
+overlay at bootstrap, and the assurance store's presence decides whether the assurance modules
+register. Step 8 comes after, because `unlock` authorizes the process that is running. Under the
+shipped `manual` activation policy, run `unlock` again after each backend restart.
+
+`arch-backend` chooses another port when 8000 belongs to a different workspace and prints the
+address; set `backend.port` in `arch-workspace.yaml` to pin one.
 
 ```bash
 curl http://localhost:8000/api/stats

@@ -33,7 +33,6 @@ See `src.infrastructure.repository_upgrade.guard`.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 from importlib.metadata import PackageNotFoundError
@@ -71,10 +70,8 @@ from src.infrastructure.backend.backend_probe import (
 from src.infrastructure.cli._upgrade_checkpoints import (
     CheckpointFailed,
     checkpoint_base,
-    list_checkpoint_sets,
-    load_checkpoint_set,
     prune_previous_sets,
-    restore_checkpoint_set,
+    record_state_after,
     take_checkpoint_set,
 )
 from src.infrastructure.cli._upgrade_deployment import (
@@ -89,6 +86,7 @@ from src.infrastructure.cli._upgrade_repo_phases import (
     refresh_generated_includes,
     sweep_and_recover,
 )
+from src.infrastructure.cli._upgrade_restore import restore_or_list
 from src.infrastructure.cli._upgrade_tiers import (
     classify_roots,
     clean_before_writing,
@@ -160,6 +158,10 @@ def parser() -> argparse.ArgumentParser:
         help="Return every target to the state a previous --commit recorded before it wrote (see --list-checkpoints)",
     )
     p.add_argument(
+        "--discard-later-work", action="store_true", default=False,
+        help="With --restore: restore even though files changed after the upgrade, discarding those changes",
+    )
+    p.add_argument(
         "--list-checkpoints", action="store_true", default=False,
         help="List the checkpoint sets --commit has left behind for this deployment",
     )
@@ -210,10 +212,14 @@ def main_upgrade(
     tiers = classify_roots(repo_roots=repo_roots, enterprise_roots=enterprise_roots, admin_mode=args.admin_mode)
     roots = list(tiers.written)
     if args.restore or args.list_checkpoints:
-        return _restore_or_list(args, side, roots)
+        return restore_or_list(
+            args, side, roots,
+            guard=_guard_backend_not_serving,
+            rebuild_index=lambda root: FilesystemRepoUpgradeWriter(root).rebuild_index(),
+        )
     version = software_version()
     targets = [RepoUpgradeTarget(FilesystemRepoUpgradeView(r), FilesystemRepoUpgradeWriter(r)) for r in roots]
-    upstream = report_tiers_left_alone(tiers, registry=registry, software_version=version)
+    upstream, left_alone = report_tiers_left_alone(tiers, registry=registry, software_version=version)
 
     if operational_registry is None:
         # Built after the roots are known: the confidential store cannot look up how an
@@ -231,7 +237,8 @@ def main_upgrade(
         operational = evaluate_targets(side.handles, operational_registry)
         emit_deployment(
             DeploymentUpgradeReport(
-                repos=repo_report, operational_targets=operational, preflight=side.preflight
+                repos=repo_report, operational_targets=operational, preflight=side.preflight,
+                tiers_left_alone=left_alone,
             ),
             args.json_output,
         )
@@ -284,7 +291,10 @@ def main_upgrade(
     )
     try:
         checkpoint_set = (
-            take_checkpoint_set(roots, side.handles, base)
+            take_checkpoint_set(
+                roots, side.handles, base,
+                settings_document=side.manifest.settings_document.path if side.manifest else None,
+            )
             if _has_work(gate_report, gate_operational) else None
         )
     except CheckpointFailed as exc:
@@ -316,6 +326,7 @@ def main_upgrade(
         for root in tiers.written:
             record_format_upgrade(root, clean_before=clean_before[root], software_version=version)
     if outcome == "success" and checkpoint_set is not None:
+        checkpoint_set = record_state_after(checkpoint_set, base)
         for pruned in prune_previous_sets(base, keep=checkpoint_set.id):
             print(f"  checkpoint set {pruned}: pruned (one is kept)", file=sys.stderr)
     emit_deployment(
@@ -325,6 +336,7 @@ def main_upgrade(
             preflight=preflight,
             outcome=outcome,
             checkpoint_set=checkpoint_set,
+            tiers_left_alone=left_alone,
         ),
         args.json_output,
     )
@@ -338,38 +350,6 @@ def _has_work(gate_report, gate_operational) -> bool:  # type: ignore[no-untyped
         for repo_report in gate_report.per_repo
         for result in repo_report.results
     ) or any(report.state == "pending" for report in gate_operational)
-
-
-def _restore_or_list(args: argparse.Namespace, side: DeploymentSide, roots: list[Path]) -> int:
-    """`--list-checkpoints` and `--restore`: both act on the recorded sets, neither migrates."""
-    base = checkpoint_base(
-        workspace=args.workspace,
-        settings_document=side.manifest.settings_document.path if side.manifest else None,
-        roots=roots,
-    )
-    if args.list_checkpoints:
-        sets = list_checkpoint_sets(base)
-        if args.json_output:
-            print(json.dumps([s.to_dict() for s in sets], indent=2))
-        else:
-            print(f"Checkpoint sets under {base}:" if sets else f"No checkpoint sets under {base}.")
-            for s in sets:
-                print(f"  {s.id}: {len(s.repositories)} repositor{'y' if len(s.repositories) == 1 else 'ies'}, "
-                      f"{len(s.operational)} operational target(s)")
-        return 0
-    checkpoint_set = load_checkpoint_set(base, args.restore)
-    for repository in checkpoint_set.repositories:
-        _guard_backend_not_serving(Path(repository.root))
-    done = restore_checkpoint_set(
-        checkpoint_set, side.handles, rebuild_index=lambda root: FilesystemRepoUpgradeWriter(root).rebuild_index()
-    )
-    if args.json_output:
-        print(json.dumps({"restored": checkpoint_set.to_dict(), "actions": done}, indent=2))
-    else:
-        print(f"Restored checkpoint set {checkpoint_set.id}:")
-        for line in done:
-            print(f"  {line}")
-    return 0
 
 
 def _preflight_with_repairs(side: DeploymentSide, repairs: list[str]) -> DeploymentPreflight:

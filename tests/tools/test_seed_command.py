@@ -68,6 +68,18 @@ class TestSeedCommand:
     def test_missing_bundle_is_reported_not_raised(self, tmp_path: Path) -> None:
         assert cmd_seed(_args(input=str(tmp_path / "nope.json"))) == 1
 
+    def test_a_repository_without_a_seed_is_told_it_needs_none(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """The installation guide presented `seed` as general setup; on a new repository it failed with
+        a path alone. The refusal now says the seed is the bundled model's and a new store needs none."""
+        import src.infrastructure.cli._seed_commands as seed_commands
+
+        monkeypatch.setattr(seed_commands, "_engagement_root", lambda: tmp_path)
+
+        assert cmd_seed(_args(input=None)) == 1
+        assert "needs no seeding" in capsys.readouterr().err
+
     def test_with_signals_without_declared_anchors_fails_before_mutating(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str],
     ) -> None:

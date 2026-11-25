@@ -382,10 +382,10 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
 
     # repo root is four levels up: backend → infrastructure → src → <repo>
     gui_dist = Path(__file__).resolve().parents[3] / "tools" / "gui" / "dist"
-    if gui_dist.exists():
-        # SPA history-fallback: deep links (e.g. /entities/groups) have no file on disk, so
-        # serve index.html and let the client router resolve them.
-        from src.infrastructure.backend._spa_static import SPAStaticFiles  # noqa: PLC0415
+    # SPA history-fallback: deep links (e.g. /entities/groups) have no file on disk, so serve
+    # index.html and let the client router resolve them. Mounted unconditionally: a GUI built after
+    # the backend started is served without a restart, and until then `/` answers 404 saying so.
+    from src.infrastructure.backend._spa_static import SPAStaticFiles  # noqa: PLC0415
 
-        app.mount("/", SPAStaticFiles(directory=str(gui_dist), html=True), name="static")
+    app.mount("/", SPAStaticFiles(directory=str(gui_dist), html=True, check_dir=False), name="static")
     return app

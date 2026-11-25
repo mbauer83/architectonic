@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.application.software_update.installation import InstalledSoftware
+from src.application.software_update.installation import CheckoutRelation, InstalledSoftware
 from src.application.software_update.plan import ReleaseVerification
 from src.application.software_update.ports import Checkout, ReleaseSource
 from src.application.software_update.release import (
@@ -33,6 +33,8 @@ class ReleaseCheck:
     verification: ReleaseVerification | None
     #: Verified asset bytes by name, kept so the apply half installs what the check verified.
     assets: dict[str, bytes]
+    #: How the checkout stands to the release commit; None when the tag was not fetched.
+    relation: CheckoutRelation | None = None
 
     @property
     def update_available(self) -> bool:
@@ -69,7 +71,8 @@ def check_release(
         provenance="not_verified",
         provenance_detail="provenance attestations are not checked by this version",
     )
-    return ReleaseCheck(installed, release, fetched, verification, assets)
+    relation = checkout.relation_to(fetched, installed.local_configuration) if fetched is not None else None
+    return ReleaseCheck(installed, release, fetched, verification, assets, relation)
 
 
 def _verified_assets(

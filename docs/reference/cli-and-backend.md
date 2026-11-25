@@ -121,7 +121,8 @@ backend start).
 | `--guidance-cache` / `--signals-db` / `--assurance-store` | Override one operational path within that deployment identity |
 | `--exclude-target <kind>` | Operator-run partial commands only — skip one operational target kind; the report then states deployment readiness is NOT certified. Docker startup never excludes a configured active target |
 | `--list-checkpoints` | The checkpoint sets `--commit` has recorded for this deployment |
-| `--restore <set>` | Return every target a recorded set names to the state it had before that commit wrote it — repositories from their pinned git ref, operational targets from their copies |
+| `--restore <set>` | Return every target a recorded set names to the state it had before that commit wrote it — repositories from their pinned git ref, operational targets from their copies. The set's own settings document is used when none is named. Refused while files changed after the commit; they are listed |
+| `--discard-later-work` | With `--restore`: restore even though files changed after the commit, discarding those changes |
 
 Each repo root is evaluated/applied independently; findings and applied-step
 ids are reported per root plus one aggregate summary for `--workspace` runs.

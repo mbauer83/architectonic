@@ -119,7 +119,9 @@ def wired(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):  # noqa: ANN201
 
     def wire(actions: FakeActions) -> list[list[str]]:
         monkeypatch.setattr(_update_commit, "LocalCheckoutActions", lambda *a, **k: actions)
-        monkeypatch.setattr(_update_commit, "deployment_identity_arguments", lambda root: ("--workspace", str(root)))
+        monkeypatch.setattr(
+            _update_commit, "deployment_identity_arguments", lambda root, **_k: ("--workspace", str(root)),
+        )
         monkeypatch.setattr(_update_commit, "answer_questions", lambda *a, **k: ())
         monkeypatch.setattr(_update_commit.os, "execv", lambda executable, argv: execs.append(list(argv)))
         return execs
@@ -229,3 +231,23 @@ def test_a_second_commit_while_one_is_in_flight_is_refused(wired, tmp_path: Path
     assert code == 21 and "already in flight" in capsys.readouterr().err
     assert _update_commit.status(tmp_path, json_output=False) == 0
     assert "handed over" in capsys.readouterr().out
+
+
+def test_the_printed_safety_line_is_a_restore_command_that_names_this_deployment(
+    wired, tmp_path: Path, capsys,  # noqa: ANN001
+) -> None:
+    # A bare `arch-repair upgrade --restore <set>` exits 1 (no repository named), and one without the
+    # deployment's settings document cannot reach the operational targets the set copied.
+    wired(FakeActions())
+    with pytest.raises(AssertionError):
+        _commit(tmp_path, json_output=False)
+    wired(FakeActions())
+    capsys.readouterr()
+
+    assert _update_commit.resume(tmp_path, json_output=False) == 0
+
+    out = capsys.readouterr().out
+    safety = next(line for line in out.splitlines() if line.startswith("safety"))
+    # The fixture's identity is `--workspace <root>`; the real one adds `--settings <document>`.
+    assert f"uv run arch-repair upgrade --workspace {tmp_path} --restore" in safety
+    assert safety.rstrip().endswith("--restore 20261002T090100Z")

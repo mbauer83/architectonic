@@ -14,15 +14,18 @@ because a set that is never used is disk, and the one an operator reaches for is
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import sys
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 
 from src.application.deployment_upgrade.ports import OperationalTargetHandle
 from src.domain.clock import utc_now_compact
 from src.domain.repository.operational_upgrade import CheckpointSet, OperationalBackup, RepositoryCheckpoint
+from src.infrastructure.git._git_command import run_repo_git
 from src.infrastructure.git.git_worktree_checkpoint import (
     checkpoint_from_ref,
     checkpoint_worktree,
@@ -34,6 +37,12 @@ from src.infrastructure.git.git_worktree_checkpoint import (
 
 CHECKPOINTS_DIRNAME = "upgrade-checkpoints"
 _RECORD = "checkpoint-set.json"
+#: The pinned ref of a repository as the commit left it sits beside the pre-upgrade one.
+_AFTER_SUFFIX = ".after"
+
+#: Targets whose file a backend rewrites just by opening and closing it (a write-ahead-log
+#: checkpoint), so a digest cannot tell later work from a restart. A restore names them instead.
+_DATABASE_KINDS = frozenset({"assurance_sqlcipher", "signals_sqlite"})
 
 
 class CheckpointFailed(RuntimeError):
@@ -50,9 +59,18 @@ def checkpoint_base(*, workspace: str | None, settings_document: Path | None, ro
 
 
 def take_checkpoint_set(
-    roots: Sequence[Path], handles: Sequence[OperationalTargetHandle], base: Path
+    roots: Sequence[Path],
+    handles: Sequence[OperationalTargetHandle],
+    base: Path,
+    *,
+    settings_document: Path | None = None,
 ) -> CheckpointSet:
-    """Pin every repository and copy every operational target, then record the set on disk."""
+    """Pin every repository and copy every operational target, then record the set on disk.
+
+    A target that belongs to the operating-system user rather than to this deployment (`per_user`) is
+    not copied: restoring it would roll back every other installation that reads it. The settings
+    document the run was given is recorded, so a later `--restore` reaches the same targets.
+    """
     set_id = utc_now_compact()
     set_dir = base / set_id
     set_dir.mkdir(parents=True, exist_ok=True)
@@ -69,6 +87,13 @@ def take_checkpoint_set(
                 release_worktree_checkpoint(root, transient)
             repositories.append(RepositoryCheckpoint(root=str(root), ref=ref))
         for handle in handles:
+            if handle.target.per_user:
+                print(
+                    f"  {handle.target.kind} {handle.target.display_location}: not checkpointed — it is shared "
+                    "by every installation of this user, so this deployment does not put it back",
+                    file=sys.stderr,
+                )
+                continue
             copy = handle.backup(set_dir / handle.target.kind)
             if copy is not None:
                 operational.append(OperationalBackup(
@@ -84,13 +109,88 @@ def take_checkpoint_set(
                 pass
         shutil.rmtree(set_dir, ignore_errors=True)
         raise CheckpointFailed(f"the safety point could not be taken, so nothing was written: {exc}") from exc
-    checkpoint_set = CheckpointSet(id=set_id, repositories=tuple(repositories), operational=tuple(operational))
-    (set_dir / _RECORD).write_text(json.dumps(checkpoint_set.to_dict(), indent=2), encoding="utf-8")
+    checkpoint_set = CheckpointSet(
+        id=set_id, repositories=tuple(repositories), operational=tuple(operational),
+        settings_document=str(settings_document) if settings_document is not None else None,
+    )
+    _write_record(base, checkpoint_set)
     print(
         f"Checkpoint set {set_id} taken under {base} — `--restore {set_id}` returns every target to it.",
         file=sys.stderr,
     )
     return checkpoint_set
+
+
+def _write_record(base: Path, checkpoint_set: CheckpointSet) -> None:
+    (base / checkpoint_set.id / _RECORD).write_text(json.dumps(checkpoint_set.to_dict(), indent=2), encoding="utf-8")
+
+
+def record_state_after(checkpoint_set: CheckpointSet, base: Path) -> CheckpointSet:
+    """Pin each repository and digest each copied file target as the commit left them.
+
+    Taken once the commit has written and recorded its format upgrade. It is the reference a later
+    `--restore` compares against: what differs from it is work done since, not the upgrade's own.
+    """
+    repositories = []
+    for repository in checkpoint_set.repositories:
+        root = Path(repository.root)
+        transient = checkpoint_worktree(root)
+        try:
+            after_ref = pin_checkpoint(root, transient, f"{checkpoint_set.id}{_AFTER_SUFFIX}")
+        finally:
+            release_worktree_checkpoint(root, transient)
+        repositories.append(replace(repository, after_ref=after_ref))
+    operational = [
+        backup if backup.kind in _DATABASE_KINDS else replace(backup, after_digest=_file_digest(Path(backup.location)))
+        for backup in checkpoint_set.operational
+    ]
+    recorded = replace(checkpoint_set, repositories=tuple(repositories), operational=tuple(operational))
+    _write_record(base, recorded)
+    return recorded
+
+
+def work_since_upgrade(checkpoint_set: CheckpointSet) -> list[str]:
+    """What a `--restore` of *checkpoint_set* would discard beyond the upgrade's own writes.
+
+    Each repository's working tree, untracked files included, against the tree the commit left; each
+    copied file target against its digest after the commit. A set recorded before these were kept
+    has nothing to compare against and reports nothing.
+    """
+    changed: list[str] = []
+    for repository in checkpoint_set.repositories:
+        if repository.after_ref is None:
+            continue
+        root = Path(repository.root)
+        transient = checkpoint_worktree(root)
+        try:
+            rc, out, stderr = run_repo_git(
+                root, "diff", "--name-only", f"{repository.after_ref}^{{tree}}", f"{transient.checkpoint}^{{tree}}",
+            )
+        finally:
+            release_worktree_checkpoint(root, transient)
+        if rc != 0:
+            raise RuntimeError(f"comparing {root} with the state the upgrade left: {stderr}")
+        changed.extend(f"{root}: {line}" for line in out.splitlines() if line.strip())
+    for backup in checkpoint_set.operational:
+        if backup.after_digest is not None and _file_digest(Path(backup.location)) != backup.after_digest:
+            changed.append(f"{backup.kind} {backup.location}: changed since the upgrade")
+    return changed
+
+
+def databases_restored_whole(checkpoint_set: CheckpointSet) -> list[str]:
+    """The database copies a restore puts back whole: what was recorded in them since cannot be told
+    from a backend having opened them, so it is named before the restore rather than compared."""
+    return [f"{b.kind} {b.location}" for b in checkpoint_set.operational if b.kind in _DATABASE_KINDS]
+
+
+def _file_digest(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def list_checkpoint_sets(base: Path) -> list[CheckpointSet]:
@@ -132,10 +232,19 @@ def restore_checkpoint_set(
     for backup in checkpoint_set.operational:
         handle = by_location.get(backup.location)
         if handle is None:
-            done.append(f"{backup.kind} {backup.location}: not restored — no such target in this deployment")
+            done.append(
+                f"{backup.kind} {backup.location}: not restored — the deployment this run resolved has no such "
+                "target; name the deployment the set was taken under with --settings"
+            )
+            continue
+        if handle.target.per_user:
+            done.append(
+                f"{backup.kind} {backup.location}: not restored — it is shared by every installation of this user"
+            )
             continue
         handle.restore(Path(backup.backup_path))
         done.append(f"{backup.kind} {backup.location}: restored from {backup.backup_path}")
+
     return done
 
 
@@ -148,7 +257,9 @@ def prune_previous_sets(base: Path, keep: str) -> list[str]:
         for repository in old.repositories:
             root = Path(repository.root)
             if root.is_dir():
-                release_pinned_checkpoint(root, repository.ref)
+                for ref in (repository.ref, repository.after_ref):
+                    if ref is not None:
+                        release_pinned_checkpoint(root, ref)
         shutil.rmtree(base / old.id, ignore_errors=True)
         pruned.append(old.id)
     return pruned

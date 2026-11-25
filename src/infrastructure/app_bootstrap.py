@@ -350,6 +350,31 @@ def complete_diagram_type_catalog() -> DiagramTypeCatalog:
     return DiagramTypeCatalogImpl(build_module_catalog(get_complete_module_registry()))
 
 
+def assurance_module_absence_remedy() -> str:
+    """What an operator does about the assurance module missing from this process's registry.
+
+    The registry is built once, at startup, and is immutable afterwards (the catalogs, the MCP
+    contexts and the application state all hold it). So the module is absent for one of three reasons,
+    told apart by asking the same question the registry asked, now: the settings disable it; the
+    confidential store does not exist or its key cannot be read here; or the store became available
+    after this process started, which only a restart takes up.
+    """
+    from src.config.settings import module_overrides  # noqa: PLC0415
+
+    if module_skip_reason(_assurance_module, module_overrides(), set()) == "disabled":
+        return "The assurance module is disabled in the settings document (modules.assurance.enabled)."
+    if capability_for_deployment().enabled:
+        return (
+            "The assurance store became available after this backend started, and modules are "
+            "registered at startup. Restart it with `uv run arch-backend --restart --daemon`, then run "
+            "`uv run arch-assurance unlock`."
+        )
+    return (
+        "No assurance store is readable here. Create one with `uv run arch-assurance init` (or check "
+        "that this process can read its key), then restart the backend and run `uv run arch-assurance unlock`."
+    )
+
+
 def assurance_ontology_module() -> EdgeCatalogSource:
     """The statically loaded assurance ontology module — pure package
     configuration, independent of runtime capability enablement. Edge-matrix

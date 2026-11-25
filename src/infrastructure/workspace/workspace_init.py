@@ -165,7 +165,12 @@ def _resolve_repo(
         local = Path(spec["local"])
         resolved = local if local.is_absolute() else workspace_root / local
         if not resolved.is_dir():
-            raise SystemExit(f"ERROR: {label} local path does not exist: {resolved}")
+            raise SystemExit(
+                f"ERROR: {label} local path does not exist: {resolved}\n"
+                f"  A `local:` {label} repository must already exist. To start a new one, declare it as "
+                f"`git: {{url: <an empty repository>, branch: main, path: <where to clone it>}}` and run "
+                f"arch-init with --initialize-{label}-repo-if-empty."
+            )
         if not all_model_roots(resolved):
             raise SystemExit(
                 f"ERROR: {label} path has no model content — expected {MODEL}/ or "

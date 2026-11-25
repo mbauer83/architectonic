@@ -64,8 +64,24 @@ def cmd_init(args: argparse.Namespace) -> int:
     result["signals_backend"] = signals
     if archive:
         result["archive_backend"] = archive
+    if _running_backend_url() is not None:
+        # Modules register when a backend starts; one already running took no assurance module.
+        result["restart_required"] = (
+            "This workspace's backend is running and started without this store, so it has no "
+            "assurance module. Restart it with `arch-backend --restart --daemon`, then run "
+            "`arch-assurance unlock`."
+        )
     _print_yaml(result)
     return 0
+
+
+def _running_backend_url() -> str | None:
+    from src.infrastructure.cli._workspace_backend import workspace_backend_url  # noqa: PLC0415
+
+    try:
+        return workspace_backend_url()
+    except Exception:  # noqa: BLE001 — no workspace or no backend: nothing is running to restart
+        return None
 
 
 def cmd_use_backend(args: argparse.Namespace) -> int:
@@ -158,12 +174,31 @@ def cmd_unlock(args: argparse.Namespace) -> int:
     except RuntimeError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
+    if activation.backend_unlocked is False:
+        _print_yaml({
+            "status": "activated_backend_still_locked",
+            "db_path": str(db_path),
+            "stats": activation.stats,
+            "note": (
+                "The key opens the store and the activation is recorded, but this workspace's running "
+                "backend answered that it is still locked: it cannot read the key in its own environment. "
+                "Restart it from an environment that can (the same credential backend, or the same "
+                "ARCH_ASSURANCE_MASTER_PASSWORD) with `arch-backend --restart --daemon`, then run "
+                "`arch-assurance unlock` again."
+            ),
+        })
+        return 1
+    authorized = (
+        "Store activated and the running backend authorized."
+        if activation.backend_unlocked
+        else "Store activated; no backend of this workspace is running."
+    )
     _print_yaml({
         "status": "unlocked_and_verified",
         "db_path": str(db_path),
         "stats": activation.stats,
         "note": (
-            "Store activated and the running backend authorized. Whether a newly started "
+            f"{authorized} Whether a newly started "
             "process opens the store by itself depends on "
             "storage.assurance.activation_policy: 'manual' (default) starts locked and "
             "needs this command again, 'persistent' opens from the activation gate until "

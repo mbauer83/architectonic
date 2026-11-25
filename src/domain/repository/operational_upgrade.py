@@ -56,6 +56,12 @@ class UpgradeTarget:
     """False when the surface exists physically but the active configuration no
     longer selects it (e.g. a legacy public signals file under a co-located
     deployment) — still discovered, reported, and migratable."""
+    per_user: bool = False
+    """True when the surface belongs to the operating-system user rather than to this
+    deployment — the default guidance cache under the home directory, which every
+    installation of that user without its own reads. Still inspected and migrated;
+    never checkpointed or restored as one deployment's, because putting it back would
+    roll back every other installation that shares it."""
 
 
 @dataclass(frozen=True)
@@ -129,10 +135,16 @@ class DeploymentPreflight:
 
 @dataclass(frozen=True)
 class RepositoryCheckpoint:
-    """One repository's working tree as it was before a commit wrote it, pinned under a git ref."""
+    """One repository's working tree as it was before a commit wrote it, pinned under a git ref.
+
+    ``after_ref`` pins the tree as the commit left it. It is what tells work done since the upgrade
+    apart from the upgrade's own writes, so a `--restore` can name what it would discard. None for a
+    set recorded before this field existed, or one whose commit did not complete.
+    """
 
     root: str
     ref: str
+    after_ref: str | None = None
 
 
 @dataclass(frozen=True)
@@ -142,6 +154,9 @@ class OperationalBackup:
     kind: TargetKind
     location: str
     backup_path: str
+    #: SHA-256 of the target as the commit left it (a file target only). A different digest at
+    #: `--restore` is work done since the upgrade, which putting the copy back would discard.
+    after_digest: str | None = None
 
 
 @dataclass(frozen=True)
@@ -157,33 +172,60 @@ class CheckpointSet:
     id: str
     repositories: tuple[RepositoryCheckpoint, ...] = ()
     operational: tuple[OperationalBackup, ...] = ()
+    #: The deployment settings document the set was taken under. Recorded so `--restore` reaches the
+    #: operational targets the set copied without the operator having to name the same identity again.
+    settings_document: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         return {
             "id": self.id,
-            "repositories": [{"root": r.root, "ref": r.ref} for r in self.repositories],
-            "operational": [
-                {"kind": o.kind, "location": o.location, "backup_path": o.backup_path} for o in self.operational
+            "repositories": [
+                {"root": r.root, "ref": r.ref, **({"after_ref": r.after_ref} if r.after_ref else {})}
+                for r in self.repositories
             ],
+            "operational": [
+                {
+                    "kind": o.kind, "location": o.location, "backup_path": o.backup_path,
+                    **({"after_digest": o.after_digest} if o.after_digest else {}),
+                }
+                for o in self.operational
+            ],
+            **({"settings_document": self.settings_document} if self.settings_document else {}),
         }
 
     @classmethod
     def from_dict(cls, data: Mapping[str, object]) -> CheckpointSet:
         repositories = data.get("repositories")
         operational = data.get("operational")
+        settings_document = data.get("settings_document")
         return cls(
             id=str(data["id"]),
+            settings_document=str(settings_document) if settings_document else None,
             repositories=tuple(
-                RepositoryCheckpoint(root=str(r["root"]), ref=str(r["ref"]))
+                RepositoryCheckpoint(
+                    root=str(r["root"]), ref=str(r["ref"]),
+                    after_ref=str(r["after_ref"]) if r.get("after_ref") else None,
+                )
                 for r in (repositories if isinstance(repositories, list) else [])
                 if isinstance(r, Mapping)
             ),
             operational=tuple(
-                OperationalBackup(kind=o["kind"], location=str(o["location"]), backup_path=str(o["backup_path"]))
+                OperationalBackup(
+                    kind=o["kind"], location=str(o["location"]), backup_path=str(o["backup_path"]),
+                    after_digest=str(o["after_digest"]) if o.get("after_digest") else None,
+                )
                 for o in (operational if isinstance(operational, list) else [])
                 if isinstance(o, Mapping)
             ),
         )
+
+
+@dataclass(frozen=True)
+class TierLeftAlone:
+    """An enterprise tier a run does not write, because this deployment does not administer it."""
+
+    root: str
+    pending: int
 
 
 @dataclass(frozen=True)
@@ -196,6 +238,8 @@ class DeploymentUpgradeReport:
     outcome: DeploymentApplyOutcome = "success"
     checkpoint_set: CheckpointSet | None = None
     """What a commit recorded before its first write; None for a dry run or a no-op commit."""
+    tiers_left_alone: tuple[TierLeftAlone, ...] = ()
+    """Enterprise tiers this run evaluated but does not write, and what is pending in each."""
 
     def to_dict(self) -> Mapping[str, object]:
         base: dict[str, object] = dict(self.repos.to_dict())
@@ -204,6 +248,7 @@ class DeploymentUpgradeReport:
         base["deployment_preflight"] = self.preflight.to_dict() if self.preflight else None
         base["outcome"] = self.outcome
         base["checkpoint_set"] = self.checkpoint_set.to_dict() if self.checkpoint_set else None
+        base["tiers_left_alone"] = [{"root": tier.root, "pending": tier.pending} for tier in self.tiers_left_alone]
         return base
 
 

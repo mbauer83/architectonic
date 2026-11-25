@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from src.domain.deployment.layout import GUIDANCE_CACHE_DIRNAME  # noqa: F401 — re-exported for importers
 from src.domain.guidance.guidance import (
     GuidanceOverlay,
     WorkspaceGuidance,
@@ -23,16 +24,22 @@ from src.domain.guidance.guidance import (
 )
 from src.domain.yaml_documents import parse_yaml
 
-_CONFIG_DIR = Path.home() / ".config" / "arch-repo"
-GUIDANCE_CACHE_DIRNAME = "guidance-cache"
-
 
 def guidance_cache_root() -> Path:
-    return _CONFIG_DIR / GUIDANCE_CACHE_DIRNAME
+    """The cache this deployment reads and `arch-import-guidance` writes: the deployment manifest's.
+
+    That is a deployment root's `guidance-cache/`, or `deployment.guidance_cache_root` in the settings
+    document, or — when neither is set — `~/.config/arch-repo/guidance-cache`, which every installation
+    of this user without its own shares. One resolution for the runtime, the import and the upgrade, so
+    a deployment given its own cache is read from where `arch-repair upgrade` migrates it.
+    """
+    from src.infrastructure.deployment.layout import resolve_manifest  # noqa: PLC0415 — the layout imports settings
+
+    return resolve_manifest().guidance_cache_root.path
 
 
 def load_guidance_overlay(module_alias: str) -> GuidanceOverlay:
-    """Read ``~/.config/arch-repo/guidance-cache/<module_alias>.guidance.yaml``.
+    """Read ``<module_alias>.guidance.yaml`` in :func:`guidance_cache_root`.
 
     Returns an empty overlay when the file is absent — the default, license-safe state in
     which entities keep whatever ``create_when``/``never_create_when`` text the module ships
@@ -48,7 +55,7 @@ def load_guidance_overlay(module_alias: str) -> GuidanceOverlay:
 
 
 def load_workspace_guidance() -> WorkspaceGuidance:
-    """Read ``~/.config/arch-repo/guidance-cache/workspace.guidance.yaml`` into a
+    """Read ``workspace.guidance.yaml`` in :func:`guidance_cache_root` into a
     :class:`WorkspaceGuidance`.
 
     Returns an empty one when the file is absent — the default, license-safe state in which no

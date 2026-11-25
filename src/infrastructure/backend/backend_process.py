@@ -68,7 +68,10 @@ def _parse_cli_port(argv: list[str]) -> int | None:
 #: The flags that describe *how* a backend serves, as distinct from where (`--port`) and from the
 #: launcher's own role (`--daemon`). A restart that dropped one would silently change the deployment's
 #: posture — a read-only review backend coming back writable.
-_SERVING_FLAGS = frozenset({"--admin-mode", "--read-only"})
+#: The flag a backend serves its enterprise tier's administration with; the updater carries it into the
+#: data upgrade, which then upgrades that tier too.
+ADMIN_MODE_FLAG = "--admin-mode"
+_SERVING_FLAGS = frozenset({ADMIN_MODE_FLAG, "--read-only"})
 _SERVING_VALUE_FLAGS = frozenset({"--host"})
 
 

@@ -102,6 +102,12 @@ def render_human(
         lines.append(f"provenance  {check.verification.provenance.replace('_', ' ')}")
     if rehearsal is not None:
         lines.append(f"rehearsal   {_rehearsal_line(check, rehearsal)}")
+        for tier in rehearsal.left_alone:
+            lines.append(
+                f"not applied enterprise tier {tier} — this deployment does not administer it (its backend does "
+                "not run with --admin-mode); upgrade it where it is maintained with `arch-repair upgrade --commit "
+                "--repo-root <it>` and push"
+            )
     if isinstance(planning, UpToDate):
         lines.append(f"status      up to date ({planning.installed} is the newest release)")
     elif isinstance(planning, UpdateRefused):
@@ -169,6 +175,7 @@ def outcome_mapping(
     failure: str | None,
     restored: tuple[str, ...] = (),
     remaining: tuple[str, ...] = (),
+    restore_command: str | None = None,
 ) -> dict[str, object]:
     return {
         "report_schema_version": UPDATE_REPORT_SCHEMA_VERSION,
@@ -179,6 +186,7 @@ def outcome_mapping(
         "phase": journal.phase,
         "in_flight": journal.in_flight,
         "checkpoint_set": journal.checkpoint_set,
+        "restore_command": restore_command if journal.checkpoint_set else None,
         "migration_committed": journal.migration_committed,
         "failure": failure,
         "rollback": None if not (restored or remaining) else {"restored": list(restored), "remaining": list(remaining)},
@@ -198,9 +206,14 @@ def render_outcome_json(
     failure: str | None,
     restored: tuple[str, ...] = (),
     remaining: tuple[str, ...] = (),
+    restore_command: str | None = None,
 ) -> str:
     return json.dumps(
-        outcome_mapping(journal, outcome, failure=failure, restored=restored, remaining=remaining), indent=2,
+        outcome_mapping(
+            journal, outcome, failure=failure, restored=restored, remaining=remaining,
+            restore_command=restore_command,
+        ),
+        indent=2,
     )
 
 
@@ -211,6 +224,7 @@ def render_outcome_human(
     failure: str | None,
     restored: tuple[str, ...] = (),
     remaining: tuple[str, ...] = (),
+    restore_command: str | None = None,
 ) -> str:
     previous, target = journal.previous, journal.target
     headline = {
@@ -228,7 +242,8 @@ def render_outcome_human(
     for item in remaining:
         lines.append(f"REMAINING   {item}")
     if journal.checkpoint_set:
-        lines.append(f"safety      arch-repair upgrade --restore {journal.checkpoint_set} (one set is kept)")
+        lines.append(f"safety      {restore_command or 'arch-repair upgrade --restore ' + journal.checkpoint_set}")
+        lines.append("            (the backend stopped first; one set is kept)")
     for note in journal.notes:
         lines.append(f"notes       {note}")
     return "\n".join(lines)

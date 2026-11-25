@@ -9,6 +9,7 @@ import pytest
 
 from src.application.software_update.installation import (
     BackendObservation,
+    CheckoutRelation,
     DependencySelection,
     InstallationObservation,
     InstalledSoftware,
@@ -66,6 +67,9 @@ class FakeCheckout:
     def on_main_branch(self) -> bool:
         return True
 
+    def relation_to(self, commit: str, configuration: tuple[str, ...]) -> CheckoutRelation:
+        return CheckoutRelation(fast_forwardable=True, local_commits=0, merge_base=self.installed.commit)
+
 
 def _observation(software: InstalledSoftware) -> InstallationObservation:
     return InstallationObservation(
@@ -81,7 +85,7 @@ def wired(monkeypatch: pytest.MonkeyPatch):  # noqa: ANN201
         monkeypatch.setattr(arch_update, "GitHubReleases", lambda *a, **k: source)
         monkeypatch.setattr(arch_update, "GitCheckout", lambda root: checkout)
         monkeypatch.setattr(arch_update, "observe_installation", lambda root, software, **kw: _observation(software))
-        monkeypatch.setattr(arch_update, "deployment_identity_arguments", lambda root: ("--workspace", str(root)))
+        monkeypatch.setattr(arch_update, "deployment_identity_arguments", lambda root, **_k: ("--workspace", str(root)))
         # The rehearsal is a real worktree and `uv sync`; every test that is not about it gets a clear verdict.
         monkeypatch.setattr(
             arch_update, "rehearse",

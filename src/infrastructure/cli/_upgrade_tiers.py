@@ -27,6 +27,7 @@ from pathlib import Path
 
 from src.application.repository_upgrade.registry import StepRegistry
 from src.application.repository_upgrade.workspace import RepoUpgradeTarget, evaluate_workspace
+from src.domain.repository.operational_upgrade import TierLeftAlone
 from src.infrastructure.git.git_repository_state import has_uncommitted_changes, is_repository_top_level
 from src.infrastructure.git.git_work_commits import commit_format_upgrade
 from src.infrastructure.repository_upgrade.fs_adapter import (
@@ -77,19 +78,23 @@ def resolve_repo_roots(
 
 def report_tiers_left_alone(
     tiers: UpgradeRoots, *, registry: StepRegistry, software_version: str
-) -> list[RepoUpgradeTarget]:
+) -> tuple[list[RepoUpgradeTarget], tuple[TierLeftAlone, ...]]:
     """Evaluate each enterprise tier this run does not write, report it, and return its read-only views.
 
     The views are returned because the canonical-id join still reads every tier: an operational step
     resolving how an artifact is spelled now must see the enterprise copy whether or not it is written.
+    The summary goes into the report too, so a rehearsal reading `--json` can say what stays pending.
     """
     upstream = [
         RepoUpgradeTarget(FilesystemRepoUpgradeView(r), FilesystemRepoUpgradeWriter(r)) for r in tiers.owned_upstream
     ]
     report = evaluate_workspace(upstream, registry=registry, software_version=software_version)
+    left: list[TierLeftAlone] = []
     for root, repo_report in zip(tiers.owned_upstream, report.per_repo, strict=True):
-        report_owned_upstream(root, sum(1 for result in repo_report.results if result.finding.auto_migratable))
-    return upstream
+        pending = sum(1 for result in repo_report.results if result.finding.auto_migratable)
+        report_owned_upstream(root, pending)
+        left.append(TierLeftAlone(root=str(root), pending=pending))
+    return upstream, tuple(left)
 
 
 def report_owned_upstream(root: Path, pending: int) -> None:

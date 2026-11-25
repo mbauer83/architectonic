@@ -71,10 +71,15 @@ class LocalCheckoutActions:
     # ── Software ──────────────────────────────────────────────────────────────
 
     def move_checkout(self, tag: str, move: CheckoutMove) -> None:
-        GitCheckout(self.root).move_to(tag, move)
+        GitCheckout(self.root).move_to(tag, move, carry=self._carry)
 
     def restore_checkout(self, commit: str, branch: str | None) -> None:
-        GitCheckout(self.root).restore(commit, branch)
+        GitCheckout(self.root).restore(commit, branch, carry=self._carry)
+
+    @property
+    def _carry(self) -> Path:
+        """Where configuration edits a move sets aside wait — beside the verified assets, in the journal."""
+        return self.assets_dir / "configuration"
 
     def sync_environment(self, selection: DependencySelection) -> None:
         uv_environment.sync(self.root, selection, uv=self.uv)
@@ -140,7 +145,11 @@ class LocalCheckoutActions:
 
     def restore_checkpoint(self, checkpoint_set: str) -> None:
         run_checked(
-            self._tool("arch-repair", "upgrade", "--restore", checkpoint_set, *self.deployment_arguments),
+            # Rolling back its own update: whatever the new version wrote since the migration goes too.
+            self._tool(
+                "arch-repair", "upgrade", "--restore", checkpoint_set, "--discard-later-work",
+                *self.deployment_arguments,
+            ),
             cwd=self.root, timeout=_MIGRATION_TIMEOUT_SECONDS, doing=f"arch-repair upgrade --restore {checkpoint_set}",
         )
 
@@ -149,9 +158,13 @@ class LocalCheckoutActions:
         from src.infrastructure.deployment.layout import resolve_manifest  # noqa: PLC0415
 
         try:
-            activate_store(resolve_manifest().assurance_db_path.path)
+            activation = activate_store(resolve_manifest().assurance_db_path.path)
         except RuntimeError as exc:
             raise UpdateActionError(f"the assurance store could not be re-authorized: {exc}") from exc
+        if activation.backend_unlocked is False:
+            raise UpdateActionError(
+                "the restarted backend answered that the assurance store is still locked: it cannot read the key"
+            )
 
     # ── Verification ──────────────────────────────────────────────────────────
 
