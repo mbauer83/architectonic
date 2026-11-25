@@ -35,13 +35,17 @@ const types = computed(() => {
 
 const items = computed((): readonly CanvasMenuItem[] => (page.value === 'types'
   ? [...types.value.map((type) => ({
-    id: `type:${type}`, label: labelOf(type), hint: `every ${typeWords(type)} in it`,
+    id: `type:${type}`, label: labelOf(type), hint: `every ${typeWords(type)} in it`, command: 'box.by-type' as const,
   })),
     { id: 'back', label: '‹ Back', divider: true }]
   : [
-    { id: 'rename', label: 'Rename box…', hint: 'on this diagram only' },
-    ...types.value.length ? [{ id: 'types', label: 'Box by type ▸', hint: 'a box of one element type inside it' }] : [],
-    { id: 'delete', label: 'Delete box', hint: 'what it holds stays on the diagram', danger: true, divider: true },
+    { id: 'rename', label: 'Rename box…', hint: 'on this diagram only', command: 'box.rename' },
+    ...types.value.length ? [{ id: 'types', label: 'Box by type ▸', hint: 'a box of one element type inside it', command: 'box.by-type' as const }]
+      : [],
+    {
+      id: 'delete', label: 'Delete box', hint: 'what it holds stays on the diagram', danger: true, divider: true,
+      command: 'box.delete',
+    },
   ]))
 
 const settle = async (step: Promise<boolean>) => {

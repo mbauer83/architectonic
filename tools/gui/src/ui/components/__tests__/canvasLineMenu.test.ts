@@ -16,6 +16,7 @@ import { useArrangementSession } from '../../composables/useArrangementSession'
 import type { DiagramEditing } from '../../composables/useDiagramEditing'
 import CanvasLineMenu from '../CanvasLineMenu.vue'
 import { asksForTheMenu, isOnALine, selectedLineMiddle } from '../lineMenuPlace'
+import { answered } from '../../composables/__tests__/permissionFixtures'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 const element = (alias: string, extent: Extent) => ({
@@ -45,7 +46,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-const mounted = async () => {
+const mounted = async (refused: readonly string[] = []) => {
   const session = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
   session.open(geometry)
   session.change((_drawn, now) => withRouteStated(now, 'r', {
@@ -54,7 +55,9 @@ const mounted = async () => {
   const done = vi.fn()
   const host = document.createElement('div')
   document.body.appendChild(host)
-  app = createApp({ render: () => h(CanvasLineMenu, { editing: { session } as unknown as DiagramEditing, line: 0, onDone: done }) })
+  app = answered(createApp({
+    render: () => h(CanvasLineMenu, { editing: { session } as unknown as DiagramEditing, line: 0, onDone: done }),
+  }), refused)
   app.mount(host)
   await nextTick()
   return { session, host, done }
@@ -80,6 +83,17 @@ describe('a line\'s menu', () => {
     expect(host.querySelector('[data-end="to"][aria-current="true"]')?.getAttribute('data-side')).toBe('left')
     host.querySelector<HTMLButtonElement>('[data-end="to"][data-side="top"]')?.click()
     expect(session.arrangement.value?.routes.get('r')).toEqual({ from: { side: 'right', at: 0.5 }, to: { side: 'top', at: 0.5 } })
+  })
+
+  it('disables what the permission answer refuses, saying why, and does nothing when it is chosen (A-02.24)', async () => {
+    const { session, host, done } = await mounted(['diagram.layout.route'])
+    const straighten = item(host, 'Straighten')
+    expect(straighten?.getAttribute('aria-disabled')).toBe('true')
+    expect(straighten?.textContent).toContain('Not permitted for your role')
+    expect(item(host, 'Edit relation')?.getAttribute('aria-disabled')).toBeNull()
+    straighten?.click()
+    expect(session.arrangement.value?.routes.get('r')?.via).toHaveLength(2)
+    expect(done).not.toHaveBeenCalled()
   })
 })
 

@@ -13,6 +13,8 @@ import { arrowsAcross } from '../lib/arrowsAcross'
 import { usePulse } from '../composables/usePulse'
 import DiagramChangeList from './DiagramChangeList.vue'
 import { useCanvasBoxes } from '../composables/useCanvasBoxes'
+import { useCommandPermission } from '../composables/usePermissions'
+import { DIAGRAM_OPERATIONS } from './canvasCommands'
 
 const props = defineProps<{ edit: DiagramEditMode }>()
 
@@ -24,6 +26,9 @@ const saving = computed(() => editing.value.saving.value)
 const leaving = computed(() => props.edit.leaving.value)
 const error = computed(() => editing.value.error.value)
 const boxes = useCanvasBoxes(props.edit.editing)
+const permit = useCommandPermission(DIAGRAM_OPERATIONS)
+const toAutomatic = computed(() => permit.value('bar.return-to-automatic'))
+const toAutomaticBoxes = computed(() => permit.value('bar.automatic-boxes'))
 /** The layout's rule breaches as the canvas marks them, read only while they are asked for. */
 const breaches = computed(() => (props.edit.checking.value ? distinctBreaches(session.value.breaches.value) : []))
 const checkTitle = computed(() => {
@@ -101,6 +106,8 @@ const count = usePulse(
         <button
           type="button"
           data-testid="return-to-automatic"
+          :disabled="!toAutomatic.allowed"
+          :title="toAutomatic.allowed ? undefined : toAutomatic.reason"
           @click="editing.returnToAutomatic()"
         >Return to automatic</button>
       </template>
@@ -132,7 +139,10 @@ const count = usePulse(
       v-if="boxes.owned.value"
       type="button"
       class="btn btn-plain btn-sm"
-      title="Drop the layer and type boxes written down for this diagram: they are drawn automatically again"
+      :title="toAutomaticBoxes.allowed
+        ? 'Drop the layer and type boxes written down for this diagram: they are drawn automatically again'
+        : toAutomaticBoxes.reason"
+      :disabled="!toAutomaticBoxes.allowed"
       data-testid="return-to-automatic-boxes"
       @click="boxes.automatic()"
     >

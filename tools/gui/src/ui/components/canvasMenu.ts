@@ -3,6 +3,8 @@
  * hint under it, an optional key at the right, a divider before a new group, and the destructive entry
  * in the danger colour. `CanvasMenu.vue` draws them; how the keys walk them is here, apart from the DOM.
  */
+import type { Permission } from '../../domain/permissions'
+import type { CanvasCommandName } from './canvasCommands'
 
 export interface CanvasMenuItem {
   /** What `choose` answers with. */
@@ -18,6 +20,8 @@ export interface CanvasMenuItem {
   readonly caption?: string
   readonly danger?: boolean
   readonly disabled?: boolean
+  /** The canvas command the entry is (`canvasCommands`): refused by the permission answer, it is disabled. */
+  readonly command?: CanvasCommandName
   /** A `data-testid` for the entry, where a suite names it. */
   readonly testid?: string
   /** Extra attributes carried onto the entry, as a suite or a reader of it addresses it. */
@@ -38,3 +42,14 @@ export const menuStep = (key: string, at: number, count: number): number | null 
   if (at < 0) return step > 0 ? 0 : count - 1
   return (at + step + count) % count
 }
+
+/**
+ * *items* as the permission answer offers them: an entry whose command is refused is disabled, and its hint
+ * says why instead of what it does (A-02.24).
+ */
+export const permitted = (
+  items: readonly CanvasMenuItem[], permit: (command: CanvasCommandName) => Permission,
+): readonly CanvasMenuItem[] => items.map((item) => {
+  const answer = item.command === undefined ? null : permit(item.command)
+  return answer === null || answer.allowed ? item : { ...item, disabled: true, hint: answer.reason }
+})

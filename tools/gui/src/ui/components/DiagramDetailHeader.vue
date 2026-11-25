@@ -8,10 +8,12 @@
  * delete act on the stored diagram, which is not what is on the screen. */
 import type { DiagramDetail } from '../../domain'
 import { EMPTY_READING_LENS, type ReadingLens } from '../../domain/readingLens'
-import { inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import DiagramDownloadMenu from './DiagramDownloadMenu.vue'
 import DiagramAutoLayoutDialog from './DiagramAutoLayoutDialog.vue'
 import { toastKey } from '../keys'
+import { useCan, useCommandPermission } from '../composables/usePermissions'
+import { DIAGRAM_OPERATIONS } from './canvasCommands'
 
 withDefaults(defineProps<{
   detail: DiagramDetail
@@ -31,6 +33,10 @@ withDefaults(defineProps<{
 /** *laid-out*: the hand-written body was given up for a generated one, so the diagram is to be read again. */
 const emit = defineEmits<{ sync: []; delete: []; edit: []; done: []; 'laid-out': [] }>()
 const toast = inject(toastKey, () => undefined)
+/** What editing on the canvas saves through, and what laying out automatically is: offered as they are permitted. */
+const canEdit = useCan('diagrams_replace_diagram')
+const permit = useCommandPermission(DIAGRAM_OPERATIONS)
+const canLayOut = computed(() => permit.value('page.lay-out-automatically'))
 
 /** *Lay out automatically…* (A-02.42): asked in its dialog; once done, Edit on the canvas is offered. */
 const layingOut = ref(false)
@@ -79,6 +85,8 @@ const laidOut = () => {
         type="button"
         class="edit-btn"
         data-testid="diagram-edit"
+        :disabled="!canEdit.allowed"
+        :title="canEdit.allowed ? undefined : canEdit.reason"
         @click="emit('edit')"
       >
         Edit
@@ -95,7 +103,9 @@ const laidOut = () => {
         type="button"
         class="edit-btn"
         data-testid="diagram-lay-out"
-        title="Give the hand-written picture up for a generated one, arranged on the canvas"
+        :disabled="!canLayOut.allowed"
+        :title="canLayOut.allowed ? 'Give the hand-written picture up for a generated one, arranged on the canvas'
+          : canLayOut.reason"
         @click="layingOut = true"
       >
         Lay out automatically…

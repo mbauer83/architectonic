@@ -1,5 +1,12 @@
-/** What the shared canvas editor calls deleting an element: the diagram page's words, or a candidate's. */
+import { CANDIDATE_OPERATIONS, type CommandOperations, DIAGRAM_OPERATIONS } from './canvasCommands'
+
+/**
+ * What the shared canvas editor calls deleting an element: the diagram page's words, or a candidate's —
+ * and what each of its commands is an operation of on that page.
+ */
 export interface CanvasWords {
+  /** The named operation each command is here (`canvasCommands`), which the permission answer is keyed by. */
+  readonly operations: CommandOperations
   readonly deleteEntry: string
   /** The delete entry's one-line hint in the element's menu. */
   readonly deleteHint: string
@@ -18,6 +25,7 @@ export interface CanvasWords {
 }
 
 export const DIAGRAM_WORDS: CanvasWords = {
+  operations: DIAGRAM_OPERATIONS,
   deleteEntry: 'Delete from model…',
   deleteHint: 'everywhere, with its relations; asks first',
   deleteQuestion: (name) => `Delete ${name} from the model at Save?`,
@@ -31,6 +39,7 @@ export const DIAGRAM_WORDS: CanvasWords = {
 
 /** A candidate's words (06·5): removing records a remove-entity operation; the model keeps it until Apply. */
 export const CANDIDATE_WORDS: CanvasWords = {
+  operations: CANDIDATE_OPERATIONS,
   deleteEntry: 'Remove from the candidate…',
   deleteHint: 'records a remove-entity operation; asks first',
   deleteQuestion: (name) =>

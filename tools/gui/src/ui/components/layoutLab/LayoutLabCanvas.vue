@@ -4,6 +4,8 @@
  * one paint order of `labPaintOrder`, with the rule breaches over them and handles on the selected
  * shape. Press and drag a shape to move it; a box carries what it holds. Drag a handle to resize.
  * Press a line, or where it ends on an element's edge, to select it and shape it (`useLineGesture`).
+ * Moving and sizing, and shaping a line, are offered only where the permission answer allows them
+ * (`gesture.move`, `gesture.bend`); refused, a press still selects, so the menus can say why.
  */
 import { computed, ref, watch } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
@@ -29,6 +31,7 @@ import { useCanvasFocus } from './useCanvasFocus'
 import { useCanvasView } from './useCanvasView'
 import { useLabGesture } from './useLabGesture'
 import { useLineGesture } from './useLineGesture'
+import { useCommandPermission } from '../../composables/usePermissions'
 
 /** *readonly*: a press picks a shape and nothing moves. The default slot draws over the picture. */
 const props = defineProps<{
@@ -48,6 +51,10 @@ const emit = defineEmits<{ pick: [alias: string] }>()
 
 const svg = ref<SVGSVGElement | null>(null)
 const prefs = useEditingPreferences()
+const permit = useCommandPermission()
+/** Whether a press may move and size shapes, and shape lines: not on a read-only canvas, nor where refused. */
+const placing = computed(() => !props.readonly && permit.value('gesture.move').allowed)
+const routing = computed(() => !props.readonly && permit.value('gesture.bend').allowed)
 const gesture = useLabGesture(props.session, svg, {
   snapping: () => prefs.snapping.value.value, rectangle: () => prefs.rectangle.value.value,
 })
@@ -216,7 +223,7 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
           :data-alias="piece.shape.alias"
           :data-selected="chosen.has(piece.shape.alias) ? '' : undefined"
           data-painted="shape"
-          @pointerdown="readonly ? pick($event, piece.shape.alias) : pressShape($event, piece.shape.alias)"
+          @pointerdown="placing ? pressShape($event, piece.shape.alias) : pick($event, piece.shape.alias)"
         >
           <LabDrawn
             :nodes="[piece.shape.drawing.drawing]"
@@ -269,10 +276,10 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
         </g>
         <g
           v-else
-          :class="['lab-line-label', { 'lab-line-label--movable': !readonly }]"
+          :class="['lab-line-label', { 'lab-line-label--movable': routing }]"
           :data-relation="piece.relation"
           data-painted="label"
-          @pointerdown="readonly || lineGesture.pressLabel($event, piece.relation)"
+          @pointerdown="readonly || (routing ? lineGesture.pressLabel : lineGesture.pressLine)($event, piece.relation)"
         >
           <LabDrawn
             :nodes="piece.label.texts"
@@ -321,12 +328,12 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
       :bends="selectedBends"
       :pixel="pixel"
       :handle-side="handleSide"
-      :readonly="readonly"
+      :readonly="!placing"
       @handle="(event, handle) => gesture.press(event, gesture.selected.value ?? '', handle)"
     />
 
     <LabLineHandles
-      v-if="!readonly && selectedLine"
+      v-if="routing && selectedLine"
       :line="selectedLine.line"
       :course="selectedLine.course"
       :bends="lineGesture.bends.value"

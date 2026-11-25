@@ -2,6 +2,8 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type { SyncStatus } from '../../domain'
+import { permissionOf } from '../../domain/permissions'
+import type { Can } from '../keys'
 import { readErrorMessage } from '../lib/errors'
 import {
   isSyncBlockedEvent,
@@ -52,6 +54,11 @@ export function useSyncCoordination(svc: ModelService, addToast: Toast) {
     () => !authorityKnown.value || readOnly.value || writeBlocked.value,
   )
   const authority = computed(() => (authorityFresh.value ? (syncStatus.value?.authority ?? null) : null))
+  /** The permission answer every control is offered or refused by (`domain/permissions`). */
+  const can = computed((): Can => {
+    const view = { known: authorityKnown.value, authority: authority.value, writesPaused: writeBlocked.value }
+    return (operation) => permissionOf(view, operation)
+  })
   const engDirty = computed(() => syncStatus.value?.engagement?.has_uncommitted_changes ?? false)
   const entStatus = computed(() => syncStatus.value?.enterprise ?? null)
 
@@ -257,6 +264,7 @@ export function useSyncCoordination(svc: ModelService, addToast: Toast) {
     anyWriteBlocked,
     authorityKnown,
     authority,
+    can,
     syncStatus,
     engDirty,
     entStatus,

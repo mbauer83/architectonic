@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch } from 'vue'
+import { computed, inject, provide, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { DiagramContext } from '../../domain'
 import { canvasMembers } from '../../domain/layout/canvasComposition'
@@ -33,6 +33,8 @@ import { isGroupingBox } from '../../domain/layout/canvasBoxes'
 import CanvasBoxMenu from './CanvasBoxMenu.vue'
 import CanvasLabelForm from './CanvasLabelForm.vue'
 import { type CanvasWords, DIAGRAM_WORDS } from './canvasWords'
+import type { CanvasCommandName } from './canvasCommands'
+import { canvasOperationsKey, useCommandPermission } from '../composables/usePermissions'
 
 const props = defineProps<{
   editing: DiagramEditing
@@ -75,6 +77,15 @@ async function settle(step: Promise<boolean>): Promise<boolean> {
 }
 const apply = (c: CanvasCommand, overlay?: Record<string, unknown>) => settle(props.editing.propose(c, overlay))
 const toast = inject(toastKey, () => undefined)
+// What each command is on this page, for the menus and the picture under the editor (A-02.24).
+provide(canvasOperationsKey, words.value.operations)
+const permit = useCommandPermission(words.value.operations)
+/** *run*, where the permission answer allows *command*; otherwise its reason, said, and nothing done. */
+const gated = <A extends unknown[]>(command: CanvasCommandName, run: (...args: A) => void) => (...args: A) => {
+  const answer = permit.value(command)
+  if (answer.allowed) run(...args)
+  else toast(answer.reason, 'warn')
+}
 const drop = useDropFeedback(svc, props.editing, host, () => props.context, members)
 const relation = useCanvasRelation(
   svc, props.editing, () => props.context, members, { source, target },
@@ -133,6 +144,11 @@ const details = ref<string | null>(null)
 const keepDetails = async (commands: readonly CanvasCommand[]): Promise<string | null> =>
   await props.editing.propose(commands) ? null : props.editing.error.value ?? 'The drawing has changed. Try again.'
 const panelDrop = useEntityDrop(host, props.editing)
+/** Adding by the menu on empty paper, or by a row dropped from the panel, as the permission answer allows. */
+const add = {
+  created: gated('canvas.create', adding.created), found: gated('canvas.place', adding.found),
+  again: gated('element.occurrence', adding.again), dropped: gated('canvas.place', panelDrop.drop),
+}
 function menu(event: MouseEvent) {
   event.preventDefault()
   position(event.clientX, event.clientY)
@@ -162,11 +178,14 @@ const keepLabel = (text: string) => labelling.value && void settle(props.editing
   artifact_id: labelling.value.id, label: text, include_multiplicity: true,
 }))
 const { focusCanvas, up, release, moving, leave, side } = useContentGestures(
-  host, props.editing, source, position, rename, relation.editLine, (alias) => void relation.pair(alias),
-  (alias, target, x, y) => void dropped(alias, target, x, y), drop.over, relabel,
+  host, props.editing, source, position, gated('gesture.rename', rename), gated('line.edit', relation.editLine),
+  gated('gesture.connect', (alias: string) => void relation.pair(alias)),
+  gated('gesture.nest', (alias: string, target: string, x: number, y: number) => void dropped(alias, target, x, y)),
+  drop.over, gated('line.relabel', relabel),
 )
 const { key, double, openMenu, boxAt } = useCanvasEditorKeys({
-  host, mode, source, close, position, rename, editLine: relation.editLine,
+  host, mode, source, close, position, rename: gated('element.rename', rename),
+  editLine: gated('line.edit', relation.editLine),
   selected: () => ({ line: props.line ?? null, shape: props.selection ?? null, shapes: several.value }),
   // One of the diagram's own boxes, where the page edits them, has a menu of its own (A-02.39).
   boxNamed: (alias) => (words.value.newBoxEntry === undefined ? undefined
@@ -182,7 +201,7 @@ const { key, double, openMenu, boxAt } = useCanvasEditorKeys({
     @keydown="key"
     @dragover="panelDrop.over"
     @dragleave="panelDrop.leave"
-    @drop="panelDrop.drop"
+    @drop="add.dropped"
     @contextmenu="menu"
     @dblclick="double"
     @pointerdown.capture="focusCanvas"
@@ -230,9 +249,9 @@ const { key, double, openMenu, boxAt } = useCanvasEditorKeys({
           :context="context"
           :into="adding.into.value"
           :draws-again="drawsAgain"
-          @apply="adding.created"
-          @add="adding.found"
-          @again="adding.again"
+          @apply="add.created"
+          @add="add.found"
+          @again="add.again"
           @cancel="close(true)"
         />
         <CanvasSelectionMenu

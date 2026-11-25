@@ -55,24 +55,30 @@ const heading = computed(() => page.value === 'top' ? `${props.selection.length}
   : `${page.value === 'align' ? 'Align' : 'Distribute'} ${elements.value} elements`)
 const items = computed((): readonly CanvasMenuItem[] => {
   if (page.value === 'align') {
-    return [...EDGES.map(([edge, name]) => ({ id: edge, label: name })), { id: 'back', label: '‹ Back', divider: true }]
+    return [...EDGES.map(([edge, name]) => ({ id: edge, label: name, command: 'selection.align' as const })),
+      { id: 'back', label: '‹ Back', divider: true }]
   }
   if (page.value === 'distribute') {
-    return [...AXES.map(([axis, name]) => ({ id: axis, label: name, hint: 'equal gaps, the outer two stay' })),
+    return [...AXES.map(([axis, name]) => ({
+      id: axis, label: name, hint: 'equal gaps, the outer two stay', command: 'selection.distribute' as const,
+    })),
       { id: 'back', label: '‹ Back', divider: true }]
   }
   return [
-    { id: 'align', label: 'Align ▸', hint: 'left · centres · right · top · middles · bottoms',
+    { id: 'align', label: 'Align ▸', hint: 'left · centres · right · top · middles · bottoms', command: 'selection.align',
       disabled: elements.value < LEAST_TO_ALIGN },
     ...elements.value >= LEAST_TO_DISTRIBUTE
-      ? [{ id: 'distribute', label: 'Distribute ▸', hint: 'horizontally · vertically' }] : [],
+      ? [{ id: 'distribute', label: 'Distribute ▸', hint: 'horizontally · vertically', command: 'selection.distribute' as const }]
+      : [],
     ...props.words.newBoxEntry
       ? [{ id: 'box', label: props.words.newBoxEntry, hint: 'a labelled box on this diagram round what is selected',
+        command: 'selection.box' as const,
         disabled: elements.value === 0 }]
       : [],
     ...STACKING_ITEMS,
     ...props.words.removeEntry
       ? [{ id: 'remove', label: props.words.removeEntry, hint: props.words.removeHint, shortcut: props.words.removeKey,
+        command: 'selection.remove' as const,
         divider: true }]
       : [],
   ]

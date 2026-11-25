@@ -5,13 +5,16 @@
  * rule, the destructive entry in the danger colour. It opens on its first entry; the arrows walk the
  * entries and wrap, Home and End go to the ends, Enter or Space chooses, Escape asks to close.
  *
+ * An entry that is a canvas command the permission answer refuses is drawn disabled, its hint the reason.
+ *
  * It draws the entries only: the surface it sits on — fixed at a point, or inside a canvas — is the
  * caller's, so the diagram editor and the scratchpad open the same menu on their own surfaces.
  */
-import { nextTick, onMounted, ref, useId, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useId, watch } from 'vue'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import { toGlyphKey } from '../lib/glyphKey'
-import { type CanvasMenuItem, menuStep } from './canvasMenu'
+import { type CanvasMenuItem, menuStep, permitted } from './canvasMenu'
+import { useCommandPermission } from '../composables/usePermissions'
 
 const props = defineProps<{
   items: readonly CanvasMenuItem[]
@@ -24,6 +27,8 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ choose: [id: string]; close: [] }>()
 
+const permit = useCommandPermission()
+const shown = computed(() => permitted(props.items, permit.value))
 const root = ref<HTMLElement | null>(null)
 // The label names an entry and the hint describes it, so a reader hears "Distribute ▸", then why.
 const uid = useId()
@@ -75,7 +80,7 @@ const choose = (item: CanvasMenuItem) => {
       </template>
     </p>
     <template
-      v-for="item in items"
+      v-for="item in shown"
       :key="item.id"
     >
       <div
