@@ -994,6 +994,11 @@ export interface paths {
          *     once. Under the manual activation policy this is what makes `unlock` do something: a
          *     rebuild alone would re-apply the policy and start locked again, so the command would appear
          *     to succeed and change nothing.
+         *
+         *     Changing the process's authorization is an operator's act and is accepted only as a local
+         *     operator request (`operator_request`): anything that could reach the port could otherwise
+         *     authorize the process to open the confidential store. A reload that leaves authorization as it
+         *     is stays open to any caller.
          */
         post: operations["assurance_reload_store"];
         delete?: never;
@@ -18689,6 +18694,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssuranceStoreStatusResponse"];
+                };
+            };
+            /** @description `authorize` was given by a request that is not a local operator request: one from the loopback carrying `X-Arch-Operator-Request`, as `arch-assurance unlock` and `lock` send */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Request validation failed */
