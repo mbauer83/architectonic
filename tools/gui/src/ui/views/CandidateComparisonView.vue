@@ -3,21 +3,26 @@
  * Candidate architectures compared: two or more read against one common base — the model, or a
  * candidate all of them stack on — each with its operations and its picture, side by side on a wide
  * screen and one at a time behind tabs on a narrow one. Where their operations overlap is the
- * server's integration check, asked on request. The comparison is its address: the candidates
- * (`candidate`, repeated) and the base are its operands, the diagram is how it is drawn.
+ * server's integration check, asked on request. *Integrate…* integrates the compared candidates into a new
+ * one with the same conflict cards the stress workspace uses (`IntegrationCards`), and opens it. The
+ * comparison is its address: the candidates (`candidate`, repeated) and the base are its operands, the diagram
+ * is how it is drawn.
  */
 import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Effect } from 'effect'
 import type { DiagramSummary } from '../../domain'
 import { comparedIds } from '../../domain/candidates/candidateComparison'
-import { modelServiceKey } from '../keys'
-import { candidateListRoute } from '../router/artifactRoutes'
+import { modelServiceKey, toastKey } from '../keys'
+import { candidateDetailRoute, candidateListRoute } from '../router/artifactRoutes'
 import { useCandidateComparison } from '../composables/useCandidateComparison'
+import { useIntegration } from '../composables/useIntegration'
 import ComparedCandidate from '../components/candidates/ComparedCandidate.vue'
 import CandidateOverlaps from '../components/candidates/CandidateOverlaps.vue'
+import IntegrationCards from '../components/candidates/IntegrationCards.vue'
 
 const svc = inject(modelServiceKey)!
+const toast = inject(toastKey, () => undefined)
 const route = useRoute()
 const router = useRouter()
 const queried = (value: unknown): readonly unknown[] => (Array.isArray(value) ? value : [value])
@@ -45,6 +50,20 @@ const add = (id: string) => {
   if (id) address({ candidate: [...ids.value, id] })
 }
 const drop = (id: string) => address({ candidate: ids.value.filter((one) => one !== id) })
+
+/** Integrating the compared candidates into a new one; open while its cards are shown. */
+const integrating = ref(false)
+const integration = useIntegration(svc, (id) => {
+  toast(`Integrated into ${integration.name.value}, a new candidate.`)
+  void router.push(candidateDetailRoute(id))
+})
+const integrate = async () => {
+  integrating.value = true
+  await integration.choose(comparison.known.value)
+}
+watch(() => comparison.known.value.join('\n'), () => {
+  if (integrating.value) void integration.choose(comparison.known.value)
+})
 
 watch(() => [comparison.known.value.join('\n'), comparison.base.value, diagramId.value], () => {
   if (loaded.value) void comparison.read()
@@ -142,15 +161,26 @@ onMounted(async () => {
       <div class="ov-h">
         <span>Where their operations overlap — the same element, field or relation touched by more than one, or
           one removing what another uses. Only candidates offered for integration are checked.</span>
-        <button
-          type="button"
-          class="btn btn-sm"
-          data-testid="check-overlaps"
-          :disabled="comparison.known.value.length < 2 || comparison.checking.value"
-          @click="comparison.runCheck"
-        >
-          Check for overlaps
-        </button>
+        <span class="ov-acts">
+          <button
+            type="button"
+            class="btn btn-sm"
+            data-testid="check-overlaps"
+            :disabled="comparison.known.value.length < 2 || comparison.checking.value"
+            @click="comparison.runCheck"
+          >
+            Check for overlaps
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm"
+            data-testid="integrate-compared"
+            :disabled="comparison.known.value.length < 2 || integrating"
+            @click="integrate"
+          >
+            Integrate…
+          </button>
+        </span>
       </div>
       <CandidateOverlaps
         v-if="comparison.check.value"
@@ -166,6 +196,28 @@ onMounted(async () => {
       >
         {{ comparison.checkError.value }}
       </p>
+    </section>
+    <section
+      v-if="integrating"
+      class="card integrate"
+      aria-label="Integrate"
+      data-testid="integrate-card"
+    >
+      <div class="ov-h">
+        <b>Integrate {{ comparison.known.value.map(comparison.nameOf).join(', ') }} into a new candidate</b>
+        <button
+          type="button"
+          class="btn btn-sm"
+          @click="integrating = false"
+        >
+          Cancel
+        </button>
+      </div>
+      <IntegrationCards
+        :integration="integration"
+        :name-of="(id) => id"
+        :name-of-set="comparison.nameOf"
+      />
     </section>
     <div
       class="tabs"
@@ -216,7 +268,8 @@ onMounted(async () => {
 .meta select { font: inherit; margin-left: 4px; max-width: 280px; }
 .err { color: var(--danger-strong); font-size: 12.5px; }
 .hint { color: var(--muted); font-size: 12.5px; }
-.overlaps { padding: 8px 10px; margin-bottom: 12px; font-size: 12.5px; }
+.overlaps, .integrate { padding: 8px 10px; margin-bottom: 12px; font-size: 12.5px; }
+.ov-acts { display: flex; gap: 6px; flex-shrink: 0; }
 .ov-h { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; color: var(--text-2); }
 .side-by-side {
   display: grid; grid-template-columns: repeat(var(--panes), minmax(0, 1fr)); gap: 12px; align-items: start;

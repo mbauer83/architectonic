@@ -101,9 +101,12 @@ export function useIntegration(svc: IntegrationAccess, onIntegrated: (id: string
     }
   }
 
+  /** The name the new candidate is given. */
+  const rename = (text: string): void => { name.value = text }
+
   return {
     chosen, name, resolutions, abouts, answer, busy, error, decisions, ready,
-    check, choose, resolve, takeBack, integrate, raiseDecision,
+    check, choose, resolve, takeBack, integrate, raiseDecision, rename,
   }
 }
 
