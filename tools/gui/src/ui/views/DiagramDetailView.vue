@@ -12,7 +12,7 @@ import { renderMatrixMarkdown } from '../lib/matrixMarkdown'
 import type { C4Navigation } from '../../domain'
 import {
   buildDrilldownByEntityId, c4NavigationOf, diagramNeedsSvg, editRouteFor, editsOnCanvas,
-  editableMetadataByEntityType, isADifferentDiagram, matrixHtmlOf,
+  editableMetadataByEntityType, isADifferentDiagram, matrixHtmlOf, viewportHint,
 } from './DiagramDetailView.helpers'
 import { membershipOf } from '../../domain/layout/diagramMembership'
 import DrilldownMenu from '../components/DrilldownMenu.vue'
@@ -92,8 +92,7 @@ const load = () => {
 const selection = useDiagramSvgSelection({
   svc, router, svgHtml, detail, diagramEntities, diagramConnections, drilldownByEntityId, diagramId, reload: load,
 })
-// Template ref binding (`ref="svgContainer"`) requires a top-level `<script setup>` binding
-// by that exact name — aliasing the composable's ref, not copying it.
+// `ref="svgContainer"` needs a top-level binding by that name: the composable's ref, aliased, not copied.
 const { svgContainer } = selection
 
 const containerRef = ref<HTMLElement | null>(null)
@@ -136,7 +135,7 @@ const editBar = ref<EditBarHandle | null>(null)
 const edit = useDiagramEditMode(
   svc, diagramId, {
     canvas: editCanvas, bar: editBar, membership: () => membershipOf(detail.value),
-    frame: (extent) => panZoom.frame(extent), large: () => panZoom.fitScale.value < LARGE_BELOW,
+    view: panZoom, host: containerRef, large: () => panZoom.fitScale.value < LARGE_BELOW,
   }, load, toast,
 )
 const editing = computed(() => edit.active.value)
@@ -248,7 +247,6 @@ const executeDelete = () => {
             @keydown="reader.onKeydown"
             @mousedown="editing ? edit.panPress($event, panZoom.onMouseDown) : panZoom.onMouseDown($event)"
             @pointerdown="editing && !edit.spaceHeld.value && editCanvas?.sweepFrom($event)"
-            @dblclick="editing || panZoom.resetView()"
           >
             <div
               class="pan-canvas"
@@ -266,6 +264,7 @@ const executeDelete = () => {
                   :selection="editCanvas?.selected"
                   :line="editCanvas?.selectedLine"
                   :selected-shapes="editCanvas?.selection"
+                  :focused="editCanvas?.announced"
                 >
                   <LayoutLabCanvas
                     ref="editCanvas"
@@ -313,13 +312,12 @@ const executeDelete = () => {
               :to-window="panZoom.toWindow"
             />
             <DiagramViewportControls
+              :zoom="panZoom"
+              :edit="!editing && editsOnCanvas(detail) ? edit.enter : null"
               :is-transformed="panZoom.isTransformed.value"
               :is-fullscreen="fullscreen.isFullscreen.value"
               :can-fullscreen="fullscreen.isSupported"
-              :hint="editing
-                ? 'Drag an element, or a box by its title, to move it · drag on paper to select · Shift-click adds'
-                  + ' · drag a handle to resize · Space+drag pans'
-                : 'Scroll to zoom · Drag to pan · Click entity to inspect · Double-click to reset'"
+              :hint="viewportHint(editing)"
               @reset="panZoom.resetView"
               @toggle-fullscreen="fullscreen.toggle"
             />

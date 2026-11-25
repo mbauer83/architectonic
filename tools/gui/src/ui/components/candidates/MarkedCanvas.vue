@@ -62,7 +62,6 @@ const tagSize = computed(() => 12 / Math.max(panZoom.scale.value, 0.05))
     class="img-container viewport-host workspace-canvas"
     data-testid="workspace-canvas"
     @mousedown="panZoom.onMouseDown"
-    @dblclick="panZoom.resetView()"
   >
     <div
       class="pan-canvas"
@@ -95,6 +94,7 @@ const tagSize = computed(() => 12 / Math.max(panZoom.scale.value, 0.05))
       </p>
     </div>
     <DiagramViewportControls
+      :zoom="panZoom"
       :is-transformed="panZoom.isTransformed.value"
       :is-fullscreen="false"
       :can-fullscreen="false"

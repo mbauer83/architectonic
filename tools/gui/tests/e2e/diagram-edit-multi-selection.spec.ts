@@ -1,7 +1,7 @@
 /**
  * Several shapes selected at once on the diagram editor's canvas (sketch 02·8, Q14): a rectangle
- * selects what it encloses and pressing a selected shape drags them all; the selection's menu aligns
- * and distributes them, each one undoable step.
+ * selects what it touches — or, by preference, what it encloses (01·5) — and pressing a selected shape
+ * drags them all; the selection's menu aligns and distributes them, each one undoable step.
  *
  * In the browser because the gesture is DOM wiring over three layers — the canvas, the content
  * editor that owns the menu, and the page that owns the keys — which the unit suites test apart.
@@ -55,6 +55,7 @@ const fromMenu = async (page: Page, on: Locator, submenu: string, entry: string)
 }
 
 test('a rectangle selects what it encloses, and dragging one of them moves them all', async ({ page }) => {
+  await page.addInitScript(() => { localStorage.setItem('arch.preferences.rectangle', 'encloses') })
   const canvas = await open(page)
   const names = ['Architect', 'Developer', 'AI Agent']
   const grips = names.map((name) => teamA(canvas, name))
@@ -89,6 +90,30 @@ test('a rectangle selects what it encloses, and dragging one of them moves them 
   expect(moved[0][1]).toBeGreaterThan(0)
   for (const [dx, dy] of moved) expect([dx, dy]).toEqual(moved[0])
   await expect(page.getByTestId('selection-announcement')).toHaveText('3 items selected')
+})
+
+test('a rectangle selects what it touches by default, dashed, and R switches it to enclosed', async ({ page }) => {
+  const canvas = await open(page)
+  const grips = ['Architect', 'Developer'].map((name) => teamA(canvas, name))
+  const [one, two] = await Promise.all(grips.map(async (grip) => grip.boundingBox()))
+  // Across the middle of both, from the paper above them: it touches both and encloses neither.
+  const y = Math.min(one!.y, two!.y) - 12
+  const sweep = async () => {
+    await page.mouse.move(Math.min(one!.x, two!.x) + 6, y)
+    await page.mouse.down()
+    await page.mouse.move(Math.max(one!.x + one!.width, two!.x + two!.width) - 6, y + 30, { steps: 6 })
+  }
+  await sweep()
+  await expect(page.getByTestId('selection-rectangle')).toHaveAttribute('data-rule', 'touches')
+  await page.mouse.up()
+  await expect(page.getByTestId('selection-announcement')).toHaveText('2 items selected')
+
+  await page.keyboard.press('r')
+  await expect(page.getByText('A selection rectangle now selects only the elements it encloses.')).toBeVisible()
+  await sweep()
+  await expect(page.getByTestId('selection-rectangle')).toHaveAttribute('data-rule', 'encloses')
+  await page.mouse.up()
+  await expect(canvas.locator('[data-selected]')).toHaveCount(0)
 })
 
 test('aligning left edges is one step, and undo puts them back', async ({ page }) => {

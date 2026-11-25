@@ -14,7 +14,7 @@ import type { ModelService } from '../../../application/ModelService'
 import { useArrangementSession } from '../../composables/useArrangementSession'
 import { layoutOf } from '../../../domain/layout/arrangementLayout'
 import type { Handle } from '../../../domain/layout/lab/labArrangement'
-import { useLabGesture } from './useLabGesture'
+import { type ArrangingAids, useLabGesture } from './useLabGesture'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 
@@ -42,12 +42,15 @@ const geometry: LayoutGeometry = {
 /** The one call the session makes of the service while arranging: drawing resized shapes. */
 const SERVICE = { drawResizedShapes: () => Effect.succeed([]) } as unknown as ModelService
 
-const opened = () => {
+/** As before snapping and the touching rectangle: nothing snaps, a rectangle selects what it encloses. */
+const AS_HINTS: ArrangingAids = { snapping: () => 'hints', rectangle: () => 'encloses' }
+
+const opened = (aids: ArrangingAids = AS_HINTS) => {
   const session = useArrangementSession(
     (shapes) => SERVICE.drawResizedShapes(geometry.artifact_id, shapes), (_drawn, automatic) => automatic,
   )
   session.open(geometry)
-  const gesture = useLabGesture(session, ref(null))
+  const gesture = useLabGesture(session, ref(null), aids)
   /** The layout the arrangement now states, as Save would write it. */
   const layout = () => {
     const now = session.arrangement.value
@@ -180,5 +183,58 @@ describe('the canvas gesture', () => {
     gesture.sweepFrom(down(550, 300))
     pointer('pointerup', 550, 300)
     expect(gesture.selection.value).toEqual([])
+  })
+})
+
+describe('the gesture with the reader’s aids (sketch 02·1, 02·2, 01·5)', () => {
+  const SNAPPING: ArrangingAids = { snapping: () => 'snap', rectangle: () => 'touches' }
+
+  it('lands a moved element on the grid, or on a neighbour line with a guide that goes after the drop', () => {
+    vi.useFakeTimers()
+    const { lab, gesture } = opened(SNAPPING)
+    press(gesture, 'C', 450, 60)
+    pointer('pointermove', 473, 103)
+    expect(gesture.guides.value).toEqual([{ axis: 'y', at: 80, from: 12, to: 532 }])
+    pointer('pointerup', 473, 103)
+    expect(lab.arrangement.value?.elements.get('C')).toEqual(at(424, 80, 524, 120))
+    vi.advanceTimersByTime(699)
+    expect(gesture.guides.value).toHaveLength(1)
+    vi.advanceTimersByTime(1)
+    expect(gesture.guides.value).toEqual([])
+    vi.useRealTimers()
+  })
+
+  it('snaps the dragged edge of a resize to a neighbour', () => {
+    const { lab, gesture } = opened(SNAPPING)
+    press(gesture, 'B', 240, 60, 'e')
+    pointer('pointermove', 397, 60)
+    pointer('pointerup', 397, 60)
+    expect(lab.arrangement.value?.elements.get('B')).toEqual(at(140, 40, 400, 80))
+  })
+
+  it('moves a selection together by whole grid steps', () => {
+    const { lab, gesture } = opened(SNAPPING)
+    press(gesture, 'A', 30, 50)
+    pointer('pointerup', 30, 50)
+    gesture.press(down(450, 60, true), 'C')
+    press(gesture, 'C', 450, 60)
+    pointer('pointermove', 455, 71)
+    pointer('pointerup', 455, 71)
+    expect(lab.arrangement.value?.elements.get('C')).toEqual(at(408, 48, 508, 88))
+    expect(gesture.guides.value).toEqual([])
+  })
+
+  it('selects what a rectangle touches, by preference', () => {
+    const touching = opened(SNAPPING).gesture
+    touching.sweepFrom(down(130, 30))
+    pointer('pointermove', 300, 60)
+    pointer('pointerup', 300, 60)
+    expect(touching.selection.value).toEqual(['B'])
+
+    const enclosing = opened().gesture
+    enclosing.sweepFrom(down(130, 30))
+    pointer('pointermove', 300, 60)
+    pointer('pointerup', 300, 60)
+    expect(enclosing.selection.value).toEqual([])
   })
 })

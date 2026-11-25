@@ -16,6 +16,16 @@ export const pointOnPicture = (svg: SVGSVGElement | null, event: { clientX: numb
 }
 
 /**
+ * How long one screen pixel is on the picture *svg* draws, however it is zoomed — by its view box and by
+ * the window round it: what a tolerance stated in screen pixels is measured in. One where it is not drawn.
+ */
+export const pictureUnitsPerScreenPixel = (svg: SVGSVGElement | null): number => {
+  const matrix = svg?.getScreenCTM()
+  const across = matrix ? Math.hypot(matrix.a, matrix.b) : 0
+  return across > 0 ? 1 / across : 1
+}
+
+/**
  * Follow a drag on the window, not by pointer capture: pressing a piece paints it in front, which moves
  * its node, and a moved node loses its capture — the release then landed nowhere. Answers the switch.
  */

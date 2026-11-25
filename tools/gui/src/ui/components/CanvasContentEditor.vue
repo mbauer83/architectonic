@@ -36,6 +36,8 @@ const props = defineProps<{
   selectedShapes?: readonly string[]
   /** What deleting means here; the diagram page's words when absent. */
   words?: CanvasWords
+  /** The shape the keyboard is on, as it is announced (`useCanvasFocus`). */
+  focused?: string
 }>()
 const words = computed(() => props.words ?? DIAGRAM_WORDS)
 const several = computed(() => props.selectedShapes ?? [])
@@ -190,7 +192,7 @@ function double(e: MouseEvent) {
       aria-live="polite"
       data-testid="selection-announcement"
     >
-      {{ several.length > 1 ? `${several.length} items selected` : '' }}
+      {{ several.length > 1 ? `${several.length} items selected` : (focused ?? '') }}
     </p>
     <CanvasDetailsDialog
       v-if="details"

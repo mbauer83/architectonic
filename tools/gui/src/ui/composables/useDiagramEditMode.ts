@@ -14,20 +14,18 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { ModelService } from '../../application/ModelService'
 import { SMALLEST_ELEMENT, movedTogether, resized, resizedExtent } from '../../domain/layout/lab/labArrangement'
+import { GRID } from '../../domain/layout/lab/labSnapping'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import type { Extent } from '../../domain/layout/geometry'
 import { extentOfMarks, type OverviewMark } from '../lib/diagramOverview'
+import type { CanvasFocus } from '../components/layoutLab/useCanvasFocus'
 import { useEditPanel } from './useEditPanel'
 import { useDiagramEditing } from './useDiagramEditing'
-import { restackKey } from '../components/canvasElementMenu'
+import { type EditKey, editKeyOf } from './editModeKeys'
+import { useEditingPreferences } from './useEditingPreferences'
 
-/** How far an arrow moves or resizes a shape: the grid, or one pixel with Shift. */
-const GRID = 8
-
-/** Each arrow key as the direction it moves in, read by the character it produces, not its position. */
-const ARROWS: Readonly<Record<string, readonly [number, number]>> = {
-  ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
-}
+/** How far the arrows nudge a picked label: two pixels, or one with Shift (02·5). */
+const LABEL_STEP = 2
 
 /** What the page's canvas and edit bar let the keys ask of them. */
 export interface CanvasHandle {
@@ -38,9 +36,20 @@ export interface CanvasHandle {
   readonly removePickedBend: () => boolean
   readonly clearSelection: () => void
   readonly sweepFrom: (event: PointerEvent) => void
+  readonly focus: Pick<CanvasFocus, 'step' | 'enter' | 'towards' | 'selectAll'>
+  readonly focusedExtent: Extent | null
+  readonly announced: string
+  readonly nudgeLabel: (dx: number, dy: number) => boolean
 }
 export interface EditBarHandle {
   readonly closeList: () => boolean
+}
+
+/** The window onto the picture, as the keys move it: show a part, follow a shape, pan by a fraction. */
+export interface EditWindow {
+  readonly frame: (extent: Extent) => void
+  readonly reveal: (extent: Extent) => void
+  readonly panBy: (across: number, down: number) => void
 }
 
 type Toast = (message: string, type?: 'info' | 'warn' | 'error', durationMs?: number) => void
@@ -49,13 +58,17 @@ const isTyping = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement
   && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
 
+/** Whether *target* is the canvas itself, or a shape on it, rather than a control in its corner. */
+const onTheCanvas = (host: HTMLElement | null, target: EventTarget | null): boolean =>
+  target instanceof Element && Boolean(host?.contains(target)) && !target.closest('button, a, input, select, textarea')
+
 export function useDiagramEditMode(
   svc: ModelService,
   diagramId: Ref<string>,
   parts: {
     canvas: Ref<CanvasHandle | null>; bar: Ref<EditBarHandle | null>; membership: () => DrawnMembership | null
-    /** Show a part of the picture in the window (`F`); and whether the diagram is too large to see whole. */
-    frame: (extent: Extent) => void; large: () => boolean
+    /** The window the keys move, the element it is drawn in, and whether the diagram is too large to see whole. */
+    view: EditWindow; host: Ref<HTMLElement | null>; large: () => boolean
   },
   onLeft: () => void,
   toast: Toast,
@@ -70,6 +83,7 @@ export function useDiagramEditMode(
   const told = new Set<string>()
   const session = editing.session
   const panel = useEditPanel(parts.large)
+  const prefs = useEditingPreferences()
 
   /** The shapes selected, where they are now: what the overview marks and `F` frames. */
   const marks = computed((): OverviewMark[] => {
@@ -128,40 +142,75 @@ export function useDiagramEditMode(
     })
   }
 
+  /** The window follows the shape the keyboard is on, by the least move that shows it (02·9). */
+  const followFocus = () => {
+    const extent = parts.canvas.value?.focusedExtent
+    if (extent) parts.view.reveal(extent)
+  }
+
+  /** An arrow: a picked label nudged, else the selection nudged, else the focus moved — or the window panned. */
+  const arrow = (key: Extract<EditKey, { kind: 'arrow' }>, inCanvas: boolean): boolean => {
+    const canvas = parts.canvas.value
+    const [x, y] = key.direction
+    const label = key.fine ? 1 : LABEL_STEP
+    if (!canvas || (!key.resize && canvas.nudgeLabel(x * label, y * label))) return Boolean(canvas)
+    if (canvas.selection.length) nudge(canvas.selection, key.direction, key.fine ? 1 : GRID, key.resize)
+    else if (!inCanvas) return false
+    else if (canvas.focus.towards({ x, y })) followFocus()
+    else parts.view.panBy(x / 5, y / 5)
+    return true
+  }
+
+  /** What *key* does, given whether it was pressed on the canvas; answers whether it was taken. */
+  const perform = (key: EditKey, inCanvas: boolean): boolean => {
+    const canvas = parts.canvas.value
+    switch (key.kind) {
+      case 'escape': escape(); return true
+      case 'undo': session.undo(); return true
+      case 'redo': session.redo(); return true
+      case 'delete':
+        // A picked bend goes; otherwise the selection is removed from the diagram only (owner's standing
+        // rule) — deleting from the model is a menu command, and a line is not removed here.
+        if (!canvas?.hasSelection) return false
+        if (!canvas.removePickedBend() && canvas.selectedLine === null) {
+          editing.remove(canvas.selection)
+          canvas.clearSelection()
+        }
+        return true
+      case 'arrow': return arrow(key, inCanvas)
+      case 'restack':
+        if (canvas?.selection.length) editing.restack(canvas.selection, key.how)
+        return Boolean(canvas?.selection.length)
+      case 'frame':
+        if (selectionExtent.value) parts.view.frame(selectionExtent.value)
+        return Boolean(selectionExtent.value)
+      case 'pan': spaceHeld.value = true; return true
+      case 'rectangle': {
+        const rule = prefs.switchRectangle()
+        toast(`A selection rectangle now selects ${rule === 'touches' ? 'every element it touches'
+          : 'only the elements it encloses'}.`, 'info', 3000)
+        return true
+      }
+      case 'tab': {
+        const moved = inCanvas && Boolean(canvas?.focus.step(key.forward))
+        if (moved) followFocus()
+        return moved
+      }
+      case 'enter':
+        if (!inCanvas) return false
+        canvas?.focus.enter(key.toggle)
+        followFocus()
+        return true
+      case 'select-all':
+        if (inCanvas) canvas?.focus.selectAll()
+        return inCanvas
+    }
+  }
+
   const onKey = (event: KeyboardEvent) => {
     if (!active.value || isTyping(event.target)) return
-    const command = event.ctrlKey || event.metaKey
-    const key = event.key.toLowerCase()
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      escape()
-    } else if (command && key === 'z') {
-      event.preventDefault()
-      if (event.shiftKey) session.redo()
-      else session.undo()
-    } else if (command && key === 'y') {
-      event.preventDefault()
-      session.redo()
-    } else if ((event.key === 'Delete' || event.key === 'Backspace') && parts.canvas.value?.hasSelection) {
-      // A picked bend goes; otherwise the selection is removed from the diagram only (owner's standing
-      // rule) — deleting from the model is a menu command, and a line is not removed here.
-      event.preventDefault()
-      if (parts.canvas.value.removePickedBend() || parts.canvas.value.selectedLine !== null) return
-      editing.remove(parts.canvas.value.selection)
-      parts.canvas.value.clearSelection()
-    } else if (event.key in ARROWS && parts.canvas.value?.selection.length) {
-      event.preventDefault()
-      nudge(parts.canvas.value.selection, ARROWS[event.key], event.shiftKey ? 1 : GRID, event.altKey)
-    } else if (restackKey(event) !== null && parts.canvas.value?.selection.length) {
-      event.preventDefault()
-      editing.restack(parts.canvas.value.selection, restackKey(event) ?? 'front')
-    } else if (key === 'f' && !command && selectionExtent.value) {
-      event.preventDefault()
-      parts.frame(selectionExtent.value)
-    } else if (event.key === ' ') {
-      event.preventDefault()
-      spaceHeld.value = true
-    }
+    const key = editKeyOf(event)
+    if (key && perform(key, onTheCanvas(parts.host.value, event.target))) event.preventDefault()
   }
   const onKeyUp = (event: KeyboardEvent) => { if (event.key === ' ') spaceHeld.value = false }
 

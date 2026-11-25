@@ -157,7 +157,6 @@ onMounted(load)
           ref="containerRef"
           class="img-container"
           @mousedown="panZoom.onMouseDown"
-          @dblclick="panZoom.resetView"
         >
           <div
             class="pan-canvas"
@@ -171,10 +170,11 @@ onMounted(load)
             />
           </div>
           <DiagramViewportControls
+            :zoom="panZoom"
             :is-transformed="panZoom.isTransformed.value"
             :is-fullscreen="fullscreen.isFullscreen.value"
             :can-fullscreen="fullscreen.isSupported"
-            hint="Scroll to zoom · Drag to pan · Click node/edge to inspect · Double-click to reset"
+            hint="Scroll to zoom · Drag to pan · Click node/edge to inspect · 0 fits"
             @reset="panZoom.resetView"
             @toggle-fullscreen="fullscreen.toggle"
           />

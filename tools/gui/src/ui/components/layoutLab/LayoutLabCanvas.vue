@@ -7,8 +7,8 @@
  */
 import { computed, ref, watch } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
-import { extentAround, heightOf, unionOf, widthOf } from '../../../domain/layout/geometry'
-import { useElementSize } from '../../composables/useElementSize'
+import { heightOf, widthOf } from '../../../domain/layout/geometry'
+import { useEditingPreferences } from '../../composables/useEditingPreferences'
 import type { ArrangementSession } from '../../composables/useArrangementSession'
 import type { BreachMark } from './labDrawing'
 import { breachMarksOf, pointsAttribute } from './labDrawing'
@@ -20,6 +20,9 @@ import CanvasMarks from './CanvasMarks.vue'
 import LabBreachMarks from './LabBreachMarks.vue'
 import LabSelection from './LabSelection.vue'
 import LabLineHandles from './LabLineHandles.vue'
+import LabGuides from './LabGuides.vue'
+import { useCanvasFocus } from './useCanvasFocus'
+import { useCanvasView } from './useCanvasView'
 import { useLabGesture } from './useLabGesture'
 import { useLineGesture } from './useLineGesture'
 
@@ -28,59 +31,16 @@ const props = defineProps<{ session: ArrangementSession; showBreaches?: boolean;
 const emit = defineEmits<{ pick: [alias: string] }>()
 
 const svg = ref<SVGSVGElement | null>(null)
-const gesture = useLabGesture(props.session, svg)
+const prefs = useEditingPreferences()
+const gesture = useLabGesture(props.session, svg, {
+  snapping: () => prefs.snapping.value.value, rectangle: () => prefs.rectangle.value.value,
+})
 const pick = (event: PointerEvent, alias: string) => { gesture.select(event, alias); emit('pick', alias) }
-
-/** Room round the drawing, so a shape dragged out of it stays in reach. */
-const MARGIN = 40
+const focus = useCanvasFocus(props.session, gesture)
 
 const geometry = computed(() => props.session.geometry.value)
 const placement = computed(() => props.session.placement.value)
-
-/** What is drawn now, shapes and lines: the view fits it, not PlantUML's page with its title. */
-const drawnExtent = computed((): Extent | null => {
-  const where = placement.value
-  if (!where) return null
-  const lines = extentAround([...props.session.courses.value.values()].flat())
-  const all = [...where.elements.values(), ...where.boxes.values(), ...(lines ? [lines] : [])]
-  if (all.length === 0) return null
-  const drawn = unionOf(all)
-  return {
-    left: drawn.left - MARGIN, top: drawn.top - MARGIN, right: drawn.right + MARGIN, bottom: drawn.bottom + MARGIN,
-  }
-})
-
-/**
- * The view: PlantUML's page, grown to take in whatever is drawn beyond it and never shrunk, so the
- * picture keeps its scale while it is arranged. Held still while something is dragged, so the point
- * under the pointer keeps meaning the same place on the picture.
- */
-const view = ref<Extent | null>(null)
-const grown = (now: Extent | null): Extent | null => {
-  const page = geometry.value?.canvas ?? null
-  const before = view.value ?? page
-  return now && before ? unionOf([before, now]) : (now ?? before)
-}
-watch(geometry, () => { view.value = null })
-watch(drawnExtent, (now) => {
-  if (!gesture.dragging.value || !view.value) view.value = grown(now)
-}, { immediate: true })
-watch(() => gesture.dragging.value, (dragging) => { if (!dragging) view.value = grown(drawnExtent.value) })
-
-
-const viewBox = computed(() => {
-  const extent = view.value
-  return extent ? `${extent.left} ${extent.top} ${widthOf(extent)} ${heightOf(extent)}` : '0 0 100 100'
-})
-
-/** How wide the picture is shown on screen, in pixels: what a handle's size on screen is reckoned from. */
-const { width: shownWidth } = useElementSize(() => svg.value)
-
-/** One pixel on screen, in the picture's units: what the canvas's own marks are sized by. */
-const pixel = computed((): number => {
-  const extent = view.value
-  return extent && shownWidth.value > 0 ? widthOf(extent) / shownWidth.value : 1
-})
+const { viewBox, pixel, aspect, backdropTransform } = useCanvasView(props.session, svg, gesture.dragging)
 
 /** A handle is the same size on screen however far the picture is zoomed out to fit. */
 const HANDLE_PIXELS = 9
@@ -92,10 +52,11 @@ watch(() => gesture.selection.value, (now) => { if (now.length > 0) lineGesture.
 // A restacking is explicit: the shape last dropped is no longer lifted over what it was stacked behind.
 watch(() => props.session.arrangement.value?.z, () => { gesture.lifted.value = null })
 const pressShape = (event: PointerEvent, alias: string) => {
+  focus.pointed(alias)
   if (!lineGesture.pressNearAnEnd(event)) gesture.press(event, alias)
 }
 const sweep = (event: PointerEvent) => {
-  if (event.button === 0) lineGesture.clear()
+  if (event.button === 0) { lineGesture.clear(); focus.pointed(null) }
   gesture.sweepFrom(event)
 }
 const selectedLine = computed(() => {
@@ -104,14 +65,20 @@ const selectedLine = computed(() => {
 })
 
 defineExpose({
-  /** Whether anything is selected; and clearing it, as Escape's first step does. */
-  hasSelection: computed(() => gesture.selection.value.length > 0 || lineGesture.line.value !== null),
+  /** Whether anything is selected or focused; and clearing both, as Escape's first step does. */
+  hasSelection: computed(() =>
+    gesture.selection.value.length > 0 || lineGesture.line.value !== null || focus.focused.value !== null),
   /** The one shape selected, or null when none or several are; and every shape selected. */
   selected: gesture.selected,
   selection: gesture.selection,
   /** The line selected, by its place on the picture; null when none is. */
   selectedLine: lineGesture.line,
-  clearSelection: () => { gesture.clear(); lineGesture.clear() },
+  clearSelection: () => { gesture.clear(); lineGesture.clear(); focus.clear() },
+  /** The element focus the keys move (`useCanvasFocus`): where it is, as announced; and the arrows on a label. */
+  focus: { step: focus.step, enter: focus.enter, towards: focus.towards, selectAll: focus.selectAll },
+  focusedExtent: focus.extent,
+  announced: focus.announced,
+  nudgeLabel: lineGesture.nudgeLabel,
   /** Delete on a picked bend removes it, as one step; answers whether there was one. */
   removePickedBend: () => lineGesture.removePickedBend(),
   /** Begin a selection rectangle from a press beside the picture, on the page's empty paper: not a control. */
@@ -120,22 +87,6 @@ defineExpose({
       sweep(event)
     }
   },
-})
-
-const aspect = computed(() => {
-  const extent = view.value
-  return extent ? `${widthOf(extent)} / ${heightOf(extent)}` : '1 / 1'
-})
-
-/** PlantUML's background, stretched from the page it drew over the view the canvas shows. */
-const backdropTransform = computed((): string => {
-  const drawn = geometry.value
-  const extent = view.value
-  if (!drawn || !extent) return ''
-  const { canvas } = drawn
-  const across = widthOf(extent) / widthOf(canvas)
-  const down = heightOf(extent) / heightOf(canvas)
-  return `translate(${extent.left} ${extent.top}) scale(${across} ${down}) translate(${-canvas.left} ${-canvas.top})`
 })
 
 /** Every shape and line where it is now, drawn as PlantUML or the composer drew it (`labPieces`). */
@@ -292,10 +243,15 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
 
     <slot />
 
+    <LabGuides :guides="[...gesture.guides.value, ...lineGesture.guides.value]" />
+
     <LabSelection
       :placement="placement"
       :selection="gesture.selection.value"
       :rectangle="gesture.rectangle.value"
+      :rule="prefs.rectangle.value.value"
+      :ring="focus.ring.value"
+      :pixel="pixel"
       :handle-side="handleSide"
       :readonly="readonly"
       @handle="(event, handle) => gesture.press(event, gesture.selected.value ?? '', handle)"

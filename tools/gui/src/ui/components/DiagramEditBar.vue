@@ -8,6 +8,8 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import type { DiagramEditMode } from '../composables/useDiagramEditMode'
 import { breachSentence, distinctBreaches } from '../../domain/layout/lab/labBreaches'
+import { useEditingPreferences } from '../composables/useEditingPreferences'
+import { arrowsAcross } from '../lib/arrowsAcross'
 
 const props = defineProps<{ edit: DiagramEditMode }>()
 
@@ -29,8 +31,11 @@ const checkTitle = computed(() => {
 
 const listOpen = ref(false)
 const confirmExit = ref(false)
+/** Save shows the list first where the model changes, or always where the reader prefers (Q3). */
+const prefs = useEditingPreferences()
+const confirmFirst = computed(() => prefs.saveList.value.value === 'always' || changes.value.some(c => c.model))
 const requestSave = (exit = false) => {
-  if (changes.value.some(c => c.model)) {
+  if (confirmFirst.value) {
     confirmExit.value = exit
     listOpen.value = true
     props.edit.keepEditing()
@@ -44,13 +49,8 @@ const confirm = async () => {
   confirmExit.value = false
 }
 const saveAndExit = ref<HTMLButtonElement | null>(null)
-
 /** The choice takes the focus on its first, safest answer, so Enter saves and Escape keeps editing. */
-watch(leaving, async (asked) => {
-  if (!asked) return
-  await nextTick()
-  saveAndExit.value?.focus()
-})
+watch(leaving, async (asked) => { if (asked) { await nextTick(); saveAndExit.value?.focus() } })
 
 defineExpose({
   /** Whether the list of changes is open; closing it is the first thing Escape does. */
@@ -144,6 +144,7 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
         role="group"
         aria-label="Leaving edit mode"
         data-testid="leave-choice"
+        @keydown="arrowsAcross"
       >
         <strong>Discard and exit edit mode?</strong> {{ changes.length }} unsaved.
         <button
@@ -203,7 +204,7 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
             >{{ change.text }}</li>
           </ul>
           <button
-            v-if="changes.some(c => c.model)"
+            v-if="confirmFirst"
             type="button"
             :disabled="saving"
             @click="confirm"

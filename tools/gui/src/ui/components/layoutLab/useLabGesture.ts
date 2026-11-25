@@ -11,23 +11,40 @@
  * arranged automatically, beginning takes it over (`useArrangementSession`), which may move shapes, and
  * the drag continues from where the takeover put them. Each frame states the arrangement the drag has
  * reached and which shapes it moved; the release commits it.
+ *
+ * A shape moved or resized on its own lands on the grid or on a neighbour's line, with a guide
+ * (`labSnapping`, sketch 02·1–02·2); a selection moved together lands on the grid. The guides go 0.7 s
+ * after the drop. Whether anything snaps, and what a rectangle selects, are the reader's (`aids`).
  */
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import type { Extent, Point } from '../../../domain/layout/geometry'
 import { distanceBetween, extentAround } from '../../../domain/layout/geometry'
 import type { Arrangement, Handle } from '../../../domain/layout/lab/labArrangement'
-import { SMALLEST_ELEMENT, movedTogether, resized, resizedExtent } from '../../../domain/layout/lab/labArrangement'
+import {
+  SMALLEST_ELEMENT, movedTogether, resized, resizedExtent, translated,
+} from '../../../domain/layout/lab/labArrangement'
 import { changedShapes, placementOf } from '../../../domain/layout/lab/labRouting'
 import type { Placement } from '../../../domain/layout/lab/labRouting'
-import { chosenBy, toggled } from '../../../domain/layout/lab/labSelection'
+import { type RectangleRule, chosenBy, toggled } from '../../../domain/layout/lab/labSelection'
+import {
+  ALIGN_PIXELS, GRID, type Guide, type Snapping, movingLinesOf, neighboursOf, snapped,
+} from '../../../domain/layout/lab/labSnapping'
 import type { ArrangementSession } from '../../composables/useArrangementSession'
 import { isAdditive } from '../../lib/additiveClick'
 import type { Lift } from './labPaintOrder'
-import { followingPointer, pointOnPicture } from './pointerOnPicture'
+import { followingPointer, pictureUnitsPerScreenPixel, pointOnPicture } from './pointerOnPicture'
 
 /** How far a press travels before it is a drag rather than a click. */
 const TRAVEL = 4
+/** How long the guides stay after the drop. */
+const GUIDES_LINGER_MS = 700
+
+/** The reader's choices the gesture follows (Preferences): whether a drag snaps, what a rectangle selects. */
+export interface ArrangingAids {
+  readonly snapping: () => Snapping
+  readonly rectangle: () => RectangleRule
+}
 
 interface Pressed {
   /** The shape pressed, and every shape the drag moves with it. */
@@ -47,7 +64,7 @@ interface Sweep {
   readonly from: Point
 }
 
-export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElement | null>) {
+export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElement | null>, aids: ArrangingAids) {
   /** Every shape selected, in the order chosen. */
   const selection = ref<readonly string[]>([])
   /** The one shape selected, or null when none or several are. */
@@ -58,6 +75,9 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
   const lifted = ref<Lift | null>(null)
   /** Whether a press has travelled far enough to be a drag, until it is released. */
   const dragging = ref(false)
+  /** The alignment guides of the drag, until a moment after its drop. */
+  const guides = ref<readonly Guide[]>([])
+  let lingering: ReturnType<typeof setTimeout> | undefined
   let pressed: Pressed | null = null
   let sweep: Sweep | null = null
 
@@ -102,13 +122,35 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
     return arrangement && placement && extent ? { arrangement, placement, extent } : null
   }
 
-  const reached = (state: Pressed, dx: number, dy: number): Arrangement | null => {
+  /** Where the drag, travelled by (dx, dy), lands: the correction on each axis, and its guides. */
+  const landing = (state: Pressed, start: NonNullable<Pressed['start']>, dx: number, dy: number) => {
+    const geometry = session.geometry.value
+    const mode = aids.snapping()
+    if (!geometry) return { dx: 0, dy: 0, guides: [] }
+    if (state.moving.length > 1) {
+      const grid = (by: number) => (mode === 'snap' ? Math.round(by / GRID) * GRID - by : 0)
+      return { dx: grid(dx), dy: grid(dy), guides: [] }
+    }
+    const reaching = state.handle === null ? translated(start.extent, dx, dy)
+      : resizedExtent(start.extent, state.handle, dx, dy, leastOf(state))
+    const near = neighboursOf(geometry, start.placement, state.moving, reaching)
+    const tolerance = ALIGN_PIXELS * pictureUnitsPerScreenPixel(svg.value)
+    return snapped(reaching, movingLinesOf(state.handle), near, tolerance, mode)
+  }
+
+  const leastOf = (state: Pressed): number =>
+    (session.geometry.value?.boxes.some((box) => box.alias === state.alias) ? 1 : SMALLEST_ELEMENT)
+
+  const reached = (state: Pressed, travelled: number, fallen: number): Arrangement | null => {
     const geometry = session.geometry.value
     const start = state.start
     if (!geometry || !start) return null
+    const land = landing(state, start, travelled, fallen)
+    guides.value = land.guides
+    const [dx, dy] = [travelled + land.dx, fallen + land.dy]
     if (state.handle === null) return movedTogether(geometry, start.arrangement, state.moving, dx, dy)
-    const least = geometry.boxes.some((box) => box.alias === state.alias) ? 1 : SMALLEST_ELEMENT
-    return resized(geometry, start.arrangement, state.alias, resizedExtent(start.extent, state.handle, dx, dy, least))
+    const extent = resizedExtent(start.extent, state.handle, dx, dy, leastOf(state))
+    return resized(geometry, start.arrangement, state.alias, extent)
   }
 
   const swept = (state: Sweep, at: Point) => {
@@ -117,7 +159,7 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
     const spanned = extentAround([state.from, at])
     if (!placement || !spanned || (!travelled && rectangle.value === null)) return
     rectangle.value = spanned
-    const chosen = chosenBy(spanned, placement)
+    const chosen = chosenBy(spanned, placement, aids.rectangle())
     selection.value = state.additive ? [...new Set([...state.before, ...chosen])] : chosen
   }
 
@@ -148,6 +190,8 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
     follow(false)
     if (sweep && rectangle.value === null) clicked(sweep)
     if (pressed?.start) session.commit()
+    clearTimeout(lingering)
+    lingering = setTimeout(() => { guides.value = [] }, GUIDES_LINGER_MS)
     pressed = null
     sweep = null
     rectangle.value = null
@@ -157,5 +201,7 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
   const clear = () => { selection.value = [] }
   const follow = followingPointer(drag, release)
 
-  return { selection, selected, rectangle, lifted, dragging, press, select, sweepFrom, drag, release, clear }
+  return {
+    selection, selected, rectangle, lifted, dragging, guides, press, select, sweepFrom, drag, release, clear,
+  }
 }

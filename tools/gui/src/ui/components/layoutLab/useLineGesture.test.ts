@@ -130,4 +130,17 @@ describe('the line gestures', () => {
     expect(stated(session)?.label).toBeDefined()
     expect(course(session)).toEqual(before)
   })
+
+  it('nudge a picked label by the arrows, as one step, and only while the label is the one picked (02·5)', () => {
+    const { session, lines } = opened()
+    lines.pressLabel(event('pointerdown', 0, 0), 0)
+    pointer('pointerup', 0, 0)
+    expect(lines.labelPicked.value).toBe(true)
+    const steps = session.history.value.length
+    expect(lines.nudgeLabel(2, 0)).toBe(true)
+    expect(stated(session)?.label).toBeDefined()
+    expect(session.history.value.length).toBe(steps + 1)
+    lines.pressLine(event('pointerdown', 0, 0), 0)
+    expect(lines.nudgeLabel(2, 0)).toBe(false)
+  })
 })
