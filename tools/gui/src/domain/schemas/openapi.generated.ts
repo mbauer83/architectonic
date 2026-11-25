@@ -1392,6 +1392,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/change-sets/{artifact_id}/residuality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a candidate's residuality in each analysis that judged it */
+        get: operations["changes_read_residuality"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/change-sets/{artifact_id}/standing": {
         parameters: {
             query?: never;
@@ -2320,6 +2337,46 @@ export interface paths {
         patch: operations["documents_update_document_table"];
         trace?: never;
     };
+    "/api/documents/{artifact_id}/test-set": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a stress analysis's test set, its verdicts and the residuality they give
+         * @description Residuality (Y − X) / n is given once an architecture and the naive are judged on every usable stressor.
+         */
+        get: operations["documents_analysis_test_set"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/documents/{artifact_id}/test-set/hold-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hold a random third of the design stressors out into the test set
+         * @description The seed drawn with is answered, so the same draw can be made again. Fewer than three design stressors: 422.
+         */
+        post: operations["documents_hold_out_test_set"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/entities": {
         parameters: {
             query?: never;
@@ -3161,6 +3218,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stress-perspectives": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the perspectives offered to whoever writes stressors
+         * @description Each framework's perspectives with a guiding question; none names an element of any architecture.
+         */
+        get: operations["documents_list_stress_perspectives"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sync/changes": {
         parameters: {
             query?: never;
@@ -3985,6 +4062,28 @@ export interface components {
                 [key: string]: components["schemas"]["BindingTargetSpec"];
             };
         };
+        /** AnalysisEvaluation */
+        AnalysisEvaluation: {
+            /**
+             * Architectures
+             * @description The naive first, then integrated, then judged.
+             */
+            architectures: components["schemas"]["ArchitectureStanding"][];
+            /**
+             * Design Stressors
+             * @description How many stressors the design set holds, which a hold-out draws from.
+             */
+            design_stressors: number;
+            /** Document */
+            document: string;
+            /** Naive Candidate */
+            naive_candidate: string;
+            stage: components["schemas"]["EvaluationStage"];
+            /** Stressors */
+            stressors: components["schemas"]["HeldApartStressor"][];
+            /** Verdicts */
+            verdicts: components["schemas"]["StressVerdict"][];
+        };
         /** AnalysisIncidence */
         AnalysisIncidence: {
             /** Adaptations */
@@ -4067,6 +4166,48 @@ export interface components {
             naive_candidate: string;
             progress: components["schemas"]["AnalysisOutstanding"];
         };
+        /** AnalysisStanding */
+        AnalysisStanding: {
+            /**
+             * Architecture
+             * @description `naive`, or a candidate's id.
+             */
+            architecture: string;
+            /** Degrades */
+            degrades: number;
+            /** Document */
+            document: string;
+            /** Fails */
+            fails: number;
+            /**
+             * Integrated
+             * @description Whether this candidate has been integrated into the model.
+             */
+            integrated: boolean;
+            /** Judged */
+            judged: number;
+            /** Naive Survives */
+            naive_survives: number;
+            /**
+             * Residuality
+             * @description (Y − X) / n with a degraded verdict counting one half; absent until both this architecture and the naive are judged on every usable stressor, and for the naive itself.
+             */
+            residuality?: number;
+            /**
+             * Strict
+             * @description The same with full survivals only.
+             */
+            strict?: number;
+            /** Survives */
+            survives: number;
+            /** Title */
+            title: string;
+            /**
+             * Usable
+             * @description How many test stressors are usable: the denominator n.
+             */
+            usable: number;
+        };
         /**
          * AnalysisStart
          * @description Start a stress analysis: the document and its naive architecture, in one write.
@@ -4118,6 +4259,44 @@ export interface components {
             target: "diagram" | "matrix";
             /** Warnings */
             warnings: string[];
+        };
+        /** ArchitectureStanding */
+        ArchitectureStanding: {
+            /**
+             * Architecture
+             * @description `naive`, or a candidate's id.
+             */
+            architecture: string;
+            /** Degrades */
+            degrades: number;
+            /** Fails */
+            fails: number;
+            /**
+             * Integrated
+             * @description Whether this candidate has been integrated into the model.
+             */
+            integrated: boolean;
+            /** Judged */
+            judged: number;
+            /** Naive Survives */
+            naive_survives: number;
+            /**
+             * Residuality
+             * @description (Y − X) / n with a degraded verdict counting one half; absent until both this architecture and the naive are judged on every usable stressor, and for the naive itself.
+             */
+            residuality?: number;
+            /**
+             * Strict
+             * @description The same with full survivals only.
+             */
+            strict?: number;
+            /** Survives */
+            survives: number;
+            /**
+             * Usable
+             * @description How many test stressors are usable: the denominator n.
+             */
+            usable: number;
         };
         /** ArchiveGroupBody */
         ArchiveGroupBody: {
@@ -5950,6 +6129,16 @@ export interface components {
         CandidateRebase: {
             /** Based On */
             based_on: string;
+        };
+        /** CandidateResiduality */
+        CandidateResiduality: {
+            /**
+             * Analyses
+             * @description Each analysis that judged or integrated the candidate.
+             */
+            analyses: components["schemas"]["AnalysisStanding"][];
+            /** Candidate */
+            candidate: string;
         };
         /** CandidateResponse */
         CandidateResponse: {
@@ -9409,6 +9598,20 @@ export interface components {
         ErrorEnvelope: {
             detail: components["schemas"]["ErrorBody"];
         };
+        /**
+         * EvaluationStage
+         * @description Where the procedure stands: naive judged, then adapted, then integrated, then the integration judged.
+         */
+        EvaluationStage: {
+            /** Adapted */
+            adapted: boolean;
+            /** Integrated */
+            integrated: boolean;
+            /** Integration Judged */
+            integration_judged: boolean;
+            /** Naive Judged */
+            naive_judged: boolean;
+        };
         /** ExchangeImportResponse */
         ExchangeImportResponse: {
             /** Committed */
@@ -10204,6 +10407,65 @@ export interface components {
             node: string;
             /** Text */
             text: string;
+        };
+        /** HeldApartStressor */
+        HeldApartStressor: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind?: string;
+            /** Stressor */
+            stressor: string;
+            /**
+             * Unusable Reason
+             * @description Why it was struck, in the judge's words.
+             */
+            unusable_reason?: string;
+            /**
+             * Usable
+             * @description False once a judge has struck it; it then leaves every denominator.
+             */
+            usable: boolean;
+        };
+        /** HeldOut */
+        HeldOut: {
+            /**
+             * Design Stressors
+             * @description How many design stressors the third was drawn from.
+             */
+            design_stressors: number;
+            /** Document */
+            document: string;
+            /** Dry Run */
+            dry_run: boolean;
+            /**
+             * Held Out
+             * @description The stressors moved into the test set, by row id.
+             */
+            held_out: string[];
+            /**
+             * Seed
+             * @description The seed drawn with: the same seed over the same stressors draws the same third.
+             */
+            seed: number;
+            /** Wrote */
+            wrote: boolean;
+        };
+        /**
+         * HoldOut
+         * @description Hold a random third of the design stressors out into the test set.
+         */
+        HoldOut: {
+            /**
+             * Dry Run
+             * @default true
+             */
+            dry_run: boolean;
+            /**
+             * Seed
+             * @description Draw with this seed; a seed is chosen and answered when none is.
+             */
+            seed?: number | null;
         };
         /**
          * HopSuggestionGroup
@@ -11690,6 +11952,15 @@ export interface components {
             source_type: string;
             /** Target Type */
             target_type: string;
+        };
+        /** PerspectiveFramework */
+        PerspectiveFramework: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Perspectives */
+            perspectives: components["schemas"]["StressPerspective"][];
         };
         /**
          * PlacedChangeContract
@@ -13304,6 +13575,50 @@ export interface components {
             based_on?: number;
             /** Value */
             value?: number;
+        };
+        /** StressPerspective */
+        StressPerspective: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @description What choosing it may put in a stressor's optional kind.
+             */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Question */
+            question: string;
+        };
+        /** StressPerspectives */
+        StressPerspectives: {
+            /** Frameworks */
+            frameworks: components["schemas"]["PerspectiveFramework"][];
+        };
+        /** StressVerdict */
+        StressVerdict: {
+            /**
+             * Architecture
+             * @description `naive`, or the judged candidate's id.
+             */
+            architecture: string;
+            /**
+             * Id
+             * @description The survival row holding the verdict.
+             */
+            id: string;
+            /** Reasoning */
+            reasoning: string;
+            /** Stressor */
+            stressor: string;
+            /** Usable */
+            usable: boolean;
+            /**
+             * Verdict
+             * @description Absent on a row that only strikes the stressor.
+             * @enum {string}
+             */
+            verdict?: "survives" | "degrades" | "fails";
         };
         /**
          * StructuralClosureEntity
@@ -18732,6 +19047,55 @@ export interface operations {
             };
         };
     };
+    changes_read_residuality: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateResiduality"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     changes_read_standing: {
         parameters: {
             query?: never;
@@ -22522,6 +22886,144 @@ export interface operations {
             };
         };
     };
+    documents_analysis_test_set: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisEvaluation"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_hold_out_test_set: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HoldOut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeldOut"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     entities_list_entities: {
         parameters: {
             query?: {
@@ -25891,6 +26393,53 @@ export interface operations {
             };
             /** @description Write temporarily rejected by the workspace gate (retryable) */
             423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_list_stress_perspectives: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StressPerspectives"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

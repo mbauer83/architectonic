@@ -1,17 +1,18 @@
 <script setup lang="ts">
 /**
- * The Stressors tab (06·2, 06·3): counts by kind, coverage hints, the stressors as an editable table
- * with an End state column, the coupling per pair of components (Q30), and the incidence grid for
- * the stressor in focus.
+ * The Stressors tab (06·2, 06·3): counts by kind, coverage hints, a stressor written in one line,
+ * the design stressors as an editable table with an End state column, the coupling per pair of
+ * components (Q30), and the incidence grid for the stressor in focus. The test set is not here.
  */
 import { computed, ref } from 'vue'
-import { endStateName } from '../../../domain/stressAnalysis/analysisRows'
+import { cell, endStateName } from '../../../domain/stressAnalysis/analysisRows'
 import { coverageHints } from '../../../domain/stressAnalysis/analysisProgress'
 import type { AnalysisEdits } from '../../composables/useAnalysisEdits'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import CoverageHintsPanel from './CoverageHintsPanel.vue'
 import IncidenceGrid from './IncidenceGrid.vue'
 import StressorRow from './StressorRow.vue'
+import StressorInput from './StressorInput.vue'
 
 const props = defineProps<{ analysis: StressAnalysis; edits: AnalysisEdits; selected: string | null }>()
 const emit = defineEmits<{
@@ -41,6 +42,11 @@ const add = async (cells: Readonly<Record<string, string>> = {}) => {
   if (!id) return
   emit('select', id)
   fresh.value = id
+}
+/** A stressor written in the line: added, and put in focus for ticking on the canvas. */
+const write = async (stressor: string, kind: string | undefined) => {
+  const id = await props.edits.addStressor({ stressor, ...(kind ? { kind } : {}) })
+  if (id) emit('select', id)
 }
 const aboutElement = async (id: string) => {
   const added = await props.edits.addStressor({ subject: id })
@@ -72,15 +78,6 @@ const aboutElement = async (id: string) => {
       >
         Coverage hints
       </button>
-      <button
-        type="button"
-        class="btn btn-sm"
-        data-testid="add-stressor"
-        :disabled="analysis.saving.value"
-        @click="add()"
-      >
-        Add stressor
-      </button>
     </div>
     <CoverageHintsPanel
       v-if="showHints && hints"
@@ -91,6 +88,12 @@ const aboutElement = async (id: string) => {
       @about-element="aboutElement"
       @of-kind="add({ kind: $event })"
       @open-row="(tab, row) => emit('openRow', tab, row)"
+    />
+    <StressorInput
+      :kinds="analysis.stressors.value.map((row) => cell(row, 'kind'))"
+      placeholder="Write a stressor and press Enter"
+      :disabled="analysis.saving.value"
+      @write="write"
     />
     <p class="help">
       To group a stressor under an end state: its <b>End state</b> cell, or focus it and press <kbd>M</kbd>,
@@ -125,7 +128,7 @@ const aboutElement = async (id: string) => {
         v-if="!analysis.stressors.value.length"
         class="empty"
       >
-        No stressors yet. <i>Add stressor</i>, or open the coverage hints.
+        No stressors yet. Write one above, or open the coverage hints.
       </p>
     </div>
     <details class="coupling">

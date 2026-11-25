@@ -20,6 +20,7 @@ import { candidateCompareRoute, candidateDetailRoute, candidateListRoute } from 
 import { useCandidates } from '../composables/useCandidates'
 import { useCandidateApply } from '../composables/useCandidateApply'
 import ApplyCandidate from '../components/candidates/ApplyCandidate.vue'
+import CandidateResiduality from '../components/candidates/CandidateResiduality.vue'
 import CandidateOperations from '../components/candidates/CandidateOperations.vue'
 import CandidateCanvas from '../components/candidates/CandidateCanvas.vue'
 import MarkedCanvas from '../components/candidates/MarkedCanvas.vue'
@@ -208,6 +209,10 @@ onMounted(async () => {
         </select>
       </label>
     </div>
+    <CandidateResiduality
+      v-if="summary"
+      :candidate-id="summary.id"
+    />
     <p
       v-if="loaded && !summary"
       class="err"

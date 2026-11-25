@@ -14,7 +14,7 @@ export type TableRowEdit =
     }
   | { readonly op: 'remove'; readonly row_id: string; readonly based_on: Readonly<Record<string, unknown>> }
 
-export type TableName = 'stressors' | 'end-states' | 'adaptations' | 'incidence'
+export type TableName = 'stressors' | 'end-states' | 'adaptations' | 'incidence' | 'survival'
 
 /** The rows a document holds of *name*, in its order; none where the table is not found. */
 export const rowsOf = (tables: DocumentTables | null, name: TableName): readonly DocumentTableRow[] =>

@@ -197,4 +197,8 @@ export const makeModelService = (repo: ModelRepository) =>
     editDocumentTable: (...args: Parameters<ModelRepository['editDocumentTable']>) => repo.editDocumentTable(...args),
     readAnalysisProgress: (documentId: string) => repo.readAnalysisProgress(documentId),
     readAnalysisIncidence: (documentId: string) => repo.readAnalysisIncidence(documentId),
+    readTestSet: (documentId: string) => repo.readTestSet(documentId),
+    holdOutTestSet: (documentId: string, seed?: number) => repo.holdOutTestSet(documentId, seed),
+    readResiduality: (candidateId: string) => repo.readResiduality(candidateId),
+    listStressPerspectives: () => repo.listStressPerspectives(),
   }) as const

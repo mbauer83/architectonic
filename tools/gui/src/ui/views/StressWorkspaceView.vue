@@ -3,7 +3,8 @@
  * The stress-analysis workspace (sketch 06; owner decisions of 2026-11-22): the analysis's tables in
  * tabs on the left — Naive architecture · Stressors · End states · Adaptations · Integration — and on
  * the right the naive architecture's scope diagram, marked with what the open tab is about. Not a
- * wizard: any tab, any order.
+ * wizard: any tab, any order. Below the tabs the test set, apart from them; while an architecture is
+ * judged against it, the canvas shows that architecture.
  */
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -18,12 +19,14 @@ import { documentDetailRoute } from '../router/artifactRoutes'
 import { useStressAnalysis } from '../composables/useStressAnalysis'
 import { useAnalysisEdits } from '../composables/useAnalysisEdits'
 import { useCandidates } from '../composables/useCandidates'
+import { useTestSet } from '../composables/useTestSet'
 import MarkedCanvas from '../components/candidates/MarkedCanvas.vue'
 import WhatIsLeft from '../components/stressWorkspace/WhatIsLeft.vue'
 import StressorsTab from '../components/stressWorkspace/StressorsTab.vue'
 import EndStatesTab from '../components/stressWorkspace/EndStatesTab.vue'
 import AdaptationsTab from '../components/stressWorkspace/AdaptationsTab.vue'
 import IntegrationTab from '../components/stressWorkspace/IntegrationTab.vue'
+import TestSetSection from '../components/stressWorkspace/TestSetSection.vue'
 import CandidateOperations from '../components/candidates/CandidateOperations.vue'
 import CandidateCanvas from '../components/candidates/CandidateCanvas.vue'
 import ModelMovedBanner from '../components/candidates/ModelMovedBanner.vue'
@@ -37,6 +40,18 @@ const analysis = useStressAnalysis(svc, () => documentId.value)
 const edits = useAnalysisEdits(analysis, toast)
 const candidates = useCandidates(svc, {
   root: () => analysis.naiveId.value, scopeDiagram: () => analysis.scopeDiagram.value,
+})
+const testSet = useTestSet(svc, analysis, () => documentId.value, toast)
+/** The test stressor in focus in the judge walk. */
+const judged = ref<string | null>(null)
+/** The candidate being judged against the test set, read against the naive architecture; none for the naive. */
+const judgedCandidate = computed(() => {
+  const judging = testSet.judging.value
+  return judging && judging !== 'naive' && candidates.comparison.value?.candidate === judging ? judging : null
+})
+watch(() => testSet.judging.value, async (judging) => {
+  if (judging && judging !== 'naive') await candidates.select(judging, analysis.naiveId.value)
+  if (!judging) judged.value = null
 })
 
 const TABS: readonly WorkspaceTab[] = ['naive', 'stressors', 'end-states', 'adaptations', 'integration']
@@ -88,10 +103,14 @@ const fullIdOf = (stableId: string): string =>
 
 const hitsOf = (stressors: readonly string[]): ReadonlyMap<string, readonly string[]> =>
   new Map(stressors.map((id) => [id, analysis.hitsOf(id)]))
-const readsCandidate = computed(() => tab.value === 'naive' || tab.value === 'adaptations')
+/** Whether the canvas reads the selected candidate's comparison: on a candidate tab, or judging a candidate. */
+const readsCandidate = computed(() => (testSet.judging.value
+  ? judgedCandidate.value !== null
+  : tab.value === 'naive' || tab.value === 'adaptations'))
 const marks = computed((): Marks => {
   const around = framed.value ? framedMarks([framed.value], 'The row or hint selected on the left') : new Map()
   if (readsCandidate.value) return new Map([...diffMarks(candidates.comparison.value?.diff ?? []), ...around])
+  if (testSet.judging.value) return around
   if (tab.value === 'stressors' && selected.value) return new Map([...hitMarks(hitsOf([selected.value])), ...around])
   if (tab.value === 'end-states' && endStateFocus.value) {
     const under = analysis.stressors.value.filter((row) => cell(row, 'end_state') === endStateFocus.value)
@@ -101,14 +120,21 @@ const marks = computed((): Marks => {
 })
 const drawing = computed(() => (readsCandidate.value ? candidates.comparison.value?.drawing : null)
   ?? analysis.naive.value?.drawing ?? null)
-const hint = computed(() => tab.value === 'stressors' && selected.value
-  ? `Press an element to tick or untick it for ${selected.value} · Scroll to zoom · Drag to pan`
-  : 'Select a row or an element · Scroll to zoom · Drag to pan')
+const hint = computed(() => {
+  if (testSet.judging.value) {
+    return judgedCandidate.value
+      ? 'The candidate being judged, marked with what it changes from the naive · Scroll to zoom'
+      : 'The naive architecture, being judged · Scroll to zoom · Drag to pan'
+  }
+  return tab.value === 'stressors' && selected.value
+    ? `Press an element to tick or untick it for ${selected.value} · Scroll to zoom · Drag to pan`
+    : 'Select a row or an element · Scroll to zoom · Drag to pan'
+})
 
 /** A press on the picture: ticks or unticks it for the stressor in focus, otherwise frames it. */
 const pick = (stableId: string) => {
   const stressor = selected.value
-  if (tab.value !== 'stressors' || !stressor) {
+  if (tab.value !== 'stressors' || !stressor || testSet.judging.value) {
     framed.value = framed.value === stableId ? null : stableId
     return
   }
@@ -187,72 +213,81 @@ onMounted(async () => {
       @rebase="rebase"
     />
     <div class="ws">
-      <section
-        class="pane card"
-        aria-label="Analysis tables"
-      >
-        <div
-          class="tabs"
-          role="tablist"
+      <div class="left">
+        <section
+          class="pane card"
+          aria-label="Analysis tables"
         >
-          <button
-            v-for="one in tabs"
-            :key="one.id"
-            type="button"
-            role="tab"
-            class="tab"
-            :aria-selected="tab === one.id"
-            :data-tab="one.id"
-            @click="tab = one.id"
+          <div
+            class="tabs"
+            role="tablist"
           >
-            {{ one.label }}<small>{{ one.count }}</small>
-          </button>
-        </div>
-        <CandidateOperations
-          v-if="tab === 'naive' && candidates.selected.value === analysis.naiveId.value"
-          :candidates="candidates"
-          role="naive architecture · the initial candidate"
-          :name-of="analysis.nameOf"
-          @frame="framed = $event && stableEntityId($event)"
-          @sketch="sketching = $event"
-        />
-        <StressorsTab
-          v-else-if="tab === 'stressors'"
+            <button
+              v-for="one in tabs"
+              :key="one.id"
+              type="button"
+              role="tab"
+              class="tab"
+              :aria-selected="tab === one.id"
+              :data-tab="one.id"
+              @click="tab = one.id"
+            >
+              {{ one.label }}<small>{{ one.count }}</small>
+            </button>
+          </div>
+          <CandidateOperations
+            v-if="tab === 'naive' && candidates.selected.value === analysis.naiveId.value"
+            :candidates="candidates"
+            role="naive architecture · the initial candidate"
+            :name-of="analysis.nameOf"
+            @frame="framed = $event && stableEntityId($event)"
+            @sketch="sketching = $event"
+          />
+          <StressorsTab
+            v-else-if="tab === 'stressors'"
+            :analysis="analysis"
+            :edits="edits"
+            :selected="selected"
+            @select="selected = $event"
+            @show="framed = stableEntityId($event)"
+            @open-row="openRow"
+          />
+          <EndStatesTab
+            v-else-if="tab === 'end-states'"
+            :stressors="analysis.stressors.value"
+            :end-states="analysis.endStates.value"
+            :ticks="analysis.ticks.value"
+            :focus="endStateFocus"
+            :selected-row="selected"
+            :name-of="analysis.nameOf"
+            @focus="endStateFocus = $event"
+            @move="edits.setEndState"
+            @create-and-move="edits.createEndStateFor"
+            @untick="edits.untick"
+            @tick="edits.tick"
+            @note="edits.note"
+          />
+          <AdaptationsTab
+            v-else-if="tab === 'adaptations'"
+            :analysis="analysis"
+            :candidates="candidates"
+            @frame="framed = $event && stableEntityId($event)"
+            @sketch="sketching = $event"
+          />
+          <IntegrationTab
+            v-else-if="tab === 'integration'"
+            :candidates="candidates"
+            :name-of="analysis.nameOf"
+          />
+        </section>
+        <TestSetSection
           :analysis="analysis"
-          :edits="edits"
-          :selected="selected"
-          @select="selected = $event"
-          @show="framed = stableEntityId($event)"
-          @open-row="openRow"
-        />
-        <EndStatesTab
-          v-else-if="tab === 'end-states'"
-          :stressors="analysis.stressors.value"
-          :end-states="analysis.endStates.value"
-          :ticks="analysis.ticks.value"
-          :focus="endStateFocus"
-          :selected-row="selected"
-          :name-of="analysis.nameOf"
-          @focus="endStateFocus = $event"
-          @move="edits.setEndState"
-          @create-and-move="edits.createEndStateFor"
-          @untick="edits.untick"
-          @tick="edits.tick"
-          @note="edits.note"
-        />
-        <AdaptationsTab
-          v-else-if="tab === 'adaptations'"
-          :analysis="analysis"
           :candidates="candidates"
-          @frame="framed = $event && stableEntityId($event)"
-          @sketch="sketching = $event"
+          :test-set="testSet"
+          :selected="judged"
+          @select="judged = $event"
         />
-        <IntegrationTab
-          v-else-if="tab === 'integration'"
-          :candidates="candidates"
-          :name-of="analysis.nameOf"
-        />
-      </section>
+      </div>
       <section aria-label="Canvas">
         <CandidateCanvas
           v-if="sketched && analysis.scopeDiagram.value"
@@ -297,7 +332,9 @@ onMounted(async () => {
 .question { color: var(--muted); font-size: 12.5px; margin: 2px 0 10px; }
 .err { color: var(--danger-strong); font-size: 12.5px; }
 .ws { display: grid; grid-template-columns: minmax(440px, 46%) minmax(0, 1fr); gap: 12px; align-items: start; }
-.pane { min-width: 0; }
+.left, .pane { min-width: 0; }
+/* The picture stays in view while the test set below the tables is walked. */
+.ws > section[aria-label="Canvas"] { position: sticky; top: 8px; }
 .legend { font-size: 11.5px; color: var(--text-2); margin: 4px 2px; }
 @media (max-width: 1100px) { .ws { grid-template-columns: minmax(0, 1fr); } }
 </style>

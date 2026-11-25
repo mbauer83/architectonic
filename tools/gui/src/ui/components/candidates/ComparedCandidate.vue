@@ -13,6 +13,7 @@ import { withOthers } from '../../../domain/candidates/candidateComparison'
 import type { Candidates } from '../../composables/useCandidates'
 import { candidateDetailRoute } from '../../router/artifactRoutes'
 import CandidateOperations from './CandidateOperations.vue'
+import CandidateResiduality from './CandidateResiduality.vue'
 import MarkedCanvas from './MarkedCanvas.vue'
 
 const props = defineProps<{
@@ -54,6 +55,7 @@ const nameOf = (id: string): string => id
         Remove from the comparison
       </button>
     </div>
+    <CandidateResiduality :candidate-id="id" />
     <div class="card">
       <CandidateOperations
         :candidates="reading"
