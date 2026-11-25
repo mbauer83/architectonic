@@ -8,6 +8,7 @@
  * Every resolution is asked of the server at once, so the cards are always the conflicts still standing.
  * No merge proves behaviour, and the tab says so.
  */
+import { useCan } from '../../composables/usePermissions'
 import { computed, inject, reactive, watch } from 'vue'
 import type { WorkspaceTab } from '../../../domain/stressAnalysis/analysisProgress'
 import type { IntegrationConflict } from '../../../domain/schemas/candidates'
@@ -60,6 +61,7 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
   if (integration.chosen.value.length || integration.answer.value) return
   void integration.choose(integrable.value.filter((one) => one.state === 'candidate').map((one) => one.id))
 }, { immediate: true })
+const mayIntegrate = useCan('changes_integrate_candidates')
 </script>
 
 <template>
@@ -216,7 +218,8 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
         type="button"
         class="btn btn-sm btn-primary"
         data-testid="integrate"
-        :disabled="!integration.ready.value"
+        :disabled="!integration.ready.value || !mayIntegrate.allowed"
+        :title="mayIntegrate.allowed ? undefined : mayIntegrate.reason"
         @click="integration.integrate()"
       >
         Integrate

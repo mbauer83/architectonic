@@ -6,6 +6,7 @@
  * test set shows only a link to add one. *Hold out a random third* asks first, in the section itself:
  * Cancel holds the focus and Esc cancels, so a stray Enter moves nothing.
  */
+import { useCan } from '../../composables/usePermissions'
 import { computed, nextTick, ref } from 'vue'
 import type { Verdict } from '../../../domain/schemas/stressEvaluation'
 import { cell } from '../../../domain/stressAnalysis/analysisRows'
@@ -60,6 +61,7 @@ const holdOut = async () => {
   asking.value = false
   await props.testSet.holdOut()
 }
+const mayHoldOut = useCan('documents_hold_out_test_set')
 </script>
 
 <template>
@@ -158,7 +160,8 @@ const holdOut = async () => {
               type="button"
               class="btn btn-sm"
               data-testid="hold-out"
-              :disabled="testSet.holding.value || asking"
+              :disabled="testSet.holding.value || asking || !mayHoldOut.allowed"
+              :title="mayHoldOut.allowed ? undefined : mayHoldOut.reason"
               @click="askHoldOut"
             >
               Hold out a random third

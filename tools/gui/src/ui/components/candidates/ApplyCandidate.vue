@@ -5,6 +5,7 @@
  * apply runs only from here, and writes every operation in one write or none. The page that owns the
  * apply (`useCandidateApply`) is told it was applied: this confirmation is gone by then.
  */
+import { useCan } from '../../composables/usePermissions'
 import { computed } from 'vue'
 import { canApply, operationLabel, previewSentence } from '../../../domain/candidates/candidateApply'
 import type { CandidateApply } from '../../composables/useCandidateApply'
@@ -12,6 +13,7 @@ import type { CandidateApply } from '../../composables/useCandidateApply'
 const props = defineProps<{ apply: CandidateApply; name: string }>()
 
 const preview = computed(() => props.apply.preview.value)
+const mayApply = useCan('changes_apply_candidate')
 </script>
 
 <template>
@@ -65,7 +67,8 @@ const preview = computed(() => props.apply.preview.value)
         type="button"
         class="btn btn-sm btn-primary"
         data-testid="apply-confirm"
-        :disabled="!canApply(preview) || apply.busy.value"
+        :disabled="!canApply(preview) || apply.busy.value || !mayApply.allowed"
+        :title="mayApply.allowed ? undefined : mayApply.reason"
         @click="apply.confirm()"
       >
         Apply

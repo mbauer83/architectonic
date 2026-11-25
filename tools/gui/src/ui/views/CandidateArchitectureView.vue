@@ -9,6 +9,7 @@
  * the model, not on any one picture of it. *Compare with…* opens a comparison holding this candidate,
  * on the same diagram, for others to be added to.
  */
+import { useCan } from '../composables/usePermissions'
 import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Effect } from 'effect'
@@ -142,6 +143,9 @@ onMounted(async () => {
   await read()
   loaded.value = true
 })
+const mayCreate = useCan('changes_create_candidate')
+const mayApply = useCan('changes_apply_candidate')
+const mayDelete = useCan('changes_delete_candidate')
 </script>
 
 <template>
@@ -159,6 +163,8 @@ onMounted(async () => {
         type="button"
         class="btn btn-sm"
         data-testid="stack-candidate"
+        :disabled="!mayCreate.allowed"
+        :title="mayCreate.allowed ? undefined : mayCreate.reason"
         @click="stacking = true"
       >
         New candidate on top…
@@ -176,7 +182,8 @@ onMounted(async () => {
         type="button"
         class="btn btn-sm"
         data-testid="apply-to-model"
-        :disabled="apply.busy.value"
+        :disabled="apply.busy.value || !mayApply.allowed"
+        :title="mayApply.allowed ? undefined : mayApply.reason"
         @click="apply.open(candidateId)"
       >
         Apply to the model…
@@ -186,6 +193,8 @@ onMounted(async () => {
         type="button"
         class="btn btn-sm"
         data-testid="delete-candidate"
+        :disabled="!mayDelete.allowed"
+        :title="mayDelete.allowed ? undefined : mayDelete.reason"
         @click="remove"
       >
         Delete

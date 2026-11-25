@@ -8,6 +8,7 @@
  * unchanged rows greyed. A comparison of several candidates reads each *fixed* to their common base: the
  * base is named, not chosen, and nothing is sketched there.
  */
+import { useCan } from '../../composables/usePermissions'
 import { computed, nextTick, ref, watch } from 'vue'
 import { stableEntityId } from '../../../domain/artifactId'
 import type { ChangeDifference } from '../../../domain/schemas/candidates'
@@ -88,6 +89,7 @@ const cardRows = (row: ChangeDifference) => {
     .filter((name) => typeof fields[name] !== 'object' || row.fields[name])
   return names.map((name) => ({ name, changed: row.fields[name], value: fields[name] }))
 }
+const maySketch = useCan('changes_record_operation')
 </script>
 
 <template>
@@ -107,6 +109,8 @@ const cardRows = (row: ChangeDifference) => {
         type="button"
         class="btn btn-sm"
         data-testid="sketch"
+        :disabled="!maySketch.allowed"
+        :title="maySketch.allowed ? undefined : maySketch.reason"
         @click="emit('sketch', summary.id)"
       >
         Sketch on the canvas

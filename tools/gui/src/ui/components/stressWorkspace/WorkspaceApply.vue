@@ -6,6 +6,7 @@
  * be applied incomplete, knowingly. Any draft in the analysis's stack can be applied; the one read on
  * the left is offered first.
  */
+import { useCan } from '../../composables/usePermissions'
 import { computed, ref } from 'vue'
 import { whatIsLeft, type LeftItem, type WorkspaceTab } from '../../../domain/stressAnalysis/analysisProgress'
 import type { ModelService } from '../../../application/ModelService'
@@ -45,6 +46,7 @@ const applied = () => {
   close()
   emit('applied', name)
 }
+const mayApply = useCan('changes_apply_candidate')
 </script>
 
 <template>
@@ -118,7 +120,8 @@ const applied = () => {
           type="button"
           class="btn btn-sm btn-primary"
           data-testid="workspace-apply-check"
-          :disabled="!candidate || apply.busy.value"
+          :disabled="!candidate || apply.busy.value || !mayApply.allowed"
+          :title="mayApply.allowed ? undefined : mayApply.reason"
           @click="apply.open(chosen)"
         >
           Check what it writes…
