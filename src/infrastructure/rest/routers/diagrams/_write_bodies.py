@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Self
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
+from src.domain.diagrams.grouping_intents import Nest, Unnest, regrouped
+from src.domain.diagrams.layout.arrange_intents import read_intents
 from src.infrastructure.rest.contracts.artifact_home import FiledOnCreate, Rehomeable
 from src.infrastructure.write.artifact_write.canvas_commands import CanvasCommand
 
@@ -36,6 +38,31 @@ class DiagramComposition(BaseModel):
     connection_ids: list[str]
     diagram_entities: dict[str, Any] | None = None
     authored_groupings: list[dict[str, Any]] | None = None
+    #: Nest and unnest intents (as the arrange route takes them), applied to `authored_groupings` as the
+    #: body is read: what an editor kept of moving elements into and out of the diagram's own boxes,
+    #: compiled by the one grouping compiler (`grouping_intents.regrouped`). Applied here, every surface
+    #: that renders or writes a composition reads the same groupings, and none can forget the intents.
+    grouping_intents: list[dict[str, Any]] | None = None
+
+    @model_validator(mode="after")
+    def _regrouped(self) -> Self:
+        """The groupings after the intents, in order; refuses one that cannot apply, saying why.
+
+        Only moving instances between groupings is taken here: creating or deleting a grouping, and any
+        intent that states geometry, is the arrange route's.
+        """
+        if not self.grouping_intents:
+            return self
+        groupings: list[object] = list(self.authored_groupings or [])
+        for intent in read_intents(self.grouping_intents):
+            if not isinstance(intent, Nest | Unnest):
+                kind = type(intent).__name__
+                raise ValueError(f"A composition takes nest and unnest intents only; {kind} is the arrange route's.")
+            # No grouping is created here, so no grouping id is seeded from the diagram's.
+            groupings = [*regrouped(intent, groupings, diagram_id="").groupings]
+        self.authored_groupings = [dict(grouping) for grouping in groupings if isinstance(grouping, dict)]
+        self.grouping_intents = None
+        return self
 
 
 class DiagramPreviewBody(DiagramComposition):

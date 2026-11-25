@@ -7,11 +7,12 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 
 export type CanvasPopoverLevel =
-  'create' | 'element' | 'selection' | 'line' | 'rename' | 'delete' | 'target' | 'relation'
+  'create' | 'element' | 'selection' | 'line' | 'rename' | 'delete' | 'target' | 'relation' | 'nest'
 
 /** How wide a level's surface is: the picker wide, a confirmation wider still, a form between, a menu its own. */
 const WIDTH: Partial<Record<CanvasPopoverLevel, string>> = {
   create: 'canvas-pop--wide', delete: 'canvas-pop--dialog', rename: 'canvas-pop--form', relation: 'canvas-pop--form',
+  nest: 'canvas-pop--form',
 }
 
 export function useCanvasPopover(host: Ref<HTMLElement | null>, pop: Ref<HTMLElement | null>) {

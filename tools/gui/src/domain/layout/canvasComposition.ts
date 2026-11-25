@@ -1,6 +1,7 @@
 /** The unsaved drawing and the diagram replacement derived from one canvas session. */
 import type {
   CanvasCommand,
+  GroupingIntent,
   DiagramComposition,
   GeometryComposition,
 } from '../../ports/diagramWriteBodies'
@@ -14,6 +15,7 @@ import { isRecord } from '../records'
 
 
 interface Content {
+  readonly regroupings?: readonly GroupingIntent[]
   readonly addedTypes?: ReadonlyMap<string, string>
   readonly additions?: ReadonlyMap<string, string>
   readonly commands?: readonly CanvasCommand[]
@@ -65,6 +67,7 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
     connection_ids: [...kept.connection_ids],
     ...(Object.keys(entities).length ? { diagram_entities: entities } : {}),
     ...(kept.authored_groupings ? { authored_groupings: kept.authored_groupings } : {}),
+    ...(state.regroupings?.length ? { grouping_intents: state.regroupings } : {}),
   }
   const renames = Object.fromEntries(
     commands

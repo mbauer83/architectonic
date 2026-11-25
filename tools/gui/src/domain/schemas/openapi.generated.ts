@@ -6641,6 +6641,10 @@ export interface components {
             entity_ids: string[];
             /** Group */
             group?: string | null;
+            /** Grouping Intents */
+            grouping_intents?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Keywords */
             keywords?: string[] | null;
             /** Layout */
@@ -7766,6 +7770,10 @@ export interface components {
             diagram_type: string;
             /** Entity Ids */
             entity_ids: string[];
+            /** Grouping Intents */
+            grouping_intents?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Name */
             name: string;
         };
@@ -8588,6 +8596,10 @@ export interface components {
             entity_ids: string[];
             /** Group */
             group?: string | null;
+            /** Grouping Intents */
+            grouping_intents?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Layout */
             layout?: {
                 [key: string]: unknown;
@@ -9790,6 +9802,10 @@ export interface components {
             diagram_type: string;
             /** Entity Ids */
             entity_ids: string[];
+            /** Grouping Intents */
+            grouping_intents?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Name */
             name: string;
             /** Proposed Elements */

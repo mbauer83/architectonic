@@ -13,9 +13,11 @@ export function useContentGestures(
   host: Ref<HTMLElement | null>, editing: DiagramEditing, source: Ref<string>,
   position: (x: number, y: number) => void, rename: (alias: string) => void,
   editLine: (index: number) => void, pair: (alias: string) => void,
+  /** An element moved and dropped over another shape: what it was dropped on, by alias. */
+  droppedOn: (alias: string, target: string, x: number, y: number) => void = () => {},
 ) {
   let hold: ReturnType<typeof setTimeout> | undefined
-  let down: { alias: string; x: number; y: number; edge: boolean } | null = null
+  let down: { alias: string; x: number; y: number; edge: boolean; travelled?: boolean } | null = null
   function release() {
     clearTimeout(hold)
     down = null
@@ -56,7 +58,17 @@ export function useContentGestures(
     }, 550)
   }
   function moving(e: PointerEvent) {
-    if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) clearTimeout(hold)
+    if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) {
+      clearTimeout(hold)
+      down.travelled = true
+    }
+  }
+  /** The shape under the pointer at a drop, other than the one dropped and what it holds. */
+  const shapeUnder = (e: PointerEvent, dropped: string): string | undefined => {
+    const own = host.value?.querySelector(`[data-alias="${CSS.escape(dropped)}"]`)
+    return document.elementsFromPoint(e.clientX, e.clientY)
+      .map((hit) => hit.closest<SVGElement>('[data-alias]'))
+      .find((shape) => shape && shape !== own && host.value?.contains(shape))?.dataset.alias
   }
   function up(e: PointerEvent) {
     if (down?.edge) {
@@ -67,6 +79,10 @@ export function useContentGestures(
         position(e.clientX, e.clientY)
         void pair(dest)
       }
+    } else if (down?.alias && down.travelled) {
+      const [alias, target] = [down.alias, shapeUnder(e, down.alias)]
+      // After the canvas has kept the drop itself: what the drop asks for starts from where it was dropped.
+      if (target) setTimeout(() => droppedOn(alias, target, e.clientX, e.clientY))
     }
     release()
   }

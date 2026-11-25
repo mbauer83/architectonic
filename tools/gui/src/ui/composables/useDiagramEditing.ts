@@ -20,12 +20,12 @@ import type { Arrangement } from '../../domain/layout/lab/labArrangement'
 import { drawnArrangement } from '../../domain/layout/lab/labArrangement'
 import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
-import { composeCanvas } from '../../domain/layout/canvasComposition'
-import type { CanvasCommand } from '../../ports/diagramWriteBodies'
+import { membershipOf } from '../../domain/layout/diagramMembership'
+import { composeCanvas, withCommand } from '../../domain/layout/canvasComposition'
+import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import { stableEntityId } from '../../domain/artifactId'
 import { type Restack, restacked } from '../../domain/layout/stacking'
-import { withCommand } from '../../domain/layout/canvasComposition'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { ArrangementState } from './useArrangementSession'
 import { useArrangementSession } from './useArrangementSession'
@@ -113,19 +113,25 @@ export function useDiagramEditing(
         : `${c.op === 'model.relation.edit' ? 'Edit' : 'Create'} relationship: ${c.artifact_id}`,
     }))
     const added = [...now.additions ?? []].map(([id, name]) => ({ key: id, text: `Added to diagram: ${name}` }))
+    const boxNamed = (key: string) => geometry.boxes.find((one) => one.key === key)?.label ?? key
+    const regrouped = (now.regroupings ?? []).map((intent, at) => ({
+      key: `regrouped:${at}`,
+      text: `${intent.intent === 'nest' ? `Nested in ${boxNamed(intent.grouping)}` : 'Taken out of its box'}: `
+        + intent.keys.map((key) => nameOf(aliasOf(key))).join(', '),
+    }))
     const originalAliases = new Set(before.picture?.elements.map(e => e.alias))
     const removed = [...now.removed ?? []].filter(alias => originalAliases.has(alias)).map((alias) => ({
       key: `removed:${alias}`, text: `Removed from the diagram: ${nameOf(alias)} — it stays in the model`,
     }))
     if (!now.byHand) {
       return [...(before.byHand ? [{ key: 'automatic', text: 'Returned to automatic layout' }] : []),
-        ...added, ...removed, ...model]
+        ...added, ...removed, ...regrouped, ...model]
     }
     const reference = referenceOf(geometry, before, now)
     const takenOver: PendingChange[] = before.byHand ? []
       : [{ key: 'by-hand', text: 'Arranged by hand: new elements will be placed beside their neighbours' }]
     return [
-      ...added, ...removed, ...model,
+      ...added, ...removed, ...regrouped, ...model,
       ...takenOver,
       ...arrangedUnits(geometry, reference, now.arrangement).map((alias) => ({
         key: alias, text: `Arranged: ${nameOf(alias)}`,
@@ -174,7 +180,9 @@ export function useDiagramEditing(
     if (!written.wrote) {
       throw new Error(`The diagram was not written: ${written.warnings.join(' ') || 'it was refused'}`)
     }
-    savedMembers.value = write
+    // Regrouped, the groupings are the server's to compile: read back what it wrote, never restated here.
+    savedMembers.value = state.regroupings?.length
+      ? membershipOf(await Effect.runPromise(svc.getDiagram(diagramId()))) : write
     await reopen()
     onMembershipSaved()
   }
@@ -192,7 +200,8 @@ export function useDiagramEditing(
       const patch = layoutPatchBetween(stored.value ?? {}, wanted())
       // One write when what the diagram holds changes: membership and layout together, so the stored
       // layout always matches the body that write generates (D12).
-      if (removed.size > 0 || now.additions?.size || now.commands?.length || now.overlays?.length) {
+      if (removed.size > 0 || now.additions?.size || now.commands?.length || now.overlays?.length
+        || now.regroupings?.length) {
         await writeMembership(removed, patch)
         return true
       }
@@ -309,12 +318,29 @@ export function useDiagramEditing(
     return preview({ ...now, commands, overlays: overlay ? [...now.overlays ?? [], overlay] : now.overlays }, now)
   }
 
+  /**
+   * The element *alias* moved into the diagram's own box *box*, or out of the box it is in (*box* null),
+   * as one undoable step the server compiles (`GroupingIntent`). A box grows round what it holds, so
+   * the element is drawn inside the box it joins wherever it stood.
+   */
+  const nest = async (alias: string, box: string | null) => {
+    const now = session.state.value
+    const drawn = session.geometry.value
+    const key = drawn?.elements.find((one) => one.alias === alias)?.key
+    const into = box === null ? undefined : drawn?.boxes.find((one) => one.alias === box)?.key
+    if (!now || !drawn || key === undefined || (box !== null && into === undefined)) return false
+    const intent: GroupingIntent = into === undefined
+      ? { intent: 'unnest', keys: [key] } : { intent: 'nest', keys: [key], grouping: into }
+    return preview({ ...now, regroupings: [...now.regroupings ?? [], intent] }, now)
+  }
+
   /** The shapes *aliases* restacked among their siblings (`stacking`), as one undoable step. */
   const restack = (aliases: readonly string[], how: Restack) =>
     session.change((geometry, now, where) => restacked(geometry, now, where, aliases, how))
 
   return {
     add, propose, session, changes, loading, saving, error, open, save, discard, returnToAutomatic, remove, restack,
+    nest,
   }
 }
 

@@ -8,7 +8,7 @@ import type { CanvasMenuItem } from './canvasMenu'
 import type { CanvasWords } from './canvasWords'
 import type { Restack } from '../../domain/layout/stacking'
 
-export type ElementMenuChoice = 'rename' | 'details' | 'connect' | 'open' | 'remove' | 'delete' | `stack:${Restack}`
+export type ElementMenuChoice = 'rename' | 'details' | 'connect' | 'nest' | 'unnest' | 'open' | 'remove' | 'delete' | `stack:${Restack}`
 
 /** Stacking among siblings (02·7), with the keys that do the same on the selection. */
 export const STACKING_ITEMS: readonly CanvasMenuItem[] = [
@@ -29,8 +29,13 @@ export const restackKey = (event: Pick<KeyboardEvent, 'key' | 'shiftKey'>): Rest
   event.key === 'PageUp' ? (event.shiftKey ? 'front' : 'forward')
     : event.key === 'PageDown' ? (event.shiftKey ? 'back' : 'backward') : null
 
-/** *drafted*: the element is created in this session, so it has no page to open until Save. */
-export const elementMenuItems = (words: CanvasWords, drafted: boolean): readonly CanvasMenuItem[] => [
+/**
+ * *drafted*: the element is created in this session, so it has no page to open until Save. *nestedIn*:
+ * the label of the diagram's own box it is in, which *Take out* takes it out of.
+ */
+export const elementMenuItems = (
+  words: CanvasWords, drafted: boolean, nestedIn: string | null = null,
+): readonly CanvasMenuItem[] => [
   { id: 'rename', label: 'Rename', hint: 'also a double-click on it', shortcut: 'F2' },
   {
     id: 'details', label: 'Edit details…',
@@ -45,6 +50,8 @@ export const elementMenuItems = (words: CanvasWords, drafted: boolean): readonly
     id: 'open', label: 'Open', hint: drafted ? 'it has no page until it is saved' : 'its page, in a new tab',
     disabled: drafted,
   },
+  { id: 'nest', label: 'Nest in…', hint: 'a box (diagram only), or an element that may contain it (a model change)' },
+  ...nestedIn === null ? [] : [{ id: 'unnest', label: `Take out of ${nestedIn}`, hint: 'onto the box around it' }],
   ...STACKING_ITEMS,
   ...words.removeEntry
     ? [{ id: 'remove', label: words.removeEntry, hint: words.removeHint, shortcut: words.removeKey, divider: true }]

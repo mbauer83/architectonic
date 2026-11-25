@@ -15,7 +15,17 @@ export type DiagramComposition = {
   connection_ids: string[]
   diagram_entities?: Record<string, unknown>
   authored_groupings?: readonly AuthoredGrouping[]
+  /** Moves into and out of the diagram's own boxes, applied to `authored_groupings` as the body is read. */
+  grouping_intents?: readonly GroupingIntent[]
 }
+
+/**
+ * Moving instances into one of the diagram's own boxes (`nest`, by grouping id) or out of the box they
+ * are in (`unnest`), as the arrange route spells them; the server compiles them (`grouping_intents.py`).
+ */
+export type GroupingIntent =
+  | { readonly intent: 'nest'; readonly keys: readonly string[]; readonly grouping: string }
+  | { readonly intent: 'unnest'; readonly keys: readonly string[] }
 
 /** A composition, plus what the write itself decides. */
 export type DiagramWriteBody = DiagramComposition & {
