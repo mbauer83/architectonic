@@ -38,7 +38,8 @@ export const topLeftBoxOf = (svg: SVGSVGElement, drawing: Extent): Point | null 
   const boxes = [...svg.querySelectorAll('rect')].flatMap((rect) => pictureExtentOf(rect) ?? [])
     .filter((box) => box.right - box.left >= LEAST_BOX && box.bottom - box.top >= LEAST_BOX && !paper(box))
   const reach = (box: Extent) => (box.left - drawing.left) + (box.top - drawing.top)
-  const first = boxes.reduce<Extent | null>((best, box) => (best === null || reach(box) < reach(best) ? box : best), null)
+  const first = boxes.reduce<Extent | null>(
+    (best, box) => (best === null || reach(box) < reach(best) ? box : best), null)
   return first && { x: first.left, y: first.top }
 }
 
