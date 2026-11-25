@@ -4,6 +4,8 @@ oversize, and XXE/entity-expansion fixtures must be rejected, never silently deg
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from src.application.exchange.ports import ExchangeDocumentError
@@ -55,6 +57,39 @@ class TestXxeAndEntityExpansion:
         payload = f'<?xml version="1.0"?><!DOCTYPE model><model xmlns="{_NS}" identifier="m1"/>'.encode()
         with pytest.raises(ExchangeDocumentError):
             ArchimateModelExchangeReader().read(payload)
+
+
+class TestTheTreeParserHoldsWithoutTheGate:
+    """The lxml parser that builds the real tree is the second barrier, and must hold on its own.
+
+    The defusedxml gate rejects every DTD first, so the tests above pass whatever the lxml flags say.
+    These switch the gate off and give the lxml layer an external entity naming a real file, which it
+    must not read. (Network fetching is not tested: the libxml2 this project links has no HTTP client,
+    so a test of `no_network` passes with the flag off too.)
+    """
+
+    @pytest.fixture(autouse=True)
+    def _without_the_gate(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(
+            "src.infrastructure.exchange.archimate_model_exchange._xml_safety.defused_parse",
+            lambda *_args, **_kwargs: None,
+        )
+
+    def test_an_external_file_entity_is_not_expanded(self, tmp_path: Path) -> None:
+        secret = tmp_path / "secret.txt"
+        secret.write_text("CONFIDENTIAL-MARKER", encoding="utf-8")
+        payload = (
+            "<?xml version='1.0'?>"
+            f'<!DOCTYPE model [<!ENTITY xxe SYSTEM "{secret.as_uri()}">]>'
+            f'<model xmlns="{_NS}" identifier="m1"><name xml:lang="en">&xxe;</name></model>'
+        ).encode()
+        from src.infrastructure.exchange.archimate_model_exchange._xml_safety import defuse_and_parse
+
+        root = defuse_and_parse(payload)
+
+        from lxml import etree
+
+        assert b"CONFIDENTIAL-MARKER" not in etree.tostring(root)
 
 
 class TestSizeCap:
