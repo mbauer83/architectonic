@@ -71,7 +71,7 @@ def diagram_kind_connection_types(
     (`conn_lang`) groups it well enough that alphabetical is the readable choice.
     """
     kind = catalogs.diagram_types.get_diagram_type(diagram_type)
-    items = [
+    items: list[dict[str, Any]] = [
         {
             "connection_type": connection_type,
             "conn_lang": info.conn_lang,
