@@ -15,8 +15,8 @@ the verdict rows each time.
 """
 from __future__ import annotations
 
+import hashlib
 import random
-import secrets
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
 from fractions import Fraction
@@ -156,9 +156,15 @@ def evaluate(
     }
 
 
-def new_seed() -> int:
-    """A seed for a hold-out nobody chose, recorded so the draw can be made again."""
-    return secrets.randbelow(2**31)
+def seed_for(document: str, stressors: Sequence[str]) -> int:
+    """The seed of a hold-out nobody chose a seed for: the same analysis and stressors give the same one.
+
+    Derived rather than drawn, so a dry run and the write after it, both unseeded, hold out the same
+    third, and a retried write recomputes the draw it already made. The draw is a separation of the
+    stressors, not a secret, so a seed anyone can recompute costs nothing.
+    """
+    digest = hashlib.sha256("\n".join([document, *stressors]).encode("utf-8")).digest()
+    return int.from_bytes(digest[:4], "big") % 2**31
 
 
 def held_out(design: Sequence[str], seed: int) -> tuple[str, ...]:
