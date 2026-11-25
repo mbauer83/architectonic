@@ -3,12 +3,13 @@
  * into an element by a containment relationship, and drawn once more (03·5, 03·9–11). The popover's
  * level and its error are the caller's (`useCanvasPopover`); this decides what each gesture proposes.
  */
-import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
+import { computed, ref, shallowRef, watch, type ComputedRef, type Ref } from 'vue'
 import { connectionId } from '../../domain/artifactId'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import { pointOnPicture } from '../components/layoutLab/pointerOnPicture'
 import type { CanvasPopoverLevel } from './useCanvasPopover'
 import type { DiagramEditing } from './useDiagramEditing'
+import type { ArrangementState } from './useArrangementSession'
 
 type Member = { readonly alias: string; readonly id: string; readonly name: string }
 
@@ -62,7 +63,22 @@ export function useCanvasNesting(
 
   /** The element a drop asked to nest in, which *Nest in…* opens on; null when opened from the menu. */
   const asked = ref<string | null>(null)
-  watch(mode, (now) => { if (now !== 'nest') asked.value = null })
+  /** The session as it stood before the drop that asked: what *Don't nest* returns to. */
+  const beforeDrop = shallowRef<ArrangementState | null>(null)
+  watch(mode, (now) => {
+    if (now === 'nest') return
+    asked.value = null
+    beforeDrop.value = null
+  })
+  /**
+   * *Don't nest* (03·10): after a drop, the element goes back to where the drag started, as one step
+   * that Undo takes back, leaving nothing changed in the session; from the menu, the question closes.
+   */
+  const dontNest = () => {
+    const before = beforeDrop.value
+    if (before) editing.session.step(before)
+    close(true)
+  }
   /**
    * An element dropped on a shape (03·9, Q13): onto one of the diagram's own boxes it is nested there,
    * as diagram content; onto an element the question of making it part of that element is asked; onto a
@@ -80,10 +96,15 @@ export function useCanvasNesting(
       mode.value = 'nest'
       error.value = `${box.label} draws what its rule admits; ${moved.label} is not put in it by hand.`
     } else if (geometry.elements.some((one) => one.alias === target)) {
+      // The drop is the session's last step: the state before it is where the element came from.
+      const before = editing.session.history.value.at(-1)
+      const now = editing.session.state.value
+      beforeDrop.value = before && now && before.arrangement.elements.get(alias) !== now.arrangement.elements.get(alias)
+        ? before : null
       asked.value = target
       mode.value = 'nest'
     }
   }
 
-  return { anchor, drawAgain, ownBoxes, boxOfSelected, nestIn, nestUnder, asked, dropped }
+  return { anchor, drawAgain, ownBoxes, boxOfSelected, nestIn, nestUnder, asked, dropped, dontNest }
 }
