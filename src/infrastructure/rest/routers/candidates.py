@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.candidates.service import document_writer
@@ -24,7 +24,9 @@ from src.infrastructure.rest.contracts.candidates import (
     CandidateSelection,
     CandidateStanding,
     IntegrationCheck,
+    ScopeDrawingRequest,
 )
+from src.infrastructure.rest.contracts.diagram_layout_editing import DiagramLayoutGeometryResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._candidate_access import refusals, service
@@ -57,7 +59,7 @@ def changes_list_candidates() -> dict[str, Any]:
 def changes_create_candidate(body: CandidateCreate) -> dict[str, Any]:
     with refusals():
         return s.authorized_write(
-            "changes_create_candidate", service().create, body.record.model_dump(exclude_unset=True), body.diagram,
+            "changes_create_candidate", service().create, body.record.model_dump(exclude_unset=True),
             [edit.model_dump(exclude_unset=True) for edit in body.operations],
         )
 
@@ -192,7 +194,7 @@ def documents_start_stress_analysis(
         return s.authorized_write(
             "documents_start_stress_analysis", service().start, body.title, body.naive.model_dump(exclude_unset=True),
             document_writer(repo_root, verifier, s.clear_caches),
-            question=body.question, scope_diagram=body.scope_diagram,
+            context=body.context,
         )
 
 
@@ -209,11 +211,35 @@ def changes_compare_candidate(
     artifact_id: str,
     base: str = Query("model", description="Model, naive or a candidate id."),
     naive: str | None = Query(None, description="Naive candidate id when base is naive."),
-    diagram: str | None = Query(None, description="Stored diagram for canvas geometry."),
+    diagram: str | None = Query(
+        None, description="A stored diagram to draw on, instead of the one the candidate is drawn on.",
+    ),
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     with refusals():
         return service().compare(artifact_id, base, naive, diagram, catalogs.ontology)
+
+
+@router.post(
+    "/api/scope-drawings",
+    operation_id="changes_draw_scope",
+    tags=[TAG_CHANGES],
+    summary="Draw a generated view of a scope no stored diagram draws",
+    response_model=DiagramLayoutGeometryResponse,
+    response_model_exclude_none=True,
+    responses=READ_RESPONSES,
+)
+def changes_draw_scope(
+    body: ScopeDrawingRequest, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
+    """The model's entities in the scope and the relations among them, laid out as a candidate with no stored
+    diagram is drawn: what a scope chosen by a viewpoint or a search previews before an analysis starts. Writes
+    nothing. 422 when none of the scope is in the model."""
+    with refusals():
+        drawn = service().drawing(None, body.scope, body.name, catalogs.ontology)
+    if drawn is None:
+        raise HTTPException(422, "None of the scope is in the model, so there is nothing to draw.")
+    return drawn
 
 
 @router.get(

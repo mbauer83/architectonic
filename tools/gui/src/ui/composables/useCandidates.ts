@@ -2,8 +2,9 @@
  * Candidate architectures as a reader works with them: every candidate, the stack of one root and what
  * stacks on it, the one being read, and its comparison with the base chosen in *against* — by default
  * its parent (Q38). Independent of any analysis: a stress analysis supplies its naive architecture as
- * the root and its scope diagram; the candidate pages supply none and read the selected candidate's
- * own stack, down to the candidate that stacks on the model.
+ * the root; the candidate pages read the selected candidate's own stack, down to the candidate that
+ * stacks on the model. A comparison is drawn on the diagram its stack names unless the reader names
+ * another, and on a view generated from its scope where none does.
  */
 import { type ShallowRef, computed, ref, shallowRef } from 'vue'
 import { Effect } from 'effect'
@@ -15,7 +16,7 @@ import { formatEffectError } from '../lib/errors'
 export interface CandidateReading {
   /** The stack's root; by default the bottom of the selected candidate's stack. */
   readonly root?: () => string
-  /** The stored diagram whose drawing a comparison carries; none for no drawing. */
+  /** A stored diagram to draw a comparison on instead of the one its stack names; empty for that one. */
   readonly scopeDiagram: () => string
   /** Every candidate, held with other readings so that several of them list once; by default its own. */
   readonly all?: ShallowRef<readonly CandidateSummary[]>
@@ -88,12 +89,12 @@ export function useCandidates(svc: CandidateAccess, reading: CandidateReading) {
   }
 
   /**
-   * A new candidate from *record* — a name, and a parent or a scope, or neither for one that starts
-   * empty — or scoped to what *diagram* draws. Answers its id, and lists it.
+   * A new candidate from *record* — a name, and a parent, a scope or the `diagram` it is drawn on (scoped
+   * by what it draws), or none of them for one that starts empty. Answers its id, and lists it.
    */
-  const create = async (record: Readonly<Record<string, unknown>>, diagram?: string): Promise<string | null> => {
+  const create = async (record: Readonly<Record<string, unknown>>): Promise<string | null> => {
     try {
-      const created = await Effect.runPromise(svc.createCandidate(record, diagram))
+      const created = await Effect.runPromise(svc.createCandidate(record))
       await load()
       return String(created.record.id)
     } catch (failure) {

@@ -38,11 +38,12 @@ current version.
 |---|---|---|
 | List | `change_set_list` | `GET /api/change-sets` |
 | Read the record and version | `change_set_read` | `GET /api/change-sets/{id}` |
-| Create, optionally scoped by a diagram and with edits | `change_set_create` | `POST /api/change-sets` |
+| Create, optionally drawn on and scoped by a diagram, and with edits | `change_set_create` | `POST /api/change-sets` |
 | Record edits | `change_set_record` | `POST /api/change-sets/{id}/operations` |
 | Change the header or the state | `change_set_edit` | `PATCH /api/change-sets/{id}` |
 | How each operation stands against the model | `change_set_standing` | `GET /api/change-sets/{id}/standing` |
 | Compare against the model, the naive or another candidate | `change_set_compare` | `GET /api/change-sets/{id}/diff` |
+| Draw a scope no stored diagram draws, as a generated view | — | `POST /api/scope-drawings` |
 | Check candidates for conflicting claims | `change_set_check` | `POST /api/change-set-checks` |
 | Re-base drifted operations | `change_set_rebase` | `POST /api/change-sets/{id}/rebase` |
 | Apply to the model | `change_set_apply` | `POST /api/change-sets/{id}/apply` |
@@ -94,8 +95,16 @@ remove first. A delete is a dry run unless `dry_run` is false, and accepts `base
 
 ## Stress analyses
 
-`analysis_start` (`POST /api/stress-analyses`) creates the naive candidate and the stress-analysis
-document in one write. Stressors, end states, incidence, adaptations and verdicts are rows of the
+A stress analysis evaluates a proposed architecture: its naive candidate. `analysis_start`
+(`POST /api/stress-analyses`) creates the naive candidate and the stress-analysis document in one
+write. The naive candidate holds the scope and the stored diagram it is drawn on; the document names
+the naive candidate and, optionally, a `context`: the environment the architecture is evaluated in
+and the decision the evaluation informs.
+
+A candidate records the diagram it is drawn on as `diagram`. A candidate stacked on another is drawn
+on the nearest diagram its stack names. Where none is named, as for a scope chosen by a search or by a
+viewpoint that no stored diagram applies, a comparison is drawn on a view generated from the scope:
+its elements and the relations among them. Stressors, end states, incidence, adaptations and verdicts are rows of the
 document's tables, written with `artifact_edit_document_table`
 (`PATCH /api/documents/{id}/tables/{table}`). The reads are `analysis_progress`, `analysis_incidence`
 and `analysis_test_set`. Holding out a test set and reading residuality are described in

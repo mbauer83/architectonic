@@ -190,6 +190,7 @@ export const makeModelService = (repo: ModelRepository) =>
     readCandidate: (id: string) => repo.readCandidate(id),
     applyCandidate: (id: string, dryRun: boolean) => repo.applyCandidate(id, dryRun),
     startAnalysis: (...args: Parameters<ModelRepository['startAnalysis']>) => repo.startAnalysis(...args),
+    drawScope: (scope: readonly string[], name: string) => repo.drawScope(scope, name),
     deleteCandidate: (id: string) => repo.deleteCandidate(id),
     rebaseCandidate: (...args: Parameters<ModelRepository['rebaseCandidate']>) => repo.rebaseCandidate(...args),
     editCandidate: (...args: Parameters<ModelRepository['editCandidate']>) => repo.editCandidate(...args),

@@ -48,6 +48,7 @@
       "/api/matrices/{artifact_id}",
       "/api/promote/execute",
       "/api/promote/plan",
+      "/api/scope-drawings",
       "/api/scratchpads/{artifact_id}/lift",
       "/api/sync/changes",
       "/api/sync/engagement/save",
@@ -114,6 +115,7 @@
       "^/api/sync/changes(\\?|$)",
       "^/api/diagram\\-entity\\-discovery(\\?|$)",
       "^/api/exchange\\-imports(\\?|$)",
+      "^/api/scope\\-drawings(\\?|$)",
       "^/api/diagrams(\\?|$)",
       "^/api/matrices(\\?|$)"
     ]

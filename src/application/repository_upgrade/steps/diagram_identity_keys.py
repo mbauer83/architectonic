@@ -27,11 +27,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
-import yaml  # type: ignore[import-untyped]
-
 from src.application.artifacts.parsing import extract_yaml_block
 from src.application.modeling.diagram_identities import alias_by_instance, drawn_relation_ends, strings_of
 from src.application.repository_upgrade.ports import RepoUpgradeView, RepoUpgradeWriter
+from src.application.repository_upgrade.steps._frontmatter_blocks import with_block
 from src.application.repository_upgrade.steps._frontmatter_scan import list_frontmatter_candidate_files
 from src.domain.artifact_id import stable_id
 from src.domain.diagrams.authored_groupings import GROUPING_ID_KEY, walk_groupings, with_grouping_ids
@@ -89,30 +88,6 @@ def _rekeying(frontmatter: Mapping[str, object]) -> _Rekeying:
 
 def _unidentified(frontmatter: Mapping[str, object]) -> int:
     return sum(1 for _trail, entry in walk_groupings(frontmatter.get(_GROUPINGS)) if not entry.get(GROUPING_ID_KEY))
-
-
-def _block_span(lines: list[str], key: str) -> tuple[int, int] | None:
-    """The lines a top-level frontmatter key and its value occupy, as ``[start, end)``."""
-    start = next((index for index, line in enumerate(lines) if line.startswith(f"{key}:")), None)
-    if start is None:
-        return None
-    end = start + 1
-    while end < len(lines) and (not lines[end].strip() or lines[end][0] in " -"):
-        end += 1
-    return start, end
-
-
-def _with_block(text: str, key: str, value: object) -> str:
-    """*text* with the block of top-level *key* re-dumped from *value*, every other line untouched."""
-    lines = text.split("\n")
-    span = _block_span(lines, key)
-    if span is None:
-        return text
-    dumped = str(yaml.safe_dump({key: value}, sort_keys=False)).rstrip("\n").split("\n")
-    end = span[1]
-    while end > span[0] + 1 and not lines[end - 1].strip():
-        end -= 1  # blank lines after the block are not the block's
-    return "\n".join([*lines[: span[0]], *dumped, *lines[end:]])
 
 
 class DiagramIdentityKeysStep:
@@ -199,9 +174,9 @@ class DiagramIdentityKeysStep:
                 groupings if isinstance(groupings, list) else [],
                 diagram_id=stable_id(str(frontmatter.get("artifact-id", ""))),
             )
-            text = _with_block(text, _GROUPINGS, identified)
+            text = with_block(text, _GROUPINGS, identified)
         settled = _rekeying(frontmatter).settled
         labels = frontmatter.get(_EDGE_LABELS)
         if settled and isinstance(labels, Mapping):
-            text = _with_block(text, _EDGE_LABELS, {settled.get(str(key), key): label for key, label in labels.items()})
+            text = with_block(text, _EDGE_LABELS, {settled.get(str(key), key): label for key, label in labels.items()})
         return replace_frontmatter_text(content, text)

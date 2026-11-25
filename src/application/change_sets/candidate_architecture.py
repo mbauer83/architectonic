@@ -22,6 +22,11 @@ an adaptation. Which candidates a stack holds, and that it is not a circle, is `
 without changing them: a naive architecture started from the current model within a scope copies
 nothing, and the model's later changes show through. A candidate started empty has none.
 
+**It may be drawn on a stored diagram.** `diagram` names the diagram its reader sees it on — the one its
+scope was chosen from, or one that applies the viewpoint it was chosen by. A candidate stacked on another
+is drawn on the nearest diagram its stack names (`drawn_on`); one that names none is drawn as a view
+generated from its scope.
+
 **What `answers` and `satisfies` hold is opaque here.** They are references whose form is decided by
 whoever stores a candidate. The value only keeps them.
 """
@@ -102,6 +107,8 @@ class CandidateArchitecture:
     satisfies: tuple[str, ...] = ()
     #: The model's entities the candidate is read over without changing them, by id.
     scope: tuple[str, ...] = ()
+    #: The stored diagram the candidate is drawn on, by id; None where it is drawn on what it stacks on.
+    diagram: str | None = None
 
     def __post_init__(self) -> None:
         # The model's entities by their stable id, as operations name them (`operations`).
@@ -124,6 +131,8 @@ def _refusal(candidate: CandidateArchitecture) -> str | None:
             f"{candidate.state!r} is not a state a candidate architecture can be in. "
             f"The states are {', '.join(CANDIDATE_STATES)}."
         )
+    if candidate.diagram == "":
+        return f"candidate architecture '{candidate.id}' names an empty diagram; omit it to be drawn on none"
     if candidate.parent_id == candidate.id:
         return f"candidate architecture '{candidate.id}' names itself as its parent"
     for label, references in (

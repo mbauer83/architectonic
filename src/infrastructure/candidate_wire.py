@@ -127,7 +127,14 @@ class CandidateHeader(_Closed):
     )
     parent: str | None = Field(None, description="The candidate it is read on top of, by id in either spelling.")
     scope: list[str] | None = Field(
-        None, description="The model's entities it is read over without changing them. Exclusive with `diagram`.",
+        None,
+        description="The model's entities it is read over without changing them. Omitted with `diagram`: the "
+        "diagram's entities.",
+    )
+    diagram: str | None = Field(
+        None,
+        description="The stored diagram it is drawn on, by id. Where `scope` is omitted, the diagram's entities "
+        "become the scope.",
     )
     answers: list[str] | None = Field(None, description="What it answers (end states), as references.")
     satisfies: list[str] | None = Field(None, description="What it satisfies (requirements), as references.")
@@ -147,6 +154,9 @@ class CandidatePatch(_Closed):
     )
     parent: str | None = None
     scope: list[str] | None = None
+    diagram: str | None = Field(
+        None, description="The stored diagram it is drawn on; null draws it on what it stacks on.",
+    )
     answers: list[str] | None = None
     satisfies: list[str] | None = None
     changes: dict[str, JsonValue] | None = Field(

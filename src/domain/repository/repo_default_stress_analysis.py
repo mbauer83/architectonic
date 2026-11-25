@@ -1,13 +1,19 @@
 """Default stress-analysis document type. Subject and hit ids resolve in the naive candidate.
 
+An analysis evaluates a proposed architecture, its naive candidate, which owns the scope and the
+diagram it is drawn on. The document names that candidate and, optionally, the context the evaluation
+is made in: the environment, and the decision it informs.
+
 A stressor belongs to the design set, which the analysis is walked and adapted against, or to the test
 set, held apart and judged at the end. A verdict names the architecture it was reached on: the naive
 architecture, or a candidate by id.
 """
 
-#: The document type an analysis is, and the frontmatter key naming its naive candidate.
+#: The document type an analysis is, the frontmatter key naming its naive candidate, and the one holding
+#: the context the evaluation is made in.
 STRESS_ANALYSIS = "stress-analysis"
 NAIVE_CANDIDATE = "naive-candidate"
+ANALYSIS_CONTEXT = "context"
 
 #: The two sets a stressor belongs to.
 DESIGN_SET = "design"
@@ -27,9 +33,8 @@ STRESS_ANALYSIS_SCHEMA = {
         "properties": {
             "title": {"type": "string"},
             "status": {"type": "string", "enum": ["draft", "accepted", "rejected", "superseded"]},
-            "question": {"type": "string"},
             NAIVE_CANDIDATE: {"type": "string"},
-            "scope-diagram": {"type": "string"},
+            ANALYSIS_CONTEXT: {"type": "string"},
         },
     },
     "sections": [

@@ -4,8 +4,9 @@
  * (by default what it stacks on), the "model moved" band when the model moved under them, and the
  * candidate drawn on a diagram the reader chooses — marked with what it changes, or sketched with the
  * diagram editor. The same components a stress analysis reads its candidates with; nothing here knows
- * of analyses. The diagram is presentation (`?diagram=`): a candidate records operations on the
- * model, not on any one picture of it. *Compare with…* opens a comparison holding this candidate,
+ * of analyses. A candidate is drawn on the diagram its stack names, else on a view generated from its
+ * scope; another can be chosen (`?diagram=`), which is presentation: a candidate records operations on
+ * the model, not on any one picture of it. *Compare with…* opens a comparison holding this candidate,
  * on the same diagram, for others to be added to.
  */
 import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
@@ -31,8 +32,11 @@ const toast = inject(toastKey, () => undefined)
 const route = useRoute()
 const router = useRouter()
 const candidateId = computed(() => String(route.params.artifactId))
-const diagramId = computed(() => (typeof route.query.diagram === 'string' ? route.query.diagram : ''))
-const candidates = useCandidates(svc, { scopeDiagram: () => diagramId.value })
+/** The diagram the reader chose to draw on instead of the one the candidate names; empty for that one. */
+const chosenDiagram = computed(() => (typeof route.query.diagram === 'string' ? route.query.diagram : ''))
+const candidates = useCandidates(svc, { scopeDiagram: () => chosenDiagram.value })
+/** The stored diagram the candidate is drawn on; empty where it is drawn as a generated view, or not at all. */
+const diagramId = computed(() => chosenDiagram.value || candidates.comparison.value?.drawing?.artifact_id || '')
 
 const diagrams = shallowRef<readonly DiagramSummary[]>([])
 const summary = computed(() => candidates.all.value.find((one) => one.id === candidateId.value) ?? null)
@@ -105,7 +109,7 @@ const read = async () => {
   await candidates.select(candidateId.value)
 }
 watch(candidateId, read)
-watch(diagramId, async () => {
+watch(chosenDiagram, async () => {
   sketching.value = false
   await candidates.compareWith(candidates.against.value)
 })
@@ -200,7 +204,7 @@ onMounted(async () => {
           data-testid="draw-on"
           @change="drawOn(($event.target as HTMLSelectElement).value)"
         >
-          <option value="">no diagram</option>
+          <option value="">a view generated from its scope</option>
           <option
             v-for="one in diagrams"
             :key="one.artifact_id"

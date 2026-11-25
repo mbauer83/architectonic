@@ -23,8 +23,7 @@ def test_promotion_outage_tracks_the_naive_queue_even_after_it_is_removed(tmp_pa
         "end-states": [{"end_state": "Enterprise consumers see the previous architecture"}],
         "incidence": [{"stressor": "S1", "component": c, "note": "Pending promotion"} for c in (SERVICE, "$ref:queue")],
     }
-    body = document_text(schema, {k: table_text(table_of(schema, k), v) for k, v in rows.items()},
-                         **{"scope-diagram": "ARC@1783185029.4Ayzz3.one-enterprise-repository-many-engagements"})
+    body = document_text(schema, {k: table_text(table_of(schema, k), v) for k, v in rows.items()})
     tables = read_document_tables(document_path(tmp_path, schema), body, schema)
     view = CandidateView({ref: {} for ref in (ENTERPRISE, ENGAGEMENT, SERVICE, "$ref:queue")}, {})
     report = analyse(tables, view)

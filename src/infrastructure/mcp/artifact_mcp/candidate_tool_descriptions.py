@@ -29,8 +29,9 @@ CHANGE_SET_COMPARE = (
     "Compare a candidate, composed with every candidate it stacks on, against a base: the composed view of "
     "the scoped entities and connections, the differences field by field, and each operation's standing. "
     "base: `model` (the default), `naive` (with `naive` naming the analysis's naive candidate), or another "
-    "candidate's id outside this one's descendants. diagram: a stored diagram whose geometry is added as "
-    "`drawing`, for drawing the comparison."
+    "candidate's id outside this one's descendants. `drawing` is the geometry the comparison is drawn on: "
+    "the stored diagram named by diagram, else the one the candidate's stack is drawn on, else a view "
+    "generated from the scoped entities and the relations among them; absent for a candidate with none."
 )
 
 CHANGE_SET_RESIDUALITY = (
@@ -47,9 +48,9 @@ CHANGE_SET_CHECK = (
 CHANGE_SET_CREATE = (
     "Create a candidate architecture. record: its header — name (required), id (minted if omitted), "
     "rationale, state (draft or candidate), parent (a candidate to stack on), scope (entity ids it is read "
-    "over), answers, satisfies. diagram: a stored diagram whose entities become the scope, instead of "
-    "record.scope. operations: edits recorded in it in the same write, as change_set_record takes them. "
-    "Answers the record and its version."
+    "over), diagram (the stored diagram it is drawn on; with no scope, its entities become the scope), "
+    "answers, satisfies. operations: edits recorded in it in the same write, as change_set_record takes "
+    "them. Answers the record and its version."
 )
 
 CHANGE_SET_RECORD = (
@@ -91,8 +92,9 @@ CHANGE_SET_DELETE = (
 
 ANALYSIS_START = (
     "Start a stress analysis: its naive candidate and the stress-analysis document naming it, both or "
-    "neither. naive: the naive's header as change_set_create takes it (name, and scope or parent). "
-    "scope_diagram: the diagram the analysis is drawn on; its entities scope a naive that states none. "
+    "neither. naive: the naive's header as change_set_create takes it (name; scope, diagram or parent): it "
+    "owns the scope and the diagram the analysis is drawn on. context: optional free text, the environment "
+    "and the decision the evaluation informs. "
     "Stressors, end states, incidence, adaptations and verdicts are then rows of the document's tables, "
     "written with artifact_edit_document_table."
 )

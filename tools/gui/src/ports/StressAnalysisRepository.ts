@@ -7,6 +7,7 @@ import type {
 import type {
   AnalysisEvaluation, CandidateResiduality, HeldOut, StressPerspectives,
 } from '../domain/schemas/stressEvaluation'
+import type { LayoutGeometry } from '../domain/schemas/diagramLayoutGeometry'
 import type { RepoError } from './repositoryErrors'
 import type { TableRowEdit } from '../domain/stressAnalysis/analysisRows'
 
@@ -17,17 +18,18 @@ import type { TableRowEdit } from '../domain/stressAnalysis/analysisRows'
  */
 export interface StressAnalysisRepository {
   readonly listCandidates: () => Effect.Effect<readonly CandidateSummary[], RepoError>
-  readonly createCandidate: (
-    record: Readonly<Record<string, unknown>>, diagram?: string,
-  ) => Effect.Effect<CandidateResponse, RepoError>
+  /** A new candidate from its header; one naming a `diagram` and no `scope` is scoped by what it draws. */
+  readonly createCandidate: (record: Readonly<Record<string, unknown>>) => Effect.Effect<CandidateResponse, RepoError>
   /**
-   * Start an analysis in one write: the naive architecture (*naive*: its name, and its scope or parent)
-   * and the document naming it. A refusal leaves neither.
+   * Start an analysis in one write: the architecture under evaluation, its naive candidate (*naive*: its
+   * name, and its scope, the diagram it is drawn on, or the candidate it stacks on), and the document
+   * naming it with the optional *context*. A refusal leaves neither.
    */
   readonly startAnalysis: (start: {
-    readonly title: string; readonly question?: string; readonly naive: Readonly<Record<string, unknown>>
-    readonly scope_diagram?: string
+    readonly title: string; readonly context?: string; readonly naive: Readonly<Record<string, unknown>>
   }) => Effect.Effect<AnalysisStarted, RepoError>
+  /** A view generated from a scope no stored diagram draws: its entities and the relations among them. */
+  readonly drawScope: (scope: readonly string[], name: string) => Effect.Effect<LayoutGeometry, RepoError>
   /** Delete a candidate; refused (409, saying why) while one stacks on it or an analysis starts from it. */
   readonly deleteCandidate: (id: string) => Effect.Effect<void, RepoError>
   /** Write each drifted operation again against the model as it stands now, keeping what it asks for. */
@@ -45,7 +47,10 @@ export interface StressAnalysisRepository {
   readonly recordOperation: (
     id: string, basedOn: string, operation: Readonly<Record<string, unknown>>,
   ) => Effect.Effect<CandidateResponse, RepoError>
-  /** *base* is `model` or another candidate's id; *diagram* adds that stored diagram's drawing. */
+  /**
+   * *base* is `model` or another candidate's id. The drawing is *diagram*'s where given, else the one the
+   * candidate's stack is drawn on, else a view generated from its scope.
+   */
   readonly compareCandidate: (
     id: string, base: string, diagram?: string,
   ) => Effect.Effect<CandidateComparison, RepoError>

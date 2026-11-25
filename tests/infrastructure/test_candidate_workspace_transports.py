@@ -93,13 +93,13 @@ def test_analysis_reads_the_scoped_naive_candidate_on_both_surfaces(tmp_path: Pa
                     ],
                 ),
             },
-            **{"naive-candidate": naive_id, "scope-diagram": diagram},
+            **{"naive-candidate": naive_id},
         )
     )
     monkeypatch.setattr(state, "maybe_engagement_root", lambda: root)
     with TestClient(build_api_app(candidates.router)) as client:
-        header = CandidateHeader(name="Queued promotion", id=naive_id)
-        naive = mcp.change_set_create(header, diagram, repo_root=str(root))
+        header = CandidateHeader(name="Queued promotion", id=naive_id, diagram=diagram)
+        naive = mcp.change_set_create(header, repo_root=str(root))
         stable_service = stable_id(service)  # scope and view hold an entity by its stable id
         assert stable_service in naive["record"]["scope"]
         ops = [
