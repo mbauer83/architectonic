@@ -261,6 +261,8 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         # Writes the candidate's operations, removals among them, onto the model.
         "change_set_apply": (False, True, False, False),
         "change_set_delete": (False, True, False, False),
+        # Creates a diagram and names it on the candidate, which named none.
+        "change_set_save_diagram": (False, False, False, False),
         # Creates a candidate and a document, and nothing else.
         "analysis_start": (False, False, False, False),
         # Moves existing rows from the design set to the test set: it changes what they held.

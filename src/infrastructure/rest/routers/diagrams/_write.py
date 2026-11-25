@@ -9,7 +9,6 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
-from src.domain.repository.groups import UNCATEGORIZED
 from src.infrastructure.diagram_composition import (
     CompositionRefused,
     DiagramNotStored,
@@ -17,6 +16,7 @@ from src.infrastructure.diagram_composition import (
     render_composition,
     replace_diagram,
 )
+from src.infrastructure.diagram_creation import DiagramFiling, create_composed_diagram
 from src.infrastructure.rest.contracts.diagrams import DiagramPreviewResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
@@ -78,49 +78,18 @@ def preview_diagram(body: DiagramPreviewBody, catalogs: RuntimeCatalogs = Depend
 def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
-    from src.application.identifier_allocator import get_default_allocator
-    from src.application.modeling.artifact_write import prefix_for_diagram_type
-    from src.infrastructure.write.artifact_write.diagram import create_diagram
-
-    repo = s.get_repo()
     repo_root, _, verifier = s.get_write_deps(catalogs)
-    try:
-        composed = render_composition(body, repo=repo, repo_root=repo_root)
-    except CompositionRefused as exc:
-        raise rejected_input(str(exc), field=exc.field) from exc
-    puml, de, dc = composed.puml, composed.diagram_entities, composed.diagram_connections
-    conn_bindings = composed.conn_bindings
-    entity_ids_used, connection_ids_used = composed.entity_ids_used, composed.connection_ids_used
+    filing = DiagramFiling(
+        group=body.home(), keywords=body.keywords, layout=body.layout, version=body.version, status=body.status,
+        tlp=body.tlp, viewpoint=body.viewpoint,
+    )
     try:
         result = s.authorized_write(
-            "diagrams_create_diagram", 
-            create_diagram,
-            repo_root=repo_root,
-            verifier=verifier,
-            clear_repo_caches=s.clear_caches,
-            diagram_type=body.diagram_type,
-            name=body.name,
-            group=body.group or UNCATEGORIZED,
-            puml=puml,
-            artifact_id=get_default_allocator().allocate(
-                prefix=prefix_for_diagram_type(body.diagram_type), name_hint=body.name
-            ),
-            keywords=body.keywords,
-            diagram_entities=de,
-            diagram_connections=dc,
-            entity_ids_used=entity_ids_used,
-            connection_ids_used=connection_ids_used,
-            authored_groupings=body.authored_groupings,
-            layout=body.layout,
-            version=body.version,
-            status=body.status,
-            last_updated=None,
-            tlp=body.tlp,
-            connection_inference="none",
-            bindings=conn_bindings or None,
-            viewpoint=body.viewpoint,
-            dry_run=body.dry_run,
+            "diagrams_create_diagram", create_composed_diagram, body, filing, repo=s.get_repo(),
+            repo_root=repo_root, verifier=verifier, clear_caches=s.clear_caches, dry_run=body.dry_run,
         )
+    except CompositionRefused as exc:
+        raise rejected_input(str(exc), field=exc.field) from exc
     except ValueError as e:
         raise HTTPException(400, str(e))
     created(result, response, f"/api/diagrams/{result.artifact_id}")

@@ -584,7 +584,8 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     WriteCall(
         "change_set_edit",
         lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"],
-                   "patch": {"rationale": "Queue promotions while the destination is offline."}},
+                   "patch": {"rationale": "Queue promotions while the destination is offline.",
+                             "scope": [c.fixture_entity]}},
         captures=(Capture("candidate_version", _answer_field("version")),),
     ),
     WriteCall(
@@ -592,6 +593,13 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         # proves the transport and the queue, and the drift itself is the application tests'.
         "change_set_rebase",
         lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"]},
+    ),
+    WriteCall(
+        # The candidate reads over one entity and is drawn on no diagram: its generated view is saved as one.
+        "change_set_save_diagram",
+        lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"],
+                   "name": "MCP Walk Candidate View", "dry_run": False},
+        captures=(Capture("candidate_version", _answer_field("version")),),
     ),
     WriteCall(
         # A dry run of the one create the walk recorded. That proves the transport and the queue; the

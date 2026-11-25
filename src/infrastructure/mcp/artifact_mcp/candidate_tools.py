@@ -16,6 +16,7 @@ from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.candidate_wire import CandidateHeader, CandidatePatch, RecordedEdit
 from src.infrastructure.candidates import analysis_reads, evaluation
 from src.infrastructure.candidates.analysis_start import document_writer, start_analysis
+from src.infrastructure.candidates.diagram_save import diagram_writer, save_as_diagram
 from src.infrastructure.candidates.service import CandidateService
 from src.infrastructure.mcp.artifact_mcp import candidate_tool_descriptions as said
 from src.infrastructure.mcp.artifact_mcp.context import (
@@ -125,6 +126,26 @@ def change_set_apply(artifact_id: CandidateId, dry_run: bool = True, repo_root: 
     return _service(repo_root).apply(artifact_id, dry_run=dry_run)
 
 
+def change_set_save_diagram(
+    artifact_id: CandidateId,
+    based_on: BasedOn,
+    name: Annotated[str | None, Field(description="The new diagram's name; the candidate's own when omitted.")] = None,
+    group: Annotated[str | None, Field(description="The collection it is filed in; uncategorized if omitted.")] = None,
+    dry_run: bool = True,
+    repo_root: RepoRoot = None,
+) -> dict[str, Any]:
+    roots = _roots(repo_root)
+    key = roots_key(roots)
+    mutation_context, clear_repo_caches = authoritative_callbacks_for(roots)
+    writer = diagram_writer(repo_cached(key), roots[0], verifier_for(key, include_registry=True), clear_repo_caches)
+    saved = save_as_diagram(
+        CandidateService(roots[0]), artifact_id, writer, based_on=based_on, name=name, group=group, dry_run=dry_run,
+    )
+    if not dry_run:
+        mutation_context.finalize()
+    return saved
+
+
 def analysis_start(
     title: Annotated[str, Field(min_length=1, description="The analysis document's title.")],
     naive: CandidateHeader,
@@ -205,6 +226,7 @@ _WRITE_TOOLS = (
     (change_set_edit, said.CHANGE_SET_EDIT, DESTRUCTIVE_LOCAL_WRITE),
     (change_set_rebase, said.CHANGE_SET_REBASE, DESTRUCTIVE_LOCAL_WRITE),
     (change_set_apply, said.CHANGE_SET_APPLY, DESTRUCTIVE_LOCAL_WRITE),
+    (change_set_save_diagram, said.CHANGE_SET_SAVE_DIAGRAM, LOCAL_WRITE),
     (change_set_delete, said.CHANGE_SET_DELETE, DESTRUCTIVE_LOCAL_WRITE),
     (analysis_start, said.ANALYSIS_START, LOCAL_WRITE),
     (analysis_hold_out_test_set, said.ANALYSIS_HOLD_OUT, DESTRUCTIVE_LOCAL_WRITE),

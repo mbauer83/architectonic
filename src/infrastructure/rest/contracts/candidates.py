@@ -242,3 +242,22 @@ class CandidateApplication(NullsOmitted):
     standing: list[OperationStanding] = Field(
         description="Each operation's standing; those already there are skipped, the rest are written.",
     )
+
+
+class CandidateDiagramSave(Closed):
+    """Store the view a candidate drawn on no stored diagram is generated as, and draw the candidate on it."""
+
+    based_on: str = Field(description="The `version` the last read or write of this candidate answered.")
+    name: str | None = Field(None, min_length=1, description="The new diagram's name; the candidate's own when absent.")
+    group: str | None = Field(None, description="The collection the diagram is filed in; uncategorized when absent.")
+    dry_run: bool = True
+
+
+class CandidateDiagramSaved(NullsOmitted):
+    candidate: str
+    dry_run: bool
+    diagram: str | None = Field(None, description="The diagram written; absent on a dry run.")
+    name: str
+    entities: int = Field(description="How many of the model's entities the diagram draws.")
+    relations: int = Field(description="How many relations among them it draws.")
+    version: str | None = Field(None, description="The candidate's version once it names the diagram.")

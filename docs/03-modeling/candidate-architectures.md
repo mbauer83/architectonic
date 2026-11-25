@@ -44,6 +44,7 @@ current version.
 | How each operation stands against the model | `change_set_standing` | `GET /api/change-sets/{id}/standing` |
 | Compare against the model, the naive or another candidate | `change_set_compare` | `GET /api/change-sets/{id}/diff` |
 | Draw a scope no stored diagram draws, as a generated view | — | `POST /api/scope-drawings` |
+| Save the generated view a candidate is drawn on as a diagram | `change_set_save_diagram` | `POST /api/change-sets/{id}/save-as-diagram` |
 | Check candidates for conflicting claims | `change_set_check` | `POST /api/change-set-checks` |
 | Re-base drifted operations | `change_set_rebase` | `POST /api/change-sets/{id}/rebase` |
 | Apply to the model | `change_set_apply` | `POST /api/change-sets/{id}/apply` |
@@ -110,7 +111,11 @@ candidate's dry run before it is applied.
 A candidate records the diagram it is drawn on as `diagram`. A candidate stacked on another is drawn
 on the nearest diagram its stack names. Where none is named, as for a scope chosen by a search or by a
 viewpoint that no stored diagram applies, a comparison is drawn on a view generated from the scope:
-its elements and the relations among them. Stressors, end states, incidence, adaptations and verdicts are rows of the
+its elements and the relations among them. `change_set_save_diagram` stores that view as a new
+diagram, through the same create as any diagram, and records it as the candidate's `diagram`, so the
+candidate can be sketched on it. The diagram draws only what the model holds; what the candidate
+creates or changes is drawn over it on the canvas and reaches the model only when the candidate is
+applied. A candidate whose scope holds nothing of the model has no view to save. Stressors, end states, incidence, adaptations and verdicts are rows of the
 document's tables, written with `artifact_edit_document_table`
 (`PATCH /api/documents/{id}/tables/{table}`). The reads are `analysis_progress`, `analysis_incidence`
 and `analysis_test_set`. Holding out a test set and reading residuality are described in

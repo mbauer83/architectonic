@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.candidates import analysis_reads
 from src.infrastructure.candidates.analysis_start import document_writer, start_analysis
+from src.infrastructure.candidates.diagram_save import diagram_writer, save_as_diagram
 from src.infrastructure.rest.contracts.candidates import (
     AnalysisIncidence,
     AnalysisProgress,
@@ -17,6 +18,8 @@ from src.infrastructure.rest.contracts.candidates import (
     CandidateComparison,
     CandidateCreate,
     CandidateDeletion,
+    CandidateDiagramSave,
+    CandidateDiagramSaved,
     CandidateEdit,
     CandidateList,
     CandidateOperations,
@@ -176,6 +179,31 @@ def changes_apply_candidate(artifact_id: str, body: CandidateApply) -> dict[str,
     """
     with refusals():
         return s.authorized_write("changes_apply_candidate", service().apply, artifact_id, dry_run=body.dry_run)
+
+
+@router.post(
+    "/api/change-sets/{artifact_id}/save-as-diagram",
+    operation_id="changes_save_candidate_diagram",
+    tags=[TAG_CHANGES],
+    summary="Save the generated view a candidate is drawn on as a diagram",
+    response_model=CandidateDiagramSaved,
+    response_model_exclude_none=True,
+    responses=WRITE_RESPONSES,
+)
+def changes_save_candidate_diagram(
+    artifact_id: str, body: CandidateDiagramSave, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
+    """For a candidate whose stack names no stored diagram: a new diagram drawing the model's entities in its
+    scope and the relations among them, as the generated view draws them, written through the diagram create;
+    the candidate is then drawn on it. Nothing the candidate changes is written. Refused (409) where the
+    candidate is drawn on a stored diagram already, is final, or changed since `based_on`."""
+    repo_root, _registry, verifier = s.get_write_deps(catalogs)
+    with refusals():
+        return s.authorized_write(
+            "changes_save_candidate_diagram", save_as_diagram, service(), artifact_id,
+            diagram_writer(s.get_repo(), repo_root, verifier, s.clear_caches),
+            based_on=body.based_on, name=body.name, group=body.group, dry_run=body.dry_run,
+        )
 
 
 @router.post(

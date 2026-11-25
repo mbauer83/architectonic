@@ -14,6 +14,9 @@ CANDIDATE_ROWS = (
              identity_parameters=("artifact_id",), mutation_domain="repository"),
     RouteRow("POST", "/api/change-sets/{artifact_id}/apply", "operation", "changes_apply_candidate", TYPED,
              identity_parameters=("artifact_id",), mutation_domain="repository"),
+    # The diagram create renders the view with PlantUML, hence `derived-graph`.
+    RouteRow("POST", "/api/change-sets/{artifact_id}/save-as-diagram", "operation", "changes_save_candidate_diagram",
+             TYPED, identity_parameters=("artifact_id",), mutation_domain="repository", timeout_class="derived-graph"),
     RouteRow("POST", "/api/change-sets/{artifact_id}/rebase", "operation", "changes_rebase_candidate", TYPED,
              identity_parameters=("artifact_id",), mutation_domain="repository"),
     RouteRow("POST", "/api/change-sets/{artifact_id}/operations", "subresource", "changes_record_operation", TYPED,

@@ -83,6 +83,15 @@ CHANGE_SET_APPLY = (
     "be written and the refusal, if any, instead of raising it. operation_id is for artifact_get_operation."
 )
 
+CHANGE_SET_SAVE_DIAGRAM = (
+    "Save as diagram: for a candidate drawn on no stored diagram (its stack names none, so it is drawn as a "
+    "view generated from its scope), write that view as a new diagram — the model's entities in the scope "
+    "and the relations among them, through the diagram create — and draw the candidate on it. Nothing the "
+    "candidate changes is written; a scope holding nothing of the model is refused. name defaults to the "
+    "candidate's; group files it (uncategorized when omitted). Refused where the candidate is drawn on a "
+    "stored diagram already or is final. dry_run (default true) answers what would be written. " + VERSIONED
+)
+
 CHANGE_SET_DELETE = (
     "Delete a candidate nothing refers to. Refused while a candidate stacks on it, an analysis starts from "
     "it, an analysis's verdicts or adaptations name it, or it is integrated (kept as the record of what was "
