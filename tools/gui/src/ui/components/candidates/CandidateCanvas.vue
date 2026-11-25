@@ -23,7 +23,11 @@ import LayoutLabCanvas from '../layoutLab/LayoutLabCanvas.vue'
 import CanvasMarksLayer from './CanvasMarksLayer.vue'
 
 /** *changed*: the candidate against its base, as the operations table reads it (~ and − on model elements). */
-const props = defineProps<{ candidateId: string; name: string; role: string; diagramId: string; changed: Marks }>()
+const props = withDefaults(defineProps<{
+  candidateId: string; name: string; role: string; diagramId: string; changed: Marks
+  /** What *Done sketching* says, where it leads somewhere: the naive architecture's points on to Stressors. */
+  doneLabel?: string
+}>(), { doneLabel: 'Done sketching' })
 const emit = defineEmits<{ recorded: []; done: [] }>()
 const svc = inject(modelServiceKey)!
 
@@ -115,10 +119,10 @@ onMounted(async () => {
           class="btn btn-sm btn-primary"
           data-testid="done-sketching"
           @click="emit('done')"
-        >Done sketching</button>
+        >{{ doneLabel }}</button>
       </span>
       <span class="kind">{{ role }} · candidate architecture · draft · right-click for the menu · double-click renames ·
-        nothing reaches the model before Commit</span>
+        nothing reaches the model before it is applied</span>
     </div>
     <p
       v-if="error ?? editing.error.value"

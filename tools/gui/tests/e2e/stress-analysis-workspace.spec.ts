@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test'
 import type { APIRequestContext, Page } from '@playwright/test'
 
 /**
- * The stress-analysis workspace, driven as an analyst drives it: starting an analysis from a diagram,
+ * The stress-analysis workspace, driven as an analyst drives it: starting an analysis from a diagram
+ * and sketching its naive architecture straight away,
  * a stressor written, grouped and ticked on the canvas, an end state in focus, and a test set held out
  * of the design stressors and judged on the naive architecture.
  *
@@ -28,7 +29,7 @@ interface Started { document: string; naive_candidate: { record: { id: string; c
 /** An analysis of the diagram, started through the one write the start page makes. */
 const startAnalysis = async (request: APIRequestContext, title: string): Promise<Started> => {
   const started = await request.post('/api/stress-analyses', {
-    data: { title, naive: { name: 'Naive architecture' }, scope_diagram: DIAGRAM },
+    data: { title, naive: { name: 'Naive architecture', diagram: DIAGRAM } },
   })
   expect(started.ok(), await started.text()).toBe(true)
   const body = await started.json() as Started
@@ -122,21 +123,29 @@ test('undo on the sketching canvas takes the recorded operation back out of the 
   await expect.poll(() => operationsOf(request, naive.record.id)).toHaveLength(0)
 })
 
-test('starting an analysis from a diagram opens the naive architecture in the workspace', async ({ page, request }) => {
+test('starting an analysis from a diagram opens its naive architecture for sketching', async ({ page, request }) => {
   await page.goto('/stress-analyses/new')
-  await page.getByTestId('analysis-name').fill('Stress analysis — start flow')
+  await expect(page.getByText('Question')).toHaveCount(0)
   await page.getByTestId('scope-diagram').selectOption(DIAGRAM)
+  await expect(page.getByTestId('analysis-name')).toHaveValue(/^Stress analysis — /)
+  await page.getByTestId('analysis-name').fill('Stress analysis — start flow')
+  await page.getByTestId('analysis-context').fill('Promotion volumes double; the evaluation informs tiering.')
   await expect(page.getByTestId('scope-count')).not.toContainText(/^0 elements/)
   await expect(element(page, SERVICE_ALIAS)).toBeAttached()
   await page.getByTestId('start-naive').click()
 
-  await page.waitForURL(/\/workspace\?tab=naive$/)
+  await page.waitForURL(/\/workspace\?tab=naive&sketch=naive$/)
   const document = decodeURIComponent(page.url().split('/documents/')[1].split('/workspace')[0])
   created.push(document)
   const read = await (await request.get(`/api/documents/${encodeURIComponent(document)}`)).json() as { extra: Record<string, string> }
   candidates.push(read.extra['naive-candidate'])
   await expect(page.getByRole('tab', { name: /Naive architecture/ })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByTestId('candidate-operations')).toContainText('naive architecture · the initial candidate')
+  await expect(page.getByTestId('analysis-context')).toContainText('the evaluation informs tiering')
+  await expect(page.getByTestId('naive-intro')).toBeVisible()
+  await expect(page.getByTestId('candidate-canvas')).toBeVisible()
+  await page.getByTestId('done-sketching').click()
+  await expect(page.getByRole('tab', { name: /Stressors/ })).toHaveAttribute('aria-selected', 'true')
   await expect(element(page, SERVICE_ALIAS)).toBeAttached()
 })
 

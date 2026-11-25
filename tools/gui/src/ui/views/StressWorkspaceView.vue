@@ -2,9 +2,11 @@
 /**
  * The stress-analysis workspace (sketch 06; owner decisions of 2026-11-22): the analysis's tables in
  * tabs on the left — Naive architecture · Stressors · End states · Adaptations · Integration — and on
- * the right the naive architecture's scope diagram, marked with what the open tab is about. Not a
+ * the right the naive architecture as it is drawn, marked with what the open tab is about. Not a
  * wizard: any tab, any order. Below the tabs the test set, apart from them; while an architecture is
- * judged against it, the canvas shows that architecture.
+ * judged against it, the canvas shows that architecture. Opened from the start page, it sketches the
+ * naive architecture straight away, with a note saying once what it is; done sketching it, the
+ * stressors come next.
  */
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -38,9 +40,7 @@ const router = useRouter()
 const documentId = computed(() => String(route.params.artifactId))
 const analysis = useStressAnalysis(svc, () => documentId.value)
 const edits = useAnalysisEdits(analysis, toast)
-const candidates = useCandidates(svc, {
-  root: () => analysis.naiveId.value, scopeDiagram: () => analysis.scopeDiagram.value,
-})
+const candidates = useCandidates(svc, { root: () => analysis.naiveId.value, scopeDiagram: () => '' })
 const testSet = useTestSet(svc, analysis, () => documentId.value, toast)
 /** The test stressor in focus in the judge walk. */
 const judged = ref<string | null>(null)
@@ -59,8 +59,11 @@ const tab = computed<WorkspaceTab>({
   get: () => TABS.find((one) => one === route.query.tab) ?? 'stressors',
   set: (next) => { void router.replace({ query: { tab: next } }) },
 })
+/** The naive architecture as listed: what its operation count reads, kept current with every recording. */
+const opsCount = (count: number): string => `${count} ${count === 1 ? 'op' : 'ops'}`
+const naiveSummary = computed(() => candidates.all.value.find((one) => one.id === analysis.naiveId.value) ?? null)
 const tabs = computed(() => [
-  { id: 'naive' as const, label: 'Naive architecture', count: `${analysis.naive.value?.diff.length ?? 0} ops` },
+  { id: 'naive' as const, label: 'Naive architecture', count: opsCount(naiveSummary.value?.operations ?? 0) },
   { id: 'stressors' as const, label: 'Stressors', count: String(analysis.stressors.value.length) },
   { id: 'end-states' as const, label: 'End states', count: String(analysis.endStates.value.length) },
   {
@@ -76,9 +79,9 @@ const framed = ref<string | null>(null)
 /** The candidate being sketched on the canvas, if any. */
 const sketching = ref<string | null>(null)
 const sketched = computed(() => candidates.all.value.find((one) => one.id === sketching.value) ?? null)
-/** A change recorded in the sketched candidate: its table, and the naive architecture's names, follow. */
+/** A change recorded in the sketched candidate: its table, its count and the naive architecture's names follow. */
 const recorded = async () => {
-  await candidates.compareWith(candidates.against.value)
+  await Promise.all([candidates.compareWith(candidates.against.value), candidates.load()])
   if (sketching.value === analysis.naiveId.value) await analysis.reload()
 }
 /** The candidate read on the left, which the "model moved" band speaks about. */
@@ -92,8 +95,14 @@ const rebase = async () => {
   rebasing.value = false
   if (id === analysis.naiveId.value) await analysis.reload()
 }
+/** The note that says once what the naive architecture is, as it is first sketched. */
+const introducing = ref(route.query.sketch === 'naive')
+/** Done sketching: the naive architecture points on to the stressors written against it. */
 const doneSketching = async () => {
+  const wasNaive = sketching.value === analysis.naiveId.value
   sketching.value = null
+  introducing.value = false
+  if (wasNaive) tab.value = 'stressors'
   await recorded()
 }
 
@@ -165,6 +174,8 @@ onMounted(async () => {
   await candidates.load()
   // The band says whether the model moved under the naive architecture on every tab, not only its own.
   if (!candidates.selected.value && analysis.naiveId.value) await candidates.select(analysis.naiveId.value)
+  // Started a moment ago: the naive architecture opens for sketching, where it is drawn on a stored diagram.
+  if (introducing.value && analysis.drawnOn.value) sketching.value = analysis.naiveId.value
 })
 </script>
 
@@ -189,14 +200,15 @@ onMounted(async () => {
       <span
         v-if="analysis.naive.value"
         class="mono"
-      >scope: {{ analysis.naive.value.drawing?.name ?? 'explicit elements' }}
+      >scope: {{ analysis.drawnOn.value ? analysis.naive.value.drawing?.name : 'a view generated from it' }}
         ({{ analysis.naive.value.view.entities.length }} elements)</span>
     </div>
     <p
-      v-if="analysis.question.value"
-      class="question"
+      v-if="analysis.context.value"
+      class="context"
+      data-testid="analysis-context"
     >
-      Question: {{ analysis.question.value }}
+      Context: {{ analysis.context.value }}
     </p>
     <p
       v-if="analysis.error.value"
@@ -289,24 +301,43 @@ onMounted(async () => {
         />
       </div>
       <section aria-label="Canvas">
+        <p
+          v-if="introducing && sketched?.id === analysis.naiveId.value"
+          class="intro"
+          role="note"
+          data-testid="naive-intro"
+        >
+          <span>This is the <b>naive architecture</b>: the architecture under evaluation as it stands before
+            any stressor, and the first candidate architecture of this analysis. Sketch it as you would a
+            diagram; every change is one of its operations, listed on the left, and nothing reaches the
+            model before it is applied. When it is done, the stressors are written against it.</span>
+          <button
+            type="button"
+            class="btn btn-sm"
+            @click="introducing = false"
+          >
+            Understood
+          </button>
+        </p>
         <CandidateCanvas
-          v-if="sketched && analysis.scopeDiagram.value"
+          v-if="sketched && analysis.drawnOn.value"
           :key="sketched.id"
           :candidate-id="sketched.id"
           :name="sketched.name"
           :role="sketched.id === analysis.naiveId.value ? 'Naive architecture' : 'Adaptation'"
-          :diagram-id="analysis.scopeDiagram.value"
+          :done-label="sketched.id === analysis.naiveId.value ? 'Done sketching · on to Stressors' : 'Done sketching'"
+          :diagram-id="analysis.drawnOn.value"
           :changed="diffMarks(candidates.comparison.value?.diff ?? [])"
           @recorded="recorded"
           @done="doneSketching"
         />
         <MarkedCanvas
           v-else
-          :diagram-id="analysis.scopeDiagram.value"
+          :diagram-id="analysis.drawnOn.value"
           :drawing="drawing"
           :marks="marks"
           :hint="hint"
-          empty-text="No diagram to draw: this analysis has no scope diagram."
+          empty-text="Nothing to draw: the naive architecture is empty."
           @pick="pick"
         />
         <p
@@ -329,7 +360,12 @@ onMounted(async () => {
 .meta { display: flex; gap: 10px; align-items: center; margin: 8px 0 2px; font-size: 12px; color: var(--muted); }
 .badge { background: var(--accent-soft); color: var(--accent-strong); border-radius: 3px; padding: 2px 8px; }
 .mono { font-family: ui-monospace, monospace; }
-.question { color: var(--muted); font-size: 12.5px; margin: 2px 0 10px; }
+.context { color: var(--text-2); font-size: 12.5px; margin: 2px 0 10px; white-space: pre-line; }
+.intro {
+  display: flex; gap: 10px; align-items: flex-start; margin: 0 0 8px; padding: 8px 10px; font-size: 12.5px;
+  border: 1px solid var(--accent-border); background: var(--accent-soft); border-radius: 6px; color: var(--text);
+}
+.intro .btn { flex: none; }
 .err { color: var(--danger-strong); font-size: 12.5px; }
 .ws { display: grid; grid-template-columns: minmax(440px, 46%) minmax(0, 1fr); gap: 12px; align-items: start; }
 .left, .pane { min-width: 0; }

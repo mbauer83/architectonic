@@ -1,20 +1,25 @@
 <script setup lang="ts">
 /**
- * Starting a stress analysis (06·0): a name and a question, then two steps — the scope, and the naive
- * architecture, the first candidate architecture — while the canvas previews the scope. *Start the
- * naive architecture* creates the naive as a draft candidate and the analysis document naming it, in
- * one write the server makes whole or not at all, then opens the workspace on the naive architecture.
+ * Starting a stress analysis (06·0; owner decisions of 2026-11-25): an analysis evaluates a proposed
+ * architecture. One step names it — the architecture under evaluation, the naive candidate, from the
+ * current model within a scope, from an existing candidate, or empty — while the canvas previews it.
+ * A name (by default the architecture's) and an optional context are all the document asks.
+ * *Start the naive architecture* creates the naive as a draft candidate and the analysis document naming
+ * it, in one write the server makes whole or not at all, then opens the naive for sketching.
  */
-import { computed, inject, onMounted, ref, shallowRef } from 'vue'
+import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Effect } from 'effect'
 import type { DiagramSummary, ViewpointDefinitionEnvelope } from '../../domain'
 import type { CandidateSummary } from '../../domain/schemas/candidates'
+import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
+import { touchingScope } from '../../domain/candidates/touchingScope'
 import { modelServiceKey } from '../keys'
 import { formatEffectError } from '../lib/errors'
-import { stressAnalysisWorkspaceRoute } from '../router/artifactRoutes'
+import { candidateDetailRoute, stressAnalysisWorkspaceRoute } from '../router/artifactRoutes'
 import { LARGE_SCOPE, useAnalysisScope } from '../composables/useAnalysisScope'
 import MarkedCanvas from '../components/candidates/MarkedCanvas.vue'
+import StressStartArchitecture from '../components/stressWorkspace/StressStartArchitecture.vue'
 import type { Marks } from '../../domain/candidates/canvasMarks'
 import { framedMarks } from '../../domain/candidates/canvasMarks'
 
@@ -22,27 +27,53 @@ type Origin = 'model' | 'existing' | 'empty'
 
 const svc = inject(modelServiceKey)!
 const router = useRouter()
-const scope = useAnalysisScope(svc)
-
-const title = ref('')
-const question = ref('')
-const origin = ref<Origin>('model')
-const fromCandidate = ref('')
-const naiveName = ref('Naive architecture')
 const diagrams = shallowRef<readonly DiagramSummary[]>([])
 const viewpoints = shallowRef<readonly ViewpointDefinitionEnvelope[]>([])
 const candidates = shallowRef<readonly CandidateSummary[]>([])
+const scope = useAnalysisScope(svc, { diagrams: () => diagrams.value, viewpoints: () => viewpoints.value })
+
+const context = ref('')
+const origin = ref<Origin>('model')
+const fromCandidate = ref('')
+const naiveName = ref('Naive architecture')
 const starting = ref(false)
 const error = ref<string | null>(null)
 
-const marks = computed((): Marks => framedMarks(scope.pressed.value, 'In the scope'))
-const canStart = computed(() => title.value.trim() !== '' && naiveName.value.trim() !== ''
-  && (origin.value !== 'existing' || fromCandidate.value !== '') && !starting.value)
+/** What the analysis evaluates, in words: the scope's source, the candidate it stacks on, or the naive. */
+const evaluated = computed((): string => ({
+  model: scope.subject.value,
+  existing: candidates.value.find((one) => one.id === fromCandidate.value)?.name ?? '',
+  empty: naiveName.value.trim(),
+})[origin.value])
+/** The name typed, or none yet: until one is typed, the name follows the architecture under evaluation. */
+const typedTitle = ref<string | null>(null)
+const title = computed({
+  get: () => typedTitle.value ?? (evaluated.value ? `Stress analysis — ${evaluated.value}` : ''),
+  set: (typed: string) => { typedTitle.value = typed },
+})
 
-/** The naive architecture's record: its scope (none when empty), and what it stacks on. */
+/** The candidate the naive stacks on, drawn as its own page draws it. */
+const stackedOn = shallowRef<LayoutGeometry | null>(null)
+watch(fromCandidate, async (id) => {
+  stackedOn.value = null
+  if (!id) return
+  const read = await Effect.runPromise(svc.compareCandidate(id, 'model')).catch(() => null)
+  if (fromCandidate.value === id) stackedOn.value = read?.drawing ?? null
+})
+
+const fromModel = computed(() => origin.value === 'model')
+const marks = computed((): Marks => (fromModel.value ? framedMarks(scope.pressed.value, 'In the scope') : new Map()))
+const drawing = computed(() => ({ model: scope.drawing.value, existing: stackedOn.value, empty: null })[origin.value])
+const touching = computed(() => (fromModel.value ? touchingScope(scope.ids.value, candidates.value) : []))
+const canStart = computed(() => title.value.trim() !== '' && naiveName.value.trim() !== '' && !starting.value
+  && (origin.value !== 'existing' || fromCandidate.value !== '')
+  && (origin.value !== 'model' || scope.ids.value.length > 0))
+
+/** The naive architecture's record: its scope and the diagram it is drawn on, what it stacks on, or neither. */
 const naiveRecord = (): Record<string, unknown> => ({
   name: naiveName.value.trim(),
-  ...(origin.value === 'empty' ? {} : { scope: [...scope.ids.value] }),
+  ...(fromModel.value ? { scope: [...scope.ids.value] } : {}),
+  ...(fromModel.value && scope.drawnOn.value ? { diagram: scope.drawnOn.value } : {}),
   ...(origin.value === 'existing' ? { parent: fromCandidate.value } : {}),
 })
 
@@ -50,19 +81,27 @@ const start = async () => {
   starting.value = true
   error.value = null
   try {
-    const diagram = origin.value === 'empty' ? '' : scope.diagramId.value
     const started = await Effect.runPromise(svc.startAnalysis({
       title: title.value.trim(), naive: naiveRecord(),
-      ...(question.value.trim() ? { question: question.value.trim() } : {}),
-      ...(diagram ? { scope_diagram: diagram } : {}),
+      ...(context.value.trim() ? { context: context.value.trim() } : {}),
     }))
-    await router.push({ path: stressAnalysisWorkspaceRoute(started.document), query: { tab: 'naive' } })
+    await router.push({
+      path: stressAnalysisWorkspaceRoute(started.document), query: { tab: 'naive', sketch: 'naive' },
+    })
   } catch (failure) {
     error.value = formatEffectError(failure)
   } finally {
     starting.value = false
   }
 }
+
+const hint = computed(() => {
+  if (!fromModel.value) return 'The architecture the naive candidate stacks on'
+  if (!scope.drawnOn.value) return 'A view generated from the scope: no stored diagram draws it'
+  return scope.source.value === 'diagram' && !scope.wholeDiagram.value
+    ? 'Press elements to put them in the scope'
+    : 'The scope · what is outside it steps back'
+})
 
 onMounted(async () => {
   const [listed, defined, open] = await Promise.all([
@@ -94,149 +133,60 @@ onMounted(async () => {
       >
         <h2>Start a stress analysis</h2>
         <p class="lead">
-          Two steps, in any order. Nothing is created until you press <i>Start the naive architecture</i>.
+          A stress analysis evaluates a proposed architecture. Nothing is created until you press
+          <i>Start the naive architecture</i>.
         </p>
         <label class="fld">Name <input
           v-model="title"
           data-testid="analysis-name"
-          placeholder="Stress analysis — …"
+          placeholder="Stress analysis — the architecture under evaluation"
         ></label>
-        <label class="fld">Question <input
-          v-model="question"
-          placeholder="Does … hold when …?"
-        ></label>
-        <div class="step">
-          <h3><span class="num">1</span> Scope — what the analysis looks at</h3>
-          <div
-            class="seg"
-            role="tablist"
-          >
-            <button
-              v-for="one in (['diagram', 'viewpoint', 'search'] as const)"
-              :key="one"
-              type="button"
-              role="tab"
-              class="tab"
-              :aria-selected="scope.source.value === one"
-              @click="scope.source.value = one"
+        <label class="fld">Context <small class="optional">optional</small>
+          <textarea
+            v-model="context"
+            data-testid="analysis-context"
+            rows="2"
+            placeholder="The environment the architecture is evaluated in, and the decision the evaluation informs"
+          /></label>
+        <StressStartArchitecture
+          v-model:origin="origin"
+          v-model:from-candidate="fromCandidate"
+          v-model:naive-name="naiveName"
+          :scope="scope"
+          :diagrams="diagrams"
+          :viewpoints="viewpoints"
+          :candidates="candidates"
+        />
+        <section
+          v-if="touching.length"
+          class="touching"
+          data-testid="touching-candidates"
+          aria-label="Open candidates touching the scope"
+        >
+          <h3>Open candidate architectures touching this scope</h3>
+          <ul>
+            <li
+              v-for="one in touching"
+              :key="one.candidate.id"
             >
-              {{ { diagram: 'Diagram selection', viewpoint: 'Viewpoint', search: 'Search' }[one] }}
-            </button>
-          </div>
-          <label class="fld">Diagram
-            <select
-              v-model="scope.diagramId.value"
-              data-testid="scope-diagram"
-            >
-              <option value="">no diagram</option>
-              <option
-                v-for="one in diagrams"
-                :key="one.artifact_id"
-                :value="one.artifact_id"
-              >{{ one.name }}</option>
-            </select>
-          </label>
-          <div
-            v-if="scope.source.value === 'diagram'"
-            class="row"
-          >
-            <label><input
-              v-model="scope.wholeDiagram.value"
-              type="radio"
-              :value="true"
-            > the whole diagram</label>
-            <label><input
-              v-model="scope.wholeDiagram.value"
-              type="radio"
-              :value="false"
-            > only the elements I press on the canvas</label>
-          </div>
-          <label
-            v-else-if="scope.source.value === 'viewpoint'"
-            class="fld"
-          >Viewpoint
-            <select @change="scope.runViewpoint(($event.target as HTMLSelectElement).value)">
-              <option value="">choose…</option>
-              <option
-                v-for="one in viewpoints"
-                :key="one.slug"
-                :value="one.slug"
-              >{{ one.name }}</option>
-            </select>
-          </label>
-          <form
-            v-else
-            class="row"
-            @submit.prevent="scope.search"
-          >
-            <input
-              v-model="scope.query.value"
-              placeholder="Search the model"
-              aria-label="Search the model"
-            >
-            <button
-              type="submit"
-              class="btn btn-sm"
-            >
-              Search
-            </button>
-            <div class="search-hits">
-              <label
-                v-for="hit in scope.hits.value"
-                :key="hit.artifact_id"
-              ><input
-                type="checkbox"
-                :checked="scope.ticked.value.has(hit.artifact_id)"
-                @change="scope.tick(hit.artifact_id)"
-              > {{ hit.name }} <small>{{ hit.artifact_type }}</small></label>
-            </div>
-          </form>
-          <p
-            class="scope-sum"
-            data-testid="scope-count"
-          >
-            <b>{{ scope.ids.value.length }} elements</b> in scope
-            <span
-              v-if="scope.ids.value.length > LARGE_SCOPE"
-              class="warnline"
-            >A scope above {{ LARGE_SCOPE }} elements is large: stressors will be hard to walk.</span>
-          </p>
-        </div>
-        <div class="step">
-          <h3><span class="num">2</span> The naive architecture — the first candidate</h3>
-          <p class="lead">
-            The architecture as it stands before any stressor. It is a <b>candidate architecture</b> of its
-            own: every adaptation stacks on it, and nothing in it reaches the model before Commit.
-          </p>
-          <label class="origin"><input
-            v-model="origin"
-            type="radio"
-            value="model"
-          ><span><b>From the current model, within the scope</b> <small>recommended</small>
-            <small>
-              Read live from the model; it starts with no operations, and what you change becomes them.
-            </small></span></label>
-          <label class="origin"><input
-            v-model="origin"
-            type="radio"
-            value="existing"
-          ><span><b>From an existing candidate architecture</b>
-            <small>Stacks on it: its operations are read first and stay its own.</small>
-            <select
-              v-if="origin === 'existing'"
-              v-model="fromCandidate"
-            ><option value="">choose…</option><option
-              v-for="one in candidates"
-              :key="one.id"
-              :value="one.id"
-            >{{ one.name }} ({{ one.state }})</option></select></span></label>
-          <label class="origin"><input
-            v-model="origin"
-            type="radio"
-            value="empty"
-          ><span><b>Empty</b> <small>A blank canvas: no elements, no boxes.</small></span></label>
-          <label class="fld">Its name <input v-model="naiveName"></label>
-        </div>
+              <RouterLink :to="candidateDetailRoute(one.candidate.id)">
+                {{ one.candidate.name }}
+              </RouterLink>
+              <small>{{ one.candidate.state }} · reads {{ one.shared }} of these elements</small>
+            </li>
+          </ul>
+        </section>
+        <p
+          v-if="fromModel"
+          class="scope-sum"
+          data-testid="scope-count"
+        >
+          <b>{{ scope.ids.value.length }} elements</b> in scope
+          <span
+            v-if="scope.ids.value.length > LARGE_SCOPE"
+            class="warnline"
+          >A scope above {{ LARGE_SCOPE }} elements is large: stressors will be hard to walk.</span>
+        </p>
         <p
           v-if="error ?? scope.error.value"
           class="err"
@@ -256,14 +206,14 @@ onMounted(async () => {
       </section>
       <section aria-label="Canvas">
         <MarkedCanvas
-          :diagram-id="scope.diagramId.value"
-          :drawing="origin === 'empty' ? null : scope.drawing.value"
+          :diagram-id="fromModel ? scope.drawnOn.value : ''"
+          :drawing="drawing"
           :marks="marks"
-          :dimmed="scope.outside.value"
-          :hint="scope.wholeDiagram.value
-            ? 'The scope · what is outside it steps back'
-            : 'Press elements to put them in the scope'"
-          empty-text="No diagram to draw: choose a scope diagram."
+          :dimmed="fromModel ? scope.outside.value : undefined"
+          :hint="hint"
+          :empty-text="origin === 'empty'
+            ? 'Empty: a blank canvas, no elements and no boxes.'
+            : scope.drawingBusy.value ? 'Drawing the scope…' : 'Choose a scope to see it here.'"
           @pick="scope.press"
         />
       </section>
@@ -289,7 +239,7 @@ onMounted(async () => {
   color: var(--muted);
   font-weight: 600;
 }
-.fld input, .fld select {
+.fld input, .fld textarea {
   display: block;
   width: 100%;
   margin-top: 3px;
@@ -297,50 +247,14 @@ onMounted(async () => {
   font-size: 13px;
   font-weight: 400;
   text-transform: none;
-  padding: 5px 8px;
 }
-.step { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 10px 0; }
-.step h3 { font-size: 13px; margin: 0 0 6px; display: flex; gap: 8px; align-items: center; }
-.num {
-  display: inline-grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: var(--on-accent);
-  font-size: 11px;
-}
-.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 4px; }
-.seg .tab { flex: none; padding: 4px 10px; }
-.row { display: flex; gap: 8px 14px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
-.scope-sum { background: var(--soft); border-radius: 6px; padding: 6px 8px; margin: 8px 0 0; }
-.search-hits {
-  flex-basis: 100%;
-  max-height: 140px;
-  overflow: auto;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-}
-.search-hits label { display: flex; gap: 6px; padding: 2px 6px; }
-.search-hits small { color: var(--muted); }
-.origin {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 7px 9px;
-  margin-top: 6px;
-  cursor: pointer;
-}
-.origin:has(input:checked) {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-.origin small { display: block; color: var(--muted); font-size: 11.5px; }
-.origin select { margin-top: 4px; font-size: 12px; }
+.fld textarea { resize: vertical; }
+.optional { font-weight: 400; text-transform: none; }
+.touching { border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; margin: 8px 0 0; }
+.touching h3 { font-size: 12px; margin: 0 0 4px; }
+.touching ul { margin: 0; padding-left: 16px; }
+.touching small { color: var(--muted); margin-left: 6px; }
+.scope-sum { background: var(--soft); border-radius: 6px; padding: 6px 8px; margin: 8px 0; }
 .err { color: var(--danger-strong); }
 </style>
 <style src="../components/candidates/workbench.css"></style>

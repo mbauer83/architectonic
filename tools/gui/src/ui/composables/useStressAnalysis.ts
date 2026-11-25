@@ -1,7 +1,8 @@
 /**
  * One stress analysis as the workspace holds it: the document, its typed tables, the incidence and
  * progress the server derives from them, the test set and its residuality, and the naive architecture
- * composed over its scope. The design reads hold the design set only; the test set is read apart.
+ * composed over its scope, drawn on the diagram it names or on a view generated from its scope. The
+ * design reads hold the design set only; the test set is read apart.
  *
  * Every row edit goes through the document's row-batch write, stated against the row as read; where a
  * row changed since, the server answers 409, nothing is written, and the analysis is read again so the
@@ -36,15 +37,17 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
   const progress = shallowRef<AnalysisProgress | null>(null)
   /** The test set, its verdicts and each judged architecture's residuality. */
   const evaluation = shallowRef<AnalysisEvaluation | null>(null)
-  /** The naive architecture composed over the model, with the scope diagram's drawing. */
+  /** The naive architecture composed over the model, with the drawing it is read on. */
   const naive = shallowRef<CandidateComparison | null>(null)
   const loading = ref(false)
   const saving = ref(false)
   const error = ref<string | null>(null)
 
   const naiveId = computed(() => frontmatter(document.value, 'naive-candidate'))
-  const scopeDiagram = computed(() => frontmatter(document.value, 'scope-diagram'))
-  const question = computed(() => frontmatter(document.value, 'question'))
+  /** The context the evaluation is made in: the environment, and the decision it informs. */
+  const context = computed(() => frontmatter(document.value, 'context'))
+  /** The stored diagram the naive architecture is drawn on; empty where it is drawn as a generated view. */
+  const drawnOn = computed(() => naive.value?.drawing?.artifact_id ?? '')
 
   /** An element of the naive architecture by name; a provisional `$ref:` id or an unknown one as it is. */
   const names = computed(() => new Map((naive.value?.view.entities ?? [])
@@ -68,7 +71,7 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
         Effect.runPromise(svc.readAnalysisProgress(id)),
         Effect.runPromise(svc.readTestSet(id)),
         naiveId.value
-          ? Effect.runPromise(svc.compareCandidate(naiveId.value, 'model', scopeDiagram.value || undefined))
+          ? Effect.runPromise(svc.compareCandidate(naiveId.value, 'model'))
           : Promise.resolve(null),
       ])
       tables.value = read
@@ -111,7 +114,7 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
 
   return {
     document, tables, incidence, progress, evaluation, naive, loading, saving, error,
-    naiveId, scopeDiagram, question, nameOf, hitsOf, missingOf, reload, edit,
+    naiveId, context, drawnOn, nameOf, hitsOf, missingOf, reload, edit,
     /** The design set: every stressor the walk, the end states and the adaptations work from. */
     stressors: computed(() => allStressors.value.filter((row) => !heldApart.value.has(row.row_id))),
     /** The test set, held apart and judged at the end. */

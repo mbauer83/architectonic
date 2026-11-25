@@ -62,6 +62,8 @@ export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>>
   'ui/views/AssuranceBrowseView.vue#node_id': 'presentation',
   // Which of the workspace's tables is open: the analysis is the same whichever tab shows it.
   'ui/views/StressWorkspaceView.vue#tab': 'presentation',
+  // Opened from the start page: sketch the naive architecture at once, with the note saying what it is.
+  'ui/views/StressWorkspaceView.vue#sketch': 'presentation',
   // The diagram a candidate is drawn and sketched on: the candidate is the same on any diagram.
   'ui/views/CandidateArchitectureView.vue#diagram': 'presentation',
   // Carried whole to a candidate stacked on the one being read, so it opens on the same diagram.

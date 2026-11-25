@@ -23,12 +23,12 @@ export const DIAGRAM_WORDS: CanvasWords = {
   removeKey: 'Del',
 }
 
-/** A candidate's words (06·5): removing records a remove-entity operation; the model keeps it until Commit. */
+/** A candidate's words (06·5): removing records a remove-entity operation; the model keeps it until Apply. */
 export const CANDIDATE_WORDS: CanvasWords = {
   deleteEntry: 'Remove from the candidate…',
   deleteHint: 'records a remove-entity operation; asks first',
   deleteQuestion: (name) =>
-    `Remove ${name} from this candidate? It records a remove-entity operation; the model keeps it until Commit.`,
+    `Remove ${name} from this candidate? It records a remove-entity operation; the model keeps it until the candidate is applied.`,
   deleteConfirm: 'Remove from the candidate',
   removeEntry: 'Remove from view',
   removeHint: 'records nothing; the candidate keeps it',
