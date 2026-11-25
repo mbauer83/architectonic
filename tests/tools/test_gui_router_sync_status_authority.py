@@ -14,8 +14,10 @@ import pytest
 from src.application.artifacts.query import ArtifactRepository
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.git import enterprise_branch_lifecycle, enterprise_sync_state, git_work_commits
+from src.infrastructure.operation_catalog import OPERATION_CATALOG
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.sync import status_cache as sync_status_cache
+from src.infrastructure.rest.routers.sync._authority import operation_intent
 from src.infrastructure.rest.routers.sync.router import router as sync_router
 from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 from src.infrastructure.write.authorized_mutation_executor import build_workspace_mutation_executor
@@ -96,6 +98,16 @@ class TestAuthorityFreshness:
         assert denied["engagement_authoring"]["denied"] is False
         payload = client.get("/api/sync/status").json()
         assert payload["enterprise"]["health"]["reason"] == "fetch_failed"
+
+    def test_every_named_operation_is_answered_as_the_intent_that_carries_it(self, workspace) -> None:
+        """The permission answer the GUI disables controls by: one decision per catalog operation."""
+        client, _, _ = workspace
+        assert set(_authority(client)["denied_operations"]) == set(OPERATION_CATALOG)
+        with get_workspace_gate().blocking_writes("sync_in_progress"):
+            during = _authority(client)
+        assert during["denied_operations"]["diagram.layout.place"] == {"denied": True, "code": "sync_in_progress"}
+        for name, decision in during["denied_operations"].items():
+            assert decision == during["denied_intents"][operation_intent(name)], name
 
     def test_read_only_denies_all_external_intents(self, workspace) -> None:
         client, engagement, enterprise = workspace

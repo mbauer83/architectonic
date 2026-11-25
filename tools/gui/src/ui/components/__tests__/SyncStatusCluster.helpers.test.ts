@@ -18,6 +18,7 @@ const openAuthority = (denied: string[] = []): SyncAuthority => ({
       'maintenance',
     ].map((intent) => [intent, { denied: denied.includes(intent), code: denied.includes(intent) ? 'x' : null }]),
   ),
+  denied_operations: {},
 })
 
 const enterprise = (overrides: Partial<EnterpriseSyncStatus>): EnterpriseSyncStatus => ({

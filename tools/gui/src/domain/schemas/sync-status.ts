@@ -30,12 +30,14 @@ export const DeniedIntentSchema = Schema.Struct({
 export type DeniedIntent = typeof DeniedIntentSchema.Type
 
 /** Per-intent authority projection, composed fresh by the backend on every
- * status request — never cached, never derived client-side from SSE. */
+ * status request — never cached, never derived client-side from SSE. `denied_operations` is the same
+ * decision for every named operation of the backend's operation catalog (`domain/permissions`). */
 export const SyncAuthoritySchema = Schema.Struct({
   block_kind: BlockKindSchema,
   blocked_reason: Schema.NullOr(SyncHealthReasonSchema),
   blocked_message: Schema.NullOr(Schema.String),
   denied_intents: Schema.Record({ key: Schema.String, value: DeniedIntentSchema }),
+  denied_operations: Schema.Record({ key: Schema.String, value: DeniedIntentSchema }),
 })
 export type SyncAuthority = typeof SyncAuthoritySchema.Type
 
