@@ -63,7 +63,7 @@ const relation = useCanvasRelation(
   () => { mode.value = 'relation' }, (message) => { error.value = message }, (c, overlay) => void apply(c, overlay),
 )
 const { kind, label, srcCount, tgtCount, description, options, currentLine } = relation
-const { anchor, drawAgain, ownBoxes, boxOfSelected, nestIn, nestUnder, asked, dropped } = useCanvasNesting(
+const { anchor, drawAgain, ownBoxes, boxOfSelected, nestIn, nestUnder, asked, dropped, dontNest } = useCanvasNesting(
   props.editing, host, source, members, { mode, error, position, close }, (c) => void apply(c),
 )
 
@@ -210,7 +210,7 @@ function double(e: MouseEvent) {
         tabindex="-1"
         :aria-label="mode"
         :style="{ left: at.x + 'px', top: at.y + 'px' }"
-        @keydown.esc.stop="close(true)"
+        @keydown.esc.stop="mode === 'nest' ? dontNest() : close(true)"
       >
         <CanvasElementForm
           v-if="mode === 'create'"
@@ -260,7 +260,7 @@ function double(e: MouseEvent) {
           :ask="asked"
           @box="nestIn"
           @relate="nestUnder"
-          @cancel="close(true)"
+          @cancel="dontNest"
         />
         <CanvasRenameForm
           v-else-if="mode === 'rename' && selected"
