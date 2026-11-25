@@ -136,7 +136,7 @@ def _answer(
                 "baseline": plan.state.baseline, "target": plan.state.target, "gap": plan.state.gap,
                 "copies": dict(plan.state.copies), "added": dict(plan.state.added),
             },
-            "operations": to_jsonable_python([operation_to_mapping(op) for op in plan.changes.operations]),
+            "operations": to_jsonable_python([operation_to_mapping(op) for op in plan.shown]),
             "unheld": list(plan.unheld),
         } if plan else {}),
     }

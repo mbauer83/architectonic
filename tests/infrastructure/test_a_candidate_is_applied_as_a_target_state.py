@@ -127,6 +127,9 @@ def test_a_target_state_stands_beside_the_baseline(
     assert preview.json()["applied"] is False and commits == []
     planned = preview.json()["target_state"]
     assert set(planned["copies"]) == {ledger}
+    # Shown by the ids they are given: a reader is never shown an alias the write resolves.
+    assert "$ref:" not in str(preview.json()["operations"])
+    assert planned["target"] in str(preview.json()["operations"])
 
     applied = client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False})
 

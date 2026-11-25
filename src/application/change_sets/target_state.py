@@ -25,7 +25,7 @@ a candidate removes stay in the baseline without a copy.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from typing import Any, TypeAlias
 
 from src.application.change_sets.candidate_architecture import CandidateArchitecture, TargetState
@@ -44,7 +44,7 @@ from src.application.change_sets.operations import (
 from src.application.change_sets.reading import FieldValues, ModelReading, RecordedReading
 from src.application.modeling.edit_field_catalogue import creatable
 from src.domain.artifact_id import canonical_entity_key
-from src.domain.provisional_reference import provisional
+from src.domain.provisional_reference import alias_of, provisional
 
 #: A new id for an element of this type and name.
 Allocate: TypeAlias = Callable[[str, str], str]
@@ -71,6 +71,13 @@ class TargetPlan:
     state: TargetState
     #: The elements a plateau may not aggregate, by type, which stand in their state unheld.
     unheld: tuple[str, ...] = ()
+    #: The id each element the operations create is given, by the alias they name it with.
+    chosen: Mapping[str, str] = field(default_factory=dict)
+
+    @property
+    def shown(self) -> tuple[Operation, ...]:
+        """The operations as a reader is shown them: every element named by the id it is given."""
+        return tuple(named_by_id(operation, self.chosen) for operation in self.changes.operations)
 
 
 def target_plan(
@@ -129,9 +136,28 @@ def target_plan(
     held, unheld = _held(provisional(refs["target"]), target_members, permits)
     held_too, unheld_too = _held(provisional(refs["baseline"]), baseline_members, permits)
     state = TargetState(ids["baseline"], ids["target"], ids["gap"], copies=copies, added=added)
+    chosen = {**added, **{alias[o]: copies[o] for o in changed}, **{refs[part]: ids[part] for part in refs}}
     return TargetPlan(
-        ChangeSet((*writes, *held, *held_too), revision), state, tuple(sorted({*unheld, *unheld_too})),
+        ChangeSet((*writes, *held, *held_too), revision), state, tuple(sorted({*unheld, *unheld_too})), chosen,
     )
+
+
+def named_by_id(operation: Operation, chosen: Mapping[str, str]) -> Operation:
+    """*operation* with each element it names by an alias in *chosen* named by the id it is given instead."""
+
+    def by_id(reference: str) -> str:
+        alias = alias_of(reference)
+        return chosen.get(alias, reference) if alias is not None else reference
+
+    match operation:
+        case CreateEntity():
+            return operation
+        case EditEntity(target=target) | RemoveEntity(target=target):
+            return replace(operation, target=by_id(target))
+        case AddConnection(address=address) | EditConnection(address=address) | RemoveConnection(address=address):
+            return replace(operation, address=ConnectionAddress(
+                by_id(address.source_entity), address.connection_type, by_id(address.target_entity),
+            ))
 
 
 def _changed(operations: Sequence[Operation], created: frozenset[str], removed: frozenset[str]) -> tuple[str, ...]:

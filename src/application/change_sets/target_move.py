@@ -18,7 +18,6 @@ it. The list is:
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import replace
 
 from src.application.change_sets.base import BaseRevision, BaseValue, record_revision
 from src.application.change_sets.candidate_architecture import CandidateArchitecture, TargetState
@@ -28,16 +27,13 @@ from src.application.change_sets.operations import (
     AddConnection,
     ConnectionAddress,
     CreateEntity,
-    EditConnection,
     EditEntity,
-    Operation,
     RemoveConnection,
     RemoveEntity,
 )
 from src.application.change_sets.reading import RecordedReading
-from src.application.change_sets.target_state import ACTIVE, DRAFT, TRACE, stated
+from src.application.change_sets.target_state import ACTIVE, DRAFT, TRACE, named_by_id, stated
 from src.domain.artifact_id import canonical_entity_key
-from src.domain.provisional_reference import alias_of
 
 
 def move_into_baseline(
@@ -45,8 +41,8 @@ def move_into_baseline(
 ) -> ChangeSet:
     """The operations that move *candidate*'s target *state* into the baseline, over the *live* model."""
     kept = tuple(
-        settled for operation in candidate.changes.operations
-        if (settled := _named_by_id(operation, state.added)) is not None
+        named_by_id(operation, state.added) for operation in candidate.changes.operations
+        if not isinstance(operation, CreateEntity)
     )
     activated = tuple(
         EditEntity(state.added[create.ref], "status", str(create.fields.get("status") or ACTIVE), BaseValue(DRAFT))
@@ -79,24 +75,6 @@ def move_into_baseline(
         for ref in state.written if (fields := live.entity(ref)) is not None
     )
     return ChangeSet((*kept, *activated, *_once(moved), *cut, *gone), revision)
-
-
-def _named_by_id(operation: Operation, added: Mapping[str, str]) -> Operation | None:
-    """*operation* with each element the target state added named by its id; None for the create itself."""
-
-    def by_id(reference: str) -> str:
-        alias = alias_of(reference)
-        return added.get(alias, reference) if alias is not None else reference
-
-    match operation:
-        case CreateEntity():
-            return None
-        case EditEntity(target=target) | RemoveEntity(target=target):
-            return replace(operation, target=by_id(target))
-        case AddConnection(address=address) | EditConnection(address=address) | RemoveConnection(address=address):
-            return replace(operation, address=ConnectionAddress(
-                by_id(address.source_entity), address.connection_type, by_id(address.target_entity),
-            ))
 
 
 def _traces(address: ConnectionAddress, originals: Mapping[str, str]) -> bool:
