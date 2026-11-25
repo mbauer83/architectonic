@@ -81,6 +81,14 @@ def run_repo_git(
     return result.returncode, result.stdout.strip(), result.stderr.strip()
 
 
+def run_repo_git_untrimmed(repo: Path, *args: str, timeout: float = GIT_TIMEOUT) -> tuple[int, str, str]:
+    """`run_repo_git` with stdout as git wrote it — for file contents, whose final newline is content."""
+    from src.infrastructure.git.git_env import get_ssh_env  # noqa: PLC0415
+
+    result = run_git(repo, args, timeout=timeout, env=dict(get_ssh_env() or os.environ))
+    return result.returncode, result.stdout, result.stderr.strip()
+
+
 def commit_with_identity(repo: Path, message: str, *, author: GitIdentity | None) -> tuple[int, str, str]:
     """Commit staged changes, committed by the service identity and authored by `author` where given.
 

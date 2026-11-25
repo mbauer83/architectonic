@@ -178,27 +178,6 @@ def serves_in_admin_mode(backend: BackendObservation) -> bool:
     return ADMIN_MODE_FLAG in backend.flags
 
 
-def checkpoint_restore_command(root: Path, checkpoint_set: str, *, deployment: str) -> str:
-    """The command that restores *checkpoint_set*, as the operator types it for this deployment.
-
-    The same identity the migration ran with, so the restore resolves the same repositories and the
-    same operational targets. A compose host restores inside the image, as the update's rollback does.
-    """
-    if deployment == "compose-host":
-        from src.infrastructure.software_update.compose import (  # noqa: PLC0415
-            APP_SERVICE,
-            CONTAINER_UPGRADE_ARGUMENTS,
-        )
-
-        return " ".join((
-            "docker", "compose", "run", "--rm", "--no-deps", "--entrypoint", "arch-repair", APP_SERVICE,
-            "upgrade", "--restore", checkpoint_set, *CONTAINER_UPGRADE_ARGUMENTS,
-        ))
-    return " ".join((
-        "uv", "run", "arch-repair", "upgrade", *deployment_identity_arguments(root), "--restore", checkpoint_set,
-    ))
-
-
 def remotes_needing_credentials(
     root: Path, *, probe: Callable[[Path], bool] | None = None
 ) -> tuple[str, ...]:

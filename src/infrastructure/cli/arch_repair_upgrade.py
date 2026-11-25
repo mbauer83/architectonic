@@ -33,7 +33,6 @@ See `src.infrastructure.repository_upgrade.guard`.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 from importlib.metadata import PackageNotFoundError
@@ -71,13 +70,9 @@ from src.infrastructure.backend.backend_probe import (
 from src.infrastructure.cli._upgrade_checkpoints import (
     CheckpointFailed,
     checkpoint_base,
-    list_checkpoint_sets,
-    load_checkpoint_set,
     prune_previous_sets,
     record_state_after,
-    restore_checkpoint_set,
     take_checkpoint_set,
-    work_since_upgrade,
 )
 from src.infrastructure.cli._upgrade_deployment import (
     DeploymentSide,
@@ -91,6 +86,7 @@ from src.infrastructure.cli._upgrade_repo_phases import (
     refresh_generated_includes,
     sweep_and_recover,
 )
+from src.infrastructure.cli._upgrade_restore import restore_or_list
 from src.infrastructure.cli._upgrade_tiers import (
     classify_roots,
     clean_before_writing,
@@ -216,7 +212,11 @@ def main_upgrade(
     tiers = classify_roots(repo_roots=repo_roots, enterprise_roots=enterprise_roots, admin_mode=args.admin_mode)
     roots = list(tiers.written)
     if args.restore or args.list_checkpoints:
-        return _restore_or_list(args, side, roots)
+        return restore_or_list(
+            args, side, roots,
+            guard=_guard_backend_not_serving,
+            rebuild_index=lambda root: FilesystemRepoUpgradeWriter(root).rebuild_index(),
+        )
     version = software_version()
     targets = [RepoUpgradeTarget(FilesystemRepoUpgradeView(r), FilesystemRepoUpgradeWriter(r)) for r in roots]
     upstream, left_alone = report_tiers_left_alone(tiers, registry=registry, software_version=version)
@@ -350,56 +350,6 @@ def _has_work(gate_report, gate_operational) -> bool:  # type: ignore[no-untyped
         for repo_report in gate_report.per_repo
         for result in repo_report.results
     ) or any(report.state == "pending" for report in gate_operational)
-
-
-def _restore_or_list(args: argparse.Namespace, side: DeploymentSide, roots: list[Path]) -> int:
-    """`--list-checkpoints` and `--restore`: both act on the recorded sets, neither migrates."""
-    base = checkpoint_base(
-        workspace=args.workspace,
-        settings_document=side.manifest.settings_document.path if side.manifest else None,
-        roots=roots,
-    )
-    if args.list_checkpoints:
-        sets = list_checkpoint_sets(base)
-        if args.json_output:
-            print(json.dumps([s.to_dict() for s in sets], indent=2))
-        else:
-            print(f"Checkpoint sets under {base}:" if sets else f"No checkpoint sets under {base}.")
-            for s in sets:
-                print(f"  {s.id}: {len(s.repositories)} repositor{'y' if len(s.repositories) == 1 else 'ies'}, "
-                      f"{len(s.operational)} operational target(s)")
-        return 0
-    checkpoint_set = load_checkpoint_set(base, args.restore)
-    if not side.active and checkpoint_set.operational and checkpoint_set.settings_document:
-        # The set names the deployment it was taken under; its operational copies belong to that one.
-        args.settings = checkpoint_set.settings_document
-        side = build_deployment_side(args, os.environ)
-    for repository in checkpoint_set.repositories:
-        _guard_backend_not_serving(Path(repository.root))
-    later = work_since_upgrade(checkpoint_set)
-    if later and not args.discard_later_work:
-        print(
-            f"NOT RESTORED — restoring checkpoint set {checkpoint_set.id} would discard work done since the "
-            "upgrade:",
-            file=sys.stderr,
-        )
-        for line in later:
-            print(f"  {line}", file=sys.stderr)
-        print(
-            "Save or commit what you need elsewhere, then re-run with --discard-later-work to restore anyway.",
-            file=sys.stderr,
-        )
-        return EXIT_UNRESOLVED_MIGRATION
-    done = restore_checkpoint_set(
-        checkpoint_set, side.handles, rebuild_index=lambda root: FilesystemRepoUpgradeWriter(root).rebuild_index()
-    )
-    if args.json_output:
-        print(json.dumps({"restored": checkpoint_set.to_dict(), "actions": done}, indent=2))
-    else:
-        print(f"Restored checkpoint set {checkpoint_set.id}:")
-        for line in done:
-            print(f"  {line}")
-    return 0
 
 
 def _preflight_with_repairs(side: DeploymentSide, repairs: list[str]) -> DeploymentPreflight:

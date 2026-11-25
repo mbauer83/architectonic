@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
-import subprocess
 import tempfile
 import tomllib
 from pathlib import Path
@@ -14,9 +12,8 @@ from src.application.software_update.installation import CheckoutMove, CheckoutR
 from src.application.software_update.plan import SignatureVerdict
 from src.application.software_update.version import NotAReleaseVersion, ReleaseVersion, parse_release_version
 from src.infrastructure.deployment.layout import DEPLOYMENT_LOCAL_FILES
-from src.infrastructure.git._git_command import GIT_TIMEOUT, PUSH_TIMEOUT, run_repo_git
+from src.infrastructure.git._git_command import PUSH_TIMEOUT, run_repo_git, run_repo_git_untrimmed
 from src.infrastructure.git.git_repository_state import current_branch, current_commit
-from src.infrastructure.mutation_adapters import run_git
 
 RELEASE_SIGNERS = Path(".github") / "release-signers"
 GUI_BUILD_STAMP = Path("tools") / "gui" / "dist" / "build-stamp.json"
@@ -206,10 +203,10 @@ class GitCheckout:
         return _merge_three_way(ours, self._show("HEAD", path), self._show(commit, path))
 
     def _show(self, revision: str, path: str) -> str:
-        result = _untrimmed_git(self.root, "show", f"{revision}:{path}")
-        if result.returncode != 0:
-            raise CheckoutError(f"reading {path} at {revision[:12]}: {result.stderr.strip()}")
-        return result.stdout
+        rc, out, stderr = run_repo_git_untrimmed(self.root, "show", f"{revision}:{path}")
+        if rc != 0:
+            raise CheckoutError(f"reading {path} at {revision[:12]}: {stderr}")
+        return out
 
     def _git(self, *args: str, doing: str) -> None:
         rc, _, stderr = run_repo_git(self.root, *args)
@@ -245,13 +242,8 @@ def _merge_three_way(ours: str, base: str, theirs: str) -> str | None:
             path = Path(scratch) / name
             path.write_text(text, encoding="utf-8")
             files.append(str(path))
-        result = _untrimmed_git(Path(scratch), "merge-file", "-p", *files)
-    return result.stdout if result.returncode == 0 else None
-
-
-def _untrimmed_git(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    """`git *args` with its output as written: file contents keep their final newline."""
-    return run_git(cwd, args, timeout=GIT_TIMEOUT, env=dict(os.environ))
+        rc, merged, _ = run_repo_git_untrimmed(Path(scratch), "merge-file", "-p", *files)
+    return merged if rc == 0 else None
 
 
 def _save_carried(carry: Path, carried: dict[str, str]) -> None:

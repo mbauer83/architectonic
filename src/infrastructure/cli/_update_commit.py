@@ -35,15 +35,16 @@ from src.application.software_update.rollback import RollbackResult, roll_back
 from src.domain.clock import utc_now_iso
 from src.infrastructure.cli._update_report import render_journal_json, render_outcome_human, render_outcome_json
 from src.infrastructure.software_update._commands import checkout_tool
-from src.infrastructure.software_update.compose import ComposeActions, ComposeProject
+from src.infrastructure.software_update.compose import (
+    APP_SERVICE,
+    CONTAINER_UPGRADE_ARGUMENTS,
+    ComposeActions,
+    ComposeProject,
+)
 from src.infrastructure.software_update.credentials import CredentialsUnavailable, answer_questions
 from src.infrastructure.software_update.journal_store import FileJournalStore, UpdateInProgress
 from src.infrastructure.software_update.local_actions import LocalCheckoutActions
-from src.infrastructure.software_update.observation import (
-    checkpoint_restore_command,
-    deployment_identity_arguments,
-    serves_in_admin_mode,
-)
+from src.infrastructure.software_update.observation import deployment_identity_arguments, serves_in_admin_mode
 
 EXIT_USAGE = 2
 ASSETS_DIR = "assets"
@@ -235,7 +236,7 @@ def _finish(
     store.release()
     render = render_outcome_json if json_output else render_outcome_human
     restore_command = (
-        checkpoint_restore_command(store.directory.parent.parent, journal.checkpoint_set, deployment=journal.deployment)
+        _restore_command(store.directory.parent.parent, journal.checkpoint_set, deployment=journal.deployment)
         if journal.checkpoint_set else None
     )
     print(render(
@@ -273,6 +274,22 @@ def _resume_command(
     if compose_file is not None:
         command += ["--compose-file", str(compose_file)]
     return tuple(command)
+
+
+def _restore_command(root: Path, checkpoint_set: str, *, deployment: str) -> str:
+    """The command that restores *checkpoint_set*, as the operator types it for this deployment.
+
+    The same identity the migration ran with, so the restore resolves the same repositories and the
+    same operational targets. A compose host restores inside the image, as the update's rollback does.
+    """
+    if deployment == "compose-host":
+        return " ".join((
+            "docker", "compose", "run", "--rm", "--no-deps", "--entrypoint", "arch-repair", APP_SERVICE,
+            "upgrade", "--restore", checkpoint_set, *CONTAINER_UPGRADE_ARGUMENTS,
+        ))
+    return " ".join((
+        "uv", "run", "arch-repair", "upgrade", *deployment_identity_arguments(root), "--restore", checkpoint_set,
+    ))
 
 
 def _announce(phase: UpdatePhase) -> None:

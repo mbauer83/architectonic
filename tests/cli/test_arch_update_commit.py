@@ -248,5 +248,6 @@ def test_the_printed_safety_line_is_a_restore_command_that_names_this_deployment
 
     out = capsys.readouterr().out
     safety = next(line for line in out.splitlines() if line.startswith("safety"))
-    assert f"arch-repair upgrade --workspace {tmp_path} --settings " in safety
+    # The fixture's identity is `--workspace <root>`; the real one adds `--settings <document>`.
+    assert f"uv run arch-repair upgrade --workspace {tmp_path} --restore" in safety
     assert safety.rstrip().endswith("--restore 20261002T090100Z")
