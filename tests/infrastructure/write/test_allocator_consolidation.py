@@ -19,7 +19,8 @@ _OLD_CALLERS = [
     ARTIFACT_WRITE / "_artifact_deduplication.py",
     ARTIFACT_WRITE / "global_artifact_reference.py",
     ARTIFACT_WRITE / "matrix.py",
-    REST_ROUTERS / "diagrams" / "_write.py",
+    # The REST diagram create allocates through the creation it shares with Save as diagram.
+    ARTIFACT_WRITE.parents[1] / "diagram_creation.py",
     REST_ROUTERS / "admin.py",
 ]
 

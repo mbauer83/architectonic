@@ -42,18 +42,24 @@ def generated_drawing(
     repo: Any, scope: Iterable[str], name: str, root: Path, ontology: DeclaresElementKinds,
 ) -> dict[str, Any] | None:
     """A view generated from the model's entities in *scope* and the relations among them; None for none."""
-    entities = [entity.artifact_id for ref in dict.fromkeys(scope) if (entity := repo.get_entity(ref)) is not None]
-    if not entities:
+    body = generated_composition(repo, scope, name)
+    if not body.entity_ids:
         return None
+    composed = render_composition(body, repo=repo, repo_root=root)
+    return geometry_response(
+        composed.puml, "", {**composed.statements(body), "artifact-id": ""}, root, ontology, generated=True,
+    )
+
+
+def generated_composition(repo: Any, scope: Iterable[str], name: str) -> DiagramComposition:
+    """What a generated view of *scope* draws: the model's entities in it, each once, and the relations among
+    them. The one statement of it, for the view drawn on read and for the diagram it is saved as."""
+    entities = [entity.artifact_id for ref in dict.fromkeys(scope) if (entity := repo.get_entity(ref)) is not None]
     inside = set(entities)
     relations = [
         str(conn["artifact_id"]) for conn in repo.candidate_connections_for_entities(entities)
         if str(conn["source"]) in inside and str(conn["target"]) in inside
-    ]
-    body = DiagramComposition(
+    ] if entities else []
+    return DiagramComposition(
         diagram_type=GENERATED_VIEW_TYPE, name=name, entity_ids=entities, connection_ids=relations,
-    )
-    composed = render_composition(body, repo=repo, repo_root=root)
-    return geometry_response(
-        composed.puml, "", {**composed.statements(body), "artifact-id": ""}, root, ontology, generated=True,
     )

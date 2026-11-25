@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import {
   AnalysisIncidenceSchema, AnalysisProgressSchema, AnalysisStartedSchema, CandidateApplicationSchema,
-  CandidateComparisonSchema,
+  CandidateComparisonSchema, CandidateDiagramSavedSchema, CandidateIntegrationSchema,
   CandidateListSchema,
   CandidateResponseSchema, DocumentTablesSchema, DocumentTableWriteSchema, IntegrationCheckSchema,
 } from '../../domain/schemas/candidates'
@@ -29,6 +29,10 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
     postJson(candidateUrl(id, '/rebase'), { based_on: basedOn }, CandidateResponseSchema),
   applyCandidate: (id, dryRun) =>
     postJson(candidateUrl(id, '/apply'), { dry_run: dryRun }, CandidateApplicationSchema),
+  saveCandidateDiagram: (id, basedOn, name) => postJson(
+    candidateUrl(id, '/save-as-diagram'), { based_on: basedOn, ...(name ? { name } : {}), dry_run: false },
+    CandidateDiagramSavedSchema,
+  ),
   readCandidate: (id) => fetchJson(candidateUrl(id), CandidateResponseSchema),
   editCandidate: (id, basedOn, patch) =>
     patchJson(candidateUrl(id), { based_on: basedOn, patch }, CandidateResponseSchema),
@@ -37,6 +41,8 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
   compareCandidate: (id, base, diagram) =>
     fetchJson(candidateUrl(id, '/diff', { base, diagram }), CandidateComparisonSchema),
   checkCandidates: (ids) => postJson(buildUrl('/change-set-checks'), { candidates: ids }, IntegrationCheckSchema),
+  integrateCandidates: (integrate) =>
+    postJson(buildUrl('/change-set-integrations'), integrate, CandidateIntegrationSchema),
   readDocumentTables: (documentId) => fetchJson(documentUrl(documentId, '/tables'), DocumentTablesSchema),
   editDocumentTable: (documentId, table, rows) => patchJson(
     documentUrl(documentId, `/tables/${encodeIdentitySegment(table)}`), { rows, dry_run: false },

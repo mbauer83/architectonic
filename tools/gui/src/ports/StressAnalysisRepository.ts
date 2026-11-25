@@ -1,6 +1,8 @@
 import type { Effect } from 'effect'
 import type {
-  AnalysisIncidence, AnalysisProgress, AnalysisStarted, CandidateApplication, CandidateComparison, CandidateResponse,
+  AnalysisIncidence, AnalysisProgress, AnalysisStarted, CandidateApplication, CandidateComparison,
+  CandidateDiagramSaved,
+  CandidateIntegration, CandidateResponse, Resolution,
   CandidateSummary,
   DocumentTables, DocumentTableWrite, IntegrationCheck,
 } from '../domain/schemas/candidates'
@@ -39,6 +41,13 @@ export interface StressAnalysisRepository {
    * run answers what would be written and the refusal; a refused apply answers 409, saying why.
    */
   readonly applyCandidate: (id: string, dryRun: boolean) => Effect.Effect<CandidateApplication, RepoError>
+  /**
+   * Save the view generated from the scope of a candidate drawn on no stored diagram as a new diagram, and
+   * draw the candidate on it; *name* defaults to the candidate's. Writes nothing of the candidate's operations.
+   */
+  readonly saveCandidateDiagram: (
+    id: string, basedOn: string, name?: string,
+  ) => Effect.Effect<CandidateDiagramSaved, RepoError>
   readonly readCandidate: (id: string) => Effect.Effect<CandidateResponse, RepoError>
   readonly editCandidate: (
     id: string, basedOn: string, patch: Readonly<Record<string, unknown>>,
@@ -54,6 +63,15 @@ export interface StressAnalysisRepository {
   readonly compareCandidate: (
     id: string, base: string, diagram?: string,
   ) => Effect.Effect<CandidateComparison, RepoError>
+  /**
+   * *candidates* integrated into a new draft named *name*, *resolutions* settling their conflicts in order. A
+   * dry run answers the conflicts still standing with the actions each permits; writing while one stands is
+   * refused (409). Nothing reaches the model.
+   */
+  readonly integrateCandidates: (integrate: {
+    readonly candidates: readonly string[]; readonly name: string; readonly resolutions: readonly Resolution[];
+    readonly dry_run: boolean
+  }) => Effect.Effect<CandidateIntegration, RepoError>
   /** Overlaps between the offered candidates (state `candidate`); structural, never a merge. */
   readonly checkCandidates: (ids: readonly string[]) => Effect.Effect<IntegrationCheck, RepoError>
   readonly readDocumentTables: (documentId: string) => Effect.Effect<DocumentTables, RepoError>

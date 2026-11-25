@@ -170,3 +170,17 @@ class CandidatePatch(_Closed):
     def stated(self) -> dict[str, Any]:
         """The fields the patch names, in the record's own keys."""
         return self.model_dump(exclude_unset=True)
+
+
+class IntegrationResolution(_Closed):
+    """One conflict between candidates being integrated, by kind and subject as the check reports it, and what is
+    done about it. Applied in order, each over what the ones before left."""
+
+    kind: Literal["same-key", "remove-versus-use"]
+    subject: str = Field(min_length=1, description="The conflict's subject, as the integration answered it.")
+    action: Literal["take", "drop", "merge"] = Field(
+        description="`take` keeps `party`'s operation and drops the others'; `drop` drops `party`'s; `merge` writes "
+        "`value` in place of the parties' values, where each sets the same field.",
+    )
+    party: str | None = Field(None, description="The candidate whose side is taken or whose operation is dropped.")
+    value: JsonValue = Field(None, description="The merged value, for `merge`.")

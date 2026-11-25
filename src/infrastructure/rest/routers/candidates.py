@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.candidates import analysis_reads
 from src.infrastructure.candidates.analysis_start import document_writer, start_analysis
+from src.infrastructure.candidates.diagram_save import diagram_writer, save_as_diagram
+from src.infrastructure.candidates.integrate import integrate_candidates
 from src.infrastructure.rest.contracts.candidates import (
     AnalysisIncidence,
     AnalysisProgress,
@@ -17,7 +19,11 @@ from src.infrastructure.rest.contracts.candidates import (
     CandidateComparison,
     CandidateCreate,
     CandidateDeletion,
+    CandidateDiagramSave,
+    CandidateDiagramSaved,
     CandidateEdit,
+    CandidateIntegrate,
+    CandidateIntegration,
     CandidateList,
     CandidateOperations,
     CandidateRebase,
@@ -179,6 +185,31 @@ def changes_apply_candidate(artifact_id: str, body: CandidateApply) -> dict[str,
 
 
 @router.post(
+    "/api/change-sets/{artifact_id}/save-as-diagram",
+    operation_id="changes_save_candidate_diagram",
+    tags=[TAG_CHANGES],
+    summary="Save the generated view a candidate is drawn on as a diagram",
+    response_model=CandidateDiagramSaved,
+    response_model_exclude_none=True,
+    responses=WRITE_RESPONSES,
+)
+def changes_save_candidate_diagram(
+    artifact_id: str, body: CandidateDiagramSave, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> dict[str, Any]:
+    """For a candidate whose stack names no stored diagram: a new diagram drawing the model's entities in its
+    scope and the relations among them, as the generated view draws them, written through the diagram create;
+    the candidate is then drawn on it. Nothing the candidate changes is written. Refused (409) where the
+    candidate is drawn on a stored diagram already, is final, or changed since `based_on`."""
+    repo_root, _registry, verifier = s.get_write_deps(catalogs)
+    with refusals():
+        return s.authorized_write(
+            "changes_save_candidate_diagram", save_as_diagram, service(), artifact_id,
+            diagram_writer(s.get_repo(), repo_root, verifier, s.clear_caches),
+            based_on=body.based_on, name=body.name, group=body.group, dry_run=body.dry_run,
+        )
+
+
+@router.post(
     "/api/stress-analyses",
     operation_id="documents_start_stress_analysis",
     tags=[TAG_DOCUMENTS],
@@ -269,6 +300,29 @@ def changes_read_standing(artifact_id: str) -> dict[str, Any]:
 def changes_check_candidates(body: CandidateSelection) -> dict[str, Any]:
     with refusals():
         return service().check(body.candidates)
+
+
+@router.post(
+    "/api/change-set-integrations",
+    operation_id="changes_integrate_candidates",
+    tags=[TAG_CHANGES],
+    summary="Integrate candidates into a new one, resolving their conflicts",
+    response_model=CandidateIntegration,
+    response_model_exclude_none=True,
+    responses=WRITE_RESPONSES,
+)
+def changes_integrate_candidates(body: CandidateIntegrate) -> dict[str, Any]:
+    """A new draft on the parent the candidates share, holding every operation of each, converging ones once.
+    Each conflict between them is settled by a resolution, applied in order: take one party's side, drop one
+    party's operation, or merge a value where each party sets one field. A dry run answers the conflicts still
+    standing with the actions each permits; integrating while one stands is refused (409). Nothing is written to
+    the model."""
+    with refusals():
+        return s.authorized_write(
+            "changes_integrate_candidates", integrate_candidates, service(), body.candidates, name=body.name,
+            rationale=body.rationale, resolutions=[one.model_dump() for one in body.resolutions],
+            dry_run=body.dry_run,
+        )
 
 
 @router.get(

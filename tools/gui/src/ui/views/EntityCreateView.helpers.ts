@@ -1,3 +1,5 @@
+import { isStated } from '../lib/entityPropertiesPatch'
+
 /**
  * Why the create form's submit buttons are disabled, as one ordered explanation each.
  *
@@ -30,9 +32,10 @@ export const createBlockedReason = (
  * The property rows a create sends, split into values and the ad-hoc types declared beside them.
  *
  * A row whose key is blank is not a property — it is an empty row the form leaves lying around for
- * the next one to be typed into. An ad-hoc type is recorded only where the effective schema does
- * not already declare the attribute: where it does, the schema's type is the answer and repeating
- * it in the request would let the two disagree.
+ * the next one to be typed into — and neither is a row whose value is empty, which states nothing
+ * (`isStated`): a schema attribute nobody filled in is not written as an empty row. An ad-hoc type
+ * is recorded only where the effective schema does not already declare the attribute: where it does,
+ * the schema's type is the answer and repeating it in the request would let the two disagree.
  */
 export const propertyRowsForWrite = (
   rows: readonly { key: string; value: string; adHocType: string }[],
@@ -42,7 +45,7 @@ export const propertyRowsForWrite = (
   const adhocTypes: Record<string, string> = {}
   for (const row of rows) {
     const key = row.key.trim()
-    if (!key) continue
+    if (!key || !isStated(row.value)) continue
     props[key] = row.value
     if (!descriptors[key] && row.adHocType !== 'string') adhocTypes[key] = row.adHocType
   }

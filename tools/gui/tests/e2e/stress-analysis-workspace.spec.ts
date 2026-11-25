@@ -57,9 +57,14 @@ test.beforeEach(async ({ request }) => {
   test.skip(!(await declaresStressAnalysis(request)), 'the served engagement does not declare the stress-analysis document type')
 })
 
+// A candidate delete is a dry run unless it says otherwise, as a document delete is: both ask for the
+// real one, and the candidate's is checked, so a run that leaves its naive architecture behind fails here.
 test.afterEach(async ({ request }) => {
   for (const id of created.splice(0)) await request.delete(`/api/documents/${encodeURIComponent(id)}?dry_run=false`)
-  for (const id of candidates.splice(0)) await request.delete(`/api/change-sets/${encodeURIComponent(id)}`)
+  for (const id of candidates.splice(0)) {
+    const deleted = await request.delete(`/api/change-sets/${encodeURIComponent(id)}?dry_run=false`)
+    expect(deleted.status(), await deleted.text()).toBe(204)
+  }
 })
 
 test('starting writes the naive architecture and the document together, and a refused start writes neither', async ({ request }) => {

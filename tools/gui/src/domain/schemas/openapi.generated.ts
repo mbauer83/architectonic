@@ -1272,6 +1272,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/change-set-integrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Integrate candidates into a new one, resolving their conflicts
+         * @description A new draft on the parent the candidates share, holding every operation of each, converging ones once.
+         *     Each conflict between them is settled by a resolution, applied in order: take one party's side, drop one
+         *     party's operation, or merge a value where each party sets one field. A dry run answers the conflicts still
+         *     standing with the actions each permits; integrating while one stands is refused (409). Nothing is written to
+         *     the model.
+         */
+        post: operations["changes_integrate_candidates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/change-sets": {
         parameters: {
             query?: never;
@@ -1406,6 +1430,29 @@ export interface paths {
         get: operations["changes_read_residuality"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/change-sets/{artifact_id}/save-as-diagram": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Save the generated view a candidate is drawn on as a diagram
+         * @description For a candidate whose stack names no stored diagram: a new diagram drawing the model's entities in its
+         *     scope and the relations among them, as the generated view draws them, written through the diagram create;
+         *     the candidate is then drawn on it. Nothing the candidate changes is written. Refused (409) where the
+         *     candidate is drawn on a stored diagram already, is final, or changed since `based_on`.
+         */
+        post: operations["changes_save_candidate_diagram"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6248,6 +6295,61 @@ export interface components {
             version: string;
         };
         /**
+         * CandidateDiagramSave
+         * @description Store the view a candidate drawn on no stored diagram is generated as, and draw the candidate on it.
+         */
+        CandidateDiagramSave: {
+            /**
+             * Based On
+             * @description The `version` the last read or write of this candidate answered.
+             */
+            based_on: string;
+            /**
+             * Dry Run
+             * @default true
+             */
+            dry_run: boolean;
+            /**
+             * Group
+             * @description The collection the diagram is filed in; uncategorized when absent.
+             */
+            group?: string | null;
+            /**
+             * Name
+             * @description The new diagram's name; the candidate's own when absent.
+             */
+            name?: string | null;
+        };
+        /** CandidateDiagramSaved */
+        CandidateDiagramSaved: {
+            /** Candidate */
+            candidate: string;
+            /**
+             * Diagram
+             * @description The diagram written; absent on a dry run.
+             */
+            diagram?: string;
+            /** Dry Run */
+            dry_run: boolean;
+            /**
+             * Entities
+             * @description How many of the model's entities the diagram draws.
+             */
+            entities: number;
+            /** Name */
+            name: string;
+            /**
+             * Relations
+             * @description How many relations among them it draws.
+             */
+            relations: number;
+            /**
+             * Version
+             * @description The candidate's version once it names the diagram.
+             */
+            version?: string;
+        };
+        /**
          * CandidateEdit
          * @description Header fields to change, over the version last read.
          */
@@ -6308,6 +6410,53 @@ export interface components {
              * @enum {string}
              */
             state: "draft" | "candidate";
+        };
+        /**
+         * CandidateIntegrate
+         * @description Candidates to integrate into a new draft, and how each conflict between them is settled.
+         */
+        CandidateIntegrate: {
+            /**
+             * Candidates
+             * @description Distinct drafts or offered candidates on one parent.
+             */
+            candidates: string[];
+            /**
+             * Dry Run
+             * @default true
+             */
+            dry_run: boolean;
+            /**
+             * Name
+             * @description The integration's name.
+             */
+            name: string;
+            /**
+             * Rationale
+             * @default
+             */
+            rationale: string;
+            /** Resolutions */
+            resolutions?: components["schemas"]["IntegrationResolution"][];
+        };
+        /** CandidateIntegration */
+        CandidateIntegration: {
+            /** Candidates */
+            candidates: string[];
+            /**
+             * Conflicts
+             * @description The conflicts still standing after the resolutions.
+             */
+            conflicts: components["schemas"]["IntegrationConflict"][];
+            /** Dry Run */
+            dry_run: boolean;
+            /** @description The new candidate, once written. */
+            integration?: components["schemas"]["CandidateResponse"];
+            /**
+             * Operations
+             * @description How many operations the integration holds, or would once settled.
+             */
+            operations: number;
         };
         /** CandidateList */
         CandidateList: {
@@ -11144,6 +11293,50 @@ export interface components {
             candidates: string[];
             /** Overlaps */
             overlaps: components["schemas"]["CandidateOverlap"][];
+        };
+        /** IntegrationConflict */
+        IntegrationConflict: {
+            /**
+             * Actions
+             * @description What this conflict permits: take, drop, and merge where a value is set.
+             */
+            actions: string[];
+            /** Kind */
+            kind: string;
+            /** Parties */
+            parties: components["schemas"]["OverlapParty"][];
+            /** Subject */
+            subject: string;
+        };
+        /**
+         * IntegrationResolution
+         * @description One conflict between candidates being integrated, by kind and subject as the check reports it, and what is
+         *     done about it. Applied in order, each over what the ones before left.
+         */
+        IntegrationResolution: {
+            /**
+             * Action
+             * @description `take` keeps `party`'s operation and drops the others'; `drop` drops `party`'s; `merge` writes `value` in place of the parties' values, where each sets the same field.
+             * @enum {string}
+             */
+            action: "take" | "drop" | "merge";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "same-key" | "remove-versus-use";
+            /**
+             * Party
+             * @description The candidate whose side is taken or whose operation is dropped.
+             */
+            party?: string | null;
+            /**
+             * Subject
+             * @description The conflict's subject, as the integration answered it.
+             */
+            subject: string;
+            /** @description The merged value, for `merge`. */
+            value?: components["schemas"]["JsonValue"];
         };
         /**
          * InvalidParticipationDetails
@@ -19039,6 +19232,93 @@ export interface operations {
             };
         };
     };
+    changes_integrate_candidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateIntegrate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateIntegration"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     changes_list_candidates: {
         parameters: {
             query?: never;
@@ -19771,6 +20051,95 @@ export interface operations {
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_save_candidate_diagram: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateDiagramSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateDiagramSaved"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };

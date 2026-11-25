@@ -584,7 +584,8 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     WriteCall(
         "change_set_edit",
         lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"],
-                   "patch": {"rationale": "Queue promotions while the destination is offline."}},
+                   "patch": {"rationale": "Queue promotions while the destination is offline.",
+                             "scope": [c.fixture_entity]}},
         captures=(Capture("candidate_version", _answer_field("version")),),
     ),
     WriteCall(
@@ -592,6 +593,13 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         # proves the transport and the queue, and the drift itself is the application tests'.
         "change_set_rebase",
         lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"]},
+    ),
+    WriteCall(
+        # The candidate reads over one entity and is drawn on no diagram: its generated view is saved as one.
+        "change_set_save_diagram",
+        lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"],
+                   "name": "MCP Walk Candidate View", "dry_run": False},
+        captures=(Capture("candidate_version", _answer_field("version")),),
     ),
     WriteCall(
         # A dry run of the one create the walk recorded. That proves the transport and the queue; the
@@ -603,7 +611,16 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     WriteCall(
         "analysis_start",
         lambda _c: {"title": "MCP Walk Stress Analysis", "naive": {"name": "Walk naive architecture"}},
-        captures=(Capture("analysis", _answer_field("document")),),
+        captures=(
+            Capture("analysis", _answer_field("document")),
+            Capture("naive", _answer_field("naive_candidate", "record", "id")),
+        ),
+    ),
+    WriteCall(
+        # The walk's candidate and the naive architecture both stand on the model, and claim nothing in common.
+        "change_set_integrate",
+        lambda c: {"candidates": [c.created["candidate"], c.created["naive"]], "name": "MCP Walk Integration",
+                   "dry_run": False},
     ),
     WriteCall(
         # Three design stressors, the fewest a third can be held out of.

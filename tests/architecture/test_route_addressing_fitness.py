@@ -64,6 +64,8 @@ _ACTION_SEGMENTS: dict[str, frozenset[str]] = {
     "rename": frozenset({"POST"}),
     "replace": frozenset({"POST"}),
     "save": frozenset({"POST"}),
+    # Stores the view a candidate drawn on no stored diagram is generated as, as a diagram.
+    "save-as-diagram": frozenset({"POST"}),
     "share": frozenset({"POST"}),
     "submit": frozenset({"POST"}),
     "summarize": frozenset({"POST"}),

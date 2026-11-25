@@ -19,6 +19,10 @@ Each of the five knew something the others did not, so this is the union rather 
   Dominant Production Mode"` — and one caller alone stripped quotes before looking, so the other four
   read `Dominant` as an alias.
 * **A hyphen is part of an alias.** Two of the five used `\\w+`, which silently truncated one.
+* **A title is prose.** `title`, `caption`, `header` and `footer` carry their text unquoted — the
+  renderer writes a diagram's name as `title <name>` — so a diagram named "Promotion as searched"
+  declared `searched` to a reader that looked for `as` on every line, and the verifier refused the
+  body for declaring it twice.
 * **Whether the line opens a block is a separate question**, and the caller's. Containment parsing
   needs it, alias collection does not, and encoding it as two regexes is what made "leaf" mean "the
   line ends after the alias" — a colour then made an element neither leaf nor container.
@@ -38,6 +42,10 @@ _DECLARATION = re.compile(r"\bas\s+(?P<alias>[A-Za-z0-9_-]+)\b")
 
 #: A quoted label, replaced before the search so its prose cannot look like a declaration.
 _QUOTED = re.compile(r'"[^"]*"')
+
+#: A line of prose the diagram is framed with — a title, caption, header or footer, optionally aligned —
+#: whose text follows the keyword unquoted and declares nothing.
+_PROSE_LINE = re.compile(r"^(?:(?:left|right|center)\s+)?(?:title|caption|header|footer)\b", re.IGNORECASE)
 
 #: `MacroName(ALIAS)` or `MacroName(ALIAS, "label", …)` — some renderers put the alias first rather
 #: than after `as`. A **quoted** second argument, or none at all, is what distinguishes a
@@ -62,9 +70,10 @@ class AliasDeclaration:
 
 
 def alias_declared_on(line: str) -> AliasDeclaration | None:
-    """The declaration this line makes, or None. Comments declare nothing."""
+    """The declaration this line makes, or None. Comments and the prose a diagram is framed with declare
+    nothing."""
     stripped = line.strip()
-    if not stripped or stripped.startswith("'"):
+    if not stripped or stripped.startswith("'") or _PROSE_LINE.match(stripped):
         return None
     without_labels = _QUOTED.sub('""', stripped)
     match = _DECLARATION.search(without_labels)

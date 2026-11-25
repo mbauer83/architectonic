@@ -83,6 +83,26 @@ CHANGE_SET_APPLY = (
     "be written and the refusal, if any, instead of raising it. operation_id is for artifact_get_operation."
 )
 
+CHANGE_SET_INTEGRATE = (
+    "Integrate two or more drafts or offered candidates that stack on the same one into a new draft holding "
+    "every operation of each, converging ones once. Each conflict between them (as change_set_check reports "
+    "it: kind and subject) is settled by a resolution, applied in order: {kind, subject, action, party?, "
+    "value?} with action `take` (keep party's operation, drop the others'), `drop` (drop party's) or `merge` "
+    "(write value in place of the parties' values, where each sets the same field). dry_run (default true) "
+    "answers the conflicts still standing, each with the actions it permits, and how many operations the "
+    "integration would hold; integrating while a conflict stands is refused. The chosen candidates are not "
+    "changed, and nothing is written to the model."
+)
+
+CHANGE_SET_SAVE_DIAGRAM = (
+    "Save as diagram: for a candidate drawn on no stored diagram (its stack names none, so it is drawn as a "
+    "view generated from its scope), write that view as a new diagram — the model's entities in the scope "
+    "and the relations among them, through the diagram create — and draw the candidate on it. Nothing the "
+    "candidate changes is written; a scope holding nothing of the model is refused. name defaults to the "
+    "candidate's; group files it (uncategorized when omitted). Refused where the candidate is drawn on a "
+    "stored diagram already or is final. dry_run (default true) answers what would be written. " + VERSIONED
+)
+
 CHANGE_SET_DELETE = (
     "Delete a candidate nothing refers to. Refused while a candidate stacks on it, an analysis starts from "
     "it, an analysis's verdicts or adaptations name it, or it is integrated (kept as the record of what was "

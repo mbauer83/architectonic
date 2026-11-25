@@ -14,6 +14,9 @@ CANDIDATE_ROWS = (
              identity_parameters=("artifact_id",), mutation_domain="repository"),
     RouteRow("POST", "/api/change-sets/{artifact_id}/apply", "operation", "changes_apply_candidate", TYPED,
              identity_parameters=("artifact_id",), mutation_domain="repository"),
+    # The diagram create renders the view with PlantUML, hence `derived-graph`.
+    RouteRow("POST", "/api/change-sets/{artifact_id}/save-as-diagram", "operation", "changes_save_candidate_diagram",
+             TYPED, identity_parameters=("artifact_id",), mutation_domain="repository", timeout_class="derived-graph"),
     RouteRow("POST", "/api/change-sets/{artifact_id}/rebase", "operation", "changes_rebase_candidate", TYPED,
              identity_parameters=("artifact_id",), mutation_domain="repository"),
     RouteRow("POST", "/api/change-sets/{artifact_id}/operations", "subresource", "changes_record_operation", TYPED,
@@ -24,6 +27,8 @@ CANDIDATE_ROWS = (
              identity_parameters=("artifact_id",), cache_directive="no-cache"),
     RouteRow("POST", "/api/change-set-checks", "collection", "changes_check_candidates", TYPED,
              cache_directive="no-cache"),
+    RouteRow("POST", "/api/change-set-integrations", "collection", "changes_integrate_candidates", TYPED,
+             mutation_domain="repository"),
     # A scope drawn as a generated view before a candidate holds it: PlantUML runs, hence `derived-graph`.
     RouteRow("POST", "/api/scope-drawings", "collection", "changes_draw_scope", TYPED,
              cache_directive="no-store", timeout_class="derived-graph"),

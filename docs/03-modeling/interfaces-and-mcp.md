@@ -100,6 +100,8 @@ looking entirely normal. See
 | Candidate architectures | `change_set_edit` | Destructive | Change header fields of a candidate: name, rationale, parent, scope, answers, satisfies, and state — draft <-> candidate, either -> rejected or superseded; integrated only by change_set_apply; terminal states never change. |
 | Candidate architectures | `change_set_rebase` | Destructive | Write a draft candidate's drifted operations again against the model as it is now, keeping the value each asks for: applying it then overwrites deliberately what the model came to say. |
 | Candidate architectures | `change_set_apply` | Destructive | Write a draft or offered candidate's operations onto the model in one transaction, all or none, and mark it integrated. |
+| Candidate architectures | `change_set_save_diagram` | Write | Save as diagram: for a candidate drawn on no stored diagram (its stack names none, so it is drawn as a view generated from its scope), write that view as a new diagram — the model's entities in the scope and the relations among them, through the diagram create — and draw the candidate on it. |
+| Candidate architectures | `change_set_integrate` | Write | Integrate two or more drafts or offered candidates that stack on the same one into a new draft holding every operation of each, converging ones once. |
 | Candidate architectures | `change_set_delete` | Destructive | Delete a candidate nothing refers to. |
 | Stress analysis | `analysis_start` | Write | Start a stress analysis: its naive candidate and the stress-analysis document naming it, both or neither. |
 | Stress analysis | `analysis_hold_out_test_set` | Destructive | Move a third of a stress analysis's design stressors into its test set, drawn at random from seed. |
