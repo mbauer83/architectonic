@@ -127,14 +127,13 @@ credential storage. To use it in Docker, mount credentials or supply
 ## 1. Install Python dependencies
 
 ```bash
-# Core runtime
-uv sync                           # core dependencies
-uv sync --group dev               # + pytest, ruff, zuban  (alias: --dev)
-uv sync --group gui               # + FastAPI / uvicorn for the GUI server
-uv sync --group dev --group gui   # full local developer setup
+# Everything the backend, the MCP bridges and the CLI need, plus the dev tooling
+uv sync
 
-# All dependency groups (dev tooling etc.). The assurance-store dependencies are part
-# of the CORE dependencies (the host still needs libsqlcipher-dev for the store itself)
+# Runtime only, without pytest, ruff and zuban
+uv sync --no-dev
+
+# All dependency groups
 uv sync --all-groups
 
 # Cloud archive backends (optional — pick what you need)
@@ -142,6 +141,11 @@ uv sync --extra s3-archive        # + boto3 for S3 Object Lock archive
 uv sync --extra azure-archive     # + azure-storage-blob + azure-identity for Azure archive
 uv sync --extra cloud-archive     # both S3 and Azure
 ```
+
+The web server, the assurance store's Python bindings and every other runtime dependency are core
+dependencies, so a plain `uv sync` is enough to run everything below. The store itself also needs
+`libsqlcipher-dev` on the host. The `gui` group still exists so that `uv sync --group gui` keeps
+working where it is written; it adds nothing the core does not already install.
 
 &nbsp;
 
