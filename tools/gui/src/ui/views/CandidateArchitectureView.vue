@@ -22,6 +22,7 @@ import { useCandidates } from '../composables/useCandidates'
 import { useComposedDrawing } from '../composables/useComposedDrawing'
 import { useCandidateApply } from '../composables/useCandidateApply'
 import { useCandidateTargetState } from '../composables/useCandidateTargetState'
+import AbandonCandidate from '../components/candidates/AbandonCandidate.vue'
 import ApplyCandidate from '../components/candidates/ApplyCandidate.vue'
 import CandidateTargetState from '../components/candidates/CandidateTargetState.vue'
 import CandidateResiduality from '../components/candidates/CandidateResiduality.vue'
@@ -105,9 +106,11 @@ const rebase = async () => {
 const apply = useCandidateApply(svc, () => { void applied('to the model; it is integrated') })
 /** A candidate in the model as a target state is applied by moving that into the baseline, not again. */
 const target = useCandidateTargetState(svc, (write) => {
-  void applied(write === 'apply'
-    ? 'as a target state beside the baseline'
-    : 'by moving its target state into the baseline; it is integrated')
+  void applied({
+    apply: 'as a target state beside the baseline',
+    move: 'by moving its target state into the baseline; it is integrated',
+    withdraw: 'no longer: its target state is withdrawn and it is a draft again',
+  }[write])
 })
 const applicable = computed(() => (summary.value?.state === 'draft' || summary.value?.state === 'candidate')
   && !target.standing.value)
@@ -119,13 +122,10 @@ const applied = async (how: string) => {
 
 const stacked = (id: string) => router.push({ path: candidateDetailRoute(id), query: route.query })
 
-const remove = async () => {
-  const label = summary.value?.name ?? candidateId.value
-  if (!window.confirm(`Delete the candidate architecture ${label}? Its operations are lost.`)) return
-  if (await candidates.remove(candidateId.value)) {
-    toast(`Deleted ${label}.`)
-    await router.push(candidateListRoute())
-  }
+const abandoning = ref(false)
+const abandoned = (how: 'Rejected' | 'Deleted') => {
+  toast(`${how} ${summary.value?.name ?? candidateId.value}.`)
+  void (how === 'Deleted' ? router.push(candidateListRoute()) : candidates.compareWith(candidates.against.value))
 }
 
 const read = async () => {
@@ -134,6 +134,7 @@ const read = async () => {
   framed.value = null
   apply.close()
   target.close()
+  abandoning.value = false
   await Promise.all([candidates.select(candidateId.value), target.load(candidateId.value)])
 }
 watch(candidateId, read)
@@ -193,16 +194,27 @@ onMounted(async () => {
       >
         Apply as a target state…
       </button>
-      <PermittedButton
+      <button
         v-if="summary"
-        operation="changes_delete_candidate"
+        type="button"
         class="btn btn-sm"
-        data-testid="delete-candidate"
-        @click="remove"
+        data-testid="abandon-candidate"
+        @click="abandoning = true"
       >
-        Delete
-      </PermittedButton>
+        Abandon…
+      </button>
     </div>
+    <AbandonCandidate
+      v-if="summary && abandoning"
+      :candidates="candidates"
+      :target="target"
+      :candidate-id="summary.id"
+      :name="summary.name"
+      :state="summary.state"
+      @rejected="abandoned('Rejected')"
+      @deleted="abandoned('Deleted')"
+      @close="abandoning = false"
+    />
     <div class="meta">
       <span class="badge">candidate architecture</span>
       <label>Drawn on

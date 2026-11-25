@@ -2,6 +2,7 @@ import { Effect } from 'effect'
 import {
   AnalysisIncidenceSchema, AnalysisProgressSchema, AnalysisStartedSchema, CandidateApplicationSchema,
   CandidateComparisonSchema, CandidateDiagramSavedSchema, CandidateIntegrationSchema, CandidateMoveSchema,
+  CandidateWithdrawalSchema,
   CandidateTargetStateApplicationSchema,
   CandidateListSchema,
   CandidateResponseSchema, DocumentTablesSchema, DocumentTableWriteSchema, IntegrationCheckSchema,
@@ -35,6 +36,8 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
   ),
   moveCandidateIntoBaseline: (id, dryRun) =>
     postJson(candidateUrl(id, '/move-into-baseline'), { dry_run: dryRun }, CandidateMoveSchema),
+  withdrawCandidateTargetState: (id, dryRun) =>
+    postJson(candidateUrl(id, '/withdraw-target-state'), { dry_run: dryRun }, CandidateWithdrawalSchema),
   saveCandidateDiagram: (id, basedOn, name) => postJson(
     candidateUrl(id, '/save-as-diagram'), { based_on: basedOn, ...(name ? { name } : {}), dry_run: false },
     CandidateDiagramSavedSchema,

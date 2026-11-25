@@ -3,6 +3,7 @@ import type { Immutable, SchemaType } from './contractOracle'
 import type {
   AnalysisIncidenceSchema, AnalysisProgressSchema, AnalysisStartedSchema, CandidateApplicationSchema,
   CandidateDiagramSavedSchema, CandidateIntegrationSchema, CandidateMoveSchema, CandidateTargetStateApplicationSchema,
+  CandidateWithdrawalSchema,
   CandidateComparisonSchema,
   CandidateListSchema,
   CandidateResponseSchema, DocumentTablesSchema, DocumentTableWriteSchema, IntegrationCheckSchema,
@@ -24,6 +25,7 @@ describe('candidate architectures', () => {
     expectTypeOf<SchemaType<typeof CandidateTargetStateApplicationSchema>>()
       .toEqualTypeOf<Served<'CandidateTargetStateApplication'>>()
     expectTypeOf<SchemaType<typeof CandidateMoveSchema>>().toEqualTypeOf<Served<'CandidateMove'>>()
+    expectTypeOf<SchemaType<typeof CandidateWithdrawalSchema>>().toEqualTypeOf<Served<'CandidateWithdrawal'>>()
   })
 })
 

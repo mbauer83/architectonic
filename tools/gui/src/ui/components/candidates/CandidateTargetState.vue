@@ -6,7 +6,9 @@
  * the page that owns the candidate (`useCandidateTargetState`) is told one landed.
  */
 import { computed } from 'vue'
-import { moveSentence, targetOperationLines, targetSentence } from '../../../domain/candidates/candidateTargetState'
+import {
+  moveSentence, targetOperationLines, targetSentence, withdrawSentence,
+} from '../../../domain/candidates/candidateTargetState'
 import type { CandidateTargetState } from '../../composables/useCandidateTargetState'
 import { entityDetailRoute } from '../../router/artifactRoutes'
 
@@ -20,10 +22,15 @@ const preview = computed(() => {
 const sentence = computed(() => {
   const shown = preview.value
   if (!shown || shown.refusal) return ''
-  return shown.write === 'apply' && shown.ids
-    ? targetSentence(shown.ids, shown.operations.length)
-    : moveSentence(shown.operations.length)
+  if (shown.write === 'apply' && shown.ids) return targetSentence(shown.ids, shown.operations.length)
+  return shown.write === 'withdraw' ? withdrawSentence(shown.operations.length) : moveSentence(shown.operations.length)
 })
+const TITLES = {
+  apply: (name: string) => `Apply ${name} as a target state`,
+  move: (name: string) => `Move ${name} into the baseline`,
+  withdraw: (name: string) => `Withdraw the target state of ${name}`,
+} as const
+const VERBS = { apply: 'Apply as a target state', move: 'Move into the baseline', withdraw: 'Withdraw' } as const
 const copies = computed(() => Object.keys(standing.value?.copies ?? {}).length)
 const lines = computed(() => preview.value
   ? targetOperationLines(preview.value.operations, preview.value.ids ?? standing.value)
@@ -56,15 +63,25 @@ const lines = computed(() => preview.value
     >
       Move into the baseline…
     </button>
+    <button
+      type="button"
+      class="btn btn-sm"
+      data-testid="withdraw-target-state"
+      title="Take the target state out of the model instead, leaving the baseline as it was"
+      :disabled="target.busy.value"
+      @click="target.open('withdraw', candidateId)"
+    >
+      Withdraw…
+    </button>
   </div>
   <section
     v-if="preview"
     class="apply card"
-    :aria-label="preview.write === 'apply' ? 'Apply as a target state' : 'Move into the baseline'"
+    :aria-label="VERBS[preview.write]"
     data-testid="target-state-confirm"
   >
     <header>
-      <b>{{ preview.write === 'apply' ? `Apply ${name} as a target state` : `Move ${name} into the baseline` }}</b>
+      <b>{{ TITLES[preview.write](name) }}</b>
       <span>{{ sentence }}</span>
     </header>
     <p
@@ -107,7 +124,7 @@ const lines = computed(() => preview.value
         :disabled="!!preview.refusal || target.busy.value"
         @click="target.confirm()"
       >
-        {{ preview.write === 'apply' ? 'Apply as a target state' : 'Move into the baseline' }}
+        {{ VERBS[preview.write] }}
       </button>
       <button
         type="button"

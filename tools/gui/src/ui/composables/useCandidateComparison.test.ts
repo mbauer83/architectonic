@@ -25,6 +25,7 @@ const fakeAccess = (refuseCheck = false) => {
     readCandidate: () => Effect.die('not used'),
     rebaseCandidate: () => Effect.die('not used'),
     deleteCandidate: () => Effect.die('not used'),
+    editCandidate: () => Effect.die('not used'),
     compareCandidate: (id, base, diagram) => {
       calls.push(`compare ${id} ${base} ${diagram ?? '-'}`)
       const comparison: CandidateComparison = {

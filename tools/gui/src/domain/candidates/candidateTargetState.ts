@@ -72,3 +72,9 @@ const ELEMENT = /[A-Z]{2,6}@[\w.-]+/g
 export const moveSentence = (operations: number): string =>
   `Writes ${plural(operations, 'operation')} in one write: the candidate's changes onto the originals, then `
   + 'the "(target)" copies, the plateaus and the gap are removed.'
+
+/** What withdrawing a target state writes, in one sentence. */
+export const withdrawSentence = (operations: number): string =>
+  `Writes ${plural(operations, 'operation')} in one write: the "(target)" copies, the elements it added, the `
+  + 'plateaus and the gap are removed with their relations. The baseline stays as it is, and the candidate '
+  + 'becomes a draft again.'

@@ -23,6 +23,7 @@ const fakeAccess = (store: CandidateSummary[], reads: string[] = []): CandidateA
     store.splice(store.findIndex((one) => one.id === id), 1)
     return Effect.succeed(undefined)
   },
+  editCandidate: () => Effect.die('not used'),
 })
 
 describe('useCandidateCatalog', () => {

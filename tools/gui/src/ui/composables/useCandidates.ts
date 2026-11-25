@@ -24,7 +24,8 @@ export interface CandidateReading {
 
 /** What the composable reads and writes through: the model service's candidate half. */
 export type CandidateAccess = Pick<ModelService,
-  'listCandidates' | 'createCandidate' | 'readCandidate' | 'rebaseCandidate' | 'compareCandidate' | 'deleteCandidate'>
+  'listCandidates' | 'createCandidate' | 'readCandidate' | 'rebaseCandidate' | 'compareCandidate' | 'deleteCandidate'
+  | 'editCandidate'>
 
 export function useCandidates(svc: CandidateAccess, reading: CandidateReading) {
   const all = reading.all ?? shallowRef<readonly CandidateSummary[]>([])
@@ -127,9 +128,27 @@ export function useCandidates(svc: CandidateAccess, reading: CandidateReading) {
     }
   }
 
+  /**
+   * Set *id* aside as `rejected`: kept, with its operations, as a considered alternative that lost; nothing
+   * reaches the model. The server refuses, saying why, while its target state is in the model.
+   */
+  const reject = async (id: string): Promise<boolean> => {
+    try {
+      const { version } = await Effect.runPromise(svc.readCandidate(id))
+      await Effect.runPromise(svc.editCandidate(id, version, { state: 'rejected' }))
+      await load()
+      if (selected.value === id) await compare()
+      error.value = null
+      return true
+    } catch (failure) {
+      failed(failure)
+      return false
+    }
+  }
+
   return {
     all, selected, against, comparison, error, root, inStack, choices,
-    load, select, compareWith, create, stackOn, rebase, remove,
+    load, select, compareWith, create, stackOn, rebase, remove, reject,
   }
 }
 
