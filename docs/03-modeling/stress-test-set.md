@@ -106,9 +106,9 @@ The MCP tools cover the same steps:
 | Tool | What it does |
 |---|---|
 | `analysis_perspectives` | Lists the perspectives and their guiding questions |
-| `analysis_hold_out_test_set` | Moves a random third of the design stressors into the test set; dry run by default, with an optional `seed` |
+| `analysis_hold_out_test_set` | Moves a random third of the design stressors into the test set; dry run by default. Without a `seed` the draw is the analysis's own, so the dry run shows what the write moves. Asked again, it answers the test set already held and moves nothing |
 | `analysis_test_set` | Reads the test set, the verdicts, each architecture's residuality and the procedure's progress |
-| `change_set_read` with `mode="residuality"` | Reads a candidate's residuality in each analysis that judged it |
+| `change_set_residuality` | Reads a candidate's residuality in each analysis that judged it |
 
 Test stressors and verdicts are written with `artifact_edit_document_table`, as rows of the
 `stressors` table (with `set` = `test`) and the `survival` table.

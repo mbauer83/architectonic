@@ -33,15 +33,16 @@ looking entirely normal. See
 <!-- mcp-tools:begin arch-read -->
 | Tool | Access | Purpose |
 |---|---|---|
-| `analysis_incidence` | Read-only | Read stressors, missing subjects and hits, end states, adaptations and pairwise coupling. |
-| `analysis_perspectives` | Read-only | List the perspectives offered for writing stressors (PESTLE, five forces, business model canvas, organisation), each with a guiding question. |
-| `analysis_progress` | Read-only | Read outstanding analysis work and coverage: stressors by kind, and the perspectives (analysis_perspectives) none is written from. |
-| `analysis_test_set` | Read-only | Read an analysis's test set, its verdicts, each judged architecture's residuality (Y − X) / n and the stage. |
+| `analysis_incidence` | Read-only | A stress analysis's design stressors with the elements each hits (and those it names that the naive does not hold), its end states, adaptations, incidence rows, and how often each pair of elements is hit together. |
+| `analysis_perspectives` | Read-only | The perspectives offered for writing stressors (PESTLE, five forces, business model canvas, organisation), each with an id, its kind and a guiding question. |
+| `analysis_progress` | Read-only | What is unfinished in a stress analysis (stressors not walked, without end state, end states without required behaviour or adaptation, hits without a note) and coverage hints: design stressors by kind, the perspectives (analysis_perspectives) none is written from, and scoped elements no stressor hits. |
+| `analysis_test_set` | Read-only | A stress analysis's test set: its stressors, the verdicts, each judged or integrated architecture's residuality (Y − X) / n beside the naive, and the procedure's stage. |
 | `artifact_aibom_coverage` | Read-only | Per-AI-component AIBOM coverage over the architecture model: blocking gaps (missing required attributes, missing dataset linkage, missing governance edge) vs advisory gaps (missing recommended attributes), plus repo-wide derivation roles that no connection type is bound to. |
 | `artifact_aibom_export` | Read-only | Emit a CycloneDX 1.6 ML-BOM DERIVED from the architecture model: every entity carrying an AI specialization (ai-model, ai-agent, ai-inference-service, ai-dataset, ai-prompt-asset, ai-vector-store, ai-runtime, ai-tool-interface) becomes a component, with its authored model card, dataset/governance links resolved from connections, and a dependency graph between AI components. |
 | `artifact_diagram_scaffold` | Read-only | Generate a ready-to-edit @startuml…@enduml scaffold from a list of entity IDs. |
 | `artifact_list_changes` | Read-only | List the local changes this repository is holding: edits to artifacts promoted to the enterprise repository, which cannot be written here and are recorded as local changes instead. |
 | `artifact_query_datatype_types` | Read-only | List available attribute types for datatype diagrams. |
+| `artifact_query_diagram_layout` | Read-only | What arranging a diagram needs, as it is drawn now: each element's layout key, label, extent and the box it sits in; each box's key, kind (domain, type, grouping, element) and extent; each relation's key and the element keys it joins; and the stored layout block (absent while PlantUML arranges the diagram), whose entries are what a layout patch states as based_on. |
 | `artifact_query_document_tables` | Read-only | Read the rows of the typed tables a document's type declares. |
 | `artifact_query_find_connections_for` | Read-only | Find connection records that touch a given entity_id. |
 | `artifact_query_find_neighbors` | Read-only | Graph traversal: return direct or derived neighbors within max_hops. |
@@ -52,9 +53,12 @@ looking entirely normal. See
 | `artifact_query_stats` | Read-only | Return model statistics: total entity/connection/diagram counts and breakdowns by domain, connection type, and group. |
 | `artifact_query_viewpoint` | Read-only | action='list': browse the effective merged viewpoint catalog — slug/version/name/purpose/content/stakeholders/concerns, a scope summary, a plain-language query_summary so you see what a viewpoint means, not just that it exists, and whether it is pinned (engagement-repo-local quick access). |
 | `artifact_verify` | Read-only | Verify one file or all model files. |
-| `change_set_check` | Read-only | Check candidates offered for integration and identify the parties to each conflict. |
-| `change_set_list` | Read-only | List candidate architectures by id, name, state and parent. |
-| `change_set_read` | Read-only | Read a candidate, its operation standing, its scoped diff with optional diagram geometry, or its residuality in each analysis that judged it. |
+| `change_set_check` | Read-only | Check drafts or offered candidates for integration conflicts: every claim two of them (or the candidates they stack on) make on the same thing, with the operations of each party. |
+| `change_set_compare` | Read-only | Compare a candidate, composed with every candidate it stacks on, against a base: the composed view of the scoped entities and connections, the differences field by field, and each operation's standing. |
+| `change_set_list` | Read-only | List candidate architectures: id, name, state, parent, scope and how many operations each records. |
+| `change_set_read` | Read-only | Read one candidate architecture: its record (header and the operations it records, each with the base it was written against) and its `version`, which every edit of it states as `based_on`. |
+| `change_set_residuality` | Read-only | A candidate's residuality in every stress analysis that judged it or integrated it: per analysis, its verdict counts beside the naive's, and R = (Y − X) / n once both are judged on every usable test stressor. |
+| `change_set_standing` | Read-only | How each of a candidate's own operations stands against the model as it is now: `applies`, `already-there` (skipped by an apply), `drifted` (what it replaces changed since it was written; change_set_rebase writes it again) or `conflicting` (nothing to apply to; the reason says what), each with a sentence saying what to do. |
 | `scratchpad_list` | Read-only | List scratchpads with their metadata — id, name, status, version, collection and note count, never the notes themselves. |
 | `scratchpad_read` | Read-only | Read one scratchpad whole: its areas (the labelled frames), notes, links, groups and the layout block holding every coordinate. |
 <!-- mcp-tools:end arch-read -->
@@ -72,8 +76,11 @@ looking entirely normal. See
 | Connections | `artifact_edit_connection_associations` | Destructive | Add or remove second-order association entity IDs from a connection. |
 | Diagrams | `artifact_create_diagram` | Write | Create a diagram. |
 | Diagrams | `artifact_edit_diagram` | Destructive | Edit an existing diagram. |
+| Diagrams | `artifact_replace_diagram` | Destructive | Save a diagram whole, with its layout and any model edits, in one write. |
+| Diagrams | `artifact_arrange_diagram` | Destructive | Change a diagram's layout or groupings: exactly one of `patch` or `intents`. |
 | Diagrams | `artifact_delete_diagram` | Destructive | Delete a single diagram, including its rendered PNG/SVG output. |
 | Diagrams | `artifact_create_matrix` | Destructive | Create a markdown connection-matrix diagram. |
+| Viewpoints | `artifact_viewpoint` | Destructive | Create/edit/delete a ViewpointDefinition in the engagement repo's own catalog — the same validate/persist path a GUI builder's save flow uses. |
 | Documents | `artifact_create_document` | Write | Create a new architecture document (e.g. ADR, RFC). |
 | Documents | `artifact_edit_document` | Destructive | Edit an existing architecture document's frontmatter or body. |
 | Documents | `artifact_edit_document_table` | Destructive | Add, change and remove rows of one typed table a document's type declares, leaving every other line of the document as it is. |
@@ -84,8 +91,18 @@ looking entirely normal. See
 | Icons | `artifact_share_icon` | Write | Move an icon a diagram holds for itself (diagram_entities.icons, named local:<icon_key>) into this repository's library, and have the diagram name the library icon instead. |
 | Icons | `artifact_delete_icon` | Destructive | Delete an icon from this repository's library. |
 | Scratchpads | `scratchpad_create` | Write | Create a scratchpad. |
+| Scratchpads | `scratchpad_edit` | Destructive | Change a scratchpad by saying what changed, instead of sending the whole document back. |
 | Scratchpads | `scratchpad_replace` | Destructive | Replace a scratchpad whole. |
+| Scratchpads | `scratchpad_lift` | Write | Lift a selection of notes — and the links among them — into ordinary model content, through the same verified write path as any other authoring. |
 | Scratchpads | `scratchpad_delete` | Destructive | Delete a scratchpad and everything on it. |
+| Candidate architectures | `change_set_create` | Write | Create a candidate architecture. |
+| Candidate architectures | `change_set_record` | Destructive | Record edits among a draft candidate's operations, in order, as one write; the server reads each edit's base from what the candidate stacks on, so no base is stated. |
+| Candidate architectures | `change_set_edit` | Destructive | Change header fields of a candidate: name, rationale, parent, scope, answers, satisfies, and state — draft <-> candidate, either -> rejected or superseded; integrated only by change_set_apply; terminal states never change. |
+| Candidate architectures | `change_set_rebase` | Destructive | Write a draft candidate's drifted operations again against the model as it is now, keeping the value each asks for: applying it then overwrites deliberately what the model came to say. |
+| Candidate architectures | `change_set_apply` | Destructive | Write a draft or offered candidate's operations onto the model in one transaction, all or none, and mark it integrated. |
+| Candidate architectures | `change_set_delete` | Destructive | Delete a candidate nothing refers to. |
+| Stress analysis | `analysis_start` | Write | Start a stress analysis: its naive candidate and the stress-analysis document naming it, both or neither. |
+| Stress analysis | `analysis_hold_out_test_set` | Destructive | Move a third of a stress analysis's design stressors into its test set, drawn at random from seed. |
 | Bulk | `artifact_bulk_write` | Destructive | Batch entity creates, document creates, connection adds, and edits in one call. |
 | Bulk | `artifact_bulk_delete` | Destructive | Batch destructive operations with dependency-aware planning and final repository verification. |
 | Grouping | `artifact_group` | Destructive | Manage artifact group containers across all three grouping axes. |
@@ -93,29 +110,20 @@ looking entirely normal. See
 | Promotion & sync | `artifact_save_changes` | Write | Commit all accumulated architecture changes. |
 | Promotion & sync | `artifact_submit_for_review` | Write | Push the enterprise working branch to the remote for team review. |
 | Promotion & sync | `artifact_withdraw_changes` | Destructive | Permanently discard all pending enterprise changes (requires confirm=True). |
+| Local changes | `artifact_rebase_change` | Write | Bring a local change onto the enterprise artifact as it stands now, naming it by its own artifact_id (from artifact_list_changes). |
+| Local changes | `artifact_submit_changes` | Write | Submit local changes for review upstream, naming them by their own artifact_ids (from artifact_list_changes) in the order they are to be replayed. |
 | Local changes | `artifact_discard_change` | Destructive | Take back a local change, naming it by its own artifact_id (from artifact_list_changes) — an artifact may carry more than one. |
 | Guidance & ops | `artifact_authoring_guidance` | Read-only | Return authoring guidance before creating entities or diagrams. |
 | Guidance & ops | `artifact_help` | Read-only | Return the full catalog of artifact types, entity types (by domain), connection types (by language), and diagram types (with accepted domains). |
 | Guidance & ops | `artifact_get_operation` | Read-only | Return the latest recorded status, phase, timestamps, error, and final result for a prior bulk operation by operation_id. |
 | Guidance & ops | `artifact_admin_reindex` | Destructive | Rebuild the artifact index from disk. |
-| Other | `analysis_hold_out_test_set` | Destructive | Move a random third of an analysis's design stressors into its test set; the seed drawn with is answered. |
-| Other | `analysis_start` | Write | Start a stress analysis: its naive candidate (name, scope or parent) and the document naming it, or neither. |
-| Other | `artifact_arrange_diagram` | Destructive | Change a diagram's layout or groupings: exactly one of `patch` or `intents`. |
-| Other | `artifact_rebase_change` | Write | Bring a local change onto the enterprise artifact as it stands now, naming it by its own artifact_id (from artifact_list_changes). |
-| Other | `artifact_submit_changes` | Write | Submit local changes for review upstream, naming them by their own artifact_ids (from artifact_list_changes) in the order they are to be replayed. |
-| Other | `artifact_viewpoint` | Destructive | Create/edit/delete a ViewpointDefinition in the engagement repo's own catalog — the same validate/persist path a GUI builder's save flow uses. |
-| Other | `change_set_apply` | Destructive | Write a candidate's operations onto the model in one transaction, all or none, and mark it integrated; refused while one conflicts or has drifted. |
-| Other | `change_set_create` | Write | Create an engagement candidate with a name and optional parent, scope, operations or scope diagram. |
-| Other | `change_set_delete` | Destructive | Delete a candidate; refused while another candidate stacks on it or an analysis starts from it. |
-| Other | `change_set_edit` | Destructive | Patch the named candidate fields using the version returned by the last read. |
-| Other | `change_set_rebase` | Destructive | Write a draft candidate's drifted operations again against the current model, keeping what each asks for. |
-| Other | `scratchpad_edit` | Destructive | Change a scratchpad by saying what changed, instead of sending the whole document back. |
-| Other | `scratchpad_lift` | Write | Lift a selection of notes — and the links among them — into ordinary model content, through the same verified write path as any other authoring. |
 <!-- mcp-tools:end arch-write -->
 
 The tool count is kept small with clear descriptions on purpose — fewer, well-described
-tools let an agent pick correctly. Every write tool validates against the verifier, supports
-a dry-run preview, and returns structured error codes with locations on failure. Structured
+tools let an agent pick correctly. Every write to the model validates against the verifier,
+supports a dry-run preview, and returns structured error codes with locations on failure. A
+candidate architecture's own record is versioned instead: each edit of it states the version it was
+made over (see [Candidate architectures](candidate-architectures.md)). Structured
 output is returned as YAML for token efficiency. The tables above are generated from the
 registered MCP servers by `uv run tools/docs/generate_mcp_docs.py`.
 
