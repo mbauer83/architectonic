@@ -18,6 +18,7 @@ import { drawnRelations, drawnShapes, pieceOf } from './labPieces'
 import LabDrawn from './LabDrawn'
 import CanvasMarks from './CanvasMarks.vue'
 import CanvasDraftMarks from './CanvasDraftMarks.vue'
+import CanvasOutlines from './CanvasOutlines.vue'
 import LabBreachMarks from './LabBreachMarks.vue'
 import LabSelection from './LabSelection.vue'
 import LabLineHandles from './LabLineHandles.vue'
@@ -38,6 +39,8 @@ const props = defineProps<{
   drafts?: ReadonlySet<string>
   /** The relations the session would create, by key: drawn in the accent until they are saved (03·8). */
   pendingLines?: ReadonlySet<string>
+  /** The shapes something beside the canvas points at, by alias: outlined while it does (01·8). */
+  outlined?: readonly string[]
 }>()
 const emit = defineEmits<{ pick: [alias: string] }>()
 
@@ -294,6 +297,12 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
       v-if="drafts?.size"
       :session="session"
       :drafts="drafts"
+    />
+
+    <CanvasOutlines
+      v-if="outlined?.length"
+      :session="session"
+      :aliases="outlined"
     />
 
     <slot />

@@ -62,7 +62,8 @@ const toCreate = (type: string) => { kind.value = type; drawing.value = '' }
         tabindex="-1"
         data-first
       >
-        <b>{{ connectionTypeLabel(kind) }}</b> — {{ sentence(kind) }}. To change the type, remove the relation and draw another.
+        <b>{{ connectionTypeLabel(kind) }}</b> — {{ sentence(kind) }}.
+        To change the type, remove the relation and draw another.
       </p>
     </template>
     <div

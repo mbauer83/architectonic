@@ -125,7 +125,8 @@ export function useCanvasRelation(
     const line = drawnLine(index)
     return line && {
       id: line.record.artifact_id, text: line.label,
-      sentence: `${line.record.source_name} — ${connectionTypeLabel(line.record.conn_type)} → ${line.record.target_name}`,
+      sentence:
+        `${line.record.source_name} — ${connectionTypeLabel(line.record.conn_type)} → ${line.record.target_name}`,
       multiplicity: line.src || line.tgt ? `${line.src || '·'} → ${line.tgt || '·'}` : '',
     }
   }

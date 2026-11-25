@@ -24,7 +24,6 @@ import DiagramViewportControls from '../components/DiagramViewportControls.vue'
 import { useDiagramSvgSelection } from '../composables/useDiagramSvgSelection'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import DiagramDetailHeader from '../components/DiagramDetailHeader.vue'
-import DiagramAutoLayoutDialog from '../components/DiagramAutoLayoutDialog.vue'
 import DiagramC4Navigation from '../components/DiagramC4Navigation.vue'
 import CanvasContentEditor from '../components/CanvasContentEditor.vue'
 import DiagramPageSidebar from '../components/DiagramPageSidebar.vue'
@@ -38,7 +37,6 @@ import DiagramMatrixView from '../components/DiagramMatrixView.vue'
 import { diagramEditRoute, matrixEditRoute } from '../router/artifactRoutes'
 import DiagramEditBar from '../components/DiagramEditBar.vue'
 import LayoutLabCanvas from '../components/layoutLab/LayoutLabCanvas.vue'
-import CanvasOutlines from '../components/layoutLab/CanvasOutlines.vue'
 import type { CanvasHandle, EditBarHandle } from '../composables/useDiagramEditMode'
 import { useDiagramEditMode } from '../composables/useDiagramEditMode'
 import { useDiagramPageReader } from '../composables/useDiagramPageReader'
@@ -155,15 +153,6 @@ const reader = useDiagramPageReader({
   viewing: computed(() => !editing.value && svgHtml.value !== null),
 })
 
-/** *Lay out automatically…* on a hand-written diagram (A-02.42): once given up, it is offered for editing. */
-const layingOut = ref(false)
-const laidOut = () => {
-  layingOut.value = false
-  load()
-  toast('Laid out automatically. It is arranged on its canvas from now on.', 'info', 10000,
-    { label: 'Edit', run: () => void edit.enter() })
-}
-
 const executeDelete = () => {
   void router.push(isGlobalDiagram.value ? { path: '/diagrams', query: { tier: 'enterprise' } } : '/diagrams')
 }
@@ -204,13 +193,7 @@ const executeDelete = () => {
       @delete="deletePanel?.requestDelete()"
       @edit="edit.enter()"
       @done="edit.done()"
-      @lay-out="layingOut = true"
-    />
-    <DiagramAutoLayoutDialog
-      v-if="layingOut && detail"
-      :detail="detail"
-      @close="layingOut = false"
-      @laid-out="laidOut"
+      @laid-out="load"
     />
 
     <!-- Only while there is nothing to show. A refresh keeps the rendered canvas mounted, because
@@ -298,12 +281,8 @@ const executeDelete = () => {
                     :surround="edit.surround.value"
                     :drafts="drafts.inEdit.value"
                     :pending-lines="drafts.pendingLines.value"
-                  >
-                    <CanvasOutlines
-                      :session="edit.session"
-                      :aliases="edit.outlined.value"
-                    />
-                  </LayoutLabCanvas>
+                    :outlined="edit.outlined.value"
+                  />
                 </CanvasContentEditor>
               </div>
               <div

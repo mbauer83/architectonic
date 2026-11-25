@@ -65,7 +65,9 @@ const labelTrail = (picture: LayoutGeometry, alias: string): readonly string[] =
 /** Where a grouping sits: the indexes from the top, one per level. */
 export type Trail = readonly number[]
 
-const findTrail = (groupings: readonly AuthoredGrouping[], wanted: (one: AuthoredGrouping) => boolean): Trail | null => {
+const findTrail = (
+  groupings: readonly AuthoredGrouping[], wanted: (one: AuthoredGrouping) => boolean,
+): Trail | null => {
   for (const [index, one] of groupings.entries()) {
     if (wanted(one)) return [index]
     const below = findTrail(one.groups ?? [], wanted)
@@ -163,7 +165,9 @@ export const boxChanges = (
       return was !== undefined && was !== label ? [{ key: `box~${self}`, text: `Box renamed: ${was} → ${label}` }] : []
     }),
     ...[...before].filter(([self]) => !after.has(self))
-      .map(([self, label]) => ({ key: `box-${self}`, text: `Box deleted: ${label} — what it held stays on the diagram` })),
+      .map(([self, label]) => ({
+        key: `box-${self}`, text: `Box deleted: ${label} — what it held stays on the diagram`,
+      })),
   ]
 }
 

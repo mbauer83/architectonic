@@ -34,7 +34,9 @@ const types = computed(() => {
 })
 
 const items = computed((): readonly CanvasMenuItem[] => (page.value === 'types'
-  ? [...types.value.map((type) => ({ id: `type:${type}`, label: labelOf(type), hint: `every ${typeWords(type)} in it` })),
+  ? [...types.value.map((type) => ({
+    id: `type:${type}`, label: labelOf(type), hint: `every ${typeWords(type)} in it`,
+  })),
     { id: 'back', label: '‹ Back', divider: true }]
   : [
     { id: 'rename', label: 'Rename box…', hint: 'on this diagram only' },
