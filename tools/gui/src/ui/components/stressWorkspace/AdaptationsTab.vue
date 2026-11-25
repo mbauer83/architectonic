@@ -3,9 +3,15 @@
  * The Adaptations tab (06·6, Q39): every candidate stacked on the naive architecture, each saying what
  * it stacks on and which end states it answers, and below it the selected one's operations against
  * *against*. *New candidate on top…* stacks a new candidate on the selected one and records it as an
- * adaptation of the end state it answers. A row takes focus, and Enter or Space selects it.
+ * adaptation of the end state it answers. A row takes focus, and Enter or Space selects it. The selected
+ * adaptation can be abandoned — rejected, kept as a considered alternative, or deleted — with its target state
+ * withdrawn first where one stands (`AbandonCandidate`, `CandidateTargetState`).
  */
-import { computed, ref } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
+import { modelServiceKey } from '../../keys'
+import { useCandidateTargetState } from '../../composables/useCandidateTargetState'
+import AbandonCandidate from '../candidates/AbandonCandidate.vue'
+import CandidateTargetState from '../candidates/CandidateTargetState.vue'
 import { cell, cellIds, endStateName } from '../../../domain/stressAnalysis/analysisRows'
 import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
@@ -28,6 +34,17 @@ const answers = (id: string): string => props.analysis.adaptations.value
   .map((rowId) => endStateName(props.analysis.endStates.value, rowId))
   .join(', ')
 const depth = (id: string): number => chainOf(id, props.candidates.all.value).length - 2
+
+const svc = inject(modelServiceKey)!
+/** The selected adaptation, where one is selected (the naive architecture is not abandoned from here). */
+const chosen = computed(() => adaptations.value.find((one) => one.id === props.candidates.selected.value) ?? null)
+const target = useCandidateTargetState(svc, () => { void props.candidates.load() })
+const abandoning = ref(false)
+watch(() => chosen.value?.id, (id) => {
+  abandoning.value = false
+  target.close()
+  if (id) void target.load(id)
+}, { immediate: true })
 
 const stacking = ref(false)
 const name = ref('')
@@ -127,6 +144,34 @@ const create = async () => {
         </button>
       </form>
     </div>
+    <template v-if="chosen">
+      <div class="chosen-acts">
+        <button
+          v-if="!abandoning"
+          type="button"
+          class="btn btn-sm"
+          data-testid="abandon-candidate"
+          @click="abandoning = true"
+        >
+          Abandon {{ chosen.name }}…
+        </button>
+      </div>
+      <AbandonCandidate
+        v-if="abandoning"
+        :candidates="candidates"
+        :target="target"
+        :candidate-id="chosen.id"
+        :name="chosen.name"
+        :state="chosen.state"
+        @rejected="candidates.select(chosen.id)"
+        @close="abandoning = false"
+      />
+      <CandidateTargetState
+        :target="target"
+        :candidate-id="chosen.id"
+        :name="chosen.name"
+      />
+    </template>
     <CandidateOperations
       v-if="candidates.selected.value && candidates.selected.value !== analysis.naiveId.value"
       :candidates="candidates"
@@ -153,4 +198,5 @@ const create = async () => {
 .new { padding: 8px 10px; border-top: 1px solid var(--border); }
 .new-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12px; }
 .new-form input, .new-form select { font: inherit; margin-left: 4px; }
+.chosen-acts { display: flex; justify-content: flex-end; padding: 6px 10px 0; }
 </style>

@@ -9,7 +9,7 @@
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 import { Effect, Exit } from 'effect'
 import { modelServiceKey } from '../keys'
-import type { DiagramContext, EntityDisplayInfo } from '../../domain'
+import type { PictureContext, EntityDisplayInfo } from '../../domain'
 import { stableEntityId } from '../../domain/artifactId'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import { toGlyphKey } from '../lib/glyphKey'
@@ -20,7 +20,7 @@ import { type ReceivingBox, admitsType } from '../../domain/layout/receivingBox'
 import { partsTypes } from './canvasParts'
 
 const props = defineProps<{
-  context: DiagramContext
+  context: PictureContext
   /** The box under the point the menu was opened at, which the new element joins; null on open paper. */
   into?: ReceivingBox | null
   /** The diagram type draws an element more than once, so one already drawn may be drawn again. */

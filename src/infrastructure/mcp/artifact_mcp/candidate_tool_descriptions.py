@@ -102,6 +102,15 @@ CHANGE_SET_MOVE_INTO_BASELINE = (
     "true) answers the generated operations and their standing."
 )
 
+CHANGE_SET_WITHDRAW_TARGET_STATE = (
+    "Withdraw a candidate's target state instead of moving it into the baseline: the \"(target)\" copies with "
+    "their relations and traces, the elements it added, the plateaus and the gap are removed as one generated "
+    "operation list, and the candidate is a draft again (apply it, re-apply it as a target state, reject or "
+    "delete it). Refused while something written since refers to one of those elements: a relation the target "
+    "state did not write, or a diagram drawing one; the refusal names each. dry_run (default true) answers the "
+    "removals and the refusal."
+)
+
 CHANGE_SET_INTEGRATE = (
     "Integrate two or more drafts or offered candidates that stack on the same one into a new draft holding "
     "every operation of each, converging ones once. Each conflict between them (as change_set_check reports "
@@ -131,9 +140,9 @@ CHANGE_SET_DELETE = (
 
 ANALYSIS_START = (
     "Start a stress analysis: its naive candidate and the stress-analysis document naming it, both or "
-    "neither. naive: the naive's header as change_set_create takes it (name; scope, diagram or parent): it "
-    "owns the scope and the diagram the analysis is drawn on. context: optional free text, the environment "
-    "and the decision the evaluation informs. "
+    "neither. naive: the naive's header as change_set_create takes it — a name alone starts it empty, to be "
+    "defined by recording its operations and the model elements it reads over (scope); a diagram or a parent "
+    "seeds it. context: optional free text, the environment and the decision the evaluation informs. "
     "Stressors, end states, incidence, adaptations and verdicts are then rows of the document's tables, "
     "written with artifact_edit_document_table."
 )

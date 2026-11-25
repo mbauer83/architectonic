@@ -135,6 +135,17 @@ export const CandidateMoveSchema = Schema.Struct({
 })
 export type CandidateMove = typeof CandidateMoveSchema.Type
 
+/** A target state withdrawn from the model, or a dry run of it: the generated removals, or what refuses them. */
+export const CandidateWithdrawalSchema = Schema.Struct({
+  candidate: Schema.String,
+  dry_run: Schema.Boolean,
+  released: Schema.Boolean,
+  refusal: Schema.optional(Schema.String),
+  operation_id: Schema.optional(Schema.String),
+  operations: Schema.optional(Schema.Array(FieldsSchema)),
+})
+export type CandidateWithdrawal = typeof CandidateWithdrawalSchema.Type
+
 /**
  * The generated view a candidate is drawn on, saved as a diagram (or a dry run of it): what the diagram
  * draws of the model, and the candidate's version once it is drawn on it.

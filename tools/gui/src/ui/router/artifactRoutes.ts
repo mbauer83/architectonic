@@ -82,7 +82,7 @@ export const ROUTE_TEMPLATES = {
   documentDetail: '/documents/:artifactId',
   /** A stress analysis's workspace: its tables beside the canvas. Reached from the analysis document. */
   stressAnalysisWorkspace: '/documents/:artifactId/workspace',
-  /** Starting a stress analysis: a scope, then the naive architecture. Creates the document. */
+  /** Starting a stress analysis: its name and context; the naive architecture is then sketched. */
   stressAnalysisStart: '/stress-analyses/new',
   scratchpadList: '/scratchpads',
   scratchpadDetail: '/scratchpads/:artifactId',

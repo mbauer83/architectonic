@@ -25,7 +25,6 @@ from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import MalformedLayout
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
 from src.domain.ontology_representation.artifact_types import DiagramRecord
-from src.infrastructure.diagram_composition import render_composition
 from src.infrastructure.diagram_layout_wire import ArrangeIntent, LayoutPatch, stated_intents
 from src.infrastructure.rendering.laid_out_rendering import stored_layout
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
@@ -58,6 +57,7 @@ from src.infrastructure.rest.routers._openapi import (
 )
 from src.infrastructure.rest.routers.diagrams._geometry_proposals import GeometryPreviewBody
 from src.infrastructure.rest.routers.diagrams._lensed_reading import kind_muting, lensed_body, reading_body
+from src.infrastructure.rest.routers.diagrams._picture_preview import previewed_geometry
 from src.infrastructure.rest.routers.diagrams._reading_lens_request import reading_lens
 from src.infrastructure.rest.routers.diagrams._serving import _rendered_path
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
@@ -201,23 +201,15 @@ def preview_diagram_layout_geometry(
     artifact_id: str, body: GeometryPreviewBody, catalogs: Catalogs, lens: Lens,
 ) -> dict[str, object]:
     parsed = _stored_diagram(artifact_id)
-    repo = s.get_repo()
-    try:
-        elements, relations = body.proposals(catalogs, repo)
-        composed = render_composition(
-            body, repo=repo, repo_root=_repo_root(), proposed_entities=elements, proposed_connections=relations,
-        )
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from exc
-    frontmatter = {**parsed.frontmatter, **composed.statements(body)}
     root = _repo_root()
-    puml = composed.puml if lens.is_empty else lensed_body(
-        artifact_id, Path(_stored_record(artifact_id).path), lens, catalogs, root, authored=composed.puml,
-    )
-    return _geometry(lambda: geometry_response(
-        puml, artifact_id, frontmatter, root, catalogs.ontology, generated=True,
-        arrangement=body.arrangement, previous=frozenset(alias_by_instance(parsed.frontmatter)),
-        restyle_prepared=kind_muting(lens, root),
+
+    def lensed(authored: str) -> str:
+        return lensed_body(artifact_id, Path(_stored_record(artifact_id).path), lens, catalogs, root, authored=authored)
+
+    return _geometry(lambda: previewed_geometry(
+        body, parsed.frontmatter, artifact_id=artifact_id, repo=s.get_repo(), root=root, catalogs=catalogs,
+        previous=frozenset(alias_by_instance(parsed.frontmatter)),
+        lensed=None if lens.is_empty else lensed, restyle=kind_muting(lens, root),
     ))
 
 

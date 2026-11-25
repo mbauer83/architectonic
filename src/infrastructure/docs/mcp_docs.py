@@ -115,6 +115,7 @@ _ARCH_WRITE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
         "Candidate architectures",
         ("change_set_create", "change_set_record", "change_set_edit", "change_set_rebase", "change_set_apply",
          "change_set_apply_as_target_state", "change_set_move_into_baseline",
+         "change_set_withdraw_target_state",
          "change_set_save_diagram", "change_set_integrate", "change_set_delete"),
     ),
     ("Stress analysis", ("analysis_start", "analysis_hold_out_test_set")),

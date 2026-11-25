@@ -250,6 +250,25 @@ export const DiagramContextSchema = Schema.Struct({
 })
 export type DiagramContext = typeof DiagramContextSchema.Type
 
+/**
+ * What an editor reads of the diagram a picture starts from: a stored diagram's membership, or a generated
+ * view's (`artifact_id` empty). A diagram read answers all of it, so a diagram's context is a picture's.
+ */
+export const PictureStartSchema = Schema.Struct({
+  artifact_id: Schema.String,
+  name: Schema.String,
+  diagram_type: Schema.String,
+  entity_ids_used: Schema.optional(Schema.Array(Schema.String)),
+  connection_ids_used: Schema.optional(Schema.Array(Schema.String)),
+  diagram_entities: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+  authored_groupings: Schema.optional(Schema.Array(AuthoredGroupingSchema)),
+  extra: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
+})
+
+/** A picture and everything its editor needs: a diagram's context, or a candidate's picture's. */
+export const PictureContextSchema = Schema.Struct({ ...DiagramContextSchema.fields, diagram: PictureStartSchema })
+export type PictureContext = typeof PictureContextSchema.Type
+
 export const DiagramEntityDiscoverySchema = Schema.Struct({
   search_results: Schema.Array(EntityDisplayInfoSchema),
   candidate_connections: Schema.Array(EntityContextConnectionSchema),

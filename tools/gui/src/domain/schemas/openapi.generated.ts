@@ -1449,6 +1449,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/change-sets/{artifact_id}/picture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the picture a candidate is sketched on
+         * @description The stored diagram's picture, the view generated from what the candidate reads over, or the empty
+         *     picture of a candidate that reads over nothing yet.
+         */
+        get: operations["changes_read_candidate_picture"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/change-sets/{artifact_id}/picture/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a candidate's picture with everything its editor needs
+         * @description What the picture starts from — a stored diagram's membership, or the generated view's — with the
+         *     relations the model holds among, and the elements one and two steps from, what it draws and every element
+         *     the candidate reads over.
+         */
+        get: operations["changes_read_candidate_picture_context"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/change-sets/{artifact_id}/picture/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draw an edit session's composition over the picture a candidate is sketched on
+         * @description The session's composition, with the elements and relations it proposes, drawn over where the picture
+         *     starts; a composition that draws nothing is the empty picture. Writes nothing.
+         */
+        post: operations["changes_preview_candidate_picture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/change-sets/{artifact_id}/picture/shapes/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draw resized shapes of the picture a candidate is sketched on, writing nothing
+         * @description Each shape drawn by the composer at its new size; the candidate must be stored (404).
+         */
+        post: operations["changes_preview_candidate_picture_shapes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/change-sets/{artifact_id}/rebase": {
         parameters: {
             query?: never;
@@ -1520,6 +1604,29 @@ export interface paths {
         get: operations["changes_read_standing"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/change-sets/{artifact_id}/withdraw-target-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw a candidate's target state from the model, leaving the baseline as it was
+         * @description The copies with their relations and traces, the added elements, the plateaus and the gap removed as one
+         *     generated list; the candidate is then a draft again, to be applied, re-applied, rejected or deleted. Refused
+         *     with 409 while something written since refers to one of them: a relation the target state did not write, or a
+         *     diagram drawing one, each named. A dry run answers the removals and the refusal.
+         */
+        post: operations["changes_withdraw_candidate_target_state"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3256,28 +3363,6 @@ export interface paths {
         get: operations["connections_read_relation_notations"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/scope-drawings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Draw a generated view of a scope no stored diagram draws
-         * @description The model's entities in the scope and the relations among them, laid out as a candidate with no stored
-         *     diagram is drawn: what a scope chosen by a viewpoint or a search previews before an analysis starts. Writes
-         *     nothing. 422 when none of the scope is in the model.
-         */
-        post: operations["changes_draw_scope"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6641,6 +6726,42 @@ export interface components {
             state?: ("draft" | "candidate" | "integrated" | "rejected" | "superseded") | null;
         };
         /**
+         * CandidatePictureContext
+         * @description A candidate's picture and everything its editor needs, in one read, as a diagram's context read answers
+         *     for a diagram: what the start draws, what the model relates it to, and what lies one and two steps away
+         *     from it and from every element the candidate reads over.
+         */
+        CandidatePictureContext: {
+            /** Candidate Connections */
+            candidate_connections: components["schemas"]["ContextConnection"][];
+            /** Connections */
+            connections: components["schemas"]["DiagramContextConnection"][];
+            /** Derived Entities */
+            derived_entities?: components["schemas"]["DerivedViewEntityResponse"][];
+            diagram: components["schemas"]["PictureStartResponse"];
+            /** Drawn Labels */
+            drawn_labels: {
+                [key: string]: string;
+            };
+            /** Entities */
+            entities: components["schemas"]["DiagramContextEntity"][];
+            /** Etag */
+            etag: string;
+            /** Explicit Connection Pairs */
+            explicit_connection_pairs: [
+                string,
+                string
+            ][];
+            /** Generation */
+            generation: number;
+            /** Suggested Entities */
+            suggested_entities: components["schemas"]["HopSuggestionGroup"][];
+            /** Type Extras */
+            type_extras?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
          * CandidateRebase
          * @description Re-base a candidate's drifted operations on the model as it stands now.
          */
@@ -6743,6 +6864,37 @@ export interface components {
              * @description Types of elements a plateau may not aggregate, left unheld.
              */
             unheld?: string[];
+        };
+        /**
+         * CandidateWithdrawal
+         * @description What withdrawing a target state removes from the model, or why it would not.
+         */
+        CandidateWithdrawal: {
+            /** Candidate */
+            candidate: string;
+            /** Dry Run */
+            dry_run: boolean;
+            /**
+             * Operation Id
+             * @description The write's operation, when one ran.
+             */
+            operation_id?: string;
+            /**
+             * Operations
+             * @description The generated removals.
+             */
+            operations?: components["schemas"]["Fields"][];
+            /**
+             * Refusal
+             * @description Why the withdrawal is refused: what was written since that refers to the target state.
+             */
+            refusal?: string;
+            /**
+             * Released
+             * @description Whether the target state was taken out and the candidate released as a draft.
+             * @default false
+             */
+            released: boolean;
         };
         CanvasCommand: components["schemas"]["CreateElement"] | components["schemas"]["RenameElement"] | components["schemas"]["EditElement"] | components["schemas"]["DeleteElement"] | components["schemas"]["ConnectElements"];
         /** ChangedField */
@@ -12859,6 +13011,41 @@ export interface components {
             perspectives: components["schemas"]["StressPerspective"][];
         };
         /**
+         * PictureStartResponse
+         * @description Where the picture starts, as a diagram's editor reads what a diagram draws.
+         */
+        PictureStartResponse: {
+            /**
+             * Artifact Id
+             * @description The stored diagram the picture starts from; empty where it starts from a generated view.
+             */
+            artifact_id: string;
+            /** Authored Groupings */
+            authored_groupings?: components["schemas"]["AuthoredGroupingResponse"][];
+            /**
+             * Connection Ids Used
+             * @description The model's relations the start draws.
+             */
+            connection_ids_used?: string[];
+            /** Diagram Entities */
+            diagram_entities?: {
+                [key: string]: unknown;
+            };
+            /** Diagram Type */
+            diagram_type: string;
+            /**
+             * Entity Ids Used
+             * @description The model's entities the start draws.
+             */
+            entity_ids_used?: string[];
+            /** Extra */
+            extra?: {
+                [key: string]: unknown;
+            };
+            /** Name */
+            name: string;
+        };
+        /**
          * PlacedChangeContract
          * @description One element or box entry a patch changes: what it becomes (omitted: removed) and what the stored
          *     layout held for it (omitted: absent).
@@ -13853,22 +14040,6 @@ export interface components {
             fields: components["schemas"]["Fields"];
             /** Id */
             id: string;
-        };
-        /**
-         * ScopeDrawingRequest
-         * @description A scope that no stored diagram draws, to be drawn as a generated view before a candidate holds it.
-         */
-        ScopeDrawingRequest: {
-            /**
-             * Name
-             * @description What the generated view is called.
-             */
-            name: string;
-            /**
-             * Scope
-             * @description The model's entities in the scope, by id in either spelling.
-             */
-            scope: string[];
         };
         /** ScopedView */
         ScopedView: {
@@ -20321,6 +20492,300 @@ export interface operations {
             };
         };
     };
+    changes_read_candidate_picture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagramLayoutGeometryResponse"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_read_candidate_picture_context: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidatePictureContext"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_preview_candidate_picture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GeometryPreviewBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagramLayoutGeometryResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_preview_candidate_picture_shapes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DrawShapesBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShapeDrawingsResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     changes_rebase_candidate: {
         parameters: {
             query?: never;
@@ -20579,6 +21044,95 @@ export interface operations {
             };
             /** @description Request validation failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_withdraw_candidate_target_state: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CandidateApply"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateWithdrawal"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -27340,57 +27894,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RelationNotationsResponse"];
-                };
-            };
-            /** @description Request validation failed */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Unhandled server error (non-disclosing) */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-        };
-    };
-    changes_draw_scope: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScopeDrawingRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DiagramLayoutGeometryResponse"];
-                };
-            };
-            /** @description Artifact not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Request validation failed */

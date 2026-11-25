@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import type { DiagramContext } from '../../domain'
+import type { PictureContext } from '../../domain'
 import { canvasMembers } from '../../domain/layout/canvasComposition'
 import { modelServiceKey, toastKey } from '../keys'
 import { useDropFeedback } from '../composables/useDropFeedback'
@@ -37,7 +37,7 @@ import { useCommandGate } from '../composables/usePermissions'
 
 const props = defineProps<{
   editing: DiagramEditing
-  context: DiagramContext
+  context: PictureContext
   selection?: string | null
   /** The line selected on the canvas, by its place on the picture: its menu is the line's. */
   line?: number | null

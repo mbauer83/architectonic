@@ -17,7 +17,7 @@ from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_S
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.candidate_wire import CandidateHeader
 from src.infrastructure.mcp.artifact_mcp import candidate_tools as mcp
-from src.infrastructure.rest.routers import candidates, documents, state
+from src.infrastructure.rest.routers import candidate_picture, candidates, documents, state
 from tests.support.api_app import build_api_app
 from tests.support.rest_state import reset_state_for_test
 from tests.support.typed_table_documents import repository_in
@@ -43,7 +43,7 @@ def client(tmp_path: Path) -> Iterator[TestClient]:
     root = _repository(tmp_path)
     state.init_state(ArtifactRepository(shared_artifact_index([root])), root, None)
     try:
-        with TestClient(build_api_app(candidates.router, documents.router)) as served:
+        with TestClient(build_api_app(candidates.router, candidate_picture.router, documents.router)) as served:
             served.root = root  # type: ignore[attr-defined]
             yield served
     finally:
@@ -106,20 +106,17 @@ def test_a_candidate_is_drawn_on_the_diagram_its_stack_names(client: TestClient)
 
 
 def test_a_scope_no_diagram_draws_is_drawn_as_a_generated_view(client: TestClient) -> None:
-    """Q36: a search or viewpoint scope with no stored diagram is drawn from the scope itself."""
+    """Q36: a candidate that names no stored diagram is drawn from what it reads over, and its editor's picture
+    is the same view."""
     scoped = client.post("/api/change-sets", json={"record": {"name": "Searched", "scope": [_SERVICE]}}).json()
+    ref = scoped["record"]["id"]
 
-    drawing = client.get(f"/api/change-sets/{scoped['record']['id']}/diff").json()["drawing"]
-    previewed = client.post("/api/scope-drawings", json={"scope": [_SERVICE], "name": "Searched"})
+    drawing = client.get(f"/api/change-sets/{ref}/diff").json()["drawing"]
+    picture = client.get(f"/api/change-sets/{ref}/picture")
 
-    assert previewed.status_code == 200, previewed.text
-    for picture in (drawing, previewed.json()):
-        assert [stable_id(element["key"]) for element in picture["elements"]] == [stable_id(_SERVICE)]
-
-
-def test_a_scope_the_model_does_not_hold_is_refused_rather_than_drawn_empty(client: TestClient) -> None:
-    refused = client.post("/api/scope-drawings", json={"scope": ["SRV@1.nope"], "name": "Nothing"})
-    assert refused.status_code == 422, refused.text
+    assert picture.status_code == 200, picture.text
+    for drawn in (drawing, picture.json()):
+        assert [stable_id(element["key"]) for element in drawn["elements"]] == [stable_id(_SERVICE)]
 
 
 def test_a_diagram_that_is_not_stored_is_refused_when_a_candidate_names_it(client: TestClient) -> None:

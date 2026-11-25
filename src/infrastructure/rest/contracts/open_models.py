@@ -118,6 +118,8 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     "EntityDetailResponse.extra": AUTHORED,
     "DocumentDetailResponse.extra": AUTHORED,
     "DiagramDetailResponse.extra": AUTHORED,
+    # A candidate's picture starts from a stored diagram, whose read it repeats.
+    "PictureStartResponse.extra": AUTHORED,
     "ConnectionSummary.metadata": AUTHORED,
     "DiagramContextConnection.metadata": AUTHORED,
     # The two versions' frontmatter, side by side for a field-level diff. Whatever the author wrote is
@@ -147,6 +149,7 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     # Placement data keyed by entity id, and the diagram kind decides what is in it: a datatype
     # classifier's attributes are not shaped like a C4 container's boundary.
     "DiagramDetailResponse.diagram_entities": MODULE_OWNED,
+    "PictureStartResponse.diagram_entities": MODULE_OWNED,
     # The diagram type's own `project_store_graph` decides these. A bowtie's placement data is not
     # shaped like a control structure's, and enumerating both would make the ontology's extensibility
     # depend on this package.
@@ -160,6 +163,7 @@ OPEN_RESPONSE_FIELDS: dict[str, OpenReason] = {
     # they are the only level of either read that is open.
     "DiagramDetailResponse.type_extras": MODULE_OWNED,
     "DiagramContextResponse.type_extras": MODULE_OWNED,
+    "CandidatePictureContext.type_extras": MODULE_OWNED,
 
     # A documentation block about the viewpoint query language, keyed by topic and heterogeneous by
     # nature — a schema version, a comparator glossary, reserved paths, a worked example. A field per

@@ -256,3 +256,85 @@ def test_both_transports_answer_alike(root: Path, client: TestClient, scene: dic
     assert moved["integrated"] is True
     with pytest.raises(ValueError, match="not in the model as a target state"):
         mcp.change_set_move_into_baseline(ref, dry_run=False, repo_root=str(root))
+
+
+def test_an_element_the_candidate_created_is_compared_once_when_the_model_holds_it(
+    client: TestClient, scene: dict[str, str],
+) -> None:
+    """Once applied as a target state, the element the candidate creates is in the model under the id chosen for
+    it. The comparison read it from the model by that id and from the candidate by its alias, and listed it twice:
+    once removed, once added."""
+    ref, new_rule = scene["candidate"], scene["new_rule"]
+    assert client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False}).status_code == 200
+
+    compared = client.get(f"/api/change-sets/{ref}/diff", params={"base": "model"}).json()
+
+    about_it = [row for row in compared["diff"] if row["kind"] == "entity"
+                and stable_id(str(row["target"]).removeprefix("$ref:")) in {new_rule, "new-rule"}
+                or "New rule" in str(row["fields"])]
+    assert len(about_it) <= 1, about_it  # held by the model as the candidate creates it: no change at all
+    named = [one for one in compared["view"]["entities"]
+             if stable_id(one.get("artifact_id") or one["id"]) == new_rule or one["id"] == new_rule]
+    assert len(named) == 1, compared["view"]["entities"]
+
+
+def test_withdrawing_a_target_state_leaves_the_baseline_as_it_was(
+    root: Path, client: TestClient, commits: list[Path], scene: dict[str, str],
+) -> None:
+    ref = scene["candidate"]
+    before_entities, before_connections = set(_entities(root)), _connections(root)
+    assert client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False}).status_code == 200
+    commits.clear()
+
+    preview = client.post(f"/api/change-sets/{ref}/withdraw-target-state", json={})
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["released"] is False and "refusal" not in preview.json() and commits == []
+    assert {op["op"] for op in preview.json()["operations"]} == {"remove_connection", "remove_entity"}
+
+    withdrawn = client.post(f"/api/change-sets/{ref}/withdraw-target-state", json={"dry_run": False})
+
+    assert withdrawn.status_code == 200, withdrawn.text
+    assert withdrawn.json()["released"] is True and commits == [root]
+    assert set(_entities(root)) == before_entities
+    assert _connections(root) == before_connections
+    record = _record(client, ref)["record"]
+    assert record["state"] == "draft" and "target-state" not in record
+    # Released: it may be applied as a target state again, or set aside, or deleted.
+    again = client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": True})
+    assert again.status_code == 200 and "refusal" not in again.json(), again.text
+    gone = client.post(f"/api/change-sets/{ref}/withdraw-target-state", json={"dry_run": False})
+    assert gone.status_code == 409 and "not in the model as a target state" in gone.text
+
+
+def test_a_withdrawal_names_what_was_written_since_and_refuses_until_it_is_resolved(
+    root: Path, client: TestClient, commits: list[Path], scene: dict[str, str],
+) -> None:
+    ref, ledger = scene["candidate"], scene["ledger"]
+    ids = client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False}).json()["target_state"]
+    copy = stable_id(ids["copies"][ledger])
+    # Drawn to the copy while the target state stood, and a diagram drawing it: neither is the target state's.
+    reporting = _entity(root, "application-component", "Reporting")
+    _connect(root, reporting, _SERVES, copy)
+    drawn = model.artifact_create_diagram(
+        diagram_type="archimate-application", name="Target picture", entity_ids=[copy, ledger],
+        dry_run=False, repo_root=str(root),
+    )
+    assert drawn["wrote"], drawn
+    commits.clear()
+
+    preview = client.post(f"/api/change-sets/{ref}/withdraw-target-state", json={})
+    refusal = preview.json()["refusal"]
+    assert stable_id(reporting) in refusal and stable_id(str(drawn["artifact_id"])) in refusal
+    refused = client.post(f"/api/change-sets/{ref}/withdraw-target-state", json={"dry_run": False})
+    assert refused.status_code == 409 and commits == []
+    assert copy in _entities(root)  # nothing was removed
+    assert _record(client, ref)["record"]["target-state"]["gap"] == ids["gap"]
+
+    model.artifact_delete_diagram(artifact_id=str(drawn["artifact_id"]), dry_run=False, repo_root=str(root))
+    cut = model.artifact_edit_connection(
+        source_entity=reporting, connection_type=_SERVES, target_entity=copy, operation="remove",
+        dry_run=False, repo_root=str(root),
+    )
+    assert cut["wrote"], cut
+    withdrawn = mcp.change_set_withdraw_target_state(ref, dry_run=False, repo_root=str(root))
+    assert withdrawn["released"] is True and copy not in _entities(root)

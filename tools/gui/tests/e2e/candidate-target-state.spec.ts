@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 /**
- * *Apply as a target state…* and *Move into the baseline…* on a candidate's page.
+ * *Apply as a target state…*, *Move into the baseline…* and *Withdraw…* on a candidate's page.
  *
  * The dry runs are the server's own. The writes are answered here, at the network, and the candidate's
  * record with them: a real target state writes plateaus and copies into the model of whatever repository
@@ -77,4 +77,39 @@ test('a target state is applied after its dry run, and then offers the move into
   await page.getByRole('button', { name: 'Move into the baseline…' }).click()
   await expect(confirmation).toContainText('Move Target state spec candidate into the baseline')
   expect(asked).toEqual(['apply true', 'apply false', 'move true'])
+})
+
+test('a target state is withdrawn after its dry run, and the candidate can then be abandoned', async ({ page }) => {
+  const asked: string[] = []
+  let standing = true
+  await page.route('**/api/change-sets/*/withdraw-target-state', async (route) => {
+    const body = route.request().postDataJSON() as { dry_run: boolean }
+    asked.push(`withdraw ${body.dry_run}`)
+    if (!body.dry_run) standing = false
+    return route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ candidate, dry_run: body.dry_run, released: !body.dry_run, operations: [] }),
+    })
+  })
+  await page.route(/\/api\/change-sets\/[^/?]+$/, async (route) => {
+    if (route.request().method() !== 'GET' || !standing) return route.continue()
+    const response = await route.fetch()
+    const read = await response.json() as { record: Record<string, unknown>; version: string }
+    return route.fulfill({ response, json: { ...read, record: { ...read.record, 'target-state': STANDING } } })
+  })
+  await page.goto(`/candidates/${encodeURIComponent(candidate)}`)
+  await page.getByTestId('abandon-candidate').click()
+  await expect(page.getByTestId('abandon-card')).toContainText('Withdraw it first')
+  await page.getByTestId('abandon-withdraw').click()
+
+  const confirmation = page.getByTestId('target-state-confirm')
+  await expect(confirmation).toContainText('Withdraw the target state of Target state spec candidate')
+  await expect(confirmation).toContainText('The baseline stays as it is')
+  await page.getByTestId('target-state-confirm-write').click()
+  await expect(page.getByTestId('target-state')).toHaveCount(0)
+
+  await page.getByTestId('abandon-candidate').click()
+  await expect(page.getByTestId('abandon-reject')).toBeVisible()
+  await expect(page.getByTestId('abandon-delete')).toBeVisible()
+  expect(asked).toEqual(['withdraw true', 'withdraw false'])
 })

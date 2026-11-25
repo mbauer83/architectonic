@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.candidates import analysis_reads
@@ -31,9 +31,7 @@ from src.infrastructure.rest.contracts.candidates import (
     CandidateSelection,
     CandidateStanding,
     IntegrationCheck,
-    ScopeDrawingRequest,
 )
-from src.infrastructure.rest.contracts.diagram_layout_editing import DiagramLayoutGeometryResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._candidate_access import refusals, service
@@ -251,28 +249,6 @@ def changes_compare_candidate(
 ) -> dict[str, Any]:
     with refusals():
         return service().compare(artifact_id, base, naive, diagram, catalogs.ontology)
-
-
-@router.post(
-    "/api/scope-drawings",
-    operation_id="changes_draw_scope",
-    tags=[TAG_CHANGES],
-    summary="Draw a generated view of a scope no stored diagram draws",
-    response_model=DiagramLayoutGeometryResponse,
-    response_model_exclude_none=True,
-    responses=READ_RESPONSES,
-)
-def changes_draw_scope(
-    body: ScopeDrawingRequest, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
-) -> dict[str, Any]:
-    """The model's entities in the scope and the relations among them, laid out as a candidate with no stored
-    diagram is drawn: what a scope chosen by a viewpoint or a search previews before an analysis starts. Writes
-    nothing. 422 when none of the scope is in the model."""
-    with refusals():
-        drawn = service().drawing(None, body.scope, body.name, catalogs.ontology)
-    if drawn is None:
-        raise HTTPException(422, "None of the scope is in the model, so there is nothing to draw.")
-    return drawn
 
 
 @router.get(

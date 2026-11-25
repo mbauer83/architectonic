@@ -20,6 +20,9 @@ CANDIDATE_ROWS = (
     RouteRow("POST", "/api/change-sets/{artifact_id}/move-into-baseline", "operation",
              "changes_move_candidate_into_baseline", TYPED,
              identity_parameters=("artifact_id",), mutation_domain="repository"),
+    RouteRow("POST", "/api/change-sets/{artifact_id}/withdraw-target-state", "operation",
+             "changes_withdraw_candidate_target_state", TYPED,
+             identity_parameters=("artifact_id",), mutation_domain="repository"),
     # The diagram create renders the view with PlantUML, hence `derived-graph`.
     RouteRow("POST", "/api/change-sets/{artifact_id}/save-as-diagram", "operation", "changes_save_candidate_diagram",
              TYPED, identity_parameters=("artifact_id",), mutation_domain="repository", timeout_class="derived-graph"),
@@ -35,9 +38,20 @@ CANDIDATE_ROWS = (
              cache_directive="no-cache"),
     RouteRow("POST", "/api/change-set-integrations", "collection", "changes_integrate_candidates", TYPED,
              mutation_domain="repository"),
-    # A scope drawn as a generated view before a candidate holds it: PlantUML runs, hence `derived-graph`.
-    RouteRow("POST", "/api/scope-drawings", "collection", "changes_draw_scope", TYPED,
-             cache_directive="no-store", timeout_class="derived-graph"),
+    # The picture a candidate is sketched on, its editor's context, and a session's drawing over it: the
+    # counterparts of a diagram's editor reads. PlantUML runs for all but the context and the shapes'
+    # composer, hence `derived-graph` where it draws.
+    RouteRow("GET", "/api/change-sets/{artifact_id}/picture", "subresource", "changes_read_candidate_picture",
+             TYPED, identity_parameters=("artifact_id",), cache_directive="no-store", timeout_class="derived-graph"),
+    RouteRow("GET", "/api/change-sets/{artifact_id}/picture/context", "subresource",
+             "changes_read_candidate_picture_context", TYPED,
+             identity_parameters=("artifact_id",), cache_directive="no-cache"),
+    RouteRow("POST", "/api/change-sets/{artifact_id}/picture/preview", "operation",
+             "changes_preview_candidate_picture", TYPED,
+             identity_parameters=("artifact_id",), cache_directive="no-store", timeout_class="derived-graph"),
+    RouteRow("POST", "/api/change-sets/{artifact_id}/picture/shapes/preview", "operation",
+             "changes_preview_candidate_picture_shapes", TYPED,
+             identity_parameters=("artifact_id",), cache_directive="no-store", timeout_class="derived-graph"),
     RouteRow("POST", "/api/stress-analyses", "collection", "documents_start_stress_analysis", TYPED,
              mutation_domain="repository"),
     RouteRow("GET", "/api/documents/{artifact_id}/progress", "subresource", "documents_analysis_progress", TYPED,

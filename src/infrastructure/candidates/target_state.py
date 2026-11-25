@@ -22,14 +22,16 @@ from pydantic_core import to_jsonable_python
 
 from src.application.change_sets.base import record_revision
 from src.application.change_sets.candidate_apply import INTEGRATED, Application, application_of, judged
-from src.application.change_sets.candidate_architecture import CandidateArchitecture, CandidateState
+from src.application.change_sets.candidate_architecture import DRAFT, CandidateArchitecture, CandidateState
 from src.application.change_sets.candidate_reads import live_reading, wire_standing
 from src.application.change_sets.candidate_recorded_form import to_mapping
+from src.application.change_sets.change_set import ChangeSet
 from src.application.change_sets.recorded_form import operation_to_mapping
 from src.application.change_sets.stacking import sets_beneath, stack_of
 from src.application.change_sets.standing import standing_of
 from src.application.change_sets.target_move import move_into_baseline
 from src.application.change_sets.target_state import TargetPlan, target_plan
+from src.application.change_sets.target_withdraw import withdrawal_of
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
 from src.infrastructure.app_bootstrap import get_module_registry
 from src.infrastructure.artifact_index import notify_paths_changed
@@ -98,6 +100,68 @@ def move_target_into_baseline(service: CandidateService, ref: str, *, dry_run: b
         "standing": wire_standing(application.standing),
         "operations": to_jsonable_python([operation_to_mapping(operation) for operation in move.operations]),
     }
+
+
+def withdraw_target_state(service: CandidateService, ref: str, *, dry_run: bool) -> dict[str, Any]:
+    """Take *ref*'s target state out of the model and release the candidate as a draft.
+
+    Removes what applying it as a target state wrote — the copies with their relations and traces, the elements
+    it added, the plateaus and the gap — as one generated list through the one write path. Refused (409) while
+    something written since refers to one of those elements: a relation the target state did not write, or a
+    diagram drawing one. A dry run answers the operations and the refusal. The model is written first and the
+    record cleared after, as a move into the baseline does, so a repeated withdrawal writes nothing and records.
+    """
+    candidate = service.store.require(ref)
+    state = candidate.target_state
+    if state is None:
+        return _not_targeted(candidate.id, "withdraw", dry_run=dry_run)
+    stack = stack_of(candidate, service.store.find)
+    written = (*state.written, *state.added.values())
+    live = live_reading(stack, service.registry, also=(*written, *state.copies))
+    drawn: dict[str, list[str]] = {}
+    for element in written:
+        for diagram in service.index.diagrams_referencing_artifact(element):
+            drawn.setdefault(diagram.artifact_id, []).append(element)
+    withdrawal = withdrawal_of(candidate, state, live, revision=service.index.read_model_version().etag,
+                               drawn_by=drawn)
+    application = Application(
+        candidate=candidate, standing=standing_of(withdrawal.changes, live), applying=withdrawal.changes,
+        named=ChangeSet((), withdrawal.changes.repository_revision), ids={}, refusal=withdrawal.refusal,
+    )
+    written_now = None if application.refusal else write_operations(application, service.root, dry_run=dry_run)
+    refusal = application.refusal or (written_now.refusal if written_now else None)
+    if refusal and not dry_run:
+        raise CandidateConflict(refusal)
+    released = bool(written_now and written_now.committed) and _released(service, candidate)
+    return {
+        "candidate": candidate.id, "dry_run": dry_run, "released": released, "refusal": refusal,
+        "operation_id": written_now.operation_id if written_now else None,
+        "operations": to_jsonable_python([operation_to_mapping(op) for op in withdrawal.changes.operations]),
+    }
+
+
+def _not_targeted(candidate: str, verb: str, *, dry_run: bool) -> dict[str, Any]:
+    refusal = f"{candidate} is not in the model as a target state, so there is nothing to {verb}."
+    if not dry_run:
+        raise CandidateConflict(refusal)
+    return {"candidate": candidate, "dry_run": dry_run, "refusal": refusal, "operations": []}
+
+
+def _released(service: CandidateService, withdrawn: CandidateArchitecture) -> bool:
+    """Record that *withdrawn*'s target state is out of the model: a draft again, with no target state."""
+    for _attempt in range(3):
+        current = service.store.require(withdrawn.id)
+        if current.target_state is None:
+            return True
+        try:
+            service.store.save(
+                replace(current, state=DRAFT, target_state=None), record_revision(to_mapping(current)), applied=True,
+            )
+        except CandidateConflict:
+            continue
+        notify_paths_changed([service.store.path(withdrawn.id)])
+        return True
+    return False
 
 
 def _plan(service: CandidateService, candidate: CandidateArchitecture) -> TargetPlan:

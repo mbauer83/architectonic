@@ -8,7 +8,7 @@
  * id, while a diagram's lists may spell it with its slug.
  */
 import type { AuthoredGrouping } from '../authoredGrouping'
-import type { DiagramDetail } from '../schemas/diagrams'
+import type { PictureContext } from '../schemas/diagrams'
 import { stableEntityId } from '../artifactId'
 
 export interface Membership {
@@ -45,8 +45,8 @@ export const membershipWithout = (membership: Membership, removed: ReadonlySet<s
   }
 }
 
-/** What a stored diagram draws, as the canvas reads it; null before the diagram is read. */
-export const membershipOf = (detail: DiagramDetail | null): DrawnMembership | null =>
+/** What the picture a session starts from draws (a stored diagram, a candidate's start); null until read. */
+export const membershipOf = (detail: PictureContext['diagram'] | null): DrawnMembership | null =>
   detail && {
     diagram_type: detail.diagram_type,
     name: detail.name,

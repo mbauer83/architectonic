@@ -38,6 +38,12 @@ const fakeAccess = (initial: CandidateSummary[], refuseDelete = false) => {
       calls.push(`delete ${id}`)
       return Effect.succeed(undefined)
     },
+    editCandidate: (id, basedOn, patch) => {
+      calls.push(`edit ${id} ${basedOn} ${JSON.stringify(patch)}`)
+      const at = store.findIndex((one) => one.id === id)
+      if (at >= 0 && typeof patch.state === 'string') store[at] = { ...store[at]!, state: patch.state }
+      return Effect.succeed({ record: { id, ...patch }, version: 'v3' })
+    },
   }
   return { access, calls }
 }
@@ -133,5 +139,14 @@ describe('useCandidates', () => {
     expect(await candidates.remove('naive')).toBe(false)
     expect(candidates.error.value).toContain('naive cannot be deleted')
     expect(candidates.all.value.map((one) => one.id)).toContain('naive')
+  })
+
+  it('rejects a candidate through its versioned edit, keeping it listed as rejected', async () => {
+    const { access, calls } = fakeAccess(ALL)
+    const candidates = useCandidates(access, { scopeDiagram: () => '' })
+    await candidates.load()
+    expect(await candidates.reject('elsewhere')).toBe(true)
+    expect(calls).toContain('edit elsewhere v-elsewhere {"state":"rejected"}')
+    expect(candidates.all.value.find((one) => one.id === 'elsewhere')?.state).toBe('rejected')
   })
 })

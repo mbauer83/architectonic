@@ -2,7 +2,7 @@
 import { inject, nextTick, onMounted, ref, watch } from 'vue'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
-import type { DiagramContext, EntityDisplayInfo } from '../../domain'
+import type { PictureContext, EntityDisplayInfo } from '../../domain'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import { toGlyphKey } from '../lib/glyphKey'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
@@ -12,7 +12,7 @@ import { projectsByUse } from './canvasProjects'
 import { NO_COLLECTION } from './ArtifactHomeSelect.helpers'
 import type { ReceivingBox } from '../../domain/layout/receivingBox'
 
-const props = defineProps<{ context: DiagramContext; into?: ReceivingBox | null; drawsAgain?: boolean }>()
+const props = defineProps<{ context: PictureContext; into?: ReceivingBox | null; drawsAgain?: boolean }>()
 const emit = defineEmits<{
   apply: [command: CanvasCommand]; add: [entity: EntityDisplayInfo]; again: [entity: EntityDisplayInfo]; cancel: []
 }>()

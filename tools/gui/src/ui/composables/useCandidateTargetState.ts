@@ -1,5 +1,5 @@
 /**
- * *Apply as a target state…* and *Move into the baseline…* on a candidate's page: where the candidate's
+ * *Apply as a target state…*, *Move into the baseline…* and *Withdraw…* on a candidate's page: where the candidate's
  * target state stands (read off its record), and for either write a dry run first, then the write once its
  * reader confirms. The server generates, judges and writes the operations; this only sequences the calls.
  *
@@ -14,11 +14,12 @@ import { targetStateOf } from '../../domain/candidates/candidateTargetState'
 import { formatEffectError } from '../lib/errors'
 
 export type CandidateTargetStateAccess = Pick<
-  ModelService, 'applyCandidateAsTargetState' | 'moveCandidateIntoBaseline' | 'readCandidate'
+  ModelService, 'applyCandidateAsTargetState' | 'moveCandidateIntoBaseline' | 'withdrawCandidateTargetState'
+  | 'readCandidate'
 >
 
-/** Which of the two writes a confirmation is for. */
-export type TargetWrite = 'apply' | 'move'
+/** Which of the three writes a confirmation is for. */
+export type TargetWrite = 'apply' | 'move' | 'withdraw'
 
 /** A dry run being confirmed: what it would write, and the refusal when there is one. */
 export interface TargetPreview {
@@ -58,18 +59,23 @@ export function useCandidateTargetState(
     }
   }
 
-  /** Either write's answer, read the same way: whether it landed, and what it would write. */
-  const ask = (write: TargetWrite, id: string, dryRun: boolean): Promise<Answer> => Effect.runPromise(
-    write === 'apply'
-      ? svc.applyCandidateAsTargetState(id, dryRun).pipe(Effect.map((answer): Answer => ({
-        written: answer.applied, ids: answer.target_state ?? null, unheld: answer.unheld ?? [],
-        operations: answer.operations ?? [], standing: answer.standing, refusal: answer.refusal ?? null,
-      })))
-      : svc.moveCandidateIntoBaseline(id, dryRun).pipe(Effect.map((answer): Answer => ({
-        written: answer.integrated, ids: null, unheld: [],
-        operations: answer.operations ?? [], standing: answer.standing, refusal: answer.refusal ?? null,
-      }))),
-  )
+  /** Each write's answer, read the same way: whether it landed, and what it would write. */
+  const asked: Record<TargetWrite, (id: string, dryRun: boolean) => Effect.Effect<Answer, unknown>> = {
+    apply: (id, dryRun) => svc.applyCandidateAsTargetState(id, dryRun).pipe(Effect.map((answer): Answer => ({
+      written: answer.applied, ids: answer.target_state ?? null, unheld: answer.unheld ?? [],
+      operations: answer.operations ?? [], standing: answer.standing, refusal: answer.refusal ?? null,
+    }))),
+    move: (id, dryRun) => svc.moveCandidateIntoBaseline(id, dryRun).pipe(Effect.map((answer): Answer => ({
+      written: answer.integrated, ids: null, unheld: [],
+      operations: answer.operations ?? [], standing: answer.standing, refusal: answer.refusal ?? null,
+    }))),
+    withdraw: (id, dryRun) => svc.withdrawCandidateTargetState(id, dryRun).pipe(Effect.map((answer): Answer => ({
+      written: answer.released, ids: null, unheld: [],
+      operations: answer.operations ?? [], standing: [], refusal: answer.refusal ?? null,
+    }))),
+  }
+  const ask = (write: TargetWrite, id: string, dryRun: boolean): Promise<Answer> =>
+    Effect.runPromise(asked[write](id, dryRun))
 
   /** Read where *id*'s target state stands. */
   const load = async (id: string): Promise<void> => {

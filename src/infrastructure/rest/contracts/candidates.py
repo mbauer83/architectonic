@@ -149,13 +149,6 @@ class CandidateComparison(CandidateStanding):
     drawing: DiagramLayoutGeometryResponse | None = None
 
 
-class ScopeDrawingRequest(Closed):
-    """A scope that no stored diagram draws, to be drawn as a generated view before a candidate holds it."""
-
-    scope: list[str] = Field(min_length=1, description="The model's entities in the scope, by id in either spelling.")
-    name: str = Field(min_length=1, description="What the generated view is called.")
-
-
 class CandidateSelection(Closed):
     candidates: list[str] = Field(min_length=1)
 
@@ -281,6 +274,21 @@ class CandidateMove(NullsOmitted):
     operation_id: str | None = Field(None, description="The write's operation, when one ran.")
     standing: list[OperationStanding] = Field(description="Each generated operation's standing.")
     operations: list[Fields] = Field(default_factory=list, description="The generated operations.")
+
+
+class CandidateWithdrawal(NullsOmitted):
+    """What withdrawing a target state removes from the model, or why it would not."""
+
+    candidate: str
+    dry_run: bool
+    released: bool = Field(
+        False, description="Whether the target state was taken out and the candidate released as a draft.",
+    )
+    refusal: str | None = Field(
+        None, description="Why the withdrawal is refused: what was written since that refers to the target state.",
+    )
+    operation_id: str | None = Field(None, description="The write's operation, when one ran.")
+    operations: list[Fields] = Field(default_factory=list, description="The generated removals.")
 
 
 class CandidateDiagramSave(Closed):

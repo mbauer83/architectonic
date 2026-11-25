@@ -7,7 +7,7 @@
  * becomes a part of it ("Make X part of Y?"), because nesting in an element is that relation.
  */
 import { ref, type ComputedRef, type Ref } from 'vue'
-import type { DiagramContext, EntityDisplayInfo } from '../../domain'
+import type { PictureContext, EntityDisplayInfo } from '../../domain'
 import { stableEntityId } from '../../domain/artifactId'
 import type { Point } from '../../domain/layout/geometry'
 import { type ReceivingBox, receivingBoxAt } from '../../domain/layout/receivingBox'
@@ -19,7 +19,7 @@ import type { DiagramEditing } from './useDiagramEditing'
 type Member = { readonly alias: string; readonly id: string; readonly name: string; readonly type: string }
 
 export function useCanvasCreate(
-  editing: DiagramEditing, host: Ref<HTMLElement | null>, context: () => DiagramContext,
+  editing: DiagramEditing, host: Ref<HTMLElement | null>, context: () => PictureContext,
   members: ComputedRef<readonly Member[]>,
   popover: {
     readonly mode: Ref<CanvasPopoverLevel | null>

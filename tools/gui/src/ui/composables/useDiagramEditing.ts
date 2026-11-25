@@ -1,6 +1,6 @@
 /**
- * A diagram's edit session on its own page: the arranging session (`useArrangementSession`) over the
- * picture the diagram is arranged on, read against what the diagram last stored.
+ * An edit session: the arranging session (`useArrangementSession`) over the picture its *source* draws — a
+ * stored diagram's, read against what the diagram last stored, or a candidate's (`pictureSource`).
  *
  * Nothing persists until Save, and what Save would write is read off the state, never counted: the
  * arrangement now against the one last saved (`useSessionChanges`). So returning to automatic leaves no
@@ -12,7 +12,7 @@
 import { ref, shallowRef } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
-import type { DiagramContext } from '../../domain'
+import type { PictureContext } from '../../domain'
 import type { AuthoredGrouping } from '../../domain/authoredGrouping'
 import type { ArrangedLayout, StoredLayout } from '../../domain/layout/arrangementLayout'
 import {
@@ -36,6 +36,7 @@ import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { ReadingLens } from '../../domain/readingLens'
 import type { ArrangementState } from './useArrangementSession'
 import { useArrangementSession } from './useArrangementSession'
+import { type PictureSource, savedInto } from './pictureSource'
 
 export type { PendingChange }
 
@@ -44,17 +45,17 @@ export type { PendingChange }
 export interface EditingOptions {
   readonly onMembershipSaved?: () => void
   readonly lens?: () => ReadingLens | undefined
-  readonly context?: () => DiagramContext | null
+  readonly context?: () => PictureContext | null
 }
 
 export function useDiagramEditing(
-  svc: ModelService, diagramId: () => string, membership: () => DrawnMembership | null,
+  svc: ModelService, source: PictureSource, membership: () => DrawnMembership | null,
   options: EditingOptions = {},
 ) {
   const onMembershipSaved = options.onMembershipSaved ?? (() => {})
   const lens = options.lens ?? (() => undefined)
   const session = useArrangementSession(
-    (shapes) => svc.drawResizedShapes(diagramId(), shapes),
+    (shapes) => source.reshape(shapes),
     (geometry, automatic) => widenedArrangement(geometry, automatic),
   )
   /** The layout the diagram stored when the session opened or last saved; null while PlantUML arranges it. */
@@ -72,7 +73,7 @@ export function useDiagramEditing(
 
   /** Read the picture as stored and start from it; *carried* is an arrangement to keep, as a save does. */
   const reopen = async (carried: ArrangedLayout | null = null): Promise<void> => {
-    const geometry = await Effect.runPromise(svc.readLayoutGeometry(diagramId(), lens()))
+    const geometry = await Effect.runPromise(source.read(lens()))
     const layout = geometry.layout && (geometry.layout.elements || geometry.layout.boxes || geometry.layout.z)
       ? geometry.layout : null
     stored.value = layout
@@ -81,10 +82,11 @@ export function useDiagramEditing(
   }
 
   /**
-   * Open on the picture as stored; *commands* are content already proposed elsewhere, drawn at once and
-   * not undoable: they are where the session starts, as the stored picture is.
+   * Open on the picture as stored; *commands* are content already proposed elsewhere, and *added* model
+   * elements already chosen elsewhere, drawn at once and not undoable: they are where the session starts, as
+   * the stored picture is.
    */
-  const open = async (commands: readonly CanvasCommand[] = []): Promise<boolean> => {
+  const open = async (commands: readonly CanvasCommand[] = [], added = new Map<string, string>()): Promise<boolean> => {
     loading.value = true
     error.value = null
     try {
@@ -92,7 +94,8 @@ export function useDiagramEditing(
       await reopen()
       const now = session.state.value
       loading.value = false
-      return commands.length === 0 || !now || await preview({ ...now, commands }, now, false)
+      return (commands.length === 0 && added.size === 0) || !now
+        || await preview({ ...now, commands, ...(added.size ? { additions: added } : {}) }, now, false)
     } catch (failure) {
       error.value = failure instanceof Error ? failure.message : String(failure)
       return false
@@ -128,6 +131,8 @@ export function useDiagramEditing(
       .filter((one) => removed.has(one.alias) && one.key !== undefined)
       .flatMap((one) => (one.key === undefined ? [] : [one.key])) ?? [])
   }
+
+  const diagramId = (): string => savedInto(source)
 
   /**
    * Write what the diagram holds less what was removed, through the diagram write, and read the picture
@@ -286,8 +291,8 @@ export function useDiagramEditing(
     try {
       const { preview: request } = composeCanvas(drawn, next, removedIds(next.removed))
       const carried = wanted()
-      const picture = await Effect.runPromise(svc.previewLayoutGeometry(
-        diagramId(), { ...request, ...(carried ? {arrangement: carried} : {}) }, lens()))
+      const picture = await Effect.runPromise(source.preview(
+        { ...request, ...(carried ? {arrangement: carried} : {}) }, lens()))
       if (session.state.value !== previous) return false
       const read = carried ? arrangedBy(picture, picture.layout ?? carried) : drawnArrangement(picture)
       const key = place && stableEntityId(place[0])

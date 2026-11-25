@@ -74,6 +74,7 @@ _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "changes_apply_candidate",
     "changes_apply_candidate_as_target_state",
     "changes_move_candidate_into_baseline",
+    "changes_withdraw_candidate_target_state",
     "changes_delete_candidate",
     "changes_edit_candidate",
     "changes_integrate_candidates",
@@ -124,7 +125,8 @@ REST_MUTATION_MANIFEST: dict[str, MutationIntent] = {
 #: execution/exports, and non-persistent identifier minting.
 NON_MUTATING_REST_OPERATIONS: frozenset[str] = frozenset({
     "changes_check_candidates",
-    "changes_draw_scope",
+    "changes_preview_candidate_picture",
+    "changes_preview_candidate_picture_shapes",
     "diagrams_preview_diagram",
     "diagrams_preview_diagram_layout_geometry",
     "diagrams_preview_diagram_layout_shapes",

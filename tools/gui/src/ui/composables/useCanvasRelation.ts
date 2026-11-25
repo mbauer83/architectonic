@@ -8,7 +8,7 @@
 import { ref, type ComputedRef, type Ref } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
-import type { DiagramContext } from '../../domain'
+import type { PictureContext } from '../../domain'
 import { connectionId, stableConnectionId, stableEntityId } from '../../domain/artifactId'
 import { isRecord } from '../../domain/records'
 import { relationsDrawn } from '../../domain/layout/canvasComposition'
@@ -19,7 +19,7 @@ import type { DiagramEditing } from './useDiagramEditing'
 type Member = { readonly alias: string; readonly id: string; readonly type: string }
 
 export function useCanvasRelation(
-  svc: ModelService, editing: DiagramEditing, context: () => DiagramContext,
+  svc: ModelService, editing: DiagramEditing, context: () => PictureContext,
   members: ComputedRef<readonly Member[]>, ends: { source: Ref<string>; target: Ref<string> },
   opened: () => void, failed: (message: string) => void,
   apply: (command: CanvasCommand, overlay: Record<string, unknown>) => void,
