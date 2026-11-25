@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { connectionCreationGuidance, connectionTypeLabel } from '../connectionTypeGuidance'
+import { connectionCreationGuidance } from '../connectionTypeGuidance'
 import type { AuthoringGuidance } from '../../../domain'
 
 /**
@@ -45,15 +45,5 @@ describe('connectionCreationGuidance', () => {
 
   it('returns null without any guidance payload', () => {
     expect(connectionCreationGuidance(null, 'archimate-serving')).toBeNull()
-  })
-})
-
-describe('connectionTypeLabel', () => {
-  it('drops the meta-ontology prefix', () => {
-    expect(connectionTypeLabel('archimate-serving')).toBe('serving')
-  })
-
-  it('leaves an unprefixed type alone', () => {
-    expect(connectionTypeLabel('c4-uses')).toBe('c4-uses')
   })
 })

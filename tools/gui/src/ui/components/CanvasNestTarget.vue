@@ -14,6 +14,7 @@ import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import { toGlyphKey } from '../lib/glyphKey'
 import { menuStep } from './canvasMenu'
 import { typeWords } from './canvasTypeList'
+import { connectionTypeLabel } from '../../domain/connectionTypeLabel'
 
 interface Shape { readonly alias: string; readonly name: string; readonly type?: string }
 
@@ -91,7 +92,7 @@ const walk = (event: KeyboardEvent) => {
   }
 }
 const sentence = (kind: string, container: Shape) =>
-  `${props.element.name} becomes part of ${container.name} — ${typeWords(kind.replace(/^archimate-/, ''))}`
+  `${props.element.name} becomes part of ${container.name} — ${connectionTypeLabel(kind)}`
 </script>
 
 <template>
@@ -174,7 +175,7 @@ const sentence = (kind: string, container: Shape) =>
         v-for="kind in containments.get(asking.type ?? '') ?? []"
         :key="kind"
         type="button"
-        class="cp-btn nest__choice"
+        class="cp-btn cp-btn--sentence"
         role="menuitem"
         @click="emit('relate', asking.alias, kind)"
       >
@@ -210,5 +211,4 @@ const sentence = (kind: string, container: Shape) =>
 .nest__row small { display: inline-flex; gap: 4px; align-items: center; color: var(--faint); font-size: 11px; }
 .nest__name { flex: 1; min-width: 0; }
 .nest__none { margin: 4px 6px; color: var(--faint); font-size: 11px; }
-.nest__choice { text-align: left; white-space: normal; }
 </style>

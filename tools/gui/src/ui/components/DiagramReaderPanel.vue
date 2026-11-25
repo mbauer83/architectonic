@@ -16,7 +16,7 @@ import { REACH_STEPS } from '../../domain/diagramReading'
 import type { DerivedRow, NotDrawnRow, ReachedRow } from '../../domain/diagramReadingLists'
 import { getDomainColor } from '../lib/domains'
 import { toGlyphKey } from '../lib/glyphKey'
-import { connectionTypeLabel } from '../lib/connectionTypeGuidance'
+import { connectionTypeLabel } from '../../domain/connectionTypeLabel'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 
 const props = defineProps<{

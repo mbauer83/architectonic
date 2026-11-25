@@ -6,6 +6,7 @@
 import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
 import type { ArchimateOccurrence } from '../archimateOccurrences'
 import { connectionParts } from '../artifactId'
+import { connectionTypeLabel } from '../connectionTypeLabel'
 
 /** One row of what Save would write, in the product's words. */
 export interface PendingChange {
@@ -35,7 +36,7 @@ export const contentChanges = (
   const relationNamed = (id: string): string => {
     const parts = connectionParts(id)
     return parts
-      ? `${instanceNamed(parts.source)} — ${parts.type.replace(/-/g, ' ')} → ${instanceNamed(parts.target)}` : id
+      ? `${instanceNamed(parts.source)} — ${connectionTypeLabel(parts.type)} → ${instanceNamed(parts.target)}` : id
   }
   const model = (now.commands ?? []).map((c) => ({
     key: `${c.op}:${c.artifact_id}`, model: true,

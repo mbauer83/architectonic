@@ -11,7 +11,7 @@ import { Effect, Exit } from 'effect'
 import { modelServiceKey } from '../keys'
 import type { ConnectionRecord } from '../../domain/schemas/connections'
 import { stableEntityId } from '../../domain/artifactId'
-import { connectionTypeLabel } from '../lib/connectionTypeGuidance'
+import { connectionTypeLabel } from '../../domain/connectionTypeLabel'
 import type { CanvasWords } from './canvasWords'
 
 const props = defineProps<{ name: string; entityId: string; words: CanvasWords }>()

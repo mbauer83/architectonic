@@ -8,7 +8,7 @@
  * its type is shown, not changed. Kept with the session's other changes; nothing is written until Save.
  */
 import { nextTick, onMounted, ref, watch } from 'vue'
-import { typeWords } from './canvasTypeList'
+import { connectionTypeLabel } from '../../domain/connectionTypeLabel'
 
 const props = defineProps<{
   /** The two ends' names. */
@@ -39,7 +39,7 @@ onMounted(focusChoice)
 watch(() => props.inModel.length + props.options.length, focusChoice)
 
 /** A relationship type as a sentence, read source to target. */
-const sentence = (type: string) => `${props.source} — ${typeWords(type.replace(/^archimate-/, ''))} → ${props.target}`
+const sentence = (type: string) => `${props.source} — ${connectionTypeLabel(type)} → ${props.target}`
 const toDraw = (id: string) => { drawing.value = id; kind.value = '' }
 const toCreate = (type: string) => { kind.value = type; drawing.value = '' }
 </script>
@@ -62,7 +62,7 @@ const toCreate = (type: string) => { kind.value = type; drawing.value = '' }
         tabindex="-1"
         data-first
       >
-        <b>{{ kind }}</b> — {{ sentence(kind) }}. To change the type, remove the relation and draw another.
+        <b>{{ connectionTypeLabel(kind) }}</b> — {{ sentence(kind) }}. To change the type, remove the relation and draw another.
       </p>
     </template>
     <div
@@ -85,7 +85,7 @@ const toCreate = (type: string) => { kind.value = type; drawing.value = '' }
           :checked="drawing === one.id"
           @change="toDraw(one.id)"
         >
-        <span><b>{{ one.type }}</b><small>{{ sentence(one.type) }}</small></span>
+        <span><b>{{ connectionTypeLabel(one.type) }}</b><small>{{ sentence(one.type) }}</small></span>
       </label>
       <p
         v-if="!inModel.length"
@@ -107,7 +107,7 @@ const toCreate = (type: string) => { kind.value = type; drawing.value = '' }
           :checked="!drawing && kind === type"
           @change="toCreate(type)"
         >
-        <span><b>{{ type }}</b><small>{{ sentence(type) }}</small></span>
+        <span><b>{{ connectionTypeLabel(type) }}</b><small>{{ sentence(type) }}</small></span>
       </label>
       <p
         v-if="!options.length"

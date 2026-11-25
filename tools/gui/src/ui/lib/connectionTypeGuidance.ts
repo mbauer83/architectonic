@@ -25,8 +25,3 @@ export function connectionCreationGuidance(
   const neverCreateWhen = entry?.never_create_when?.trim() ?? ''
   return createWhen || neverCreateWhen ? { createWhen, neverCreateWhen } : null
 }
-
-/** Display label for a connection type in guidance surfaces, e.g. `archimate-serving` → `serving`. */
-export function connectionTypeLabel(connectionType: string): string {
-  return connectionType.replace(/^archimate-/, '')
-}
