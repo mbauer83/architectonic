@@ -96,6 +96,21 @@ export const CandidateApplicationSchema = Schema.Struct({
 })
 export type CandidateApplication = typeof CandidateApplicationSchema.Type
 
+/**
+ * The generated view a candidate is drawn on, saved as a diagram (or a dry run of it): what the diagram
+ * draws of the model, and the candidate's version once it is drawn on it.
+ */
+export const CandidateDiagramSavedSchema = Schema.Struct({
+  candidate: Schema.String,
+  dry_run: Schema.Boolean,
+  diagram: Schema.optional(Schema.String),
+  name: Schema.String,
+  entities: Schema.Number,
+  relations: Schema.Number,
+  version: Schema.optional(Schema.String),
+})
+export type CandidateDiagramSaved = typeof CandidateDiagramSavedSchema.Type
+
 /** Structural overlaps between offered candidates: the same subject touched by more than one. */
 export const IntegrationCheckSchema = Schema.Struct({
   candidates: Schema.Array(Schema.String),

@@ -189,6 +189,8 @@ export const makeModelService = (repo: ModelRepository) =>
     listCandidates: () => repo.listCandidates(),
     createCandidate: (...args: Parameters<ModelRepository['createCandidate']>) => repo.createCandidate(...args),
     readCandidate: (id: string) => repo.readCandidate(id),
+    saveCandidateDiagram: (...args: Parameters<ModelRepository['saveCandidateDiagram']>) =>
+      repo.saveCandidateDiagram(...args),
     applyCandidate: (id: string, dryRun: boolean) => repo.applyCandidate(id, dryRun),
     startAnalysis: (...args: Parameters<ModelRepository['startAnalysis']>) => repo.startAnalysis(...args),
     drawScope: (scope: readonly string[], name: string) => repo.drawScope(scope, name),

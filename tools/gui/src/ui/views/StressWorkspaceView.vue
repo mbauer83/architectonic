@@ -37,6 +37,7 @@ import CandidateOperations from '../components/candidates/CandidateOperations.vu
 import CandidateCanvas from '../components/candidates/CandidateCanvas.vue'
 import ModelMovedBanner from '../components/candidates/ModelMovedBanner.vue'
 import NaiveIntroNote from '../components/stressWorkspace/NaiveIntroNote.vue'
+import SaveAsDiagram from '../components/candidates/SaveAsDiagram.vue'
 import AnalysisMeta from '../components/stressWorkspace/AnalysisMeta.vue'
 
 const svc = inject(modelServiceKey)!
@@ -148,8 +149,8 @@ onMounted(async () => {
   await candidates.load()
   // The band says whether the model moved under the naive architecture on every tab, not only its own.
   if (!candidates.selected.value && analysis.naiveId.value) await candidates.select(analysis.naiveId.value)
-  // Started a moment ago: the naive architecture opens for sketching, where it is drawn on a stored diagram.
-  if (introducing.value && analysis.drawnOn.value) sketching.value = analysis.naiveId.value
+  // Started a moment ago: the naive architecture opens for sketching — on a generated view, by first saving it.
+  if (introducing.value && analysis.naive.value?.drawing) sketching.value = analysis.naiveId.value
 })
 </script>
 
@@ -298,6 +299,14 @@ onMounted(async () => {
             :changed="diffMarks(candidates.comparison.value?.diff ?? [])"
             @recorded="recorded"
             @done="doneSketching"
+          />
+          <SaveAsDiagram
+            v-else-if="sketched && analysis.naive.value?.drawing && naiveSummary"
+            :candidate-id="naiveSummary.id"
+            :name="naiveSummary.name"
+            reason="sketch"
+            @saved="analysis.reload"
+            @cancel="sketching = null"
           />
           <MarkedCanvas
             v-else

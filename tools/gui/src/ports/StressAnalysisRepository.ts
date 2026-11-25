@@ -1,6 +1,7 @@
 import type { Effect } from 'effect'
 import type {
-  AnalysisIncidence, AnalysisProgress, AnalysisStarted, CandidateApplication, CandidateComparison, CandidateResponse,
+  AnalysisIncidence, AnalysisProgress, AnalysisStarted, CandidateApplication, CandidateComparison, CandidateDiagramSaved,
+  CandidateResponse,
   CandidateSummary,
   DocumentTables, DocumentTableWrite, IntegrationCheck,
 } from '../domain/schemas/candidates'
@@ -39,6 +40,13 @@ export interface StressAnalysisRepository {
    * run answers what would be written and the refusal; a refused apply answers 409, saying why.
    */
   readonly applyCandidate: (id: string, dryRun: boolean) => Effect.Effect<CandidateApplication, RepoError>
+  /**
+   * Save the view generated from the scope of a candidate drawn on no stored diagram as a new diagram, and
+   * draw the candidate on it; *name* defaults to the candidate's. Writes nothing of the candidate's operations.
+   */
+  readonly saveCandidateDiagram: (
+    id: string, basedOn: string, name?: string,
+  ) => Effect.Effect<CandidateDiagramSaved, RepoError>
   readonly readCandidate: (id: string) => Effect.Effect<CandidateResponse, RepoError>
   readonly editCandidate: (
     id: string, basedOn: string, patch: Readonly<Record<string, unknown>>,
