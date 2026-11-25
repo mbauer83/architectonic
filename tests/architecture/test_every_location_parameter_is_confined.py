@@ -164,7 +164,7 @@ def test_every_rest_location_parameter_declares_the_segment_pattern(
 
     assert unconfined == [], (
         "these REST parameters are named like locations and neither declare PathComponent "
-        "(src/infrastructure/rest/contracts/path_components.py) nor have a REST_NOT_LOCATIONS row "
+        "(src/infrastructure/artifact_home_wire.py) nor have a REST_NOT_LOCATIONS row "
         f"saying why they are not locations: {unconfined}"
     )
 

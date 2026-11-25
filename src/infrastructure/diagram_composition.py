@@ -23,10 +23,10 @@ from src.domain.diagrams.grouping_intents import Nest, Unnest, regrouped
 from src.domain.diagrams.layout.arrange_intents import read_intents
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, Layout, read_layout
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
+from src.infrastructure.artifact_home_wire import Rehomeable
 from src.infrastructure.diagram_layout_wire import LayoutPatch, RegroupIntent, stated_intents
 from src.infrastructure.rendering.diagram_selection import resolve_diagram_selection
 from src.infrastructure.rendering.layout.diagram_picture import placed_on_its_picture
-from src.infrastructure.rest.contracts.artifact_home import Rehomeable
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.canvas_commands import CanvasCommand
 from src.infrastructure.write.artifact_write.diagram_layout_patch import reconciled_layout

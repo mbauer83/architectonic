@@ -15,7 +15,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
-from src.infrastructure.rest.contracts.artifact_home import FiledOnCreate, Rehomeable
+from src.infrastructure.artifact_home_wire import FiledOnCreate, Rehomeable
 
 
 class _Body(BaseModel):

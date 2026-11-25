@@ -14,9 +14,10 @@ from src.application.assurance.diagrams import assurance_surface_diagram_types
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.repository.groups import GroupAxis, GroupEntry, GroupRegistry
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
+from src.infrastructure.artifact_home_wire import PathComponent
 from src.infrastructure.rest.contracts.authoring_catalogs import GroupListResponse
 from src.infrastructure.rest.contracts.groups import GroupOperationResponse
-from src.infrastructure.rest.contracts.path_components import PathComponent, PathComponentParameter
+from src.infrastructure.rest.contracts.path_components import PathComponentParameter
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import TAG_GROUPS, WRITE_RESPONSES

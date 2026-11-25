@@ -45,13 +45,13 @@ from src.infrastructure.mcp.tool_annotations import (
     LOCAL_WRITE,
     READ_ONLY,
 )
-from src.infrastructure.rest.contracts.scratchpad_requests import (
+from src.infrastructure.scratchpad.composition import scratchpad_service, served
+from src.infrastructure.scratchpad_wire import (
     LayoutPatchWire,
     RemovePatchWire,
     ScratchpadDocumentWire,
     UpsertPatchWire,
 )
-from src.infrastructure.scratchpad.composition import scratchpad_service, served
 
 
 def _root(repo_root: str | None) -> Path:
