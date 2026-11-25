@@ -12,6 +12,8 @@ import { alignedSelection, distributedSelection, elementsOf } from '../../domain
 import type { DiagramEditing } from '../composables/useDiagramEditing'
 import type { CanvasWords } from './canvasWords'
 import CanvasMenu from './CanvasMenu.vue'
+import CanvasLabelForm from './CanvasLabelForm.vue'
+import { useCanvasBoxes } from '../composables/useCanvasBoxes'
 import type { CanvasMenuItem } from './canvasMenu'
 import { STACKING_ITEMS, restackOf } from './canvasElementMenu'
 
@@ -24,7 +26,12 @@ const EDGES: readonly (readonly [AlignEdge, string])[] = [
 ]
 const AXES: readonly (readonly [DistributeAxis, string])[] = [['x', 'Horizontally'], ['y', 'Vertically']]
 
-const page = ref<'top' | 'align' | 'distribute'>('top')
+const page = ref<'top' | 'align' | 'distribute' | 'box'>('top')
+const boxes = useCanvasBoxes(props.editing)
+const boxed = async (label: string) => {
+  if (await boxes.newBox(props.selection, label)) emit('done')
+  else emit('close')
+}
 const elements = computed(() => {
   const where = props.editing.session.placement.value
   return where ? elementsOf(props.selection, where).size : 0
@@ -59,6 +66,10 @@ const items = computed((): readonly CanvasMenuItem[] => {
       disabled: elements.value < LEAST_TO_ALIGN },
     ...elements.value >= LEAST_TO_DISTRIBUTE
       ? [{ id: 'distribute', label: 'Distribute ▸', hint: 'horizontally · vertically' }] : [],
+    ...props.words.newBoxEntry
+      ? [{ id: 'box', label: props.words.newBoxEntry, hint: 'a labelled box on this diagram round what is selected',
+        disabled: elements.value === 0 }]
+      : [],
     ...STACKING_ITEMS,
     ...props.words.removeEntry
       ? [{ id: 'remove', label: props.words.removeEntry, hint: props.words.removeHint, shortcut: props.words.removeKey,
@@ -72,7 +83,7 @@ const choose = (id: string) => {
     props.editing.restack(props.selection, how)
     emit('done')
   } else if (id === 'back') page.value = 'top'
-  else if (id === 'align' || id === 'distribute') page.value = id
+  else if (id === 'align' || id === 'distribute' || id === 'box') page.value = id
   else if (id === 'remove') remove()
   else if (page.value === 'align') align(id as AlignEdge)
   else distribute(id as DistributeAxis)
@@ -80,7 +91,17 @@ const choose = (id: string) => {
 </script>
 
 <template>
+  <CanvasLabelForm
+    v-if="page === 'box'"
+    title="Put in a new box"
+    value=""
+    field="Label"
+    note="The box is drawn on this diagram only; the model has no boxes."
+    @keep="boxed"
+    @cancel="emit('close')"
+  />
   <CanvasMenu
+    v-else
     :heading="heading"
     :label="page === 'top' ? 'Selection' : page === 'align' ? 'Align' : 'Distribute'"
     :items="items"

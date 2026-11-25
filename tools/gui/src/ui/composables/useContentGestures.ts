@@ -1,7 +1,8 @@
 /**
  * What a press on the canvas means for its content (sketch 01·3, 01·10, 03·8–9), read once for the
  * press, the cursor and the highlight alike (`pressed`): on a line, or where one ends on an element's
- * edge, it is the line's (Q33); on an element's edge band, or the relation dot of a selected element, it
+ * edge, it is the line's (Q33), and a long press opens its relation — on its label, the label's own
+ * text, typed in place (02·5); on an element's edge band, or the relation dot of a selected element, it
  * draws a relation; on the rest of an element it moves it, and a long press renames it.
  *
  * While nothing is pressed the side of the edge band under the pointer is said (`side`), which the
@@ -47,6 +48,8 @@ export function useContentGestures(
   droppedOn: (alias: string, target: string, x: number, y: number) => void = () => {},
   /** An element being moved is over another shape, or over none (*target* undefined), or let go (null). */
   over: (alias: string | null, target?: string) => void = () => {},
+  /** A long press on the label of the line at *index*: its text, typed in place. */
+  relabel: (index: number) => void = editLine,
 ) {
   let hold: ReturnType<typeof setTimeout> | undefined
   let down: { alias: string; x: number; y: number; edge: boolean; travelled?: boolean } | null = null
@@ -87,7 +90,8 @@ export function useContentGestures(
     if (what.kind === 'line') {
       position(e.clientX, e.clientY)
       down = { alias: '', x: e.clientX, y: e.clientY, edge: false }
-      hold = setTimeout(() => editLine(what.index), 550)
+      const onLabel = e.target instanceof Element && e.target.closest('.lab-line-label') !== null
+      hold = setTimeout(() => (onLabel ? relabel : editLine)(what.index), 550)
       return
     }
     const edge = what.kind === 'edge'

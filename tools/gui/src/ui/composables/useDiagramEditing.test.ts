@@ -173,6 +173,26 @@ describe('removing an element from the diagram', () => {
   })
 })
 
+describe('the boxes a session edits', () => {
+  it('are written with the diagram, and read back so the server\'s ids are what the next edit starts from', async () => {
+    const stated = [{ id: 'g-Front1', label: 'Front office', 'entity-ids': ['APP@1.a'] }]
+    const getDiagram = vi.fn(() => Effect.succeed({ ...MEMBERSHIP, authored_groupings: stated }))
+    const editing = useDiagramEditing(
+      { ...service, previewLayoutGeometry: () => Effect.succeed(geometry), getDiagram } as unknown as ModelService,
+      () => 'ARC@1.a.test', () => MEMBERSHIP,
+    )
+    await editing.open()
+    const boxes = [{ label: 'Front office', 'entity-ids': ['APP@1.a'] }]
+    expect(await editing.restate((now) => ({ ...now, groupings: boxes }))).toBe(true)
+    expect(await editing.save()).toBe(true)
+    expect(written).toHaveLength(1)
+    expect(written[0].authored_groupings).toEqual(boxes)
+    expect(sent).toHaveLength(0)
+    expect(getDiagram).toHaveBeenCalledOnce()
+    expect(editing.statedGroupings()).toEqual(stated)
+  })
+})
+
 describe('an element added at a point', () => {
   const added: LayoutGeometry = {
     ...geometry, elements: [...geometry.elements, element('N', 'APP@9.n', at(250, 200, 350, 240))],

@@ -27,7 +27,11 @@ import { elementMenuItems, restackOf } from './canvasElementMenu'
 import { entityDetailRoute } from '../router/artifactRoutes'
 import CanvasNestTarget from './CanvasNestTarget.vue'
 import { isArchimateDiagramType } from '../lib/archimateOccurrences'
-import { asksForTheMenu, isOnALine, selectedLineMiddle } from './lineMenuPlace'
+import { isOnALine } from './lineMenuPlace'
+import { useCanvasEditorKeys } from '../composables/useCanvasEditorKeys'
+import { isGroupingBox } from '../../domain/layout/canvasBoxes'
+import CanvasBoxMenu from './CanvasBoxMenu.vue'
+import CanvasLabelForm from './CanvasLabelForm.vue'
 import { type CanvasWords, DIAGRAM_WORDS } from './canvasWords'
 
 const props = defineProps<{
@@ -138,6 +142,8 @@ function menu(event: MouseEvent) {
     mode.value = 'line'
     return
   }
+  // A box's title band opens the box's menu; its body, as empty paper's, adds to it (A-02.39, 03·1).
+  if ((event.target as Element).classList.contains('lab-grip') && openMenu('box', source.value)) return
   const onSelection = several.value.length > 1 && (!source.value || several.value.includes(source.value))
   // A container element's body, below its title, is a box's body: the menu there adds to it (03·2).
   const box = adding.openedAt(event)
@@ -146,47 +152,26 @@ function menu(event: MouseEvent) {
 }
 // A line's menu belongs to the line it was opened on: another line picked, or none, closes it.
 watch(() => props.line, () => { if (mode.value === 'line') close() })
+/** The relation whose label is typed in place (02·5); null while none is. */
+const labelling = ref<ReturnType<typeof relation.labelOf>>(null)
+const relabel = (index: number) => {
+  labelling.value = relation.labelOf(index)
+  if (labelling.value) mode.value = 'label'
+}
+const keepLabel = (text: string) => labelling.value && void settle(props.editing.propose([], {
+  artifact_id: labelling.value.id, label: text, include_multiplicity: true,
+}))
 const { focusCanvas, up, release, moving, leave, side } = useContentGestures(
   host, props.editing, source, position, rename, relation.editLine, (alias) => void relation.pair(alias),
-  (alias, target, x, y) => void dropped(alias, target, x, y), drop.over,
+  (alias, target, x, y) => void dropped(alias, target, x, y), drop.over, relabel,
 )
-const cornerOf = (alias: string) =>
-  host.value?.querySelector(`[data-alias="${CSS.escape(alias)}"]`)?.getBoundingClientRect()
-function key(e: KeyboardEvent) {
-  if (e.key === 'Escape' && mode.value) {
-    e.stopPropagation()
-    close(true)
-  }
-  // The menu key, or Shift+F10: a selected line's menu at its middle (02·9, Q35), else the selection's.
-  if (asksForTheMenu(e) && props.line != null) {
-    e.preventDefault()
-    const middle = selectedLineMiddle(host.value) ?? { x: 40, y: 40 }
-    position(middle.x, middle.y)
-    mode.value = 'line'
-  } else if (asksForTheMenu(e) && props.selection) {
-    e.preventDefault()
-    const box = cornerOf(props.selection)
-    position(box?.right ?? 40, box?.top ?? 40)
-    source.value = props.selection
-    mode.value = several.value.length > 1 ? 'selection' : 'element'
-  }
-  if (e.key === 'F2' && props.selection) {
-    e.preventDefault()
-    const box = cornerOf(props.selection)
-    if (box) position(box.left, box.top)
-    rename(props.selection)
-  }
-}
-function double(e: MouseEvent) {
-  position(e.clientX, e.clientY)
-  // A double press on a label opens its relation; on a line it adds a bend, which the canvas does.
-  const line = (e.target as Element).closest<SVGElement>('.lab-line-label[data-relation]')
-  if (line) relation.editLine(Number(line.dataset.relation))
-  else if (!(e.target as Element).closest('[data-relation], .lab-line-handles')) {
-    const alias = elementAt(e)?.dataset.alias
-    if (alias) rename(alias)
-  }
-}
+const { key, double, openMenu, boxAt } = useCanvasEditorKeys({
+  host, mode, source, close, position, rename, editLine: relation.editLine,
+  selected: () => ({ line: props.line ?? null, shape: props.selection ?? null, shapes: several.value }),
+  // One of the diagram's own boxes, where the page edits them, has a menu of its own (A-02.39).
+  boxNamed: (alias) => (words.value.newBoxEntry === undefined ? undefined
+    : props.editing.session.geometry.value?.boxes.find((one) => one.alias === alias && isGroupingBox(one))),
+})
 </script>
 <template>
   <div
@@ -257,6 +242,26 @@ function double(e: MouseEvent) {
           :words="words"
           @done="close(true)"
           @close="close(true)"
+        />
+        <CanvasBoxMenu
+          v-else-if="mode === 'box' && boxAt"
+          :key="boxAt.alias"
+          :editing="editing"
+          :box="boxAt"
+          :members="members"
+          @done="close(true)"
+          @close="close(true)"
+        />
+        <CanvasLabelForm
+          v-else-if="mode === 'label' && labelling"
+          :title="`Label of ${labelling.sentence}`"
+          :value="labelling.text"
+          field="Label"
+          :before="labelling.multiplicity || undefined"
+          note="Drawn on this diagram only."
+          optional
+          @keep="keepLabel"
+          @cancel="close(true)"
         />
         <CanvasLineMenu
           v-else-if="mode === 'line' && line != null"

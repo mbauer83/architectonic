@@ -13,6 +13,7 @@ import { ref, shallowRef } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type { DiagramContext } from '../../domain'
+import type { AuthoredGrouping } from '../../domain/authoredGrouping'
 import type { ArrangedLayout, StoredLayout } from '../../domain/layout/arrangementLayout'
 import {
   arrangedBy, layoutOf, layoutPatchBetween, patchIsEmpty, shownRoutesOfMoved,
@@ -105,7 +106,9 @@ export function useDiagramEditing(
     const context = options.context?.()
     return context ? canvasMembers(context, state, picture) : []
   }
-  const { changes, undoStep, redoStep } = useSessionChanges(session, saved, members)
+  const { changes, undoStep, redoStep } = useSessionChanges(session, saved, {
+    members, stated: () => savedMembers.value?.authored_groupings ?? [],
+  })
 
   const wanted = (): ArrangedLayout | null => {
     const geometry = session.geometry.value
@@ -144,8 +147,8 @@ export function useDiagramEditing(
     if (!written.wrote) {
       throw new Error(`The diagram was not written: ${written.warnings.join(' ') || 'it was refused'}`)
     }
-    // Regrouped, the groupings are the server's to compile: read back what it wrote, never restated here.
-    savedMembers.value = state.regroupings?.length
+    // Regrouped or with boxes edited, the groupings are the server's to identify: read back what it wrote.
+    savedMembers.value = state.regroupings?.length || state.groupings
       ? membershipOf(await Effect.runPromise(svc.getDiagram(diagramId()))) : write
     await reopen()
     onMembershipSaved()
@@ -165,7 +168,7 @@ export function useDiagramEditing(
       // One write when what the diagram holds changes: membership and layout together, so the stored
       // layout always matches the body that write generates (D12).
       if (removed.size > 0 || now.additions?.size || now.commands?.length || now.overlays?.length
-        || now.regroupings?.length || now.occurrences?.length || now.drawnRelations?.length) {
+        || now.regroupings?.length || now.occurrences?.length || now.drawnRelations?.length || now.groupings) {
         await writeMembership(removed, patch)
         return true
       }
@@ -354,9 +357,18 @@ export function useDiagramEditing(
   const restack = (aliases: readonly string[], how: Restack) =>
     session.change((geometry, now, where) => restacked(geometry, now, where, aliases, how))
 
+  /** The content *change* makes of the session's, drawn as one undoable step; nothing where it makes none. */
+  const restate = (change: (now: ArrangementState) => ArrangementState | null): Promise<boolean> => {
+    const now = session.state.value
+    const next = now && change(now)
+    return next ? preview(next, now) : Promise.resolve(false)
+  }
+
   return {
     add, propose, session, changes, undoStep, redoStep, loading, saving, error, open, save, discard, returnToAutomatic,
-    remove, restack, nest, addOccurrence, discardDraft, drawRelation,
+    remove, restack, nest, addOccurrence, discardDraft, drawRelation, restate,
+    /** The boxes the diagram states, as last read or saved. */
+    statedGroupings: (): readonly AuthoredGrouping[] => savedMembers.value?.authored_groupings ?? [],
   }
 }
 

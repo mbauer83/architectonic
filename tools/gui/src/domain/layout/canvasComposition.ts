@@ -7,6 +7,7 @@ import type {
 } from '../../ports/diagramWriteBodies'
 import { membershipWithout } from './diagramMembership'
 import type { DrawnMembership } from './diagramMembership'
+import type { AuthoredGrouping } from '../authoredGrouping'
 import { connectionParts, stableConnectionId, stableEntityId } from '../artifactId'
 
 import type { DiagramContext, EntityDetail } from '..'
@@ -17,6 +18,8 @@ import { type ArchimateOccurrence, occurrenceItems } from '../archimateOccurrenc
 
 interface Content {
   readonly regroupings?: readonly GroupingIntent[]
+  /** The diagram's boxes as the session states them; absent keeps the diagram's own. */
+  readonly groupings?: readonly AuthoredGrouping[]
   /** Further drawings of elements the diagram already draws, added in this session. */
   readonly occurrences?: readonly ArchimateOccurrence[]
   readonly addedTypes?: ReadonlyMap<string, string>
@@ -41,6 +44,7 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
   const kept = membershipWithout(
     {
       ...drawn,
+      ...(state.groupings ? { authored_groupings: state.groupings } : {}),
       entity_ids: [
         ...drawn.entity_ids,
         ...(state.additions?.keys() ?? []),

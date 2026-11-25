@@ -13,6 +13,8 @@ export interface CanvasWords {
   readonly removeKey?: string
   /** What nesting *part* in *whole* by a containment relationship has done, said once it is chosen (03·10). */
   readonly nested: (part: string, whole: string) => string
+  /** Putting a selection in a new box; offered where the page edits the diagram's boxes, as is a box's menu. */
+  readonly newBoxEntry?: string
 }
 
 export const DIAGRAM_WORDS: CanvasWords = {
@@ -24,6 +26,7 @@ export const DIAGRAM_WORDS: CanvasWords = {
   removeHint: 'it stays in the model',
   removeKey: 'Del',
   nested: (part, whole) => `${part} becomes part of ${whole}: a model change, written to the model when you Save.`,
+  newBoxEntry: 'Put in a new box…',
 }
 
 /** A candidate's words (06·5): removing records a remove-entity operation; the model keeps it until Apply. */

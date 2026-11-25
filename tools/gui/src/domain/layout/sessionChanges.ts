@@ -5,7 +5,7 @@
  */
 import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
 import type { ArchimateOccurrence } from '../archimateOccurrences'
-import { connectionParts } from '../artifactId'
+import { connectionParts, stableConnectionId } from '../artifactId'
 import { connectionTypeLabel } from '../connectionTypeLabel'
 
 /** One row of what Save would write, in the product's words. */
@@ -17,6 +17,8 @@ export interface PendingChange {
 
 interface Content {
   readonly commands?: readonly CanvasCommand[]
+  /** What this diagram states on its relations — a label — each over the one before it. */
+  readonly overlays?: readonly Record<string, unknown>[]
   readonly additions?: ReadonlyMap<string, string>
   readonly drawnRelations?: readonly string[]
   readonly occurrences?: readonly ArchimateOccurrence[]
@@ -63,5 +65,25 @@ export const contentChanges = (
   const removed = [...now.removed ?? []].filter((alias) => drawnBefore.has(alias)).map((alias) => ({
     key: `removed:${alias}`, text: `Removed from the diagram: ${named(alias)} — it stays in the model`,
   }))
-  return [...added, ...removed, ...regrouped, ...model]
+  return [...added, ...removed, ...regrouped, ...relabelled(now, relationNamed), ...model]
+}
+
+/**
+ * The labels a session typed on relations it changes nothing else about (02·5), each relation once with
+ * its last label: one that comes with a relation created, edited or drawn is that change's, not a row.
+ */
+const relabelled = (now: Content, relationNamed: (id: string) => string): readonly PendingChange[] => {
+  const accompanied = new Set([
+    ...(now.commands ?? []).map((c) => c.artifact_id), ...now.drawnRelations ?? [],
+  ].map(stableConnectionId))
+  const last = new Map((now.overlays ?? []).flatMap((overlay) => {
+    const id = overlay.artifact_id
+    return typeof id === 'string' && typeof overlay.label === 'string' && !accompanied.has(stableConnectionId(id))
+      ? [[stableConnectionId(id), { id, label: overlay.label }] as const] : []
+  }))
+  return [...last.values()].map(({ id, label }) => ({
+    key: `label:${stableConnectionId(id)}`,
+    text: label ? `Label on this diagram: ${relationNamed(id)} — “${label}”`
+      : `Label taken off this diagram: ${relationNamed(id)}`,
+  }))
 }

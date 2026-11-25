@@ -13,6 +13,8 @@ import type { Arrangement } from '../../domain/layout/lab/labArrangement'
 import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import { type PendingChange, contentChanges } from '../../domain/layout/sessionChanges'
 import { stepName } from '../../domain/layout/sessionSteps'
+import { boxChanges } from '../../domain/layout/canvasBoxes'
+import type { AuthoredGrouping } from '../../domain/authoredGrouping'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { ArrangementSession, ArrangementState } from './useArrangementSession'
 
@@ -25,13 +27,19 @@ export type MembersOf = (
   picture: LayoutGeometry, state: ArrangementState | null,
 ) => readonly { readonly alias: string; readonly name: string }[]
 
-/**
- * *members* names a drawing by its element's name, as the model and the session have it; a shape it does
- * not name — a box, or any shape when no names are given — goes by the label the picture draws.
- */
+/** What the session's changes are named and counted against beyond its own state. */
+export interface SessionReads {
+  /** Names a drawing by its element's name, as the model and the session have it; a shape it does not
+   * name — a box, or any shape when no names are given — goes by the label the picture draws. */
+  readonly members?: MembersOf
+  /** The boxes the diagram states, which a session's boxes are counted against. */
+  readonly stated?: () => readonly AuthoredGrouping[]
+}
+
 export function useSessionChanges(
-  session: ArrangementSession, saved: ShallowRef<ArrangementState | null>, members: MembersOf = () => [],
+  session: ArrangementSession, saved: ShallowRef<ArrangementState | null>, reads: SessionReads = {},
 ) {
+  const members = reads.members ?? (() => [])
   /** The pictures a shape may be named from: the one drawn now, and the one saved, which still draws what
    * the session removed. */
   const pictures = () => [session.drawnPicture.value, saved.value?.picture].flatMap((one) => (one ? [one] : []))
@@ -46,10 +54,11 @@ export function useSessionChanges(
   /** What *now* holds that the diagram did not: elements, boxes and model changes. */
   const contentOf = (now: ArrangementState): readonly PendingChange[] => {
     const geometry = session.geometry.value
-    return geometry ? contentChanges(
+    const boxes = now.groupings ? boxChanges(reads.stated?.() ?? [], now.groupings, saved.value?.picture) : []
+    return geometry ? [...contentChanges(
       now, new Set(saved.value?.picture?.elements.map((e) => e.alias)), nameOf, (key) => nameOf(aliasOf(key)),
       (grouping) => geometry.boxes.find((one) => one.key === grouping)?.label ?? grouping,
-    ) : []
+    ), ...boxes] : []
   }
 
   /** The names of what was arranged from *before* to *after* on the picture shown now: shapes and lines. */
