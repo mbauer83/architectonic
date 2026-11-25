@@ -27,7 +27,8 @@ onMounted(async () => {
 const own = computed(() => stableEntityId(props.entityId))
 const going = computed(() => relations.value?.filter((one) => stableEntityId(one.source) === own.value) ?? [])
 const holding = computed(() => relations.value?.filter((one) => stableEntityId(one.source) !== own.value) ?? [])
-const sentence = (one: ConnectionRecord) => `${one.source_name} ${connectionTypeLabel(one.conn_type)} ${one.target_name}`
+const sentence = (one: ConnectionRecord) =>
+  `${one.source_name} ${connectionTypeLabel(one.conn_type)} ${one.target_name}`
 </script>
 
 <template>

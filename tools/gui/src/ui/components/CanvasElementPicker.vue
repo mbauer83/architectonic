@@ -86,7 +86,8 @@ const choose = (hit: EntityDisplayInfo) => {
   else if (props.drawsAgain) emit('again', hit)
 }
 /** What choosing a hit already drawn does, or that it does nothing: said under its name (03·1). */
-const drawnHint = computed(() => (props.drawsAgain ? 'on this diagram — adds a second occurrence' : 'already on this diagram'))
+const drawnHint = computed(() =>
+  (props.drawsAgain ? 'on this diagram — adds a second occurrence' : 'already on this diagram'))
 
 const options = () => [...root.value?.querySelectorAll<HTMLElement>('[role="option"]') ?? []]
 const walk = (event: KeyboardEvent) => {

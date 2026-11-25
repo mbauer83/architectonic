@@ -20,7 +20,8 @@ const SIZE = 9
 
 /** Write the mark into the drawing of each draft in *nodes*, after taking out any written before. */
 const markPicture = (nodes: ReadonlyMap<string, readonly Element[]>, drafts: ReadonlySet<string>): void => {
-  const pictures = new Set([...nodes.values()].flat().flatMap((one) => (one instanceof SVGElement ? [one.ownerSVGElement] : [])))
+  const pictures = new Set([...nodes.values()].flat()
+    .flatMap((one) => (one instanceof SVGElement ? [one.ownerSVGElement] : [])))
   for (const picture of pictures) picture?.querySelectorAll(`[${MARK}]`).forEach((mark) => mark.remove())
   for (const [id, drawings] of nodes) {
     if (!drafts.has(stableEntityId(id))) continue

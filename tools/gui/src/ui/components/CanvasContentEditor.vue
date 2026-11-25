@@ -74,7 +74,8 @@ const { anchor, drawAgain, ownBoxes, boxOfSelected, nestIn, nestUnder, asked, dr
   props.editing, host, source, members, { mode, error, position, close }, (c) => void apply(c),
 )
 const adding = useCanvasCreate(
-  props.editing, host, () => props.context, members, { mode, error, close, source, asked }, (alias) => emit('select', alias),
+  props.editing, host, () => props.context, members, { mode, error, close, source, asked },
+  (alias) => emit('select', alias),
 )
 const drawsAgain = computed(() => isArchimateDiagramType(props.context.diagram.diagram_type))
 

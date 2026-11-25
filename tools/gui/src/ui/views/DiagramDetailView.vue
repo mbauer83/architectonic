@@ -140,7 +140,9 @@ const edit = useDiagramEditMode(
   }, load, toast,
 )
 const editing = computed(() => edit.active.value)
-const drafts = useDiagramDrafts({ context: contextQuery.data, editing: edit.editing, nodeElements: selection.nodeElements })
+const drafts = useDiagramDrafts({
+  context: contextQuery.data, editing: edit.editing, nodeElements: selection.nodeElements,
+})
 watch(editing, () => { void panZoom.fitDiagramToViewport() })
 watch(() => edit.session.geometry.value, () => { if (editing.value) void panZoom.fitDiagramToViewport() })
 

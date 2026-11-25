@@ -331,7 +331,8 @@ export function useDiagramEditing(
     const now = session.state.value
     if (!now) return false
     const commands = [proposed].flat().reduce(withCommand, now.commands ?? [])
-    return preview({ ...now, commands, overlays: overlay ? [...now.overlays ?? [], overlay] : now.overlays }, now, true, place)
+    const overlays = overlay ? [...now.overlays ?? [], overlay] : now.overlays
+    return preview({ ...now, commands, overlays }, now, true, place)
   }
 
   /** The draft *id* discarded with everything the session proposed about it, as one undoable step. */

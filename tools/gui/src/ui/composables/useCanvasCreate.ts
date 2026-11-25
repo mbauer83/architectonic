@@ -79,10 +79,13 @@ export function useCanvasCreate(
 
   /** An element already drawn, drawn once more where the menu was opened (03·1). */
   const again = async (entity: EntityDisplayInfo) => {
-    const drawn = context().entities.find((one) => stableEntityId(one.artifact_id) === stableEntityId(entity.artifact_id))
+    const own = stableEntityId(entity.artifact_id)
+    const drawn = context().entities.find((one) => stableEntityId(one.artifact_id) === own)
     if (!drawn) return
     const added = await editing.addOccurrence(
-      { artifact_id: drawn.artifact_id, name: drawn.name, display_alias: drawn.display_alias }, clicked.value ?? undefined)
+      { artifact_id: drawn.artifact_id, name: drawn.name, display_alias: drawn.display_alias },
+      clicked.value ?? undefined,
+    )
     if (added) close(true)
     else failed()
   }

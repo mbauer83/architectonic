@@ -13,7 +13,8 @@ const CONTAINMENT = 'containment'
 export const containedTypes = (
   outgoing: Readonly<Record<string, readonly string[]>>, containing: ReadonlySet<string>,
 ): ReadonlySet<string> =>
-  new Set(Object.entries(outgoing).flatMap(([target, kinds]) => (kinds.some((kind) => containing.has(kind)) ? [target] : [])))
+  new Set(Object.entries(outgoing)
+    .flatMap(([target, kinds]) => (kinds.some((kind) => containing.has(kind)) ? [target] : [])))
 
 export const partsTypes = async (
   svc: Pick<ModelService, 'getOntologyClassification' | 'getDiagramTypeConnectionTypes'>,
