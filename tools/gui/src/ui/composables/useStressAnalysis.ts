@@ -1,6 +1,7 @@
 /**
  * One stress analysis as the workspace holds it: the document, its typed tables, the incidence and
- * progress the server derives from them, and the naive architecture composed over its scope.
+ * progress the server derives from them, the test set and its residuality, and the naive architecture
+ * composed over its scope. The design reads hold the design set only; the test set is read apart.
  *
  * Every row edit goes through the document's row-batch write, stated against the row as read; where a
  * row changed since, the server answers 409, nothing is written, and the analysis is read again so the
@@ -14,8 +15,10 @@ import type { DocumentDetail } from '../../domain'
 import type {
   AnalysisIncidence, AnalysisProgress, CandidateComparison, DocumentTables,
 } from '../../domain/schemas/candidates'
+import type { AnalysisEvaluation } from '../../domain/schemas/stressEvaluation'
 import type { TableName, TableRowEdit } from '../../domain/stressAnalysis/analysisRows'
 import { rowsOf, ticksOf } from '../../domain/stressAnalysis/analysisRows'
+import { inTestSet } from '../../domain/stressAnalysis/testSet'
 import { formatEffectError } from '../lib/errors'
 
 const isConflict = (failure: unknown): boolean => failure instanceof NetworkError && failure.status === 409
@@ -31,6 +34,8 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
   const tables = shallowRef<DocumentTables | null>(null)
   const incidence = shallowRef<AnalysisIncidence | null>(null)
   const progress = shallowRef<AnalysisProgress | null>(null)
+  /** The test set, its verdicts and each judged architecture's residuality. */
+  const evaluation = shallowRef<AnalysisEvaluation | null>(null)
   /** The naive architecture composed over the model, with the scope diagram's drawing. */
   const naive = shallowRef<CandidateComparison | null>(null)
   const loading = ref(false)
@@ -57,10 +62,11 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
     loading.value = true
     try {
       document.value = await Effect.runPromise(svc.getDocument(id))
-      const [read, grid, left, composed] = await Promise.all([
+      const [read, grid, left, judged, composed] = await Promise.all([
         Effect.runPromise(svc.readDocumentTables(id)),
         Effect.runPromise(svc.readAnalysisIncidence(id)),
         Effect.runPromise(svc.readAnalysisProgress(id)),
+        Effect.runPromise(svc.readTestSet(id)),
         naiveId.value
           ? Effect.runPromise(svc.compareCandidate(naiveId.value, 'model', scopeDiagram.value || undefined))
           : Promise.resolve(null),
@@ -68,6 +74,7 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
       tables.value = read
       incidence.value = grid
       progress.value = left
+      evaluation.value = judged
       naive.value = composed
       error.value = null
     } catch (failure) {
@@ -98,14 +105,24 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
     }
   }
 
+  const allStressors = computed(() => rowsOf(tables.value, 'stressors'))
+  const testStressors = computed(() => allStressors.value.filter(inTestSet))
+  const heldApart = computed(() => new Set(testStressors.value.map((row) => row.row_id)))
+
   return {
-    document, tables, incidence, progress, naive, loading, saving, error,
+    document, tables, incidence, progress, evaluation, naive, loading, saving, error,
     naiveId, scopeDiagram, question, nameOf, hitsOf, missingOf, reload, edit,
-    stressors: computed(() => rowsOf(tables.value, 'stressors')),
+    /** The design set: every stressor the walk, the end states and the adaptations work from. */
+    stressors: computed(() => allStressors.value.filter((row) => !heldApart.value.has(row.row_id))),
+    /** The test set, held apart and judged at the end. */
+    testStressors,
+    /** The survival table's rows: each a verdict on one test stressor for one architecture. */
+    verdicts: computed(() => rowsOf(tables.value, 'survival')),
     endStates: computed(() => rowsOf(tables.value, 'end-states')),
     adaptations: computed(() => rowsOf(tables.value, 'adaptations')),
-    /** The incidence table's rows as ticks: which stressor hits which component, and why. */
-    ticks: computed(() => ticksOf(rowsOf(tables.value, 'incidence'))),
+    /** The design set's ticks: which stressor hits which component, and why. */
+    ticks: computed(() => ticksOf(rowsOf(tables.value, 'incidence'))
+      .filter((tick) => !heldApart.value.has(tick.stressor))),
   }
 }
 

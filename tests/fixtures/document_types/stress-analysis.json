@@ -33,9 +33,11 @@
         { "name": "stressor", "type": "row", "table": "stressors", "required": true },
         { "name": "component", "type": "reference", "to": ["@active-structure-element"], "required": true },
         { "name": "note" } ] } ] },
-    { "name": "Test", "tables": [ { "name": "survival", "row_id": "T", "columns": [
+    { "name": "Test Set", "tables": [ { "name": "survival", "row_id": "T", "columns": [
         { "name": "stressor", "type": "row", "table": "stressors", "required": true },
-        { "name": "naive_survives", "type": "boolean" },
-        { "name": "integrated_survives", "type": "boolean" } ] } ] }
+        { "name": "architecture", "required": true },
+        { "name": "verdict", "enum": ["survives", "degrades", "fails"] },
+        { "name": "usable", "type": "boolean" },
+        { "name": "reasoning" } ] } ] }
   ]
 }

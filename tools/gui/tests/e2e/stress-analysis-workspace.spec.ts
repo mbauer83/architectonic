@@ -3,7 +3,8 @@ import type { APIRequestContext, Page } from '@playwright/test'
 
 /**
  * The stress-analysis workspace, driven as an analyst drives it: starting an analysis from a diagram,
- * a stressor written, grouped and ticked on the canvas, and an end state in focus.
+ * a stressor written, grouped and ticked on the canvas, an end state in focus, and a test set held out
+ * of the design stressors and judged on the naive architecture.
  *
  * Each test makes its own analysis and deletes it afterwards: the document, then the naive
  * architecture it named, which the candidate delete refuses while the document still names it.
@@ -142,8 +143,7 @@ test('starting an analysis from a diagram opens the naive architecture in the wo
 test('a stressor is written, grouped under a new end state, ticked on the canvas and taken back', async ({ page, request }) => {
   const id = await analysisOf(request, 'Stress analysis — stressor round trip')
   await workspace(page, id, 'stressors')
-  await page.getByTestId('add-stressor').click()
-  const text = page.getByLabel('Stressor', { exact: true })
+  const text = page.getByTestId('stressor-input').first()
   await text.fill('Forty engagement repositories promote in the same week')
   await text.press('Enter')
   const row = page.locator('tr.st-row[data-row="S1"]')
@@ -222,4 +222,31 @@ test('a rename on the sketching canvas is saved to the candidate, and renaming i
   await expect(operations).toHaveCount(0)
   await page.getByTestId('done-sketching').click()
   await expect(page.getByTestId('workspace-canvas')).toBeVisible()
+})
+
+test('a third of the design stressors is held out and judged on the naive', async ({ page, request }) => {
+  const id = await analysisOf(request, 'Stress analysis — test set')
+  const written = await request.patch(`/api/documents/${encodeURIComponent(id)}/tables/stressors`, {
+    data: {
+      dry_run: false,
+      rows: ['Demand doubles', 'A regulator bans the service', 'The founder leaves']
+        .map((stressor) => ({ op: 'add', cells: { stressor, set: 'design' } })),
+    },
+  })
+  expect(written.ok(), await written.text()).toBe(true)
+  await workspace(page, id, 'stressors')
+  await expect(page.locator('tr.st-row')).toHaveCount(3)
+
+  await page.getByTestId('add-test-set').click()
+  page.once('dialog', (dialog) => { void dialog.accept() })
+  await page.getByTestId('hold-out').click()
+  await expect(page.locator('tr.st-row')).toHaveCount(2)
+  const section = page.getByTestId('test-set')
+  await expect(section).toContainText('1 stressor held apart')
+
+  await section.locator('[data-judge="naive"]').click()
+  const walk = page.getByTestId('judge-walk')
+  await walk.getByRole('button', { name: 'Fails' }).click()
+  await expect(walk.locator('tr.jr').first()).toContainText('fails')
+  await expect(section.getByTestId('residuality').first()).toContainText('survives 0 of 1')
 })

@@ -1,14 +1,11 @@
 """Candidate architectures and stress-analysis workspace reads."""
 
-from collections.abc import Iterator
-from contextlib import contextmanager
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.candidates.repository import CandidateConflict
-from src.infrastructure.candidates.service import CandidateService, document_writer
+from src.infrastructure.candidates.service import document_writer
 from src.infrastructure.rest.contracts.candidates import (
     AnalysisIncidence,
     AnalysisProgress,
@@ -29,28 +26,10 @@ from src.infrastructure.rest.contracts.candidates import (
 )
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
+from src.infrastructure.rest.routers._candidate_access import refusals, service
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_CHANGES, TAG_DOCUMENTS, WRITE_RESPONSES
 
 router = APIRouter()
-
-
-def _service() -> CandidateService:
-    root = s.maybe_engagement_root()
-    if root is None:
-        raise HTTPException(503, "Engagement repository is not initialised")
-    return CandidateService(root)
-
-
-@contextmanager
-def _refusals() -> Iterator[None]:
-    try:
-        yield
-    except FileNotFoundError as exc:
-        raise HTTPException(404, str(exc)) from exc
-    except CandidateConflict as exc:
-        raise HTTPException(409, str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from exc
 
 
 @router.get(
@@ -62,8 +41,8 @@ def _refusals() -> Iterator[None]:
     responses=READ_RESPONSES,
 )
 def changes_list_candidates() -> dict[str, Any]:
-    with _refusals():
-        return {"candidates": _service().list()}
+    with refusals():
+        return {"candidates": service().list()}
 
 
 @router.post(
@@ -75,8 +54,8 @@ def changes_list_candidates() -> dict[str, Any]:
     responses=WRITE_RESPONSES,
 )
 def changes_create_candidate(body: CandidateCreate) -> dict[str, Any]:
-    with _refusals():
-        return s.authorized_write("changes_create_candidate", _service().create, body.record, body.diagram)
+    with refusals():
+        return s.authorized_write("changes_create_candidate", service().create, body.record, body.diagram)
 
 
 @router.get(
@@ -88,8 +67,8 @@ def changes_create_candidate(body: CandidateCreate) -> dict[str, Any]:
     responses=READ_RESPONSES,
 )
 def changes_read_candidate(artifact_id: str) -> dict[str, Any]:
-    with _refusals():
-        return _service().read(artifact_id)
+    with refusals():
+        return service().read(artifact_id)
 
 
 @router.patch(
@@ -101,8 +80,8 @@ def changes_read_candidate(artifact_id: str) -> dict[str, Any]:
     responses=WRITE_RESPONSES,
 )
 def changes_edit_candidate(artifact_id: str, body: CandidateEdit) -> dict[str, Any]:
-    with _refusals():
-        return s.authorized_write("changes_edit_candidate", _service().edit, artifact_id, body.based_on, body.patch)
+    with refusals():
+        return s.authorized_write("changes_edit_candidate", service().edit, artifact_id, body.based_on, body.patch)
 
 
 @router.post(
@@ -115,9 +94,9 @@ def changes_edit_candidate(artifact_id: str, body: CandidateEdit) -> dict[str, A
 )
 def changes_record_operation(artifact_id: str, body: CandidateOperation) -> dict[str, Any]:
     """Merged per claim: an edit replaces the one before it, and an edit back to its base drops it."""
-    with _refusals():
+    with refusals():
         return s.authorized_write(
-            "changes_record_operation", _service().record, artifact_id, body.based_on, body.operation,
+            "changes_record_operation", service().record, artifact_id, body.based_on, body.operation,
         )
 
 
@@ -132,8 +111,8 @@ def changes_record_operation(artifact_id: str, body: CandidateOperation) -> dict
 )
 def changes_delete_candidate(artifact_id: str) -> Response:
     """Refused with 409, saying why, while a candidate stacks on it or an analysis names it as its naive."""
-    with _refusals():
-        s.authorized_write("changes_delete_candidate", _service().delete, artifact_id)
+    with refusals():
+        s.authorized_write("changes_delete_candidate", service().delete, artifact_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -147,8 +126,8 @@ def changes_delete_candidate(artifact_id: str) -> Response:
 )
 def changes_rebase_candidate(artifact_id: str, body: CandidateRebase) -> dict[str, Any]:
     """Each drifted operation keeps what it asks for and is written against the model as it stands now."""
-    with _refusals():
-        return s.authorized_write("changes_rebase_candidate", _service().rebase, artifact_id, body.based_on)
+    with refusals():
+        return s.authorized_write("changes_rebase_candidate", service().rebase, artifact_id, body.based_on)
 
 
 @router.post(
@@ -166,8 +145,8 @@ def changes_apply_candidate(artifact_id: str, body: CandidateApply) -> dict[str,
     All operations land or none do. On success the candidate is integrated. A dry run answers the
     refusal instead of raising it.
     """
-    with _refusals():
-        return s.authorized_write("changes_apply_candidate", _service().apply, artifact_id, dry_run=body.dry_run)
+    with refusals():
+        return s.authorized_write("changes_apply_candidate", service().apply, artifact_id, dry_run=body.dry_run)
 
 
 @router.post(
@@ -183,9 +162,9 @@ def documents_start_stress_analysis(
 ) -> dict[str, Any]:
     """One write: the naive architecture and the document naming it are both written, or neither is."""
     repo_root, _registry, verifier = s.get_write_deps(catalogs)
-    with _refusals():
+    with refusals():
         return s.authorized_write(
-            "documents_start_stress_analysis", _service().start, body.title, body.naive,
+            "documents_start_stress_analysis", service().start, body.title, body.naive,
             document_writer(repo_root, verifier, s.clear_caches),
             question=body.question, scope_diagram=body.scope_diagram,
         )
@@ -207,8 +186,8 @@ def changes_compare_candidate(
     diagram: str | None = Query(None, description="Stored diagram for canvas geometry."),
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
-    with _refusals():
-        return _service().compare(artifact_id, base, naive, diagram, catalogs.ontology)
+    with refusals():
+        return service().compare(artifact_id, base, naive, diagram, catalogs.ontology)
 
 
 @router.get(
@@ -221,8 +200,8 @@ def changes_compare_candidate(
     responses=READ_RESPONSES,
 )
 def changes_read_standing(artifact_id: str) -> dict[str, Any]:
-    with _refusals():
-        return _service().standing(artifact_id)
+    with refusals():
+        return service().standing(artifact_id)
 
 
 @router.post(
@@ -234,8 +213,8 @@ def changes_read_standing(artifact_id: str) -> dict[str, Any]:
     responses=READ_RESPONSES,
 )
 def changes_check_candidates(body: CandidateSelection) -> dict[str, Any]:
-    with _refusals():
-        return _service().check(body.candidates)
+    with refusals():
+        return service().check(body.candidates)
 
 
 @router.get(
@@ -249,8 +228,8 @@ def changes_check_candidates(body: CandidateSelection) -> dict[str, Any]:
 def documents_analysis_progress(
     artifact_id: str, kinds: list[str] = Query(default=[], description="Stress categories to check for coverage.")
 ) -> dict[str, Any]:
-    with _refusals():
-        return _service().progress(artifact_id, kinds)
+    with refusals():
+        return service().progress(artifact_id, kinds)
 
 
 @router.get(
@@ -262,5 +241,5 @@ def documents_analysis_progress(
     responses=READ_RESPONSES,
 )
 def documents_analysis_incidence(artifact_id: str) -> dict[str, Any]:
-    with _refusals():
-        return _service().incidence(artifact_id)
+    with refusals():
+        return service().incidence(artifact_id)

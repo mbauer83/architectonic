@@ -5,6 +5,9 @@ import {
   CandidateListSchema,
   CandidateResponseSchema, DocumentTablesSchema, DocumentTableWriteSchema, IntegrationCheckSchema,
 } from '../../domain/schemas/candidates'
+import {
+  AnalysisEvaluationSchema, CandidateResidualitySchema, HeldOutSchema, StressPerspectivesSchema,
+} from '../../domain/schemas/stressEvaluation'
 import { encodeIdentitySegment } from '../../domain/identitySegments'
 import type { StressAnalysisRepository } from '../../ports/StressAnalysisRepository'
 import { buildUrl, deleteNoContent, fetchJson, patchJson, postJson } from './httpTransport'
@@ -40,4 +43,11 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
   ),
   readAnalysisProgress: (documentId) => fetchJson(documentUrl(documentId, '/progress'), AnalysisProgressSchema),
   readAnalysisIncidence: (documentId) => fetchJson(documentUrl(documentId, '/incidence'), AnalysisIncidenceSchema),
+  readTestSet: (documentId) => fetchJson(documentUrl(documentId, '/test-set'), AnalysisEvaluationSchema),
+  holdOutTestSet: (documentId, seed) => postJson(
+    documentUrl(documentId, '/test-set/hold-out'), { ...(seed === undefined ? {} : { seed }), dry_run: false },
+    HeldOutSchema,
+  ),
+  readResiduality: (candidateId) => fetchJson(candidateUrl(candidateId, '/residuality'), CandidateResidualitySchema),
+  listStressPerspectives: () => fetchJson(buildUrl('/stress-perspectives'), StressPerspectivesSchema),
 })

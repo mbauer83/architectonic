@@ -4,6 +4,9 @@ import type {
   CandidateSummary,
   DocumentTables, DocumentTableWrite, IntegrationCheck,
 } from '../domain/schemas/candidates'
+import type {
+  AnalysisEvaluation, CandidateResiduality, HeldOut, StressPerspectives,
+} from '../domain/schemas/stressEvaluation'
 import type { RepoError } from './repositoryErrors'
 import type { TableRowEdit } from '../domain/stressAnalysis/analysisRows'
 
@@ -54,4 +57,12 @@ export interface StressAnalysisRepository {
   ) => Effect.Effect<DocumentTableWrite, RepoError>
   readonly readAnalysisProgress: (documentId: string) => Effect.Effect<AnalysisProgress, RepoError>
   readonly readAnalysisIncidence: (documentId: string) => Effect.Effect<AnalysisIncidence, RepoError>
+  /** The test set, its verdicts, and each judged or integrated architecture's residuality. */
+  readonly readTestSet: (documentId: string) => Effect.Effect<AnalysisEvaluation, RepoError>
+  /** Move a random third of the design stressors into the test set; the seed drawn with is answered. */
+  readonly holdOutTestSet: (documentId: string, seed?: number) => Effect.Effect<HeldOut, RepoError>
+  /** A candidate's residuality in each analysis that judged it. */
+  readonly readResiduality: (candidateId: string) => Effect.Effect<CandidateResiduality, RepoError>
+  /** The perspectives offered to whoever writes stressors. */
+  readonly listStressPerspectives: () => Effect.Effect<StressPerspectives, RepoError>
 }

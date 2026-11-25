@@ -581,6 +581,21 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     WriteCall(
         "analysis_start",
         lambda _c: {"title": "MCP Walk Stress Analysis", "naive": {"name": "Walk naive architecture"}},
+        captures=(Capture("analysis", _answer_field("document")),),
+    ),
+    WriteCall(
+        # Three design stressors, the fewest a third can be held out of.
+        "artifact_edit_document_table",
+        lambda c: {
+            "artifact_id": c.created["analysis"], "table": "stressors", "dry_run": False,
+            "rows": [{"op": "add", "cells": {"stressor": text, "set": "design"}}
+                     for text in ("A regulator bans the service", "Demand doubles", "The founder leaves")],
+        },
+    ),
+    WriteCall(
+        # Seeded, so the walk moves the same stressor every time it runs.
+        "analysis_hold_out_test_set",
+        lambda c: {"artifact_id": c.created["analysis"], "seed": 7, "dry_run": False},
     ),
     WriteCall(
         # The candidate the walk made, which nothing stacks on and no analysis names. The naive the

@@ -49,6 +49,8 @@ _ACTION_SEGMENTS: dict[str, frozenset[str]] = {
     "execute": frozenset({"POST"}),
     "execute-diagram": frozenset({"POST"}),
     "execute-projection": frozenset({"POST"}),
+    # Moves a random third of a stress analysis's design stressors into its test set.
+    "hold-out": frozenset({"POST"}),
     "lift": frozenset({"POST"}),
     "export": frozenset({"POST"}),
     "export-csv": frozenset({"POST"}),
