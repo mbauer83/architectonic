@@ -1,5 +1,6 @@
 import type { Effect } from 'effect'
 import type { DocumentDetail, DocumentList, DocumentType, NotFoundError, WriteResult } from '../domain'
+import type { FreeDocumentTitle } from '../domain/schemas/documents'
 import type { RepoError } from './repositoryErrors'
 
 /**
@@ -12,6 +13,8 @@ import type { RepoError } from './repositoryErrors'
  */
 export interface DocumentRepository {
   readonly listDocumentTypes: () => Effect.Effect<DocumentType[], RepoError>
+  /** *title*, or it numbered, as the first name a new document of *docType* would not be refused for. */
+  readonly freeDocumentTitle: (docType: string, title: string) => Effect.Effect<FreeDocumentTitle, RepoError>
   readonly listDocuments: (params?: {
     doc_type?: string; status?: string; limit?: number; offset?: number; group?: string; scope?: string;
   }) => Effect.Effect<DocumentList, RepoError>

@@ -99,6 +99,12 @@ class TestLabellingABaseDrawing:
         body = _render({"display_labels": {_LONG.artifact_id: "Short"}})
         assert _label_of(body, "GOL_BbBbBb") == "Another Goal"
 
+    def test_the_override_names_the_element_by_either_spelling_of_its_id(self) -> None:
+        """An editor holds an element's short id as often as its full one; a canvas labelled a pending
+        rename under the short id and the picture kept the old name."""
+        body = _render({"display_labels": {"GOL@1000000000.AaAaAa": "Short"}})
+        assert _label_of(body, "GOL_AaAaAa") == "Short"
+
     def test_an_override_for_an_instance_the_diagram_does_not_hold_changes_nothing(self) -> None:
         assert _render({"display_labels": {"GOL@1.zz.gone": "Ghost"}}) == _render({})
 

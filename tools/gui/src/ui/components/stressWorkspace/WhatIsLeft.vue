@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * "What is left" (06·8): the progress read as sentences, each a link that opens the tab and the row
- * it is about. Completeness is asked for only at commit; until then this only informs.
+ * it is about. Esc closes the list. *Apply…* answers with the same sentences; until then this only informs.
  */
 import { computed, ref } from 'vue'
 import type { AnalysisProgress } from '../../../domain/schemas/candidates'
@@ -23,6 +23,7 @@ const go = (item: LeftItem) => {
   <div
     class="left"
     data-testid="what-is-left"
+    @keydown.esc.stop="open = false"
   >
     <button
       type="button"

@@ -13,7 +13,12 @@ from src.application.artifacts.document_table_rows import DocumentTables, TypedR
 from src.application.change_sets.candidate_view import CandidateView
 from src.application.stress_analysis.rows import held_apart, rows_of
 from src.domain.artifact_id import canonical_entity_key
-from src.domain.repository.repo_default_stress_perspectives import kinds_in_use, unwritten_perspectives
+from src.domain.repository.repo_default_stress_perspectives import (
+    STRESS_PERSPECTIVES,
+    PerspectiveFramework,
+    kinds_in_use,
+    unwritten_perspectives,
+)
 
 
 def _incomplete_design_rows(tables: DocumentTables, held: frozenset[str]) -> list[dict[str, str]]:
@@ -41,7 +46,11 @@ def _held_apart_row(table: str, row: TypedRow, held: frozenset[str]) -> bool:
             return False
 
 
-def analyse(tables: DocumentTables, naive: CandidateView) -> dict[str, Any]:
+def analyse(
+    tables: DocumentTables, naive: CandidateView,
+    frameworks: tuple[PerspectiveFramework, ...] = STRESS_PERSPECTIVES,
+) -> dict[str, Any]:
+    """Progress, incidence and coverage of the design set; coverage counts the *frameworks*' perspectives."""
     held = held_apart(tables)
     stressors = [row for row in rows_of(tables, "stressors") if row["id"] not in held]
     ends = rows_of(tables, "end-states")
@@ -95,7 +104,7 @@ def analyse(tables: DocumentTables, naive: CandidateView) -> dict[str, Any]:
             "incomplete_rows": _incomplete_design_rows(tables, held),
         },
         "coverage": {
-            "by_kind": counts, "unwritten_perspectives": unwritten_perspectives(counts),
+            "by_kind": counts, "unwritten_perspectives": unwritten_perspectives(counts, frameworks),
             "single_stressor_end_states": [row["id"] for row in ends if grouped[row["id"]] == 1],
             "untouched": [
                 {"id": ref, "fan_in": fan_in[ref], "fan_out": fan_out[ref]}

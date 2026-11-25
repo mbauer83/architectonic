@@ -2,11 +2,13 @@
 /**
  * Sketching a candidate (06·5, F12, F14): the scope diagram in edit mode with the diagram page's own
  * editor (`CanvasContentEditor` over `LayoutLabCanvas`), in a candidate's words. A band names what is
- * sketched and when it was last saved to the candidate; there is no Save, because every change is
- * recorded as it is made. What the session created or renamed carries a small + or ~. *Undo* (and
- * Ctrl+Z on the canvas) takes back the last step, and with it what that step recorded in the candidate.
+ * sketched, what it stacks on, and when it was last saved to the candidate; there is no Save, because
+ * every change is recorded as it is made. *Edit details…* opens on the element as the candidate holds it,
+ * marking what differs from what it stacks on (`useCandidateDetails`). What the session created or renamed
+ * carries a small + or ~. *Undo* (and Ctrl+Z on the canvas) takes back the last step, and with it what that
+ * step recorded in the candidate.
  */
-import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, inject, onMounted, provide, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
 import type { DiagramContext } from '../../../domain'
 import type { Marks } from '../../../domain/candidates/canvasMarks'
@@ -14,10 +16,12 @@ import { stableEntityId } from '../../../domain/artifactId'
 import { modelServiceKey } from '../../keys'
 import { formatEffectError } from '../../lib/errors'
 import { membershipOf } from '../../../domain/layout/diagramMembership'
+import { useCandidateDetails } from '../../composables/useCandidateDetails'
 import { useCandidateEditing } from '../../composables/useCandidateEditing'
 import { useDrawnEntities } from '../../composables/useDrawnEntities'
 import { useFittedPanZoom } from '../../composables/useFittedPanZoom'
 import CanvasContentEditor from '../CanvasContentEditor.vue'
+import { detailsSourceKey } from '../canvasDetails'
 import { CANDIDATE_WORDS } from '../canvasWords'
 import LayoutLabCanvas from '../layoutLab/LayoutLabCanvas.vue'
 import CanvasMarksLayer from './CanvasMarksLayer.vue'
@@ -25,11 +29,14 @@ import CanvasMarksLayer from './CanvasMarksLayer.vue'
 /** *changed*: the candidate against its base, as the operations table reads it (~ and − on model elements). */
 const props = withDefaults(defineProps<{
   candidateId: string; name: string; role: string; diagramId: string; changed: Marks
+  /** What it stacks on, in words (`stackLine`). */
+  stack?: string
   /** What *Done sketching* says, where it leads somewhere: the naive architecture's points on to Stressors. */
   doneLabel?: string
-}>(), { doneLabel: 'Done sketching' })
+}>(), { doneLabel: 'Done sketching', stack: '' })
 const emit = defineEmits<{ recorded: []; done: [] }>()
 const svc = inject(modelServiceKey)!
+provide(detailsSourceKey, useCandidateDetails(svc, () => props.candidateId))
 
 const context = shallowRef<DiagramContext | null>(null)
 const error = ref<string | null>(null)
@@ -86,13 +93,21 @@ onMounted(async () => {
     data-testid="candidate-canvas"
   >
     <div class="cs-banner">
-      <span class="what">Sketching {{ name }}</span>
+      <span class="what">Sketching {{ name }}<small
+        v-if="stack"
+        class="stack"
+        data-testid="sketch-stack"
+      > · {{ stack }}</small></span>
       <span class="acts">
         <span
           v-if="editing.savedAt.value"
           class="saved"
           data-testid="saved-at"
         >Saved to the candidate {{ editing.savedAt.value }}</span>
+        <span
+          v-else
+          class="saved"
+        >Saved to the candidate as you sketch</span>
         <button
           type="button"
           class="btn btn-sm"
@@ -178,6 +193,7 @@ onMounted(async () => {
   color: var(--accent-strong); border-radius: 6px; font-size: 12.5px;
 }
 .what { font-size: 13.5px; font-weight: 700; }
+.stack { font-size: 12px; font-weight: 400; color: var(--text-2); }
 .kind { grid-column: 1 / -1; font-size: 12px; color: var(--text-2); }
 .acts { grid-row: 1; grid-column: 2; display: flex; gap: 6px; align-items: center; }
 .saved { font-size: 11.5px; color: var(--muted); }

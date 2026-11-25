@@ -4,6 +4,7 @@ from pathlib import Path
 
 from src.application.artifacts.repository import ArtifactRepository
 from src.application.identifier_allocator import get_default_allocator
+from src.application.modeling.artifact_write import slugify
 from src.domain.artifact_id import stable_id
 from src.domain.ontology_representation.artifact_types import DiagramRecord, DocumentRecord, EntityRecord
 
@@ -82,6 +83,19 @@ def check_document_duplicate(
         if extract_friendly_slug(document.artifact_id) == friendly_slug:
             return document
     return None
+
+
+def first_free_document_title(repo: ArtifactRepository, doc_type: str, title: str) -> str:
+    """*title*, or the first of "*title* (2)", "*title* (3)", … that `validate_document_unique` would accept.
+
+    The rule a new document's name obeys is this module's, so the name a form proposes is asked of it
+    rather than worked out again beside it: two analyses of the same architecture get the same default,
+    and the second was refused when started.
+    """
+    taken = {extract_friendly_slug(doc.artifact_id) for doc in repo.list_documents(doc_type=doc_type)}
+    stem = title.strip()
+    numbered = (stem if n == 1 else f"{stem} ({n})" for n in range(1, len(taken) + 2))
+    return next(one for one in numbered if slugify(one) not in taken)
 
 
 def validate_entity_unique(

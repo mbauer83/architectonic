@@ -3,7 +3,7 @@
  * The Adaptations tab (06·6, Q39): every candidate stacked on the naive architecture, each saying what
  * it stacks on and which end states it answers, and below it the selected one's operations against
  * *against*. *New candidate on top…* stacks a new candidate on the selected one and records it as an
- * adaptation of the end state it answers.
+ * adaptation of the end state it answers. A row takes focus, and Enter or Space selects it.
  */
 import { computed, ref } from 'vue'
 import { cell, cellIds, endStateName } from '../../../domain/stressAnalysis/analysisRows'
@@ -12,7 +12,11 @@ import type { Candidates } from '../../composables/useCandidates'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import CandidateOperations from '../candidates/CandidateOperations.vue'
 
-const props = defineProps<{ analysis: StressAnalysis; candidates: Candidates }>()
+const props = defineProps<{
+  analysis: StressAnalysis; candidates: Candidates
+  /** The element selected on the canvas, by stable id. */
+  framed?: string | null
+}>()
 const emit = defineEmits<{ frame: [target: string | null]; sketch: [id: string] }>()
 
 const adaptations = computed(() =>
@@ -54,7 +58,11 @@ const create = async () => {
           class="oprow"
           :class="{ sel: one.id === candidates.selected.value }"
           :data-candidate="one.id"
+          tabindex="0"
+          :aria-selected="one.id === candidates.selected.value"
           @click="candidates.select(one.id)"
+          @keydown.enter.prevent="candidates.select(one.id)"
+          @keydown.space.prevent="candidates.select(one.id)"
         >
           <td>
             <span
@@ -123,6 +131,7 @@ const create = async () => {
       :candidates="candidates"
       role="adaptation"
       :name-of="analysis.nameOf"
+      :framed="framed"
       @frame="emit('frame', $event)"
       @sketch="emit('sketch', $event)"
     />
@@ -135,6 +144,7 @@ const create = async () => {
 .tbl td { padding: 6px 8px; border-top: 1px solid var(--border); vertical-align: top; }
 .oprow { cursor: pointer; }
 .oprow.sel td { background: var(--accent-soft); }
+.oprow:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .ind { color: var(--faint); font-family: ui-monospace, monospace; }
 .role { display: block; font-size: 11px; color: var(--muted); }
 .state { font-size: 11px; font-weight: 600; color: var(--text-2); }

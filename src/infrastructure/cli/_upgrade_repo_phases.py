@@ -14,7 +14,7 @@ from src.domain.repository.repository_upgrade import COVERAGE_NOTE, WorkspaceUpg
 from src.infrastructure.atomic_file import sweep_stale_tmp_files
 from src.infrastructure.cli._upgrade_deployment import print_operational_reports
 from src.infrastructure.repository_upgrade.fs_adapter import FilesystemRepoUpgradeWriter
-from src.infrastructure.repository_upgrade.guard import conflicting_dirty_files
+from src.infrastructure.repository_upgrade.guard import WorktreeStatusUnreadable, conflicting_dirty_files
 from src.infrastructure.write.artifact_write.m4_transaction import (
     TransactionRecoveryError,
     recover_transactions,
@@ -53,7 +53,15 @@ def sweep_and_recover(repo_root: Path) -> list[str]:
 
 
 def note_dirty_overlap(repo_root: Path, touched_locations: frozenset[str]) -> None:
-    overlap = conflicting_dirty_files(repo_root, touched_locations)
+    try:
+        overlap = conflicting_dirty_files(repo_root, touched_locations)
+    except WorktreeStatusUnreadable as unreadable:
+        print(
+            f"Note: {repo_root} has no readable git status ({unreadable}), so whether this run rewrites "
+            "files with uncommitted local edits cannot be checked; review the result before relying on it.",
+            file=sys.stderr,
+        )
+        return
     if overlap:
         files = "\n".join(f"  {f}" for f in overlap)
         print(

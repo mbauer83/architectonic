@@ -113,12 +113,14 @@ ANALYSIS_INCIDENCE = (
 
 ANALYSIS_TEST_SET = (
     "A stress analysis's test set: its stressors, the verdicts, each judged or integrated architecture's "
-    "residuality (Y − X) / n beside the naive, and the procedure's stage."
+    "residuality (Y − X) / n beside the naive, and the procedure's stage. Candidates integrated apart are "
+    "judged together as the architecture `integration`."
 )
 
 ANALYSIS_PERSPECTIVES = (
     "The perspectives offered for writing stressors (PESTLE, five forces, business model canvas, "
-    "organisation), each with an id, its kind and a guiding question."
+    "organisation, and any the repository adds in .arch-repo/stress-perspectives.json), each with an id, "
+    "its kind and a guiding question."
 )
 
 ANALYSIS_HOLD_OUT = (

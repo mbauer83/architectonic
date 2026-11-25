@@ -247,8 +247,10 @@ test('a third of the design stressors is held out and judged on the naive', asyn
   await expect(page.locator('tr.st-row')).toHaveCount(3)
 
   await page.getByTestId('add-test-set').click()
-  page.once('dialog', (dialog) => { void dialog.accept() })
   await page.getByTestId('hold-out').click()
+  // Asked in the section itself, Cancel focused: a stray Enter holds nothing out.
+  await expect(page.getByTestId('hold-out-ask')).toContainText('Move 1 of the 3 design stressors')
+  await page.getByTestId('hold-out-confirm').click()
   await expect(page.locator('tr.st-row')).toHaveCount(2)
   const section = page.getByTestId('test-set')
   await expect(section).toContainText('1 stressor held apart')

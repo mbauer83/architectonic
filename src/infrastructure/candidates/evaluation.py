@@ -13,11 +13,12 @@ from typing import Any, TypeAlias
 
 from src.application.artifacts.document_part_edits import RowChange, TableRowEdits
 from src.application.artifacts.document_table_edits import row_values
-from src.application.change_sets.stacking import descendants
-from src.application.stress_analysis.evaluation import evaluate, held_out, seed_for
+from src.application.change_sets.stacking import descendants, stack_of
+from src.application.stress_analysis.evaluation import evaluate, held_out, integration_of, seed_for
 from src.application.stress_analysis.rows import held_apart, in_test_set, rows_of
 from src.domain.repository.repo_default_stress_analysis import NAIVE_CANDIDATE, STRESS_ANALYSIS, TEST_SET
-from src.domain.repository.repo_default_stress_perspectives import STRESS_PERSPECTIVES
+from src.infrastructure.candidates.analysis_reads import analysis_tables
+from src.infrastructure.candidates.perspectives import repository_perspectives
 from src.infrastructure.candidates.repository import CandidateConflict
 from src.infrastructure.candidates.service import CandidateService
 from src.infrastructure.write.artifact_write.types import WriteResult
@@ -27,15 +28,20 @@ TableWriter: TypeAlias = Callable[[str, TableRowEdits, bool], WriteResult]
 
 
 def evaluation(service: CandidateService, ref: str) -> dict[str, Any]:
-    """The analysis's test set, its verdicts, the standing of every judged or integrated architecture, and the stage."""
-    document, naive, tables = service.analysis_tables(ref)
+    """The analysis's test set, its verdicts, the standing of every judged or integrated architecture and of
+    the integration, and the stage."""
+    document, naive, tables = analysis_tables(service, ref)
     candidates = service.store.list()
     stacked = descendants(naive, candidates)
     integrated = [one.id for one in candidates if one.id in stacked and one.state == "integrated"]
     design = [row for row in rows_of(tables, "stressors") if not in_test_set(row)]
+    integration = integration_of(
+        integrated, lambda ref: [one.id for one in stack_of(service.store.require(ref), service.store.find)],
+    )
     return {
         "document": document, "naive_candidate": naive, "design_stressors": len(design),
-        **evaluate(tables, integrated=integrated, adapted=bool(stacked), known=[one.id for one in candidates]),
+        **evaluate(tables, integrated=integrated, integration=integration, adapted=bool(stacked),
+                   known=[one.id for one in candidates], frameworks=repository_perspectives(service.root)),
     }
 
 
@@ -43,7 +49,7 @@ def hold_out(
     service: CandidateService, ref: str, write: TableWriter, *, seed: int | None, dry_run: bool,
 ) -> dict[str, Any]:
     """Move a random third of the design stressors into the test set, in one row edit of the stressors table."""
-    document, _naive, tables = service.analysis_tables(ref)
+    document, _naive, tables = analysis_tables(service, ref)
     stressors, held = tables.table("stressors"), held_apart(tables)
     every = list(stressors.rows) if stressors else []
     rows = [row for row in every if row.row_id not in held]
@@ -97,12 +103,13 @@ def residuality_by_analysis(service: CandidateService, candidate: str) -> dict[s
     return {"candidate": candidate, "analyses": standings}
 
 
-def perspectives() -> dict[str, Any]:
-    """The frameworks offered to whoever writes stressors, each perspective with its guiding question."""
+def perspectives(service: CandidateService) -> dict[str, Any]:
+    """The frameworks the repository offers whoever writes stressors, each perspective with its guiding question:
+    the shipped ones, with the repository's own laid over them (`repository_perspectives`)."""
     return {"frameworks": [
         {"id": framework.id, "name": framework.name, "perspectives": [
             {"id": one.id, "name": one.name, "kind": one.kind, "question": one.question}
             for one in framework.perspectives
         ]}
-        for framework in STRESS_PERSPECTIVES
+        for framework in repository_perspectives(service.root)
     ]}

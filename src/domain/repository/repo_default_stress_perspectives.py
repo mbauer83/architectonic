@@ -8,7 +8,9 @@ advance. A perspective's `kind` is what choosing it may put in a stressor's opti
 This declaration is the one vocabulary of stressor kinds. A stressor may carry a kind outside it,
 written freely; that kind is counted as written and stands for no perspective.
 
-The frameworks are data. Another framework is one more entry here, and the workspace offers it.
+The frameworks are data. Another framework is one more entry here, and the workspace offers it. A
+repository extends them for its deployment (`with_frameworks`): a framework of its own is added, and
+one with a shipped framework's id takes that framework's place.
 """
 
 from __future__ import annotations
@@ -61,14 +63,16 @@ class PerspectiveFramework:
     perspectives: tuple[Perspective, ...]
 
 
-def _framework(key: str, name: str, *perspectives: tuple[str, str]) -> PerspectiveFramework:
+def declared_framework(key: str, name: str, *perspectives: tuple[str, str]) -> PerspectiveFramework:
+    """A framework from its id, its name and each perspective's (name, guiding question); a perspective's
+    id is the framework's id and its own name, so a shipped and a repository's framework are spelled alike."""
     return PerspectiveFramework(key, name, tuple(
         Perspective(f"{key}.{label.lower().replace(' ', '-')}", label, question) for label, question in perspectives
     ))
 
 
 STRESS_PERSPECTIVES: tuple[PerspectiveFramework, ...] = (
-    _framework(
+    declared_framework(
         "pestle", "PESTLE",
         ("Political", "What if a change of government or policy withdraws a commitment the organisation relies on?"),
         ("Economic", "What if funding, prices or demand move sharply: a recession, inflation, a currency swing?"),
@@ -79,7 +83,7 @@ STRESS_PERSPECTIVES: tuple[PerspectiveFramework, ...] = (
         ("Environmental", "What if a climate, energy or resource event disrupts operations or changes what is "
                           "acceptable?"),
     ),
-    _framework(
+    declared_framework(
         "five-forces", "Five forces",
         ("New entrants", "What if a newcomer offers the same for a fraction of the price?"),
         ("Substitutes", "What if customers can meet the same need in an entirely different way?"),
@@ -87,7 +91,7 @@ STRESS_PERSPECTIVES: tuple[PerspectiveFramework, ...] = (
         ("Supplier power", "What if a key supplier raises prices, changes terms or stops supplying?"),
         ("Rivalry", "What if a competitor starts a price war or matches the core offer?"),
     ),
-    _framework(
+    declared_framework(
         "business-model-canvas", "Business model canvas",
         ("Customer segments", "What if the main customer segment shrinks, splits or moves away?"),
         ("Value propositions", "What if what customers value most stops being what the organisation offers?"),
@@ -101,7 +105,7 @@ STRESS_PERSPECTIVES: tuple[PerspectiveFramework, ...] = (
         ("Key partners", "What if a key partner withdraws, is acquired or becomes a competitor?"),
         ("Cost structure", "What if a major cost doubles, or has to be halved?"),
     ),
-    _framework(
+    declared_framework(
         "organisation", "Organisation & people",
         ("Key people", "What if the one person who knows how something works leaves tomorrow?"),
         ("Teams", "What if a team is reorganised, merged, moved or halved?"),
@@ -110,7 +114,18 @@ STRESS_PERSPECTIVES: tuple[PerspectiveFramework, ...] = (
 )
 
 
-def unwritten_perspectives(kinds: Iterable[str]) -> list[str]:
+def with_frameworks(
+    added: Iterable[PerspectiveFramework], shipped: tuple[PerspectiveFramework, ...] = STRESS_PERSPECTIVES,
+) -> tuple[PerspectiveFramework, ...]:
+    """*shipped* with *added* laid over it: an added framework with a shipped one's id takes its place, in its
+    position; any other is appended, in the order given."""
+    own = {framework.id: framework for framework in added}
+    return (*(own.pop(framework.id, framework) for framework in shipped), *own.values())
+
+
+def unwritten_perspectives(
+    kinds: Iterable[str], frameworks: tuple[PerspectiveFramework, ...] = STRESS_PERSPECTIVES,
+) -> list[str]:
     """The perspectives no stressor is written from, by id, in the declaration's order.
 
     None while no stressor names a kind: the kind is optional, so an empty column says nothing about
@@ -119,5 +134,5 @@ def unwritten_perspectives(kinds: Iterable[str]) -> list[str]:
     used = {kind_of(kind) for kind in kinds} - {""}
     if not used:
         return []
-    return [one.id for framework in STRESS_PERSPECTIVES for one in framework.perspectives if one.kind not in used]
+    return [one.id for framework in frameworks for one in framework.perspectives if one.kind not in used]
 

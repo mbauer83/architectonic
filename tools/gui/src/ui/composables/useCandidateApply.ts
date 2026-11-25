@@ -2,6 +2,10 @@
  * *Apply to the model…* on a candidate's page: a dry run first, read as what would be written and any
  * refusal, then the apply itself once its reader confirms. The server writes every operation in one
  * write or none, and integrates the candidate when it does; this only sequences the two calls.
+ *
+ * *onApplied* is told the candidate once it is integrated, before the confirmation closes. The page that
+ * owns the apply is told, not the confirmation: the confirmation is gone by the time it could say so,
+ * and an event from a component that is no longer mounted reaches nobody.
  */
 import { ref, shallowRef } from 'vue'
 import { Effect } from 'effect'
@@ -11,7 +15,7 @@ import { formatEffectError } from '../lib/errors'
 
 export type CandidateApplyAccess = Pick<ModelService, 'applyCandidate'>
 
-export function useCandidateApply(svc: CandidateApplyAccess) {
+export function useCandidateApply(svc: CandidateApplyAccess, onApplied: (candidate: string) => void = () => {}) {
   /** The dry run being confirmed, for the candidate it was asked about; null when none is open. */
   const preview = shallowRef<(ApplyPreview & { readonly candidate: string }) | null>(null)
   const busy = ref(false)
@@ -49,6 +53,7 @@ export function useCandidateApply(svc: CandidateApplyAccess) {
     if (!id) return false
     const answer = await run(() => Effect.runPromise(svc.applyCandidate(id, false)))
     if (!answer?.integrated) return false
+    onApplied(id)
     preview.value = null
     return true
   }

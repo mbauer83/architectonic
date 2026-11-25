@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import ConfigDict, RootModel
+from pydantic import ConfigDict, Field, RootModel
 
 from src.infrastructure.rest.contracts.baseline_standing import BaselineStandingContract
 from src.infrastructure.rest.contracts.document_tables import DocumentTableDeclaration
@@ -136,3 +136,14 @@ class DocumentSchemataResponse(RootModel[dict[str, DocumentSchemaEntry]]):
     model_config = ConfigDict(json_schema_extra=mark_nulls_omitted)
 
     root: dict[str, DocumentSchemaEntry]
+
+
+class FreeDocumentTitle(Closed):
+    """The first name a new document of a type may take, starting from the one asked about."""
+
+    doc_type: str
+    asked: str = Field(description="The name asked about.")
+    title: str = Field(
+        description="*asked* where no document of the type is named so, else the first of \"asked (2)\", "
+        "\"asked (3)\", … that none is: the name a document created now would not be refused for.",
+    )

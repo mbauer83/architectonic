@@ -2242,6 +2242,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/document-types/{doc_type}/free-title": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the first name a new document of a type may take
+         * @description *title* where no document of *doc_type* is named so, else *title* numbered "(2)", "(3)", … — the name
+         *     the document create would not refuse as taken. A form proposing a default name asks this, so a second
+         *     analysis of the same architecture is not refused for the first one's name. 404 for an unknown type.
+         */
+        get: operations["documents_read_free_document_title"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents": {
         parameters: {
             query?: never;
@@ -2313,7 +2335,8 @@ export interface paths {
         };
         /**
          * Read unfinished stress analysis and coverage hints
-         * @description Coverage reads the shipped perspectives (`/api/stress-perspectives`), the one vocabulary of kinds.
+         * @description Coverage reads the perspectives this repository offers (`/api/stress-perspectives`), the one vocabulary of
+         *     kinds.
          */
         get: operations["documents_analysis_progress"];
         put?: never;
@@ -3282,7 +3305,9 @@ export interface paths {
         };
         /**
          * List the perspectives offered to whoever writes stressors
-         * @description Each framework's perspectives with a guiding question; none names an element of any architecture.
+         * @description Each framework's perspectives with a guiding question; none names an element of any architecture. The
+         *     shipped frameworks, with the repository's own from `.arch-repo/stress-perspectives.json` laid over them; 422
+         *     where that file cannot be read.
          */
         get: operations["documents_list_stress_perspectives"];
         put?: never;
@@ -4169,7 +4194,7 @@ export interface components {
         AnalysisEvaluation: {
             /**
              * Architectures
-             * @description The naive first, then integrated, then judged.
+             * @description The naive first, then the integrated candidates and the integration, then the judged ones.
              */
             architectures: components["schemas"]["ArchitectureStanding"][];
             /**
@@ -4278,7 +4303,7 @@ export interface components {
         AnalysisStanding: {
             /**
              * Architecture
-             * @description `naive`, or a candidate's id.
+             * @description `naive`, a candidate's id, or `integration`: the candidates integrated apart, judged together.
              */
             architecture: string;
             /** Degrades */
@@ -4370,7 +4395,7 @@ export interface components {
         ArchitectureStanding: {
             /**
              * Architecture
-             * @description `naive`, or a candidate's id.
+             * @description `naive`, a candidate's id, or `integration`: the candidates integrated apart, judged together.
              */
             architecture: string;
             /** Degrades */
@@ -10335,6 +10360,24 @@ export interface components {
             /** Version */
             version: number;
         };
+        /**
+         * FreeDocumentTitle
+         * @description The first name a new document of a type may take, starting from the one asked about.
+         */
+        FreeDocumentTitle: {
+            /**
+             * Asked
+             * @description The name asked about.
+             */
+            asked: string;
+            /** Doc Type */
+            doc_type: string;
+            /**
+             * Title
+             * @description *asked* where no document of the type is named so, else the first of "asked (2)", "asked (3)", … that none is: the name a document created now would not be refused for.
+             */
+            title: string;
+        };
         /** GeometryBoxContract */
         GeometryBoxContract: {
             /** Alias */
@@ -14173,7 +14216,7 @@ export interface components {
         StressVerdict: {
             /**
              * Architecture
-             * @description `naive`, or the judged candidate's id.
+             * @description `naive`, the judged candidate's id, or `integration` for candidates integrated apart.
              */
             architecture: string;
             /**
@@ -23029,6 +23072,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentTypeListResponse"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_read_free_document_title: {
+        parameters: {
+            query: {
+                /** @description The name a form would propose. */
+                title: string;
+            };
+            header?: never;
+            path: {
+                doc_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreeDocumentTitle"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Request validation failed */

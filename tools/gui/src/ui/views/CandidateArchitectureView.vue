@@ -19,6 +19,7 @@ import { diffMarks, framedMarks } from '../../domain/candidates/canvasMarks'
 import { modelServiceKey, toastKey } from '../keys'
 import { candidateCompareRoute, candidateDetailRoute, candidateListRoute } from '../router/artifactRoutes'
 import { useCandidates } from '../composables/useCandidates'
+import { useComposedDrawing } from '../composables/useComposedDrawing'
 import { useCandidateApply } from '../composables/useCandidateApply'
 import ApplyCandidate from '../components/candidates/ApplyCandidate.vue'
 import CandidateResiduality from '../components/candidates/CandidateResiduality.vue'
@@ -35,6 +36,8 @@ const candidateId = computed(() => String(route.params.artifactId))
 /** The diagram the reader chose to draw on instead of the one the candidate names; empty for that one. */
 const chosenDiagram = computed(() => (typeof route.query.diagram === 'string' ? route.query.diagram : ''))
 const candidates = useCandidates(svc, { scopeDiagram: () => chosenDiagram.value })
+/** The picture with the candidate drawn as it composes, as its sketch draws it. */
+const drawing = useComposedDrawing(svc, () => candidates.comparison.value)
 /** The stored diagram the candidate is drawn on; empty where it is drawn as a generated view, or not at all. */
 const diagramId = computed(() => chosenDiagram.value || candidates.comparison.value?.drawing?.artifact_id || '')
 
@@ -75,7 +78,7 @@ const rebase = async () => {
   rebasing.value = false
 }
 
-const apply = useCandidateApply(svc)
+const apply = useCandidateApply(svc, () => { void applied() })
 const applicable = computed(() => summary.value?.state === 'draft' || summary.value?.state === 'candidate')
 const applied = async () => {
   toast(`Applied ${summary.value?.name ?? candidateId.value} to the model; it is integrated.`)
@@ -235,7 +238,6 @@ onMounted(async () => {
       v-if="summary && apply.preview.value?.candidate === summary.id"
       :apply="apply"
       :name="summary.name"
-      @applied="applied"
     />
     <p
       v-else-if="apply.error.value"
@@ -263,6 +265,7 @@ onMounted(async () => {
           :candidates="candidates"
           role="candidate architecture"
           :name-of="nameOf"
+          :framed="framed"
           @frame="framed = $event && stableEntityId($event)"
           @sketch="sketch"
         />
@@ -288,10 +291,11 @@ onMounted(async () => {
         <MarkedCanvas
           v-else
           :diagram-id="diagramId"
-          :drawing="candidates.comparison.value?.drawing ?? null"
+          :drawing="drawing"
           :marks="marks"
-          hint="Select a row to frame its element · Scroll to zoom · Drag to pan"
+          hint="Select a row to frame its element, or an element to find its rows · Scroll to zoom · Drag to pan"
           empty-text="No diagram to draw: choose one above."
+          @pick="framed = framed === $event ? null : $event"
         />
         <p class="legend">
           + added · ~ changed — a field differs · − removed, drawn as a faded dashed ghost

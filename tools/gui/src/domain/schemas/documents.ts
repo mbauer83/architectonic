@@ -81,6 +81,14 @@ export const DocumentTypesSchema = Schema.Struct({
   document_types: Schema.Array(DocumentTypeSchema),
 })
 
+/** The first name a new document of a type may take (`GET /api/document-types/{type}/free-title`). */
+export const FreeDocumentTitleSchema = Schema.Struct({
+  doc_type: Schema.String,
+  asked: Schema.String,
+  title: Schema.String,
+})
+export type FreeDocumentTitle = typeof FreeDocumentTitleSchema.Type
+
 export const DocumentSummarySchema = Schema.Struct({
   artifact_id: Schema.String,
   doc_type: Schema.String,

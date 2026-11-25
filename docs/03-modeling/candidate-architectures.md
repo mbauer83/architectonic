@@ -99,7 +99,13 @@ A stress analysis evaluates a proposed architecture: its naive candidate. `analy
 (`POST /api/stress-analyses`) creates the naive candidate and the stress-analysis document in one
 write. The naive candidate holds the scope and the stored diagram it is drawn on; the document names
 the naive candidate and, optionally, a `context`: the environment the architecture is evaluated in
-and the decision the evaluation informs.
+and the decision the evaluation informs. A document's title is unique within its type, so the start
+page asks `GET /api/document-types/stress-analysis/free-title` for its default title: the proposed
+title, or that title numbered `(2)`, `(3)` and so on where another analysis already has it.
+
+The canvases of the workspace and of a candidate's page draw a candidate with its own changes on the
+picture. An element it removes stays drawn as a faded dashed ghost. **Apply…** in the workspace lists what is left in the analysis, then shows the chosen
+candidate's dry run before it is applied.
 
 A candidate records the diagram it is drawn on as `diagram`. A candidate stacked on another is drawn
 on the nearest diagram its stack names. Where none is named, as for a scope chosen by a search or by a

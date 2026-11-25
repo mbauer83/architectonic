@@ -143,7 +143,6 @@ def test_only_the_genuinely_nullary_tools_serve_an_empty_input_schema() -> None:
         "assurance_verify": "verification is defined over the whole store; its checks span analyses",
         # The shipped frameworks a stressor writer looks from. They name the environment, never a
         # repository's content, so there is no repository or analysis to scope them by.
-        "analysis_perspectives": "the shipped perspective catalogue; it names nothing in any repository",
     }
 
     served_empty = {

@@ -36,8 +36,8 @@ The workspace shows **Add a test set** below the analysis tables while the analy
 it to open the test-set section. There are two ways to fill it.
 
 **Hold out a random third.** With three or more design stressors written, select **Hold out a
-random third**. A third of the design stressors, chosen at random on the server, move into the test
-set. The confirmation names the stressors moved and the seed used; the same seed over the same
+random third** and confirm the question that opens in the section. A third of the design stressors,
+chosen at random on the server, move into the test set. The confirmation names the stressors moved and the seed used; the same seed over the same
 stressors moves the same ones again. Holding out works best before the design stressors are walked.
 
 **Write test stressors directly.** Type a stressor into the line in the test-set section and press
@@ -53,12 +53,30 @@ optional kind; once stressors carry kinds, a perspective without any stressor is
 circle. The perspectives describe the organisation's environment and never name an element of the
 architecture.
 
+A repository can offer perspectives of its own. Write them to `.arch-repo/stress-perspectives.json`:
+
+```json
+{"frameworks": [{"id": "regulation", "name": "Regulation", "perspectives": [
+  {"name": "Data residency", "question": "What if data must stay in the country it was collected in?"}
+]}]}
+```
+
+A framework with its own id is offered after the shipped ones. A framework with a shipped
+framework's id (`pestle`, `five-forces`, `business-model-canvas`, `organisation`) takes that
+framework's place. The coverage hints count the perspectives the repository offers. A file that
+cannot be read in this shape is reported when the perspectives are read, naming the framework at
+fault.
+
 &nbsp;
 
 ## Judge an architecture
 
 Each architecture judged so far has a line in the test-set section. The naive architecture always has
 one, and so does every candidate that has been integrated into the model.
+
+The integration also always has a line. Where one integrated candidate stacks on all the others, its
+own line is the integration's. Where candidates were integrated separately, the section adds a line
+for **The integration of** those candidates, judged as one architecture: the model as they left it.
 
 1. Open the test-set section and select **Judge** beside an architecture. To judge a candidate that
    has no line yet, choose it under **Evaluate against the test set**.
@@ -72,7 +90,8 @@ one, and so does every candidate that has been integrated into the model.
 5. Select **Next unjudged →** to move on, and **Done** to close the walk.
 
 Each verdict is a row of the analysis document's Test Set table, naming the stressor, the
-architecture (`naive` or the candidate's id), the verdict, whether the stressor is usable, and the
+architecture (`naive`, the candidate's id, or `integration` for candidates integrated separately), the
+verdict, whether the stressor is usable, and the
 reasoning. A later verdict on the same stressor and architecture replaces the earlier one.
 
 &nbsp;

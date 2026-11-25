@@ -2,19 +2,24 @@
 /**
  * One candidate's operations against the base chosen in *against* (06·6, F15, Q39): the same component
  * on the candidate page and on a stress analysis's Naive architecture and Adaptations tabs; *role* is
- * what its reader calls the candidate. The canvas marks the same comparison; a row
- * selected here frames its element there. A row's card shows the element's fields, base against
- * candidate: changed rows highlighted with the base struck through, unchanged rows greyed. A comparison
- * of several candidates reads each *fixed* to their common base: the base is named, not chosen, and
- * nothing is sketched there.
+ * what its reader calls the candidate. The canvas marks the same comparison; a row selected here frames
+ * its element there, and an element selected there selects its rows here (*framed*). A row's card shows
+ * the element's fields, base against candidate: changed rows highlighted with the base struck through,
+ * unchanged rows greyed. A comparison of several candidates reads each *fixed* to their common base: the
+ * base is named, not chosen, and nothing is sketched there.
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import { stableEntityId } from '../../../domain/artifactId'
 import type { ChangeDifference } from '../../../domain/schemas/candidates'
 import { chosenIds } from '../../../domain/candidates/candidateCanvas'
 import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
 
-const props = defineProps<{ candidates: Candidates; role: string; nameOf: (id: string) => string; fixed?: boolean }>()
+const props = defineProps<{
+  candidates: Candidates; role: string; nameOf: (id: string) => string; fixed?: boolean
+  /** The element selected on the canvas, by stable id: its rows are selected here. */
+  framed?: string | null
+}>()
 const emit = defineEmits<{ frame: [target: string | null]; sketch: [id: string] }>()
 
 const summary = computed(() =>
@@ -60,6 +65,18 @@ const standingOf = (row: ChangeDifference): string => {
 }
 
 const selectedRow = ref<number | null>(null)
+const table = ref<HTMLTableElement | null>(null)
+/** Whether *row* is about the element *stableId*: the element itself, or a relation at either end. */
+const about = (row: ChangeDifference, stableId: string): boolean => (typeof row.target === 'string'
+  ? stableEntityId(chosenIds(comparison.value?.view ?? { entities: [] }).get(row.target) ?? row.target) === stableId
+  : [row.target.source_entity, row.target.target_entity].some((end) => stableEntityId(end) === stableId))
+const framedRows = computed(() => new Set((comparison.value?.diff ?? []).flatMap((row, index) =>
+  (props.framed && about(row, props.framed) ? [index] : []))))
+watch(framedRows, async (rows) => {
+  if (!rows.size) return
+  await nextTick()
+  table.value?.querySelector('tr.framed')?.scrollIntoView({ block: 'nearest' })
+})
 const card = ref<number | null>(null)
 const select = (index: number, row: ChangeDifference) => {
   selectedRow.value = selectedRow.value === index ? null : index
@@ -119,6 +136,7 @@ const cardRows = (row: ChangeDifference) => {
     </p>
     <table
       v-else-if="comparison"
+      ref="table"
       class="tbl"
     >
       <thead><tr><th>Artifact</th><th>Change</th><th>Base → proposed</th><th>Standing</th></tr></thead>
@@ -127,7 +145,10 @@ const cardRows = (row: ChangeDifference) => {
           v-for="(row, index) in comparison.diff"
           :key="index"
           class="oprow"
-          :class="{ sel: index === selectedRow, 'base-only': changeWord(row) === 'only in the base' }"
+          :class="{
+            sel: index === selectedRow, framed: framedRows.has(index),
+            'base-only': changeWord(row) === 'only in the base',
+          }"
           @click="select(index, row)"
           @mouseenter="card = index"
           @mouseleave="card = null"
@@ -208,7 +229,8 @@ const cardRows = (row: ChangeDifference) => {
 .tbl th { text-align: left; font-size: 11px; text-transform: uppercase; color: var(--muted); padding: 4px 8px; }
 .tbl td { padding: 6px 8px; border-top: 1px solid var(--border); vertical-align: top; position: relative; }
 .oprow { cursor: pointer; }
-.oprow.sel td { background: var(--accent-soft); }
+.oprow.sel td, .oprow.framed td { background: var(--accent-soft); }
+.oprow.framed td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .oprow.base-only td { color: var(--muted); }
 .sub { display: block; font-size: 11px; color: var(--muted); }
 .chg-word { white-space: nowrap; }

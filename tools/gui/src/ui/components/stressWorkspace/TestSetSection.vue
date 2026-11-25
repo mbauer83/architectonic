@@ -3,12 +3,13 @@
  * The test set, apart from the design work: collapsed to one line and the residuality of each judged
  * architecture while the analysis is worked, open to write or hold out stressors and to judge. The
  * procedure is stated once and its order shown as progress, never as a gate. An analysis without a
- * test set shows only a link to add one.
+ * test set shows only a link to add one. *Hold out a random third* asks first, in the section itself:
+ * Cancel holds the focus and Esc cancels, so a stray Enter moves nothing.
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import type { Verdict } from '../../../domain/schemas/stressEvaluation'
 import { cell } from '../../../domain/stressAnalysis/analysisRows'
-import { NAIVE, procedure } from '../../../domain/stressAnalysis/testSet'
+import { architectureName, procedure } from '../../../domain/stressAnalysis/testSet'
 import type { Candidates } from '../../composables/useCandidates'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import type { TestSet } from '../../composables/useTestSet'
@@ -28,11 +29,10 @@ const emit = defineEmits<{ select: [rowId: string | null] }>()
 const open = ref(false)
 const evaluation = computed(() => props.analysis.evaluation.value)
 const held = computed(() => props.analysis.testStressors.value)
-const nameOf = (architecture: string): string => architecture === NAIVE
-  ? 'Naive architecture'
-  : props.candidates.all.value.find((one) => one.id === architecture)?.name ?? architecture
 /** Each architecture with a line: the naive, the integration, and every candidate judged so far. */
 const standings = computed(() => evaluation.value?.architectures ?? [])
+const nameOf = (architecture: string): string => architectureName(architecture, standings.value,
+  (candidate) => props.candidates.all.value.find((one) => one.id === candidate)?.name ?? candidate)
 const evaluable = computed(() => props.candidates.inStack.value.filter((one) => one.id !== props.analysis.naiveId.value
   && !standings.value.some((standing) => standing.architecture === one.id)))
 const steps = computed(() => (evaluation.value ? procedure(evaluation.value.stage) : []))
@@ -48,10 +48,16 @@ const judgeOne = (stressor: string, cells: Readonly<{ verdict?: Verdict; usable?
   const architecture = props.testSet.judging.value
   if (architecture) void props.testSet.judge(stressor, architecture, cells)
 }
+/** Whether the hold-out is being asked about; its Cancel takes the focus. */
+const asking = ref(false)
+const cancelHold = ref<HTMLButtonElement | null>(null)
+const askHoldOut = async () => {
+  asking.value = true
+  await nextTick()
+  cancelHold.value?.focus()
+}
 const holdOut = async () => {
-  const count = Math.floor(design.value / 3)
-  if (!window.confirm(`Move ${count} of the ${design.value} design stressors, chosen at random, into the test set? `
-    + 'It is best done before they are walked.')) return
+  asking.value = false
   await props.testSet.holdOut()
 }
 </script>
@@ -152,8 +158,8 @@ const holdOut = async () => {
               type="button"
               class="btn btn-sm"
               data-testid="hold-out"
-              :disabled="testSet.holding.value"
-              @click="holdOut"
+              :disabled="testSet.holding.value || asking"
+              @click="askHoldOut"
             >
               Hold out a random third
             </button>
@@ -174,6 +180,37 @@ const holdOut = async () => {
                 >{{ one.name }}</option>
               </select>
             </label>
+          </div>
+          <div
+            v-if="asking"
+            class="ask"
+            role="alertdialog"
+            aria-label="Hold out a random third"
+            data-testid="hold-out-ask"
+            @keydown.esc.stop.prevent="asking = false"
+          >
+            <p>
+              Move {{ Math.floor(design / 3) }} of the {{ design }} design stressors, chosen at random, into the
+              test set? It is best done before they are walked.
+            </p>
+            <div class="ask-acts">
+              <button
+                ref="cancelHold"
+                type="button"
+                class="btn btn-sm"
+                @click="asking = false"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-primary"
+                data-testid="hold-out-confirm"
+                @click="holdOut"
+              >
+                Hold out {{ Math.floor(design / 3) }}
+              </button>
+            </div>
           </div>
           <ul class="held">
             <li
@@ -214,6 +251,12 @@ const holdOut = async () => {
 .acts { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 4px 10px; }
 .evaluate { font-size: 12px; color: var(--muted); }
 .evaluate select { font: inherit; margin-left: 4px; max-width: 220px; }
+.ask {
+  margin: 4px 10px 6px; padding: 8px 10px; border: 1px solid var(--accent-border); border-radius: 6px;
+  background: var(--accent-soft); color: var(--text);
+}
+.ask p { margin: 0 0 6px; }
+.ask-acts { display: flex; gap: 8px; justify-content: flex-end; }
 .held { margin: 4px 0 8px; padding: 0 10px 0 28px; color: var(--text-2); }
 .held li { margin: 2px 0; }
 .rid { font-family: ui-monospace, monospace; color: var(--muted); margin-right: 4px; }

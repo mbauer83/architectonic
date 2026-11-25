@@ -1,6 +1,7 @@
 /**
  * The workspace's row edits, in its words: add, change and remove a stressor (with *Undo*), put it
- * under an end state or create one by naming it, and tick, untick and annotate what it hits. Each is
+ * under an end state or create one by naming it, say why an end state needs no change, and tick, untick
+ * and annotate what it hits. Each is
  * one row batch through `StressAnalysis.edit`, stated against the row as it was read.
  */
 import type { DocumentTableRow } from '../../domain/schemas/candidates'
@@ -48,12 +49,18 @@ export function useAnalysisEdits(analysis: StressAnalysis, toast: ShowToast) {
     if (current) await setEndState(current, id)
   }
 
+  /** An end state answered by no change, for the reason given; an empty reason takes the answer back. */
+  const answerNoChange = (endState: DocumentTableRow, reason: string) =>
+    analysis.edit('end-states', [changeRow(endState, { no_change_reason: reason })])
+
   const tick = (stressor: string, component: string) =>
     analysis.edit('incidence', [{ op: 'add', cells: { stressor, component } }])
   const untick = (one: Tick) => analysis.edit('incidence', [removeRow(one.row)])
   const note = (one: Tick, text: string) => analysis.edit('incidence', [changeRow(one.row, { note: text })])
 
-  return { addStressor, changeStressor, removeStressor, setEndState, createEndStateFor, tick, untick, note }
+  return {
+    addStressor, changeStressor, removeStressor, setEndState, createEndStateFor, answerNoChange, tick, untick, note,
+  }
 }
 
 export type AnalysisEdits = ReturnType<typeof useAnalysisEdits>

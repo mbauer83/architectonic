@@ -2,7 +2,8 @@
 /**
  * The Stressors tab (06·2, 06·3): counts by kind, coverage hints, a stressor written in one line,
  * the design stressors as an editable table with an End state column, the coupling per pair of
- * components (Q30), and the incidence grid for the stressor in focus. The test set is not here.
+ * components (Q30), and the incidence grid for the stressor in focus. An element selected on the canvas
+ * marks the rows that tick it. The test set is not here.
  */
 import { computed, inject, ref } from 'vue'
 import { endStateName } from '../../../domain/stressAnalysis/analysisRows'
@@ -16,7 +17,11 @@ import IncidenceGrid from './IncidenceGrid.vue'
 import StressorRow from './StressorRow.vue'
 import StressorInput from './StressorInput.vue'
 
-const props = defineProps<{ analysis: StressAnalysis; edits: AnalysisEdits; selected: string | null }>()
+const props = defineProps<{
+  analysis: StressAnalysis; edits: AnalysisEdits; selected: string | null
+  /** The rows that tick the element selected on the canvas. */
+  ticking: ReadonlySet<string>
+}>()
 const emit = defineEmits<{
   select: [rowId: string | null]
   show: [stableOrFullId: string]
@@ -96,6 +101,7 @@ const aboutElement = async (id: string) => {
             :key="row.row_id"
             :row="row"
             :selected="row.row_id === selected"
+            :ticks-selected="ticking.has(row.row_id)"
             :kinds="kinds"
             :hits="analysis.hitsOf(row.row_id).length"
             :missing="analysis.missingOf(row.row_id).map(analysis.nameOf)"

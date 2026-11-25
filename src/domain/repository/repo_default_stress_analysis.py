@@ -20,6 +20,8 @@ DESIGN_SET = "design"
 TEST_SET = "test"
 #: How a verdict names the naive architecture; any other architecture is named by its candidate id.
 NAIVE_ARCHITECTURE = "naive"
+#: How a verdict names the integration when candidates were integrated apart, so no one of them holds it all.
+INTEGRATION_ARCHITECTURE = "integration"
 #: What an architecture does under a test stressor.
 SURVIVES, DEGRADES, FAILS = "survives", "degrades", "fails"
 

@@ -38,7 +38,9 @@ import type {
   WriteResultSchema,
   WriteVerificationSchema,
 } from './write-results'
-import type { DocumentTypeSchema, DocumentTypesSchema, SectionSpecSchema } from './documents'
+import type {
+  DocumentTypeSchema, DocumentTypesSchema, FreeDocumentTitleSchema, SectionSpecSchema,
+} from './documents'
 import type { GroupEntrySchema, GroupListSchema } from './groups'
 import type { MatrixConfigSchema, MatrixConnTypeConfigSchema } from './diagrams'
 import type {
@@ -192,6 +194,9 @@ describe('authoring catalogs', () => {
     // schema with a default — so readers carried fallbacks for a response the server never sends.
     expectTypeOf<SchemaType<typeof DocumentTypesSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DocumentTypeListResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof FreeDocumentTitleSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['FreeDocumentTitle']>
     >()
     expectTypeOf<SchemaType<typeof DocumentTypeSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DocumentTypeResponse']>

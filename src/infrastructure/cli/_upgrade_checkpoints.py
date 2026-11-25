@@ -26,6 +26,7 @@ from src.application.deployment_upgrade.ports import OperationalTargetHandle
 from src.domain.clock import utc_now_compact
 from src.domain.repository.operational_upgrade import CheckpointSet, OperationalBackup, RepositoryCheckpoint
 from src.infrastructure.git._git_command import run_repo_git
+from src.infrastructure.git.git_repository_state import current_commit
 from src.infrastructure.git.git_worktree_checkpoint import (
     checkpoint_from_ref,
     checkpoint_worktree,
@@ -58,6 +59,15 @@ def checkpoint_base(*, workspace: str | None, settings_document: Path | None, ro
     return roots[0].parent / ".arch" / CHECKPOINTS_DIRNAME
 
 
+def _refuse_without_history(root: Path) -> None:
+    """A repository is pinned as a git commit: a root with no commit to pin has no safety point."""
+    if current_commit(root) is None:
+        raise RuntimeError(
+            f"{root} has no git commit to pin (it is not under git, or nothing is committed yet). "
+            "Commit it, or upgrade a clone that is under git."
+        )
+
+
 def take_checkpoint_set(
     roots: Sequence[Path],
     handles: Sequence[OperationalTargetHandle],
@@ -78,6 +88,7 @@ def take_checkpoint_set(
     operational: list[OperationalBackup] = []
     try:
         for root in roots:
+            _refuse_without_history(root)
             transient = checkpoint_worktree(root)
             try:
                 ref = pin_checkpoint(root, transient, set_id)

@@ -99,5 +99,8 @@ def changes_read_residuality(artifact_id: str) -> dict[str, Any]:
     responses=READ_RESPONSES,
 )
 def documents_list_stress_perspectives() -> dict[str, Any]:
-    """Each framework's perspectives with a guiding question; none names an element of any architecture."""
-    return evaluation.perspectives()
+    """Each framework's perspectives with a guiding question; none names an element of any architecture. The
+    shipped frameworks, with the repository's own from `.arch-repo/stress-perspectives.json` laid over them; 422
+    where that file cannot be read."""
+    with refusals():
+        return evaluation.perspectives(service())
