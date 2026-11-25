@@ -17,6 +17,7 @@ const DETAIL = {
   entity_ids_used: ['GOL@1.g'], connection_ids_used: ['GOL@1.g---OUT@2.o@@archimate-realization'],
   extra: { 'manual-layout': true },
 } as unknown as DiagramDetail
+const WRITE = { artifact_id: 'ARC@1.a.goals', path: 'x', content: null, verification: null, warnings: [] }
 const PREVIEW = { puml: '', image: 'data:image/png;base64,AA==', warnings: [], derived_entities: null }
 
 let app: App | null = null
@@ -57,7 +58,7 @@ describe('laying a hand-written diagram out automatically', () => {
   })
 
   it('writes the diagram\'s own replacement with manual_layout false, from what it states it draws', async () => {
-    const editDiagram = vi.fn(() => Effect.succeed({ wrote: true, warnings: [] }))
+    const editDiagram = vi.fn(() => Effect.succeed({ ...WRITE, wrote: true }))
     const { laidOut } = mounted({ editDiagram })
     await settle()
     confirm().click()
@@ -70,7 +71,7 @@ describe('laying a hand-written diagram out automatically', () => {
   })
 
   it('says why when the write refuses, and reports nothing laid out', async () => {
-    const editDiagram = vi.fn(() => Effect.succeed({ wrote: false, warnings: ['E101 refused'] }))
+    const editDiagram = vi.fn(() => Effect.succeed({ ...WRITE, wrote: false, warnings: ['E101 refused'] }))
     const { laidOut } = mounted({ editDiagram })
     await settle()
     confirm().click()
