@@ -19,6 +19,7 @@ from src.application.puml_alias_declarations import (
     label_declared_on,
     relabelled_declaration,
 )
+from src.domain.artifact_id import canonical_entity_key
 from src.domain.ontology_representation.artifact_types import EntityRecord
 
 #: The ``diagram-entities`` key holding per-instance labels: ``{instance id: label}``.
@@ -70,12 +71,13 @@ def instance_labels_by_alias(
     which `occurrence_entities` carries in ``host_diagram_id``. Declarations know only aliases, so
     the join is made once here for the renderer and for a body that is relabelled in place.
     """
-    overrides = display_label_overrides(diagram_entities)
+    # An entity's instance id may be written in either spelling of its id, full or short; both name it.
+    overrides = {canonical_entity_key(key): label for key, label in display_label_overrides(diagram_entities).items()}
     if not overrides:
         return {}
     by_alias: dict[str, str] = {}
     for entity in entities:
-        label = overrides.get(entity.artifact_id)
+        label = overrides.get(canonical_entity_key(entity.artifact_id))
         if label and entity.display_alias:
             by_alias[normalize_puml_alias(entity.display_alias)] = label
     for occurrence in occurrences:
