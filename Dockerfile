@@ -46,18 +46,18 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Layer 1: dependencies only (cached unless lockfile/manifest change).
-# --no-install-project installs just the third-party deps. Extras:
-#   gui            → FastAPI + uvicorn (the served backend)
+# --no-install-project installs just the third-party deps; the served backend's web stack is a
+# core dependency. Extras:
 #   cloud-archive  → boto3 + azure-* so the full assurance storage matrix works
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-install-project --group gui ${ARCH_PIP_EXTRAS}
+    uv sync --frozen --no-dev --no-install-project ${ARCH_PIP_EXTRAS}
 
 # Layer 2: the project source + editable install of the project itself.
 COPY src/ src/
 COPY config/ config/
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --group gui ${ARCH_PIP_EXTRAS}
+    uv sync --frozen --no-dev ${ARCH_PIP_EXTRAS}
 
 # Fetch the pinned plantuml.jar (sibling of pyproject.toml, where the app looks).
 RUN .venv/bin/get-plantuml

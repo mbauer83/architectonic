@@ -7,10 +7,8 @@ only reach them by copying the flag list — and a copied flag list drifts silen
 supply-chain gate means a confident verdict over the wrong set. So the two answers live here, the
 flags are written down once, and every gate calls the function rather than respelling the selection.
 
-- ``shipped_closure()`` — what a user is exposed to: the main dependencies plus the ``gui`` group and
-  the ``cloud-archive`` extra. ``fastapi`` and the ``/api/events`` websocket stack are declared in the
-  ``gui`` *group* rather than in ``[project].dependencies`` or an extra, so a closure taken from the
-  extras alone omits the only network-facing code in the product.
+- ``shipped_closure()`` — what a user is exposed to: the main dependencies, which include ``fastapi``
+  and the ``/api/events`` websocket stack, plus the ``cloud-archive`` extra.
 - ``development_closure()`` — what CI executes, which is an attack surface of its own: a compromised
   test plugin runs with repository write access.
 
@@ -36,7 +34,7 @@ ClosureName = Literal["shipped", "development"]
 
 #: The selection per closure, and the only place these flags appear.
 _SELECTION: Mapping[ClosureName, tuple[str, ...]] = {
-    "shipped": ("--no-dev", "--group", "gui", "--extra", "cloud-archive"),
+    "shipped": ("--no-dev", "--extra", "cloud-archive"),
     "development": ("--all-groups", "--all-extras"),
 }
 

@@ -32,8 +32,7 @@ dependencies = [
     "pillow>=12.3.0",
     "resvg-py>=0.5.0",
     # The backend is the runtime everything else talks to (REST, MCP, the GUI it serves, and the
-    # stdio bridges that start it), so its web stack is a core dependency. The `gui` group below
-    # still names the same two packages, so `uv sync --group gui` keeps working where it is written.
+    # stdio bridges that start it), so its web stack is a core dependency, declared here only.
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
 ]
@@ -225,7 +224,6 @@ dev = [
     "pytest-split>=0.11.0",
     "pip-audit>=2.9",
 ]
-gui = [
-    "fastapi>=0.115.0",
-    "uvicorn[standard]>=0.32.0",
-]
+# Empty, and kept: installations from before the web stack became a core dependency, and the
+# commands written for them, still pass `--group gui`, and uv refuses a group it does not know.
+gui = []
