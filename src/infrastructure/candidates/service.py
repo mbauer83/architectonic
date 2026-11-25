@@ -5,7 +5,7 @@ from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, TypeAlias
 
-from src.application.artifacts.document_table_rows import tables_of_stored_document
+from src.application.artifacts.document_table_rows import DocumentTables, tables_of_stored_document
 from src.application.change_sets.base import record_revision
 from src.application.change_sets.candidate_apply import application_of
 from src.application.change_sets.candidate_reads import (
@@ -188,7 +188,8 @@ class CandidateService:
             result["drawing"] = stored_geometry(parsed, record.artifact_id, self.root, ontology)
         return result
 
-    def analysis(self, ref: str, kinds: Sequence[str] = ()) -> dict[str, Any]:
+    def analysis_tables(self, ref: str) -> tuple[str, str, DocumentTables]:
+        """The analysis document's id, its naive candidate's id and its typed tables; refused for any other document."""
         doc = self.index.get_document(ref)
         if doc is None:
             raise FileNotFoundError(ref)
@@ -197,9 +198,12 @@ class CandidateService:
         naive = str(doc.extra.get(NAIVE_CANDIDATE) or "")
         if not naive:
             raise ValueError("Set naive-candidate on the stress-analysis document.")
+        return doc.artifact_id, naive, tables_of_stored_document(doc.path, doc.doc_type, [self.root])
+
+    def analysis(self, ref: str, kinds: Sequence[str] = ()) -> dict[str, Any]:
+        document, naive, tables = self.analysis_tables(ref)
         view = read_view(self.store.require(naive), self.store, self.registry)
-        tables = tables_of_stored_document(doc.path, doc.doc_type, [self.root])
-        return {"document": doc.artifact_id, "naive_candidate": naive, **analyse(tables, view, kinds=tuple(kinds))}
+        return {"document": document, "naive_candidate": naive, **analyse(tables, view, kinds=tuple(kinds))}
 
     def check(self, ids: Sequence[str]) -> dict[str, Any]:
         if not ids or len(set(ids)) != len(ids):

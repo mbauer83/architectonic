@@ -141,6 +141,9 @@ def test_only_the_genuinely_nullary_tools_serve_an_empty_input_schema() -> None:
         # report an in-scope edge to an out-of-scope node as dangling, which is a wrong answer rather
         # than a narrower one. A `return_mode` would shape output rather than scope it.
         "assurance_verify": "verification is defined over the whole store; its checks span analyses",
+        # The shipped frameworks a stressor writer looks from. They name the environment, never a
+        # repository's content, so there is no repository or analysis to scope them by.
+        "analysis_perspectives": "the shipped perspective catalogue; it names nothing in any repository",
     }
 
     served_empty = {
@@ -257,6 +260,8 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "change_set_delete": (False, True, False, False),
         # Creates a candidate and a document, and nothing else.
         "analysis_start": (False, False, False, False),
+        # Moves existing rows from the design set to the test set: it changes what they held.
+        "analysis_hold_out_test_set": (False, True, False, False),
         "scratchpad_create": (False, False, False, False),
         # The aggregate is replaced whole, so a document that omits a note deletes it.
         "scratchpad_replace": (False, True, False, False),

@@ -30,4 +30,12 @@ CANDIDATE_ROWS = (
              identity_parameters=("artifact_id",), cache_directive="no-cache"),
     RouteRow("GET", "/api/documents/{artifact_id}/incidence", "subresource", "documents_analysis_incidence", TYPED,
              identity_parameters=("artifact_id",), cache_directive="no-cache"),
+    RouteRow("GET", "/api/documents/{artifact_id}/test-set", "subresource", "documents_analysis_test_set", TYPED,
+             identity_parameters=("artifact_id",), cache_directive="no-cache"),
+    RouteRow("POST", "/api/documents/{artifact_id}/test-set/hold-out", "operation", "documents_hold_out_test_set",
+             TYPED, identity_parameters=("artifact_id",), mutation_domain="repository"),
+    RouteRow("GET", "/api/change-sets/{artifact_id}/residuality", "subresource", "changes_read_residuality", TYPED,
+             identity_parameters=("artifact_id",), cache_directive="no-cache"),
+    RouteRow("GET", "/api/stress-perspectives", "catalog", "documents_list_stress_perspectives", TYPED,
+             cache_directive="no-cache"),
 )

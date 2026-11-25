@@ -5,16 +5,23 @@ from typing import Any, Literal
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
+from src.application.artifacts.document_part_edits import TableRowEdits
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
+from src.infrastructure.candidates import evaluation
 from src.infrastructure.candidates.service import CandidateService, document_writer
 from src.infrastructure.mcp.artifact_mcp.context import (
     authoritative_callbacks_for,
+    registry_cached,
+    repo_cached,
     resolve_repo_roots,
     roots_key,
     verifier_for,
 )
 from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool
 from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, LOCAL_WRITE, READ_ONLY
+from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
+from src.infrastructure.write.artifact_write.document import edit_document
+from src.infrastructure.write.artifact_write.types import WriteResult
 
 
 def _roots(repo_root: str | None) -> list[Path]:
@@ -32,14 +39,16 @@ def change_set_list(repo_root: str | None = None) -> dict[str, Any]:
 
 def change_set_read(
     artifact_id: str,
-    mode: Literal["record", "standing", "diff"] = "record",
+    mode: Literal["record", "standing", "diff", "residuality"] = "record",
     base: str = "model",
     naive: str | None = None,
     diagram: str | None = None,
     repo_root: str | None = None,
 ) -> dict[str, Any]:
-    """Read a candidate, its operation standing, or its scoped diff with optional diagram geometry."""
+    """Read a candidate, its operation standing, its scoped diff with optional diagram geometry, or its residuality in each analysis that judged it."""  # noqa: E501
     service = _service(repo_root)
+    if mode == "residuality":
+        return evaluation.residuality_by_analysis(service, artifact_id)
     if mode == "diff":
         return service.compare(artifact_id, base, naive, diagram, process_runtime_catalogs().ontology)
     if mode == "standing":
@@ -110,8 +119,43 @@ def analysis_incidence(artifact_id: str, repo_root: str | None = None) -> dict[s
     return _service(repo_root).incidence(artifact_id)
 
 
+def analysis_test_set(artifact_id: str, repo_root: str | None = None) -> dict[str, Any]:
+    """Read an analysis's test set, its verdicts, each judged architecture's residuality (Y − X) / n and the stage."""
+    return evaluation.evaluation(_service(repo_root), artifact_id)
+
+
+def analysis_perspectives() -> dict[str, Any]:
+    """List the perspectives offered for writing stressors (PESTLE, five forces, business model canvas, organisation), each with a guiding question."""  # noqa: E501
+    return evaluation.perspectives()
+
+
+def analysis_hold_out_test_set(
+    artifact_id: str, seed: int | None = None, dry_run: bool = True, repo_root: str | None = None,
+) -> dict[str, Any]:
+    """Move a random third of an analysis's design stressors into its test set; the seed drawn with is answered."""
+    roots = _roots(repo_root)
+    mutation_context, clear_repo_caches = authoritative_callbacks_for(roots)
+
+    def write(document: str, edits: TableRowEdits, dry: bool) -> WriteResult:
+        return edit_document(
+            assert_write_root=assert_engagement_write_root, repo_root=roots[0],
+            verifier=verifier_for(roots_key(roots), include_registry=False), clear_repo_caches=clear_repo_caches,
+            artifact_id=document, registry=registry_cached(roots_key(roots)), repo=repo_cached(roots_key(roots)),
+            part=edits, title=None, body=None, keywords=None, extra_frontmatter=None, status=None, version=None,
+            last_updated=None, dry_run=dry,
+        )
+
+    held = evaluation.hold_out(CandidateService(roots[0]), artifact_id, write, seed=seed, dry_run=dry_run)
+    if held["wrote"] and not dry_run:
+        mutation_context.finalize()
+    return held
+
+
 def register_candidate_read_tools(mcp: MCPServer) -> None:
-    for tool in (change_set_list, change_set_read, change_set_check, analysis_progress, analysis_incidence):
+    for tool in (
+        change_set_list, change_set_read, change_set_check, analysis_progress, analysis_incidence, analysis_test_set,
+        analysis_perspectives,
+    ):
         mcp.tool(
             name=tool.__name__,
             title=tool.__name__.replace("_", " ").title(),
@@ -124,6 +168,7 @@ def register_candidate_read_tools(mcp: MCPServer) -> None:
 def register_candidate_write_tools(mcp: MCPServer) -> None:
     for tool in (
         change_set_create, change_set_edit, change_set_rebase, change_set_apply, change_set_delete, analysis_start,
+        analysis_hold_out_test_set,
     ):
         register_mutation_tool(
             mcp,

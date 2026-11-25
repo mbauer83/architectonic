@@ -34,7 +34,9 @@ looking entirely normal. See
 | Tool | Access | Purpose |
 |---|---|---|
 | `analysis_incidence` | Read-only | Read stressors, missing subjects and hits, end states, adaptations and pairwise coupling. |
+| `analysis_perspectives` | Read-only | List the perspectives offered for writing stressors (PESTLE, five forces, business model canvas, organisation), each with a guiding question. |
 | `analysis_progress` | Read-only | Read outstanding analysis work and coverage, including unused categories from kinds. |
+| `analysis_test_set` | Read-only | Read an analysis's test set, its verdicts, each judged architecture's residuality (Y − X) / n and the stage. |
 | `artifact_aibom_coverage` | Read-only | Per-AI-component AIBOM coverage over the architecture model: blocking gaps (missing required attributes, missing dataset linkage, missing governance edge) vs advisory gaps (missing recommended attributes), plus repo-wide derivation roles that no connection type is bound to. |
 | `artifact_aibom_export` | Read-only | Emit a CycloneDX 1.6 ML-BOM DERIVED from the architecture model: every entity carrying an AI specialization (ai-model, ai-agent, ai-inference-service, ai-dataset, ai-prompt-asset, ai-vector-store, ai-runtime, ai-tool-interface) becomes a component, with its authored model card, dataset/governance links resolved from connections, and a dependency graph between AI components. |
 | `artifact_diagram_scaffold` | Read-only | Generate a ready-to-edit @startuml…@enduml scaffold from a list of entity IDs. |
@@ -52,7 +54,7 @@ looking entirely normal. See
 | `artifact_verify` | Read-only | Verify one file or all model files. |
 | `change_set_check` | Read-only | Check candidates offered for integration and identify the parties to each conflict. |
 | `change_set_list` | Read-only | List candidate architectures by id, name, state and parent. |
-| `change_set_read` | Read-only | Read a candidate, its operation standing, or its scoped diff with optional diagram geometry. |
+| `change_set_read` | Read-only | Read a candidate, its operation standing, its scoped diff with optional diagram geometry, or its residuality in each analysis that judged it. |
 | `scratchpad_list` | Read-only | List scratchpads with their metadata — id, name, status, version, collection and note count, never the notes themselves. |
 | `scratchpad_read` | Read-only | Read one scratchpad whole: its areas (the labelled frames), notes, links, groups and the layout block holding every coordinate. |
 <!-- mcp-tools:end arch-read -->
@@ -96,6 +98,7 @@ looking entirely normal. See
 | Guidance & ops | `artifact_help` | Read-only | Return the full catalog of artifact types, entity types (by domain), connection types (by language), and diagram types (with accepted domains). |
 | Guidance & ops | `artifact_get_operation` | Read-only | Return the latest recorded status, phase, timestamps, error, and final result for a prior bulk operation by operation_id. |
 | Guidance & ops | `artifact_admin_reindex` | Destructive | Rebuild the artifact index from disk. |
+| Other | `analysis_hold_out_test_set` | Destructive | Move a random third of an analysis's design stressors into its test set; the seed drawn with is answered. |
 | Other | `analysis_start` | Write | Start a stress analysis: its naive candidate (name, scope or parent) and the document naming it, or neither. |
 | Other | `artifact_arrange_diagram` | Destructive | Change a diagram's layout or groupings: exactly one of `patch` or `intents`. |
 | Other | `artifact_rebase_change` | Write | Bring a local change onto the enterprise artifact as it stands now, naming it by its own artifact_id (from artifact_list_changes). |
