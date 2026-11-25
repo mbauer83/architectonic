@@ -40,6 +40,7 @@ import LayoutLabCanvas from '../components/layoutLab/LayoutLabCanvas.vue'
 import type { CanvasHandle, EditBarHandle } from '../composables/useDiagramEditMode'
 import { useDiagramEditMode } from '../composables/useDiagramEditMode'
 import { useDiagramPageReader } from '../composables/useDiagramPageReader'
+import { useDiagramDrafts } from '../composables/useDiagramDrafts'
 import PumlSourceToggle from '../components/PumlSourceToggle.vue'
 import DiagramMetaLine from '../components/DiagramMetaLine.vue'
 
@@ -139,6 +140,7 @@ const edit = useDiagramEditMode(
   }, load, toast,
 )
 const editing = computed(() => edit.active.value)
+const drafts = useDiagramDrafts({ context: contextQuery.data, editing: edit.editing, nodeElements: selection.nodeElements })
 watch(editing, () => { void panZoom.fitDiagramToViewport() })
 watch(() => edit.session.geometry.value, () => { if (editing.value) void panZoom.fitDiagramToViewport() })
 
@@ -272,6 +274,7 @@ const executeDelete = () => {
                     :session="edit.session"
                     :show-breaches="edit.checking.value"
                     :surround="edit.surround.value"
+                    :drafts="drafts.inEdit.value"
                   />
                 </CanvasContentEditor>
               </div>

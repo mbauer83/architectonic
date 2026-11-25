@@ -215,3 +215,19 @@ export function canvasMembers(context: DiagramContext, state: Content | null, pi
     return item ? [{ ...item, alias: s.alias }] : []
   })
 }
+
+/** The status a draft has: an element the model holds provisionally, as everything a canvas creates is. */
+export const DRAFT_STATUS = 'draft'
+
+/**
+ * The shapes of *picture* that draw a draft (sketch 03·4, D19): an element the model holds as a draft,
+ * or one this session creates, which is written as one — however often it is drawn. By alias.
+ */
+export function draftAliases(context: DiagramContext, state: Content | null, picture: LayoutGeometry | null) {
+  const drafts = new Set([
+    ...context.entities.filter((one) => one.status === DRAFT_STATUS).map((one) => stableEntityId(one.artifact_id)),
+    ...(state?.commands ?? []).filter((c) => c.op === 'model.element.create').map((c) => stableEntityId(c.artifact_id)),
+  ])
+  return new Set(canvasMembers(context, state, picture)
+    .filter((one) => drafts.has(stableEntityId(one.id))).map((one) => one.alias))
+}

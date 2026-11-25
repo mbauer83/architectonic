@@ -17,6 +17,7 @@ import type { DrawnRelation, DrawnShape, Piece } from './labPieces'
 import { drawnRelations, drawnShapes, pieceOf } from './labPieces'
 import LabDrawn from './LabDrawn'
 import CanvasMarks from './CanvasMarks.vue'
+import CanvasDraftMarks from './CanvasDraftMarks.vue'
 import LabBreachMarks from './LabBreachMarks.vue'
 import LabSelection from './LabSelection.vue'
 import LabLineHandles from './LabLineHandles.vue'
@@ -33,6 +34,8 @@ const props = defineProps<{
   session: ArrangementSession; showBreaches?: boolean; readonly?: boolean
   /** The title and the legend, where the page placed them (`useSurroundPlacement`); none, none drawn. */
   surround?: readonly PlacedPart[]
+  /** The shapes that draw a draft, by alias: each is marked, and announced as one. */
+  drafts?: ReadonlySet<string>
 }>()
 const emit = defineEmits<{ pick: [alias: string] }>()
 
@@ -42,7 +45,7 @@ const gesture = useLabGesture(props.session, svg, {
   snapping: () => prefs.snapping.value.value, rectangle: () => prefs.rectangle.value.value,
 })
 const pick = (event: PointerEvent, alias: string) => { gesture.select(event, alias); emit('pick', alias) }
-const focus = useCanvasFocus(props.session, gesture)
+const focus = useCanvasFocus(props.session, gesture, (alias) => props.drafts?.has(alias) ?? false)
 
 const geometry = computed(() => props.session.geometry.value)
 const placement = computed(() => props.session.placement.value)
@@ -273,6 +276,12 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
     <CanvasMarks
       :session="session"
       :order="shapeOrder"
+    />
+
+    <CanvasDraftMarks
+      v-if="drafts?.size"
+      :session="session"
+      :drafts="drafts"
     />
 
     <slot />

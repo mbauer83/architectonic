@@ -19,7 +19,10 @@ interface Selecting {
   readonly selection: Ref<readonly string[]>
 }
 
-export function useCanvasFocus(session: ArrangementSession, gesture: Selecting) {
+/** *isDraft*: whether a shape draws a draft, which it is announced as (sketch 03·4). */
+export function useCanvasFocus(
+  session: ArrangementSession, gesture: Selecting, isDraft: (alias: string) => boolean = () => false,
+) {
   const focused = ref<string | null>(null)
   /** Whether the keyboard moved the focus last, rather than the pointer: the ring shows only then. */
   const byKeyboard = ref(false)
@@ -107,7 +110,8 @@ export function useCanvasFocus(session: ArrangementSession, gesture: Selecting) 
     const box = drawn.boxes.find((one) => one.alias === at)
     const name = box?.label ?? drawn.elements.find((one) => one.alias === at)?.label ?? at
     const selected = gesture.selection.value.includes(at) ? ', selected' : ''
-    return `${name}${box ? ', box' : ''}${selected}, ${order.value.indexOf(at) + 1} of ${order.value.length}`
+    const draft = isDraft(at) ? ', draft' : ''
+    return `${name}${box ? ', box' : ''}${draft}${selected}, ${order.value.indexOf(at) + 1} of ${order.value.length}`
   })
 
   return {

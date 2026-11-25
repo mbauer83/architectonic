@@ -11,6 +11,7 @@ import { useReadingAddress } from './useReadingAddress'
 import { useReadingKeyboard } from './useReadingKeyboard'
 import { drawnExtentOf } from '../lib/svgExtent'
 import { extentOfMarks, type OverviewMark } from '../lib/diagramOverview'
+import { DRAFT_STATUS } from '../../domain/layout/canvasComposition'
 
 /**
  * The diagram reader as the diagram page mounts it: the reading (`useDiagramReader`), its address
@@ -73,7 +74,9 @@ export function useDiagramPageReader(options: {
     host: options.host, nodeElements: selection.nodeElements, selectedIds: selection.selectedIds,
     describe: (id) => {
       const entity = entityById.value.get(id)
-      return entity ? { name: entity.name, type: entity.artifact_type.replace(/-/g, ' ') } : null
+      return entity
+        ? { name: entity.name, type: entity.artifact_type.replace(/-/g, ' '), draft: entity.status === DRAFT_STATUS }
+        : null
     },
     select: (id, additive) => selection.selectEntity(id, additive),
     clear: selection.clearSelection, frame, reveal: panZoom.reveal, enabled: options.viewing,
