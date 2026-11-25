@@ -39,7 +39,9 @@ const corners = computed(() => {
       :y="corner.y"
       :font-size="SIZE"
       text-anchor="end"
-    >d</text>
+    >
+      d
+    </text>
   </g>
 </template>
 

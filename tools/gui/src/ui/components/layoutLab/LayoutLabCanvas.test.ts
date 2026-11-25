@@ -194,7 +194,7 @@ describe('the diagram canvas', () => {
   it('marks a shape that draws a draft with a quiet "d" in its top right corner, hidden from a reader', async () => {
     const { host } = await mounted(new Set(['C']))
     const marks = [...host.querySelectorAll('[data-draft]')]
-    expect(marks.map((mark) => [mark.getAttribute('data-draft'), mark.textContent])).toEqual([['C', 'd']])
+    expect(marks.map((mark) => [mark.getAttribute('data-draft'), mark.textContent?.trim()])).toEqual([['C', 'd']])
     expect(Number(marks[0]?.getAttribute('x'))).toBeLessThan(500)
     expect(Number(marks[0]?.getAttribute('y'))).toBeGreaterThan(40)
     expect(marks[0]?.closest('[aria-hidden="true"]')).not.toBeNull()
