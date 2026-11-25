@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   UNSET_MEMBER_COLOUR, canTakeColour, colourKey, foldSummary, hasCustomColours, lensSummary,
   panelHint, presenceLabel, typeOfferLabel, valueSetLabel, withColourBy, withPrinted,
-} from '../DiagramReadingPanel.helpers'
+} from '../DiagramDisplayOptionsPanel.helpers'
 import {
   DEFAULT_GRADIENT, EMPTY_READING_LENS, isEmptyLens, lensParams, withDeclaredColours, withLegend,
   withRampEnd, type ReadingLens,

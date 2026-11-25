@@ -19,7 +19,7 @@ import {
 import {
   canTakeColour, hasCustomColours, presenceLabel, valueSetLabel, withColourBy, withPrinted,
   type ColourStep,
-} from './DiagramReadingPanel.helpers'
+} from './DiagramDisplayOptionsPanel.helpers'
 
 defineProps<{
   attribute: AttributeOffer

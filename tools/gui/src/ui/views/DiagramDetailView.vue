@@ -16,7 +16,7 @@ import {
 } from './DiagramDetailView.helpers'
 import { membershipOf } from '../../domain/layout/diagramMembership'
 import DrilldownMenu from '../components/DrilldownMenu.vue'
-import DiagramReadingPanel from '../components/DiagramReadingPanel.vue'
+import DiagramDisplayOptionsPanel from '../components/DiagramDisplayOptionsPanel.vue'
 import { useDiagramReadingLens } from '../composables/useDiagramReadingLens'
 import { useFittedPanZoom } from '../composables/useFittedPanZoom'
 import { useFullscreen } from '../composables/useFullscreen'
@@ -224,7 +224,7 @@ const executeDelete = () => {
         :c4-navigation="c4Nav"
       />
 
-      <DiagramReadingPanel
+      <DiagramDisplayOptionsPanel
         v-if="!editing && diagramNeedsSvg(detail.diagram_type) && reading.offersAnything.value"
         class="reading-panel"
         :panel="reading.panel.value"

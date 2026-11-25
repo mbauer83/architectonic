@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { createApp, h, type App } from 'vue'
-import DiagramReadingPanel from '../DiagramReadingPanel.vue'
+import DiagramDisplayOptionsPanel from '../DiagramDisplayOptionsPanel.vue'
 import { EMPTY_READING_LENS, type ReadingLens } from '../../../domain/readingLens'
 import type { AttributeOffer, DiagramAttributePanel, TypeOffer } from '../../../domain/schemas/diagrams'
 
@@ -32,7 +32,7 @@ const opened = (
   const host = document.createElement('div')
   document.body.appendChild(host)
   const app = createApp({
-    render: () => h(DiagramReadingPanel, { panel: offer, lens }),
+    render: () => h(DiagramDisplayOptionsPanel, { panel: offer, lens }),
   })
   app.mount(host)
   host.querySelector<HTMLButtonElement>('.reading__toggle')?.click()
