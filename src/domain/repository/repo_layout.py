@@ -22,6 +22,7 @@ MANAGED_INCLUDE_BASENAMES = frozenset({
 ICONS = "icons"  # subdirectory within DIAGRAM_CATALOG/ — the shared icon library, ICO@….md
 ARCH_REPO = ".arch-repo"
 ARCH_DOC_SCHEMATA = "documents"  # subdirectory within ARCH_REPO/ — document type JSON schemas
+ARCH_SCHEMATA = "schemata"  # subdirectory within ARCH_REPO/ — attribute and frontmatter JSON schemata
 SCRATCHPADS = "scratchpads"  # SCRATCHPADS/<group-slug>/SCR@….scratchpad.yaml — free-standing
 #: Two dots so the kind is readable in a directory listing, and so a glob for scratchpads cannot
 #: also match a stray `.yaml` someone dropped beside them. Here rather than on the repository
