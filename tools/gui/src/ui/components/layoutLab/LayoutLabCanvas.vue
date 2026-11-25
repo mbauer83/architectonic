@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * The lab's picture: boxes, elements and lines drawn from the real geometry where they are now, in the
+ * The canvas's picture: boxes, elements and lines drawn from the real geometry where they are now, in the
  * one paint order of `labPaintOrder`, with the rule breaches over them and handles on the selected
  * shape. Press and drag a shape to move it; a box carries what it holds. Drag a handle to resize.
  * Press a line, or where it ends on an element's edge, to select it and shape it (`useLineGesture`).
@@ -76,15 +76,14 @@ const viewBox = computed(() => {
 /** How wide the picture is shown on screen, in pixels: what a handle's size on screen is reckoned from. */
 const { width: shownWidth } = useElementSize(() => svg.value)
 
-/** One pixel on screen, in the picture's units: what the lab's own marks are sized by. */
+/** One pixel on screen, in the picture's units: what the canvas's own marks are sized by. */
 const pixel = computed((): number => {
   const extent = view.value
   return extent && shownWidth.value > 0 ? widthOf(extent) / shownWidth.value : 1
 })
 
-/** A handle, and a breach's tag, are the same size on screen however far the picture is zoomed out to fit. */
+/** A handle is the same size on screen however far the picture is zoomed out to fit. */
 const HANDLE_PIXELS = 9
-const TAG_PIXELS = 11
 const handleSide = computed((): number => HANDLE_PIXELS * pixel.value)
 
 /** A line selected is the selection: picking one lets go of the shapes, and picking a shape the line. */
@@ -120,14 +119,13 @@ defineExpose({
     }
   },
 })
-const tagSize = computed((): number => TAG_PIXELS * pixel.value)
 
 const aspect = computed(() => {
   const extent = view.value
   return extent ? `${widthOf(extent)} / ${heightOf(extent)}` : '1 / 1'
 })
 
-/** PlantUML's background, stretched from the page it drew over the view the lab shows. */
+/** PlantUML's background, stretched from the page it drew over the view the canvas shows. */
 const backdropTransform = computed((): string => {
   const drawn = geometry.value
   const extent = view.value
@@ -181,7 +179,7 @@ const ends = (relationIndex: number): Extent[] => {
 }
 
 const marks = computed((): BreachMark[] =>
-  (props.showBreaches ? breachMarksOf(props.session.breaches.value, ends, tagSize.value) : []))
+  (props.showBreaches ? breachMarksOf(props.session.breaches.value, ends) : []))
 
 /** The shapes back to front, as painted: what the marks read what covers what from. */
 const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind === 'shape' ? [piece.shape.alias] : [])))
@@ -282,7 +280,7 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
     <LabBreachMarks
       v-if="showBreaches"
       :marks="marks"
-      :tag-size="tagSize"
+      :geometry="geometry"
     />
 
     <CanvasMarks
@@ -320,7 +318,7 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
 </template>
 
 <style scoped>
-/* How the picture looks is PlantUML's drawing; only the lab's own marks — grips, breaches, handles —
+/* How the picture looks is PlantUML's drawing; only the canvas's own marks — grips, breaches, handles —
    are styled here. */
 .lab-canvas { display: block; width: 100%; height: auto; max-height: 85vh; }
 /* The picture is the canvas: no frame of its own, which is the page's to draw for its mode. */

@@ -2,7 +2,7 @@
 
 The arrangement used to label every relation before anything looked at which were unroutable, and
 labelling one that has no course raised a `KeyError`. The composer never got to answer `NotComposed`:
-a stored picture fell back on the exception, and the layout lab's request for the server's picture of
+a stored picture fell back on the exception, and a request for the server's picture of
 a layout answered 500 (seen on a real diagram once two moves and a resize walled an element in).
 """
 

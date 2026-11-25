@@ -23,7 +23,6 @@ from src.infrastructure.mcp.artifact_mcp import auto_start_default_watcher
 from src.infrastructure.mcp.mcp_artifact_server import mcp_read, mcp_write
 from src.infrastructure.mcp.mcp_assurance_server import mcp_assurance_read, mcp_assurance_write
 from src.infrastructure.mcp.streamable_http_mount import mounted
-from src.infrastructure.rest.layout_lab.routes import install_layout_lab
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.state import maybe_engagement_root, maybe_enterprise_root
 
@@ -368,8 +367,6 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
         viewpoints_router, viewpoint_authoring_router,
     ):
         app.include_router(router)
-    # Off unless switched on, and outside the REST contract either way: see `layout_lab.routes`.
-    install_layout_lab(app)
 
     # Starlette mounts only match `/mcp/…`, not the bare `/mcp` path. Serve each MCP ASGI
     # handler on both variants so IDE clients can POST to `/mcp` without being routed into

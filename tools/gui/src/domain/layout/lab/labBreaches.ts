@@ -1,11 +1,11 @@
 /**
- * What the lines of the lab's picture break: each relation's breaches of the rules, by tier.
+ * What the lines of the canvas's picture break: each relation's breaches of the rules, by tier.
  *
  * Asked of the rules as they are stated, not restated: the readability rules and their tiers come from
  * `routeQuality` (`RULE_TIERS`), staying attached from `attachment`. Hard: a line through text, a bend
  * at a decorated end, a run along another line or a border, a line through another element (I5), a
  * line no route reaches, two connected elements over each other. Soft: a jog. The two other soft rules
- * — heads together, a label obscured — have no browser mirror yet, so the lab does not count them.
+ * — heads together, a label obscured — have no browser mirror yet, so the canvas does not count them.
  */
 import type { Extent, Point } from '../geometry'
 import { elementsCrossed, endsConflict } from '../attachment'
@@ -87,3 +87,31 @@ export const countByTier = (breaches: readonly Breach[]): Readonly<Record<Tier, 
   hard: breaches.filter((one) => one.tier === 'hard').length,
   soft: breaches.filter((one) => one.tier === 'soft').length,
 })
+
+/** Each rule in a reader's words, as a line breaking it is described. */
+const RULE_WORDS: Readonly<Record<Rule, string>> = {
+  text: 'runs through text',
+  'bend-at-an-end': 'bends at a decorated end',
+  'runs-along': 'runs along another line or a border',
+  jog: 'jogs',
+  'crosses-an-element': 'crosses an element it does not join',
+  unroutable: 'has no route that keeps every rule',
+  'ends-overlap': 'joins two elements drawn over each other',
+}
+
+const keyOf = (one: Breach): string =>
+  `${one.relation}:${one.rule}:${one.at.map((point) => `${point.x},${point.y}`).join(' ')}`
+
+/** The breaches a reader is shown: a rule broken twice over the same stretch of a line is one breach. */
+export const distinctBreaches = (breaches: readonly Breach[]): { key: string; breach: Breach }[] =>
+  [...new Map(breaches.map((one) => [keyOf(one), one])).entries()].map(([key, breach]) => ({ key, breach }))
+
+/** A breach in a reader's words: the line, by the elements it joins, and the rule it breaks. */
+export const breachSentence = (breach: Breach, geometry: LayoutGeometry | null): string => {
+  const relation = geometry?.relations.find((one) => one.index === breach.relation)
+  const named = (alias: string): string =>
+    geometry?.elements.find((one) => one.alias === alias)?.label
+    ?? geometry?.boxes.find((one) => one.alias === alias)?.label ?? alias
+  const line = relation ? `${named(relation.source)} → ${named(relation.target)}` : 'A line'
+  return `${line} ${RULE_WORDS[breach.rule]}`
+}

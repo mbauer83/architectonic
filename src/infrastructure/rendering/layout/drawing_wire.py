@@ -1,9 +1,9 @@
-"""What the layout lab draws with: PlantUML's own drawing of each shape and line, as plain values.
+"""What the diagram canvas draws with: PlantUML's own drawing of each shape and line, as plain values.
 
-The lab draws the picture the composer draws, so it is given the same markup the composer places —
+The canvas draws the picture the composer draws, so it is given the same markup the composer places —
 every outline, fill, stroke, glyph and word as PlantUML drew it — instead of a palette of its own. A
 shape is carried by a shift, which the browser applies; a resized shape is drawn again by the
-composer's own `fitted_box` and `resized_element` (`reshaped`), so a lab never sets a label or
+composer's own `fitted_box` and `resized_element` (`reshaped`), so the canvas never sets a label or
 stretches an outline its own way. A line is the router's, drawn with PlantUML's stroke, and its
 decorations are carried from the frame they were drawn in (`frame_as_drawn`) to the line's new end.
 
@@ -40,7 +40,7 @@ def _attribute_name(name: str) -> str:
 def _drawn_tag(element: Element) -> str:
     tag = tag_of(element)
     if tag not in DRAWING_TAGS:
-        raise Unreadable(f"a <{tag}> in a drawing the lab is given")
+        raise Unreadable(f"a <{tag}> in a drawing the canvas is given")
     return tag
 
 
@@ -66,7 +66,7 @@ def element_of(node: object) -> Element:
         raise Unreadable("a drawing that is not a node")
     tag = _text(node.get("tag"))
     if tag not in DRAWING_TAGS:
-        raise Unreadable(f"a <{tag}> in a drawing sent to the lab")
+        raise Unreadable(f"a <{tag}> in a drawing sent to the canvas")
     attributes: object = node.get("attributes") or {}
     children: object = node.get("children") or []
     if not isinstance(attributes, Mapping) or not isinstance(children, list):
@@ -102,7 +102,7 @@ def relation_drawing(
 ) -> Node:
     """How one line is drawn: PlantUML's stroke, its decorations in the frames they were drawn in, its label.
 
-    The ends come in the order the lab's course runs — from the relation's source — so *turned* says
+    The ends come in the order the canvas's course runs — from the relation's source — so *turned* says
     whether that is the reverse of the order the picture files them in.
     """
     first_end, second_end = picture.extent_of(drawn.ends[0]), picture.extent_of(drawn.ends[1])

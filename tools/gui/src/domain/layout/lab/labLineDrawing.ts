@@ -4,9 +4,9 @@
  * decorations carried from the frame they were drawn in to the line's new ends.
  *
  * The TypeScript mirror of `relation_drawing.rounded_path` and of `relation_decorations`
- * (`heading_at_end`, `stopping_short`, the turn `Motion.facing` makes), for the lab's drag frames:
+ * (`heading_at_end`, `stopping_short`, the turn `Motion.facing` makes), for the canvas's drag frames:
  * only where a line goes is decided here. What it is drawn with — colour, weight, dashes, the shape
- * of a head — is PlantUML's drawing, handed over by the lab's geometry and never restated.
+ * of a head — is PlantUML's drawing, handed over by the canvas's geometry and never restated.
  */
 import type { Point } from '../geometry'
 import { distanceBetween } from '../geometry'

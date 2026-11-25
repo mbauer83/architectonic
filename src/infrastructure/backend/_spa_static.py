@@ -24,7 +24,7 @@ ASSET_SUFFIXES = frozenset({
 
 
 #: Path prefixes the server answers itself, which the history fallback never turns into the shell.
-_SERVER_ADDRESSES = ("api/", "mcp/", "lab/")
+_SERVER_ADDRESSES = ("api/", "mcp/")
 
 
 def _looks_like_asset(last_segment: str) -> bool:
@@ -46,9 +46,8 @@ class SPAStaticFiles(StaticFiles):
     boots and resolves the route itself (and direct navigation / refresh / bookmarks work on any
     route). Guards keep the fallback narrow:
 
-    - ``api/``, ``mcp/`` and ``lab/`` paths are never rewritten — they are matched by their own
-      routes before this mount, and if an unknown one reaches here it still 404s. For ``lab/`` that
-      is the answer the GUI reads as "the layout lab is off".
+    - ``api/`` and ``mcp/`` paths are never rewritten — they are matched by their own routes before
+      this mount, and if an unknown one reaches here it still 404s.
     - Paths naming a static asset by its suffix (a missing ``assets/old.js``) 404 normally rather
       than being masked by HTML. See ``ASSET_SUFFIXES``.
 

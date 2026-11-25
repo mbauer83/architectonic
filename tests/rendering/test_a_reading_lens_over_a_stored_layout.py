@@ -15,6 +15,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 from fastapi.testclient import TestClient
@@ -256,15 +257,33 @@ class TestTheLegend:
             ], word
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "A stored layout states where each element is, and its size only where an author resized it; "
-        "a printed attribute grows the element in place, so a long value draws it over its neighbour "
-        "and the box it is in over the next box. Nothing makes room for what a lens adds."
-    ),
-)
-def test_a_long_printed_value_still_leaves_the_shapes_apart(scene: LaidOutScene) -> None:
-    report = check_picture(_picture(scene.svg(colour_by="risk_score", print=["remit"])))
+class TestALongPrintedValue:
+    """A long value is broken so its element keeps the width it is stored at and grows downward.
 
-    assert not report.of(PictureDefect.SHAPES_OVERLAP)
+    Before, the element grew in place to the value's width: drawn over its neighbour, with its box
+    pushed over the next. Only the value is wrapped; nothing moves a neighbour to make room.
+    """
+
+    _LONG: ClassVar[dict[str, object]] = {"colour_by": "risk_score", "print": ["remit"]}
+
+    def test_the_shapes_stay_apart(self, scene: LaidOutScene) -> None:
+        report = check_picture(_picture(scene.svg(**self._LONG)))
+
+        assert not report.of(PictureDefect.SHAPES_OVERLAP)
+        assert not report.of(PictureDefect.BOX_OVER_NON_MEMBER)
+
+    def test_the_element_keeps_its_stored_width_grows_downward_and_holds_every_word(
+        self, scene: LaidOutScene
+    ) -> None:
+        stored, lensed = _picture(scene.svg()), _picture(scene.svg(**self._LONG))
+
+        for nickname in ("ship", "bill"):
+            alias = scene.model.alias(nickname)
+            was, now = stored.elements[alias].extent, lensed.elements[alias]
+            assert now.extent.width <= was.width + 0.5, alias
+            assert (now.extent.left, now.extent.top) == pytest.approx((was.left, was.top), abs=_PLACED)
+            assert now.extent.height > was.height, alias
+            assert " ".join(word.text for word in now.words).endswith(str(_CARRIED[nickname]["remit"]))
+            for word in now.words:
+                assert now.extent.left <= word.start.x and word.start.x + word.width <= now.extent.right, word
+                assert now.extent.top < word.start.y < now.extent.bottom, word

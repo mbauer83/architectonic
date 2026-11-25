@@ -1,4 +1,4 @@
-"""What the layout lab is given to draw a diagram from: PlantUML's picture of it, read, with its joins made.
+"""What the diagram canvas is given to draw a diagram from: PlantUML's picture of it, read, with its joins made.
 
 Nothing is read here that the product does not already read. The picture comes through the one reader
 of PlantUML's structure (`plantuml_svg_reader`); which instance, grouping and stated relation each
@@ -6,7 +6,7 @@ shape and line is comes through the joins the composer makes (`diagram_layout_st
 `box_identities`, `relation_identities`); a box's title band and an element's outside label are the
 text regions the router keeps out of (`text_clearance`); what each is drawn with is PlantUML's own
 markup of it (`drawing`). This module only writes those answers down as plain values a browser can
-take, so the lab draws exactly what the composer would arrange, as the composer would draw it.
+take, so the canvas draws exactly what the composer would arrange, as the composer would draw it.
 """
 
 from __future__ import annotations
@@ -114,7 +114,7 @@ def _relation(
 
 
 def geometry_of(drawing: RenderedDrawing, diagram: LaidOutDiagram) -> Wire:
-    """A picture as the lab draws it: every shape and line where PlantUML put it, named as a layout names it,
+    """A picture as the canvas draws it: every shape and line where PlantUML put it, named as a layout names it,
     with PlantUML's own drawing of each — and of the backdrop behind them — to draw it with."""
     picture = drawing.picture
     keys = box_keys_by_alias(picture, diagram)
@@ -135,7 +135,7 @@ def diagram_geometry(
     plantuml_svg: str, frontmatter: Mapping[str, object], ontology: DeclaresElementKinds,
     *, arrangement: dict[str, Any] | None = None, previous: frozenset[str] = frozenset(),
 ) -> Wire | NotReadable:
-    """The lab's geometry of the diagram *frontmatter* states, from PlantUML's own picture of it."""
+    """The canvas's geometry of the diagram *frontmatter* states, from PlantUML's own picture of it."""
     drawing = read_rendered_drawing(plantuml_svg)
     if isinstance(drawing, NotReadable):
         return drawing

@@ -7,6 +7,7 @@
  */
 import { computed, nextTick, ref, watch } from 'vue'
 import type { DiagramEditMode } from '../composables/useDiagramEditMode'
+import { breachSentence, distinctBreaches } from '../../domain/layout/lab/labBreaches'
 
 const props = defineProps<{ edit: DiagramEditMode }>()
 
@@ -17,6 +18,14 @@ const changes = computed(() => editing.value.changes.value)
 const saving = computed(() => editing.value.saving.value)
 const leaving = computed(() => props.edit.leaving.value)
 const error = computed(() => editing.value.error.value)
+/** The layout's rule breaches as the canvas marks them, read only while they are asked for. */
+const breaches = computed(() => (props.edit.checking.value ? distinctBreaches(session.value.breaches.value) : []))
+const checkTitle = computed(() => {
+  if (!props.edit.checking.value) return 'Check layout: mark where lines break the layout rules'
+  const picture = session.value.geometry.value
+  return breaches.value.length === 0 ? 'No layout rule is broken'
+    : breaches.value.map(({ breach }) => breachSentence(breach, picture)).join('\n')
+})
 
 const listOpen = ref(false)
 const confirmExit = ref(false)
@@ -95,6 +104,33 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
       @click="session.redo()"
     >
       Redo
+    </button>
+    <!-- Check layout (owner): as quiet as its neighbours, off until asked for; on, a count beside it and
+         each breach named in its tooltip and on hover over its mark. -->
+    <button
+      type="button"
+      class="btn btn-plain btn-sm check"
+      :aria-pressed="edit.checking.value"
+      :title="checkTitle"
+      data-testid="edit-check-layout"
+      @click="edit.toggleCheck()"
+    >
+      <svg
+        viewBox="0 0 16 16"
+        aria-hidden="true"
+      ><rect
+        x="2.5"
+        y="2.5"
+        width="11"
+        height="11"
+        rx="1.5"
+        stroke-dasharray="2.5 2"
+      /></svg>
+      Check layout<span
+        v-if="edit.checking.value"
+        class="count"
+        data-testid="edit-check-count"
+      >{{ breaches.length }}</span>
     </button>
     <span class="sp" />
     <span
@@ -293,6 +329,10 @@ kbd {
   background: var(--warn-soft); color: var(--warn-text); border: 1px solid var(--warn-border);
 }
 .err { color: var(--danger-strong); }
+.check { display: inline-flex; align-items: center; gap: 5px; }
+.check svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.3; }
+.check[aria-pressed='true'] { border-color: var(--accent-border); color: var(--accent-strong); }
+.check .count { padding: 0 5px; border-radius: 8px; background: var(--soft); color: var(--text-2); font-size: 11px; }
 .panel-toggle {
   width: 30px; height: 26px; display: inline-grid; place-items: center; flex: none; cursor: pointer;
   border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--text-2);

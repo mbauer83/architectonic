@@ -1,5 +1,5 @@
 /**
- * The layout lab's picture as pieces to draw: each shape and line where it is now, drawn as PlantUML
+ * The diagram canvas's picture as pieces to draw: each shape and line where it is now, drawn as PlantUML
  * or the composer drew it, and the paint order (`labPaintOrder`) turned into those pieces.
  */
 import type { Extent } from '../../../domain/layout/geometry'

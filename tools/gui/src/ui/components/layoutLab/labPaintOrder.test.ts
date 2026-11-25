@@ -1,5 +1,5 @@
 /**
- * The lab's one paint order: shapes by nesting, a container before its contents, then lines, then
+ * The canvas's one paint order: shapes by nesting, a container before its contents, then lines, then
  * labels. The shape last moved is brought forward, a widened box never covers a sibling it overlaps,
  * and a line goes under whatever hides one of its ends.
  */
@@ -65,7 +65,7 @@ const named = (piece: Painted): string =>
 
 const placeOf = (order: readonly Painted[], name: string): number => order.map(named).indexOf(name)
 
-describe('the lab paint order', () => {
+describe('the canvas paint order', () => {
   it('paints a box, then everything in it, siblings as drawn; then every line, then every label', () => {
     expect(paintOrder(geometry, drawn, null).map(named)).toEqual([
       'One', 'Inner', 'a', 'Two', 'b', 'c', 'd',

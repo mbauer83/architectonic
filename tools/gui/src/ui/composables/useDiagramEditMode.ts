@@ -63,6 +63,9 @@ export function useDiagramEditMode(
   const active = ref(false)
   const leaving = ref(false)
   const spaceHeld = ref(false)
+  /** Whether the layout's rule breaches are marked on the canvas: off until asked for, never opened for one. */
+  const checking = ref(false)
+  const toggleCheck = () => { checking.value = !checking.value }
   const told = new Set<string>()
   const session = editing.session
   const panel = useEditPanel(parts.large)
@@ -187,7 +190,7 @@ export function useDiagramEditMode(
   })
 
   return {
-    editing, session, active, leaving, spaceHeld, panel, marks,
+    editing, session, active, leaving, spaceHeld, panel, marks, checking, toggleCheck,
     canUndo: computed(() => session.history.value.length > 0),
     canRedo: computed(() => session.future.value.length > 0),
     enter, done, saveAndExit, discardAndExit, keepEditing, panPress,

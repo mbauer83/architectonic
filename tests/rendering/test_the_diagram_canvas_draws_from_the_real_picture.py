@@ -1,10 +1,10 @@
-"""The layout lab: drawn from PlantUML's real picture, composed by the real composer, and absent when off.
+"""The diagram canvas: drawn from PlantUML's real picture, and its resized shapes by the real composer.
 
-Over the pictures the product renders (`tests.support.rendered_pictures`). What the lab reads it reads
-through the product's own joins, so the tests ask what a lab user relies on: every element the lab
-offers to move carries the key a layout names it by, every line knows which stated relation it is
-and runs from its source, a grouping's box is addressed by its grouping id — and a layout the lab
-sends back is drawn as the composer draws a stored one.
+Over the pictures the product renders (`tests.support.rendered_pictures`). What the canvas reads it
+reads through the product's own joins, so the tests ask what an editor relies on: every element it
+offers to move carries the key a layout names it by, every line knows which stated relation it is and
+runs from its source, a grouping's box is addressed by its grouping id — and a shape it resizes is
+drawn as the composer draws a stored one.
 """
 
 from __future__ import annotations
@@ -21,7 +21,6 @@ from src.application.artifacts.repository import ArtifactRepository
 from src.application.modeling.diagram_identities import alias_by_instance
 from src.domain.diagrams.authored_groupings import GROUPING_ID_KEY
 from src.domain.diagrams.layout.geometry import Extent, Point
-from src.domain.diagrams.layout.rendered_picture import RenderedPicture
 from src.domain.repository.frontmatter import parse_frontmatter
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.artifact_index import shared_artifact_index
@@ -30,10 +29,8 @@ from src.infrastructure.rendering.layout.drawing_wire import element_of, node_of
 from src.infrastructure.rendering.layout.plantuml_svg_reader import (
     RenderedDrawing,
     read_rendered_drawing,
-    read_rendered_picture,
 )
 from src.infrastructure.rendering.layout.shape_drawing import fitted_box, resized_element
-from src.infrastructure.rest.layout_lab.routes import LAB_PREFIX, install_layout_lab
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
 from tests.support.api_app import build_api_app
@@ -45,7 +42,7 @@ pytestmark = pytest.mark.skipif(not plantuml_available(), reason="plantuml.jar n
 
 @pytest.fixture(scope="module")
 def model(tmp_path_factory: pytest.TempPathFactory) -> RenderedModel:
-    return build_rendered_model(tmp_path_factory.mktemp("layout-lab"))
+    return build_rendered_model(tmp_path_factory.mktemp("diagram-canvas"))
 
 
 def _frontmatter(model: RenderedModel, scene: str) -> dict[str, object]:
@@ -109,13 +106,10 @@ def test_a_grouping_box_is_addressed_by_its_grouping_id(model: RenderedModel) ->
 
 
 @pytest.fixture
-def lab(model: RenderedModel, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
-    monkeypatch.setenv("ARCH_LAYOUT_LAB", "1")
+def client(model: RenderedModel) -> Iterator[TestClient]:
     s.init_state(ArtifactRepository(shared_artifact_index([model.repo])), model.repo, None)
-    app = build_api_app(diagrams_router)
-    install_layout_lab(app)
     try:
-        with TestClient(app) as client:
+        with TestClient(build_api_app(diagrams_router)) as client:
             yield client
     finally:
         reset_state_for_test()
@@ -125,48 +119,13 @@ def _diagram_id(model: RenderedModel, scene: str) -> str:
     return Path(model.scenes[scene].path).stem
 
 
-def test_the_lab_is_absent_unless_switched_on(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("ARCH_LAYOUT_LAB", raising=False)
-    off = build_api_app()
-    install_layout_lab(off)
-    monkeypatch.setenv("ARCH_LAYOUT_LAB", "true")
-    on = build_api_app()
-    install_layout_lab(on)
-
-    assert TestClient(off).get(LAB_PREFIX).status_code == 404
-    assert TestClient(on).get(LAB_PREFIX).json() == {"enabled": True}
-    # Not part of the REST contract either way: the published document is the same with the lab on.
-    assert on.openapi() == off.openapi()
-
-
-def test_the_geometry_is_served_and_kept_by_no_one(lab: TestClient, model: RenderedModel) -> None:
-    response = lab.get(f"/api/diagrams/{_diagram_id(model, 'top-to-bottom')}/layout/geometry")
+def test_the_geometry_is_served_and_kept_by_no_one(client: TestClient, model: RenderedModel) -> None:
+    response = client.get(f"/api/diagrams/{_diagram_id(model, 'top-to-bottom')}/layout/geometry")
 
     assert response.status_code == 200, response.text
     assert response.headers["cache-control"] == "no-store"
     assert response.json()["name"] == "Order handling" and response.json()["elements"]
-    assert lab.get("/api/diagrams/ARC@1790000000.nowhere/layout/geometry").status_code == 404
-
-
-def test_a_layout_sent_to_the_lab_is_drawn_by_the_composer(lab: TestClient, model: RenderedModel) -> None:
-    scene = "top-to-bottom"
-    picture = read_rendered_picture(model.scenes[scene].svg)
-    assert isinstance(picture, RenderedPicture)
-    elements = _rows(_geometry(model, scene), "elements")
-    key = next(row["key"] for row in elements if row["alias"] == model.alias("broker"))
-    was = picture.elements[model.alias("broker")].extent
-    moved = {"x": round(was.left) + 300, "y": round(was.top) + 40}
-
-    response = lab.post(
-        f"{LAB_PREFIX}/diagrams/{_diagram_id(model, scene)}/picture", json={"layout": {"elements": {key: moved}}}
-    )
-
-    assert response.status_code == 200, response.text
-    assert response.headers["content-type"].startswith("image/svg+xml")
-    composed = read_rendered_picture(response.text)
-    assert isinstance(composed, RenderedPicture)
-    now = composed.elements[model.alias("broker")].extent
-    assert abs(now.left - moved["x"]) < 0.01 and abs(now.top - moved["y"]) < 0.01
+    assert client.get("/api/diagrams/ARC@1790000000.nowhere/layout/geometry").status_code == 404
 
 
 def _markup(element: Element) -> str:
@@ -190,7 +149,7 @@ def test_every_shape_and_line_is_drawn_with_plantuml_s_own_drawing(model: Render
 
 
 def test_a_drawing_reads_back_as_the_markup_it_was_written_from(model: RenderedModel) -> None:
-    """The pair: what the lab is sent and what it sends back are one drawing, over every scene drawn."""
+    """The pair: what the canvas is sent and what it sends back are one drawing, over every scene drawn."""
     for scene in model.scenes.values():
         drawing = read_rendered_drawing(scene.svg)
         assert isinstance(drawing, RenderedDrawing)
@@ -198,7 +157,7 @@ def test_a_drawing_reads_back_as_the_markup_it_was_written_from(model: RenderedM
             assert _markup(element_of(node_of(group))) == _markup(group)
 
 
-def test_a_resized_shape_is_drawn_by_the_composer(lab: TestClient, model: RenderedModel) -> None:
+def test_a_resized_shape_is_drawn_by_the_composer(client: TestClient, model: RenderedModel) -> None:
     scene = "groupings"
     drawing = read_rendered_drawing(model.scenes[scene].svg)
     assert isinstance(drawing, RenderedDrawing)
@@ -207,7 +166,7 @@ def test_a_resized_shape_is_drawn_by_the_composer(lab: TestClient, model: Render
     grown = Extent(box.extent.left, box.extent.top, box.extent.right + 80, box.extent.bottom + 40)
     wider = Extent(element.extent.left, element.extent.top, element.extent.right + 60, element.extent.bottom)
 
-    response = lab.post(f"/api/diagrams/{_diagram_id(model, scene)}/layout/preview", json={"shapes": [
+    response = client.post(f"/api/diagrams/{_diagram_id(model, scene)}/layout/preview", json={"shapes": [
         {"drawing": node_of(drawing.shapes[alias]), "box": True, "drawn": _wire(box.extent), "to": _wire(grown)},
         {"drawing": node_of(drawing.shapes[element_alias]), "box": False, "drawn": _wire(element.extent),
          "to": _wire(wider)},
@@ -222,11 +181,11 @@ def test_a_resized_shape_is_drawn_by_the_composer(lab: TestClient, model: Render
     )
 
 
-def test_a_drawing_that_is_not_one_is_refused(lab: TestClient, model: RenderedModel) -> None:
+def test_a_drawing_that_is_not_one_is_refused(client: TestClient, model: RenderedModel) -> None:
     script = {"tag": "script", "attributes": {}, "text": "alert(1)", "children": []}
     extent = {"left": 0, "top": 0, "right": 10, "bottom": 10}
 
-    response = lab.post(f"/api/diagrams/{_diagram_id(model, 'groupings')}/layout/preview", json={"shapes": [
+    response = client.post(f"/api/diagrams/{_diagram_id(model, 'groupings')}/layout/preview", json={"shapes": [
         {"drawing": {"tag": "g", "attributes": {}, "text": None, "children": [script]}, "box": True,
          "drawn": extent, "to": extent},
     ]})
@@ -237,13 +196,3 @@ def test_a_drawing_that_is_not_one_is_refused(lab: TestClient, model: RenderedMo
 
 def _wire(extent: Extent) -> dict[str, float]:
     return {"left": extent.left, "top": extent.top, "right": extent.right, "bottom": extent.bottom}
-
-
-def test_a_layout_that_is_not_one_is_refused_with_what_is_wrong(lab: TestClient, model: RenderedModel) -> None:
-    response = lab.post(
-        f"{LAB_PREFIX}/diagrams/{_diagram_id(model, 'top-to-bottom')}/picture",
-        json={"layout": {"elements": {"APP@1.a": {"x": 1}}}},
-    )
-
-    assert response.status_code == 422
-    assert "needs both x and y" in response.text

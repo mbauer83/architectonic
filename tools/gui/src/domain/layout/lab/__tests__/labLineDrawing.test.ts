@@ -1,5 +1,5 @@
 /**
- * The lab draws a line as the composer does: held to `tests/fixtures/layout_geometry/line_drawing.json`,
+ * The canvas draws a line as the composer does: held to `tests/fixtures/layout_geometry/line_drawing.json`,
  * which pytest holds to `relation_drawing` and `relation_decorations`. And it draws it with PlantUML's
  * own stroke and decorations, never a look of its own.
  */

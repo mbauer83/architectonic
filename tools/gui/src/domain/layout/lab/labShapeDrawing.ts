@@ -1,9 +1,9 @@
 /**
- * Which of PlantUML's drawings a shape is drawn with in the lab, and where.
+ * Which of PlantUML's drawings a shape is drawn with on the canvas, and where.
  *
  * Everything is drawn with PlantUML's own markup, as the composer draws it. A shape at the size
  * PlantUML drew it is that drawing, shifted — what the composer's `placed_shape` does. A shape at
- * another size is the drawing the composer made of it at that size (`Reshaped`, asked of the lab's
+ * another size is the drawing the composer made of it at that size (`Reshaped`, asked of the canvas's
  * backend, which answers with `fitted_box` or `resized_element`), shifted from where it was made for;
  * until that answer arrives, the last one there is — or PlantUML's own — stands in.
  */

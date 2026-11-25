@@ -1,6 +1,6 @@
 /**
  * One diagram being arranged: its picture as PlantUML drew it, where everything is now, the routes the
- * router answered, and undo and redo. The diagram canvas and the layout lab both arrange through it.
+ * router answered, and undo and redo. The diagram canvas arranges through it.
  *
  * Lines are PlantUML's own while the picture is arranged automatically; once it is arranged by hand
  * every line is the router's. Opening a picture runs the router's full pass, as the server does. From

@@ -1,5 +1,5 @@
 /**
- * The lab's picture as the router sees it, and the router's two passes over it.
+ * The canvas's picture as the router sees it, and the router's two passes over it.
  *
  * The scene is the one the composer routes (`arrangement.py`): every element, every box, and the text
  * a line keeps out of — each box's title band as wide as its title, carried as the title is, and each
@@ -48,7 +48,7 @@ export const resizedFromDrawn = (now: Extent, drawn: Extent): boolean =>
  * outside no way in but round the side.
  *
  * Not where the box is taken to drag it: that is its whole outline, the title band across its full
- * width included (`dragRegionOf` in the lab's drawing).
+ * width included (`dragRegionOf` on the canvas's drawing).
  */
 export const routingBandOf = (box: GeometryBox, now: Extent): Extent | null => {
   if (!box.title_band || box.words.length === 0) return null

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * The lab's one gesture, driven through the lab's own session: a press without travel only selects,
+ * The canvas's one gesture, driven through the arranging session: a press without travel only selects,
  * a drag moves (a box carrying its members) or resizes, lines are routed live and again on the drop,
  * and every change is one step undo takes back. Nothing here is mocked but the frame clock.
  */
@@ -11,7 +11,8 @@ import { LINE_DRAWING, SHAPE_DRAWING } from '../../../domain/layout/lab/__tests_
 import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
 import { Effect } from 'effect'
 import type { ModelService } from '../../../application/ModelService'
-import { useLayoutLab } from '../../composables/useLayoutLab'
+import { useArrangementSession } from '../../composables/useArrangementSession'
+import { layoutOf } from '../../../domain/layout/arrangementLayout'
 import type { Handle } from '../../../domain/layout/lab/labArrangement'
 import { useLabGesture } from './useLabGesture'
 
@@ -38,14 +39,21 @@ const geometry: LayoutGeometry = {
   }],
 }
 
-/** The one call the lab's session makes of the service while arranging: drawing resized shapes. */
+/** The one call the session makes of the service while arranging: drawing resized shapes. */
 const SERVICE = { drawResizedShapes: () => Effect.succeed([]) } as unknown as ModelService
 
 const opened = () => {
-  const lab = useLayoutLab(SERVICE)
-  lab.open(geometry)
-  const gesture = useLabGesture(lab, ref(null))
-  return { lab, gesture }
+  const session = useArrangementSession(
+    (shapes) => SERVICE.drawResizedShapes(geometry.artifact_id, shapes), (_drawn, automatic) => automatic,
+  )
+  session.open(geometry)
+  const gesture = useLabGesture(session, ref(null))
+  /** The layout the arrangement now states, as Save would write it. */
+  const layout = () => {
+    const now = session.arrangement.value
+    return now ? layoutOf(geometry, now) : null
+  }
+  return { lab: { ...session, layout }, gesture }
 }
 
 /** The pointer pressed on *alias* (or one of its handles) at (x, y): outside an SVG, page and picture agree. */
@@ -64,7 +72,7 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
-describe('the layout lab gesture', () => {
+describe('the canvas gesture', () => {
   it('only selects on a press that does not travel', () => {
     const { lab, gesture } = opened()
     press(gesture, 'C', 450, 60)
@@ -74,7 +82,7 @@ describe('the layout lab gesture', () => {
     expect(gesture.selected.value).toBe('C')
     expect(lab.history.value).toHaveLength(0)
     expect(lab.routes.value).toBeNull()
-    expect(lab.layout.value?.elements['APP@3.c']).toEqual({ x: 400, y: 40 })
+    expect(lab.layout()?.elements['APP@3.c']).toEqual({ x: 400, y: 40 })
   })
 
   it('moves an element by the pointer travel, routing live and keeping the last frame on the drop', () => {
@@ -90,7 +98,7 @@ describe('the layout lab gesture', () => {
     expect(gesture.dragging.value).toBe(false)
     expect(lab.courses.value.get(0)).toEqual(shown)
     expect(lab.arrangement.value?.elements.get('C')).toEqual(at(420, 80, 520, 120))
-    expect(lab.layout.value).toMatchObject({ elements: { 'APP@3.c': { x: 420, y: 80 } } })
+    expect(lab.layout()).toMatchObject({ elements: { 'APP@3.c': { x: 420, y: 80 } } })
     const course = lab.courses.value.get(0)
     expect(course?.at(-1)?.x).toBe(420)
 
@@ -105,7 +113,7 @@ describe('the layout lab gesture', () => {
     pointer('pointermove', 15, 65)
     pointer('pointerup', 15, 65)
 
-    expect(lab.layout.value).toMatchObject({ elements: { 'APP@1.a': { x: 20, y: 90 }, 'APP@2.b': { x: 140, y: 90 } } })
+    expect(lab.layout()).toMatchObject({ elements: { 'APP@1.a': { x: 20, y: 90 }, 'APP@2.b': { x: 140, y: 90 } } })
     expect(lab.placement.value?.boxes.get('G')).toEqual(at(10, 60, 250, 140))
   })
 
@@ -114,27 +122,13 @@ describe('the layout lab gesture', () => {
     press(gesture, 'C', 500, 80, 'se')
     pointer('pointermove', 560, 100)
     pointer('pointerup', 560, 100)
-    expect(lab.layout.value).toMatchObject({ elements: { 'APP@3.c': { x: 400, y: 40, w: 160, h: 60 } } })
+    expect(lab.layout()).toMatchObject({ elements: { 'APP@3.c': { x: 400, y: 40, w: 160, h: 60 } } })
 
     press(gesture, 'C', 560, 100, 'se')
     pointer('pointermove', 300, 0)
     pointer('pointerup', 300, 0)
     expect(lab.arrangement.value?.elements.get('C')).toEqual(at(400, 40, 424, 64))
     expect(lab.history.value).toHaveLength(2)
-  })
-
-  it('widens as one step, and reset returns PlantUML arrangement and lines', () => {
-    const { lab } = opened()
-    lab.widen()
-    expect(lab.history.value).toHaveLength(1)
-    expect(lab.routes.value).not.toBeNull()
-    expect(lab.counts.value.hard).toBe(0)
-
-    lab.reset()
-    expect(lab.history.value).toHaveLength(0)
-    expect(lab.routes.value).toBeNull()
-    expect(lab.layout.value?.elements['APP@3.c']).toEqual({ x: 400, y: 40 })
-    expect(lab.courses.value.get(0)).toEqual([{ x: 240, y: 60 }, { x: 400, y: 60 }])
   })
 
   it('toggles a shape in and out of the selection with Shift, and drags the whole selection', () => {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 //
-// The lab draws PlantUML's drawing as it was handed over — every attribute that sets the look kept —
+// The canvas draws PlantUML's drawing as it was handed over — every attribute that sets the look kept —
 // and nothing that is not drawing: no other element, no handler, no link that fetches.
 
 import { afterEach, describe, expect, it } from 'vitest'
@@ -27,7 +27,7 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-describe('a drawing in the lab', () => {
+describe('a drawing on the canvas', () => {
   it('keeps PlantUML\'s fill, stroke and font, in SVG', () => {
     const outline = node('path', { d: 'M0,0 L10,0', fill: '#D1BADC', style: 'stroke:#3F3842;stroke-width:0.5;' })
     const word = node('text', { 'font-family': 'sans-serif', 'font-size': '12', textLength: '58.6641', x: '1', y: '2' }, 'Increased')
