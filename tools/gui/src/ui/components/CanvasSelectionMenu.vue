@@ -13,6 +13,7 @@ import type { DiagramEditing } from '../composables/useDiagramEditing'
 import type { CanvasWords } from './canvasWords'
 import CanvasMenu from './CanvasMenu.vue'
 import type { CanvasMenuItem } from './canvasMenu'
+import { STACKING_ITEMS, restackOf } from './canvasElementMenu'
 
 const props = defineProps<{ editing: DiagramEditing; selection: readonly string[]; words: CanvasWords }>()
 const emit = defineEmits<{ done: []; close: [] }>()
@@ -58,6 +59,7 @@ const items = computed((): readonly CanvasMenuItem[] => {
       disabled: elements.value < LEAST_TO_ALIGN },
     ...elements.value >= LEAST_TO_DISTRIBUTE
       ? [{ id: 'distribute', label: 'Distribute ▸', hint: 'horizontally · vertically' }] : [],
+    ...STACKING_ITEMS,
     ...props.words.removeEntry
       ? [{ id: 'remove', label: props.words.removeEntry, hint: props.words.removeHint, shortcut: props.words.removeKey,
         divider: true }]
@@ -65,7 +67,11 @@ const items = computed((): readonly CanvasMenuItem[] => {
   ]
 })
 const choose = (id: string) => {
-  if (id === 'back') page.value = 'top'
+  const how = restackOf(id)
+  if (how) {
+    props.editing.restack(props.selection, how)
+    emit('done')
+  } else if (id === 'back') page.value = 'top'
   else if (id === 'align' || id === 'distribute') page.value = id
   else if (id === 'remove') remove()
   else if (page.value === 'align') align(id as AlignEdge)

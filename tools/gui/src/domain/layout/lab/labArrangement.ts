@@ -23,6 +23,8 @@ export interface Arrangement {
   readonly elements: ReadonlyMap<string, Extent>
   readonly stated: ReadonlyMap<string, Extent>
   readonly routes: ReadonlyMap<string, Route>
+  /** The stated stacking among siblings, by alias (`stacking`); a shape it does not name is at 0. */
+  readonly z?: ReadonlyMap<string, number>
 }
 
 /** The least room kept either side of a box's title. */
@@ -128,7 +130,7 @@ export const movedTogether = (
     new Map([...entries].map(([key, extent]) => [key, carried.has(key) ? translated(extent, dx, dy) : extent]))
   const elements = shift(arrangement.elements)
   return {
-    elements, stated: shift(arrangement.stated),
+    ...arrangement, elements, stated: shift(arrangement.stated),
     routes: routesFollowing(geometry, arrangement.routes, elements, carried, [dx, dy]),
   }
 }

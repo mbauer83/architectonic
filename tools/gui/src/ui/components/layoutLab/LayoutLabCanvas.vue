@@ -90,6 +90,8 @@ const handleSide = computed((): number => HANDLE_PIXELS * pixel.value)
 /** A line selected is the selection: picking one lets go of the shapes, and picking a shape the line. */
 const lineGesture = useLineGesture(props.session, svg, pixel, () => gesture.clear())
 watch(() => gesture.selection.value, (now) => { if (now.length > 0) lineGesture.clear() })
+// A restacking is explicit: the shape last dropped is no longer lifted over what it was stacked behind.
+watch(() => props.session.arrangement.value?.z, () => { gesture.lifted.value = null })
 const pressShape = (event: PointerEvent, alias: string) => {
   if (!lineGesture.pressNearAnEnd(event)) gesture.press(event, alias)
 }
@@ -156,7 +158,7 @@ const lines = computed((): ReadonlyMap<number, DrawnRelation> => {
 const pieces = computed((): Piece[] => {
   const drawn = geometry.value
   const where = placement.value
-  return drawn && where ? paintOrder(drawn, where, gesture.lifted.value)
+  return drawn && where ? paintOrder(drawn, where, gesture.lifted.value, props.session.arrangement.value?.z)
     .flatMap((painted) => pieceOf(painted, shapes.value, lines.value)) : []
 })
 

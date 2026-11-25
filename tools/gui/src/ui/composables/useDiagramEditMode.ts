@@ -19,6 +19,7 @@ import type { Extent } from '../../domain/layout/geometry'
 import { extentOfMarks, type OverviewMark } from '../lib/diagramOverview'
 import { useEditPanel } from './useEditPanel'
 import { useDiagramEditing } from './useDiagramEditing'
+import { restackKey } from '../components/canvasElementMenu'
 
 /** How far an arrow moves or resizes a shape: the grid, or one pixel with Shift. */
 const GRID = 8
@@ -148,6 +149,9 @@ export function useDiagramEditMode(
     } else if (event.key in ARROWS && parts.canvas.value?.selection.length) {
       event.preventDefault()
       nudge(parts.canvas.value.selection, ARROWS[event.key], event.shiftKey ? 1 : GRID, event.altKey)
+    } else if (restackKey(event) !== null && parts.canvas.value?.selection.length) {
+      event.preventDefault()
+      editing.restack(parts.canvas.value.selection, restackKey(event) ?? 'front')
     } else if (key === 'f' && !command && selectionExtent.value) {
       event.preventDefault()
       parts.frame(selectionExtent.value)

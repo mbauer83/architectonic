@@ -24,6 +24,7 @@ import { composeCanvas } from '../../domain/layout/canvasComposition'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import { stableEntityId } from '../../domain/artifactId'
+import { type Restack, restacked } from '../../domain/layout/stacking'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { ArrangementState } from './useArrangementSession'
 import { useArrangementSession } from './useArrangementSession'
@@ -59,7 +60,8 @@ export function useDiagramEditing(
   /** Read the picture as stored and start from it; *carried* is an arrangement to keep, as a save does. */
   const reopen = async (carried: ArrangedLayout | null = null): Promise<void> => {
     const geometry = await Effect.runPromise(svc.readLayoutGeometry(diagramId()))
-    const layout = geometry.layout && (geometry.layout.elements || geometry.layout.boxes) ? geometry.layout : null
+    const layout = geometry.layout && (geometry.layout.elements || geometry.layout.boxes || geometry.layout.z)
+      ? geometry.layout : null
     stored.value = layout
     saved.value = { ...savedState(geometry, layout), picture: geometry }
     session.open(geometry, carried ? { arrangement: arrangedBy(geometry, carried), byHand: true } : saved.value)
@@ -198,7 +200,7 @@ export function useDiagramEditing(
         error.value = result.errors.join(' ')
         return false
       }
-      const layout = result.layout.elements || result.layout.boxes ? result.layout : null
+      const layout = result.layout.elements || result.layout.boxes || result.layout.z ? result.layout : null
       stored.value = layout
       saved.value = session.state.value
       return true
@@ -305,7 +307,13 @@ export function useDiagramEditing(
     return preview({ ...now, commands, overlays: overlay ? [...now.overlays ?? [], overlay] : now.overlays }, now)
   }
 
-  return { add, propose, session, changes, loading, saving, error, open, save, discard, returnToAutomatic, remove }
+  /** The shapes *aliases* restacked among their siblings (`stacking`), as one undoable step. */
+  const restack = (aliases: readonly string[], how: Restack) =>
+    session.change((geometry, now, where) => restacked(geometry, now, where, aliases, how))
+
+  return {
+    add, propose, session, changes, loading, saving, error, open, save, discard, returnToAutomatic, remove, restack,
+  }
 }
 
 export type DiagramEditing = ReturnType<typeof useDiagramEditing>

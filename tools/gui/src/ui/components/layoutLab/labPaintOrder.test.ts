@@ -174,3 +174,10 @@ describe('the lab paint order', () => {
     expect(placeOf(order, 'line:2')).toBeGreaterThan(lastShape)
   })
 })
+
+describe('the stated stacking', () => {
+  it('orders siblings, a box and everything in it painted as one unit', () => {
+    const order = shapeOrder(geometry, drawn, null, new Map([['One', 9], ['c', -1]]))
+    expect(order.map((one) => one.alias)).toEqual(['c', 'Two', 'b', 'd', 'One', 'Inner', 'a'])
+  })
+})

@@ -17,7 +17,7 @@ import CanvasConnectTarget from './CanvasConnectTarget.vue'
 import CanvasRelationForm from './CanvasRelationForm.vue'
 import CanvasRenameForm from './CanvasRenameForm.vue'
 import CanvasDeleteConfirm from './CanvasDeleteConfirm.vue'
-import { elementMenuItems } from './canvasElementMenu'
+import { elementMenuItems, restackOf } from './canvasElementMenu'
 import { entityDetailRoute } from '../router/artifactRoutes'
 import { asksForTheMenu, isOnALine, selectedLineMiddle } from './lineMenuPlace'
 import { type CanvasWords, DIAGRAM_WORDS } from './canvasWords'
@@ -67,7 +67,11 @@ function rename(alias: string) {
 function onElement(choice: string) {
   const el = selected.value
   if (!el) return
-  if (choice === 'rename') rename(source.value)
+  const how = restackOf(choice)
+  if (how) {
+    props.editing.restack([source.value], how)
+    close(true)
+  } else if (choice === 'rename') rename(source.value)
   else if (choice === 'connect') mode.value = 'target'
   else if (choice === 'delete') mode.value = 'delete'
   else if (choice === 'open') {

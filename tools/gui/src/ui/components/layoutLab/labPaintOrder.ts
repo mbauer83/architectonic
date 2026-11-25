@@ -3,7 +3,8 @@
  * everything it holds — then the lines, then their labels. The backdrop is behind all of it and the
  * lab's own marks (breaches, handles) in front; neither is part of this order.
  *
- * Two things move a shape out of the order PlantUML drew it in:
+ * Siblings are painted in their stated stacking (`stacking`), ties as PlantUML drew them. Two things
+ * move a shape out of that order while it is being arranged:
  *
  * - **Lifting.** The shape last pressed, with everything it holds and every box holding it, is painted
  *   after its siblings, so what is being dragged is brought into view and stays there once dropped. A
@@ -25,6 +26,7 @@ import { overlaps } from '../../../domain/layout/geometry'
 import { childrenOf, descendantsOf } from '../../../domain/layout/lab/labArrangement'
 import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
 import type { Placement } from '../../../domain/layout/lab/labRouting'
+import { stackedSiblings } from '../../../domain/layout/stacking'
 
 /** The shape last pressed, and whether the press moved it or resized it. */
 export interface Lift {
@@ -68,13 +70,15 @@ const siblingsInOrder = (
   return [...others.filter((alias) => !covered(alias)), lifted, ...others.filter(covered)]
 }
 
-/** Every shape back to front: a box, then everything in it; siblings as drawn, save the lifted one. */
-export const shapeOrder = (geometry: LayoutGeometry, placement: Placement, lift: Lift | null): PaintedShape[] => {
+/** Every shape back to front: a box, then everything in it; siblings as stacked, save the lifted one. */
+export const shapeOrder = (
+  geometry: LayoutGeometry, placement: Placement, lift: Lift | null, z?: ReadonlyMap<string, number>,
+): PaintedShape[] => {
   const boxes = new Set(geometry.boxes.map((box) => box.alias))
   const children = childrenOf(geometry)
   const chain = lift ? liftedChain(geometry, lift.alias) : new Set<string>()
   const walk = (parent: string | null): PaintedShape[] => {
-    const siblings = children.get(parent) ?? []
+    const siblings = stackedSiblings(children.get(parent) ?? [], z)
     const ordered = lift ? siblingsInOrder(siblings, chain, lift, placement) : siblings
     return ordered.flatMap((alias) => [{ kind: 'shape' as const, alias, isBox: boxes.has(alias) }, ...walk(alias)])
   }
@@ -112,8 +116,10 @@ const sunkLines = (
 }
 
 /** The whole picture back to front: shapes, each hidden line just below what hides it, then the rest. */
-export const paintOrder = (geometry: LayoutGeometry, placement: Placement, lift: Lift | null): Painted[] => {
-  const shapes = shapeOrder(geometry, placement, lift)
+export const paintOrder = (
+  geometry: LayoutGeometry, placement: Placement, lift: Lift | null, z?: ReadonlyMap<string, number>,
+): Painted[] => {
+  const shapes = shapeOrder(geometry, placement, lift, z)
   const sunk = sunkLines(geometry, placement, shapes)
   const lineAndLabel = (relation: number): Painted[] =>
     [{ kind: 'line', relation }, { kind: 'label', relation }]

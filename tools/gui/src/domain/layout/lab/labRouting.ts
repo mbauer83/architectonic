@@ -156,6 +156,7 @@ export const widenedArrangement = (geometry: LayoutGeometry, arrangement: Arrang
   const opened = widened(sceneOf(geometry, placement, fixed), connectorsOf(geometry, arrangement.routes, fixed))
   const before = placement.boxes
   return {
+    ...arrangement,
     routes: arrangement.routes,
     elements: new Map(opened.elements),
     stated: new Map([
