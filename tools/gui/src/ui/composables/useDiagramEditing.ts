@@ -106,7 +106,7 @@ export function useDiagramEditing(
     const context = options.context?.()
     return context ? canvasMembers(context, state, picture) : []
   }
-  const { changes, undoStep, redoStep } = useSessionChanges(session, saved, {
+  const { changes, undoStep, redoStep, nameOf } = useSessionChanges(session, saved, {
     members, stated: () => savedMembers.value?.authored_groupings ?? [],
   })
 
@@ -365,8 +365,8 @@ export function useDiagramEditing(
   }
 
   return {
-    add, propose, session, changes, undoStep, redoStep, loading, saving, error, open, save, discard, returnToAutomatic,
-    remove, restack, nest, addOccurrence, discardDraft, drawRelation, restate,
+    add, propose, session, changes, undoStep, redoStep, nameOf, loading, saving, error, open, save, discard,
+    returnToAutomatic, remove, restack, nest, addOccurrence, discardDraft, drawRelation, restate,
     /** The boxes the diagram states, as last read or saved. */
     statedGroupings: (): readonly AuthoredGrouping[] => savedMembers.value?.authored_groupings ?? [],
   }

@@ -116,7 +116,7 @@ const laidOut = () => {
       </button>
     </template>
     <DiagramAutoLayoutDialog
-      v-if="layingOut"
+      v-if="layingOut && !editing"
       :detail="detail"
       @close="layingOut = false"
       @laid-out="laidOut"

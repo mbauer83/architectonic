@@ -278,6 +278,7 @@ const executeDelete = () => {
                     :drafts="drafts.inEdit.value"
                     :pending-lines="drafts.pendingLines.value"
                     :outlined="edit.outlined.value"
+                    :name-of="edit.editing.nameOf"
                   />
                 </CanvasContentEditor>
               </div>

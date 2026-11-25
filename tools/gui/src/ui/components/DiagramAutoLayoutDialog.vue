@@ -55,10 +55,25 @@ onMounted(async () => {
 })
 onBeforeUnmount(() => { if (currentUrl.value) URL.revokeObjectURL(currentUrl.value) })
 
+/**
+ * Whether the diagram is still the one this page read: a body saved since — from its editor, or by another
+ * session — would be replaced unseen, so the write is refused and the reader told to look first.
+ */
+const unchanged = async (): Promise<boolean> => {
+  const exit = await Effect.runPromiseExit(svc.getDiagram(props.detail.artifact_id))
+  return Exit.isSuccess(exit) && exit.value.puml_source === props.detail.puml_source
+}
+
 const confirm = async () => {
   if (!composition.value) return
   writing.value = true
   failed.value = ''
+  if (!await unchanged()) {
+    writing.value = false
+    failed.value = 'The diagram changed since this page read it, so laying it out now would replace a body you '
+      + 'have not seen. Reload the page to see it, then lay it out.'
+    return
+  }
   const exit = await Effect.runPromiseExit(svc.editDiagram(props.detail.artifact_id, {
     ...composition.value, manual_layout: false, dry_run: false,
   }))
