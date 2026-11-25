@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -22,6 +23,9 @@ ASSET_SUFFIXES = frozenset({
     "txt", "xml", "webmanifest", "pdf", "zip", "gz", "br", "mp4", "webm",
 })
 
+
+#: What a request for the GUI is told before it has been built.
+GUI_NOT_BUILT = "The GUI has not been built: run `npm ci && npm run build` in tools/gui."
 
 #: Path prefixes the server answers itself, which the history fallback never turns into the shell.
 _SERVER_ADDRESSES = ("api/", "mcp/")
@@ -58,6 +62,15 @@ class SPAStaticFiles(StaticFiles):
     the server answering the new shell while the browser ran the old GUI (B106). ``no-cache`` means
     "ask first", and with the existing ETag the answer is a 304 when nothing changed.
     """
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        """The SPA is mounted whether or not it has been built, so a build made while the backend runs
+        is served at once. Until `dist/` exists a request here is a 404 — one that says so for a GUI
+        address, and the plain one an unknown `api/` or `mcp/` address has always had."""
+        if self.directory is not None and not Path(self.directory).is_dir():
+            server_address = self.get_path(scope).startswith(_SERVER_ADDRESSES)
+            raise StarletteHTTPException(404, None if server_address else GUI_NOT_BUILT)
+        await super().__call__(scope, receive, send)
 
     async def get_response(self, path: str, scope: Any) -> Response:
         try:
