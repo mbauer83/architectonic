@@ -42,22 +42,27 @@ export const buildUrl = (
 }
 
 /**
- * Where to read the entity `id` from.
+ * Where to read the entity `id` from, or one of its subresources (`/neighbors`).
  *
  * Turning identity into an address is this adapter's job, and there are two addresses because there
  * are two kinds of thing. An ordinary artifact is a member of the entity collection. A construct a
  * diagram owns is a sub-entity of that diagram, and *must* be addressed there: its identifier
  * contains a slash (`…#nodes/g11`), a slash ends a URL path segment, and an encoded one is decoded
- * back by the server before routing — so the flat address matches no route and answers 404.
+ * back by the server before routing — so the flat address matches no route and answers 404. A
+ * subresource hangs off whichever of the two the entity has, so no caller spells either again.
  */
-export const entityAddress = (id: string): string => {
+export const entityAddress = (
+  id: string,
+  subresource = '',
+  params?: Parameters<typeof buildUrl>[1],
+): string => {
   const local = parseDiagramLocalId(id)
-  if (local === null) return buildUrl(`/entities/${encodeIdentitySegment(id)}`)
-  return buildUrl(
-    `/diagrams/${encodeIdentitySegment(local.diagramId)}`
-    + `/entities/${encodeIdentitySegment(local.entityType)}`
-    + `/${encodeIdentitySegment(local.localId)}`,
-  )
+  const path = local === null
+    ? `/entities/${encodeIdentitySegment(id)}`
+    : `/diagrams/${encodeIdentitySegment(local.diagramId)}`
+      + `/entities/${encodeIdentitySegment(local.entityType)}`
+      + `/${encodeIdentitySegment(local.localId)}`
+  return buildUrl(`${path}${subresource}`, params)
 }
 
 /** The abort budget for a URL, from its path's timeout class. `null` means never abort. */

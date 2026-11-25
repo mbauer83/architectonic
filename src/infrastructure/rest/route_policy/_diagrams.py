@@ -53,6 +53,14 @@ DIAGRAM_ROWS: tuple[RouteRow, ...] = (
         # Worth adding deliberately later; not worth claiming now.
         cache_directive="no-cache", conditional_read="none",
     ),
+    # The neighbourhood of such a construct, at the same address: the entity neighbourhood's reading,
+    # which the flat `/api/entities/{artifact_id}/neighbors` cannot reach for the slash in its id.
+    RouteRow(
+        "GET", "/api/diagrams/{artifact_id}/entities/{entity_type}/{local_id}/neighbors", "subresource",
+        "diagrams_read_diagram_entity_neighbors", TYPED,
+        identity_parameters=("artifact_id", "entity_type", "local_id"),
+        cache_directive="no-cache", conditional_read="none", timeout_class="derived-graph",
+    ),
     RouteRow(
         "GET", "/api/diagrams/{artifact_id}/connections", "subresource", "diagrams_list_diagram_connections",
         TYPED, identity_parameters=_ID, cache_directive="no-cache",

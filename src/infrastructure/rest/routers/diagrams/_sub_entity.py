@@ -17,6 +17,7 @@ from src.application.artifacts.parsing import parse_entity_content_sections
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification._verifier_contribution_runner import held_record_scopes_from_catalogs
+from src.domain.artifact_id import held_record_id
 from src.domain.baseline_standing import BASELINE_STANDING
 from src.infrastructure.rest.contracts.entities import EntityDetailResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
@@ -60,7 +61,7 @@ def get_diagram_entity(
     diagram = repo.get_diagram(artifact_id)
     if diagram is None:
         raise HTTPException(404, f"Diagram not found: {artifact_id!r}")
-    wanted = f"{artifact_id}#{entity_type}/{local_id}"
+    wanted = held_record_id(artifact_id, entity_type, local_id)
     record = next(
         (entity for entity in extract_diagram_entities(
             diagram, held_record_scopes_from_catalogs(catalogs).get(diagram.diagram_type, NOTHING_HELD),

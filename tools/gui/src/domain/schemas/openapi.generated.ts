@@ -2062,6 +2062,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diagrams/{artifact_id}/entities/{entity_type}/{local_id}/neighbors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Neighbouring entities of a construct a diagram owns
+         * @description The neighbourhood of a construct a diagram owns — a GSN goal, a swimlane — at its diagram's address.
+         *
+         *     The same reading as an entity's: such a construct is a record with connections, but its id
+         *     (``{diagram}#{entity_type}/{local_id}``) holds a slash, which no single path segment can carry,
+         *     so it is addressed in the diagram's segments as its own read is.
+         */
+        get: operations["diagrams_read_diagram_entity_neighbors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diagrams/{artifact_id}/icons/{icon_key}/share": {
         parameters: {
             query?: never;
@@ -22453,6 +22477,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntityDetailResponse"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    diagrams_read_diagram_entity_neighbors: {
+        parameters: {
+            query?: {
+                include_potential?: boolean;
+                max_hops?: number | null;
+                traversal?: "direct" | "derived";
+            };
+            header?: never;
+            path: {
+                artifact_id: string;
+                entity_type: string;
+                local_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityNeighborhoodResponse"];
                 };
             };
             /** @description Artifact not found */

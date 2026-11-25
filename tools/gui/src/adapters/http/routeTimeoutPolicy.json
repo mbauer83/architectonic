@@ -32,6 +32,7 @@
       "/api/diagrams/{artifact_id}",
       "/api/diagrams/{artifact_id}/attribute-panel",
       "/api/diagrams/{artifact_id}/download",
+      "/api/diagrams/{artifact_id}/entities/{entity_type}/{local_id}/neighbors",
       "/api/diagrams/{artifact_id}/icons/{icon_key}/share",
       "/api/diagrams/{artifact_id}/layout",
       "/api/diagrams/{artifact_id}/layout/arrange",
@@ -69,6 +70,7 @@
       "^/api/events(\\?|$)"
     ],
     "derived-graph": [
+      "^/api/diagrams/[^/?#]+/entities/[^/?#]+/[^/?#]+/neighbors(\\?|$)",
       "^/api/assurance/analyses/[^/?#]+/diagrams/[^/?#]+/rendered(\\?|$)",
       "^/api/diagrams/[^/?#]+/layout/geometry/preview(\\?|$)",
       "^/api/assurance/analyses/[^/?#]+/gsn/rendered(\\?|$)",

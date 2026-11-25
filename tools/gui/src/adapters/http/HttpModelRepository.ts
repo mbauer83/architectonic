@@ -149,7 +149,7 @@ export const makeHttpModelRepository = (): ModelRepository => ({
     fetchJson(buildUrl('/ontology/classification-levels'), ClassificationLevelsResponseSchema),
   getNeighbors: (entityId: string, maxHops = 1) =>
     fetchJson(
-      buildUrl(`/entities/${encodeIdentitySegment(entityId)}/neighbors`, { max_hops: maxHops }),
+      entityAddress(entityId, '/neighbors', { max_hops: maxHops }),
       DirectNeighborhoodSchema,
     ).pipe(Effect.map((response) => response.hops)),
   search: (query: string, limit = 20) => {

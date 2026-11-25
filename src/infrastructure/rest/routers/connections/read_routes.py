@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.modeling.enterprise_reference import (
@@ -17,7 +17,6 @@ from src.application.ontology_views import (
     element_appearance_payload,
 )
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.derived_neighbors import DerivationLimitError, derive_neighbors
 from src.infrastructure.rendering.diagram_selection import connections_among
 from src.infrastructure.rest.contracts.authoring_catalogs import (
     ClassificationLevelsResponse,
@@ -27,19 +26,16 @@ from src.infrastructure.rest.contracts.authoring_catalogs import (
     RelationNotationsResponse,
 )
 from src.infrastructure.rest.contracts.connections import ConnectionListResponse
-from src.infrastructure.rest.contracts.entities import EntityNeighborhoodResponse
 from src.infrastructure.rest.contracts.errors import ApiError, FieldError, ValidationErrorDetails
 from src.infrastructure.rest.contracts.search import KeywordSearchResponse
 from src.infrastructure.rest.contracts.write_help import WriteHelpResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
-from src.infrastructure.rest.routers._failures import derivation_limit
 from src.infrastructure.rest.routers._global_search import (
     prioritize_global_hits,
     visible_diagram_entity_types,
 )
 from src.infrastructure.rest.routers._openapi import (
-    READ_RESPONSES,
     TAG_CONNECTIONS,
     TAG_ENTITIES,
     TAG_TAXONOMY,
@@ -88,47 +84,6 @@ def register_connection_read_routes(router: APIRouter) -> None:
             if (connection := repo.get_connection(connection_id)) is not None
         ]
         return {"items": [s.connection_to_dict(connection) for connection in found]}
-
-    @router.get("/api/entities/{artifact_id}/neighbors", tags=[TAG_CONNECTIONS],
-        summary="Neighbouring entities of an entity",
-        response_model=EntityNeighborhoodResponse, responses=READ_RESPONSES)
-    def get_neighbors(
-        artifact_id: str,
-        max_hops: int | None = None,
-        traversal: Literal["direct", "derived"] = "direct",
-        include_potential: bool = False,
-        catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
-    ) -> dict[str, object]:
-        """The neighbourhood of one entity, tagged by how it was reached.
-
-        ``traversal`` is an alternate execution specification, so it stays in the query — but the
-        two answers are genuinely different shapes, and the direct arm used to carry no tag at all,
-        so a client could not tell which it had received.
-
-        ``max_hops`` left unset is one hop for the direct arm and the configured derivation bound for
-        the derived one, which composes nothing within fewer than two.
-        """
-        entity_id = artifact_id
-        repo = s.get_repo()
-        if repo.get_entity(entity_id) is None:
-            # Identity is in the path now, so an unknown id is an unaddressable resource rather
-            # than a filter that matched nothing — and an empty neighbourhood is indistinguishable
-            # from a real one with no neighbours, which is the wrong answer to give.
-            raise HTTPException(404, f"Not found: {entity_id!r}")
-        if traversal == "direct":
-            hops = repo.find_neighbors(entity_id, max_hops=max_hops or 1)
-            return {"traversal": "direct", "hops": {hop: sorted(ids) for hop, ids in hops.items()}}
-        try:
-            neighbors = derive_neighbors(
-                entity_id,
-                max_hops=max_hops,
-                include_potential=include_potential,
-                read_access=repo,
-                registries=catalogs.module_catalog,
-            )
-            return {"traversal": "derived", "neighbors": neighbors}
-        except DerivationLimitError as exc:
-            raise derivation_limit(str(exc)) from exc
 
     @router.get("/api/search", tags=[TAG_ENTITIES], summary="Keyword search over artifacts",
         response_model=KeywordSearchResponse)
@@ -321,3 +276,4 @@ def _resolve_effective_type(
         return declared_type, True
     entity_type = record.extra.get(GLOBAL_ARTIFACT_ENTITY_TYPE)
     return (entity_type if isinstance(entity_type, str) and entity_type else declared_type), False
+
