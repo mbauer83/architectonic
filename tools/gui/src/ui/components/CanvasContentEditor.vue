@@ -74,8 +74,9 @@ const drop = useDropFeedback(svc, props.editing, host, () => props.context, memb
 const relation = useCanvasRelation(
   svc, props.editing, () => props.context, members, { source, target },
   () => { mode.value = 'relation' }, (message) => { error.value = message }, (c, overlay) => void apply(c, overlay),
+  (id, overlay) => void settle(props.editing.drawRelation(id, overlay)),
 )
-const { kind, label, srcCount, tgtCount, description, options, currentLine } = relation
+const { kind, drawing, inModel, label, srcCount, tgtCount, description, options, currentLine } = relation
 const { anchor, drawAgain, ownBoxes, boxOfSelected, nestIn, nestUnder, asked, dropped, dontNest } = useCanvasNesting(
   props.editing, host, source, members, { mode, error, position, close }, (c) => apply(c), {
     settled: drop.settled, say: (line) => toast(line, 'info', 6000),
@@ -317,12 +318,15 @@ function double(e: MouseEvent) {
         <CanvasRelationForm
           v-else-if="mode === 'relation'"
           v-model:kind="kind"
+          v-model:drawing="drawing"
           v-model:src-count="srcCount"
           v-model:tgt-count="tgtCount"
           v-model:description="description"
           v-model:label="label"
-          :title="`${nameOf(source)} → ${nameOf(target)}`"
+          :source="nameOf(source)"
+          :target="nameOf(target)"
           :options="options"
+          :in-model="inModel"
           :editing="Boolean(currentLine)"
           @keep="relation.keep"
           @cancel="close(true)"

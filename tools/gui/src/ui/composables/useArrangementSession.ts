@@ -40,6 +40,8 @@ export interface ArrangementState {
   readonly picture?: LayoutGeometry
   readonly addedTypes?: ReadonlyMap<string, string>
   readonly additions?: ReadonlyMap<string, string>
+  /** Relations the model holds, drawn on the diagram in this session. */
+  readonly drawnRelations?: readonly string[]
   readonly arrangement: Arrangement
   /** Arranged by hand: every line routed. Otherwise the picture is PlantUML's, lines and all. */
   readonly byHand: boolean

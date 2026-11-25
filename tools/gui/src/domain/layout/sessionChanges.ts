@@ -17,6 +17,7 @@ export interface PendingChange {
 interface Content {
   readonly commands?: readonly CanvasCommand[]
   readonly additions?: ReadonlyMap<string, string>
+  readonly drawnRelations?: readonly string[]
   readonly occurrences?: readonly ArchimateOccurrence[]
   readonly regroupings?: readonly GroupingIntent[]
   readonly removed?: ReadonlySet<string>
@@ -48,6 +49,9 @@ export const contentChanges = (
     ...[...now.additions ?? []].map(([id, name]) => ({ key: id, text: `Added to diagram: ${name}` })),
     ...(now.occurrences ?? []).map((one) => ({
       key: one.id, text: `Drawn again: ${instanceNamed(one.backing_entity_id)}`,
+    })),
+    ...(now.drawnRelations ?? []).map((id) => ({
+      key: `drawn:${id}`, text: `Drawn from the model: ${relationNamed(id)}`,
     })),
   ]
   const regrouped = (now.regroupings ?? []).map((intent, at) => ({

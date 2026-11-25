@@ -149,7 +149,7 @@ export function useDiagramEditing(
       // One write when what the diagram holds changes: membership and layout together, so the stored
       // layout always matches the body that write generates (D12).
       if (removed.size > 0 || now.additions?.size || now.commands?.length || now.overlays?.length
-        || now.regroupings?.length || now.occurrences?.length) {
+        || now.regroupings?.length || now.occurrences?.length || now.drawnRelations?.length) {
         await writeMembership(removed, patch)
         return true
       }
@@ -300,6 +300,17 @@ export function useDiagramEditing(
     return preview({ ...now, commands, overlays }, now, true, place)
   }
 
+  /**
+   * The relation *id*, which the model holds, drawn on the diagram as one undoable step: diagram content,
+   * no model change (03·8, "In the model: draw it"); *overlay* is the label this diagram draws on it.
+   */
+  const drawRelation = async (id: string, overlay?: Record<string, unknown>) => {
+    const now = session.state.value
+    if (!now || now.drawnRelations?.includes(id)) return false
+    const overlays = overlay ? [...now.overlays ?? [], overlay] : now.overlays
+    return preview({ ...now, drawnRelations: [...now.drawnRelations ?? [], id], overlays }, now)
+  }
+
   /** The draft *id* discarded with everything the session proposed about it, as one undoable step. */
   const discardDraft = async (id: string) => {
     const now = session.state.value
@@ -328,7 +339,7 @@ export function useDiagramEditing(
 
   return {
     add, propose, session, changes, undoStep, redoStep, loading, saving, error, open, save, discard, returnToAutomatic,
-    remove, restack, nest, addOccurrence, discardDraft,
+    remove, restack, nest, addOccurrence, discardDraft, drawRelation,
   }
 }
 

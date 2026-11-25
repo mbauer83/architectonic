@@ -74,6 +74,16 @@ describe('the moves into and out of the diagram\'s own boxes', () => {
   })
 })
 
+describe('a relation the model holds, drawn in the session', () => {
+  const drawn = { diagram_type: 'archimate-layered', name: 'D', entity_ids: [ID], connection_ids: ['c-1'] }
+
+  it('joins what the diagram draws, as diagram content and no model change', () => {
+    const { write, preview } = composeCanvas(drawn, { drawnRelations: ['c-2'] }, new Set())
+    expect(write.connection_ids).toEqual(['c-1', 'c-2'])
+    expect(preview.connection_ids).toEqual(['c-1', 'c-2'])
+  })
+})
+
 describe('a further drawing of an element', () => {
   const stored = { id: 'occ-svc-2', backing_entity_id: ID }
   const drawn = {

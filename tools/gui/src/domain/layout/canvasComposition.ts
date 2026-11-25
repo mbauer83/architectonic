@@ -21,6 +21,8 @@ interface Content {
   readonly occurrences?: readonly ArchimateOccurrence[]
   readonly addedTypes?: ReadonlyMap<string, string>
   readonly additions?: ReadonlyMap<string, string>
+  /** Relations the model holds, drawn on the diagram in this session: diagram content only. */
+  readonly drawnRelations?: readonly string[]
   readonly commands?: readonly CanvasCommand[]
   readonly overlays?: readonly Record<string, unknown>[]
 }
@@ -44,7 +46,9 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
         ...(state.additions?.keys() ?? []),
         ...creates.map((c) => c.artifact_id),
       ],
-      connection_ids: [...drawn.connection_ids, ...links.map((c) => c.artifact_id)],
+      connection_ids: [
+        ...drawn.connection_ids, ...links.map((c) => c.artifact_id), ...state.drawnRelations ?? [],
+      ],
     },
     deletions,
   )
