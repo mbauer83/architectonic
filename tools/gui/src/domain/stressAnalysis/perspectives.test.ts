@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PerspectiveFramework } from '../schemas/stressEvaluation'
-import { randomPerspective, unwritten } from './perspectives'
+import { randomPerspective } from './perspectives'
 
 const frameworks: readonly PerspectiveFramework[] = [
   { id: 'pestle', name: 'PESTLE', perspectives: [
@@ -11,16 +11,6 @@ const frameworks: readonly PerspectiveFramework[] = [
     { id: 'organisation.teams', name: 'Teams', kind: 'teams', question: 'What if?' },
   ] },
 ]
-
-describe('the perspectives no stressor is written from', () => {
-  it('are none while no stressor names a kind, because the kind is optional', () => {
-    expect(unwritten(frameworks, ['', '  '])).toEqual(new Set())
-  })
-
-  it('are those whose kind no stressor carries, whatever its case and spacing', () => {
-    expect(unwritten(frameworks, ['Political ', 'scale'])).toEqual(new Set(['pestle.legal', 'organisation.teams']))
-  })
-})
 
 describe('a random perspective', () => {
   it('is drawn across every framework, and the pick decides which', () => {

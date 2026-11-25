@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AnalysisProgress } from '../schemas/candidates'
-import { coverageHints, whatIsLeft } from './analysisProgress'
+import { coverageHints, kindChoices, kindsInUse, whatIsLeft } from './analysisProgress'
 
 const progress = (overrides: Partial<AnalysisProgress['progress']> = {}, untouched: AnalysisProgress['coverage']['untouched'] = []): AnalysisProgress => ({
   document: 'STRESS@1', naive_candidate: 'CAND@1',
@@ -8,7 +8,10 @@ const progress = (overrides: Partial<AnalysisProgress['progress']> = {}, untouch
     unwalked: [], without_end_state: [], without_required_behaviour: [], without_adaptation: [],
     unexplained_hits: [], incomplete_rows: [], ...overrides,
   },
-  coverage: { by_kind: { scale: 1 }, unused_kinds: ['time'], single_stressor_end_states: ['E1'], untouched },
+  coverage: {
+    by_kind: { legal: 1 }, unwritten_perspectives: ['pestle.political'], single_stressor_end_states: ['E1'],
+    untouched,
+  },
 })
 
 describe('what is left', () => {
@@ -39,7 +42,6 @@ describe('coverage hints', () => {
     ]), (id) => `${id} name`)
     expect(hints.wellConnected.map((one) => [one.name, one.relations])).toEqual([['A name', 6], ['B name', 3]])
     expect(hints.otherUntouched.map((one) => one.id)).toEqual(['C', 'D'])
-    expect(hints.unusedKinds).toEqual(['time'])
     expect(hints.singleStressorEndStates).toEqual(['E1'])
     expect(hints.withoutEndState).toEqual(['S3'])
   })
@@ -50,5 +52,20 @@ describe('coverage hints', () => {
       { id: 'C', fan_in: 1, fan_out: 0 }, { id: 'D', fan_in: 0, fan_out: 0 },
     ]), (id) => id)
     expect(hints.wellConnected.map((one) => one.id)).toEqual(['A'])
+  })
+})
+
+describe('the kinds', () => {
+  it('in use are counted as written, and a kind no stressor carries is never one of them', () => {
+    expect(kindsInUse({ legal: 1, economic: 3, 'Batch window': 1, scale: 0 })).toEqual([
+      ['economic', 3], ['Batch window', 1], ['legal', 1],
+    ])
+  })
+
+  it('a kind cell offers come from the perspectives, then any free kind in use', () => {
+    const frameworks = [{ id: 'pestle', name: 'PESTLE', perspectives: [
+      { id: 'pestle.legal', name: 'Legal', kind: 'legal', question: 'What if?' },
+    ] }]
+    expect(kindChoices(frameworks, { 'Batch window': 2, legal: 1 })).toEqual(['legal', 'Batch window'])
   })
 })

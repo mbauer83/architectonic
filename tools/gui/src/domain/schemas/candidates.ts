@@ -118,7 +118,7 @@ export const AnalysisProgressSchema = Schema.Struct({
   }),
   coverage: Schema.Struct({
     by_kind: Schema.Record({ key: Schema.String, value: Schema.Number }),
-    unused_kinds: Schema.Array(Schema.String),
+    unwritten_perspectives: Schema.Array(Schema.String),
     single_stressor_end_states: Schema.Array(Schema.String),
     untouched: Schema.Array(Schema.Struct({ id: Schema.String, fan_in: Schema.Number, fan_out: Schema.Number })),
   }),

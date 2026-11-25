@@ -4,9 +4,11 @@
  * the design stressors as an editable table with an End state column, the coupling per pair of
  * components (Q30), and the incidence grid for the stressor in focus. The test set is not here.
  */
-import { computed, ref } from 'vue'
-import { cell, endStateName } from '../../../domain/stressAnalysis/analysisRows'
-import { coverageHints } from '../../../domain/stressAnalysis/analysisProgress'
+import { computed, inject, ref } from 'vue'
+import { endStateName } from '../../../domain/stressAnalysis/analysisRows'
+import { coverageHints, kindChoices, kindsInUse } from '../../../domain/stressAnalysis/analysisProgress'
+import { modelServiceKey } from '../../keys'
+import { usePerspectives } from '../../composables/usePerspectives'
 import type { AnalysisEdits } from '../../composables/useAnalysisEdits'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import CoverageHintsPanel from './CoverageHintsPanel.vue'
@@ -22,13 +24,10 @@ const emit = defineEmits<{
 }>()
 
 const showHints = ref(false)
-/** The row just added, whose text field opens for typing. */
-const fresh = ref<string | null>(null)
 
-const byKind = computed(() => Object.entries(props.analysis.progress.value?.coverage.by_kind ?? {}))
-const kinds = computed(() => [...new Set([
-  ...byKind.value.map(([kind]) => kind), ...(props.analysis.progress.value?.coverage.unused_kinds ?? []),
-])].sort())
+const byKind = computed(() => kindsInUse(props.analysis.progress.value?.coverage.by_kind ?? {}))
+const perspectives = usePerspectives(inject(modelServiceKey)!)
+const kinds = computed(() => kindChoices(perspectives.value, props.analysis.progress.value?.coverage.by_kind ?? {}))
 const hints = computed(() => {
   const progress = props.analysis.progress.value
   return progress ? coverageHints(progress, props.analysis.nameOf) : null
@@ -36,13 +35,6 @@ const hints = computed(() => {
 const focused = computed(() => props.analysis.stressors.value.find((row) => row.row_id === props.selected) ?? null)
 const coupling = computed(() => [...props.analysis.incidence.value?.coupling ?? []].sort((a, b) => b.count - a.count))
 
-/** Add a row, select it, and put its text field in focus (*Add stressor*, or a coverage hint). */
-const add = async (cells: Readonly<Record<string, string>> = {}) => {
-  const id = await props.edits.addStressor(cells)
-  if (!id) return
-  emit('select', id)
-  fresh.value = id
-}
 /** A stressor written in the line: added, and put in focus for ticking on the canvas. */
 const write = async (stressor: string, kind: string | undefined) => {
   const id = await props.edits.addStressor({ stressor, ...(kind ? { kind } : {}) })
@@ -64,11 +56,6 @@ const aboutElement = async (id: string) => {
         :key="kind"
         class="k"
       >{{ kind }} {{ count }}</span>
-      <span
-        v-for="kind in analysis.progress.value?.coverage.unused_kinds ?? []"
-        :key="kind"
-        class="k low"
-      >{{ kind }} 0</span>
       <span class="sp" />
       <button
         type="button"
@@ -86,11 +73,10 @@ const aboutElement = async (id: string) => {
       @close="showHints = false"
       @show="emit('show', $event)"
       @about-element="aboutElement"
-      @of-kind="add({ kind: $event })"
       @open-row="(tab, row) => emit('openRow', tab, row)"
     />
     <StressorInput
-      :kinds="analysis.stressors.value.map((row) => cell(row, 'kind'))"
+      :unwritten="analysis.progress.value?.coverage.unwritten_perspectives ?? []"
       placeholder="Write a stressor and press Enter"
       :disabled="analysis.saving.value"
       @write="write"
@@ -109,13 +95,11 @@ const aboutElement = async (id: string) => {
             v-for="row in analysis.stressors.value"
             :key="row.row_id"
             :row="row"
-            :fresh="row.row_id === fresh"
             :selected="row.row_id === selected"
             :kinds="kinds"
             :hits="analysis.hitsOf(row.row_id).length"
             :missing="analysis.missingOf(row.row_id).map(analysis.nameOf)"
             :end-states="analysis.endStates.value"
-            @opened="fresh = null"
             @select="emit('select', row.row_id === selected ? null : row.row_id)"
             @change="edits.changeStressor(row, $event)"
             @remove="edits.removeStressor(row)"
@@ -172,7 +156,6 @@ const aboutElement = async (id: string) => {
   border-bottom: 1px solid var(--border);
 }
 .k { padding: 1px 7px; border-radius: 3px; background: var(--soft); color: var(--text-2); }
-.k.low { background: var(--warn-soft); color: var(--warn-text); }
 .sp { flex: 1; }
 .help { padding: 6px 10px; font-size: 12px; color: var(--text-2); margin: 0; }
 .help kbd {
