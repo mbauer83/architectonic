@@ -7,7 +7,7 @@ from typing import Any, TypeAlias
 
 from src.application.artifacts.document_table_rows import DocumentTables, tables_of_stored_document
 from src.application.change_sets.base import record_revision
-from src.application.change_sets.candidate_apply import application_of
+from src.application.change_sets.candidate_apply import TERMINAL, application_of
 from src.application.change_sets.candidate_reads import (
     comparison,
     read_view,
@@ -63,7 +63,9 @@ class CandidateService:
         record = to_mapping(self.store.require(ref))
         return {"record": record, "version": record_revision(record)}
 
-    def save(self, record: Mapping[str, Any], based_on: str | None, *, ref: str | None = None) -> dict[str, Any]:
+    def save(
+        self, record: Mapping[str, Any], based_on: str | None, *, ref: str | None = None, applied: bool = False,
+    ) -> dict[str, Any]:
         body = dict(record)
         if ref and canonical_entity_key(str(body.get("id", ref))) != canonical_entity_key(ref):
             raise ValueError("The addressed candidate and record id must agree.")
@@ -71,7 +73,7 @@ class CandidateService:
         if (parent := body.get("parent")) and (beneath := self.store.find(str(parent))) is not None:
             body["parent"] = beneath.id  # a parent is held under the id it is stored by, however it was named
         candidate = from_mapping(body)
-        version = self.store.save(candidate, based_on)
+        version = self.store.save(candidate, based_on, applied=applied)
         notify_paths_changed([self.store.path(candidate.id)])
         return {"record": to_mapping(candidate), "version": version}
 
@@ -170,7 +172,7 @@ class CandidateService:
             raise CandidateConflict(refusal)
         integrated = bool(written and written.committed)
         if integrated:
-            self.save(to_mapping(application.integrated), version, ref=ref)
+            self.save(to_mapping(application.integrated), version, ref=ref, applied=True)
         return {
             "candidate": ref, "dry_run": dry_run, "integrated": integrated, "refusal": refusal,
             "operation_id": written.operation_id if written else None,
@@ -226,8 +228,12 @@ class CandidateService:
             raise ValueError("Select one or more distinct candidates.")
         layers = {}
         for candidate in selected:
-            if candidate.state != "candidate":
-                raise ValueError(f"Offer {candidate.id} as a candidate before checking integration.")
+            # A draft may be applied, so it may be checked: the check is how an applier sees what else
+            # touches the same things. A terminal candidate has nothing left to integrate.
+            if candidate.state in TERMINAL:
+                raise ValueError(
+                    f"{candidate.id} is {candidate.state}; only a draft or an offered candidate is checked."
+                )
             layers.update((c.id, c) for c in stack_of(candidate, self.store.find))
         return {"candidates": [candidate.id for candidate in selected], "overlaps": [
             {"kind": overlap.kind, "subject": overlap.subject, "parties": [

@@ -46,6 +46,43 @@ CANDIDATE_STATES: tuple[CandidateState, ...] = get_args(CandidateState)
 DRAFT: CandidateState = "draft"
 
 
+#: Where a candidate may move by an edit, from each state. A draft is offered (`candidate`) and an offer
+#: withdrawn (`draft`); either may be set aside as `rejected` or `superseded`. `integrated` is not here:
+#: a candidate becomes integrated only by being applied, which writes what it says onto the model. The
+#: three terminal states move nowhere.
+EDITABLE_TRANSITIONS: dict[CandidateState, frozenset[CandidateState]] = {
+    "draft": frozenset({"candidate", "rejected", "superseded"}),
+    "candidate": frozenset({"draft", "rejected", "superseded"}),
+    "integrated": frozenset(),
+    "rejected": frozenset(),
+    "superseded": frozenset(),
+}
+
+#: The states a candidate may be written in when it is new.
+INITIAL_STATES: frozenset[CandidateState] = frozenset({"draft", "candidate"})
+
+
+def refused_transition(was: CandidateState | None, becomes: CandidateState, *, applied: bool = False) -> str | None:
+    """Why a candidate in state *was* (None: new) cannot be written in state *becomes*, or None when it can.
+
+    *applied* is the apply's own write, the one way into `integrated`.
+    """
+    if was == becomes:
+        return None
+    if becomes == "integrated":
+        return None if applied and was in INITIAL_STATES else (
+            "A candidate becomes integrated only by being applied, which writes its operations onto the "
+            "model: use apply (POST /api/change-sets/<id>/apply, MCP change_set_apply)."
+        )
+    if was is None:
+        return None if becomes in INITIAL_STATES else f"A new candidate starts as draft or candidate, not {becomes}."
+    if becomes not in EDITABLE_TRANSITIONS[was]:
+        allowed = sorted(EDITABLE_TRANSITIONS[was])
+        then = f"it may become {', '.join(allowed)}" if allowed else "it is terminal and does not change"
+        return f"A candidate in state {was} cannot become {becomes}: {then}."
+    return None
+
+
 class MalformedCandidateArchitecture(ValueError):
     """A candidate architecture that cannot exist as stated. The message says why."""
 

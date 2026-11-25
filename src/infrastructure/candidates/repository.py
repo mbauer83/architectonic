@@ -8,7 +8,11 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from src.application.change_sets.base import record_revision
-from src.application.change_sets.candidate_architecture import CandidateArchitecture, MalformedCandidateArchitecture
+from src.application.change_sets.candidate_architecture import (
+    CandidateArchitecture,
+    MalformedCandidateArchitecture,
+    refused_transition,
+)
 from src.application.change_sets.candidate_recorded_form import dump_candidate, load_candidate, to_mapping
 from src.application.change_sets.ordering import application_order
 from src.application.change_sets.stacking import sets_beneath, stack_of
@@ -93,7 +97,8 @@ class CandidateArchitectureStore:
         finally:
             os.close(descriptor)
 
-    def save(self, candidate: CandidateArchitecture, based_on: str | None) -> str:
+    def save(self, candidate: CandidateArchitecture, based_on: str | None, *, applied: bool = False) -> str:
+        """Write *candidate* over the version *based_on*; *applied* only from the apply that integrates it."""
         with self._locked(candidate.id):
             old = self.find(candidate.id)
             version = record_revision(to_mapping(candidate))
@@ -101,9 +106,13 @@ class CandidateArchitectureStore:
                 return version
             current = record_revision(to_mapping(old)) if old else None
             if current != based_on:
-                raise CandidateConflict("The candidate changed. Read its current version before editing it.")
+                raise CandidateConflict(
+                    f"The candidate changed: its current version is {current}. Read it before editing it."
+                )
             if old and old.state in {"integrated", "superseded", "rejected"}:
                 raise CandidateConflict("A terminal candidate is immutable. Create a new candidate.")
+            if refusal := refused_transition(old.state if old else None, candidate.state, applied=applied):
+                raise CandidateConflict(refusal)
             if old and old.state == "candidate" and old.changes != candidate.changes:
                 raise CandidateConflict("Return the candidate to draft before changing its operations.")
             stack = stack_of(candidate, self.find)
