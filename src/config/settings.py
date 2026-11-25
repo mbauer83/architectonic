@@ -34,6 +34,9 @@ _DEFAULTS: dict[str, dict[str, object]] = {
         "log_generations": 3,
         "slow_request_warning_s": 5.0,
         "request_thread_dump_s": 20.0,
+        # A non-loopback `--host` is refused unless this is true: the backend has no authentication,
+        # so listening beyond the loopback is the operator's statement that something else guards it.
+        "allow_remote_without_auth": False,
     },
     "diagrams": {
         "archimate_type_markers": "labels",
@@ -269,6 +272,11 @@ def backend_log_max_bytes() -> int:
 def backend_log_generations() -> int:
     """How many rotated logs are kept. One means one previous log; there is no "keep nothing"."""
     return _positive_int("log_generations", 3)
+
+
+def backend_allows_remote_without_auth() -> bool:
+    """Whether the operator has opted in to a non-loopback bind; only a literal `true` opts in."""
+    return load_settings()["backend"].get("allow_remote_without_auth", False) is True
 
 
 def backend_min_log_level() -> str:

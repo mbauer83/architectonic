@@ -111,7 +111,9 @@ COPY config/ /app/config/
 # image layer (owned by the runtime user) so the entrypoint and `arch-assurance`
 # can mutate it without bind-mount permission conflicts. Operators override
 # declarative values via .env, or by mounting a settings.yaml writable by the
-# runtime uid (see docs/reference/docker-compose.md).
+# runtime uid (see docs/reference/docker-compose.md). These settings opt in to the
+# non-loopback bind the entrypoint makes (backend.allow_remote_without_auth): the
+# container must listen on all interfaces for a published port to reach it.
 RUN cp /app/config/settings.server.yaml /app/config/settings.yaml
 # Pre-built SPA, served by the backend at /.
 COPY --from=frontend /build/dist/ /app/tools/gui/dist/

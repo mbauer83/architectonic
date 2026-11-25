@@ -103,6 +103,10 @@ backend:
   request_thread_dump_s: 20   # dump every thread's stack for a request still running
                               # after this — the diagnostic for a stuck request, so keep
                               # it well above the warning threshold
+  allow_remote_without_auth: false  # permit a non-loopback --host. The backend has no
+                              # authentication, so set this only where a VPN, firewall
+                              # or authenticating proxy guards the address. The flag
+                              # --allow-remote-without-auth does the same for one run
 
 diagrams:
   archimate_type_markers: icons   # icons | labels
