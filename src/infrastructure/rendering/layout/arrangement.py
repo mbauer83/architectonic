@@ -20,7 +20,7 @@ picture's own terms — aliases, extents, courses — so it can be checked witho
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 from src.domain.diagrams.layout.geometry import Extent, Point
@@ -81,12 +81,11 @@ def _union(extents: Sequence[Extent]) -> Extent:
     )
 
 
-def _widened_to(needed: Extent, stated: Placed | None) -> Extent:
-    """*needed* grown to take in what is stated for the box: its corner, and its far corner where it is sized."""
+def _stated_reach(stated: Placed | None) -> Extent | None:
+    """What a box's statement reaches: its corner, and its far corner where it is sized."""
     if stated is None:
-        return needed
-    far = placed_extent(stated) or Extent(stated.x, stated.y, stated.x, stated.y)
-    return _union([needed, far])
+        return None
+    return placed_extent(stated) or Extent(stated.x, stated.y, stated.x, stated.y)
 
 
 def _wide_enough_for_its_title(needed: Extent, box: DrawnBox) -> Extent:
@@ -100,6 +99,46 @@ def _wide_enough_for_its_title(needed: Extent, box: DrawnBox) -> Extent:
         return needed
     grow = (least - needed.width) / 2
     return Extent(needed.left - grow, needed.top, needed.right + grow, needed.bottom)
+
+
+def fitted_boxes(
+    picture: RenderedPicture, elements: Mapping[str, Extent], stated: Callable[[str], Extent | None],
+) -> dict[str, Extent]:
+    """Every box of *picture* where it is drawn now: the box rule, which the canvas keeps too.
+
+    A box is what its contents need — the elements where *elements* has them now, the boxes inside it
+    fitted the same way — with the padding the renderer gave it, never narrower than its title, and
+    grown to take in what *stated* reaches for it; never narrowed. `tests/fixtures/layout_geometry/
+    boxes.json` holds the canvas's `fittedBoxes` to the same answers.
+    """
+    children: dict[str | None, list[str]] = defaultdict(list)
+    for shape in (*picture.boxes.values(), *picture.elements.values()):
+        children[shape.inside].append(shape.alias)
+    boxes: dict[str, Extent] = {}
+
+    def now(alias: str) -> Extent:
+        return elements[alias] if alias in elements else fit(alias)
+
+    def fit(alias: str) -> Extent:
+        if alias in boxes:
+            return boxes[alias]
+        box, inside = picture.boxes[alias], children.get(alias, [])
+        drawn = needed = box.extent
+        if inside:
+            before = _union([extent for child in inside if (extent := picture.extent_of(child)) is not None])
+            after = _union([now(child) for child in inside])
+            needed = Extent(
+                after.left - (before.left - drawn.left), after.top - (before.top - drawn.top),
+                after.right + (drawn.right - before.right), after.bottom + (drawn.bottom - before.bottom),
+            )
+        needed = _wide_enough_for_its_title(needed, box)
+        reach = stated(alias)
+        boxes[alias] = needed if reach is None else _union([needed, reach])
+        return boxes[alias]
+
+    for alias in picture.boxes:
+        fit(alias)
+    return boxes
 
 
 @dataclass(frozen=True)
@@ -125,9 +164,7 @@ class _Arranging:
             self._children[shape.inside].append(shape.alias)
         self.resized: set[str] = set()
         self.elements = {alias: self._element_extent(alias) for alias in picture.elements}
-        self.boxes: dict[str, Extent] = {}
-        for alias in picture.boxes:
-            self._box_extent(alias)
+        self.boxes = fitted_boxes(picture, self.elements, lambda alias: _stated_reach(self._stated_for(alias)))
 
     def _stated_for(self, alias: str) -> Placed | None:
         """What the layout states for a shape: an element by its instance, a box by its key."""
@@ -144,25 +181,6 @@ class _Arranging:
         if abs(placed.width - drawn.width) > _SAME_SIZE or abs(placed.height - drawn.height) > _SAME_SIZE:
             self.resized.add(alias)
         return placed
-
-    def _extent_now(self, alias: str) -> Extent:
-        return self.elements[alias] if alias in self.elements else self._box_extent(alias)
-
-    def _box_extent(self, alias: str) -> Extent:
-        if alias in self.boxes:
-            return self.boxes[alias]
-        drawn, inside = self._picture.boxes[alias].extent, self._children.get(alias, [])
-        needed = drawn
-        if inside:
-            before = _union([extent for child in inside if (extent := self._picture.extent_of(child)) is not None])
-            now = _union([self._extent_now(child) for child in inside])
-            needed = Extent(
-                now.left - (before.left - drawn.left), now.top - (before.top - drawn.top),
-                now.right + (drawn.right - before.right), now.bottom + (drawn.bottom - before.bottom),
-            )
-        needed = _wide_enough_for_its_title(needed, self._picture.boxes[alias])
-        self.boxes[alias] = _widened_to(needed, self._stated_for(alias))
-        return self.boxes[alias]
 
     def _stacking(self, alias: str) -> int:
         instance = self._diagram.instance_by_alias.get(alias)

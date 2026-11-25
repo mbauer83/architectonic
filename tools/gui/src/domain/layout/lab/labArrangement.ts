@@ -6,7 +6,8 @@
  * its contents need with the padding PlantUML gave it, never narrower than its title, widened to what
  * is stated for it and never narrowed. So a member stays inside its box because the box grows to hold
  * it, and moving a box moves what it holds. Membership never changes here: which box an element is in
- * is the diagram's to say, not a drag's.
+ * is the diagram's to say, not a drag's. `tests/fixtures/layout_geometry/boxes.json` holds `fittedBoxes` to the
+ * composer's `fitted_boxes`.
  */
 import type { Extent, Point } from '../geometry'
 import { unionOf, widthOf } from '../geometry'
