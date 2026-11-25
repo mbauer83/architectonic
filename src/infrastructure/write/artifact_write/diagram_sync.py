@@ -295,12 +295,12 @@ def sync_diagram_to_model(
     exist. Renamed entities are detected by matching the stable prefix
     (``TYPE@timestamp.random``) so a name change updates the reference rather
     than removing the entity. Surviving records are passed to
-    ``generate_archimate_puml_body`` so names are always current.
+    ``generate_puml_body`` so names are always current.
 
     Raises ValueError for scope-bound (model-backed) diagrams — use
     ``refresh_diagram`` for those.
     """
-    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
+    from src.infrastructure.rendering.diagram_builder import generate_puml_body  # noqa: PLC0415
 
     assert_engagement_write_root(repo_root)
 
@@ -388,7 +388,7 @@ def sync_diagram_to_model(
             deleted_diagram=False,
         )
 
-    puml = generate_archimate_puml_body(
+    puml = generate_puml_body(
         name,
         entity_records,
         conn_records,

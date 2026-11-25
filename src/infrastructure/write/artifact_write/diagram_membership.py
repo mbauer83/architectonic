@@ -132,7 +132,7 @@ def rendered_membership(
     diagram's body is not the generator's to rewrite.
     """
     from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path  # noqa: PLC0415
-    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
+    from src.infrastructure.rendering.diagram_builder import generate_puml_body  # noqa: PLC0415
 
     from .parse_existing import parse_diagram_file  # noqa: PLC0415
 
@@ -159,7 +159,7 @@ def rendered_membership(
     # boxes it wants is stating them all, and merging would make a group impossible to delete.
     groupings = stored if authored_groupings is None else authored_groupings
     return RenderedMembership(
-        puml=generate_archimate_puml_body(
+        puml=generate_puml_body(
             str(fm.get("name", "")),
             entities,
             connections,

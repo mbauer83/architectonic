@@ -215,7 +215,7 @@ def render_composition(
     """
     from src.infrastructure.icons.diagram_icons import DiagramIconSource  # noqa: PLC0415
     from src.infrastructure.icons.library_source import LibraryIconSource  # noqa: PLC0415
-    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
+    from src.infrastructure.rendering.diagram_builder import generate_puml_body  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.diagram_body_preparation import with_icons_prepared  # noqa: PLC0415
 
     entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
@@ -235,7 +235,7 @@ def render_composition(
     except ValueError as exc:  # an upload the normaliser refuses is the caller's to correct
         raise CompositionRefused(str(exc), field="diagram_entities") from exc
     dc, conn_bindings = _extract_conn_bindings(dc)
-    puml = generate_archimate_puml_body(
+    puml = generate_puml_body(
         body.name,
         entities,
         connections,

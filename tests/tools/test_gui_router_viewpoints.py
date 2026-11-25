@@ -469,7 +469,7 @@ class TestExecuteDiagram:
 
         import src.infrastructure.rendering.diagram_builder as diagram_builder_mod
 
-        monkeypatch.setattr(diagram_builder_mod, "generate_archimate_puml_body", _capture)
+        monkeypatch.setattr(diagram_builder_mod, "generate_puml_body", _capture)
         monkeypatch.setattr(diagram_builder_mod, "render_puml_svg", lambda *a, **kw: ("<svg/>", []))
 
         resp = client.post("/api/viewpoints/execute-diagram", json={"query": {}})
@@ -505,7 +505,7 @@ class TestExecuteDiagram:
             captured["label_attribute"] = kwargs.get("label_attribute")
             return "@startuml\n@enduml\n"
 
-        monkeypatch.setattr(diagram_builder_mod, "generate_archimate_puml_body", _capture)
+        monkeypatch.setattr(diagram_builder_mod, "generate_puml_body", _capture)
         monkeypatch.setattr(diagram_builder_mod, "render_puml_svg", lambda *a, **kw: ("<svg/>", []))
 
         resp = labelled_client.post("/api/viewpoints/execute-diagram", json={"slug": "labelled"})
@@ -520,7 +520,7 @@ class TestExecuteDiagram:
             captured["label_attribute"] = kwargs.get("label_attribute")
             return "@startuml\n@enduml\n"
 
-        monkeypatch.setattr(diagram_builder_mod, "generate_archimate_puml_body", _capture)
+        monkeypatch.setattr(diagram_builder_mod, "generate_puml_body", _capture)
         monkeypatch.setattr(diagram_builder_mod, "render_puml_svg", lambda *a, **kw: ("<svg/>", []))
 
         resp = client.post("/api/viewpoints/execute-diagram", json={"query": {}})

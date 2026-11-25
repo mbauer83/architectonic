@@ -102,7 +102,7 @@ def gsn_draft(analysis_id: str) -> JSONResponse:
     response_model=GsnRenderedResponse)
 def gsn_rendered(analysis_id: str) -> JSONResponse:
     from src.infrastructure.rendering.diagram_builder import (  # noqa: PLC0415
-        generate_archimate_puml_body,
+        generate_puml_body,
         render_puml_svg,
     )
     from src.infrastructure.rest.routers import state  # noqa: PLC0415
@@ -128,7 +128,7 @@ def gsn_rendered(analysis_id: str) -> JSONResponse:
                 remedy="Start the backend with an engagement repository root.",
             ),
         )
-    puml = generate_archimate_puml_body(
+    puml = generate_puml_body(
         f"GSN {analysis_id}",
         [],
         [],

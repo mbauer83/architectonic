@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from src.domain.diagrams.authored_groupings import states_a_ruled_grouping
-from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
+from src.infrastructure.rendering.diagram_builder import generate_puml_body
 from tests.support.archimate_scenes import DIAGRAM_TYPE, SCENES, Scene
 
 _KEPT = Path(__file__).parent.parent / "fixtures" / "archimate_bodies"
@@ -27,7 +27,7 @@ def body_of(scene: Scene) -> str:
     with warnings.catch_warnings():
         # The largest scene is past the size the generator warns at, which is why it is a scene.
         warnings.simplefilter("ignore", UserWarning)
-        return generate_archimate_puml_body(
+        return generate_puml_body(
             scene.name, list(scene.entities), list(scene.connections), diagram_type=DIAGRAM_TYPE,
             **scene.statements,  # type: ignore[arg-type]
         )
