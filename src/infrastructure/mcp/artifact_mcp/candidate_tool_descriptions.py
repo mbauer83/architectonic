@@ -140,9 +140,9 @@ CHANGE_SET_DELETE = (
 
 ANALYSIS_START = (
     "Start a stress analysis: its naive candidate and the stress-analysis document naming it, both or "
-    "neither. naive: the naive's header as change_set_create takes it (name; scope, diagram or parent): it "
-    "owns the scope and the diagram the analysis is drawn on. context: optional free text, the environment "
-    "and the decision the evaluation informs. "
+    "neither. naive: the naive's header as change_set_create takes it — a name alone starts it empty, to be "
+    "defined by recording its operations and the model elements it reads over (scope); a diagram or a parent "
+    "seeds it. context: optional free text, the environment and the decision the evaluation informs. "
     "Stressors, end states, incidence, adaptations and verdicts are then rows of the document's tables, "
     "written with artifact_edit_document_table."
 )

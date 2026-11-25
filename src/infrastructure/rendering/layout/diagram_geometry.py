@@ -211,6 +211,18 @@ def geometry_response(
     }
 
 
+#: The size of the picture of nothing: room to start sketching in.
+_EMPTY_CANVAS = {"left": 0.0, "top": 0.0, "right": 960.0, "bottom": 560.0}
+
+
+def empty_geometry(artifact_id: str, name: str) -> dict[str, Any]:
+    """The geometry of a picture that draws nothing: a canvas to start on, and no shape, box or line."""
+    return {
+        "artifact_id": artifact_id, "name": name, "canvas": dict(_EMPTY_CANVAS), "backdrop": [],
+        "surround": {"drawn": dict(_EMPTY_CANVAS), "parts": []}, "elements": [], "boxes": [], "relations": [],
+    }
+
+
 def drawn_extents(geometry: Mapping[str, object]) -> dict[str, Extent]:
     """Each element's extent as the geometry read draws it, by its layout key: the sizes a layout entry omits."""
     found: dict[str, Extent] = {}

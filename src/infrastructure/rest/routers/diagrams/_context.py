@@ -7,11 +7,9 @@ from difflib import SequenceMatcher
 from typing import Any
 
 from src.application._diagram_entity_extraction import (
-    HELD_CONNECTION_MARK,
     NOTHING_HELD,
     HeldRecordScope,
     axis_entity_ids,
-    extract_diagram_connections,
     extract_diagram_entities,
 )
 from src.application.artifacts.parsing import extract_declared_puml_aliases, normalize_puml_alias
@@ -22,15 +20,11 @@ from src.application.modeling.diagram_kind_palette import (
 )
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.domain.artifact_id import stable_conn_id
 from src.domain.diagrams.element_correspondence import element_correspondences
-from src.domain.diagrams.relation_key import labels_by_relation
 from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.artifact_types import DiagramRecord, EntityRecord
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
-from src.infrastructure.rendering.archimate_occurrences import drawn_labels_by_instance
 from src.infrastructure.rest.routers import state as s
-from src.infrastructure.rest.routers.diagrams._derived_entities import derived_entity_rows
 from src.infrastructure.rest.routers.viewpoints._scope import resolve_viewpoint_scope
 
 
@@ -102,6 +96,11 @@ def diagram_entities_and_puml(
         puml = diag_rec.path.read_text(encoding="utf-8")
     except OSError:
         return [], ""
+    return drawn_entities(repo, diag_rec, puml, catalogs), puml
+
+
+def drawn_entities(repo: Any, diag_rec: DiagramRecord, puml: str, catalogs: RuntimeCatalogs) -> list[dict[str, Any]]:
+    """Each entity the picture *puml* of *diag_rec* draws, as the editor lists it, in domain order."""
     aliases = declared_aliases_in_puml(puml)
     scope = _held_record_scope(catalogs, diag_rec.diagram_type)
     records = {rec.artifact_id: rec for rec in repo.list_entities()}
@@ -145,7 +144,7 @@ def diagram_entities_and_puml(
             e["name"],
         )
     )
-    return entities, puml
+    return entities
 
 
 def candidate_connections_for_entities(repo: Any, entity_ids: list[str]) -> list[dict[str, Any]]:
@@ -186,81 +185,17 @@ def parse_explicit_connection_pairs(puml: str) -> set[tuple[str, str]]:
 
 
 def diagram_context_payload(repo: Any, diag_rec: DiagramRecord, catalogs: RuntimeCatalogs) -> dict[str, Any]:
+    from src.infrastructure.rest.routers.diagrams._picture_context import picture_context_payload  # noqa: PLC0415
     from src.infrastructure.rest.routers.diagrams.router import _read_diagram_impl  # noqa: PLC0415
 
-    version = repo.read_model_version()
     diagram = _read_diagram_impl(diag_rec.artifact_id, catalogs)
-    entities, puml = diagram_entities_and_puml(repo, diag_rec, catalogs)
-    entity_ids = [str(entity["artifact_id"]) for entity in entities]
-    scope = _held_record_scope(catalogs, diag_rec.diagram_type)
-    extracted_entities = {rec.artifact_id: rec for rec in extract_diagram_entities(diag_rec, scope)}
-    in_diagram = {}
-    for entity in entities:
-        entity_id = str(entity["artifact_id"])
-        rec = repo.get_entity(entity_id) or extracted_entities.get(entity_id)
-        if rec is not None:
-            in_diagram[entity_id] = rec
-    explicit_pairs = parse_explicit_connection_pairs(puml)
-    edge_labels = labels_by_relation(diag_rec.extra.get("edge-labels") if diag_rec.extra else None)
-    connections: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    connection_records = {conn.artifact_id: conn for conn in repo.list_connections()}
-    connection_records.update({
-        conn.artifact_id: conn for conn in extract_diagram_connections(diag_rec, scope)
-    })
-    for conn in connection_records.values():
-        if conn.artifact_id in seen:
-            continue
-        src = in_diagram.get(conn.source)
-        tgt = in_diagram.get(conn.target)
-        if src is None or tgt is None:
-            continue
-        sa = normalize_puml_alias(src.display_alias or "")
-        ta = normalize_puml_alias(tgt.display_alias or "")
-        is_owned = conn.path == diag_rec.path and HELD_CONNECTION_MARK in conn.artifact_id
-        if not is_owned and (sa, ta) not in explicit_pairs and (ta, sa) not in explicit_pairs:
-            continue
-        # The key a statement about this drawn relation is filed under: a connection the diagram
-        # holds by its id within the diagram, a model connection by its own.
-        edge_key = conn.artifact_id.partition(HELD_CONNECTION_MARK)[2] if is_owned else stable_conn_id(conn.artifact_id)
-        d = s.connection_to_dict(conn)
-        d["source_name"] = src.name
-        d["target_name"] = tgt.name
-        d["source_alias"] = sa
-        d["target_alias"] = ta
-        d["edge_key"] = edge_key
-        d["edge_label_override"] = edge_labels.get(edge_key)
-        connections.append(d)
-        seen.add(conn.artifact_id)
-    raw_de = diag_rec.extra.get("diagram-entities") if diag_rec.extra else None
-    diagram_entities: dict[str, Any] = raw_de if isinstance(raw_de, dict) else {}
-    dt = catalogs.diagram_types.find_diagram_type(diag_rec.diagram_type)
-    type_extras = dt.build_context_extras(repo, diag_rec.artifact_id, diagram_entities) if dt else {}
-    # What the type's projection draws and as what, from the diagram-entities the read serves: the
-    # same rows the preview answers, so an editor is right before its first preview.
-    root = s.maybe_engagement_root()
-    derived = (
-        derived_entity_rows(dt, diag_rec.diagram_type, diagram.get("diagram_entities") or {}, root)
-        if dt is not None and root is not None else None
-    )
-    return {
-        "diagram": diagram,
-        "entities": entities,
-        "connections": connections,
-        # What each instance is called in the body as it stands, by instance id. Read off the body
-        # rather than derived, because a hand-laid body may call an element something its record
-        # does not — and an editor that cannot see that would revert it on the first save.
-        "drawn_labels": drawn_labels_by_instance(puml, diagram_entities, in_diagram),
-        "candidate_connections": candidate_connections_for_entities(repo, entity_ids),
-        "suggested_entities": hop_suggestions(repo, entity_ids, catalogs, max_hops=2, limit_per_hop=25),
-        "explicit_connection_pairs": [list(pair) for pair in sorted(explicit_pairs)],
-        "generation": version.generation,
-        "etag": version.etag,
-        # Namespaced, not merged: the envelope declares its own fields, and a hook free to add a key
-        # beside them would make the whole response a contract promising nothing.
-        "type_extras": type_extras or None,
-        "derived_entities": derived,
-    }
+    try:
+        puml = diag_rec.path.read_text(encoding="utf-8")
+    except OSError:
+        puml = ""
+    return {"diagram": diagram, **picture_context_payload(
+        repo, diag_rec, puml, catalogs, read_entities=diagram.get("diagram_entities") or {},
+    )}
 
 
 def hop_suggestions(

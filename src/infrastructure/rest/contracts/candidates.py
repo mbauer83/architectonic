@@ -149,13 +149,6 @@ class CandidateComparison(CandidateStanding):
     drawing: DiagramLayoutGeometryResponse | None = None
 
 
-class ScopeDrawingRequest(Closed):
-    """A scope that no stored diagram draws, to be drawn as a generated view before a candidate holds it."""
-
-    scope: list[str] = Field(min_length=1, description="The model's entities in the scope, by id in either spelling.")
-    name: str = Field(min_length=1, description="What the generated view is called.")
-
-
 class CandidateSelection(Closed):
     candidates: list[str] = Field(min_length=1)
 
