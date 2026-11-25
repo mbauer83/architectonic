@@ -28,9 +28,7 @@ from src.domain.diagrams.bindings import (
     parse_binding,
     parse_target,
 )
-from src.domain.diagrams.element_correspondence import (
-    element_entity_ids,
-)
+from src.domain.diagrams.element_correspondence import diagram_element_ids, element_entity_ids
 
 _SHORTHAND_ALLOWED_KINDS: frozenset[str] = frozenset(
     {"represents", "scoped-by", "traces-to", "refines"}
@@ -255,3 +253,23 @@ def _normalize_shorthand(entity_type: str, element_id: str, shorthand: dict[str,
         correspondence_kind=corr_kind,
         target=target,
     )
+
+
+def bindings_of_drawn_elements(
+    raw_bindings: list[dict[str, object]], diagram_entities: object,
+) -> list[dict[str, object]]:
+    """*raw_bindings* less those whose subject is a diagram element *diagram_entities* no longer declares.
+
+    A binding of an element is the element's: when a write replaces `diagram-entities` and an element
+    goes — a further occurrence taken off the diagram — its `represents` binding goes with it, rather
+    than staying behind to name an element that is not there (E401) and refuse the write.
+    """
+    drawn = diagram_element_ids(diagram_entities)
+
+    def kept(raw: dict[str, object]) -> bool:
+        subject = raw.get("subject")
+        if not isinstance(subject, dict) or subject.get("kind") != "entity":
+            return True
+        return str(subject.get("id") or "").strip() in drawn
+
+    return [raw for raw in raw_bindings if kept(raw)]

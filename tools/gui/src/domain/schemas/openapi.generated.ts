@@ -5990,7 +5990,7 @@ export interface components {
             /** State */
             state: string;
         };
-        CanvasCommand: components["schemas"]["CreateElement"] | components["schemas"]["RenameElement"] | components["schemas"]["DeleteElement"] | components["schemas"]["ConnectElements"];
+        CanvasCommand: components["schemas"]["CreateElement"] | components["schemas"]["RenameElement"] | components["schemas"]["EditElement"] | components["schemas"]["DeleteElement"] | components["schemas"]["ConnectElements"];
         /** ChangedField */
         ChangedField: {
             after: components["schemas"]["JsonValue"];
@@ -6641,6 +6641,10 @@ export interface components {
             entity_ids: string[];
             /** Group */
             group?: string | null;
+            /** Grouping Intents */
+            grouping_intents?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Keywords */
             keywords?: string[] | null;
             /** Layout */
@@ -7766,6 +7770,10 @@ export interface components {
             diagram_type: string;
             /** Entity Ids */
             entity_ids: string[];
+            /** Grouping Intents */
+            grouping_intents?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Name */
             name: string;
         };
@@ -8588,6 +8596,10 @@ export interface components {
             entity_ids: string[];
             /** Group */
             group?: string | null;
+            /** Grouping Intents */
+            grouping_intents?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Layout */
             layout?: {
                 [key: string]: unknown;
@@ -8655,6 +8667,42 @@ export interface components {
             entity_id?: string | null;
             /** Instance Id */
             instance_id: string;
+        };
+        /**
+         * EditElement
+         * @description An element's details as its entity form edits them (`edit_entity`); a field left None is not changed.
+         *
+         *     `properties` and `attribute_types` are patches key by key, as the form sends them: a key mapped to
+         *     None is removed, an omitted key is kept.
+         */
+        EditElement: {
+            /** Artifact Id */
+            artifact_id: string;
+            /** Attribute Types */
+            attribute_types?: {
+                [key: string]: string | null;
+            } | null;
+            /** Group */
+            group?: string | null;
+            /** Keywords */
+            keywords?: string[] | null;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Op
+             * @constant
+             */
+            op: "model.element.edit";
+            /** Properties */
+            properties?: {
+                [key: string]: string | null;
+            } | null;
+            /** Specializations */
+            specializations?: string[] | null;
+            /** Status */
+            status?: string | null;
+            /** Summary */
+            summary?: string | null;
         };
         /** EditEntityBody */
         EditEntityBody: {
@@ -9754,6 +9802,10 @@ export interface components {
             diagram_type: string;
             /** Entity Ids */
             entity_ids: string[];
+            /** Grouping Intents */
+            grouping_intents?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Name */
             name: string;
             /** Proposed Elements */

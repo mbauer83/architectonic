@@ -31,6 +31,16 @@ export const editsOf = (command: CanvasCommand): readonly CandidateEdit[] => {
       }]
     case 'model.element.rename':
       return [{ op: 'edit_entity', artifact_id: command.artifact_id, field: 'name', value: command.name }]
+    case 'model.element.edit': {
+      const { op: _, artifact_id: id, properties, attribute_types: types, ...fields } = command
+      const keyed = (field: string, patch: Readonly<Record<string, string | null>> | undefined) =>
+        Object.entries(patch ?? {}).map(([key, value]) => ({ op: 'edit_entity', artifact_id: id, field, key, value }))
+      return [
+        ...Object.entries(fields).filter(([, value]) => value !== undefined)
+          .map(([field, value]) => ({ op: 'edit_entity', artifact_id: id, field, value })),
+        ...keyed('properties', properties), ...keyed('attribute_types', types),
+      ]
+    }
     case 'model.element.delete':
       return [{ op: 'remove_entity', artifact_id: command.artifact_id }]
     case 'model.relation.create': {

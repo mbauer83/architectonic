@@ -74,3 +74,17 @@ def element_entity_ids(bindings: object) -> dict[str, str]:
     }
 
 
+
+
+def diagram_element_ids(diagram_entities: object) -> frozenset[str]:
+    """Every diagram-local element `diagram-entities` declares: the `id` of each item of each list.
+
+    The ids a binding's `entity` subject may name; one that names none of them binds nothing (E401).
+    """
+    if not isinstance(diagram_entities, dict):
+        return frozenset()
+    return frozenset(
+        str(item["id"])
+        for items in diagram_entities.values() if isinstance(items, list)
+        for item in items if isinstance(item, dict) and item.get("id") is not None
+    )

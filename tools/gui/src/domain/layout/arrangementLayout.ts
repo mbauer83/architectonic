@@ -41,15 +41,22 @@ export interface Placed {
   readonly h?: number
 }
 
-/** The three sections of a layout block an arrangement states. */
+/** The sections of a layout block an arrangement states. */
 export interface ArrangedLayout {
   readonly elements: Readonly<Record<string, Placed>>
   readonly boxes: Readonly<Record<string, Placed>>
   readonly relations?: Readonly<Record<string, Route>>
+  /** The stacking, by the key that names the shape in `elements` or `boxes`. */
+  readonly z?: Readonly<Record<string, number>>
 }
 
 /** The sections of a stored block an arrangement reads and writes: the layout contract's own. */
-export type StoredLayout = Pick<typeof DiagramLayoutSchema.Type, 'elements' | 'boxes' | 'relations'>
+export type StoredLayout = Pick<typeof DiagramLayoutSchema.Type, 'elements' | 'boxes' | 'relations' | 'z'>
+
+/** Every shape's alias by the key a layout names it by; a shape the layout cannot name is absent. */
+const aliasesByKey = (geometry: LayoutGeometry): ReadonlyMap<string, string> =>
+  new Map([...geometry.elements, ...geometry.boxes].flatMap((shape) =>
+    (shape.key === undefined ? [] : [[shape.key, shape.alias] as const])))
 
 const SAME = 0.5
 
@@ -77,7 +84,12 @@ export const arrangedBy = (geometry: LayoutGeometry, stored: StoredLayout): Arra
   }))
   const drawnKeys = new Set(geometry.relations.flatMap((one) => (one.key === undefined ? [] : [one.key])))
   const routes = new Map(Object.entries(stored.relations ?? {}).filter(([key]) => drawnKeys.has(key)))
-  return { elements, stated, routes }
+  const aliases = aliasesByKey(geometry)
+  const z = new Map(Object.entries(stored.z ?? {}).flatMap(([key, value]): [string, number][] => {
+    const alias = aliases.get(key)
+    return alias === undefined ? [] : [[alias, value]]
+  }))
+  return { elements, stated, routes, ...(z.size ? { z } : {}) }
 }
 
 const placedAt = (extent: Extent, sized: boolean): Placed => ({
@@ -102,7 +114,12 @@ export const layoutOf = (geometry: LayoutGeometry, arrangement: Arrangement): Ar
     const now = placement.boxes.get(box.alias)
     if (box.key !== undefined && now) (box.section === 'elements' ? elements : boxes)[box.key] = placedAt(now, true)
   }
-  return { elements, boxes, relations: Object.fromEntries(arrangement.routes) }
+  const keys = new Map([...aliasesByKey(geometry)].map(([key, alias]) => [alias, key]))
+  const z = Object.fromEntries([...arrangement.z ?? []].flatMap(([alias, value]): [string, number][] => {
+    const key = keys.get(alias)
+    return key === undefined ? [] : [[key, value]]
+  }))
+  return { elements, boxes, relations: Object.fromEntries(arrangement.routes), ...(Object.keys(z).length ? { z } : {}) }
 }
 
 /** One entry of a layout patch: what it becomes (null removes it) and what it was read as. */
@@ -115,6 +132,7 @@ export type ArrangementPatch = {
   readonly elements: Readonly<Record<string, EntryChange>>
   readonly boxes: Readonly<Record<string, EntryChange>>
   readonly relations: Readonly<Record<string, EntryChange<Route>>>
+  readonly z: Readonly<Record<string, EntryChange<number>>>
 }
 
 const samePlaced = (one: Placed | undefined, other: Placed | undefined): boolean =>
@@ -139,10 +157,11 @@ export const layoutPatchBetween = (stored: StoredLayout, wanted: ArrangedLayout 
   elements: sectionPatch(stored.elements ?? {}, wanted?.elements ?? {}, samePlaced),
   boxes: sectionPatch(stored.boxes ?? {}, wanted?.boxes ?? {}, samePlaced),
   relations: sectionPatch<Route>(stored.relations ?? {}, wanted?.relations ?? {}, sameRoute),
+  z: sectionPatch<number>(stored.z ?? {}, wanted?.z ?? {}, (one, other) => one === other),
 })
 
 export const patchIsEmpty = (patch: ArrangementPatch): boolean =>
-  [patch.elements, patch.boxes, patch.relations].every((section) => Object.keys(section).length === 0)
+  [patch.elements, patch.boxes, patch.relations, patch.z].every((section) => Object.keys(section).length === 0)
 
 const sameExtent = (one: Extent | undefined, other: Extent | undefined): boolean =>
   one !== undefined && other !== undefined && Math.abs(one.left - other.left) <= SAME
@@ -184,7 +203,8 @@ export const arrangedUnits = (
     const [px, py] = shiftOf(parentFrom, parentTo)
     return Math.abs(dx - px) <= SAME && Math.abs(dy - py) <= SAME
   }
-  return [...inside.keys()].filter((alias) => changed(alias) && !carried(alias))
+  const restacked = (alias: string): boolean => (before.z?.get(alias) ?? 0) !== (after.z?.get(alias) ?? 0)
+  return [...inside.keys()].filter((alias) => (changed(alias) && !carried(alias)) || restacked(alias))
 }
 
 /** The lines whose stated route an edit changed from *before* to *after*, by their place on the picture. */

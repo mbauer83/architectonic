@@ -102,10 +102,24 @@ describe('a canvas menu', () => {
 describe("an element's menu", () => {
   it('lists what the editor can do, removing before the destructive entry at the bottom', () => {
     const ids = elementMenuItems(DIAGRAM_WORDS, false).map((one) => one.id)
-    expect(ids).toEqual(['rename', 'connect', 'open', 'remove', 'delete'])
+    expect(ids).toEqual([
+      'rename', 'details', 'connect', 'open', 'nest', 'stack:front', 'stack:forward', 'stack:backward', 'stack:back', 'remove', 'delete',
+    ])
     const last = elementMenuItems(DIAGRAM_WORDS, false).at(-1)
     expect(last?.danger).toBe(true)
     expect(last?.hint).toBe(DIAGRAM_WORDS.deleteHint)
+  })
+
+  it('offers to take an element out of the diagram\'s own box it is in, naming the box', () => {
+    const items = elementMenuItems(DIAGRAM_WORDS, false, 'Desk')
+    expect(items.find((one) => one.id === 'unnest')?.label).toBe('Take out of Desk')
+    expect(elementMenuItems(DIAGRAM_WORDS, false).some((one) => one.id === 'unnest')).toBe(false)
+  })
+
+  it('draws an element again only where the diagram type draws further occurrences', () => {
+    expect(elementMenuItems(DIAGRAM_WORDS, false, null, true).some((one) => one.id === 'occurrence')).toBe(true)
+    expect(elementMenuItems(DIAGRAM_WORDS, false, null, false).some((one) => one.id === 'occurrence')).toBe(false)
+    expect(elementMenuItems(DIAGRAM_WORDS, true, null, true).find((one) => one.id === 'occurrence')?.disabled).toBe(true)
   })
 
   it('cannot open the page of an element drafted in this session', () => {

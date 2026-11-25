@@ -17,23 +17,24 @@ import {
   arrangedBy, arrangedUnits, layoutOf, layoutPatchBetween, patchIsEmpty, shownRoutesOfMoved,
 } from '../../domain/layout/arrangementLayout'
 import type { Arrangement } from '../../domain/layout/lab/labArrangement'
-import { drawnArrangement } from '../../domain/layout/lab/labArrangement'
+import { drawnArrangement, placedAt } from '../../domain/layout/lab/labArrangement'
+import type { Point } from '../../domain/layout/geometry'
+import { occurrenceItems } from '../../domain/archimateOccurrences'
+import { type PendingChange, contentChanges } from '../../domain/layout/sessionChanges'
+import { addOccurrenceFor } from '../lib/archimateOccurrences'
 import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
-import { composeCanvas } from '../../domain/layout/canvasComposition'
-import type { CanvasCommand } from '../../ports/diagramWriteBodies'
+import { membershipOf } from '../../domain/layout/diagramMembership'
+import { composeCanvas, withCommand } from '../../domain/layout/canvasComposition'
+import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import { stableEntityId } from '../../domain/artifactId'
+import { type Restack, restacked } from '../../domain/layout/stacking'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { ArrangementState } from './useArrangementSession'
 import { useArrangementSession } from './useArrangementSession'
 
-/** One row of what Save would write, in the product's words. */
-export interface PendingChange {
-  readonly key: string
-  readonly text: string
-  readonly model?: boolean
-}
+export type { PendingChange }
 
 export function useDiagramEditing(
   svc: ModelService, diagramId: () => string, membership: () => DrawnMembership | null,
@@ -59,7 +60,8 @@ export function useDiagramEditing(
   /** Read the picture as stored and start from it; *carried* is an arrangement to keep, as a save does. */
   const reopen = async (carried: ArrangedLayout | null = null): Promise<void> => {
     const geometry = await Effect.runPromise(svc.readLayoutGeometry(diagramId()))
-    const layout = geometry.layout && (geometry.layout.elements || geometry.layout.boxes) ? geometry.layout : null
+    const layout = geometry.layout && (geometry.layout.elements || geometry.layout.boxes || geometry.layout.z)
+      ? geometry.layout : null
     stored.value = layout
     saved.value = { ...savedState(geometry, layout), picture: geometry }
     session.open(geometry, carried ? { arrangement: arrangedBy(geometry, carried), byHand: true } : saved.value)
@@ -91,6 +93,9 @@ export function useDiagramEditing(
     return geometry?.elements.find((one) => one.alias === alias)?.label
       ?? geometry?.boxes.find((one) => one.alias === alias)?.label ?? alias
   }
+  /** The alias the picture draws the entity *id* under; the id itself where it draws none. */
+  const aliasOf = (id: string): string =>
+    session.drawnPicture.value?.elements.find((one) => one.key === stableEntityId(id))?.alias ?? id
 
   /** What Save would write, read off the state against the last save. */
   const changes = computed((): readonly PendingChange[] => {
@@ -98,27 +103,18 @@ export function useDiagramEditing(
     const now = session.state.value
     const before = saved.value
     if (!geometry || !now || !before) return []
-    const model = (now.commands ?? []).map(c => ({
-      key: `${c.op}:${c.artifact_id}`, model: true,
-      text: c.op === 'model.element.create' ? `Create element: ${c.name}`
-        : c.op === 'model.element.rename' ? `Rename element: ${c.name}`
-        : c.op === 'model.element.delete' ? `Delete from model: ${c.artifact_id}`
-        : `${c.op === 'model.relation.edit' ? 'Edit' : 'Create'} relationship: ${c.artifact_id}`,
-    }))
-    const added = [...now.additions ?? []].map(([id, name]) => ({ key: id, text: `Added to diagram: ${name}` }))
-    const originalAliases = new Set(before.picture?.elements.map(e => e.alias))
-    const removed = [...now.removed ?? []].filter(alias => originalAliases.has(alias)).map((alias) => ({
-      key: `removed:${alias}`, text: `Removed from the diagram: ${nameOf(alias)} — it stays in the model`,
-    }))
+    const content = contentChanges(
+      now, new Set(before.picture?.elements.map((e) => e.alias)), nameOf, (key) => nameOf(aliasOf(key)),
+      (grouping) => geometry.boxes.find((one) => one.key === grouping)?.label ?? grouping,
+    )
     if (!now.byHand) {
-      return [...(before.byHand ? [{ key: 'automatic', text: 'Returned to automatic layout' }] : []),
-        ...added, ...removed, ...model]
+      return [...(before.byHand ? [{ key: 'automatic', text: 'Returned to automatic layout' }] : []), ...content]
     }
     const reference = referenceOf(geometry, before, now)
     const takenOver: PendingChange[] = before.byHand ? []
       : [{ key: 'by-hand', text: 'Arranged by hand: new elements will be placed beside their neighbours' }]
     return [
-      ...added, ...removed, ...model,
+      ...content,
       ...takenOver,
       ...arrangedUnits(geometry, reference, now.arrangement).map((alias) => ({
         key: alias, text: `Arranged: ${nameOf(alias)}`,
@@ -167,7 +163,9 @@ export function useDiagramEditing(
     if (!written.wrote) {
       throw new Error(`The diagram was not written: ${written.warnings.join(' ') || 'it was refused'}`)
     }
-    savedMembers.value = write
+    // Regrouped, the groupings are the server's to compile: read back what it wrote, never restated here.
+    savedMembers.value = state.regroupings?.length
+      ? membershipOf(await Effect.runPromise(svc.getDiagram(diagramId()))) : write
     await reopen()
     onMembershipSaved()
   }
@@ -185,7 +183,8 @@ export function useDiagramEditing(
       const patch = layoutPatchBetween(stored.value ?? {}, wanted())
       // One write when what the diagram holds changes: membership and layout together, so the stored
       // layout always matches the body that write generates (D12).
-      if (removed.size > 0 || now.additions?.size || now.commands?.length || now.overlays?.length) {
+      if (removed.size > 0 || now.additions?.size || now.commands?.length || now.overlays?.length
+        || now.regroupings?.length || now.occurrences?.length) {
         await writeMembership(removed, patch)
         return true
       }
@@ -198,7 +197,7 @@ export function useDiagramEditing(
         error.value = result.errors.join(' ')
         return false
       }
-      const layout = result.layout.elements || result.layout.boxes ? result.layout : null
+      const layout = result.layout.elements || result.layout.boxes || result.layout.z ? result.layout : null
       stored.value = layout
       saved.value = session.state.value
       return true
@@ -232,22 +231,43 @@ export function useDiagramEditing(
     if (!now) return
     const additions = new Map(now.additions)
     const removed = new Set(now.removed)
-    const refused: string[] = []
+    let occurrences = now.occurrences ?? []
     for (const alias of aliases) {
       const key = session.geometry.value?.elements.find((one) => one.alias === alias)?.key
       if (key === undefined) continue
-      // A further occurrence of an entity is held by the diagram's own records, which this write does not
-      // edit yet: refused with a sentence rather than removed on the canvas and quietly kept by Save.
+      // A further drawing added in this session is simply not added; any other is removed by its own id.
+      if (occurrences.some((one) => one.id === key)) {
+        occurrences = occurrences.filter((one) => one.id !== key)
+        continue
+      }
       const added = [...additions].find(([id]) => stableEntityId(id) === stableEntityId(key))
-      const member = savedMembers.value?.entity_ids.some((id) => stableEntityId(id) === stableEntityId(key)) ?? false
+      const member = savedMembers.value?.entity_ids.some((id) => stableEntityId(id) === stableEntityId(key))
+        || occurrenceItems(savedMembers.value?.diagram_entities ?? {}).some((one) => one.id === key)
       if (added) additions.delete(added[0])
-      else if (!member) { refused.push(nameOf(alias)); continue }
+      else if (!member) continue
       removed.add(alias)
     }
-    error.value = refused.length === 0 ? null
-      : `${refused.join(', ')} ${refused.length === 1 ? 'is a further occurrence' : 'are further occurrences'}; `
-        + 'removing one is not possible here yet.'
-    if (removed.size > (now.removed?.size ?? 0)) session.step({ ...now, additions, removed })
+    if (removed.size > (now.removed?.size ?? 0) || occurrences.length < (now.occurrences?.length ?? 0)) {
+      session.step({ ...now, additions, removed, occurrences })
+    }
+  }
+
+  /**
+   * *entity*, already on the diagram, drawn once more (03·5): a further drawing with its own id, written
+   * as the diagram's occurrence statement at Save, one undoable step. *at*, on the picture, is where it
+   * is placed; without it the composer places it beside its neighbours.
+   */
+  const addOccurrence = async (entity: { artifact_id: string; name: string; display_alias: string }, at?: Point) => {
+    const drawn = savedMembers.value
+    const now = session.state.value
+    if (!drawn || !now) return false
+    const stated = {
+      ...drawn.diagram_entities,
+      occurrence: [...occurrenceItems(drawn.diagram_entities ?? {}), ...now.occurrences ?? []],
+    }
+    const { occurrenceId } = addOccurrenceFor(stated, entity)
+    const occurrence = { id: occurrenceId, backing_entity_id: entity.artifact_id }
+    return preview({ ...now, occurrences: [...now.occurrences ?? [], occurrence] }, now, true, at && [occurrenceId, at])
   }
 
   const add = async (id: string, name: string, type?: string) => {
@@ -270,7 +290,9 @@ export function useDiagramEditing(
   }
 
   /** Draw *next*'s content: as one undoable step, or (*undoable* false) as the state the session opens on. */
-  const preview = async (next: ArrangementState, previous: ArrangementState, undoable = true) => {
+  const preview = async (
+    next: ArrangementState, previous: ArrangementState, undoable = true, place?: readonly [string, Point],
+  ) => {
     const drawn = savedMembers.value
     if (!drawn || loading.value || saving.value) return false
     loading.value = true
@@ -282,7 +304,9 @@ export function useDiagramEditing(
         ...request, ...(carried ? {arrangement: carried} : {}),
       }))
       if (session.state.value !== previous) return false
-      const arrangement = carried ? arrangedBy(picture, picture.layout ?? carried) : drawnArrangement(picture)
+      const read = carried ? arrangedBy(picture, picture.layout ?? carried) : drawnArrangement(picture)
+      const alias = place && picture.elements.find((one) => one.key === place[0])?.alias
+      const arrangement = place && alias ? placedAt(picture, read, new Map([[alias, place[1]]])) : read
       if (undoable) session.step({ ...next, picture, arrangement })
       else session.open(picture, { ...next, arrangement })
       return true
@@ -294,18 +318,38 @@ export function useDiagramEditing(
     }
   }
 
-  const propose = async (command: CanvasCommand, overlay?: Record<string, unknown>) => {
+  /** *proposed* kept in the session as one undoable step, each over what it supersedes (`withCommand`). */
+  const propose = async (proposed: CanvasCommand | readonly CanvasCommand[], overlay?: Record<string, unknown>) => {
     const now = session.state.value
     if (!now) return false
-    let commands = [...now.commands ?? []]
-    if (command.op === 'model.element.rename' || command.op === 'model.relation.edit') {
-      commands = commands.filter(c => c.op !== command.op || c.artifact_id !== command.artifact_id)
-    }
-    commands.push(command)
+    const commands = [proposed].flat().reduce(withCommand, now.commands ?? [])
     return preview({ ...now, commands, overlays: overlay ? [...now.overlays ?? [], overlay] : now.overlays }, now)
   }
 
-  return { add, propose, session, changes, loading, saving, error, open, save, discard, returnToAutomatic, remove }
+  /**
+   * The element *alias* moved into the diagram's own box *box*, or out of the box it is in (*box* null),
+   * as one undoable step the server compiles (`GroupingIntent`). A box grows round what it holds, so
+   * the element is drawn inside the box it joins wherever it stood.
+   */
+  const nest = async (alias: string, box: string | null) => {
+    const now = session.state.value
+    const drawn = session.geometry.value
+    const key = drawn?.elements.find((one) => one.alias === alias)?.key
+    const into = box === null ? undefined : drawn?.boxes.find((one) => one.alias === box)?.key
+    if (!now || !drawn || key === undefined || (box !== null && into === undefined)) return false
+    const intent: GroupingIntent = into === undefined
+      ? { intent: 'unnest', keys: [key] } : { intent: 'nest', keys: [key], grouping: into }
+    return preview({ ...now, regroupings: [...now.regroupings ?? [], intent] }, now)
+  }
+
+  /** The shapes *aliases* restacked among their siblings (`stacking`), as one undoable step. */
+  const restack = (aliases: readonly string[], how: Restack) =>
+    session.change((geometry, now, where) => restacked(geometry, now, where, aliases, how))
+
+  return {
+    add, propose, session, changes, loading, saving, error, open, save, discard, returnToAutomatic, remove, restack,
+    nest, addOccurrence,
+  }
 }
 
 export type DiagramEditing = ReturnType<typeof useDiagramEditing>

@@ -1,6 +1,7 @@
 /** The unsaved drawing and the diagram replacement derived from one canvas session. */
 import type {
   CanvasCommand,
+  GroupingIntent,
   DiagramComposition,
   GeometryComposition,
 } from '../../ports/diagramWriteBodies'
@@ -8,12 +9,16 @@ import { membershipWithout } from './diagramMembership'
 import type { DrawnMembership } from './diagramMembership'
 import { stableConnectionId, stableEntityId } from '../artifactId'
 
-import type { DiagramContext } from '..'
+import type { DiagramContext, EntityDetail } from '..'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 import { isRecord } from '../records'
+import { type ArchimateOccurrence, occurrenceItems } from '../archimateOccurrences'
 
 
 interface Content {
+  readonly regroupings?: readonly GroupingIntent[]
+  /** Further drawings of elements the diagram already draws, added in this session. */
+  readonly occurrences?: readonly ArchimateOccurrence[]
   readonly addedTypes?: ReadonlyMap<string, string>
   readonly additions?: ReadonlyMap<string, string>
   readonly commands?: readonly CanvasCommand[]
@@ -43,7 +48,12 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
     },
     deletions,
   )
-  const entities = { ...drawn.diagram_entities }
+  const entities: Record<string, unknown> = { ...drawn.diagram_entities }
+  // A further drawing removed, or of an element deleted, goes from the statements; one added here joins them.
+  const gone = new Set([...deletions].map(stableEntityId))
+  const occurrences = [...occurrenceItems(entities), ...state.occurrences ?? []]
+    .filter((one) => !removed.has(one.id) && !gone.has(stableEntityId(one.backing_entity_id)))
+  if (occurrences.length || 'occurrence' in entities) entities.occurrence = occurrences
   if (state.overlays?.length) {
     const stored: unknown = entities._connections
     const prior = Array.isArray(stored) ? (stored as unknown[]).filter(isRecord) : []
@@ -65,6 +75,7 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
     connection_ids: [...kept.connection_ids],
     ...(Object.keys(entities).length ? { diagram_entities: entities } : {}),
     ...(kept.authored_groupings ? { authored_groupings: kept.authored_groupings } : {}),
+    ...(state.regroupings?.length ? { grouping_intents: state.regroupings } : {}),
   }
   const renames = Object.fromEntries(
     commands
@@ -106,6 +117,54 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
   return { preview, write }
 }
 
+/**
+ * *commands* with *command* kept: a rename or a relation edit replaces the one before it for the same
+ * artifact; an element's details merge over the ones before them, key by key for a keyed field, as the
+ * write path applies successive edits — so a second edit that left a field alone does not drop the first.
+ */
+export const withCommand = (commands: readonly CanvasCommand[], command: CanvasCommand): CanvasCommand[] => {
+  const same = (one: CanvasCommand) => one.op === command.op && one.artifact_id === command.artifact_id
+  if (command.op === 'model.element.edit') {
+    const before = commands.find(same)
+    const merged = before?.op === 'model.element.edit' ? {
+      ...before, ...command,
+      ...(before.properties || command.properties
+        ? { properties: { ...before.properties, ...command.properties } } : {}),
+      ...(before.attribute_types || command.attribute_types
+        ? { attribute_types: { ...before.attribute_types, ...command.attribute_types } } : {}),
+    } : command
+    return [...commands.filter((one) => !same(one)), merged]
+  }
+  const replaces = command.op === 'model.element.rename' || command.op === 'model.relation.edit'
+  return [...(replaces ? commands.filter((one) => !same(one)) : commands), command]
+}
+
+/**
+ * *detail* as the session would leave it: its last pending rename, and its pending details over what the
+ * model holds — what the entity form opens on when an element's details are edited a second time.
+ */
+export const withPendingDetails = (detail: EntityDetail, commands: readonly CanvasCommand[]): EntityDetail => {
+  const own = commands.filter((one) => stableEntityId(one.artifact_id) === stableEntityId(detail.artifact_id))
+  const renamed = own.filter((one) => one.op === 'model.element.rename').at(-1)
+  const edit = own.find((one) => one.op === 'model.element.edit')
+  if (!renamed && !edit) return detail
+  const properties = { ...detail.properties }
+  for (const [key, value] of Object.entries(edit?.properties ?? {})) {
+    if (value === null) delete properties[key]
+    else properties[key] = value
+  }
+  return {
+    ...detail,
+    ...(renamed ? { name: renamed.name } : {}),
+    ...(edit ? {
+      summary: edit.summary ?? detail.summary, notes: edit.notes ?? detail.notes,
+      status: edit.status ?? detail.status, group: edit.group ?? detail.group,
+      keywords: edit.keywords ?? detail.keywords, specializations: edit.specializations ?? detail.specializations,
+      properties,
+    } : {}),
+  }
+}
+
 /** Resolve drawing aliases to their model identity, including unsaved additions and renames. */
 export function canvasMembers(context: DiagramContext, state: Content | null, picture: LayoutGeometry | null) {
   const lookup = new Map(
@@ -131,8 +190,11 @@ export function canvasMembers(context: DiagramContext, state: Content | null, pi
       if (m) m.name = c.name
     }
   }
+  // A further drawing is the element it draws again: the same id, name and type, under its own alias.
+  const backing = new Map([...occurrenceItems(context.diagram.diagram_entities ?? {}), ...state?.occurrences ?? []]
+    .map((one) => [one.id, stableEntityId(one.backing_entity_id)]))
   return [...(picture?.elements ?? []), ...(picture?.boxes ?? [])].flatMap((s) => {
-    const item = lookup.get(s.key ?? '')
+    const item = lookup.get(s.key ?? '') ?? lookup.get(backing.get(s.key ?? '') ?? '')
     return item ? [{ ...item, alias: s.alias }] : []
   })
 }

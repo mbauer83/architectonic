@@ -9,6 +9,7 @@ import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import { elementAt, useContentGestures } from '../composables/useContentGestures'
 import { useCanvasPopover } from '../composables/useCanvasPopover'
 import { useCanvasRelation } from '../composables/useCanvasRelation'
+import { useCanvasNesting } from '../composables/useCanvasNesting'
 import CanvasElementForm from './CanvasElementForm.vue'
 import CanvasSelectionMenu from './CanvasSelectionMenu.vue'
 import CanvasLineMenu from './CanvasLineMenu.vue'
@@ -17,8 +18,11 @@ import CanvasConnectTarget from './CanvasConnectTarget.vue'
 import CanvasRelationForm from './CanvasRelationForm.vue'
 import CanvasRenameForm from './CanvasRenameForm.vue'
 import CanvasDeleteConfirm from './CanvasDeleteConfirm.vue'
-import { elementMenuItems } from './canvasElementMenu'
+import CanvasDetailsDialog from './CanvasDetailsDialog.vue'
+import { elementMenuItems, restackOf } from './canvasElementMenu'
 import { entityDetailRoute } from '../router/artifactRoutes'
+import CanvasNestTarget from './CanvasNestTarget.vue'
+import { isArchimateDiagramType } from '../lib/archimateOccurrences'
 import { asksForTheMenu, isOnALine, selectedLineMiddle } from './lineMenuPlace'
 import { type CanvasWords, DIAGRAM_WORDS } from './canvasWords'
 
@@ -59,6 +63,9 @@ const relation = useCanvasRelation(
   () => { mode.value = 'relation' }, (message) => { error.value = message }, (c, overlay) => void apply(c, overlay),
 )
 const { kind, label, srcCount, tgtCount, description, options, currentLine } = relation
+const { anchor, drawAgain, ownBoxes, boxOfSelected, nestIn, nestUnder, asked, dropped } = useCanvasNesting(
+  props.editing, host, source, members, { mode, error, position, close }, (c) => void apply(c),
+)
 
 function rename(alias: string) {
   source.value = alias
@@ -67,8 +74,19 @@ function rename(alias: string) {
 function onElement(choice: string) {
   const el = selected.value
   if (!el) return
-  if (choice === 'rename') rename(source.value)
+  const how = restackOf(choice)
+  if (how) {
+    props.editing.restack([source.value], how)
+    close(true)
+  } else if (choice === 'rename') rename(source.value)
   else if (choice === 'connect') mode.value = 'target'
+  else if (choice === 'nest') mode.value = 'nest'
+  else if (choice === 'occurrence') void drawAgain()
+  else if (choice === 'unnest') void nestIn(null)
+  else if (choice === 'details') {
+    details.value = el.id
+    close()
+  }
   else if (choice === 'delete') mode.value = 'delete'
   else if (choice === 'open') {
     window.open(router.resolve(entityDetailRoute(el.id)).href, '_blank', 'noopener')
@@ -78,6 +96,14 @@ function onElement(choice: string) {
     close(true)
   }
 }
+/** What an element may be nested in: every other element, each once, however often it is drawn. */
+const containersFor = (element: { readonly id: string }) => [...new Map(members.value
+  .filter((m) => m.id !== element.id && !ownBoxes.value.some((box) => box.alias === m.alias))
+  .map((m) => [m.id, m])).values()]
+/** The element whose details are being edited in the modal; null while none is. */
+const details = ref<string | null>(null)
+const keepDetails = async (commands: readonly CanvasCommand[]): Promise<string | null> =>
+  await props.editing.propose(commands) ? null : props.editing.error.value ?? 'The drawing has changed. Try again.'
 const addFound = (entity: EntityDisplayInfo) => {
   void props.editing.add(entity.artifact_id, entity.name, entity.artifact_type)
   close(true)
@@ -91,6 +117,7 @@ const dropMember = (event: DragEvent) => {
 function menu(event: MouseEvent) {
   event.preventDefault()
   position(event.clientX, event.clientY)
+  anchor.value = { x: event.clientX, y: event.clientY }
   source.value = elementAt(event)?.dataset.alias ?? ''
   if (props.line != null && isOnALine(event.target)) {
     mode.value = 'line'
@@ -102,7 +129,7 @@ function menu(event: MouseEvent) {
 // A line's menu belongs to the line it was opened on: another line picked, or none, closes it.
 watch(() => props.line, () => { if (mode.value === 'line') close() })
 const { focusCanvas, up, release, moving } = useContentGestures(
-  host, props.editing, source, position, rename, relation.editLine, (alias) => void relation.pair(alias),
+  host, props.editing, source, position, rename, relation.editLine, (alias) => void relation.pair(alias), dropped,
 )
 const cornerOf = (alias: string) =>
   host.value?.querySelector(`[data-alias="${CSS.escape(alias)}"]`)?.getBoundingClientRect()
@@ -165,6 +192,14 @@ function double(e: MouseEvent) {
     >
       {{ several.length > 1 ? `${several.length} items selected` : '' }}
     </p>
+    <CanvasDetailsDialog
+      v-if="details"
+      :key="details"
+      :artifact-id="details"
+      :pending="editing.session.state.value?.commands ?? []"
+      :keep="keepDetails"
+      @close="details = null; host?.focus({ preventScroll: true })"
+    />
     <Teleport to="body">
       <div
         v-if="mode"
@@ -205,7 +240,9 @@ function double(e: MouseEvent) {
           :heading="selected.name"
           :type="selected.type"
           :label="`${selected.name}: element`"
-          :items="elementMenuItems(words, drafted)"
+          :items="elementMenuItems(
+            words, drafted, boxOfSelected?.name ?? null, isArchimateDiagramType(context.diagram.diagram_type),
+          )"
           @choose="onElement"
           @close="close(true)"
         />
@@ -214,6 +251,16 @@ function double(e: MouseEvent) {
           :from="selected.name"
           :members="members.filter((m) => m.alias !== source)"
           @pick="relation.pair"
+        />
+        <CanvasNestTarget
+          v-else-if="mode === 'nest' && selected"
+          :element="selected"
+          :boxes="ownBoxes.filter((box) => box.alias !== boxOfSelected?.alias)"
+          :members="containersFor(selected)"
+          :ask="asked"
+          @box="nestIn"
+          @relate="nestUnder"
+          @cancel="close(true)"
         />
         <CanvasRenameForm
           v-else-if="mode === 'rename' && selected"
