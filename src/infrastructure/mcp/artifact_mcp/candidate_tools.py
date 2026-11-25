@@ -14,8 +14,9 @@ from pydantic import Field
 from src.application.artifacts.document_part_edits import TableRowEdits
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.candidate_wire import CandidateHeader, CandidatePatch, RecordedEdit
-from src.infrastructure.candidates import evaluation
-from src.infrastructure.candidates.service import CandidateService, document_writer
+from src.infrastructure.candidates import analysis_reads, evaluation
+from src.infrastructure.candidates.analysis_start import document_writer, start_analysis
+from src.infrastructure.candidates.service import CandidateService
 from src.infrastructure.mcp.artifact_mcp import candidate_tool_descriptions as said
 from src.infrastructure.mcp.artifact_mcp.context import (
     authoritative_callbacks_for,
@@ -136,7 +137,8 @@ def analysis_start(
     mutation_context, clear_repo_caches = authoritative_callbacks_for(roots)
     writer = document_writer(roots[0], verifier_for(roots_key(roots), include_registry=False), clear_repo_caches)
     try:
-        return CandidateService(roots[0]).start(
+        return start_analysis(
+            CandidateService(roots[0]),
             title, naive.model_dump(exclude_unset=True), writer, context=context,
         )
     finally:
@@ -144,19 +146,19 @@ def analysis_start(
 
 
 def analysis_progress(artifact_id: AnalysisId, repo_root: RepoRoot = None) -> dict[str, Any]:
-    return _service(repo_root).progress(artifact_id)
+    return analysis_reads.progress(_service(repo_root), artifact_id)
 
 
 def analysis_incidence(artifact_id: AnalysisId, repo_root: RepoRoot = None) -> dict[str, Any]:
-    return _service(repo_root).incidence(artifact_id)
+    return analysis_reads.incidence(_service(repo_root), artifact_id)
 
 
 def analysis_test_set(artifact_id: AnalysisId, repo_root: RepoRoot = None) -> dict[str, Any]:
     return evaluation.evaluation(_service(repo_root), artifact_id)
 
 
-def analysis_perspectives() -> dict[str, Any]:
-    return evaluation.perspectives()
+def analysis_perspectives(repo_root: RepoRoot = None) -> dict[str, Any]:
+    return evaluation.perspectives(_service(repo_root))
 
 
 def analysis_hold_out_test_set(

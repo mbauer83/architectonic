@@ -76,6 +76,7 @@ def test_a_refused_start_leaves_nothing_behind(tmp_path: Path) -> None:
 
 
 def test_a_start_refused_only_by_the_write_takes_its_naive_back(tmp_path: Path) -> None:
+    from src.infrastructure.candidates.analysis_start import start_analysis
     from src.infrastructure.candidates.service import CandidateService
     from src.infrastructure.write.artifact_write.types import WriteResult
 
@@ -86,7 +87,7 @@ def test_a_start_refused_only_by_the_write_takes_its_naive_back(tmp_path: Path) 
                            verification={"issues": [] if dry_run else [{"severity": "error", "message": "late"}]})
 
     with pytest.raises(ValueError, match="late"):
-        CandidateService(root).start("Late refusal", {"name": "Naive"}, writer)
+        start_analysis(CandidateService(root), "Late refusal", {"name": "Naive"}, writer)
     assert _candidate_files(root) == []
 
 

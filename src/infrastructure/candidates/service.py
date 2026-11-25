@@ -1,10 +1,13 @@
-"""Candidate and analysis operations shared by the HTTP and MCP transports."""
+"""Candidate operations shared by the HTTP and MCP transports.
+
+A stress analysis is started in `analysis_start` and read in `analysis_reads`, over these candidates.
+"""
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, TypeAlias
+from typing import Any
 
 from src.application.artifacts.document_table_rows import DocumentTables, tables_of_stored_document
 from src.application.artifacts.repository import ArtifactRepository
@@ -13,7 +16,6 @@ from src.application.change_sets.candidate_apply import TERMINAL, application_of
 from src.application.change_sets.candidate_architecture import CandidateArchitecture
 from src.application.change_sets.candidate_reads import (
     comparison,
-    read_view,
     reading_beneath,
     rebase,
     standing_report,
@@ -29,13 +31,11 @@ from src.application.change_sets.stacking import drawn_on, stack_of
 from src.application.identifier_allocator import get_default_allocator
 from src.application.modeling.artifact_write import generate_entity_id
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds
-from src.application.stress_analysis.workspace import analyse
-from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.viewpoints.placed_occurrences import resolve_placed_entities
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.modules.module_types import EntityTypeName
-from src.domain.repository.repo_default_stress_analysis import ANALYSIS_CONTEXT, NAIVE_CANDIDATE, STRESS_ANALYSIS
+from src.domain.repository.repo_default_stress_analysis import NAIVE_CANDIDATE, STRESS_ANALYSIS
 from src.infrastructure.app_bootstrap import get_module_registry
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
 from src.infrastructure.candidates.apply import write_operations
@@ -46,11 +46,6 @@ from src.infrastructure.candidates.repository import (
     NotStored,
 )
 from src.infrastructure.candidates.scope_drawing import drawing as scope_drawing
-from src.infrastructure.write.artifact_write.document import create_document
-from src.infrastructure.write.artifact_write.types import WriteResult
-
-#: The analysis document's writer, bound by the transport to its verifier: title, frontmatter, dry run.
-DocumentWriter: TypeAlias = Callable[[str, dict[str, object], bool], WriteResult]
 
 
 class CandidateService:
@@ -109,32 +104,6 @@ class CandidateService:
             body = to_mapping(self._recorded_all(from_mapping(body), edits))
         return self.save(body, None)
 
-    def start(
-        self, title: str, naive: Mapping[str, Any], write_document: DocumentWriter, *, context: str | None = None,
-    ) -> dict[str, Any]:
-        """Start an analysis: its naive architecture and the document naming it, both or neither.
-
-        The document is planned before anything is written, so the refusals a plan can see leave
-        nothing behind; a refusal only the write sees takes the naive architecture back with it. The
-        naive owns the scope and the diagram it is drawn on; the document names the naive and, where
-        given, the *context* the evaluation is made in.
-        """
-        record = dict(naive)
-        record.setdefault("id", generate_entity_id(str(KIND.id_prefix), str(record.get("name") or "")))
-        ref = str(record["id"])
-        frontmatter: dict[str, object] = {NAIVE_CANDIDATE: ref, **({ANALYSIS_CONTEXT: context} if context else {})}
-        _refuse_unwritten(write_document(title, frontmatter, True), wrote=False)
-        if self.store.find(ref) is not None:
-            raise CandidateConflict(f"{ref} already exists; a naive architecture starts as a new candidate.")
-        created = self.create(record)
-        try:
-            written = write_document(title, frontmatter, False)
-            _refuse_unwritten(written, wrote=True)
-        except BaseException:
-            self._remove(ref)
-            raise
-        return {"document": written.artifact_id, "naive_candidate": created}
-
     def delete(self, ref: str, *, based_on: str | None = None, dry_run: bool = False) -> dict[str, Any]:
         """Delete a candidate nothing refers to, or say what refers to it.
 
@@ -159,7 +128,7 @@ class CandidateService:
         if refusal:
             raise CandidateConflict(f"{ref} cannot be deleted: {refusal}")
         if not dry_run:
-            self._remove(ref, version)
+            self.discard(ref, version)
         return {"candidate": ref, "dry_run": dry_run, "deleted": not dry_run, "version": version}
 
     def _held_by(self, ref: str) -> str | None:
@@ -190,7 +159,9 @@ class CandidateService:
             )
         return None
 
-    def _remove(self, ref: str, based_on: str | None = None) -> None:
+    def discard(self, ref: str, based_on: str | None = None) -> None:
+        """Take the candidate *ref* away without the checks a deletion makes: for taking back a candidate the
+        same operation has just created, when the rest of that operation is refused."""
         self.store.delete(ref, based_on)
         notify_paths_changed([self.store.path(ref)])
 
@@ -288,25 +259,6 @@ class CandidateService:
         """The stored *diagram*'s geometry, else a view generated from *scope*; None where there is neither."""
         return scope_drawing(ArtifactRepository(self.index), diagram, scope, name, self.root, ontology)
 
-    def analysis_tables(self, ref: str) -> tuple[str, str, DocumentTables]:
-        """The analysis document's id, its naive candidate's id and its typed tables; refused for any other document."""
-        doc = self.index.get_document(ref)
-        if doc is None:
-            raise NotStored(f"No document {ref} is stored.")
-        if doc.doc_type != STRESS_ANALYSIS:
-            raise ValueError("Select a stress-analysis document.")
-        naive = str(doc.extra.get(NAIVE_CANDIDATE) or "")
-        if not naive:
-            raise ValueError("Set naive-candidate on the stress-analysis document.")
-        stored = self.store.find(naive)
-        tables = tables_of_stored_document(doc.path, doc.doc_type, [self.root])
-        return doc.artifact_id, stored.id if stored else naive, tables
-
-    def analysis(self, ref: str) -> dict[str, Any]:
-        document, naive, tables = self.analysis_tables(ref)
-        view = read_view(self.store.require(naive), self.store, self.registry)
-        return {"document": document, "naive_candidate": naive, **analyse(tables, view)}
-
     def check(self, ids: Sequence[str]) -> dict[str, Any]:
         selected = [self.store.require(ref) for ref in ids]
         if not selected or len({candidate.id for candidate in selected}) != len(selected):
@@ -329,29 +281,6 @@ class CandidateService:
     def standing(self, ref: str) -> dict[str, Any]:
         candidate = self.store.require(ref)
         return {"candidate": candidate.id, "standing": standing_report(candidate, self.store, self.registry)}
-
-    def progress(self, ref: str) -> dict[str, Any]:
-        report = self.analysis(ref)
-        return {key: report[key] for key in ("document", "naive_candidate", "progress", "coverage")}
-
-    def incidence(self, ref: str) -> dict[str, Any]:
-        report = self.analysis(ref)
-        return {key: value for key, value in report.items() if key not in {"progress", "coverage"}}
-
-
-def document_writer(
-    repo_root: Path, verifier: ArtifactVerifier, clear_repo_caches: Callable[[Path], None],
-) -> DocumentWriter:
-    """The analysis document written as every document is created, by the transport's verifier."""
-
-    def write(title: str, frontmatter: dict[str, object], dry_run: bool) -> WriteResult:
-        return create_document(
-            repo_root=repo_root, verifier=verifier, clear_repo_caches=clear_repo_caches, doc_type=STRESS_ANALYSIS,
-            title=title, body=None, keywords=None, extra_frontmatter=frontmatter, artifact_id=None,
-            version="0.1.0", status="draft", last_updated=None, dry_run=dry_run,
-        )
-
-    return write
 
 
 def _a_draft(candidate: CandidateArchitecture, done: str) -> CandidateArchitecture:
@@ -379,13 +308,6 @@ def _with_minted_id(edit: Mapping[str, Any]) -> Mapping[str, Any]:
         )
     minted = get_default_allocator().allocate(prefix=info.prefix, name_hint=str(fields.get("name") or ""))
     return {**edit, "artifact_id": minted}
-
-
-def _refuse_unwritten(result: WriteResult, *, wrote: bool) -> None:
-    """Refuse what verification refused, or a write that wrote nothing, in the verifier's own words."""
-    if result.error_messages or result.wrote != wrote:
-        said = " ".join(result.error_messages) or "it was refused"
-        raise ValueError(f"The analysis document cannot be {'written' if wrote else 'planned'}: {said}")
 
 
 def _rows_of(tables: DocumentTables, name: str) -> tuple[Any, ...]:

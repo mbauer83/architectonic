@@ -34,7 +34,7 @@ looking entirely normal. See
 | Tool | Access | Purpose |
 |---|---|---|
 | `analysis_incidence` | Read-only | A stress analysis's design stressors with the elements each hits (and those it names that the naive does not hold), its end states, adaptations, incidence rows, and how often each pair of elements is hit together. |
-| `analysis_perspectives` | Read-only | The perspectives offered for writing stressors (PESTLE, five forces, business model canvas, organisation), each with an id, its kind and a guiding question. |
+| `analysis_perspectives` | Read-only | The perspectives offered for writing stressors (PESTLE, five forces, business model canvas, organisation, and any the repository adds in .arch-repo/stress-perspectives.json), each with an id, its kind and a guiding question. |
 | `analysis_progress` | Read-only | What is unfinished in a stress analysis (stressors not walked, without end state, end states without required behaviour or adaptation, hits without a note) and coverage hints: design stressors by kind, the perspectives (analysis_perspectives) none is written from, and scoped elements no stressor hits. |
 | `analysis_test_set` | Read-only | A stress analysis's test set: its stressors, the verdicts, each judged or integrated architecture's residuality (Y − X) / n beside the naive, and the procedure's stage. |
 | `artifact_aibom_coverage` | Read-only | Per-AI-component AIBOM coverage over the architecture model: blocking gaps (missing required attributes, missing dataset linkage, missing governance edge) vs advisory gaps (missing recommended attributes), plus repo-wide derivation roles that no connection type is bound to. |

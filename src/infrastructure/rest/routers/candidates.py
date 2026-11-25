@@ -5,7 +5,8 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.infrastructure.candidates.service import document_writer
+from src.infrastructure.candidates import analysis_reads
+from src.infrastructure.candidates.analysis_start import document_writer, start_analysis
 from src.infrastructure.rest.contracts.candidates import (
     AnalysisIncidence,
     AnalysisProgress,
@@ -192,7 +193,8 @@ def documents_start_stress_analysis(
     repo_root, _registry, verifier = s.get_write_deps(catalogs)
     with refusals():
         return s.authorized_write(
-            "documents_start_stress_analysis", service().start, body.title, body.naive.model_dump(exclude_unset=True),
+            "documents_start_stress_analysis", start_analysis, service(), body.title,
+            body.naive.model_dump(exclude_unset=True),
             document_writer(repo_root, verifier, s.clear_caches),
             context=body.context,
         )
@@ -278,9 +280,10 @@ def changes_check_candidates(body: CandidateSelection) -> dict[str, Any]:
     responses=READ_RESPONSES,
 )
 def documents_analysis_progress(artifact_id: str) -> dict[str, Any]:
-    """Coverage reads the shipped perspectives (`/api/stress-perspectives`), the one vocabulary of kinds."""
+    """Coverage reads the perspectives this repository offers (`/api/stress-perspectives`), the one vocabulary of
+    kinds."""
     with refusals():
-        return service().progress(artifact_id)
+        return analysis_reads.progress(service(), artifact_id)
 
 
 @router.get(
@@ -293,4 +296,4 @@ def documents_analysis_progress(artifact_id: str) -> dict[str, Any]:
 )
 def documents_analysis_incidence(artifact_id: str) -> dict[str, Any]:
     with refusals():
-        return service().incidence(artifact_id)
+        return analysis_reads.incidence(service(), artifact_id)

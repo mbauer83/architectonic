@@ -26,7 +26,11 @@ from src.application.artifacts.document_table_rows import DocumentTables
 from src.application.stress_analysis.rows import Row, in_test_set, rows_of
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.repository.repo_default_stress_analysis import DEGRADES, NAIVE_ARCHITECTURE, SURVIVES
-from src.domain.repository.repo_default_stress_perspectives import unwritten_perspectives
+from src.domain.repository.repo_default_stress_perspectives import (
+    STRESS_PERSPECTIVES,
+    PerspectiveFramework,
+    unwritten_perspectives,
+)
 
 #: The share of the design set a hold-out moves into the test set.
 HELD_OUT_SHARE = Fraction(1, 3)
@@ -118,13 +122,15 @@ def _stated(values: dict[str, Any]) -> dict[str, Any]:
 
 def evaluate(
     tables: DocumentTables, *, integrated: Sequence[str], adapted: bool, known: Sequence[str] = (),
+    frameworks: tuple[PerspectiveFramework, ...] = STRESS_PERSPECTIVES,
 ) -> dict[str, Any]:
     """The test set, its verdicts, every judged or integrated architecture's standing, and the procedure's stage.
 
     *integrated* names the candidates of the analysis integrated into the model, whose standing is
     always shown; *adapted* says whether any candidate adapts the naive architecture yet. *known* are
     the candidates that exist: a verdict naming one in either spelling of its id is read as naming it
-    by the id it is stored under, so one architecture's verdicts are never counted as two.
+    by the id it is stored under, so one architecture's verdicts are never counted as two. The test
+    set's coverage counts the *frameworks*' perspectives.
     """
     stressors = [row for row in rows_of(tables, "stressors") if in_test_set(row)]
     held = {row["id"] for row in stressors}
@@ -146,7 +152,9 @@ def evaluate(
         "verdicts": [_stated({"id": one.row, "stressor": one.stressor, "architecture": one.architecture,
                               "verdict": one.verdict, "usable": one.usable, "reasoning": one.reasoning})
                      for one in verdicts],
-        "unwritten_perspectives": unwritten_perspectives(str(row.get("kind") or "") for row in stressors),
+        "unwritten_perspectives": unwritten_perspectives(
+            (str(row.get("kind") or "") for row in stressors), frameworks,
+        ),
         "architectures": [standing_as_read(standing, naive, integrated=name in integrated)
                           for name, standing in standings.items()],
         "stage": {

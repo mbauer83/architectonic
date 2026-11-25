@@ -118,7 +118,8 @@ ANALYSIS_TEST_SET = (
 
 ANALYSIS_PERSPECTIVES = (
     "The perspectives offered for writing stressors (PESTLE, five forces, business model canvas, "
-    "organisation), each with an id, its kind and a guiding question."
+    "organisation, and any the repository adds in .arch-repo/stress-perspectives.json), each with an id, "
+    "its kind and a guiding question."
 )
 
 ANALYSIS_HOLD_OUT = (
