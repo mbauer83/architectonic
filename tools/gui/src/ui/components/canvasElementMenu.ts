@@ -8,7 +8,7 @@ import type { CanvasMenuItem } from './canvasMenu'
 import type { CanvasWords } from './canvasWords'
 import type { Restack } from '../../domain/layout/stacking'
 
-export type ElementMenuChoice = 'rename' | 'details' | 'connect' | 'nest' | 'unnest' | 'open' | 'remove' | 'delete' | `stack:${Restack}`
+export type ElementMenuChoice = 'rename' | 'details' | 'connect' | 'nest' | 'unnest' | 'occurrence' | 'open' | 'remove' | 'delete' | `stack:${Restack}`
 
 /** Stacking among siblings (02·7), with the keys that do the same on the selection. */
 export const STACKING_ITEMS: readonly CanvasMenuItem[] = [
@@ -31,10 +31,11 @@ export const restackKey = (event: Pick<KeyboardEvent, 'key' | 'shiftKey'>): Rest
 
 /**
  * *drafted*: the element is created in this session, so it has no page to open until Save. *nestedIn*:
- * the label of the diagram's own box it is in, which *Take out* takes it out of.
+ * the label of the diagram's own box it is in, which *Take out* takes it out of. *drawsAgain*: the
+ * diagram type draws an element more than once (ArchiMate's occurrences).
  */
 export const elementMenuItems = (
-  words: CanvasWords, drafted: boolean, nestedIn: string | null = null,
+  words: CanvasWords, drafted: boolean, nestedIn: string | null = null, drawsAgain = false,
 ): readonly CanvasMenuItem[] => [
   { id: 'rename', label: 'Rename', hint: 'also a double-click on it', shortcut: 'F2' },
   {
@@ -52,6 +53,12 @@ export const elementMenuItems = (
   },
   { id: 'nest', label: 'Nest in…', hint: 'a box (diagram only), or an element that may contain it (a model change)' },
   ...nestedIn === null ? [] : [{ id: 'unnest', label: `Take out of ${nestedIn}`, hint: 'onto the box around it' }],
+  ...drawsAgain
+    ? [{
+      id: 'occurrence', label: 'Add another occurrence here', disabled: drafted,
+      hint: drafted ? 'once it is saved' : 'the same element drawn again, where the menu was opened',
+    }]
+    : [],
   ...STACKING_ITEMS,
   ...words.removeEntry
     ? [{ id: 'remove', label: words.removeEntry, hint: words.removeHint, shortcut: words.removeKey, divider: true }]

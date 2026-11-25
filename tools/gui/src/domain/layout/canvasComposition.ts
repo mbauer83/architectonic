@@ -12,10 +12,13 @@ import { stableConnectionId, stableEntityId } from '../artifactId'
 import type { DiagramContext, EntityDetail } from '..'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 import { isRecord } from '../records'
+import { type ArchimateOccurrence, occurrenceItems } from '../archimateOccurrences'
 
 
 interface Content {
   readonly regroupings?: readonly GroupingIntent[]
+  /** Further drawings of elements the diagram already draws, added in this session. */
+  readonly occurrences?: readonly ArchimateOccurrence[]
   readonly addedTypes?: ReadonlyMap<string, string>
   readonly additions?: ReadonlyMap<string, string>
   readonly commands?: readonly CanvasCommand[]
@@ -45,7 +48,12 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
     },
     deletions,
   )
-  const entities = { ...drawn.diagram_entities }
+  const entities: Record<string, unknown> = { ...drawn.diagram_entities }
+  // A further drawing removed, or of an element deleted, goes from the statements; one added here joins them.
+  const gone = new Set([...deletions].map(stableEntityId))
+  const occurrences = [...occurrenceItems(entities), ...state.occurrences ?? []]
+    .filter((one) => !removed.has(one.id) && !gone.has(stableEntityId(one.backing_entity_id)))
+  if (occurrences.length || 'occurrence' in entities) entities.occurrence = occurrences
   if (state.overlays?.length) {
     const stored: unknown = entities._connections
     const prior = Array.isArray(stored) ? (stored as unknown[]).filter(isRecord) : []
@@ -182,8 +190,11 @@ export function canvasMembers(context: DiagramContext, state: Content | null, pi
       if (m) m.name = c.name
     }
   }
+  // A further drawing is the element it draws again: the same id, name and type, under its own alias.
+  const backing = new Map([...occurrenceItems(context.diagram.diagram_entities ?? {}), ...state?.occurrences ?? []]
+    .map((one) => [one.id, stableEntityId(one.backing_entity_id)]))
   return [...(picture?.elements ?? []), ...(picture?.boxes ?? [])].flatMap((s) => {
-    const item = lookup.get(s.key ?? '')
+    const item = lookup.get(s.key ?? '') ?? lookup.get(backing.get(s.key ?? '') ?? '')
     return item ? [{ ...item, alias: s.alias }] : []
   })
 }

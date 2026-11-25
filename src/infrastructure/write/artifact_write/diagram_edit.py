@@ -97,7 +97,11 @@ def edit_diagram(
     ``ValueError`` — use ``create_matrix`` (the ``artifact_create_matrix`` MCP
     tool) with ``artifact_id`` set instead.
     """
-    from src.application.modeling.binding_normalize import normalize_bindings, strip_diagram_shorthand
+    from src.application.modeling.binding_normalize import (
+        bindings_of_drawn_elements,
+        normalize_bindings,
+        strip_diagram_shorthand,
+    )
     from src.domain.diagrams.bindings import bindings_to_raw
     assert_write_root(repo_root)
 
@@ -203,6 +207,9 @@ def edit_diagram(
     # Bindings: existing from file + new from caller, then normalize shorthand from entities
     _raw_b = fm.get("bindings")
     existing_raw_bindings = [b for b in _raw_b if isinstance(b, dict)] if isinstance(_raw_b, list) else []
+    if diagram_entities is not None:
+        # The caller replaced the elements: a stored binding of one it took away goes with it.
+        existing_raw_bindings = bindings_of_drawn_elements(existing_raw_bindings, eff_diagram_entities)
     merged_raw_bindings = list(bindings or []) if replace_bindings else existing_raw_bindings + list(bindings or [])
     norm_bindings = normalize_bindings(
         eff_diagram_entities if isinstance(eff_diagram_entities, dict) else None,

@@ -116,6 +116,12 @@ describe("an element's menu", () => {
     expect(elementMenuItems(DIAGRAM_WORDS, false).some((one) => one.id === 'unnest')).toBe(false)
   })
 
+  it('draws an element again only where the diagram type draws further occurrences', () => {
+    expect(elementMenuItems(DIAGRAM_WORDS, false, null, true).some((one) => one.id === 'occurrence')).toBe(true)
+    expect(elementMenuItems(DIAGRAM_WORDS, false, null, false).some((one) => one.id === 'occurrence')).toBe(false)
+    expect(elementMenuItems(DIAGRAM_WORDS, true, null, true).find((one) => one.id === 'occurrence')?.disabled).toBe(true)
+  })
+
   it('cannot open the page of an element drafted in this session', () => {
     expect(elementMenuItems(DIAGRAM_WORDS, true).find((one) => one.id === 'open')?.disabled).toBe(true)
   })

@@ -9,6 +9,7 @@ import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import { elementAt, useContentGestures } from '../composables/useContentGestures'
 import { useCanvasPopover } from '../composables/useCanvasPopover'
 import { useCanvasRelation } from '../composables/useCanvasRelation'
+import { useCanvasNesting } from '../composables/useCanvasNesting'
 import CanvasElementForm from './CanvasElementForm.vue'
 import CanvasSelectionMenu from './CanvasSelectionMenu.vue'
 import CanvasLineMenu from './CanvasLineMenu.vue'
@@ -20,8 +21,8 @@ import CanvasDeleteConfirm from './CanvasDeleteConfirm.vue'
 import CanvasDetailsDialog from './CanvasDetailsDialog.vue'
 import { elementMenuItems, restackOf } from './canvasElementMenu'
 import { entityDetailRoute } from '../router/artifactRoutes'
-import { connectionId } from '../../domain/artifactId'
 import CanvasNestTarget from './CanvasNestTarget.vue'
+import { isArchimateDiagramType } from '../lib/archimateOccurrences'
 import { asksForTheMenu, isOnALine, selectedLineMiddle } from './lineMenuPlace'
 import { type CanvasWords, DIAGRAM_WORDS } from './canvasWords'
 
@@ -62,6 +63,9 @@ const relation = useCanvasRelation(
   () => { mode.value = 'relation' }, (message) => { error.value = message }, (c, overlay) => void apply(c, overlay),
 )
 const { kind, label, srcCount, tgtCount, description, options, currentLine } = relation
+const { anchor, drawAgain, ownBoxes, boxOfSelected, nestIn, nestUnder, asked, dropped } = useCanvasNesting(
+  props.editing, host, source, members, { mode, error, position, close }, (c) => void apply(c),
+)
 
 function rename(alias: string) {
   source.value = alias
@@ -77,6 +81,7 @@ function onElement(choice: string) {
   } else if (choice === 'rename') rename(source.value)
   else if (choice === 'connect') mode.value = 'target'
   else if (choice === 'nest') mode.value = 'nest'
+  else if (choice === 'occurrence') void drawAgain()
   else if (choice === 'unnest') void nestIn(null)
   else if (choice === 'details') {
     details.value = el.id
@@ -90,51 +95,6 @@ function onElement(choice: string) {
     props.editing.remove([source.value])
     close(true)
   }
-}
-/** The diagram's own boxes, by alias and label, and the one the chosen element is drawn in. */
-const ownBoxes = computed(() => (props.editing.session.geometry.value?.boxes ?? [])
-  .filter((box) => box.kind === 'authored-grouping').map((box) => ({ alias: box.alias, name: box.label })))
-const boxOfSelected = computed(() => {
-  const inside = props.editing.session.geometry.value?.elements.find((one) => one.alias === source.value)?.inside
-  return ownBoxes.value.find((box) => box.alias === inside) ?? null
-})
-async function nestIn(box: string | null) {
-  if (await props.editing.nest(source.value, box)) close(true)
-  else error.value = props.editing.error.value ?? 'The drawing has changed. Try again.'
-}
-/**
- * An element dropped on a shape (03·9, Q13): onto one of the diagram's own boxes it is nested there, as
- * diagram content; onto an element the question of making it part of that element is asked; onto a box
- * a rule draws, one line says the box draws by its rule. Dropped where it already is, nothing is asked.
- */
-function dropped(alias: string, target: string, x: number, y: number) {
-  const geometry = props.editing.session.geometry.value
-  const moved = geometry?.elements.find((one) => one.alias === alias)
-  if (!geometry || !moved || moved.inside === target) return
-  source.value = alias
-  position(x, y)
-  const box = geometry.boxes.find((one) => one.alias === target)
-  if (box?.kind === 'authored-grouping') void nestIn(target)
-  else if (box) {
-    mode.value = 'nest'
-    error.value = `${box.label} draws what its rule admits; ${moved.label} is not put in it by hand.`
-  } else if (geometry.elements.some((one) => one.alias === target)) {
-    asked.value = target
-    mode.value = 'nest'
-  }
-}
-/** The element a drop asked to nest in, which *Nest in…* opens on; null when opened from the menu. */
-const asked = ref<string | null>(null)
-watch(mode, (now) => { if (now !== 'nest') asked.value = null })
-/** Nested in an element: the containment relation from it, kept as a model change. */
-function nestUnder(container: string, kind: string) {
-  const whole = members.value.find((one) => one.alias === container)
-  const part = selected.value
-  if (!whole || !part) return
-  void apply({
-    op: 'model.relation.create', artifact_id: connectionId(whole.id, kind, part.id),
-    description: '', src_multiplicity: '', tgt_multiplicity: '',
-  })
 }
 /** The element whose details are being edited in the modal; null while none is. */
 const details = ref<string | null>(null)
@@ -153,6 +113,7 @@ const dropMember = (event: DragEvent) => {
 function menu(event: MouseEvent) {
   event.preventDefault()
   position(event.clientX, event.clientY)
+  anchor.value = { x: event.clientX, y: event.clientY }
   source.value = elementAt(event)?.dataset.alias ?? ''
   if (props.line != null && isOnALine(event.target)) {
     mode.value = 'line'
@@ -275,7 +236,7 @@ function double(e: MouseEvent) {
           :heading="selected.name"
           :type="selected.type"
           :label="`${selected.name}: element`"
-          :items="elementMenuItems(words, drafted, boxOfSelected?.name ?? null)"
+          :items="elementMenuItems(words, drafted, boxOfSelected?.name ?? null, isArchimateDiagramType(context.diagram.diagram_type))"
           @choose="onElement"
           @close="close(true)"
         />

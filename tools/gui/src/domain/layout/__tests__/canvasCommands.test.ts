@@ -72,3 +72,24 @@ describe('the moves into and out of the diagram\'s own boxes', () => {
     expect('grouping_intents' in composeCanvas(drawn, {}, new Set()).write).toBe(false)
   })
 })
+
+describe('a further drawing of an element', () => {
+  const stored = { id: 'occ-svc-2', backing_entity_id: ID }
+  const drawn = {
+    diagram_type: 'archimate-layered', name: 'D', entity_ids: [ID], connection_ids: [],
+    diagram_entities: { occurrence: [stored] },
+  }
+
+  it('added in the session joins the occurrence statement the diagram already makes', () => {
+    const added = { id: 'occ-svc-3', backing_entity_id: ID }
+    const { write, preview } = composeCanvas(drawn, { occurrences: [added] }, new Set())
+    expect(write.diagram_entities?.occurrence).toEqual([stored, added])
+    expect(preview.diagram_entities?.occurrence).toEqual([stored, added])
+  })
+
+  it('removed from the diagram, or of an element deleted, leaves the statement', () => {
+    expect(composeCanvas(drawn, {}, new Set(['occ-svc-2'])).write.diagram_entities?.occurrence).toEqual([])
+    const deleted = composeCanvas(drawn, { commands: [{ op: 'model.element.delete', artifact_id: ID }] }, new Set())
+    expect(deleted.write.diagram_entities?.occurrence).toEqual([])
+  })
+})

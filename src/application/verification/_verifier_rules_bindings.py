@@ -20,6 +20,7 @@ from src.application.verification._verifier_rules_binding_targets import Represe
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
 from src.domain.diagrams.allowed_bindings import AllowedBindingsSpec
 from src.domain.diagrams.bindings import CORE_CORRESPONDENCE_KINDS
+from src.domain.diagrams.element_correspondence import diagram_element_ids
 from src.domain.modules.catalogs import DiagramTypeCatalog
 
 
@@ -97,16 +98,7 @@ def check_bindings_scoped(
 
 
 def _collect_entity_element_ids(fm: dict) -> set[str]:
-    ids: set[str] = set()
-    de = fm.get("diagram-entities")
-    if not isinstance(de, dict):
-        return ids
-    for items in de.values():
-        if isinstance(items, list):
-            for item in items:
-                if isinstance(item, dict) and item.get("id") is not None:
-                    ids.add(str(item["id"]))
-    return ids
+    return set(diagram_element_ids(fm.get("diagram-entities")))
 
 
 def _collect_connection_element_ids(fm: dict) -> set[str]:
