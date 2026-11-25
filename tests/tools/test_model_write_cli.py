@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from src.domain.deployment.endpoint_vocabulary import BackendIdentity
+from src.infrastructure.cli._workspace_backend import AttachedBackend
 from src.infrastructure.write import artifact_write_cli
 
 
@@ -16,7 +17,7 @@ def live_backend(monkeypatch):
     The third part is not decoration: the CLI sends writes, so it confirms that the backend at the
     recorded port serves the repository it was given rather than a neighbouring workspace's.
     """
-    monkeypatch.setattr(artifact_write_cli.backend_write, "serving_port", lambda root: 8000)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "serving_url", lambda root: "http://127.0.0.1:8000")
 
 
 class _FakeResp:
@@ -67,10 +68,12 @@ def test_cli_refuses_to_write_to_a_backend_serving_another_repository(
     tmp_path: Path, capsys, monkeypatch
 ) -> None:
     """A recorded port outlives the backend that wrote it; the next occupant may be a neighbour's."""
-    monkeypatch.setattr(artifact_write_cli.backend_write, "read_backend_state", lambda path: {"port": 8000})
     # Even if the requested root is mounted for reads, writes go to the engagement.
     identity = BackendIdentity((str(tmp_path / "other"), str(tmp_path)), "test")
-    monkeypatch.setattr(artifact_write_cli.backend_write, "probe_identity_on_port", lambda port: identity)
+    monkeypatch.setattr(
+        artifact_write_cli.backend_write, "workspace_backend",
+        lambda cwd: AttachedBackend("http://127.0.0.1:8000", identity),
+    )
     sent: list[object] = []
     monkeypatch.setattr(artifact_write_cli.backend_write, "urlopen", lambda req, timeout=10.0: sent.append(req))
 

@@ -46,7 +46,7 @@ def run_import(
     style: IconStyle,
     commit: bool,
 ) -> list[ImportedFile]:
-    port = backend_write.serving_port(repo_root)
+    base_url = backend_write.serving_url(repo_root)
     results: list[ImportedFile] = []
     for path in sorted(p for p in folder.iterdir() if p.suffix.lower() in _FORMATS):
         upload = {
@@ -56,7 +56,7 @@ def run_import(
             "default_style": style, "dry_run": not commit,
         }
         try:
-            answer = backend_write.post(port, "/api/icons", json.dumps(upload).encode(), "application/json")
+            answer = backend_write.post(base_url, "/api/icons", json.dumps(upload).encode(), "application/json")
         except backend_write.BackendRefusal as exc:
             results.append(ImportedFile(path, "refused", str(exc)))
             continue

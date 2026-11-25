@@ -58,6 +58,7 @@ def notify_backend_reload(*, authorize: bool | None = None) -> dict[str, Any] | 
     """
     try:
         from src.infrastructure.cli._workspace_backend import workspace_backend_url  # noqa: PLC0415
+        from src.infrastructure.cli.backend_write import send  # noqa: PLC0415
         from src.infrastructure.rest.contracts.operator_request import (  # noqa: PLC0415
             operator_request_headers,
         )
@@ -72,8 +73,7 @@ def notify_backend_reload(*, authorize: bool | None = None) -> dict[str, Any] | 
             method="POST",
             headers={"Content-Type": "application/json", **operator_request_headers()},
         )
-        with urllib.request.urlopen(request, timeout=_RELOAD_TIMEOUT_S) as response:  # noqa: S310 — loopback URL
-            answer = json.loads(response.read() or b"{}")
+        answer = send(request, timeout=_RELOAD_TIMEOUT_S)
     except Exception:  # noqa: BLE001 — no backend running: the policy applies at its next start
         logger.debug("No running backend took the assurance reload", exc_info=True)
         return None

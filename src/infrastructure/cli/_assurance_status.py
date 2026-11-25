@@ -12,7 +12,6 @@ process would do when no backend answers.
 
 from __future__ import annotations
 
-import json
 import urllib.request
 from pathlib import Path
 
@@ -29,6 +28,7 @@ def backend_holds_store_open() -> bool | None:
     """
     try:
         from src.infrastructure.cli._workspace_backend import workspace_backend_url  # noqa: PLC0415
+        from src.infrastructure.cli.backend_write import send  # noqa: PLC0415
 
         base_url = workspace_backend_url()
         if base_url is None:
@@ -37,8 +37,7 @@ def backend_holds_store_open() -> bool | None:
             f"{base_url}/api/assurance/status",
             headers={"Accept": "application/json"},
         )
-        with urllib.request.urlopen(request, timeout=_BACKEND_PROBE_TIMEOUT_S) as response:  # noqa: S310
-            payload = json.loads(response.read().decode("utf-8"))
+        payload = send(request, timeout=_BACKEND_PROBE_TIMEOUT_S)
     except Exception:  # noqa: BLE001
         return None
     if not isinstance(payload, dict):

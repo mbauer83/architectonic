@@ -214,11 +214,12 @@ def test_unlock_authorizes_nothing_when_no_backend_serves_this_workspace(
     """
     import urllib.request
 
-    from src.infrastructure.cli import _workspace_backend
+    from src.infrastructure.cli import _workspace_backend, backend_write
 
     posted: list[str] = []
     monkeypatch.setattr(_workspace_backend, "workspace_backend_url", lambda cwd=None: None)
     monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: posted.append("posted"))
+    monkeypatch.setattr(backend_write, "urlopen", lambda *a, **k: posted.append("posted"))
 
     _REAL_NOTIFY_BACKEND_RELOAD(authorize=True)
 
@@ -226,9 +227,7 @@ def test_unlock_authorizes_nothing_when_no_backend_serves_this_workspace(
 
 
 def test_unlock_authorizes_the_backend_serving_this_workspace(monkeypatch: pytest.MonkeyPatch) -> None:
-    import urllib.request
-
-    from src.infrastructure.cli import _workspace_backend
+    from src.infrastructure.cli import _workspace_backend, backend_write
 
     urls: list[str] = []
     monkeypatch.setattr(_workspace_backend, "workspace_backend_url", lambda cwd=None: "http://127.0.0.1:8188")
@@ -241,7 +240,7 @@ def test_unlock_authorizes_the_backend_serving_this_workspace(monkeypatch: pytes
             return False
 
     monkeypatch.setattr(
-        urllib.request, "urlopen", lambda req, timeout=3: urls.append(req.full_url) or _Response()
+        backend_write, "urlopen", lambda req, timeout=3: urls.append(req.full_url) or _Response()
     )
 
     _REAL_NOTIFY_BACKEND_RELOAD(authorize=True)

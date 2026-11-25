@@ -80,7 +80,7 @@ def test_cli_targets_entity_remove_path(monkeypatch) -> None:
 
     from src.infrastructure.write import artifact_write_cli  # noqa: PLC0415
 
-    monkeypatch.setattr(artifact_write_cli.backend_write, "serving_port", lambda root: 8000)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "serving_url", lambda root: "http://127.0.0.1:8000")
 
     captured: list[str] = []
 
@@ -107,7 +107,7 @@ def test_cli_targets_diagram_remove_path(monkeypatch) -> None:
 
     from src.infrastructure.write import artifact_write_cli  # noqa: PLC0415
 
-    monkeypatch.setattr(artifact_write_cli.backend_write, "serving_port", lambda root: 8000)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "serving_url", lambda root: "http://127.0.0.1:8000")
 
     captured: list[str] = []
 

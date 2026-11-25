@@ -1409,12 +1409,13 @@ def test_arch_backend_reports_an_already_running_backend_with_what_it_serves(mon
 
 # --- W3/W4: artifact_write_cli requires a running backend ---
 
+from src.infrastructure.cli._workspace_backend import AttachedBackend  # noqa: E402
 from src.infrastructure.write import artifact_write_cli  # noqa: E402
 
 
 def test_write_cli_errors_when_backend_absent(monkeypatch, tmp_path: Path, capsys) -> None:
     """artifact_write_cli exits with error when no backend state exists."""
-    monkeypatch.setattr(artifact_write_cli.backend_write, "read_backend_state", lambda path: None)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "workspace_backend", lambda cwd: None)
 
     result = artifact_write_cli.main(["--repo-root", str(tmp_path), "delete-entity", "ENT@123.abc"])
 
@@ -1425,8 +1426,11 @@ def test_write_cli_errors_when_backend_absent(monkeypatch, tmp_path: Path, capsy
 
 def test_write_cli_errors_when_backend_unhealthy(monkeypatch, tmp_path: Path, capsys) -> None:
     """artifact_write_cli exits with error when backend state exists but probe fails."""
-    monkeypatch.setattr(artifact_write_cli.backend_write, "read_backend_state", lambda path: {"port": 8123})
-    monkeypatch.setattr(artifact_write_cli.backend_write, "probe_identity_on_port", lambda port: None)
+    monkeypatch.setattr(
+        artifact_write_cli.backend_write, "workspace_backend",
+        lambda cwd: AttachedBackend("http://127.0.0.1:8123", None),
+    )
+    monkeypatch.setattr(artifact_write_cli.backend_write, "probe_backend_identity", lambda url: None)
 
     result = artifact_write_cli.main(["--repo-root", str(tmp_path), "delete-entity", "ENT@123.abc"])
 
@@ -1439,7 +1443,7 @@ def test_write_cli_routes_delete_entity_through_backend(monkeypatch, tmp_path: P
     """delete-entity targets the canonical entity detail route when a backend is available."""
     import json as json_mod  # noqa: PLC0415
 
-    monkeypatch.setattr(artifact_write_cli.backend_write, "serving_port", lambda root: 8123)
+    monkeypatch.setattr(artifact_write_cli.backend_write, "serving_url", lambda root: "http://127.0.0.1:8123")
 
     requests_captured: list[dict[str, object]] = []
 
