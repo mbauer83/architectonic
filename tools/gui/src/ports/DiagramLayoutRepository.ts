@@ -29,6 +29,18 @@ export interface LayoutEntryChange {
 /** Changes to a diagram's layout block, by section (`elements`, `boxes`, `relations`, `z`) and key. */
 export type LayoutPatch = Readonly<Record<string, Readonly<Record<string, LayoutEntryChange | null>>>>
 
+/**
+ * Where a diagram being arranged is now, to place what is drawn round it: the parts' extents and what the
+ * diagram occupied as PlantUML drew them, and its shapes, line courses and line labels now.
+ */
+export interface SurroundPlacement {
+  readonly drawn: Extent
+  readonly parts: readonly Extent[]
+  readonly shapes: readonly Extent[]
+  readonly courses: readonly (readonly (readonly [number, number])[])[]
+  readonly labels: readonly Extent[]
+}
+
 /** Arranging a diagram: the picture it is arranged on, resized shapes drawn anew, and the layout write. */
 export interface DiagramLayoutRepository {
   readonly listDiagramElementTypes: (
@@ -42,6 +54,11 @@ export interface DiagramLayoutRepository {
   ) => Effect.Effect<LayoutGeometry, RepoError>
   /** The picture a diagram is arranged on; under *lens*, drawn as the reader is reading it (owner, 11-25). */
   readonly readLayoutGeometry: (diagramId: string, lens?: ReadingLens) => Effect.Effect<LayoutGeometry, RepoError>
+  /** How far each part drawn round the diagram moves, by the composer's rule, in the order given. */
+  readonly placeSurround: (
+    diagramId: string,
+    placement: SurroundPlacement,
+  ) => Effect.Effect<readonly (readonly [number, number])[], RepoError>
   readonly drawResizedShapes: (
     diagramId: string,
     shapes: readonly ShapeToDraw[],

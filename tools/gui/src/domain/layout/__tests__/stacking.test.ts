@@ -20,7 +20,7 @@ const element = (alias: string, key: string, extent: Extent, inside?: string) =>
 /** a, b and c overlap one another in a row, d stands apart; a box G holds x and y. */
 const geometry: LayoutGeometry = {
   artifact_id: 'ARC@1.a.test', name: 'Test', canvas: at(0, 0, 800, 400), backdrop: [],
-  surround: [],
+  surround: { drawn: { left: 0, top: 0, right: 0, bottom: 0 }, parts: [] },
   elements: [
     element('a', 'APP@1.a', at(0, 0, 100, 50)),
     element('b', 'APP@2.b', at(80, 10, 180, 60)),

@@ -32,6 +32,7 @@ from src.infrastructure.rendering.layout.arrangement import Arrangement, arrange
 from src.infrastructure.rendering.layout.plantuml_svg_reader import RenderedDrawing, read_rendered_drawing
 from src.infrastructure.rendering.layout.relation_drawing import drawn_relation
 from src.infrastructure.rendering.layout.shape_drawing import fitted_box, placed_shape, resized_element
+from src.infrastructure.rendering.layout.surround_placement import carried_by, occupied
 from src.infrastructure.rendering.layout.svg_markup import Motion, drawn_extent, fitted, moved
 from src.infrastructure.rendering.layout.svg_path_data import written_number
 
@@ -54,42 +55,26 @@ def _around(extents: list[Extent]) -> Extent:
     )
 
 
-def _diagram_extent_drawn(drawing: RenderedDrawing) -> Extent:
+def diagram_extent_drawn(drawing: RenderedDrawing) -> Extent:
     """What PlantUML's shapes and relations occupied, title and legend aside."""
     picture = drawing.picture
-    occupied = [shape.extent for shape in (*picture.elements.values(), *picture.boxes.values())]
-    occupied += [around for relation in picture.relations if (around := Extent.around(relation.course)) is not None]
-    occupied += [label for relation in picture.relations if (label := label_extent(relation.words)) is not None]
-    return _around(occupied) if occupied else picture.canvas
+    shapes = [shape.extent for shape in (*picture.elements.values(), *picture.boxes.values())]
+    labels = [label for relation in picture.relations if (label := label_extent(relation.words)) is not None]
+    return occupied(shapes, (relation.course for relation in picture.relations), labels) or picture.canvas
 
 
 def _diagram_extent_now(drawing: RenderedDrawing, arrangement: Arrangement) -> Extent:
-    occupied = [*arrangement.elements.values(), *arrangement.boxes.values()]
+    labels = []
     for relation, drawn in zip(arrangement.relations, drawing.picture.relations, strict=True):
-        if (around := Extent.around(relation.course)) is not None:
-            occupied.append(around)
         label = label_extent(drawn.words)
         if label is not None and relation.label_centre is not None:
             half_width, half_height = label.width / 2, label.height / 2
-            occupied.append(Extent(
+            labels.append(Extent(
                 relation.label_centre.x - half_width, relation.label_centre.y - half_height,
                 relation.label_centre.x + half_width, relation.label_centre.y + half_height,
             ))
-    return _around(occupied) if occupied else drawing.picture.canvas
-
-
-def _carried_with(part: Extent, was: Extent, now: Extent) -> Motion:
-    """How something drawn around the diagram moves with it: it keeps to the side or the middle it was at.
-
-    The editor's canvas carries the title and the legend by the same rule (`labSurround.ts`, `carriedBy`)."""
-    if part.centre.x < was.left:
-        dx = now.left - was.left
-    elif part.centre.x > was.right:
-        dx = now.right - was.right
-    else:
-        dx = now.centre.x - was.centre.x
-    dy = now.bottom - was.bottom if part.centre.y > was.bottom else now.top - was.top
-    return Motion.shift(dx, dy)
+    shapes = [*arrangement.elements.values(), *arrangement.boxes.values()]
+    return occupied(shapes, (relation.course for relation in arrangement.relations), labels) or drawing.picture.canvas
 
 
 def _shape(drawing: RenderedDrawing, arrangement: Arrangement, alias: str) -> Element:
@@ -126,10 +111,10 @@ def _composed(drawing: RenderedDrawing, diagram: LaidOutDiagram) -> Element:
     arrangement = arrange(picture, diagram)
     if arrangement.unroutable:
         raise _NoRoute(arrangement.unroutable)
-    was, now = _diagram_extent_drawn(drawing), _diagram_extent_now(drawing, arrangement)
+    was, now = diagram_extent_drawn(drawing), _diagram_extent_now(drawing, arrangement)
 
     chrome = [
-        moved(part, _carried_with(extent, was, now)) if (extent := drawn_extent(part)) is not None
+        moved(part, Motion.shift(*carried_by(extent, was, now))) if (extent := drawn_extent(part)) is not None
         else copy.deepcopy(part)
         for part in drawing.chrome
     ]

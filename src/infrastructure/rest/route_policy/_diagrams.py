@@ -129,6 +129,13 @@ DIAGRAM_ROWS: tuple[RouteRow, ...] = (
         "diagrams_preview_diagram_layout_shapes", TYPED,
         identity_parameters=_ID, cache_directive="no-store", timeout_class="derived-graph",
     ),
+    # Where the title and the legend of a diagram being arranged go: the composer's rule over the numbers the
+    # editor sends, no picture drawn, hence the default budget.
+    RouteRow(
+        "POST", "/api/diagrams/{artifact_id}/layout/surround/preview", "operation",
+        "diagrams_preview_diagram_surround", TYPED,
+        identity_parameters=_ID, cache_directive="no-store",
+    ),
     RouteRow(
         "PATCH", "/api/diagrams/{artifact_id}/layout", "subresource", "diagrams_patch_diagram_layout", TYPED,
         identity_parameters=_ID, mutation_domain="repository", timeout_class="derived-graph",

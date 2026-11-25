@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * What the canvas draws for a selected line (sketch 02·3–02·5): its course outlined, a green diamond at
+ * What the canvas draws for a selected line (sketch 02·3–02·5): its course outlined, a green-edged diamond at
  * each end to slide it along its element, a handle in the middle of each segment to move it sideways,
  * a white handle on each bend, and — while its label is moved — a leader from the label to its anchor.
  * Every handle is the same size on screen however far the picture is zoomed.
@@ -31,6 +31,9 @@ const emit = defineEmits<{
   addBend: [event: MouseEvent]
 }>()
 
+/** An end's diamond is a little larger than the other handles: 10 screen pixels to their 9 (sketch 02·3). */
+const END_SCALE = 10 / 9
+const endSide = computed(() => props.handleSide * END_SCALE)
 const ends = computed((): [End, Point][] => [['from', props.course[0]], ['to', props.course[props.course.length - 1]]])
 /** The middle of each segment long enough to take a handle of its own. */
 const middles = computed(() => props.course.slice(1).flatMap((end, index) => {
@@ -98,10 +101,10 @@ const leaderLine = computed(() => {
       :key="end"
       class="lab-line-handles__end"
       :data-end="end"
-      :x="at.x - handleSide / 2"
-      :y="at.y - handleSide / 2"
-      :width="handleSide"
-      :height="handleSide"
+      :x="at.x - endSide / 2"
+      :y="at.y - endSide / 2"
+      :width="endSide"
+      :height="endSide"
       :transform="`rotate(45 ${at.x} ${at.y})`"
       @pointerdown="emit('end', $event, end)"
     />
@@ -115,7 +118,8 @@ const leaderLine = computed(() => {
   fill: none; stroke: var(--paper-accent); stroke-width: 2px; opacity: 0.55; pointer-events: stroke;
   vector-effect: non-scaling-stroke;
 }
-.lab-line-handles__end { fill: var(--paper-ok); stroke: var(--paper-handle); stroke-width: 1px; cursor: move; }
+/* An end is a white diamond outlined in green, which slides along its element: the crosshair says so. */
+.lab-line-handles__end { fill: var(--paper-handle); stroke: var(--paper-port); stroke-width: 1.5px; cursor: crosshair; }
 .lab-line-handles__bend { fill: var(--paper-handle); stroke: var(--paper-accent); stroke-width: 1.5px; cursor: move; }
 .lab-line-handles__bend.is-picked { fill: var(--paper-accent); }
 .lab-line-handles__segment { fill: var(--paper-handle); stroke: var(--paper-accent); stroke-width: 1.5px; }

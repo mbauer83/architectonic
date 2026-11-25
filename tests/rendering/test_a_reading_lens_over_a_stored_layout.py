@@ -319,8 +319,9 @@ class TestTheEditorArrangesTheReading:
 
     def test_the_legend_comes_with_where_it_is_drawn_round_the_diagram(self, scene: LaidOutScene) -> None:
         geometry = self._geometry(scene, **_LENS)
-        legend = [part for part in geometry["surround"] if "risk_score" in " ".join(_texts(part["drawing"]))]
-        assert legend, geometry["surround"]
+        parts = geometry["surround"]["parts"]
+        legend = [part for part in parts if "risk_score" in " ".join(_texts(part["drawing"]))]
+        assert legend, parts
         extent = legend[0]["extent"]
         for shape in (*geometry["elements"], *geometry["boxes"]):
             drawn = shape["extent"]
@@ -328,6 +329,6 @@ class TestTheEditorArrangesTheReading:
             assert apart or extent["top"] >= drawn["bottom"] or extent["bottom"] <= drawn["top"], shape["alias"]
 
     def test_without_a_lens_nothing_is_drawn_round_the_diagram_but_its_own_parts(self, scene: LaidOutScene) -> None:
-        surround = self._geometry(scene)["surround"]
+        surround = self._geometry(scene)["surround"]["parts"]
 
         assert not [part for part in surround if "risk_score" in " ".join(_texts(part["drawing"]))]

@@ -123,6 +123,7 @@ NON_MUTATING_REST_OPERATIONS: frozenset[str] = frozenset({
     "diagrams_preview_diagram",
     "diagrams_preview_diagram_layout_geometry",
     "diagrams_preview_diagram_layout_shapes",
+    "diagrams_preview_diagram_surround",
     "entities_allocate_identifiers",
     "icons_preview_shown_icons",
     "matrices_preview_matrix",

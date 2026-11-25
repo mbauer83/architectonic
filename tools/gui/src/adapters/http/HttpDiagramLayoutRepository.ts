@@ -1,7 +1,7 @@
 import { Effect, Schema } from 'effect'
 import type { DiagramLayoutRepository } from '../../ports/DiagramLayoutRepository'
 import {
-  DiagramLayoutGeometrySchema, DiagramLayoutPatchResultSchema, ShapeDrawingsSchema,
+  DiagramLayoutGeometrySchema, DiagramLayoutPatchResultSchema, ShapeDrawingsSchema, SurroundPlacementSchema,
 } from '../../domain/schemas/diagramLayoutGeometry'
 import { encodeIdentitySegment } from '../../domain/identitySegments'
 import { lensParams } from '../../domain/readingLens'
@@ -20,6 +20,10 @@ export const diagramLayoutMethods = (): DiagramLayoutRepository => ({
     postJson(layoutUrl(diagramId, '/geometry/preview', lens && lensParams(lens)), body, DiagramLayoutGeometrySchema),
   readLayoutGeometry: (diagramId, lens) =>
     fetchJson(layoutUrl(diagramId, '/geometry', lens && lensParams(lens)), DiagramLayoutGeometrySchema),
+  placeSurround: (diagramId, placement) =>
+    postJson(layoutUrl(diagramId, '/surround/preview'), placement, SurroundPlacementSchema).pipe(
+      Effect.map((answer) => answer.moves),
+    ),
   drawResizedShapes: (diagramId, shapes) =>
     postJson(layoutUrl(diagramId, '/preview'), { shapes }, ShapeDrawingsSchema).pipe(
       Effect.map((answer) => answer.drawings),

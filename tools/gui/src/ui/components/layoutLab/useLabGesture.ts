@@ -26,7 +26,9 @@ import {
 } from '../../../domain/layout/lab/labArrangement'
 import { changedShapes, placementOf } from '../../../domain/layout/lab/labRouting'
 import type { Placement } from '../../../domain/layout/lab/labRouting'
-import { type RectangleRule, chosenBy, toggled } from '../../../domain/layout/lab/labSelection'
+import {
+  type BendRef, type RectangleRule, bendsWithin, chosenBy, toggled, withBends, withBendsMoved,
+} from '../../../domain/layout/lab/labSelection'
 import {
   ALIGN_PIXELS, GRID, type Guide, type Snapping, movingLinesOf, neighboursOf, snapped,
 } from '../../../domain/layout/lab/labSnapping'
@@ -50,6 +52,8 @@ interface Pressed {
   /** The shape pressed, and every shape the drag moves with it. */
   readonly alias: string
   readonly moving: readonly string[]
+  /** The bends selected with them, which a move carries along (sketch 02·8). */
+  readonly bends: readonly BendRef[]
   readonly handle: Handle | null
   readonly from: Point
   /** Where the drag starts from: read once the step has begun. */
@@ -61,6 +65,7 @@ interface Sweep {
   readonly box: string | null
   readonly additive: boolean
   readonly before: readonly string[]
+  readonly bendsBefore: readonly BendRef[]
   readonly from: Point
 }
 
@@ -69,6 +74,8 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
   const selection = ref<readonly string[]>([])
   /** The one shape selected, or null when none or several are. */
   const selected = computed(() => (selection.value.length === 1 ? selection.value[0] : null))
+  /** The bends lines state inside the last selection rectangle, selected with the shapes. */
+  const bends = ref<readonly BendRef[]>([])
   /** The selection rectangle being swept, until it is released. */
   const rectangle = ref<Extent | null>(null)
   /** The shape last pressed and how, which the paint order brings forward (`labPaintOrder`). */
@@ -99,10 +106,16 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
       return
     }
     const together = handle === null && selection.value.includes(alias)
-    if (!together) selection.value = [alias]
+    if (!together) {
+      selection.value = [alias]
+      bends.value = []
+    }
     follow(true)
     lifted.value = { alias, how: handle === null ? 'moved' : 'resized' }
-    pressed = { alias, moving: together ? selection.value : [alias], handle, from: pointIn(event), start: null }
+    pressed = {
+      alias, moving: together ? selection.value : [alias], bends: together ? bends.value : [], handle,
+      from: pointIn(event), start: null,
+    }
   }
 
   /** Begin a selection rectangle: on empty paper (*box* null), or on a box's body. */
@@ -110,7 +123,9 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
     if (event.button !== 0) return
     event.stopPropagation()
     follow(true)
-    sweep = { box, additive: isAdditive(event), before: selection.value, from: pointIn(event) }
+    sweep = {
+      box, additive: isAdditive(event), before: selection.value, bendsBefore: bends.value, from: pointIn(event),
+    }
   }
 
   /** Begin the step, then read where the drag starts from. */
@@ -127,7 +142,7 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
     const geometry = session.geometry.value
     const mode = aids.snapping()
     if (!geometry) return { dx: 0, dy: 0, guides: [] }
-    if (state.moving.length > 1) {
+    if (state.moving.length > 1 || state.bends.length > 0) {
       const grid = (by: number) => (mode === 'snap' ? Math.round(by / GRID) * GRID - by : 0)
       return { dx: grid(dx), dy: grid(dy), guides: [] }
     }
@@ -148,7 +163,10 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
     const land = landing(state, start, travelled, fallen)
     guides.value = land.guides
     const [dx, dy] = [travelled + land.dx, fallen + land.dy]
-    if (state.handle === null) return movedTogether(geometry, start.arrangement, state.moving, dx, dy)
+    if (state.handle === null) {
+      const bent = withBendsMoved(geometry, start.arrangement, state.bends, state.moving, dx, dy)
+      return movedTogether(geometry, bent, state.moving, dx, dy)
+    }
     const extent = resizedExtent(start.extent, state.handle, dx, dy, leastOf(state))
     return resized(geometry, start.arrangement, state.alias, extent)
   }
@@ -161,6 +179,8 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
     rectangle.value = spanned
     const chosen = chosenBy(spanned, placement, aids.rectangle())
     selection.value = state.additive ? [...new Set([...state.before, ...chosen])] : chosen
+    const inside = bendsWithin(spanned, session.arrangement.value?.routes ?? new Map())
+    bends.value = state.additive ? withBends(state.bendsBefore, inside) : inside
   }
 
   const drag = (event: PointerEvent) => {
@@ -184,6 +204,7 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
   const clicked = (state: Sweep) => {
     if (state.box) selection.value = state.additive ? toggled(state.before, state.box) : [state.box]
     else if (!state.additive) selection.value = []
+    if (!state.additive) bends.value = []
   }
 
   const release = () => {
@@ -198,10 +219,13 @@ export function useLabGesture(session: ArrangementSession, svg: Ref<SVGSVGElemen
     dragging.value = false
   }
 
-  const clear = () => { selection.value = [] }
+  const clear = () => {
+    selection.value = []
+    bends.value = []
+  }
   const follow = followingPointer(drag, release)
 
   return {
-    selection, selected, rectangle, lifted, dragging, guides, press, select, sweepFrom, drag, release, clear,
+    selection, selected, bends, rectangle, lifted, dragging, guides, press, select, sweepFrom, drag, release, clear,
   }
 }

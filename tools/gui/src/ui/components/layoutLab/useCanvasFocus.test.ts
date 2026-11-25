@@ -18,7 +18,7 @@ const at = (left: number, top: number, right: number, bottom: number): Extent =>
 /** Box G holds A and B side by side; C sits below on its own. */
 const geometry: LayoutGeometry = {
   artifact_id: 'ARC@1.a.test', name: 'Test', canvas: at(0, 0, 600, 400), backdrop: [],
-  surround: [],
+  surround: { drawn: { left: 0, top: 0, right: 0, bottom: 0 }, parts: [] },
   elements: [
     { alias: 'B', label: 'Bravo', extent: at(140, 40, 240, 80), inside: 'G', words: [], drawing: SHAPE_DRAWING },
     { alias: 'A', label: 'Alpha', extent: at(20, 40, 120, 80), inside: 'G', words: [], drawing: SHAPE_DRAWING },

@@ -1,5 +1,6 @@
 import type { ModelRepository, ListParams, Direction } from '../ports/ModelRepository'
 import type { ReadingLens } from '../domain/readingLens'
+import type { SurroundPlacement } from '../ports/DiagramLayoutRepository'
 
 /**
  * Application service: use-case orchestration layer.
@@ -179,6 +180,7 @@ export const makeModelService = (repo: ModelRepository) =>
       diagramId: string, body: Parameters<ModelRepository['previewLayoutGeometry']>[1], lens?: ReadingLens,
     ) => repo.previewLayoutGeometry(diagramId, body, lens),
     readLayoutGeometry: (diagramId: string, lens?: ReadingLens) => repo.readLayoutGeometry(diagramId, lens),
+    placeSurround: (diagramId: string, placement: SurroundPlacement) => repo.placeSurround(diagramId, placement),
     drawResizedShapes: (diagramId: string, shapes: Parameters<ModelRepository['drawResizedShapes']>[1]) =>
       repo.drawResizedShapes(diagramId, shapes),
     patchLayout: (diagramId: string, patch: Parameters<ModelRepository['patchLayout']>[1], dryRun: boolean) =>

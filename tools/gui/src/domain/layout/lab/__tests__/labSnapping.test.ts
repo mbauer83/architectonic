@@ -83,7 +83,7 @@ describe('a resize aligns only the edge being dragged', () => {
 describe('what a shape may align to', () => {
   const geometry: LayoutGeometry = {
     artifact_id: 'ARC@1.a.test', name: 'Test', canvas: at(0, 0, 4000, 400), backdrop: [],
-    surround: [],
+    surround: { drawn: { left: 0, top: 0, right: 0, bottom: 0 }, parts: [] },
     elements: [
       { alias: 'A', label: 'A', extent: at(20, 40, 120, 80), inside: 'G', words: [], drawing: SHAPE_DRAWING },
       { alias: 'B', label: 'B', extent: at(140, 40, 240, 80), inside: 'G', words: [], drawing: SHAPE_DRAWING },

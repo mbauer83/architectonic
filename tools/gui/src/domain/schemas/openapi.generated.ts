@@ -2101,6 +2101,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diagrams/{artifact_id}/layout/surround/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Place the title and legend of a diagram being arranged, writing nothing
+         * @description How far each part drawn round the diagram moves, by the composer's own rule (`surround_placement`), so
+         *     the editor's canvas shows the title and the legend where the saved picture will. Needs nothing of the
+         *     diagram but its address: where everything is arrives in the request, as the editor holds it.
+         */
+        post: operations["diagrams_preview_diagram_surround"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diagrams/{artifact_id}/svg": {
         parameters: {
             query?: never;
@@ -7818,8 +7840,7 @@ export interface components {
             name: string;
             /** Relations */
             relations: components["schemas"]["GeometryRelationContract"][];
-            /** Surround */
-            surround: components["schemas"]["SurroundPartContract"][];
+            surround: components["schemas"]["SurroundContract"];
         };
         /**
          * DiagramLayoutIntentsResponse
@@ -13796,12 +13817,53 @@ export interface components {
             };
         };
         /**
+         * SurroundContract
+         * @description What PlantUML draws round the diagram, and what the diagram occupied when it was drawn: where the layout
+         *     surround route carries each part from.
+         */
+        SurroundContract: {
+            drawn: components["schemas"]["ExtentContract"];
+            /** Parts */
+            parts: components["schemas"]["SurroundPartContract"][];
+        };
+        /**
          * SurroundPartContract
          * @description A part PlantUML draws round the diagram — its title, its legend — and where it is drawn.
          */
         SurroundPartContract: {
             drawing: components["schemas"]["DrawingNodeContract"];
             extent: components["schemas"]["ExtentContract"];
+        };
+        /**
+         * SurroundPlacementBody
+         * @description Where a diagram being arranged is now, and what was drawn round it: the parts' extents as drawn, and what
+         *     the diagram occupied then (both as the geometry read handed them over); its shapes, the courses of its lines
+         *     and its lines' labels as they are now.
+         */
+        SurroundPlacementBody: {
+            /** Courses */
+            courses: [
+                number,
+                number
+            ][][];
+            drawn: components["schemas"]["ExtentBody"];
+            /** Labels */
+            labels: components["schemas"]["ExtentBody"][];
+            /** Parts */
+            parts: components["schemas"]["ExtentBody"][];
+            /** Shapes */
+            shapes: components["schemas"]["ExtentBody"][];
+        };
+        /**
+         * SurroundPlacementResponse
+         * @description How far each part drawn round the diagram moves, in the order asked, as ``[dx, dy]``.
+         */
+        SurroundPlacementResponse: {
+            /** Moves */
+            moves: [
+                number,
+                number
+            ][];
         };
         /**
          * SyncAuthorityResponse
@@ -21938,6 +22000,104 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShapeDrawingsResponse"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    diagrams_preview_diagram_surround: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SurroundPlacementBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurroundPlacementResponse"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */

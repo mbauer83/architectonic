@@ -7,7 +7,10 @@ import type { Extent } from '../../geometry'
 import type { LayoutGeometry } from '../../../schemas/diagramLayoutGeometry'
 import { drawnArrangement, movedTogether, placedAt } from '../labArrangement'
 import { placementOf } from '../labRouting'
-import { alignedSelection, chosenBy, distributedSelection, toggled } from '../labSelection'
+import {
+  alignedSelection, bendsWithin, chosenBy, distributedSelection, toggled, withBends, withBendsMoved, withoutBends,
+} from '../labSelection'
+import { LINE_DRAWING } from './labDrawingFixtures'
 import { extentAround } from '../../geometry'
 import { SHAPE_DRAWING } from './labDrawingFixtures'
 
@@ -21,7 +24,7 @@ const element = (alias: string, extent: Extent, inside?: string) =>
 /** A and B in box G; C and D outside it, D with E drawn inside it. */
 const geometry: LayoutGeometry = {
   artifact_id: 'ARC@1.a.test', name: 'Test', canvas: at(0, 0, 800, 400), backdrop: [],
-  surround: [],
+  surround: { drawn: { left: 0, top: 0, right: 0, bottom: 0 }, parts: [] },
   elements: [
     element('A', at(20, 40, 120, 80), 'G'), element('B', at(140, 50, 240, 90), 'G'),
     element('C', at(400, 40, 500, 70)), element('D', at(600, 100, 700, 200)), element('E', at(620, 140, 660, 180), 'D'),
@@ -90,5 +93,42 @@ describe('align and distribute on a selection', () => {
     expect(next.elements.get('D')).toEqual(at(600, 100, 700, 200))
     expect(next.elements.get('C')).toEqual(at(310, 40, 410, 70))
     expect(next.elements.get('E')).toEqual(at(620, 140, 660, 180))
+  })
+})
+
+describe('the bends a selection rectangle picks up (sketch 02·8)', () => {
+  /** C to D, its line bent twice; A to B inside the box, bent once. */
+  const lines: LayoutGeometry = {
+    ...geometry,
+    relations: [
+      { index: 0, key: 'cd', source: 'C', target: 'D', decorated: [false, true], course: [[500, 55], [600, 150]],
+        label: '', label_size: undefined, drawing: LINE_DRAWING },
+      { index: 1, key: 'ab', source: 'A', target: 'B', decorated: [false, true], course: [[120, 60], [140, 70]],
+        label: '', label_size: undefined, drawing: LINE_DRAWING },
+    ],
+  }
+  const bent = {
+    ...start,
+    routes: new Map([['cd', { via: [[550, 55], [550, 150]] as const }], ['ab', { via: [[130, 60]] as const }]]),
+  }
+
+  it('are the stated bends inside it, whatever the rectangle rule', () => {
+    expect(bendsWithin(at(540, 40, 560, 100), bent.routes)).toEqual([{ key: 'cd', index: 0 }])
+    expect(bendsWithin(at(0, 0, 800, 400), bent.routes)).toHaveLength(3)
+    expect(withBends([{ key: 'cd', index: 0 }], [{ key: 'cd', index: 0 }, { key: 'ab', index: 0 }]))
+      .toEqual([{ key: 'cd', index: 0 }, { key: 'ab', index: 0 }])
+  })
+
+  it('move with the selection, except on a line the selection carries whole', () => {
+    const picked = [{ key: 'cd', index: 1 }, { key: 'ab', index: 0 }]
+    const moved = withBendsMoved(lines, bent, picked, ['G'], 10, 5)
+    expect(moved.routes.get('cd')?.via).toEqual([[550, 55], [560, 155]])
+    expect(moved.routes.get('ab')?.via).toEqual([[130, 60]])
+  })
+
+  it('go when the selection is removed, each line keeping its other bends', () => {
+    const left = withoutBends(bent, [{ key: 'cd', index: 0 }])
+    expect(left.routes.get('cd')?.via).toEqual([[550, 150]])
+    expect(withoutBends(left, [{ key: 'ab', index: 0 }]).routes.get('ab')?.via).toBeUndefined()
   })
 })

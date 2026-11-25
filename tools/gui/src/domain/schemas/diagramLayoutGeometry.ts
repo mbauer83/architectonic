@@ -102,6 +102,10 @@ const GeometryRelationSchema = Schema.Struct({
 /** A part PlantUML draws round the diagram — its title, its legend — and where it is drawn. */
 const SurroundPartSchema = Schema.Struct({ drawing: DrawingNodeSchema, extent: ExtentSchema })
 
+/** What PlantUML draws round the diagram, and what the diagram occupied when it was drawn. */
+const SurroundSchema = Schema.Struct({ drawn: ExtentSchema, parts: Schema.Array(SurroundPartSchema) })
+
+export type Surround = typeof SurroundSchema.Type
 export type SurroundPart = typeof SurroundPartSchema.Type
 
 export const DiagramLayoutGeometrySchema = Schema.Struct({
@@ -111,12 +115,17 @@ export const DiagramLayoutGeometrySchema = Schema.Struct({
   /** What PlantUML draws behind everything: the background. */
   backdrop: Schema.Array(DrawingNodeSchema),
   /** What PlantUML draws round the diagram: its title and its legend. */
-  surround: Schema.Array(SurroundPartSchema),
+  surround: SurroundSchema,
   elements: Schema.Array(GeometryElementSchema),
   boxes: Schema.Array(GeometryBoxSchema),
   relations: Schema.Array(GeometryRelationSchema),
   /** The layout the diagram states; absent where PlantUML arranges it. */
   layout: Schema.optional(DiagramLayoutSchema),
+})
+
+/** How far each part drawn round the diagram moves, in the order asked (`layout/surround/preview`). */
+export const SurroundPlacementSchema = Schema.Struct({
+  moves: Schema.Array(Schema.Tuple(Schema.Number, Schema.Number)),
 })
 
 /** Each resized shape drawn by the composer at its new size, in the order asked. */

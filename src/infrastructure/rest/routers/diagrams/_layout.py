@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict
 from src.application.modeling.diagram_identities import alias_by_instance
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.viewpoints.diagram_reading_lens import ReadingLens
+from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import MalformedLayout
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
 from src.domain.ontology_representation.artifact_types import DiagramRecord
@@ -32,11 +33,13 @@ from src.infrastructure.rendering.layout.diagram_geometry import (
 )
 from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, first_layout_of, placed_on_its_picture
 from src.infrastructure.rendering.layout.drawing_wire import reshaped
+from src.infrastructure.rendering.layout.surround_placement import carried_by, occupied
 from src.infrastructure.rest.contracts.diagram_layout_editing import (
     DiagramLayoutGeometryResponse,
     DiagramLayoutIntentsResponse,
     DiagramLayoutPatchResponse,
     ShapeDrawingsResponse,
+    SurroundPlacementResponse,
 )
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
@@ -97,6 +100,20 @@ class DrawShapesBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     shapes: list[ShapeToDraw]
+
+
+class SurroundPlacementBody(BaseModel):
+    """Where a diagram being arranged is now, and what was drawn round it: the parts' extents as drawn, and what
+    the diagram occupied then (both as the geometry read handed them over); its shapes, the courses of its lines
+    and its lines' labels as they are now."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    drawn: ExtentBody
+    parts: list[ExtentBody]
+    shapes: list[ExtentBody]
+    courses: list[list[tuple[float, float]]]
+    labels: list[ExtentBody]
 
 
 class PatchLayoutBody(BaseModel):
@@ -208,6 +225,29 @@ def preview_diagram_layout_shapes(artifact_id: str, body: DrawShapesBody) -> dic
         return {"drawings": [reshaped(shape.model_dump()) for shape in body.shapes]}
     except Unreadable as unreadable:
         raise HTTPException(422, f"This shape cannot be drawn: {unreadable.met}") from unreadable
+
+
+@router.post(
+    "/api/diagrams/{artifact_id}/layout/surround/preview", tags=[TAG_DIAGRAMS],
+    summary="Place the title and legend of a diagram being arranged, writing nothing",
+    response_model=SurroundPlacementResponse, response_model_exclude_none=True,
+    responses={**READ_RESPONSES, **WRITE_RESPONSES},
+)
+def preview_diagram_surround(artifact_id: str, body: SurroundPlacementBody) -> dict[str, object]:
+    """How far each part drawn round the diagram moves, by the composer's own rule (`surround_placement`), so
+    the editor's canvas shows the title and the legend where the saved picture will. Needs nothing of the
+    diagram but its address: where everything is arrives in the request, as the editor holds it."""
+    _ = artifact_id
+    was = _extent(body.drawn)
+    now = occupied(
+        map(_extent, body.shapes), ([Point(x, y) for x, y in course] for course in body.courses),
+        map(_extent, body.labels),
+    ) or was
+    return {"moves": [carried_by(_extent(part), was, now) for part in body.parts]}
+
+
+def _extent(body: ExtentBody) -> Extent:
+    return Extent(body.left, body.top, body.right, body.bottom)
 
 
 @router.patch(
