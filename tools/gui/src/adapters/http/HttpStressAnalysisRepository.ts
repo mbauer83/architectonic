@@ -23,7 +23,7 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
   createCandidate: (record, diagram) =>
     postJson(buildUrl('/change-sets'), { record, ...(diagram ? { diagram } : {}) }, CandidateResponseSchema),
   startAnalysis: (start) => postJson(buildUrl('/stress-analyses'), start, AnalysisStartedSchema),
-  deleteCandidate: (id) => deleteNoContent(candidateUrl(id)),
+  deleteCandidate: (id) => deleteNoContent(candidateUrl(id, '', { dry_run: 'false' })),
   rebaseCandidate: (id, basedOn) =>
     postJson(candidateUrl(id, '/rebase'), { based_on: basedOn }, CandidateResponseSchema),
   applyCandidate: (id, dryRun) =>
@@ -32,7 +32,7 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
   editCandidate: (id, basedOn, patch) =>
     patchJson(candidateUrl(id), { based_on: basedOn, patch }, CandidateResponseSchema),
   recordOperation: (id, basedOn, operation) =>
-    postJson(candidateUrl(id, '/operations'), { based_on: basedOn, operation }, CandidateResponseSchema),
+    postJson(candidateUrl(id, '/operations'), { based_on: basedOn, operations: [operation] }, CandidateResponseSchema),
   compareCandidate: (id, base, diagram) =>
     fetchJson(candidateUrl(id, '/diff', { base, diagram }), CandidateComparisonSchema),
   checkCandidates: (ids) => postJson(buildUrl('/change-set-checks'), { candidates: ids }, IntegrationCheckSchema),

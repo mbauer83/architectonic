@@ -164,16 +164,12 @@ class TestThePreviewIsTheWritesOwnPicture:
         field the writes had. Inheriting one declaration is what makes that impossible; this fails if
         someone re-declares the fields on one body instead of adding them to the shared one.
         """
-        from src.infrastructure.rest.routers.diagrams._write_bodies import (
-            CreateDiagramGuiBody,
-            DiagramComposition,
-            DiagramPreviewBody,
-            EditDiagramGuiBody,
-        )
+        from src.infrastructure.diagram_composition import DiagramComposition, DiagramReplacement
+        from src.infrastructure.rest.routers.diagrams._write_bodies import CreateDiagramGuiBody, DiagramPreviewBody
 
         composition_fields = set(DiagramComposition.model_fields)
         assert composition_fields, "the shared composition declares nothing"
-        for body in (DiagramPreviewBody, CreateDiagramGuiBody, EditDiagramGuiBody):
+        for body in (DiagramPreviewBody, CreateDiagramGuiBody, DiagramReplacement):
             assert issubclass(body, DiagramComposition), f"{body.__name__} does not share the composition"
             assert composition_fields <= set(body.model_fields)
 

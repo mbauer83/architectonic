@@ -18,7 +18,7 @@ vocabulary about a different thing and are not touched.
 architecture started from an existing candidate, then adaptations of it, then a candidate built on
 an adaptation. Which candidates a stack holds, and that it is not a circle, is `stacking`'s.
 
-**Its scope is what it reads live.** `scope` names the model's entities the candidate is drawn over
+**Its scope is what it reads live.** `scope` names, by stable id, the model's entities the candidate is drawn over
 without changing them: a naive architecture started from the current model within a scope copies
 nothing, and the model's later changes show through. A candidate started empty has none.
 
@@ -33,6 +33,7 @@ from typing import Literal, TypeAlias, get_args
 
 from src.application.change_sets.change_set import ChangeSet
 from src.application.change_sets.coherence import dangling
+from src.domain.artifact_id import canonical_entity_key
 
 #: Where a candidate is in the work. `draft` is the only state in which its operations may change;
 #: `candidate` offers it for integration; the other three are terminal.
@@ -43,6 +44,43 @@ CANDIDATE_STATES: tuple[CandidateState, ...] = get_args(CandidateState)
 
 #: The state a candidate is written in, and the only one whose operations are its author's to change.
 DRAFT: CandidateState = "draft"
+
+
+#: Where a candidate may move by an edit, from each state. A draft is offered (`candidate`) and an offer
+#: withdrawn (`draft`); either may be set aside as `rejected` or `superseded`. `integrated` is not here:
+#: a candidate becomes integrated only by being applied, which writes what it says onto the model. The
+#: three terminal states move nowhere.
+EDITABLE_TRANSITIONS: dict[CandidateState, frozenset[CandidateState]] = {
+    "draft": frozenset({"candidate", "rejected", "superseded"}),
+    "candidate": frozenset({"draft", "rejected", "superseded"}),
+    "integrated": frozenset(),
+    "rejected": frozenset(),
+    "superseded": frozenset(),
+}
+
+#: The states a candidate may be written in when it is new.
+INITIAL_STATES: frozenset[CandidateState] = frozenset({"draft", "candidate"})
+
+
+def refused_transition(was: CandidateState | None, becomes: CandidateState, *, applied: bool = False) -> str | None:
+    """Why a candidate in state *was* (None: new) cannot be written in state *becomes*, or None when it can.
+
+    *applied* is the apply's own write, the one way into `integrated`.
+    """
+    if was == becomes:
+        return None
+    if becomes == "integrated":
+        return None if applied and was in INITIAL_STATES else (
+            "A candidate becomes integrated only by being applied, which writes its operations onto the "
+            "model: use apply (POST /api/change-sets/<id>/apply, MCP change_set_apply)."
+        )
+    if was is None:
+        return None if becomes in INITIAL_STATES else f"A new candidate starts as draft or candidate, not {becomes}."
+    if becomes not in EDITABLE_TRANSITIONS[was]:
+        allowed = sorted(EDITABLE_TRANSITIONS[was])
+        then = f"it may become {', '.join(allowed)}" if allowed else "it is terminal and does not change"
+        return f"A candidate in state {was} cannot become {becomes}: {then}."
+    return None
 
 
 class MalformedCandidateArchitecture(ValueError):
@@ -66,6 +104,8 @@ class CandidateArchitecture:
     scope: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        # The model's entities by their stable id, as operations name them (`operations`).
+        object.__setattr__(self, "scope", tuple(canonical_entity_key(ref) for ref in self.scope))
         refusal = _refusal(self)
         if refusal is not None:
             raise MalformedCandidateArchitecture(refusal)

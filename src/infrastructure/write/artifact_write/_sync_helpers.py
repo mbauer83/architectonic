@@ -14,6 +14,7 @@ from src.application.read_models import EntityContextConnection
 from src.domain.artifact_id import (
     ConnectionReference,
     parse_connection_reference,
+    stable_id,
 )
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
@@ -48,8 +49,8 @@ _STD_ALIAS_RE = re.compile(r"^(?P<prefix>[A-Z]{2,6})_(?P<random>[A-Za-z0-9_-]{4,
 
 
 def stable_prefix(artifact_id: str) -> str:
-    """Return the rename-stable part of an artifact ID (drops the trailing slug)."""
-    return artifact_id.rsplit(".", 1)[0]
+    """Return the rename-stable part of an artifact ID (drops the trailing slug), as `stable_id` reads it."""
+    return stable_id(artifact_id)
 
 
 def current_reference_spellings(ids: list[str], store: LookupStore) -> list[str]:

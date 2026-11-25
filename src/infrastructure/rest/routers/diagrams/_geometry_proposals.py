@@ -10,7 +10,7 @@ from src.application.artifacts.parsing import standard_alias_of
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.artifact_id import connection_id_as_written, parse_entity_id, stable_conn_id, stable_id
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
-from src.infrastructure.rest.routers.diagrams._write_bodies import DiagramComposition
+from src.infrastructure.diagram_composition import DiagramComposition
 
 
 class ProposedElement(BaseModel):

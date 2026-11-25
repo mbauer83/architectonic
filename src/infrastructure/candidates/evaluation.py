@@ -14,10 +14,11 @@ from typing import Any, TypeAlias
 from src.application.artifacts.document_part_edits import RowChange, TableRowEdits
 from src.application.artifacts.document_table_edits import row_values
 from src.application.change_sets.stacking import descendants
-from src.application.stress_analysis.evaluation import evaluate, held_out, new_seed
+from src.application.stress_analysis.evaluation import evaluate, held_out, seed_for
 from src.application.stress_analysis.rows import held_apart, in_test_set, rows_of
 from src.domain.repository.repo_default_stress_analysis import NAIVE_CANDIDATE, STRESS_ANALYSIS, TEST_SET
 from src.domain.repository.repo_default_stress_perspectives import STRESS_PERSPECTIVES
+from src.infrastructure.candidates.repository import CandidateConflict
 from src.infrastructure.candidates.service import CandidateService
 from src.infrastructure.write.artifact_write.types import WriteResult
 
@@ -28,12 +29,13 @@ TableWriter: TypeAlias = Callable[[str, TableRowEdits, bool], WriteResult]
 def evaluation(service: CandidateService, ref: str) -> dict[str, Any]:
     """The analysis's test set, its verdicts, the standing of every judged or integrated architecture, and the stage."""
     document, naive, tables = service.analysis_tables(ref)
-    stacked = descendants(naive, service.store.list())
-    integrated = [one.id for one in service.store.list() if one.id in stacked and one.state == "integrated"]
+    candidates = service.store.list()
+    stacked = descendants(naive, candidates)
+    integrated = [one.id for one in candidates if one.id in stacked and one.state == "integrated"]
     design = [row for row in rows_of(tables, "stressors") if not in_test_set(row)]
     return {
         "document": document, "naive_candidate": naive, "design_stressors": len(design),
-        **evaluate(tables, integrated=integrated, adapted=bool(stacked)),
+        **evaluate(tables, integrated=integrated, adapted=bool(stacked), known=[one.id for one in candidates]),
     }
 
 
@@ -43,9 +45,15 @@ def hold_out(
     """Move a random third of the design stressors into the test set, in one row edit of the stressors table."""
     document, _naive, tables = service.analysis_tables(ref)
     stressors, held = tables.table("stressors"), held_apart(tables)
-    rows = [row for row in stressors.rows if row.row_id not in held] if stressors else []
-    drawn_with = new_seed() if seed is None else seed
-    chosen = set(held_out([row.row_id for row in rows], drawn_with))
+    every = list(stressors.rows) if stressors else []
+    rows = [row for row in every if row.row_id not in held]
+    # Drawn over every stressor the analysis holds, in the document's order: before a hold-out that is
+    # the design set, and after one it is the same set, so a retry draws again what it drew the first time.
+    drawn_from = [row.row_id for row in every]
+    drawn_with = seed_for(document, drawn_from) if seed is None else seed
+    if held:
+        return _held_already(document, drawn_from, held, drawn_with, dry_run)
+    chosen = set(held_out(drawn_from, drawn_with))
     edits = TableRowEdits("stressors", tuple(
         RowChange(row.row_id, row_values(row), {"set": TEST_SET}) for row in rows if row.row_id in chosen
     ))
@@ -58,9 +66,26 @@ def hold_out(
     }
 
 
+def _held_already(
+    document: str, drawn_from: list[str], held: frozenset[str], seed: int, dry_run: bool,
+) -> dict[str, Any]:
+    """A hold-out asked of an analysis that already has a test set: the same draw again is answered as
+    done, writing nothing; anything else is refused, since a second third would shrink the design set."""
+    if set(held_out(drawn_from, seed)) == held:
+        return {
+            "document": document, "seed": seed, "dry_run": dry_run, "wrote": False,
+            "design_stressors": len(drawn_from), "held_out": [ref for ref in drawn_from if ref in held],
+        }
+    raise CandidateConflict(
+        f"{document} already holds a test set ({', '.join(ref for ref in drawn_from if ref in held)}), and this "
+        "hold-out would draw another. Add test stressors as rows of the stressors table with set = test, "
+        "or move a stressor back to the design set first."
+    )
+
+
 def residuality_by_analysis(service: CandidateService, candidate: str) -> dict[str, Any]:
     """The candidate's standing in every analysis that judged it, or integrated it, against its test set."""
-    service.store.require(candidate)
+    candidate = service.resolved(candidate)
     standings = []
     for doc in service.index.list_documents(doc_type=STRESS_ANALYSIS):
         if not doc.extra.get(NAIVE_CANDIDATE):

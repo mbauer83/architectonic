@@ -95,8 +95,10 @@ _ARCH_WRITE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
     (
         "Diagrams",
-        ("artifact_create_diagram", "artifact_edit_diagram", "artifact_delete_diagram", "artifact_create_matrix"),
+        ("artifact_create_diagram", "artifact_edit_diagram", "artifact_replace_diagram", "artifact_arrange_diagram",
+         "artifact_delete_diagram", "artifact_create_matrix"),
     ),
+    ("Viewpoints", ("artifact_viewpoint",)),
     (
         "Documents",
         ("artifact_create_document", "artifact_edit_document", "artifact_edit_document_table",
@@ -107,7 +109,14 @@ _ARCH_WRITE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
         ("artifact_create_icon", "artifact_edit_icon", "artifact_replace_icon", "artifact_share_icon",
          "artifact_delete_icon"),
     ),
-    ("Scratchpads", ("scratchpad_create", "scratchpad_replace", "scratchpad_delete")),
+    ("Scratchpads", ("scratchpad_create", "scratchpad_edit", "scratchpad_replace", "scratchpad_lift",
+                     "scratchpad_delete")),
+    (
+        "Candidate architectures",
+        ("change_set_create", "change_set_record", "change_set_edit", "change_set_rebase", "change_set_apply",
+         "change_set_delete"),
+    ),
+    ("Stress analysis", ("analysis_start", "analysis_hold_out_test_set")),
     ("Bulk", ("artifact_bulk_write", "artifact_bulk_delete")),
     ("Grouping", ("artifact_group",)),
     (
@@ -121,7 +130,8 @@ _ARCH_WRITE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
     # Beside promotion, which is what these are about: an edit to an artifact this repository
     # promoted away is recorded as a change and travels back the same road.
-    ("Local changes", ("artifact_list_changes", "artifact_discard_change")),
+    ("Local changes", ("artifact_list_changes", "artifact_rebase_change", "artifact_submit_changes",
+                       "artifact_discard_change")),
     (
         "Guidance & ops",
         ("artifact_authoring_guidance", "artifact_help", "artifact_get_operation", "artifact_admin_reindex"),

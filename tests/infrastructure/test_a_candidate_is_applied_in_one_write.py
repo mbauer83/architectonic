@@ -76,7 +76,7 @@ def _candidate(client: TestClient, *intents: dict[str, Any]) -> str:
     created = client.post("/api/change-sets", json={"record": {"name": "Replace the rule"}}).json()
     ref, version = created["record"]["id"], created["version"]
     for intent in intents:
-        recorded = client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operation": intent})
+        recorded = client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operations": [intent]})
         assert recorded.status_code == 200, recorded.text
         version = recorded.json()["version"]
     return ref

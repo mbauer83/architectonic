@@ -12,6 +12,7 @@ from typing import Any
 from src.application.artifacts.document_table_rows import DocumentTables, TypedRow
 from src.application.change_sets.candidate_view import CandidateView
 from src.application.stress_analysis.rows import held_apart, rows_of
+from src.domain.artifact_id import canonical_entity_key
 from src.domain.repository.repo_default_stress_perspectives import kinds_in_use, unwritten_perspectives
 
 
@@ -49,10 +50,18 @@ def analyse(tables: DocumentTables, naive: CandidateView) -> dict[str, Any]:
     hits: dict[str, set[str]] = defaultdict(set)
     missing: dict[str, set[str]] = defaultdict(set)
     unexplained = []
+    # An element is matched by its stable id, so either spelling of it is one element, and answered
+    # as the naive view names it.
+    spelled = {canonical_entity_key(ref): ref for ref in naive.entities}
+
+    def element(written: object) -> str:
+        return spelled.get(canonical_entity_key(str(written)), str(written))
+
     for tick in incidence:
-        stressor, component = tick.get("stressor"), tick.get("component")
-        if not stressor or not component:
+        stressor, written = tick.get("stressor"), tick.get("component")
+        if not stressor or not written:
             continue
+        component = element(written)
         hits[stressor].add(component)
         if component not in naive.entities:
             missing[stressor].add(component)
@@ -60,7 +69,7 @@ def analyse(tables: DocumentTables, naive: CandidateView) -> dict[str, Any]:
             unexplained.append(tick["id"])
     for row in stressors:
         subject = row.get("subject")
-        if subject and subject not in naive.entities:
+        if subject and element(subject) not in naive.entities:
             missing[row["id"]].add(subject)
 
     pairs = Counter(pair for components in hits.values() for pair in combinations(sorted(components), 2))

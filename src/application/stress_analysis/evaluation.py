@@ -15,15 +15,16 @@ the verdict rows each time.
 """
 from __future__ import annotations
 
+import hashlib
 import random
-import secrets
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from fractions import Fraction
 from typing import Any
 
 from src.application.artifacts.document_table_rows import DocumentTables
 from src.application.stress_analysis.rows import Row, in_test_set, rows_of
+from src.domain.artifact_id import canonical_entity_key
 from src.domain.repository.repo_default_stress_analysis import DEGRADES, NAIVE_ARCHITECTURE, SURVIVES
 from src.domain.repository.repo_default_stress_perspectives import unwritten_perspectives
 
@@ -115,15 +116,23 @@ def _stated(values: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in values.items() if value is not None}
 
 
-def evaluate(tables: DocumentTables, *, integrated: Sequence[str], adapted: bool) -> dict[str, Any]:
+def evaluate(
+    tables: DocumentTables, *, integrated: Sequence[str], adapted: bool, known: Sequence[str] = (),
+) -> dict[str, Any]:
     """The test set, its verdicts, every judged or integrated architecture's standing, and the procedure's stage.
 
     *integrated* names the candidates of the analysis integrated into the model, whose standing is
-    always shown; *adapted* says whether any candidate adapts the naive architecture yet.
+    always shown; *adapted* says whether any candidate adapts the naive architecture yet. *known* are
+    the candidates that exist: a verdict naming one in either spelling of its id is read as naming it
+    by the id it is stored under, so one architecture's verdicts are never counted as two.
     """
     stressors = [row for row in rows_of(tables, "stressors") if in_test_set(row)]
     held = {row["id"] for row in stressors}
-    verdicts = [one for one in verdicts_of(rows_of(tables, "survival")) if one.stressor in held]
+    spelled = {canonical_entity_key(name): name for name in (*known, *integrated)}
+    verdicts = [
+        replace(one, architecture=spelled.get(canonical_entity_key(one.architecture), one.architecture))
+        for one in verdicts_of(rows_of(tables, "survival")) if one.stressor in held
+    ]
     unusable = struck(verdicts)
     usable = [row["id"] for row in stressors if row["id"] not in unusable]
     judged = [one.architecture for one in verdicts if one.architecture != NAIVE_ARCHITECTURE]
@@ -147,9 +156,15 @@ def evaluate(tables: DocumentTables, *, integrated: Sequence[str], adapted: bool
     }
 
 
-def new_seed() -> int:
-    """A seed for a hold-out nobody chose, recorded so the draw can be made again."""
-    return secrets.randbelow(2**31)
+def seed_for(document: str, stressors: Sequence[str]) -> int:
+    """The seed of a hold-out nobody chose a seed for: the same analysis and stressors give the same one.
+
+    Derived rather than drawn, so a dry run and the write after it, both unseeded, hold out the same
+    third, and a retried write recomputes the draw it already made. The draw is a separation of the
+    stressors, not a secret, so a seed anyone can recompute costs nothing.
+    """
+    digest = hashlib.sha256("\n".join([document, *stressors]).encode("utf-8")).digest()
+    return int.from_bytes(digest[:4], "big") % 2**31
 
 
 def held_out(design: Sequence[str], seed: int) -> tuple[str, ...]:

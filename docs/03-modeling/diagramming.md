@@ -48,6 +48,12 @@ this is a property of the declaration mechanism, not of ArchiMate. `GET
 /api/ontology/element-appearance` serves the resolved answer for whichever meta-ontology governs:
 colour per domain, corner style per entity type.
 
+**An element can be drawn more than once.** A further drawing is an **occurrence**: an item
+`{id, backing_entity_id}` in the diagram's `diagram-entities.occurrence` list, where `id` is the
+occurrence's own id and `backing_entity_id` names the element, by its id in either spelling. The
+occurrence id is used wherever an instance is named: in `display_labels`, in a layout entry, and in a
+relation key that attaches an arrow to that drawing.
+
 Diagram families with their own renderer (activity, sequence, matrix, C4, datatype, GSN) draw in
 their own notation and are unaffected by the domain palette.
 

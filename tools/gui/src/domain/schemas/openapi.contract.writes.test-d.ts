@@ -98,7 +98,7 @@ describe('what the client may send is what the server declares', () => {
     expectTypeOf<
       UndeclaredFields<
         Parameters<ModelRepository['editDiagram']>[1],
-        components['schemas']['EditDiagramGuiBody']
+        components['schemas']['DiagramReplacement']
       >
     >().toEqualTypeOf<never>()
   })

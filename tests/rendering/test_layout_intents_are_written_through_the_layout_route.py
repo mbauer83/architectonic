@@ -81,14 +81,15 @@ def test_return_to_automatic_hands_the_whole_diagram_back_to_plantuml(model: Ren
     assert not answer.json()["layout"] and not _stored_layout(path)
 
 
-@pytest.mark.parametrize("intents", [
-    [{"intent": "rotate"}],
-    [{"intent": "align", "keys": ["APP@1712870400.nothere", "APP@1712870401.nothere"], "edge": "left"}],
+@pytest.mark.parametrize(("intents", "status"), [
+    # Not an intent at all: the request schema names the intents there are.
+    ([{"intent": "rotate"}], 422),
+    ([{"intent": "align", "keys": ["APP@1712870400.nothere", "APP@1712870401.nothere"], "edge": "left"}], 400),
 ])
 def test_an_intent_that_does_not_apply_is_refused_and_nothing_is_written(
-    model: RenderedModel, client: TestClient, intents: list[dict[str, object]],
+    model: RenderedModel, client: TestClient, intents: list[dict[str, object]], status: int,
 ) -> None:
     artifact_id, path = _diagram(model)
     answer = client.post(f"/api/diagrams/{artifact_id}/layout/arrange", json={"intents": intents, "dry_run": False})
-    assert answer.status_code == 400, answer.text
+    assert answer.status_code == status, answer.text
     assert _stored_layout(path) is None

@@ -14,6 +14,12 @@ moved.
 `edit_field_catalogue`, which the write functions, the REST bodies, the bulk decoder and a proposed
 change already share. A fifth spelling would drift as the third one did.
 
+**An entity is named in its stable form.** An operation is built from whatever spelling its author
+held — the short id, or the id with its slug — and keeps the stable one (`canonical_entity_key`, the
+id form's owner). Two operations naming one entity are then one claim however each was spelled, a
+connection to an entity the set creates finds it, and a recorded set does not carry a slug a later
+rename makes stale.
+
 **Each operation refuses to exist malformed**, in a sentence that names the fix: these are built
 where an author is present to correct them, and read back from a file where nobody is.
 """
@@ -32,11 +38,17 @@ from src.application.modeling.edit_field_catalogue import (
     ArtifactKind,
     creatable,
 )
+from src.domain.artifact_id import canonical_entity_key
 from src.domain.provisional_reference import provisional
 
 
 class MalformedChangeSet(ValueError):
     """A change set, or one of its operations, that cannot exist as stated. The message says why."""
+
+
+def _keep_stable(operation: object, attribute: str) -> None:
+    """Hold *attribute* in its stable spelling. A provisional reference is not an id and stays as written."""
+    object.__setattr__(operation, attribute, canonical_entity_key(getattr(operation, attribute)))
 
 
 @dataclass(frozen=True, slots=True, order=True)
@@ -57,6 +69,8 @@ class ConnectionAddress:
                 "a connection is addressed by its source, its type and its target, and all three "
                 "are named"
             )
+        _keep_stable(self, "source_entity")
+        _keep_stable(self, "target_entity")
 
     @property
     def endpoints(self) -> tuple[str, str]:
@@ -173,6 +187,7 @@ class EditEntity:
     def __post_init__(self) -> None:
         if not self.target:
             raise MalformedChangeSet("an edit names the entity it changes")
+        _keep_stable(self, "target")
         _check_edit("entity", self.field, self.key, self.base)
 
     @property
@@ -191,6 +206,7 @@ class RemoveEntity:
     def __post_init__(self) -> None:
         if not self.target:
             raise MalformedChangeSet("a removal names the entity it removes")
+        _keep_stable(self, "target")
         _check_removal_base(self.base)
 
     @property

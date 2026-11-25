@@ -34,23 +34,23 @@ def live_reading(
     stack: tuple[CandidateArchitecture, ...], registry: ArtifactRegistry, also: Iterable[str] = (),
 ) -> RecordedReading:
     """The model's records over what the stack reads, and *also* what an edit about to be recorded names."""
-    refs = {ref for layer in stack for ref in layer.scope} | set(also)
+    named = {ref for layer in stack for ref in layer.scope} | set(also)
     for layer in stack:
         for operation in layer.changes.operations:
             subject = operation.claim.subject
-            refs.update(subject.endpoints if isinstance(subject, ConnectionAddress) else (subject,))
+            named.update(subject.endpoints if isinstance(subject, ConnectionAddress) else (subject,))
             if isinstance(operation, CreateEntity) and operation.artifact_id:
-                refs.add(operation.artifact_id)
-    entities, relations = {}, {}
-    aliases = {}
+                named.add(operation.artifact_id)
+    # Every record is held by its stable id, as operations name what they touch (`operations`).
+    refs = {canonical_entity_key(ref) for ref in named}
+    entities, relations, stored = {}, {}, []
     for ref in sorted(refs):
         if (entity := registry.get_entity(ref)) is not None:
             entities[ref] = dict(current_entity_values(entity), artifact_type=entity.artifact_type)
-            aliases[canonical_entity_key(entity.artifact_id)] = ref
-    for ref in entities:
-        for conn in registry.find_connections_for(ref):
-            address = ConnectionAddress(aliases.get(canonical_entity_key(conn.source), conn.source), conn.conn_type,
-                                        aliases.get(canonical_entity_key(conn.target), conn.target))
+            stored.append(entity.artifact_id)
+    for artifact_id in stored:
+        for conn in registry.find_connections_for(artifact_id):
+            address = ConnectionAddress(conn.source, conn.conn_type, conn.target)
             relations[address] = {
                 "description": conn.content_text, "metadata": dict(conn.attributes),
                 "specializations": conn.specializations,
@@ -79,10 +79,13 @@ def comparison(
             {a: f for a, f in live.connections.items() if all(end in live.entities for end in a.endpoints)},
         )
     else:
-        selected = naive if base == "naive" else base
-        if not selected or selected == candidate.id or selected in descendants(candidate.id, store.list()):
+        named = naive if base == "naive" else base
+        if not named:
+            raise ValueError("Comparing against the naive architecture names it: pass its id as naive.")
+        selected = store.require(named)
+        if selected.id == candidate.id or selected.id in descendants(candidate.id, store.list()):
             raise ValueError("Select the model or a different candidate outside this candidate's descendants.")
-        before = read_view(store.require(selected), store, registry)
+        before = read_view(selected, store, registry)
     return to_jsonable_python({
         "candidate": candidate.id, "base": base, "stack": [layer.id for layer in stack],
         "view": after.wire(), "diff": difference(before, after),

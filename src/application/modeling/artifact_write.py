@@ -56,10 +56,18 @@ _ID_ALPHABET = string.ascii_letters + string.digits + "_"
 _RANDOM_LENGTH = 7
 
 
+#: The longest slug minted. A slug ends up in a file name, and a name the file system refuses (255 bytes
+#: on the common ones) failed the write with a 500 after a 5000-character candidate name.
+MAX_SLUG_LENGTH = 80
+
+
 def slugify(value: str) -> str:
     s = value.strip().lower()
     s = re.sub(r"[^a-z0-9]+", "-", s)
     s = re.sub(r"-+", "-", s).strip("-")
+    if len(s) > MAX_SLUG_LENGTH:
+        cut = s[:MAX_SLUG_LENGTH]
+        s = (cut.rsplit("-", 1)[0] if "-" in cut else cut).strip("-")
     return s or "entity"
 
 
