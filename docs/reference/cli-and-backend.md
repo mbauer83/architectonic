@@ -47,6 +47,20 @@ uv run arch-backend --restart --daemon
 | Admin | `--admin-mode` | Direct enterprise authoring, exclusively through the admin operations surface (`/admin/api/*`); standard authoring tools stay engagement-only even here; GUI shows a banner |
 | Read-only | `--read-only` | Every architecture-repository mutation is denied on every interface (REST, MCP, GUI) by the server-side authorization policy — authoring, group and viewpoint writes, promotion, save/submit/discard |
 
+**Listening beyond this machine.** The backend listens on `127.0.0.1` and has no authentication:
+whoever reaches its port can read and change the repositories it serves. `--host` with any address
+other than a loopback one is refused unless you also pass `--allow-remote-without-auth`, or set
+`backend.allow_remote_without_auth: true` in `config/settings.yaml`. Opt in only where something
+else guards the address: a VPN, a firewall, or an authenticating reverse proxy. The Docker image opts
+in for you, for the reason given in [Docker Compose Deployment](docker-compose.md#vpn-access--the-reverse-proxy).
+
+**The names it answers to.** Every request, to the GUI, REST and MCP alike, must be addressed to a
+loopback name (`localhost`, `127.0.0.1`, `[::1]`) or to one listed in `ARCH_ALLOWED_HOSTS`;
+anything else is refused with `421`. This stops a web page from reaching a local backend by pointing
+a domain of its own at `127.0.0.1`. The variable is comma-separated, each entry `name`, `name:port`
+or `name:*` for any port; `*` turns the check off. `ARCH_MCP_ALLOWED_HOSTS`, the name it had when
+only the MCP endpoints read it, is still honoured when `ARCH_ALLOWED_HOSTS` is unset.
+
 `--daemon` starts a detached session, redirects stdin from `/dev/null`, and writes to
 `backend.log_path`. `arch-backend &` also works and detaches stdin when it detects a
 background TTY job, but `--daemon` is the preferred operational form.

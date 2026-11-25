@@ -35,6 +35,7 @@ from src.application.scratchpad.service import ScratchpadService
 from src.domain.repository.artifact_location import own_id_prefix
 from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.scratchpad import ScratchpadError
+from src.infrastructure.rest.contracts.path_components import PathComponent
 from src.infrastructure.rest.contracts.scratchpad_requests import (
     LayoutPatchWire,
     RemovePatchWire,
@@ -89,7 +90,7 @@ class CreateScratchpadBody(_ClosedBody):
     """
 
     name: str
-    group: str = UNCATEGORIZED
+    group: PathComponent = UNCATEGORIZED
     description: str = ""
     meta_ontology: str = Field(default="archimate-4", alias="meta-ontology")
     seed_areas: bool = Field(default=True, alias="seed-areas")
@@ -106,7 +107,7 @@ class ReplaceScratchpadBody(_ClosedBody):
     """
 
     version: str
-    group: str
+    group: PathComponent
     scratchpad: ScratchpadDocumentWire
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)

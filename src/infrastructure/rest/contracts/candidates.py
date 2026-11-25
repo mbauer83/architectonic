@@ -3,6 +3,7 @@ from pydantic import Field, JsonValue, model_serializer
 
 from src.infrastructure.candidate_wire import CandidateHeader, CandidatePatch, IntegrationResolution, RecordedEdit
 from src.infrastructure.rest.contracts.diagram_layout_editing import DiagramLayoutGeometryResponse
+from src.infrastructure.rest.contracts.path_components import PathComponent
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
@@ -249,7 +250,9 @@ class CandidateDiagramSave(Closed):
 
     based_on: str = Field(description="The `version` the last read or write of this candidate answered.")
     name: str | None = Field(None, min_length=1, description="The new diagram's name; the candidate's own when absent.")
-    group: str | None = Field(None, description="The collection the diagram is filed in; uncategorized when absent.")
+    group: PathComponent | None = Field(
+        None, description="The collection the diagram is filed in; uncategorized when absent.",
+    )
     dry_run: bool = True
 
 

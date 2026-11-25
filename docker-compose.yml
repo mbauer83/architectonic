@@ -34,8 +34,11 @@ services:
       # Escape hatch for a setup the composed flags do not fit; wins when set.
       ARCH_GIT_SSH_COMMAND: ${ARCH_GIT_SSH_COMMAND:-}
     ports:
-      # Direct access on the VPN. When fronting with the proxy profile you may
-      # restrict this to the loopback (ARCH_APP_BIND=127.0.0.1) or firewall it.
+      # Direct access on the VPN. The backend has no authentication: this bind
+      # address is the access boundary, which is why the image's settings opt in to
+      # listening beyond the container's loopback (backend.allow_remote_without_auth).
+      # When fronting with the proxy profile, restrict this to the loopback
+      # (ARCH_APP_BIND=127.0.0.1) or firewall it.
       # ARCH_APP_PORT changes the PUBLISHED (host-side) port only; inside the
       # container the app always listens on :8000, which is why the healthcheck
       # below hardcodes it — it probes from inside the container's namespace.

@@ -7,6 +7,12 @@
 
 backend:
   port: 8000
+  # The container listens on all of its interfaces (docker/entrypoint.sh passes --host 0.0.0.0),
+  # because a published port cannot reach a process listening on the container's loopback. The
+  # backend has no authentication, so a non-loopback bind is refused unless this says the
+  # deployment guards the address itself: the published port's bind address (ARCH_APP_BIND), a
+  # VPN, a firewall or an authenticating proxy. See docs/reference/docker-compose.md.
+  allow_remote_without_auth: true
   min_log_level: INFO
   # No log_path: the container runs `arch-backend` in the FOREGROUND (see
   # docker/entrypoint.sh), so its diagnostics go to stdout/stderr where `docker logs` and any

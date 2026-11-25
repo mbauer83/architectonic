@@ -14,6 +14,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 from src.domain.repository.groups import UNCATEGORIZED
+from src.infrastructure.rest.contracts.path_components import PathComponent
 
 
 class FiledOnCreate(BaseModel):
@@ -21,7 +22,7 @@ class FiledOnCreate(BaseModel):
 
     #: Which collection the artifact is filed in — its *home*. Absent means `uncategorized`, the
     #: same reading the write path and every MCP twin already take.
-    group: str | None = None
+    group: PathComponent | None = None
 
     def home(self) -> str:
         """The collection to place it in, absent reading as the uncategorized one.
@@ -38,4 +39,4 @@ class Rehomeable(BaseModel):
     #: Move the artifact to this collection. Absent leaves it where it is; naming `uncategorized`
     #: is how a re-home *out* of a collection is said, because that is a real collection rather
     #: than the absence of one.
-    group: str | None = None
+    group: PathComponent | None = None

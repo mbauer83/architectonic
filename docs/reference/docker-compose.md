@@ -275,10 +275,22 @@ does is described in [Configuration](configuration.md#configsettingsyaml--backen
 ## VPN access & the reverse proxy
 
 The backend has no built-in TLS or authentication — the VPN is the access
-boundary. Two supported topologies:
+boundary. A backend refuses to listen on anything but the loopback unless the
+deployment opts in, and the image's settings do: `config/settings.server.yaml`
+sets `backend.allow_remote_without_auth: true`, because the container has to
+listen on all of its interfaces for the published port to reach it. If you mount
+your own `settings.yaml`, keep that key, or the container stops at start with a
+message naming it. Two supported topologies:
 
 **Direct** (default): the `app` port is published on the VPN interface. Set
 `ARCH_APP_BIND` / `ARCH_APP_PORT` in `.env`.
+
+Either way, set `ARCH_ALLOWED_HOSTS` in `.env` to the names clients use: the VPN
+address (`10.0.0.5:*`) and, behind Caddy, the host of `ARCH_SITE_ADDRESS`
+(`arch.internal:*`). The backend answers only to those and the loopback names, and
+refuses any other `Host` with `421` on the GUI, REST and MCP alike, so a web page
+cannot reach it by pointing a domain of its own at the address. `*` turns the check
+off.
 
 **Behind Caddy** (`proxy` profile): Caddy terminates TLS and forwards GUI, REST,
 SSE, and MCP (streaming preserved). Set the hostname clients use:

@@ -11,6 +11,7 @@ from src.application.artifacts.document_schema import (
 from src.application.artifacts.query import ArtifactRepository
 from src.application.document_links import id_links_expanded, relocated_links
 from src.application.identifier_allocator import get_default_allocator
+from src.application.repository_confinement import path_inside
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.config.repo_paths import DOCS
 from src.domain.repository.groups import UNCATEGORIZED
@@ -94,7 +95,7 @@ def create_document(
     last = last_updated or modification_stamp()
     doc_id = artifact_id or _generate_document_id(abbreviation, title)
     doc_dir = _doc_dir(repo_root, doc_subdirectory, group)
-    path = doc_dir / f"{doc_id}.md"
+    path = path_inside(repo_root, doc_dir, f"{doc_id}.md")
 
     friendly_slug = extract_friendly_slug(doc_id)
     repo = get_repository(repo_root)

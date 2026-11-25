@@ -8,6 +8,8 @@ import pathlib
 from pathlib import Path
 from typing import NotRequired, TypedDict
 
+from src.infrastructure.backend.bind_policy import REMOTE_OPT_IN_FLAG
+
 logger = logging.getLogger(__name__)
 _PROC_DIR = Path("/proc")
 
@@ -27,8 +29,9 @@ class BackendInstance(TypedDict):
     ports: list[int]
     declared_port: int | None
     #: The serving flags the process was started with, as argv tokens a restart can carry verbatim:
-    #: `--admin-mode`, `--read-only`, and `--host <address>`. Optional only so a test can build an
-    #: instance without spelling them; `find_arch_backend_instances` always fills it.
+    #: `--admin-mode`, `--read-only`, `--allow-remote-without-auth` and `--host <address>`. Optional
+    #: only so a test can build an instance without spelling them; `find_arch_backend_instances` always
+    #: fills it.
     serving_flags: NotRequired[list[str]]
     process_state: str | None
     stdin: str | None
@@ -71,7 +74,7 @@ def _parse_cli_port(argv: list[str]) -> int | None:
 #: The flag a backend serves its enterprise tier's administration with; the updater carries it into the
 #: data upgrade, which then upgrades that tier too.
 ADMIN_MODE_FLAG = "--admin-mode"
-_SERVING_FLAGS = frozenset({ADMIN_MODE_FLAG, "--read-only"})
+_SERVING_FLAGS = frozenset({ADMIN_MODE_FLAG, "--read-only", REMOTE_OPT_IN_FLAG})
 _SERVING_VALUE_FLAGS = frozenset({"--host"})
 
 

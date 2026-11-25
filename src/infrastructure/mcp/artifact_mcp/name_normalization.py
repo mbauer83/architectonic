@@ -9,6 +9,8 @@ from mcp.shared.exceptions import MCPError
 from mcp.types import CallToolRequestParams, CallToolResult, TextContent
 
 from src.application.mutation_authorization import MutationRejected
+from src.application.repository_confinement import LocationRefused
+from src.infrastructure.mcp.location_parameters import confined_arguments
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +105,9 @@ def install_call_tool_normalizer(mcp: MCPServer) -> None:
             return await _answer(ctx, params)
         except MCPError:
             raise
+        except LocationRefused as refused:
+            logger.info("Tool %r refused a location: %r", params.name, str(refused))
+            return CallToolResult(content=[TextContent(type="text", text=str(refused))], is_error=True)
         except ToolError as failed:
             refusal = _refusal_in(failed)
             if refusal is None:
@@ -124,10 +129,12 @@ def install_call_tool_normalizer(mcp: MCPServer) -> None:
         if normalized != params.name:
             logger.info("Normalized incoming tool name %r -> %r", params.name, normalized)
 
-        arguments = params.arguments or {}
         tool = mcp._tool_manager.get_tool(normalized)  # type: ignore[attr-defined]
         if tool is not None:
-            _reject_unknown_parameters(tool, arguments)
+            _reject_unknown_parameters(tool, params.arguments or {})
+        # Every location a client names is confined to the configured repositories before any tool
+        # sees it — the one place all four servers' calls pass (`location_parameters`).
+        arguments = confined_arguments(normalized, params.arguments or {})
 
         context: Context[Any, Any] = Context(
             request_context=ctx,

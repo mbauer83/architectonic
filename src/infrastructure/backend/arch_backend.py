@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 import uvicorn
 
-from src.config.settings import backend_min_log_level
+from src.config.settings import backend_allows_remote_without_auth, backend_min_log_level
 from src.infrastructure.backend import _lifecycle_cli, backend_control, server_roots
 from src.infrastructure.backend._lifecycle_cli import (
     _run_status,
@@ -38,6 +38,7 @@ from src.infrastructure.backend.backend_state import (
     remove_own_backend_state,
     write_backend_state,
 )
+from src.infrastructure.backend.bind_policy import REMOTE_OPT_IN_FLAG, bind_refusal, is_loopback
 from src.infrastructure.backend.log_rotation import (
     keep_bounded,
     point_output_at,
@@ -78,6 +79,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.stop:
         _run_stop(args, args.port)
         return
+    _refuse_an_unguarded_remote_bind(args, parser)
     if args.daemon:
         # A starter, so under the start lock: a bridge starting this workspace's backend at the same
         # moment would otherwise be judged a wedged backend by the guard below.
@@ -88,6 +90,18 @@ def main(argv: list[str] | None = None) -> None:
         return
     # The foreground server takes no lock: a lock holder may be the process that spawned it.
     _start(args, parser, argv, resolved_port)
+
+
+def _refuse_an_unguarded_remote_bind(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+    """Stop before anything starts when the backend would listen beyond the loopback unbidden."""
+    opted_in = args.allow_remote_without_auth or backend_allows_remote_without_auth()
+    if refusal := bind_refusal(args.host, opted_in=opted_in):
+        parser.error(refusal)
+    if not is_loopback(args.host):
+        logger.warning(
+            "Listening on %s without authentication, as opted in; the deployment must guard this address",
+            args.host,
+        )
 
 
 def _start(
@@ -130,7 +144,11 @@ def _build_parser() -> argparse.ArgumentParser:
                    help="Stop the running backend before starting a new one")
     p.add_argument("--daemon", action="store_true", default=False,
                    help="Start arch-backend detached with output in .arch/backend.log")
-    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--host", default="127.0.0.1",
+                   help="Address to listen on. Anything but the loopback needs --allow-remote-without-auth")
+    p.add_argument(REMOTE_OPT_IN_FLAG, dest="allow_remote_without_auth", action="store_true", default=False,
+                   help="Permit a non-loopback --host. The backend has no authentication: use only behind "
+                        "a VPN, firewall or authenticating proxy (setting: backend.allow_remote_without_auth)")
     p.add_argument("--port", type=int, default=None)
     p.add_argument("--git-token-file", default=None, metavar="PATH",
                    help="Read the HTTPS personal access token from this file (alternative to "

@@ -103,10 +103,25 @@ def _configured_repo_root(*names: str) -> Path | None:
     return Path(value).expanduser() if value is not None else None
 
 
+def _served_engagement_root() -> Path | None:
+    """The engagement root this backend serves, whether or not it also serves an enterprise one."""
+    try:
+        from src.infrastructure.rest.routers import state as gui_state  # noqa: PLC0415
+    except Exception:  # noqa: BLE001
+        return None
+    return gui_state.maybe_engagement_root()
+
+
 def default_engagement_repo_root() -> Path:
     configured = _configured_repo_root("ARCH_MCP_MODEL_REPO_ROOT", "ARCH_REPO_ROOT")
     if configured is not None:
         return configured
+    # A backend serving an engagement repository alone still serves *that* one: falling through to
+    # the code's own workspace here pointed its tools, and the confinement of their arguments, at a
+    # repository the backend was never given.
+    served = _served_engagement_root()
+    if served is not None:
+        return served
     roots = _workspace_repo_roots()
     if roots is None:
         raise RuntimeError(

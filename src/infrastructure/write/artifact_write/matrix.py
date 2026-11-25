@@ -3,6 +3,7 @@ from pathlib import Path
 
 from src.application.identifier_allocator import get_default_allocator
 from src.application.modeling.artifact_write import format_matrix_markdown, prefix_for_diagram_type
+from src.application.repository_confinement import path_inside
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS
 
@@ -76,7 +77,7 @@ def create_matrix(
         effective_id = artifact_id or get_default_allocator().allocate(
             prefix=prefix_for_diagram_type("matrix"), name_hint=name
         )
-    current_path = existing_path or (repo_root / DIAGRAM_CATALOG / DIAGRAMS / f"{effective_id}.md")
+    current_path = existing_path or path_inside(repo_root, DIAGRAM_CATALOG, DIAGRAMS, f"{effective_id}.md")
 
     last = last_updated or modification_stamp()
     warnings: list[str] = []

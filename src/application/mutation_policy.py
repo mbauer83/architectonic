@@ -4,7 +4,9 @@ Decides every mutation request against an immutable authorization snapshot:
 
 * Standard authoring is engagement-only in EVERY mode and accepts only the
   configured active engagement root (canonically resolved — child paths, ``..``,
-  relative and symlink spellings of anything else are rejected).
+  relative and symlink spellings of anything else are rejected). Resolution and
+  containment are `repository_confinement`'s, the one owner of where a location
+  a client names may lead.
 * Promotion — including enterprise save, submit, and discard — is the only
   enterprise write outside admin mode; admin mode enables direct enterprise
   authoring exclusively through the admin operations surface.
@@ -33,6 +35,7 @@ from src.application.mutation_authorization import (
     RepositoryWrite,
     SyncHealthReason,
 )
+from src.application.repository_confinement import canonical, is_root, is_within
 
 # Faults of the remote relationship (fetch/upstream/divergence): local commits and
 # local branch discard remain safe and are the recovery path; only remote-affecting
@@ -130,10 +133,10 @@ def _authorize_target(snapshot: AuthorizationSnapshot, request: MutationRequest)
 
 
 def _check_engagement_root(snapshot: AuthorizationSnapshot, root: Path) -> MutationDecision:
-    resolved = root.resolve()
-    if snapshot.engagement_root is not None and resolved == snapshot.engagement_root:
+    resolved = canonical(root)
+    if snapshot.engagement_root is not None and is_root(root, snapshot.engagement_root):
         return MutationAllowed()
-    if snapshot.enterprise_root is not None and resolved.is_relative_to(snapshot.enterprise_root):
+    if snapshot.enterprise_root is not None and is_within(root, snapshot.enterprise_root):
         return MutationDenied(
             code="enterprise_target_forbidden",
             message=(
@@ -149,8 +152,8 @@ def _check_engagement_root(snapshot: AuthorizationSnapshot, root: Path) -> Mutat
 
 
 def _check_enterprise_root(snapshot: AuthorizationSnapshot, root: Path) -> MutationDecision:
-    resolved = root.resolve()
-    if snapshot.enterprise_root is not None and resolved == snapshot.enterprise_root:
+    resolved = canonical(root)
+    if snapshot.enterprise_root is not None and is_root(root, snapshot.enterprise_root):
         return MutationAllowed()
     return MutationDenied(
         code="target_not_enterprise_root",

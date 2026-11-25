@@ -58,6 +58,9 @@ def notify_backend_reload(*, authorize: bool | None = None) -> dict[str, Any] | 
     """
     try:
         from src.infrastructure.cli._workspace_backend import workspace_backend_url  # noqa: PLC0415
+        from src.infrastructure.rest.contracts.operator_request import (  # noqa: PLC0415
+            operator_request_headers,
+        )
 
         base_url = workspace_backend_url()
         if base_url is None:
@@ -67,7 +70,7 @@ def notify_backend_reload(*, authorize: bool | None = None) -> dict[str, Any] | 
             f"{base_url}/api/assurance/reload",
             data=payload,
             method="POST",
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", **operator_request_headers()},
         )
         with urllib.request.urlopen(request, timeout=_RELOAD_TIMEOUT_S) as response:  # noqa: S310 — loopback URL
             answer = json.loads(response.read() or b"{}")

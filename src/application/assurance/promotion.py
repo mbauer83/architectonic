@@ -1,18 +1,20 @@
 """Promotion preflight check for assurance-constraints.
 
 Blocks promotion when safety/security constraints lack an owner or evidence (§6).
-Warns when constraints carry a TLP classification above WHITE (§23 promotion gate).
+Warns when constraints carry a TLP classification that is not publishable, an unrecognised one
+included (§23 promotion gate).
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from src.domain.assurance.classification import is_publishable
+
 if TYPE_CHECKING:
     from src.application.assurance.ports import ConfidentialAssuranceStore
 
 _SAFETY_CLASSES = frozenset({"safety", "security"})
-_CLASSIFIED_TLP = frozenset({"TLP:AMBER", "TLP:RED"})
 
 
 def promotion_preflight(
@@ -68,7 +70,7 @@ def promotion_preflight(
                     ),
                 })
 
-        if tlp in _CLASSIFIED_TLP:
+        if not is_publishable(tlp):
             warnings.append({
                 "node_id": nid,
                 "name": str(node.get("name", "")),

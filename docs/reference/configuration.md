@@ -71,7 +71,10 @@ Consequences worth knowing:
 - **`arch-assurance status` / `unlock` / `lock` address this workspace's backend only.** `unlock`
   authorizes the running process to open the confidential store, so reaching a neighbour's backend
   would mean one workspace's ceremony granting access in another. When no backend is running for this
-  workspace, the activation gate is still set and the next start applies it.
+  workspace, the activation gate is still set and the next start applies it. The backend accepts
+  that authorization, and its revocation, only from the machine it runs on and only as the command
+  sends it, so neither a remote client nor a web page can unlock the store. Run `unlock` on the
+  backend's host (`docker compose exec app arch-assurance unlock` for the container).
 - **MCP clients**: each workspace's `.mcp.json` starts the bridges in that workspace's directory, so
   the working directory names the workspace. Where a client cannot set one, pass
   `--workspace DIR` or set `ARCH_MCP_WORKSPACE`. A bridge that cannot reach a backend for its own
@@ -103,6 +106,10 @@ backend:
   request_thread_dump_s: 20   # dump every thread's stack for a request still running
                               # after this — the diagnostic for a stuck request, so keep
                               # it well above the warning threshold
+  allow_remote_without_auth: false  # permit a non-loopback --host. The backend has no
+                              # authentication, so set this only where a VPN, firewall
+                              # or authenticating proxy guards the address. The flag
+                              # --allow-remote-without-auth does the same for one run
 
 diagrams:
   archimate_type_markers: icons   # icons | labels

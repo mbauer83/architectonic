@@ -1,53 +1,71 @@
 """Tests for TLP max-classification ceiling (SC-4).
 
 Covers:
-  - tlp_level ordering: WHITE < GREEN < AMBER < RED
-  - is_above_ceiling: edge cases and unknown values
+  - the TLP order: WHITE < GREEN < AMBER < RED
+  - exceeds_ceiling: edge cases, and unknown values failing closed
   - AssuranceExposurePolicy.filter_security_records: correct keep/withheld split
   - Assurance node redaction via AssuranceContext.withheld_response
 """
 
 from __future__ import annotations
 
+import pytest
+
 # ── TLP helpers ───────────────────────────────────────────────────────────────
 
 
 class TestTLPHelpers:
-    def test_tlp_level_ordering(self) -> None:
-        from src.infrastructure.mcp.assurance_mcp.context import tlp_level
+    def test_ordering(self) -> None:
+        from src.domain.assurance.classification import content_rank
 
-        assert tlp_level("TLP:WHITE") < tlp_level("TLP:GREEN")
-        assert tlp_level("TLP:GREEN") < tlp_level("TLP:AMBER")
-        assert tlp_level("TLP:AMBER") < tlp_level("TLP:RED")
+        assert content_rank("TLP:WHITE") < content_rank("TLP:GREEN")
+        assert content_rank("TLP:GREEN") < content_rank("TLP:AMBER")
+        assert content_rank("TLP:AMBER") < content_rank("TLP:RED")
 
-    def test_unknown_tlp_treated_as_white(self) -> None:
-        from src.infrastructure.mcp.assurance_mcp.context import tlp_level
+    @pytest.mark.parametrize("unrecognised", ["TLP:UNKNOWN", "red", "", None, "TLP: AMBER"])
+    def test_unrecognised_content_is_withheld_below_red(self, unrecognised: str | None) -> None:
+        """Regression: an unrecognised level ranked as TLP:WHITE and was shown under any ceiling."""
+        from src.domain.assurance.classification import exceeds_ceiling
 
-        assert tlp_level("TLP:UNKNOWN") == 0
+        assert exceeds_ceiling(unrecognised, "TLP:AMBER")
+        assert not exceeds_ceiling(unrecognised, "TLP:RED")
+
+    def test_an_unrecognised_ceiling_admits_only_white(self) -> None:
+        from src.domain.assurance.classification import exceeds_ceiling
+
+        assert not exceeds_ceiling("TLP:WHITE", "TLP:BOGUS")
+        assert exceeds_ceiling("TLP:GREEN", "TLP:BOGUS")
 
     def test_is_above_ceiling_equal_not_above(self) -> None:
-        from src.infrastructure.mcp.assurance_mcp.context import is_above_ceiling
+        from src.domain.assurance.classification import exceeds_ceiling
 
-        assert not is_above_ceiling("TLP:AMBER", "TLP:AMBER")
+        assert not exceeds_ceiling("TLP:AMBER", "TLP:AMBER")
 
     def test_is_above_ceiling_below_not_above(self) -> None:
-        from src.infrastructure.mcp.assurance_mcp.context import is_above_ceiling
+        from src.domain.assurance.classification import exceeds_ceiling
 
-        assert not is_above_ceiling("TLP:GREEN", "TLP:AMBER")
-        assert not is_above_ceiling("TLP:WHITE", "TLP:RED")
+        assert not exceeds_ceiling("TLP:GREEN", "TLP:AMBER")
+        assert not exceeds_ceiling("TLP:WHITE", "TLP:RED")
 
     def test_is_above_ceiling_above(self) -> None:
-        from src.infrastructure.mcp.assurance_mcp.context import is_above_ceiling
+        from src.domain.assurance.classification import exceeds_ceiling
 
-        assert is_above_ceiling("TLP:RED", "TLP:AMBER")
-        assert is_above_ceiling("TLP:AMBER", "TLP:GREEN")
-        assert is_above_ceiling("TLP:RED", "TLP:WHITE")
+        assert exceeds_ceiling("TLP:RED", "TLP:AMBER")
+        assert exceeds_ceiling("TLP:AMBER", "TLP:GREEN")
+        assert exceeds_ceiling("TLP:RED", "TLP:WHITE")
 
-    def test_case_insensitive(self) -> None:
-        from src.infrastructure.mcp.assurance_mcp.context import is_above_ceiling
+    def test_case_and_whitespace_insensitive(self) -> None:
+        from src.domain.assurance.classification import exceeds_ceiling
 
-        # Context module upper-cases internally
-        assert not is_above_ceiling("TLP:AMBER", "TLP:AMBER")
+        assert not exceeds_ceiling(" tlp:amber ", "TLP:AMBER")
+
+    def test_a_derived_figure_takes_its_most_sensitive_contributor(self) -> None:
+        """Regression: an unrecognised contributor was dropped, understating the classification."""
+        from src.domain.assurance.classification import most_sensitive
+
+        assert most_sensitive(["TLP:WHITE", "TLP:AMBER"]) == "TLP:AMBER"
+        assert most_sensitive(["TLP:WHITE", "bogus"]) == "TLP:RED"
+        assert most_sensitive([]) is None
 
 
 # ── Signal filter (via AssuranceExposurePolicy) ───────────────────────────────

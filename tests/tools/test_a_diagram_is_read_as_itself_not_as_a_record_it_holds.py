@@ -43,8 +43,11 @@ def _read(repo: Path, artifact_id: str) -> dict[str, Any]:
 
 
 @pytest.fixture
-def repo(tmp_path: Path) -> Path:
-    return repository_with_held_records(tmp_path, "ENG-READ")
+def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    root = repository_with_held_records(tmp_path, "ENG-READ")
+    # A client may name only a configured repository; this one is configured for the test.
+    monkeypatch.setenv("ARCH_REPO_ROOT", str(root))
+    return root
 
 
 def test_a_held_record_keeps_its_local_part_in_its_stable_form() -> None:

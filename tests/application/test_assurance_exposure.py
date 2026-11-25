@@ -233,3 +233,19 @@ def test_filter_security_records_defaults_to_amber() -> None:
     assert withheld == 1
     assert len(visible) == 1
     assert visible[0]["component_id"] == "C2"
+
+
+def test_a_node_with_an_unrecognised_level_is_withheld_below_red() -> None:
+    """Regression: an unrecognised level ranked as TLP:WHITE, so every reader saw it."""
+    policy = AssuranceExposurePolicy("TLP:GREEN", True)
+    nodes = [
+        {"node_id": "a", "tlp": "TLP:WHITE"},
+        {"node_id": "b", "tlp": "red"},
+        {"node_id": "c", "tlp": None},
+    ]
+
+    visible, withheld = policy.filter_nodes(nodes)
+
+    assert [n["node_id"] for n in visible] == ["a"]
+    assert withheld == 2
+    assert isinstance(policy.apply_node(nodes[1]), NotFound)

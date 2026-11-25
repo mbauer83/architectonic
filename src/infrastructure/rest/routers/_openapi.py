@@ -143,13 +143,14 @@ def media_response(media_type: str, description: str) -> dict[int | str, Any]:
 # error as a string and failed on the object it actually receives.
 
 
-def _err(description: str) -> dict[str, Any]:
+def error_response(description: str) -> dict[str, Any]:
+    """An error status as the OpenAPI document declares it: the typed envelope, described."""
     return {"description": description, "model": ErrorEnvelope}
 
 
 #: Attach to id-lookup reads: they 404 when the artifact is absent. (422 for a bad query
 #: parameter is declared application-wide, since every operation can produce one.)
-READ_RESPONSES: dict[int | str, dict[str, Any]] = {404: _err("Artifact not found")}
+READ_RESPONSES: dict[int | str, dict[str, Any]] = {404: error_response("Artifact not found")}
 
 #: Attach to write operations. Mirrors the mutation-gate + authorization statuses
 #: (``state._rejection_to_http`` / ``authorized_write``).
@@ -162,16 +163,16 @@ class DocumentTableWriteResponse(WriteResultResponse):
 
 
 WRITE_RESPONSES: dict[int | str, dict[str, Any]] = {
-    400: _err("Validation error (bad or ambiguous write)"),
-    403: _err("Write forbidden (e.g. admin mode not enabled, or mutation denied)"),
-    409: _err("Write conflict"),
-    413: _err("Request body larger than the operation accepts; the details carry the limit"),
-    423: _err("Write temporarily rejected by the workspace gate (retryable)"),
+    400: error_response("Validation error (bad or ambiguous write)"),
+    403: error_response("Write forbidden (e.g. admin mode not enabled, or mutation denied)"),
+    409: error_response("Write conflict"),
+    413: error_response("Request body larger than the operation accepts; the details carry the limit"),
+    423: error_response("Write temporarily rejected by the workspace gate (retryable)"),
 }
 
 #: Declared on the application, so every operation's 422 documents the envelope its handler
 #: actually returns rather than FastAPI's default ``HTTPValidationError``.
 APP_RESPONSES: dict[int | str, dict[str, Any]] = {
-    422: _err("Request validation failed"),
-    500: _err("Unhandled server error (non-disclosing)"),
+    422: error_response("Request validation failed"),
+    500: error_response("Unhandled server error (non-disclosing)"),
 }

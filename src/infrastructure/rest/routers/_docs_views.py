@@ -94,6 +94,18 @@ def filtered_document(document: OpenApiDocument, tags: frozenset[str]) -> OpenAp
     return filtered
 
 
+def documentation_pages(app: FastAPI) -> frozenset[str]:
+    """The paths that serve the framework's interactive documentation, the section views included.
+
+    The security headers give these pages their own content policy (they load their viewer from a
+    CDN), so the set is stated here, beside the views that serve it.
+    """
+    framework = (app.docs_url, app.redoc_url, app.swagger_ui_oauth2_redirect_url)
+    return frozenset(
+        [path for path in framework if path] + [f"/docs/{section}" for section in SECTION_TAGS]
+    )
+
+
 def install_docs_views(app: FastAPI) -> None:
     """Serve `/docs/{section}` and `/openapi/{section}.json` for each section.
 

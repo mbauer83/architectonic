@@ -318,6 +318,10 @@ collect_verification_errors(root, include_diagrams=True)
 fi
 
 log "Starting arch-backend on 0.0.0.0:${ARCH_PORT:-8000}"
+# All interfaces, because a published port cannot reach the container's loopback. The backend
+# refuses this bind unless backend.allow_remote_without_auth is true in the active settings, which
+# config/settings.server.yaml (baked into the image) sets: the deployment, not the backend, is the
+# access boundary. A settings.yaml mounted over it must keep the key.
 # shellcheck disable=SC2086
 exec arch-backend --host 0.0.0.0 ${ARCH_PORT:+--port "$ARCH_PORT"} \
     ${ARCH_READ_ONLY:+--read-only} \

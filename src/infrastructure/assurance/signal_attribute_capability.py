@@ -28,6 +28,7 @@ from src.application.viewpoints.ports import (
     SignalBasisSnapshot,
     SignalMetricsBatch,
 )
+from src.domain.assurance.classification import most_sensitive
 from src.infrastructure.mcp.assurance_mcp.context import AssuranceContext, get_assurance_context
 
 
@@ -88,10 +89,7 @@ class AssuranceSignalAttributeCapability:
                 return SignalMetricsBatch(
                     available=False, note="signal snapshot changed mid-evaluation; retry",
                 )
-        order = ("TLP:WHITE", "TLP:GREEN", "TLP:AMBER", "TLP:RED")
-        classification = max(
-            (c for c in classifications if c in order), key=order.index, default=None,
-        )
+        classification = most_sensitive(classifications)
         return SignalMetricsBatch(
             available=True, values=values,
             classification=classification, basis_snapshots=tuple(basis_snapshots),

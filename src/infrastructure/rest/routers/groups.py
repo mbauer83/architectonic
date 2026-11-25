@@ -16,6 +16,7 @@ from src.domain.repository.groups import GroupAxis, GroupEntry, GroupRegistry
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
 from src.infrastructure.rest.contracts.authoring_catalogs import GroupListResponse
 from src.infrastructure.rest.contracts.groups import GroupOperationResponse
+from src.infrastructure.rest.contracts.path_components import PathComponent, PathComponentParameter
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import TAG_GROUPS, WRITE_RESPONSES
@@ -39,7 +40,7 @@ class CreateGroupBody(_ClosedBody):
     collection route has nowhere else to put it."""
 
     kind: str
-    slug: str
+    slug: PathComponent
     name: str
     description: str = ""
     order: int = 0
@@ -49,7 +50,7 @@ class CreateGroupBody(_ClosedBody):
 
 class RenameGroupBody(_ClosedBody):
     name: str | None = None
-    new_slug: str | None = None
+    new_slug: PathComponent | None = None
 
 
 class ArchiveGroupBody(_ClosedBody):
@@ -187,7 +188,7 @@ def _group_location(kind: str, slug: str) -> str:
 
 @router.post("/api/groups/{kind}/{slug}/rename", tags=[TAG_GROUPS], summary="Rename a group",
     response_model=GroupOperationResponse, response_model_exclude_none=True, responses=WRITE_RESPONSES)
-async def rename_group(kind: str, slug: str, body: RenameGroupBody) -> dict[str, Any]:
+async def rename_group(kind: str, slug: PathComponentParameter, body: RenameGroupBody) -> dict[str, Any]:
     """An explicit action segment, not a ``PATCH`` field: renaming re-files every member, so it is
     a move rather than an attribute update, and it changes the resource's own address."""
     return await _exec_op(
@@ -202,7 +203,9 @@ async def rename_group(kind: str, slug: str, body: RenameGroupBody) -> dict[str,
 
 @router.post("/api/groups/{kind}/{slug}/archive", tags=[TAG_GROUPS], summary="Archive a group",
     response_model=GroupOperationResponse, response_model_exclude_none=True, responses=WRITE_RESPONSES)
-async def archive_group(kind: str, slug: str, body: ArchiveGroupBody | None = None) -> dict[str, Any]:
+async def archive_group(
+    kind: str, slug: PathComponentParameter, body: ArchiveGroupBody | None = None,
+) -> dict[str, Any]:
     return await _exec_op(
         "groups_archive_group", axis=kind, action="archive", target=slug,
         confirm=body.confirm if body is not None else None,
@@ -211,7 +214,7 @@ async def archive_group(kind: str, slug: str, body: ArchiveGroupBody | None = No
 
 @router.post("/api/groups/{kind}/{slug}/unarchive", tags=[TAG_GROUPS], summary="Unarchive a group",
     response_model=GroupOperationResponse, response_model_exclude_none=True, responses=WRITE_RESPONSES)
-async def unarchive_group(kind: str, slug: str) -> dict[str, Any]:
+async def unarchive_group(kind: str, slug: PathComponentParameter) -> dict[str, Any]:
     """No body: the path names the group and the segment names the action, so there is nothing left
     for a caller to say."""
     return await _exec_op("groups_unarchive_group", axis=kind, action="unarchive", target=slug)
@@ -219,7 +222,7 @@ async def unarchive_group(kind: str, slug: str) -> dict[str, Any]:
 
 @router.patch("/api/groups/{kind}/{slug}", tags=[TAG_GROUPS], summary="Update a group (partial)",
     response_model=GroupOperationResponse, response_model_exclude_none=True, responses=WRITE_RESPONSES)
-async def update_group(kind: str, slug: str, body: UpdateGroupBody) -> dict[str, Any]:
+async def update_group(kind: str, slug: PathComponentParameter, body: UpdateGroupBody) -> dict[str, Any]:
     return await _exec_op(
         "groups_update_group",
         axis=kind,
@@ -272,7 +275,7 @@ def project_group_delete(result: dict[str, Any], *, axis: str, slug: str) -> dic
     response_model=GroupOperationResponse, response_model_exclude_none=True, responses=WRITE_RESPONSES)
 async def delete_group(
     kind: str,
-    slug: str,
+    slug: PathComponentParameter,
     confirm: str | None = Query(default=None),
 ) -> dict[str, Any]:
     result = await _exec_op(

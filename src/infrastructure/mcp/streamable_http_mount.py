@@ -34,7 +34,7 @@ def _flag(name: str, default: str) -> bool:
 
 
 def _host() -> str:
-    """The host the transport answers on. Seeds the SDK's DNS-rebinding defaults."""
+    """The host the SDK is told it answers on; its allowed hosts are set explicitly beside it."""
     return os.getenv("ARCH_MCP_HOST", "127.0.0.1")
 
 

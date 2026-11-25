@@ -16,6 +16,7 @@ from src.config.settings import request_thread_dump_seconds, slow_request_warnin
 from src.infrastructure.artifact_index.coordination import get_write_queue_state_snapshot
 from src.infrastructure.backend._teardown import teardown_steps
 from src.infrastructure.backend.cache_directive import apply_cache_directive
+from src.infrastructure.backend.edge_policy import install_edge_policy
 from src.infrastructure.backend.read_model_caching import conditional_read_middleware
 from src.infrastructure.backend.request_body_limit import RequestBodyLimit
 from src.infrastructure.backend.shutdown import run_teardown
@@ -242,7 +243,7 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
     )
     from src.infrastructure.rest.contracts.operation_ids import manifest_operation_id
     from src.infrastructure.rest.contracts.wire_nulls import install_wire_null_policy
-    from src.infrastructure.rest.routers._docs_views import install_docs_views
+    from src.infrastructure.rest.routers._docs_views import documentation_pages, install_docs_views
     from src.infrastructure.rest.routers._openapi import APP_RESPONSES
     from src.infrastructure.rest.routers.admin import router as admin_router
     from src.infrastructure.rest.routers.assurance.router import router as assurance_router
@@ -350,6 +351,7 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    install_edge_policy(app, documentation_pages=documentation_pages(app))
 
     app.add_api_route("/health", _health_check, include_in_schema=False)
 

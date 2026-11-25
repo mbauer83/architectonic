@@ -994,6 +994,11 @@ export interface paths {
          *     once. Under the manual activation policy this is what makes `unlock` do something: a
          *     rebuild alone would re-apply the policy and start locked again, so the command would appear
          *     to succeed and change nothing.
+         *
+         *     Changing the process's authorization is an operator's act and is accepted only as a local
+         *     operator request (`operator_request`): anything that could reach the port could otherwise
+         *     authorize the process to open the confidential store. A reload that leaves authorization as it
+         *     is stays open to any caller.
          */
         post: operations["assurance_reload_store"];
         delete?: never;
@@ -1689,7 +1694,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Serve a rendered diagram image */
+        /**
+         * Serve a rendered diagram image
+         * @description A rendered image, found by its file name anywhere in the rendered tree.
+         *
+         *     Group collections mirror the source tree under `rendered/<collection>/`, and a rendered file
+         *     name is unique by artifact id, so the name alone finds it. It is compared as a name, never used
+         *     as a pattern: handed to a glob, `*` matched any file. A match must still lie inside the rendered
+         *     tree once links are followed.
+         */
         get: operations["diagrams_read_diagram_image"];
         put?: never;
         post?: never;
@@ -18694,6 +18707,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssuranceStoreStatusResponse"];
+                };
+            };
+            /** @description `authorize` was given by a request that is not a local operator request: one from the loopback carrying `X-Arch-Operator-Request`, as `arch-assurance unlock` and `lock` send */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Request validation failed */
