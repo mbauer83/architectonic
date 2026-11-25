@@ -2,7 +2,8 @@
  * The canvas's gestures on a line (sketch 02·3–02·5): press a line to select it — or press where it ends
  * on an element's edge (Q33) — then drag an end along its element's outline or round onto another side,
  * drag a segment sideways, drag a bend, double-press the line to add a bend and a bend to remove it, and
- * drag the line's label. Bend placement is the pointer's alone (Q35).
+ * drag the line's label. Bend placement is the pointer's alone (Q35). An end dragged in line with the
+ * line's other end snaps there and shows a guide (02·3); a label picked is nudged by the arrows (02·5).
  *
  * Each drag is one undoable step, begun on the first travel: every frame states the route it reached
  * (`labRouteEdits`) and the session routes the line between what is stated; the release tidies a
@@ -22,6 +23,7 @@ import {
   wholeRoute, withBendAdded, withBendAt, withBendRemoved, withEndAt, withRouteStated,
 } from '../../../domain/layout/lab/labRouteEdits'
 import { MIDDLE } from '../../../domain/layout/lab/labLineDrawing'
+import { type Guide, inLineGuide } from '../../../domain/layout/lab/labSnapping'
 import type { RoutedConnector } from '../../../domain/layout/routing/scene'
 import type { ArrangementSession } from '../../composables/useArrangementSession'
 import { followingPointer, pointOnPicture } from './pointerOnPicture'
@@ -32,6 +34,8 @@ const NEAR_AN_END = 6
 /** A jog shorter than this, on screen, is straightened when a drag ends; an end snaps in line within it. */
 const JOG = 4
 const IN_LINE_SNAP = 6
+/** How long the in-line guide stays after the drop, as the alignment guides do. */
+const GUIDE_LINGERS_MS = 700
 
 type Drag =
   | { readonly kind: 'end'; readonly end: End }
@@ -57,6 +61,11 @@ export function useLineGesture(
   const bend = ref<number | null>(null)
   /** Whether the selected line's label is being moved: its leader is drawn while it is. */
   const movingLabel = ref(false)
+  /** Whether the selected line's label was the last thing pressed: the arrows then nudge it (02·5). */
+  const labelPicked = ref(false)
+  /** The guide of an end dragged in line with the other end, until a moment after the drop. */
+  const guides = ref<readonly Guide[]>([])
+  let lingering: ReturnType<typeof setTimeout> | undefined
   let pressed: Pressed | null = null
 
   const selected = computed(() => lineAt(session.geometry.value, session.arrangement.value, line.value))
@@ -69,6 +78,7 @@ export function useLineGesture(
 
   const select = (index: number | null) => {
     if (index !== line.value) bend.value = null
+    labelPicked.value = false
     line.value = index
     if (index !== null) onPick()
   }
@@ -105,6 +115,7 @@ export function useLineGesture(
     const centre = labelCentre(course, route.label ?? MIDDLE)
     const at = pointOnPicture(svg.value, event)
     begin(event, index, { kind: 'label', grab: { x: at.x - centre.x, y: at.y - centre.y } })
+    labelPicked.value = event.button === 0
   }
 
   /**
@@ -136,6 +147,8 @@ export function useLineGesture(
       if (!extent) return null
       const other = drag.end === 'from' ? start.routed.course.at(-1) : start.routed.course[0]
       const port = portNear(extent, at, other ?? null, IN_LINE_SNAP * pixel.value)
+      const guide = inLineGuide(extent, port, other ?? null)
+      guides.value = guide ? [guide] : []
       return { route: withEndAt(start.stated, drag.end, port, extent), course: null }
     }
     if (drag.kind === 'segment') {
@@ -193,6 +206,8 @@ export function useLineGesture(
     const state = pressed
     pressed = null
     movingLabel.value = false
+    clearTimeout(lingering)
+    lingering = setTimeout(() => { guides.value = [] }, GUIDE_LINGERS_MS)
     if (!state?.start) return
     const tidy = tidied(state)
     if (tidy) {
@@ -234,8 +249,19 @@ export function useLineGesture(
     return true
   }
 
+  /** The arrows on a picked label: moved by (dx, dy) and anchored again, as one step; answers whether one was. */
+  const nudgeLabel = (dx: number, dy: number): boolean => {
+    const course = line.value === null ? undefined : session.courses.value.get(line.value)
+    if (!labelPicked.value || !course) return false
+    restate((route) => {
+      const centre = labelCentre(course, route.label ?? MIDDLE)
+      return { ...route, label: labelAnchoredAt(course, { x: centre.x + dx, y: centre.y + dy }) }
+    })
+    return true
+  }
+
   return {
-    line, bend, bends, routed, stated, movingLabel, select, clear,
+    line, bend, bends, routed, stated, movingLabel, guides, labelPicked, select, clear, nudgeLabel,
     pressLine, pressEnd, pressSegment, pressBend, pressLabel, pressNearAnEnd, doublePress, removePickedBend,
   }
 }

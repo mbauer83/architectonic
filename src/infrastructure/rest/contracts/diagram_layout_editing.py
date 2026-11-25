@@ -101,6 +101,13 @@ class GeometryRelationContract(NullsOmitted):
     drawing: LineDrawingContract
 
 
+class SurroundPartContract(NullsOmitted):
+    """A part PlantUML draws round the diagram — its title, its legend — and where it is drawn."""
+
+    drawing: DrawingNodeContract
+    extent: ExtentContract
+
+
 class DiagramLayoutGeometryResponse(NullsOmitted):
     """PlantUML's own picture of a diagram as an editor arranges it, and the layout the diagram states."""
 
@@ -109,6 +116,8 @@ class DiagramLayoutGeometryResponse(NullsOmitted):
     canvas: ExtentContract
     #: What PlantUML draws behind everything: the background.
     backdrop: list[DrawingNodeContract]
+    #: What PlantUML draws round the diagram: its title and its legend.
+    surround: list[SurroundPartContract]
     elements: list[GeometryElementContract]
     boxes: list[GeometryBoxContract]
     relations: list[GeometryRelationContract]

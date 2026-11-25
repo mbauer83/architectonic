@@ -1,6 +1,8 @@
 """Arranging a diagram: the picture an editor arranges, shapes drawn at a new size, and a layout patch.
 
-The read and the drawing write nothing. The patch is the one write: entries of the layout block,
+The picture is drawn under the reader's lens where one is given, so an editor arranges what the reader
+was reading: the printed attributes, the colouring, the legend (owner, 2026-11-25). The read and the
+drawing write nothing. The patch is the one write: entries of the layout block,
 applied to the stored layout — or, on a diagram PlantUML still arranges, to the first layout taken
 over from its picture — and written through the diagram edit, so it is refused and verified as any
 layout is.
@@ -17,8 +19,11 @@ from pydantic import BaseModel, ConfigDict
 
 from src.application.modeling.diagram_identities import alias_by_instance
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.application.viewpoints.diagram_reading_lens import ReadingLens
 from src.domain.diagrams.layout.layout_block import MalformedLayout
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
+from src.domain.ontology_representation.artifact_types import DiagramRecord
+from src.infrastructure.rendering.laid_out_rendering import stored_layout
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
 from src.infrastructure.rendering.layout.diagram_geometry import (
     geometry_response,
@@ -42,6 +47,9 @@ from src.infrastructure.rest.routers._openapi import (
 )
 from src.infrastructure.rest.routers.diagrams._composition import render_composition
 from src.infrastructure.rest.routers.diagrams._geometry_proposals import GeometryPreviewBody
+from src.infrastructure.rest.routers.diagrams._lensed_reading import kind_muting, lensed_body, reading_body
+from src.infrastructure.rest.routers.diagrams._reading_lens_request import reading_lens
+from src.infrastructure.rest.routers.diagrams._serving import _rendered_path
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.parse_existing import ParsedDiagram, parse_diagram_file
 
@@ -51,6 +59,7 @@ if TYPE_CHECKING:
 router = APIRouter()
 
 Catalogs = Annotated[RuntimeCatalogs, Depends(runtime_catalogs_dependency)]
+Lens = Annotated[ReadingLens, Depends(reading_lens)]
 
 
 class DrawingNodeBody(BaseModel):
@@ -104,11 +113,15 @@ class PatchLayoutBody(BaseModel):
     dry_run: bool = True
 
 
-def _stored_diagram(artifact_id: str) -> ParsedDiagram:
+def _stored_record(artifact_id: str) -> DiagramRecord:
     record = s.get_repo().get_diagram(artifact_id)
     if record is None or not Path(record.path).exists():
         raise HTTPException(404, f"Diagram '{artifact_id}' not found")
-    return parse_diagram_file(Path(record.path))
+    return record
+
+
+def _stored_diagram(artifact_id: str) -> ParsedDiagram:
+    return parse_diagram_file(Path(_stored_record(artifact_id).path))
 
 
 def _repo_root() -> Path:
@@ -124,9 +137,22 @@ def _repo_root() -> Path:
     response_model_exclude_none=True,
     responses=READ_RESPONSES,
 )
-def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs) -> dict[str, object]:
+def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs, lens: Lens) -> dict[str, object]:
     parsed = _stored_diagram(artifact_id)
-    return _geometry(lambda: stored_geometry(parsed, artifact_id, _repo_root(), catalogs.ontology))
+    if lens.is_empty:
+        return _geometry(lambda: stored_geometry(parsed, artifact_id, _repo_root(), catalogs.ontology))
+    record = _stored_record(artifact_id)
+    root = _repo_root()
+    path = Path(record.path)
+    # As the reader's picture is drawn (`_serving.get_diagram_svg`): printed lines held to the stored widths.
+    body = reading_body(
+        artifact_id, path, lens, catalogs, root, diagram_type=record.diagram_type,
+        laid_out=stored_layout(path, catalogs.ontology), stored_svg=_rendered_path(record, ".svg"),
+    )
+    return _geometry(lambda: geometry_response(
+        body, artifact_id, dict(parsed.frontmatter), root, catalogs.ontology,
+        restyle_prepared=kind_muting(lens, root),
+    ))
 
 
 def _geometry(read: Callable[[], dict[str, object]]) -> dict[str, object]:
@@ -143,7 +169,7 @@ def _geometry(read: Callable[[], dict[str, object]]) -> dict[str, object]:
     response_model_exclude_none=True, responses={**READ_RESPONSES, **WRITE_RESPONSES},
 )
 def preview_diagram_layout_geometry(
-    artifact_id: str, body: GeometryPreviewBody, catalogs: Catalogs,
+    artifact_id: str, body: GeometryPreviewBody, catalogs: Catalogs, lens: Lens,
 ) -> dict[str, object]:
     parsed = _stored_diagram(artifact_id)
     repo = s.get_repo()
@@ -155,9 +181,14 @@ def preview_diagram_layout_geometry(
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     frontmatter = {**parsed.frontmatter, **composed.statements(body)}
+    root = _repo_root()
+    puml = composed.puml if lens.is_empty else lensed_body(
+        artifact_id, Path(_stored_record(artifact_id).path), lens, catalogs, root, authored=composed.puml,
+    )
     return _geometry(lambda: geometry_response(
-        composed.puml, artifact_id, frontmatter, _repo_root(), catalogs.ontology, generated=True,
+        puml, artifact_id, frontmatter, root, catalogs.ontology, generated=True,
         arrangement=body.arrangement, previous=frozenset(alias_by_instance(parsed.frontmatter)),
+        restyle_prepared=kind_muting(lens, root),
     ))
 
 

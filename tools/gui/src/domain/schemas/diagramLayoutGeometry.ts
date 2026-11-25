@@ -99,12 +99,19 @@ const GeometryRelationSchema = Schema.Struct({
   drawing: LineDrawingSchema,
 })
 
+/** A part PlantUML draws round the diagram — its title, its legend — and where it is drawn. */
+const SurroundPartSchema = Schema.Struct({ drawing: DrawingNodeSchema, extent: ExtentSchema })
+
+export type SurroundPart = typeof SurroundPartSchema.Type
+
 export const DiagramLayoutGeometrySchema = Schema.Struct({
   artifact_id: Schema.String,
   name: Schema.String,
   canvas: ExtentSchema,
   /** What PlantUML draws behind everything: the background. */
   backdrop: Schema.Array(DrawingNodeSchema),
+  /** What PlantUML draws round the diagram: its title and its legend. */
+  surround: Schema.Array(SurroundPartSchema),
   elements: Schema.Array(GeometryElementSchema),
   boxes: Schema.Array(GeometryBoxSchema),
   relations: Schema.Array(GeometryRelationSchema),

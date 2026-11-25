@@ -263,7 +263,6 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
           ref="containerRef"
           class="img-container viewport-host"
           @mousedown="panZoom.onMouseDown"
-          @dblclick="panZoom.resetView"
         >
           <div
             class="pan-canvas"
@@ -276,10 +275,11 @@ onMounted(() => { if (props.adHoc || slug.value) void load() })
             />
           </div>
           <DiagramViewportControls
+            :zoom="panZoom"
             :is-transformed="panZoom.isTransformed.value"
             :is-fullscreen="fullscreen.isFullscreen.value"
             :can-fullscreen="fullscreen.isSupported"
-            hint="Scroll to zoom · Drag to pan · Click entity to inspect · Double-click to reset"
+            hint="Scroll to zoom · Drag to pan · Click entity to inspect · 0 fits"
             @reset="panZoom.resetView"
             @toggle-fullscreen="fullscreen.toggle"
           />

@@ -199,3 +199,9 @@ export const editableMetadataByEntityType = <Spec>(
   }
   return out
 }
+
+/** What the window says it answers, by mode: double-click no longer resets the view (Q7) — `0` fits. */
+export const viewportHint = (editing: boolean): string => (editing
+  ? 'Drag an element, or a box by its title, to move it · drag on paper to select · Shift-click adds'
+    + ' · drag a handle to resize · Space+drag pans'
+  : 'Scroll to zoom · Drag to pan · Click entity to inspect · 0 fits · E edits')

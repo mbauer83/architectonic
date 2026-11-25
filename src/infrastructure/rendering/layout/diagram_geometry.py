@@ -11,7 +11,7 @@ take, so the canvas draws exactly what the composer would arrange, as the compos
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +38,7 @@ from src.infrastructure.rendering.layout.drawing_wire import node_of, relation_d
 from src.infrastructure.rendering.layout.membership_placement import with_new_members
 from src.infrastructure.rendering.layout.plantuml_svg_reader import RenderedDrawing, read_rendered_drawing
 from src.infrastructure.rendering.layout.relation_identities import DrawnAs, relation_keys_by_index
+from src.infrastructure.rendering.layout.svg_markup import drawn_extent
 from src.infrastructure.write.artifact_write.parse_existing import ParsedDiagram
 
 type Wire = dict[str, object]
@@ -113,6 +114,15 @@ def _relation(
     }
 
 
+def _surround(drawing: RenderedDrawing) -> list[Wire]:
+    """What PlantUML draws round the diagram — its title, its legend — with where each is drawn: what the
+    canvas carries along as the diagram is arranged, as the composer does (`composer._carried_with`)."""
+    return [
+        {"drawing": node_of(part), "extent": _extent(extent)}
+        for part in drawing.chrome if (extent := drawn_extent(part)) is not None
+    ]
+
+
 def geometry_of(drawing: RenderedDrawing, diagram: LaidOutDiagram) -> Wire:
     """A picture as the canvas draws it: every shape and line where PlantUML put it, named as a layout names it,
     with PlantUML's own drawing of each — and of the backdrop behind them — to draw it with."""
@@ -122,6 +132,7 @@ def geometry_of(drawing: RenderedDrawing, diagram: LaidOutDiagram) -> Wire:
     return {
         "canvas": _extent(picture.canvas),
         "backdrop": [node_of(part) for part in drawing.backdrop],
+        "surround": _surround(drawing),
         "elements": [_element(element, diagram, drawing) for element in picture.elements.values()],
         "boxes": [_box(box, diagram, keys, drawing) for box in picture.boxes.values()],
         "relations": [
@@ -161,14 +172,19 @@ def stored_geometry(
 def geometry_response(
     puml: str, artifact_id: str, frontmatter: Mapping[str, object], root: Path, ontology: DeclaresElementKinds,
     *, generated: bool = False, arrangement: dict[str, Any] | None = None, previous: frozenset[str] = frozenset(),
+    restyle_prepared: Callable[[str], str] | None = None,
 ) -> Wire:
     """The geometry of *puml*, stored or composed (*generated*); raises ValueError when it cannot be drawn.
 
     With an *arrangement*, members not in *previous* are placed and the returned layout replaces the stored one.
+    *restyle_prepared* restyles the prepared body, as a reading that turns the element kinds down does.
     """
     diagram_type = str(frontmatter.get("diagram-type", "archimate"))
     try:
-        svg = measure_composition(puml, root, diagram_type)[1] if generated else plantuml_svg(puml, root, diagram_type)
+        svg = (
+            measure_composition(puml, root, diagram_type, restyle_prepared)[1] if generated
+            else plantuml_svg(puml, root, diagram_type, restyle_prepared)
+        )
     except NotDrawn as refusal:
         raise ValueError(str(refusal)) from refusal
     geometry = diagram_geometry(svg, frontmatter, ontology, arrangement=arrangement, previous=previous)

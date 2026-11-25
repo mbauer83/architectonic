@@ -7818,6 +7818,8 @@ export interface components {
             name: string;
             /** Relations */
             relations: components["schemas"]["GeometryRelationContract"][];
+            /** Surround */
+            surround: components["schemas"]["SurroundPartContract"][];
         };
         /**
          * DiagramLayoutIntentsResponse
@@ -13792,6 +13794,14 @@ export interface components {
             query: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * SurroundPartContract
+         * @description A part PlantUML draws round the diagram — its title, its legend — and where it is drawn.
+         */
+        SurroundPartContract: {
+            drawing: components["schemas"]["DrawingNodeContract"];
+            extent: components["schemas"]["ExtentContract"];
         };
         /**
          * SyncAuthorityResponse
@@ -21731,7 +21741,22 @@ export interface operations {
     };
     diagrams_read_diagram_layout_geometry: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Attribute to colour the drawn elements by */
+                colour_by?: string;
+                /** @description What becomes of the colour an element has for being what it is, while an attribute is read — `keep` for both colourings at once, `dim` to turn the kinds down so they are still told apart but the attribute is the loud colouring, `drop` to give every element the attribute says nothing about the same neutral the unset member takes. Acts only alongside `colour_by` */
+                element_kind_colouring?: string;
+                /** @description Which named gradient an ordered value set is spread along — `red-green`, `yellow-blue` for a red/green colour-blind reader, or either reversed (`green-red`, `blue-yellow`) for a scale whose high end is the bad one. Absent leaves a graded set on the default and a ramp on its magnitude pair */
+                gradient?: string;
+                /** @description A colour for one value, as `member:#rrggbb`; repeatable */
+                key?: string[];
+                /** @description Draw a legend explaining the notation this diagram uses */
+                legend?: boolean;
+                /** @description Attribute values to print with the elements */
+                print?: string[];
+                /** @description A gradient for a continuous attribute, as `near:far` in #rrggbb */
+                ramp?: string;
+            };
             header?: never;
             path: {
                 artifact_id: string;
@@ -21780,7 +21805,22 @@ export interface operations {
     };
     diagrams_preview_diagram_layout_geometry: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Attribute to colour the drawn elements by */
+                colour_by?: string;
+                /** @description What becomes of the colour an element has for being what it is, while an attribute is read — `keep` for both colourings at once, `dim` to turn the kinds down so they are still told apart but the attribute is the loud colouring, `drop` to give every element the attribute says nothing about the same neutral the unset member takes. Acts only alongside `colour_by` */
+                element_kind_colouring?: string;
+                /** @description Which named gradient an ordered value set is spread along — `red-green`, `yellow-blue` for a red/green colour-blind reader, or either reversed (`green-red`, `blue-yellow`) for a scale whose high end is the bad one. Absent leaves a graded set on the default and a ramp on its magnitude pair */
+                gradient?: string;
+                /** @description A colour for one value, as `member:#rrggbb`; repeatable */
+                key?: string[];
+                /** @description Draw a legend explaining the notation this diagram uses */
+                legend?: boolean;
+                /** @description Attribute values to print with the elements */
+                print?: string[];
+                /** @description A gradient for a continuous attribute, as `near:far` in #rrggbb */
+                ramp?: string;
+            };
             header?: never;
             path: {
                 artifact_id: string;

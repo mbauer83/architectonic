@@ -31,6 +31,7 @@ import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import { stableEntityId } from '../../domain/artifactId'
 import { type Restack, restacked } from '../../domain/layout/stacking'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
+import type { ReadingLens } from '../../domain/readingLens'
 import type { ArrangementState } from './useArrangementSession'
 import { useArrangementSession } from './useArrangementSession'
 
@@ -38,7 +39,7 @@ export type { PendingChange }
 
 export function useDiagramEditing(
   svc: ModelService, diagramId: () => string, membership: () => DrawnMembership | null,
-  onMembershipSaved: () => void = () => {},
+  onMembershipSaved: () => void = () => {}, lens: () => ReadingLens | undefined = () => undefined,
 ) {
   const session = useArrangementSession(
     (shapes) => svc.drawResizedShapes(diagramId(), shapes),
@@ -59,7 +60,7 @@ export function useDiagramEditing(
 
   /** Read the picture as stored and start from it; *carried* is an arrangement to keep, as a save does. */
   const reopen = async (carried: ArrangedLayout | null = null): Promise<void> => {
-    const geometry = await Effect.runPromise(svc.readLayoutGeometry(diagramId()))
+    const geometry = await Effect.runPromise(svc.readLayoutGeometry(diagramId(), lens()))
     const layout = geometry.layout && (geometry.layout.elements || geometry.layout.boxes || geometry.layout.z)
       ? geometry.layout : null
     stored.value = layout
@@ -96,7 +97,6 @@ export function useDiagramEditing(
   /** The alias the picture draws the entity *id* under; the id itself where it draws none. */
   const aliasOf = (id: string): string =>
     session.drawnPicture.value?.elements.find((one) => one.key === stableEntityId(id))?.alias ?? id
-
   /** What Save would write, read off the state against the last save. */
   const changes = computed((): readonly PendingChange[] => {
     const geometry = session.geometry.value
@@ -300,9 +300,8 @@ export function useDiagramEditing(
     try {
       const { preview: request } = composeCanvas(drawn, next, removedIds(next.removed))
       const carried = wanted()
-      const picture = await Effect.runPromise(svc.previewLayoutGeometry(diagramId(), {
-        ...request, ...(carried ? {arrangement: carried} : {}),
-      }))
+      const picture = await Effect.runPromise(svc.previewLayoutGeometry(
+        diagramId(), { ...request, ...(carried ? {arrangement: carried} : {}) }, lens()))
       if (session.state.value !== previous) return false
       const read = carried ? arrangedBy(picture, picture.layout ?? carried) : drawnArrangement(picture)
       const alias = place && picture.elements.find((one) => one.key === place[0])?.alias

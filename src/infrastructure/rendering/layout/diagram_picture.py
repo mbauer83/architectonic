@@ -7,7 +7,7 @@ REST surface and the MCP tools alike, through the one reader of PlantUML's struc
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds, joined_to_its_picture
@@ -23,26 +23,31 @@ class NotDrawn(ValueError):
     """PlantUML drew no picture of a diagram, or drew one the reader cannot read, with why."""
 
 
-def plantuml_svg(puml_body: str, repo_root: Path, diagram_type: str) -> str:
-    """PlantUML's own SVG of *puml_body*. Raises `NotDrawn` with PlantUML's warnings when there is none."""
+def plantuml_svg(
+    puml_body: str, repo_root: Path, diagram_type: str, restyle_prepared: Callable[[str], str] | None = None,
+) -> str:
+    """PlantUML's own SVG of *puml_body*, its prepared body restyled where *restyle_prepared* says. Raises
+    `NotDrawn` with PlantUML's warnings when there is none."""
     from src.infrastructure.rendering.puml_runtime import render_puml_svg  # noqa: PLC0415 - starts the renderer
 
-    svg, warnings = render_puml_svg(puml_body, repo_root, diagram_type)
+    svg, warnings = render_puml_svg(puml_body, repo_root, diagram_type, restyle_prepared=restyle_prepared)
     if svg is None:
         raise NotDrawn(f"PlantUML could not draw the diagram: {'; '.join(warnings)}")
     return svg
 
 
-def measure_composition(body: str, repo_root: Path, diagram_type: str) -> tuple[str, str]:
+def measure_composition(
+    body: str, repo_root: Path, diagram_type: str, restyle_prepared: Callable[[str], str] | None = None,
+) -> tuple[str, str]:
     """Return the generated source and the SVG it actually drew, including any necessary rank relaxation.
 
     Graphviz can crash on nested clusters and return its stack trace as a successful SVG.
     Only that diagnostic retries, without hidden positioning constraints. Save draws the recovered source.
     """
-    svg = plantuml_svg(body, repo_root, diagram_type)
+    svg = plantuml_svg(body, repo_root, diagram_type, restyle_prepared)
     if 'data-diagram-type="DESCRIPTION"' not in svg and "An error has occurred" in svg and "plantuml.dot." in svg:
         body = without_layout_links(body)
-        svg = plantuml_svg(body, repo_root, diagram_type)
+        svg = plantuml_svg(body, repo_root, diagram_type, restyle_prepared)
     return body, svg
 
 

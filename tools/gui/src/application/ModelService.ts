@@ -175,9 +175,10 @@ export const makeModelService = (repo: ModelRepository) =>
     shareIcon: (diagramId: string, iconKey: string, body: Parameters<ModelRepository['shareIcon']>[2]) =>
       repo.shareIcon(diagramId, iconKey, body),
     listDiagramElementTypes: (diagramType: string) => repo.listDiagramElementTypes(diagramType),
-    previewLayoutGeometry: (diagramId: string, body: Parameters<ModelRepository['previewLayoutGeometry']>[1]) =>
-      repo.previewLayoutGeometry(diagramId, body),
-    readLayoutGeometry: (diagramId: string) => repo.readLayoutGeometry(diagramId),
+    previewLayoutGeometry: (
+      diagramId: string, body: Parameters<ModelRepository['previewLayoutGeometry']>[1], lens?: ReadingLens,
+    ) => repo.previewLayoutGeometry(diagramId, body, lens),
+    readLayoutGeometry: (diagramId: string, lens?: ReadingLens) => repo.readLayoutGeometry(diagramId, lens),
     drawResizedShapes: (diagramId: string, shapes: Parameters<ModelRepository['drawResizedShapes']>[1]) =>
       repo.drawResizedShapes(diagramId, shapes),
     patchLayout: (diagramId: string, patch: Parameters<ModelRepository['patchLayout']>[1], dryRun: boolean) =>

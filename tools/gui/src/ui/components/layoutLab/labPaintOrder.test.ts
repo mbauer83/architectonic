@@ -32,6 +32,7 @@ const relation = (index: number, source: string, target: string) => ({
  */
 const geometry: LayoutGeometry = {
   artifact_id: 'ARC@1.a.test', name: 'Test', canvas: at(0, 0, 600, 400), backdrop: [],
+  surround: [],
   boxes: [
     box('One', undefined, at(0, 0, 200, 150)),
     box('Two', undefined, at(250, 0, 450, 150)),

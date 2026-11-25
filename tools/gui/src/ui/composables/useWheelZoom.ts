@@ -13,6 +13,18 @@ export interface ViewTransform {
 }
 
 /**
+ * Zoom *view* by *factor*, keeping the point *at* (pixels from the viewport's top left) where it is;
+ * never past the range the scale may not leave.
+ */
+export const zoomAbout = ({ scale, tx, ty }: ViewTransform, factor: number, at: { x: number; y: number }): void => {
+  const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale.value * factor))
+  const ratio = next / scale.value
+  tx.value = at.x * (1 - ratio) + tx.value * ratio
+  ty.value = at.y * (1 - ratio) + ty.value * ratio
+  scale.value = next
+}
+
+/**
  * Cursor-anchored wheel zoom over a viewport.
  *
  * Anchored means the point under the cursor stays under the cursor: the translation is corrected by
@@ -53,12 +65,9 @@ export function useWheelZoom(
     // Returned *without* `preventDefault`, so the scrollable element receives the wheel it was given.
     if (scrollableUnderPointer(event.target, container)) return
     event.preventDefault()
-    const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale.value * (event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP)))
-    const ratio = next / scale.value
     const rect = container.getBoundingClientRect()
-    tx.value = (event.clientX - rect.left) * (1 - ratio) + tx.value * ratio
-    ty.value = (event.clientY - rect.top) * (1 - ratio) + ty.value * ratio
-    scale.value = next
+    zoomAbout({ scale, tx, ty }, event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP,
+      { x: event.clientX - rect.left, y: event.clientY - rect.top })
   }
 
   // `immediate`, because the element is not always a template ref that arrives after setup — given

@@ -1,7 +1,7 @@
 import { computed, nextTick, onUnmounted, ref, watch, type Ref } from 'vue'
 import { usePanTranslateStyle } from './usePanCanvasStyle'
 import { usePanGesture } from './usePanGesture'
-import { useWheelZoom } from './useWheelZoom'
+import { useWheelZoom, zoomAbout } from './useWheelZoom'
 import type { ReadingView } from '../../domain/diagramReading'
 import type { Extent, Point } from '../../domain/layout/geometry'
 import { motionAllowed } from '../lib/motionPreference'
@@ -231,6 +231,20 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     if (at) glide({ x: at.x, y: at.y, percent: Math.min(Math.max(scale.value, READABLE), at.fits) * 100 })
   }
 
+  /** The zoom cluster's and the keys' zoom (01·1): by *factor*, about the window's centre. */
+  const zoomBy = (factor: number) => {
+    const rect = containerRef.value?.getBoundingClientRect()
+    if (rect) zoomAbout({ scale, tx, ty }, factor, { x: rect.width / 2, y: rect.height / 2 })
+  }
+
+  /** Move the window by a fraction of its own size: an arrow with nothing to move pans by a fifth (02·9). */
+  const panBy = (across: number, down: number) => {
+    const rect = containerRef.value?.getBoundingClientRect()
+    if (!rect) return
+    tx.value -= across * rect.width
+    ty.value -= down * rect.height
+  }
+
   /** Move the window by the least that brings a part of the picture *margin* pixels inside it. */
   const reveal = (extent: Extent, margin = 32) => {
     const rect = containerRef.value?.getBoundingClientRect()
@@ -258,6 +272,6 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
 
   return {
     scale, tx, ty, fitScale, canvasStyle, isTransformed, onMouseDown, resetView, fitDiagramToViewport,
-    windowView, showView, glide, goTo, frame, reveal, toWindow, windowExtent,
+    windowView, showView, glide, goTo, frame, reveal, toWindow, windowExtent, zoomBy, panBy,
   }
 }

@@ -23,6 +23,7 @@ const element = (alias: string, extent: Extent) => ({
 /** A beside and above C: the line from A to C turns twice. */
 const geometry: LayoutGeometry = {
   artifact_id: 'ARC@1.a.test', name: 'Test', canvas: at(0, 0, 700, 500), backdrop: [],
+  surround: [],
   elements: [element('A', at(20, 40, 120, 80)), element('C', at(400, 240, 500, 280))],
   boxes: [],
   relations: [{
@@ -129,5 +130,18 @@ describe('the line gestures', () => {
     expect(lines.movingLabel.value).toBe(false)
     expect(stated(session)?.label).toBeDefined()
     expect(course(session)).toEqual(before)
+  })
+
+  it('nudge a picked label by the arrows, as one step, and only while the label is the one picked (02·5)', () => {
+    const { session, lines } = opened()
+    lines.pressLabel(event('pointerdown', 0, 0), 0)
+    pointer('pointerup', 0, 0)
+    expect(lines.labelPicked.value).toBe(true)
+    const steps = session.history.value.length
+    expect(lines.nudgeLabel(2, 0)).toBe(true)
+    expect(stated(session)?.label).toBeDefined()
+    expect(session.history.value.length).toBe(steps + 1)
+    lines.pressLine(event('pointerdown', 0, 0), 0)
+    expect(lines.nudgeLabel(2, 0)).toBe(false)
   })
 })

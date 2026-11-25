@@ -287,3 +287,47 @@ class TestALongPrintedValue:
             for word in now.words:
                 assert now.extent.left <= word.start.x and word.start.x + word.width <= now.extent.right, word
                 assert now.extent.top < word.start.y < now.extent.bottom, word
+
+
+def _texts(node: dict[str, object]) -> list[str]:
+    """Every text a drawing node and its children carry, as the geometry read hands them over."""
+    children = node.get("children")
+    own = [str(node["text"])] if node.get("text") else []
+    return own + [text for child in (children if isinstance(children, list) else []) for text in _texts(child)]
+
+
+class TestTheEditorArrangesTheReading:
+    """The picture an editor arranges carries the reader's lens (owner, 2026-11-25): what is printed, the
+    colouring and the legend are what edit mode shows, and the title and legend come with their places."""
+
+    def _geometry(self, scene: LaidOutScene, **lens: object) -> dict[str, object]:
+        answer = scene.client.get(f"/api/diagrams/{scene.stored.artifact_id}/layout/geometry", params=lens)
+        assert answer.status_code == 200, answer.text
+        return answer.json()
+
+    def test_the_printed_lines_are_in_the_picture_to_arrange(self, scene: LaidOutScene) -> None:
+        elements = {row["alias"]: row for row in self._geometry(scene, **_LENS)["elements"]}
+
+        for alias, label in _printed(scene).items():
+            assert " ".join(word["text"] for word in elements[alias]["words"]) == label
+
+    def test_the_lens_changes_no_element_s_identity_nor_the_stored_layout(self, scene: LaidOutScene) -> None:
+        plain, lensed = self._geometry(scene), self._geometry(scene, **_LENS)
+
+        assert {row["key"] for row in lensed["elements"]} == {row["key"] for row in plain["elements"]}
+        assert lensed["layout"] == plain["layout"]
+
+    def test_the_legend_comes_with_where_it_is_drawn_round_the_diagram(self, scene: LaidOutScene) -> None:
+        geometry = self._geometry(scene, **_LENS)
+        legend = [part for part in geometry["surround"] if "risk_score" in " ".join(_texts(part["drawing"]))]
+        assert legend, geometry["surround"]
+        extent = legend[0]["extent"]
+        for shape in (*geometry["elements"], *geometry["boxes"]):
+            drawn = shape["extent"]
+            apart = extent["left"] >= drawn["right"] or extent["right"] <= drawn["left"]
+            assert apart or extent["top"] >= drawn["bottom"] or extent["bottom"] <= drawn["top"], shape["alias"]
+
+    def test_without_a_lens_nothing_is_drawn_round_the_diagram_but_its_own_parts(self, scene: LaidOutScene) -> None:
+        surround = self._geometry(scene)["surround"]
+
+        assert not [part for part in surround if "risk_score" in " ".join(_texts(part["drawing"]))]

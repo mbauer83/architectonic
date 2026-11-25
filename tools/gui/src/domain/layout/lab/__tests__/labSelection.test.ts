@@ -21,6 +21,7 @@ const element = (alias: string, extent: Extent, inside?: string) =>
 /** A and B in box G; C and D outside it, D with E drawn inside it. */
 const geometry: LayoutGeometry = {
   artifact_id: 'ARC@1.a.test', name: 'Test', canvas: at(0, 0, 800, 400), backdrop: [],
+  surround: [],
   elements: [
     element('A', at(20, 40, 120, 80), 'G'), element('B', at(140, 50, 240, 90), 'G'),
     element('C', at(400, 40, 500, 70)), element('D', at(600, 100, 700, 200)), element('E', at(620, 140, 660, 180), 'D'),

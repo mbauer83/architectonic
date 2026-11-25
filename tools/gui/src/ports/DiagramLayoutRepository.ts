@@ -7,6 +7,7 @@ import type {
   LayoutGeometry,
 } from '../domain/schemas/diagramLayoutGeometry'
 import type { RepoError } from './repositoryErrors'
+import type { ReadingLens } from '../domain/readingLens'
 
 /** A shape resized on the canvas: PlantUML's drawing of it, where that was drawn, and where it goes. */
 export interface ShapeToDraw {
@@ -33,11 +34,14 @@ export interface DiagramLayoutRepository {
   readonly listDiagramElementTypes: (
     diagramType: string,
   ) => Effect.Effect<readonly { artifact_type: string; domain: string }[], RepoError>
+  /** The picture of an unsaved composition; under *lens*, drawn as the reader is reading it. */
   readonly previewLayoutGeometry: (
     diagramId: string,
     composition: GeometryComposition,
+    lens?: ReadingLens,
   ) => Effect.Effect<LayoutGeometry, RepoError>
-  readonly readLayoutGeometry: (diagramId: string) => Effect.Effect<LayoutGeometry, RepoError>
+  /** The picture a diagram is arranged on; under *lens*, drawn as the reader is reading it (owner, 11-25). */
+  readonly readLayoutGeometry: (diagramId: string, lens?: ReadingLens) => Effect.Effect<LayoutGeometry, RepoError>
   readonly drawResizedShapes: (
     diagramId: string,
     shapes: readonly ShapeToDraw[],

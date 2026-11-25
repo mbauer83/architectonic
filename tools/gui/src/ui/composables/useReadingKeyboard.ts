@@ -1,38 +1,13 @@
 import { watch, type Ref } from 'vue'
-import { centreOf, type Extent } from '../../domain/layout/geometry'
+import type { Extent } from '../../domain/layout/geometry'
+import { ARROW_DIRECTIONS, inReadingOrder, nearestTowards } from '../../domain/layout/keyboardReach'
 import { pictureExtentOf } from '../lib/svgExtent'
 
-/** One element as the keyboard reaches it: where it is drawn and how it is announced. */
+/** One element as the keyboard reaches it: where it is drawn, its drawing, and how it is announced. */
 interface Stop {
   readonly id: string
   readonly element: SVGGraphicsElement
   readonly box: Extent
-}
-
-/** Top to bottom, then left to right; shapes whose tops are within a few units share a row. */
-const ROW = 8
-const readingOrder = (one: Stop, other: Stop): number =>
-  Math.abs(one.box.top - other.box.top) > ROW ? one.box.top - other.box.top : one.box.left - other.box.left
-
-const DIRECTIONS: Readonly<Record<string, { x: number; y: number }>> = {
-  ArrowRight: { x: 1, y: 0 }, ArrowLeft: { x: -1, y: 0 }, ArrowDown: { x: 0, y: 1 }, ArrowUp: { x: 0, y: -1 },
-}
-
-/** The nearest stop from *from* in a direction: ahead of it, weighing sideways distance double. */
-const nearest = (from: Stop, stops: readonly Stop[], direction: { x: number; y: number }): Stop | null => {
-  const here = centreOf(from.box)
-  let best: Stop | null = null
-  let bestScore = Number.POSITIVE_INFINITY
-  for (const stop of stops) {
-    if (stop === from) continue
-    const there = centreOf(stop.box)
-    const ahead = (there.x - here.x) * direction.x + (there.y - here.y) * direction.y
-    if (ahead <= 0) continue
-    const aside = Math.abs((there.x - here.x) * direction.y + (there.y - here.y) * direction.x)
-    const score = ahead + 2 * aside
-    if (score < bestScore) { best = stop; bestScore = score }
-  }
-  return best
 }
 
 /**
@@ -62,7 +37,7 @@ export function useReadingKeyboard(options: {
       const element = elements.find((one): one is SVGGraphicsElement => one instanceof SVGGraphicsElement)
       const box = element ? pictureExtentOf(element) : null
       return element && box ? [{ id, element, box }] : []
-    }).sort(readingOrder)
+    }).sort((one, other) => inReadingOrder(one.box, other.box))
     stops.forEach((stop, index) => {
       const about = options.describe(stop.id)
       stop.element.setAttribute('tabindex', '-1')
@@ -87,10 +62,10 @@ export function useReadingKeyboard(options: {
   const onKeydown = (event: KeyboardEvent) => {
     if (!options.enabled.value || event.ctrlKey || event.metaKey || event.altKey) return
     const at = focused()
-    const direction = DIRECTIONS[event.key]
+    const direction = ARROW_DIRECTIONS[event.key]
     if (direction) {
       event.preventDefault()
-      focusStop(at ? nearest(at, stops, direction) : stops[0])
+      focusStop(at ? nearestTowards(at.box, stops.filter((stop) => stop !== at), direction) : stops[0])
     } else if (event.key === 'Enter') {
       event.preventDefault()
       if (at) options.select(at.id, event.shiftKey)
