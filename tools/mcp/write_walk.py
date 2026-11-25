@@ -611,7 +611,16 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     WriteCall(
         "analysis_start",
         lambda _c: {"title": "MCP Walk Stress Analysis", "naive": {"name": "Walk naive architecture"}},
-        captures=(Capture("analysis", _answer_field("document")),),
+        captures=(
+            Capture("analysis", _answer_field("document")),
+            Capture("naive", _answer_field("naive_candidate", "record", "id")),
+        ),
+    ),
+    WriteCall(
+        # The walk's candidate and the naive architecture both stand on the model, and claim nothing in common.
+        "change_set_integrate",
+        lambda c: {"candidates": [c.created["candidate"], c.created["naive"]], "name": "MCP Walk Integration",
+                   "dry_run": False},
     ),
     WriteCall(
         # Three design stressors, the fewest a third can be held out of.

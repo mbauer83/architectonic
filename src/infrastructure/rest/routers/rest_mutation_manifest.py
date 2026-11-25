@@ -74,6 +74,7 @@ _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "changes_apply_candidate",
     "changes_delete_candidate",
     "changes_edit_candidate",
+    "changes_integrate_candidates",
     "changes_rebase_candidate",
     "changes_save_candidate_diagram",
     "changes_record_operation",

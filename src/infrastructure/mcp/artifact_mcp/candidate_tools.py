@@ -13,10 +13,11 @@ from pydantic import Field
 
 from src.application.artifacts.document_part_edits import TableRowEdits
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
-from src.infrastructure.candidate_wire import CandidateHeader, CandidatePatch, RecordedEdit
+from src.infrastructure.candidate_wire import CandidateHeader, CandidatePatch, IntegrationResolution, RecordedEdit
 from src.infrastructure.candidates import analysis_reads, evaluation
 from src.infrastructure.candidates.analysis_start import document_writer, start_analysis
 from src.infrastructure.candidates.diagram_save import diagram_writer, save_as_diagram
+from src.infrastructure.candidates.integrate import integrate_candidates
 from src.infrastructure.candidates.service import CandidateService
 from src.infrastructure.mcp.artifact_mcp import candidate_tool_descriptions as said
 from src.infrastructure.mcp.artifact_mcp.context import (
@@ -126,6 +127,22 @@ def change_set_apply(artifact_id: CandidateId, dry_run: bool = True, repo_root: 
     return _service(repo_root).apply(artifact_id, dry_run=dry_run)
 
 
+def change_set_integrate(
+    candidates: Annotated[list[str], Field(min_length=2, description="Distinct candidate ids on one parent.")],
+    name: Annotated[str, Field(min_length=1, description="The integration's name.")],
+    rationale: str = "",
+    resolutions: Annotated[
+        list[IntegrationResolution] | None, Field(description="How each conflict is settled, in order."),
+    ] = None,
+    dry_run: bool = True,
+    repo_root: RepoRoot = None,
+) -> dict[str, Any]:
+    return integrate_candidates(
+        _service(repo_root), candidates, name=name, rationale=rationale,
+        resolutions=[one.model_dump() for one in resolutions or []], dry_run=dry_run,
+    )
+
+
 def change_set_save_diagram(
     artifact_id: CandidateId,
     based_on: BasedOn,
@@ -227,6 +244,7 @@ _WRITE_TOOLS = (
     (change_set_rebase, said.CHANGE_SET_REBASE, DESTRUCTIVE_LOCAL_WRITE),
     (change_set_apply, said.CHANGE_SET_APPLY, DESTRUCTIVE_LOCAL_WRITE),
     (change_set_save_diagram, said.CHANGE_SET_SAVE_DIAGRAM, LOCAL_WRITE),
+    (change_set_integrate, said.CHANGE_SET_INTEGRATE, LOCAL_WRITE),
     (change_set_delete, said.CHANGE_SET_DELETE, DESTRUCTIVE_LOCAL_WRITE),
     (analysis_start, said.ANALYSIS_START, LOCAL_WRITE),
     (analysis_hold_out_test_set, said.ANALYSIS_HOLD_OUT, DESTRUCTIVE_LOCAL_WRITE),

@@ -46,6 +46,7 @@ current version.
 | Draw a scope no stored diagram draws, as a generated view | — | `POST /api/scope-drawings` |
 | Save the generated view a candidate is drawn on as a diagram | `change_set_save_diagram` | `POST /api/change-sets/{id}/save-as-diagram` |
 | Check candidates for conflicting claims | `change_set_check` | `POST /api/change-set-checks` |
+| Integrate candidates into a new one, resolving conflicts | `change_set_integrate` | `POST /api/change-set-integrations` |
 | Re-base drifted operations | `change_set_rebase` | `POST /api/change-sets/{id}/rebase` |
 | Apply to the model | `change_set_apply` | `POST /api/change-sets/{id}/apply` |
 | Delete | `change_set_delete` | `DELETE /api/change-sets/{id}` |
@@ -85,6 +86,33 @@ it is now, keeping the value it asks for.
 It is refused while an operation conflicts or has drifted, or while a candidate beneath it is not
 integrated. Operations already in the model are skipped. A dry run, the default, answers what would be
 written and the refusal, if any.
+
+### Integrating
+
+`change_set_integrate` makes a new draft candidate that holds the operations of two or more drafts or
+offered candidates. The candidates stack on the same candidate, or all on the model, and the new one
+stacks there too. Operations that ask for the same thing are kept once.
+
+Where the candidates disagree, a dry run (the default) lists each conflict with its `kind`, `subject`,
+parties and the actions it permits:
+
+| Action | Effect |
+|---|---|
+| `take` | Keeps the operation of the named `party` and drops the other parties' operations on that subject. |
+| `drop` | Drops the operation of the named `party`. Where two remaining parties still disagree, the conflict stays. |
+| `merge` | Writes `value` in place of the parties' values. Offered where every party sets the same field. |
+
+Resolutions are applied in the order given, each to the conflicts that remain after the ones before.
+A resolution that names no remaining conflict is refused. An integration is written only when no
+conflict remains. The chosen candidates are left as they are, and nothing reaches the model until the
+integration is applied.
+
+```json
+{"candidates": ["CAND@1795540000.aaaaaa", "CAND@1795540000.bbbbbb"], "name": "Integration",
+ "resolutions": [{"kind": "same-key", "subject": "name of SRV@1712870400.Uv9Wx9",
+                  "action": "take", "party": "CAND@1795540000.bbbbbb"}],
+ "dry_run": false}
+```
 
 ### Deleting
 

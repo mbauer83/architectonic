@@ -27,6 +27,8 @@ CANDIDATE_ROWS = (
              identity_parameters=("artifact_id",), cache_directive="no-cache"),
     RouteRow("POST", "/api/change-set-checks", "collection", "changes_check_candidates", TYPED,
              cache_directive="no-cache"),
+    RouteRow("POST", "/api/change-set-integrations", "collection", "changes_integrate_candidates", TYPED,
+             mutation_domain="repository"),
     # A scope drawn as a generated view before a candidate holds it: PlantUML runs, hence `derived-graph`.
     RouteRow("POST", "/api/scope-drawings", "collection", "changes_draw_scope", TYPED,
              cache_directive="no-store", timeout_class="derived-graph"),

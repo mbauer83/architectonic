@@ -1,7 +1,7 @@
 """Candidate architecture records, scoped comparisons and stress-analysis projections."""
 from pydantic import Field, JsonValue, model_serializer
 
-from src.infrastructure.candidate_wire import CandidateHeader, CandidatePatch, RecordedEdit
+from src.infrastructure.candidate_wire import CandidateHeader, CandidatePatch, IntegrationResolution, RecordedEdit
 from src.infrastructure.rest.contracts.diagram_layout_editing import DiagramLayoutGeometryResponse
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 from src.infrastructure.rest.contracts.wire_shape import Closed
@@ -261,3 +261,28 @@ class CandidateDiagramSaved(NullsOmitted):
     entities: int = Field(description="How many of the model's entities the diagram draws.")
     relations: int = Field(description="How many relations among them it draws.")
     version: str | None = Field(None, description="The candidate's version once it names the diagram.")
+
+
+class CandidateIntegrate(Closed):
+    """Candidates to integrate into a new draft, and how each conflict between them is settled."""
+
+    candidates: list[str] = Field(min_length=2, description="Distinct drafts or offered candidates on one parent.")
+    name: str = Field(min_length=1, description="The integration's name.")
+    rationale: str = ""
+    resolutions: list[IntegrationResolution] = Field(default_factory=list)
+    dry_run: bool = True
+
+
+class IntegrationConflict(NullsOmitted):
+    kind: str
+    subject: str
+    parties: list[OverlapParty]
+    actions: list[str] = Field(description="What this conflict permits: take, drop, and merge where a value is set.")
+
+
+class CandidateIntegration(NullsOmitted):
+    candidates: list[str]
+    dry_run: bool
+    operations: int = Field(description="How many operations the integration holds, or would once settled.")
+    conflicts: list[IntegrationConflict] = Field(description="The conflicts still standing after the resolutions.")
+    integration: CandidateResponse | None = Field(None, description="The new candidate, once written.")

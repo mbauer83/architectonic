@@ -8,6 +8,7 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.candidates import analysis_reads
 from src.infrastructure.candidates.analysis_start import document_writer, start_analysis
 from src.infrastructure.candidates.diagram_save import diagram_writer, save_as_diagram
+from src.infrastructure.candidates.integrate import integrate_candidates
 from src.infrastructure.rest.contracts.candidates import (
     AnalysisIncidence,
     AnalysisProgress,
@@ -21,6 +22,8 @@ from src.infrastructure.rest.contracts.candidates import (
     CandidateDiagramSave,
     CandidateDiagramSaved,
     CandidateEdit,
+    CandidateIntegrate,
+    CandidateIntegration,
     CandidateList,
     CandidateOperations,
     CandidateRebase,
@@ -297,6 +300,29 @@ def changes_read_standing(artifact_id: str) -> dict[str, Any]:
 def changes_check_candidates(body: CandidateSelection) -> dict[str, Any]:
     with refusals():
         return service().check(body.candidates)
+
+
+@router.post(
+    "/api/change-set-integrations",
+    operation_id="changes_integrate_candidates",
+    tags=[TAG_CHANGES],
+    summary="Integrate candidates into a new one, resolving their conflicts",
+    response_model=CandidateIntegration,
+    response_model_exclude_none=True,
+    responses=WRITE_RESPONSES,
+)
+def changes_integrate_candidates(body: CandidateIntegrate) -> dict[str, Any]:
+    """A new draft on the parent the candidates share, holding every operation of each, converging ones once.
+    Each conflict between them is settled by a resolution, applied in order: take one party's side, drop one
+    party's operation, or merge a value where each party sets one field. A dry run answers the conflicts still
+    standing with the actions each permits; integrating while one stands is refused (409). Nothing is written to
+    the model."""
+    with refusals():
+        return s.authorized_write(
+            "changes_integrate_candidates", integrate_candidates, service(), body.candidates, name=body.name,
+            rationale=body.rationale, resolutions=[one.model_dump() for one in body.resolutions],
+            dry_run=body.dry_run,
+        )
 
 
 @router.get(
