@@ -364,6 +364,20 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
             "dry_run": False,
         },
     ),
+    WriteCall(
+        # The canvas save: the walk's diagram saved whole, with an element edit in the same write.
+        "artifact_replace_diagram",
+        lambda c: {
+            "artifact_id": c.created["diagram"],
+            "replacement": {
+                "diagram_type": "archimate-application", "name": "MCP Walk Application View (edited)",
+                "entity_ids": [c.created["entity"], c.fixture_entity], "connection_ids": [],
+                "commands": [{"op": "model.element.edit", "artifact_id": c.created["entity"],
+                              "summary": "Saved with its diagram."}],
+                "dry_run": False,
+            },
+        },
+    ),
     # A grouping intent regenerates the body for the new groupings, in the same write as the layout.
     WriteCall(
         "artifact_arrange_diagram",

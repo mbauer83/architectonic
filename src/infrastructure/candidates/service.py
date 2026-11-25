@@ -368,7 +368,7 @@ def _with_minted_id(edit: Mapping[str, Any]) -> Mapping[str, Any]:
     """*edit*, or for a create that names no id, the create with one minted as the write path mints one."""
     if edit.get("op") != "create_entity" or edit.get("artifact_id"):
         return edit
-    fields = edit.get("fields") or {}
+    fields: Mapping[str, Any] = edit.get("fields") or {}
     info = get_module_registry().find_entity_type(EntityTypeName(str(fields.get("artifact_type") or "")))
     if info is None:
         raise ValueError(

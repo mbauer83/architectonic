@@ -65,7 +65,7 @@ a base. Several edits are recorded in one call, in order, and either all of them
 ]}
 ```
 
-- A create without `artifact_id` is given one, minted from its type and name, and the answer shows it.
+- A create that names no id is given one, minted from its type and name, and the answer shows it.
   Later edits name the new entity by that id.
 - An edit of a field replaces an earlier edit of the same field. An edit back to the value beneath
   removes the operation.

@@ -174,11 +174,12 @@ def canvas_save(
                             dry_run=False, **command.stated(),
                         ))
                         continue
-                    created = {"description": "", "src_multiplicity": "", "tgt_multiplicity": ""} | command.stated()
                     require(add_connection(
                         repo_root=staged, registry=registry, verifier=verifier, clear_repo_caches=touched.add,
                         source_entity=source, connection_type=kind, target_entity=target,
-                        version="0.1.0", status="draft", last_updated=None, dry_run=False, **created,
+                        description=command.description or "", src_multiplicity=command.src_multiplicity or "",
+                        tgt_multiplicity=command.tgt_multiplicity or "",
+                        version="0.1.0", status="draft", last_updated=None, dry_run=False,
                     ))
         repo, _, verifier = context()
         diagram = save_diagram(staged, repo, verifier, touched.add, False)
