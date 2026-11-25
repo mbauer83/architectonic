@@ -11,7 +11,7 @@ import { computed, ref, shallowRef } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type { CandidateIntegration, IntegrationConflict, Resolution } from '../../domain/schemas/candidates'
-import { type DecisionOption, decisionDraft } from '../../domain/candidates/integration'
+import { type DecisionOption, type NameOf, decisionDraft } from '../../domain/candidates/integration'
 import { formatEffectError } from '../lib/errors'
 
 export type IntegrationAccess = Pick<ModelService, 'integrateCandidates' | 'createDocument'>
@@ -20,6 +20,8 @@ export function useIntegration(svc: IntegrationAccess, onIntegrated: (id: string
   const chosen = ref<readonly string[]>([])
   const name = ref('Integration')
   const resolutions = shallowRef<readonly Resolution[]>([])
+  /** What each resolution was about, in words, as it was made. */
+  const abouts = shallowRef<readonly string[]>([])
   const answer = shallowRef<CandidateIntegration | null>(null)
   const busy = ref(false)
   const error = ref<string | null>(null)
@@ -47,24 +49,28 @@ export function useIntegration(svc: IntegrationAccess, onIntegrated: (id: string
     answer.value = chosen.value.length > 1 ? await ask(true) : null
   }
 
-  /** *resolution* made after the others; refused (and not kept) where the server refuses it. */
-  const resolve = async (resolution: Resolution): Promise<void> => {
+  /** *resolution*, about what *about* says, made after the others; not kept where the server refuses it. */
+  const resolve = async (resolution: Resolution, about = resolution.subject): Promise<void> => {
     const before = resolutions.value
     resolutions.value = [...before, resolution]
     const read = await ask(true)
-    if (read) answer.value = read
-    else resolutions.value = before
+    if (read) {
+      answer.value = read
+      abouts.value = [...abouts.value.slice(0, before.length), about]
+    } else resolutions.value = before
   }
 
   /** The resolution at *index* taken back, with every one made after it, which was made over it. */
   const takeBack = async (index: number): Promise<void> => {
     resolutions.value = resolutions.value.slice(0, index)
+    abouts.value = abouts.value.slice(0, index)
     await check()
   }
 
   const choose = async (ids: readonly string[]): Promise<void> => {
     chosen.value = ids
     resolutions.value = []
+    abouts.value = []
     await check()
   }
 
@@ -75,13 +81,16 @@ export function useIntegration(svc: IntegrationAccess, onIntegrated: (id: string
     const id = written?.integration?.record.id
     if (typeof id !== 'string') return
     resolutions.value = []
+    abouts.value = []
     answer.value = null
     onIntegrated(id)
   }
 
   /** A draft ADR about *conflict*, its options what each party proposes; the conflict stays open. */
-  const raiseDecision = async (conflict: IntegrationConflict, options: readonly DecisionOption[]) => {
-    const { title, body } = decisionDraft(conflict, options)
+  const raiseDecision = async (
+    conflict: IntegrationConflict, options: readonly DecisionOption[], nameOf: NameOf,
+  ) => {
+    const { title, body } = decisionDraft(conflict, options, nameOf)
     try {
       const written = await Effect.runPromise(svc.createDocument({
         doc_type: 'adr', title, body, status: 'draft', dry_run: false,
@@ -93,7 +102,7 @@ export function useIntegration(svc: IntegrationAccess, onIntegrated: (id: string
   }
 
   return {
-    chosen, name, resolutions, answer, busy, error, decisions, ready,
+    chosen, name, resolutions, abouts, answer, busy, error, decisions, ready,
     check, choose, resolve, takeBack, integrate, raiseDecision,
   }
 }

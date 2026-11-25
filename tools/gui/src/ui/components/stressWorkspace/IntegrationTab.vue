@@ -12,7 +12,8 @@ import { computed, inject, reactive, watch } from 'vue'
 import type { WorkspaceTab } from '../../../domain/stressAnalysis/analysisProgress'
 import type { IntegrationConflict } from '../../../domain/schemas/candidates'
 import {
-  answerLinks, conflictTitle, mergedResolution, partyResolution, permits, proposal, resolutionWords,
+  answerLinks, conflictSubject, conflictTitle, mergedResolution, partyResolution, permits, proposal,
+  resolutionWords,
 } from '../../../domain/candidates/integration'
 import { endStateName } from '../../../domain/stressAnalysis/analysisRows'
 import { modelServiceKey, toastKey } from '../../keys'
@@ -45,9 +46,12 @@ const toggle = (id: string, on: boolean) => {
   void integration.choose(on ? [...now, id] : now)
 }
 const raise = (conflict: IntegrationConflict) => integration.raiseDecision(conflict, conflict.parties.map((party) => ({
-  name: nameOfSet(party.set_id), proposes: proposal(party.operation),
+  name: nameOfSet(party.set_id), proposes: proposal(party.operation, nameOf),
   answers: linksOf(party.set_id).endStates.map((row) => endStateName(props.analysis.endStates.value, row)),
-})))
+})), nameOf)
+/** An element by the name the naive architecture gives it. */
+const nameOf = (id: string): string => props.analysis.nameOf(id)
+const about = (conflict: IntegrationConflict): string => conflictSubject(conflict, nameOf)
 
 // Those offered for integration are chosen when the adaptations are first read; the author may change it.
 watch(() => integrable.value.map((one) => one.id).join(' '), () => {
@@ -97,7 +101,7 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
         v-for="(one, index) in integration.resolutions.value"
         :key="index"
       >
-        {{ resolutionWords(one, nameOfSet) }}
+        {{ resolutionWords(one, nameOfSet, integration.abouts.value[index] ?? one.subject) }}
         <button
           type="button"
           class="btn btn-sm"
@@ -113,7 +117,7 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
       class="conf card"
       data-testid="integration-conflict"
     >
-      <h4>{{ conflictTitle(conflict) }}</h4>
+      <h4>{{ conflictTitle(conflict, nameOf) }}</h4>
       <div class="sides">
         <div
           v-for="party in conflict.parties"
@@ -121,29 +125,29 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
           class="side"
         >
           <b>{{ nameOfSet(party.set_id) }}</b>
-          <span>{{ proposal(party.operation) }}</span>
+          <span>{{ proposal(party.operation, nameOf) }}</span>
           <small class="links">
             <template
               v-for="row in linksOf(party.set_id).adaptations"
               :key="`a${row}`"
-            ><a
+            >adaptation <a
               href="#"
               @click.prevent="emit('open', 'adaptations', row)"
-            >{{ row }}</a> </template>
+            >{{ row }}</a> · </template>
             <template
               v-for="row in linksOf(party.set_id).endStates"
               :key="`e${row}`"
-            ><a
+            >answers <a
               href="#"
               @click.prevent="emit('open', 'end-states', row)"
-            >{{ endStateName(analysis.endStates.value, row) }}</a> </template>
+            >{{ endStateName(analysis.endStates.value, row) }}</a> · </template>
             <template
               v-for="row in linksOf(party.set_id).stressors"
               :key="`s${row}`"
             ><a
               href="#"
               @click.prevent="emit('open', 'stressors', row)"
-            >{{ row }}</a> </template>
+            >{{ row }}</a>{{ ' ' }}</template>
           </small>
           <span class="acts">
             <button
@@ -151,14 +155,14 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
               class="btn btn-sm"
               data-testid="take-side"
               :disabled="integration.busy.value"
-              @click="integration.resolve(partyResolution(conflict, 'take', party.set_id))"
+              @click="integration.resolve(partyResolution(conflict, 'take', party.set_id), about(conflict))"
             >Take this side</button>
             <button
               type="button"
               class="btn btn-sm"
               data-testid="drop-change"
               :disabled="integration.busy.value"
-              @click="integration.resolve(partyResolution(conflict, 'drop', party.set_id))"
+              @click="integration.resolve(partyResolution(conflict, 'drop', party.set_id), about(conflict))"
             >Drop this change</button>
           </span>
         </div>
@@ -166,7 +170,7 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
       <form
         v-if="permits(conflict, 'merge')"
         class="merge"
-        @submit.prevent="integration.resolve(mergedResolution(conflict, merged[conflict.subject] ?? ''))"
+        @submit.prevent="integration.resolve(mergedResolution(conflict, merged[conflict.subject] ?? ''), about(conflict))"
       >
         <label>Merged value <input
           v-model="merged[conflict.subject]"

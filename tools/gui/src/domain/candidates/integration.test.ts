@@ -20,8 +20,9 @@ const row = (id: string, values: Record<string, string | readonly string[]>): Do
 
 describe('a conflict between candidates being integrated', () => {
   it('says what it is about and what each party proposes', () => {
-    expect(conflictTitle(conflict)).toBe('Both change name of SRV@1.svc')
-    expect(proposal(conflict.parties[0].operation)).toBe('Set name of SRV@1.svc to “Queue”')
+    const nameOf = (id: string) => (id === 'SRV@1.svc' ? 'Promotion Service' : id)
+    expect(conflictTitle(conflict, nameOf)).toBe('Both change the name of Promotion Service')
+    expect(proposal(conflict.parties[0].operation, nameOf)).toBe('Set name of Promotion Service to “Queue”')
     expect(permits(conflict, 'merge')).toBe(true)
   })
 
@@ -30,8 +31,8 @@ describe('a conflict between candidates being integrated', () => {
       .toEqual({ kind: 'same-key', subject: 'name of SRV@1.svc', action: 'take', party: 'CAND@1.gate' })
     expect(mergedResolution(conflict, 'Queue Gate'))
       .toEqual({ kind: 'same-key', subject: 'name of SRV@1.svc', action: 'merge', value: 'Queue Gate' })
-    expect(resolutionWords(partyResolution(conflict, 'drop', 'CAND@1.gate'), () => 'Gate'))
-      .toBe("Dropped Gate's change to name of SRV@1.svc")
+    expect(resolutionWords(partyResolution(conflict, 'drop', 'CAND@1.gate'), () => 'Gate', 'the name of Service'))
+      .toBe('Dropped the change of Gate to the name of Service')
   })
 
   it('links a party to its adaptation row, the end states it answers and their stressors', () => {
@@ -46,9 +47,9 @@ describe('a conflict between candidates being integrated', () => {
     const draft = decisionDraft(conflict, [
       { name: 'Queues', proposes: 'Set name to “Queue”', answers: ['Promotions stall'] },
       { name: 'Gate', proposes: 'Set name to “Gate”', answers: [] },
-    ])
+    ], (id) => (id === 'SRV@1.svc' ? 'Promotion Service' : id))
 
-    expect(draft.title).toBe('Decide: name of SRV@1.svc')
+    expect(draft.title).toBe('Decide the name of Promotion Service')
     expect(draft.body).toContain('## Context')
     expect(draft.body).toContain('- **Queues**: Set name to “Queue” (answers Promotions stall)')
     expect(draft.body).toContain('To be decided.')
