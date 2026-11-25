@@ -74,11 +74,19 @@ beforeEach(() => {
 })
 
 describe('the changes a session would save', () => {
-  it('starts with none, and a first move takes the picture over and moves one element', async () => {
+  it('starts with none, and a first move counts the element moved, not the takeover as a change of its own',
+    async () => {
+      const editing = await opened()
+      expect(editing.changes.value).toEqual([])
+      move(editing, 'C', 30)
+      expect(editing.changes.value.map((change) => change.key)).toEqual(['C'])
+    })
+
+  it('counts a line shaped by hand as a change of its own, even as the first step', async () => {
     const editing = await opened()
-    expect(editing.changes.value).toEqual([])
-    move(editing, 'C', 30)
-    expect(editing.changes.value.map((change) => change.key)).toEqual(['by-hand', 'C'])
+    editing.session.change((_drawn, now) => ({ ...now, routes: new Map(now.routes).set('r', { via: [[260, 120]] }) }))
+    expect(editing.changes.value).toEqual([{ key: 'line:0', text: 'Arranged: the line A → C' }])
+    expect(editing.undoStep.value).toBe('Arranged: the line A → C')
   })
 
   it('follows undo and redo, and returning to automatic leaves nothing to save', async () => {
@@ -87,7 +95,7 @@ describe('the changes a session would save', () => {
     editing.session.undo()
     expect(editing.changes.value).toEqual([])
     editing.session.redo()
-    expect(editing.changes.value).toHaveLength(2)
+    expect(editing.changes.value).toHaveLength(1)
     editing.returnToAutomatic()
     expect(editing.changes.value).toEqual([])
   })
@@ -107,6 +115,27 @@ describe('the changes a session would save', () => {
     editing.discard()
     expect(editing.changes.value).toEqual([])
     expect(editing.session.state.value?.byHand).toBe(false)
+  })
+})
+
+describe('the step Undo and Redo would take', () => {
+  it('is named by what it arranged, and nothing is named where there is no step', async () => {
+    const editing = await opened()
+    expect(editing.undoStep.value).toBeNull()
+    move(editing, 'C', 30)
+    expect(editing.undoStep.value).toBe('Arranged: C')
+    editing.session.undo()
+    expect(editing.undoStep.value).toBeNull()
+    expect(editing.redoStep.value).toBe('Arranged: C')
+  })
+
+  it('names returning to automatic, and a removal says the element stays in the model', async () => {
+    const editing = await opened()
+    move(editing, 'C', 30)
+    editing.returnToAutomatic()
+    expect(editing.undoStep.value).toBe('Return to automatic layout')
+    editing.remove(['A'])
+    expect(editing.undoStep.value).toBe('Removed from the diagram: A — it stays in the model')
   })
 })
 

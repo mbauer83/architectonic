@@ -5,6 +5,7 @@
  */
 import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
 import type { ArchimateOccurrence } from '../archimateOccurrences'
+import { connectionParts } from '../artifactId'
 
 /** One row of what Save would write, in the product's words. */
 export interface PendingChange {
@@ -29,13 +30,19 @@ export const contentChanges = (
   now: Content, drawnBefore: ReadonlySet<string>, named: (alias: string) => string,
   instanceNamed: (key: string) => string, boxNamed: (grouping: string) => string,
 ): readonly PendingChange[] => {
+  /** A relation by its ends' names and its type, read source to target; its id where it is no relation id. */
+  const relationNamed = (id: string): string => {
+    const parts = connectionParts(id)
+    return parts
+      ? `${instanceNamed(parts.source)} — ${parts.type.replace(/-/g, ' ')} → ${instanceNamed(parts.target)}` : id
+  }
   const model = (now.commands ?? []).map((c) => ({
     key: `${c.op}:${c.artifact_id}`, model: true,
     text: c.op === 'model.element.create' ? `Create element: ${c.name}`
       : c.op === 'model.element.rename' ? `Rename element: ${c.name}`
-        : c.op === 'model.element.delete' ? `Delete from model: ${c.artifact_id}`
+        : c.op === 'model.element.delete' ? `Delete from model: ${instanceNamed(c.artifact_id)}`
           : c.op === 'model.element.edit' ? `Edit details: ${instanceNamed(c.artifact_id)}`
-            : `${c.op === 'model.relation.edit' ? 'Edit' : 'Create'} relationship: ${c.artifact_id}`,
+            : `${c.op === 'model.relation.edit' ? 'Edit' : 'Create'} relationship: ${relationNamed(c.artifact_id)}`,
   }))
   const added = [
     ...[...now.additions ?? []].map(([id, name]) => ({ key: id, text: `Added to diagram: ${name}` })),

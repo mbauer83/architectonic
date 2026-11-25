@@ -3,26 +3,26 @@
  * picture the diagram is arranged on, read against what the diagram last stored.
  *
  * Nothing persists until Save, and what Save would write is read off the state, never counted: the
- * arrangement now against the one last saved (`arrangedUnits`). So returning to automatic leaves no
+ * arrangement now against the one last saved (`useSessionChanges`). So returning to automatic leaves no
  * arranging change, a move undone leaves none, and the count follows Undo and Redo (owner, F3).
  *
  * Taking a picture over writes it down as a first layout is: PlantUML's arrangement with its narrow
  * gaps widened (`widenedArrangement`), the same rule the server's first layout applies.
  */
-import { computed, ref, shallowRef } from 'vue'
+import { ref, shallowRef } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type { ArrangedLayout, StoredLayout } from '../../domain/layout/arrangementLayout'
 import {
-  arrangedBy, arrangedUnits, layoutOf, layoutPatchBetween, patchIsEmpty, shownRoutesOfMoved,
+  arrangedBy, layoutOf, layoutPatchBetween, patchIsEmpty, shownRoutesOfMoved,
 } from '../../domain/layout/arrangementLayout'
-import type { Arrangement } from '../../domain/layout/lab/labArrangement'
 import { drawnArrangement, placedAt } from '../../domain/layout/lab/labArrangement'
 import type { Point } from '../../domain/layout/geometry'
 import { occurrenceItems } from '../../domain/archimateOccurrences'
-import { type PendingChange, contentChanges } from '../../domain/layout/sessionChanges'
+import type { PendingChange } from '../../domain/layout/sessionChanges'
 import { addOccurrenceFor } from '../lib/archimateOccurrences'
 import { widenedArrangement } from '../../domain/layout/lab/labRouting'
+import { referenceOf, useSessionChanges } from './useSessionChanges'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { membershipOf } from '../../domain/layout/diagramMembership'
 import { composeCanvas, withCommand, withoutDraft } from '../../domain/layout/canvasComposition'
@@ -89,42 +89,7 @@ export function useDiagramEditing(
     }
   }
 
-  const nameOf = (alias: string): string => {
-    const geometry = session.drawnPicture.value
-    return geometry?.elements.find((one) => one.alias === alias)?.label
-      ?? geometry?.boxes.find((one) => one.alias === alias)?.label ?? alias
-  }
-  /** The alias the picture draws the entity *id* under; the id itself where it draws none. */
-  const aliasOf = (id: string): string =>
-    session.drawnPicture.value?.elements.find((one) => one.key === stableEntityId(id))?.alias ?? id
-  /** What Save would write, read off the state against the last save. */
-  const changes = computed((): readonly PendingChange[] => {
-    const geometry = session.geometry.value
-    const now = session.state.value
-    const before = saved.value
-    if (!geometry || !now || !before) return []
-    const content = contentChanges(
-      now, new Set(before.picture?.elements.map((e) => e.alias)), nameOf, (key) => nameOf(aliasOf(key)),
-      (grouping) => geometry.boxes.find((one) => one.key === grouping)?.label ?? grouping,
-    )
-    if (!now.byHand) {
-      return [...(before.byHand ? [{ key: 'automatic', text: 'Returned to automatic layout' }] : []), ...content]
-    }
-    const reference = referenceOf(geometry, before, now)
-    const takenOver: PendingChange[] = before.byHand ? []
-      : [{ key: 'by-hand', text: 'Arranged by hand: new elements will be placed beside their neighbours' }]
-    return [
-      ...content,
-      ...takenOver,
-      ...arrangedUnits(geometry, reference, now.arrangement).map((alias) => ({
-        key: alias, text: `Arranged: ${nameOf(alias)}`,
-      })),
-    ]
-  })
-
-  /** What the session's arranging is counted against: the last save, or the picture it took over. */
-  const referenceOf = (geometry: LayoutGeometry, before: ArrangementState, now: ArrangementState): Arrangement =>
-    before.byHand ? before.arrangement : (now.takenOver ?? widenedArrangement(geometry, before.arrangement))
+  const { changes, undoStep, redoStep } = useSessionChanges(session, saved)
 
   const wanted = (): ArrangedLayout | null => {
     const geometry = session.geometry.value
@@ -362,8 +327,8 @@ export function useDiagramEditing(
     session.change((geometry, now, where) => restacked(geometry, now, where, aliases, how))
 
   return {
-    add, propose, session, changes, loading, saving, error, open, save, discard, returnToAutomatic, remove, restack,
-    nest, addOccurrence, discardDraft,
+    add, propose, session, changes, undoStep, redoStep, loading, saving, error, open, save, discard, returnToAutomatic,
+    remove, restack, nest, addOccurrence, discardDraft,
   }
 }
 

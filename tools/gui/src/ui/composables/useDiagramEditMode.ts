@@ -26,6 +26,7 @@ import { useDiagramEditing } from './useDiagramEditing'
 import { type EditKey, editKeyOf } from './editModeKeys'
 import { useEditingPreferences } from './useEditingPreferences'
 import { useSurroundPlacement } from './useSurroundPlacement'
+import type { ShowToast } from '../keys'
 
 /** How far the arrows nudge a picked label: two pixels, or one with Shift (02·5). */
 const LABEL_STEP = 2
@@ -58,8 +59,6 @@ export interface EditWindow {
   readonly panBy: (across: number, down: number) => void
 }
 
-type Toast = (message: string, type?: 'info' | 'warn' | 'error', durationMs?: number) => void
-
 const isTyping = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement
   && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
@@ -79,7 +78,7 @@ export function useDiagramEditMode(
     lens?: () => ReadingLens
   },
   onLeft: () => void,
-  toast: Toast,
+  toast: ShowToast,
 ) {
   const editing = useDiagramEditing(svc, () => diagramId.value, parts.membership, onLeft, () => parts.lens?.())
   const active = ref(false)
@@ -238,14 +237,21 @@ export function useDiagramEditMode(
     if (spaceHeld.value) pan(event)
   }
 
-  // Said once per diagram, at the moment it happens: the picture is now arranged by hand.
+  // Said once per diagram, at the moment it happens: the picture is now arranged by hand. The toast's
+  // Undo goes back to the automatic picture the step took over, taking back what followed it too.
   watch(() => session.state.value?.byHand, (byHand, was) => {
     if (!active.value || !byHand || was !== false || told.has(diagramId.value)) return
-    if (session.history.value.length === 0) return
+    const automatic = session.history.value.at(-1)
+    if (!automatic) return
     told.add(diagramId.value)
+    const undoTakeover = () => {
+      for (let steps = session.history.value.length; steps > 0 && session.history.value.includes(automatic); steps--) {
+        session.undo()
+      }
+    }
     toast(
       'Arranged by hand from here on. Undo, or “Return to automatic”, gives the automatic layout back.',
-      'info', 6000,
+      'info', 8000, { label: 'Undo', run: undoTakeover },
     )
   })
 
