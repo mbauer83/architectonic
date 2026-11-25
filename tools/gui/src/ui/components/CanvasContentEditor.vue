@@ -56,10 +56,12 @@ const nameOf = (alias: string) => members.value.find((e) => e.alias === alias)?.
 const drafted = computed(() => props.editing.session.state.value?.commands?.some(
   (c) => c.op === 'model.element.create' && c.artifact_id === selected.value?.id) ?? false)
 
-async function apply(c: CanvasCommand, overlay?: Record<string, unknown>) {
-  if (await props.editing.propose(c, overlay)) close(true)
+/** A step the session took closes the popover; one it refused says why, there. */
+async function settle(step: Promise<boolean>) {
+  if (await step) close(true)
   else error.value = props.editing.error.value ?? 'The drawing has changed. Try again.'
 }
+const apply = (c: CanvasCommand, overlay?: Record<string, unknown>) => settle(props.editing.propose(c, overlay))
 const relation = useCanvasRelation(
   svc, props.editing, () => props.context, members, { source, target },
   () => { mode.value = 'relation' }, (message) => { error.value = message }, (c, overlay) => void apply(c, overlay),
@@ -90,6 +92,7 @@ function onElement(choice: string) {
     close()
   }
   else if (choice === 'delete') mode.value = 'delete'
+  else if (choice === 'discard') void settle(props.editing.discardDraft(el.id))
   else if (choice === 'open') {
     window.open(router.resolve(entityDetailRoute(el.id)).href, '_blank', 'noopener')
     close()

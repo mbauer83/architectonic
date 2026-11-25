@@ -25,7 +25,7 @@ import { addOccurrenceFor } from '../lib/archimateOccurrences'
 import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { membershipOf } from '../../domain/layout/diagramMembership'
-import { composeCanvas, withCommand } from '../../domain/layout/canvasComposition'
+import { composeCanvas, withCommand, withoutDraft } from '../../domain/layout/canvasComposition'
 import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import { stableEntityId } from '../../domain/artifactId'
@@ -325,6 +325,12 @@ export function useDiagramEditing(
     return preview({ ...now, commands, overlays: overlay ? [...now.overlays ?? [], overlay] : now.overlays }, now)
   }
 
+  /** The draft *id* discarded with everything the session proposed about it, as one undoable step. */
+  const discardDraft = async (id: string) => {
+    const now = session.state.value
+    return now ? preview(withoutDraft(now, id), now) : false
+  }
+
   /**
    * The element *alias* moved into the diagram's own box *box*, or out of the box it is in (*box* null),
    * as one undoable step the server compiles (`GroupingIntent`). A box grows round what it holds, so
@@ -347,7 +353,7 @@ export function useDiagramEditing(
 
   return {
     add, propose, session, changes, loading, saving, error, open, save, discard, returnToAutomatic, remove, restack,
-    nest, addOccurrence,
+    nest, addOccurrence, discardDraft,
   }
 }
 

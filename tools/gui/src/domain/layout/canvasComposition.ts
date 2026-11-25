@@ -7,7 +7,7 @@ import type {
 } from '../../ports/diagramWriteBodies'
 import { membershipWithout } from './diagramMembership'
 import type { DrawnMembership } from './diagramMembership'
-import { stableConnectionId, stableEntityId } from '../artifactId'
+import { connectionParts, stableConnectionId, stableEntityId } from '../artifactId'
 
 import type { DiagramContext, EntityDetail } from '..'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
@@ -137,6 +137,23 @@ export const withCommand = (commands: readonly CanvasCommand[], command: CanvasC
   }
   const replaces = command.op === 'model.element.rename' || command.op === 'model.relation.edit'
   return [...(replaces ? commands.filter((one) => !same(one)) : commands), command]
+}
+
+/**
+ * *content* without the draft *id*, as though it had never been created: its creation, and everything
+ * the session proposed about it — a rename, details, a relation from or to it, a move into a box.
+ */
+export const withoutDraft = <C extends Content>(content: C, id: string): C => {
+  const own = stableEntityId(id)
+  const about = (command: CanvasCommand): boolean => {
+    const ends = connectionParts(command.artifact_id)
+    return ends ? [ends.source, ends.target].some((end) => stableEntityId(end) === own)
+      : stableEntityId(command.artifact_id) === own
+  }
+  const regroupings = (content.regroupings ?? [])
+    .map((intent) => ({ ...intent, keys: intent.keys.filter((key) => stableEntityId(key) !== own) }))
+    .filter((intent) => intent.keys.length > 0)
+  return { ...content, commands: (content.commands ?? []).filter((one) => !about(one)), regroupings }
 }
 
 /**

@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import type { EntityDetail } from '../..'
 import type { CanvasCommand } from '../../../ports/diagramWriteBodies'
-import { composeCanvas, withCommand, withPendingDetails } from '../canvasComposition'
+import { composeCanvas, withCommand, withPendingDetails, withoutDraft } from '../canvasComposition'
 
 const ID = 'SRV@1712870400.Uv9Wx9.repository-promotion-service'
 const kept = (...commands: CanvasCommand[]) => commands.reduce(withCommand, [] as CanvasCommand[])
@@ -91,5 +91,29 @@ describe('a further drawing of an element', () => {
     expect(composeCanvas(drawn, {}, new Set(['occ-svc-2'])).write.diagram_entities?.occurrence).toEqual([])
     const deleted = composeCanvas(drawn, { commands: [{ op: 'model.element.delete', artifact_id: ID }] }, new Set())
     expect(deleted.write.diagram_entities?.occurrence).toEqual([])
+  })
+})
+
+describe('a draft discarded', () => {
+  const DRAFT = 'BOB@1795000000.Abc123.audit-note'
+  const relation = (source: string, target: string): CanvasCommand => ({
+    op: 'model.relation.create', artifact_id: `${source}---${target}@@archimate-association`,
+    description: '', src_multiplicity: '', tgt_multiplicity: '',
+  })
+
+  it('takes its creation and everything proposed about it, and leaves the rest of the session', () => {
+    const rest: CanvasCommand[] = [{ op: 'model.element.rename', artifact_id: ID, name: 'Kept' }, relation(ID, 'APP@1.a.b')]
+    const session = {
+      commands: [
+        { op: 'model.element.create', artifact_type: 'business-object', artifact_id: DRAFT, name: 'Note', group: 'g' },
+        { op: 'model.element.rename', artifact_id: DRAFT, name: 'Audit note' },
+        relation(ID, DRAFT), relation(DRAFT, 'APP@1.a.b'), ...rest,
+      ] satisfies CanvasCommand[],
+      regroupings: [{ intent: 'nest' as const, keys: [DRAFT, 'APP@1.a.b'], grouping: 'g-1' },
+        { intent: 'unnest' as const, keys: [DRAFT] }],
+    }
+    const left = withoutDraft(session, DRAFT)
+    expect(left.commands).toEqual(rest)
+    expect(left.regroupings).toEqual([{ intent: 'nest', keys: ['APP@1.a.b'], grouping: 'g-1' }])
   })
 })

@@ -126,6 +126,14 @@ describe("an element's menu", () => {
     expect(elementMenuItems(DIAGRAM_WORDS, true).find((one) => one.id === 'open')?.disabled).toBe(true)
   })
 
+  it('offers to discard a draft, last and in red, rather than to remove or delete it', () => {
+    for (const words of [DIAGRAM_WORDS, CANDIDATE_WORDS]) {
+      const items = elementMenuItems(words, true)
+      expect(items.some((one) => one.id === 'remove' || one.id === 'delete')).toBe(false)
+      expect(items.at(-1)).toMatchObject({ id: 'discard', label: 'Discard this draft', danger: true })
+    }
+  })
+
   it('says a candidate\'s words where the menu is a candidate\'s', () => {
     const items = elementMenuItems(CANDIDATE_WORDS, false)
     expect(items.find((one) => one.id === 'remove')?.label).toBe(CANDIDATE_WORDS.removeEntry)
