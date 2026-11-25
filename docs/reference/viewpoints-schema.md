@@ -618,7 +618,7 @@ viewpoints:
   derivation_max_hops: 4                   # default max_hops when a derived-traversal node omits it
   derivation_max_relationships: 20000      # hard ceiling — raises traversal_time_budget_exceeded
   derivation_time_budget_seconds: 2.0      # the practical enforcement: derivation stops gracefully here
-  diagram_render_max_entities: 250         # pre-flight ceiling for the ad-hoc diagram representation —
+  diagram_render_max_entities: 400         # pre-flight ceiling for the ad-hoc diagram representation —
                                            # larger results get a friendly refusal, never a renderer stack error
   legibility_budget: 100                   # default node count above which a graph surface opens aggregated;
                                            # overridable per definition via presentation.legibility_budget
