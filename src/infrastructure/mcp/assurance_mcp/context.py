@@ -23,23 +23,6 @@ from src.application.assurance.ports import (
 
 _exposure_log = logging.getLogger("arch-assurance-exposure")
 
-_TLP_ORDER: dict[str, int] = {
-    "TLP:WHITE": 0,
-    "TLP:GREEN": 1,
-    "TLP:AMBER": 2,
-    "TLP:RED": 3,
-}
-
-
-def tlp_level(tlp: str) -> int:
-    return _TLP_ORDER.get(str(tlp).upper(), 0)
-
-
-def is_above_ceiling(tlp: str, ceiling: str) -> bool:
-    """Return True if tlp is more sensitive than ceiling (should be withheld)."""
-    return tlp_level(tlp) > tlp_level(ceiling)
-
-
 def assurance_workspace_root() -> Path:
     """The workspace the assurance bundle is keyed on, and which locates the non-SQLCipher backends.
 

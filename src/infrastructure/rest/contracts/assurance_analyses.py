@@ -8,9 +8,9 @@ contract closed against one answered 500 on another.
 
 ``method`` and ``status`` are the domain's own vocabularies at type level, so a method the domain
 retires cannot go on being published here. ``tlp`` is deliberately a plain string: nothing validates
-it on the way in (``assurance_analysis.create_analysis`` checks name, method and status only, and
-``is_above_ceiling`` reads an unrecognised value as the least sensitive), so declaring a closed set
-would document a guarantee the write path does not make.
+it on the way in (``assurance_analysis.create_analysis`` checks name, method and status only, and the
+exposure policy reads an unrecognised value as the most sensitive), so declaring a closed set would
+document a guarantee the write path does not make.
 
 Every read here is exposure-filtered before the counts are taken. A total counted before filtering
 would disclose the existence of what the ceiling withholds, through a number nobody thinks of as

@@ -17,6 +17,8 @@ from typing import Any
 
 import sqlcipher3  # type: ignore[import-untyped]
 
+from src.domain.assurance.classification import TLP_ORDER
+
 _KEY = "assurance-benchmark-key"
 _NODE_TYPES = (
     "loss",
@@ -31,7 +33,7 @@ _NODE_TYPES = (
     "corrective-action",
     "obligation",
 )
-_TLPS = ("TLP:WHITE", "TLP:GREEN", "TLP:AMBER", "TLP:RED")
+_TLPS = TLP_ORDER
 
 
 def _connect(path: Path) -> Any:
@@ -94,7 +96,7 @@ def _create_store(path: Path, node_count: int, analysis_count: int) -> None:
 def _measure_worker(path: Path, worker: int, iterations: int) -> dict[str, list[float]]:
     conn = _connect(path)
     measurements = {"browse": [], "search": [], "count": []}
-    visible_tlps = ("TLP:WHITE", "TLP:GREEN", "TLP:AMBER")
+    visible_tlps = TLP_ORDER[:3]
     for iteration in range(iterations):
         analysis_id = f"ANL@{(worker * iterations + iteration) % 100:04d}"
         started = time.perf_counter()

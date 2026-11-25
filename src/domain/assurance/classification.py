@@ -14,6 +14,8 @@ means one definition governs every confidentiality decision.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 TLP_WHITE = "TLP:WHITE"
 TLP_GREEN = "TLP:GREEN"
 TLP_AMBER = "TLP:AMBER"
@@ -47,3 +49,33 @@ def tlp_rank(value: str | None) -> int:
 def is_publishable(value: str | None) -> bool:
     """True if content at this classification may be shared (rendered + persisted publicly)."""
     return tlp_rank(value) <= TLP_ORDER.index(PUBLISHABLE_CEILING)
+
+
+def content_rank(value: str | None) -> int:
+    """How sensitive a piece of content is, for deciding whether a reader may see it.
+
+    Unknown or malformed input ranks as TLP:RED. This is the exposure side of the order, where a
+    misspelt level must withhold rather than disclose: reading it as the least sensitive, as two
+    copies of this order once did, showed `tlp: "red "` and `tlp: null` content to every reader.
+    """
+    return TLP_ORDER.index(normalize_tlp(value, default=TLP_RED))
+
+
+def ceiling_rank(value: str | None) -> int:
+    """How much a reader may see; an unknown ceiling admits only TLP:WHITE."""
+    return TLP_ORDER.index(normalize_tlp(value, default=TLP_WHITE))
+
+
+def exceeds_ceiling(value: str | None, ceiling: str | None) -> bool:
+    """True when content at *value* must be withheld from a reader whose ceiling is *ceiling*."""
+    return content_rank(value) > ceiling_rank(ceiling)
+
+
+def most_sensitive(values: Iterable[str | None]) -> str | None:
+    """The classification of something derived from *values*; None when there is nothing to classify.
+
+    An unknown contributor counts as TLP:RED: a derived figure is at least as sensitive as the least
+    certain thing it was computed from.
+    """
+    ranks = [content_rank(value) for value in values]
+    return TLP_ORDER[max(ranks)] if ranks else None

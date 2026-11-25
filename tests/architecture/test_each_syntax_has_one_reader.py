@@ -81,6 +81,10 @@ class SyntaxReader:
     #: Where this syntax is read *only* by these calls, in place of `_LOCATING_CALLS`: a glyph so
     #: common (a dot) that splitting at it is no evidence, while cutting at the last one is.
     only_located_by: frozenset[str] = frozenset()
+    #: A pattern two or more literals of one tuple, list, set or dict display must match for that
+    #: display to count as stating the syntax's values — and so their order. For a syntax that is a
+    #: ranked vocabulary, whose second reader is a table of the values rather than a search for one.
+    enumeration_probe: re.Pattern[str] | None = None
     #: Modules that legitimately read it anyway, each because of something this rule cannot see.
     exempt: frozenset[Path] = field(default_factory=frozenset)
 
@@ -196,6 +200,9 @@ _CUTS_AT_THE_SLUG = frozenset({"rsplit", "rpartition", "count"})
 #: section that sizes boxes. Whole literals, and deliberately not `layout` itself — a diagram type's
 #: configuration and a scratchpad's document each have a `layout` of their own that is not this one.
 _LAYOUT_BLOCK_WORD = re.compile(r"\A(via|boxes)\Z")
+
+#: A Traffic Light Protocol level, spelled whole.
+_TLP_LEVEL = re.compile(r"\ATLP:[A-Z]+\Z")
 
 SYNTAX_READERS: tuple[SyntaxReader, ...] = (
     SyntaxReader(
@@ -677,6 +684,22 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             Path("src/domain/repository/artifact_location.py"),
         }),
     ),
+    SyntaxReader(
+        syntax="a TLP classification level, and how two of them order",
+        owners=(Path("src/domain/assurance/classification.py"),),
+        instead=(
+            "`src.domain.assurance.classification`: `exceeds_ceiling` to decide whether a reader may "
+            "see content, `most_sensitive` to classify something derived from several records, "
+            "`content_rank` and `ceiling_rank` for a rank, `TLP_ORDER` to enumerate the levels"
+        ),
+        incident=(
+            "the exposure policy and the MCP context each kept a table of the four levels and ranked "
+            "a value they did not recognise as TLP:WHITE, so assurance content whose level was "
+            "misspelt or null was shown to a reader whose ceiling should have withheld it; two metric "
+            "folds kept a third and fourth table and dropped such a value from the maximum"
+        ),
+        enumeration_probe=_TLP_LEVEL,
+    ),
 )
 
 #: What each row's exemptions cost today. A ratchet in the spirit of the project's other shrink-only
@@ -749,6 +772,29 @@ def _literals_deciding(
     return sorted(found)
 
 
+def _enumerations(path: Path, probe: re.Pattern[str]) -> list[str]:
+    """Collection displays in this file naming two or more values the probe recognises."""
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    found: set[str] = set()
+    for node in ast.walk(tree):
+        elements: list[ast.expr | None]
+        match node:
+            case ast.Tuple(elts=elts) | ast.List(elts=elts) | ast.Set(elts=elts):
+                elements = list(elts)
+            case ast.Dict(keys=keys):
+                elements = list(keys)
+            case _:
+                continue
+        named = [
+            element.value for element in elements
+            if isinstance(element, ast.Constant) and isinstance(element.value, str)
+            and probe.search(element.value)
+        ]
+        if len(named) >= 2:
+            found.add(", ".join(named))
+    return sorted(found)
+
+
 def _second_readers(reader: SyntaxReader) -> dict[str, list[str]]:
     offenders: dict[str, list[str]] = {}
     for path in python_sources(SRC, TOOLS):
@@ -764,6 +810,8 @@ def _second_readers(reader: SyntaxReader) -> dict[str, list[str]]:
             found += _literals_deciding(
                 path, reader.literal_probe, reader.also_located_by, reader.only_located_by,
             )
+        if reader.enumeration_probe is not None:
+            found += _enumerations(path, reader.enumeration_probe)
         if found:
             offenders[str(relative)] = found
     return offenders
@@ -790,7 +838,9 @@ def test_nothing_outside_the_owner_decides_the_syntax(reader: SyntaxReader) -> N
 def test_every_row_carries_the_incident_that_earned_it(reader: SyntaxReader) -> None:
     """A rule with no recorded cost is one the next reader argues with rather than obeys."""
     assert len(reader.incident) > 80, (reader.syntax, reader.incident)
-    assert reader.reserved_names or reader.literal_probe is not None, reader.syntax
+    assert (
+        reader.reserved_names or reader.literal_probe is not None or reader.enumeration_probe is not None
+    ), reader.syntax
     # A namespace-less reserved name matches anything spelled the same anywhere.
     assert bool(reader.reserved_names) == bool(reader.reserved_module), reader.syntax
 
@@ -808,6 +858,23 @@ def test_no_row_carries_more_exemptions_than_its_budget(reader: SyntaxReader) ->
 
 class TestTheDetectorsCatchWhatTheyClaim:
     """Applied to snippets, so the guard is tested rather than trusted — each is a real past reading."""
+
+    @pytest.mark.parametrize(
+        ("source", "decides"),
+        [
+            pytest.param('_TLP_ORDER = {"TLP:WHITE": 0, "TLP:GREEN": 1}', True, id="exposure-table"),
+            pytest.param('order = ("TLP:WHITE", "TLP:GREEN", "TLP:AMBER", "TLP:RED")', True, id="metric-fold"),
+            pytest.param('row.get("tlp", "TLP:AMBER")', False, id="a-stored-default"),
+            pytest.param('tlp: str = "TLP:WHITE"', False, id="a-parameter-default"),
+        ],
+    )
+    def test_a_table_of_tlp_levels_is_recognised_and_one_default_is_not(
+        self, source: str, decides: bool, tmp_path: Path,
+    ) -> None:
+        module = tmp_path / "snippet.py"
+        module.write_text(source, encoding="utf-8")
+
+        assert bool(_enumerations(module, _TLP_LEVEL)) is decides, source
 
     @pytest.mark.parametrize(
         "reading",

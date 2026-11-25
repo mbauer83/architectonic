@@ -17,22 +17,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from src.application.verification.assurance_issues import AssuranceVerificationResult
-
-_TLP_ORDER: dict[str, int] = {
-    "TLP:WHITE": 0,
-    "TLP:GREEN": 1,
-    "TLP:AMBER": 2,
-    "TLP:RED": 3,
-}
+from src.domain.assurance.classification import TLP_RED, ceiling_rank, content_rank, exceeds_ceiling
 
 
-def _tlp_level(tlp: str) -> int:
-    return _TLP_ORDER.get(str(tlp).upper(), 0)
-
-
-def is_above_ceiling(tlp: str, ceiling: str) -> bool:
-    """Return True when tlp is more sensitive than ceiling."""
-    return _tlp_level(tlp) > _tlp_level(ceiling)
+def is_above_ceiling(tlp: str | None, ceiling: str | None) -> bool:
+    """Return True when tlp is more sensitive than ceiling; an unrecognised level fails closed."""
+    return exceeds_ceiling(tlp, ceiling)
 
 
 @dataclass(frozen=True)
@@ -90,7 +80,7 @@ class AssuranceExposurePolicy:
     def scope(self) -> PolicyScope:
         return PolicyScope(
             ceiling=self._ceiling,
-            visibility_limited=_tlp_level(self._ceiling) < _tlp_level("TLP:RED"),
+            visibility_limited=ceiling_rank(self._ceiling) < content_rank(TLP_RED),
         )
 
     # ── Collection filters ────────────────────────────────────────────────────
@@ -107,7 +97,7 @@ class AssuranceExposurePolicy:
         visible: list[dict[str, Any]] = []
         withheld = 0
         for node in nodes:
-            if is_above_ceiling(str(node.get("tlp", "TLP:WHITE")), self._ceiling):
+            if is_above_ceiling(node.get("tlp", "TLP:WHITE"), self._ceiling):
                 withheld += 1
             else:
                 visible.append(node)
@@ -140,7 +130,7 @@ class AssuranceExposurePolicy:
         visible: list[dict[str, Any]] = []
         withheld = 0
         for rec in records:
-            if is_above_ceiling(str(rec.get("tlp", "TLP:AMBER")), self._ceiling):
+            if is_above_ceiling(rec.get("tlp", "TLP:AMBER"), self._ceiling):
                 withheld += 1
             else:
                 visible.append(rec)
@@ -154,7 +144,7 @@ class AssuranceExposurePolicy:
         visible: list[dict[str, Any]] = []
         withheld = 0
         for analysis in analyses:
-            if is_above_ceiling(str(analysis.get("tlp", "TLP:WHITE")), self._ceiling):
+            if is_above_ceiling(analysis.get("tlp", "TLP:WHITE"), self._ceiling):
                 withheld += 1
             else:
                 visible.append(analysis)
@@ -173,7 +163,7 @@ class AssuranceExposurePolicy:
     def _apply_record(self, record: dict[str, Any] | None) -> Visible | NotFound:
         if record is None:
             return NotFound()
-        if is_above_ceiling(str(record.get("tlp", "TLP:WHITE")), self._ceiling):
+        if is_above_ceiling(record.get("tlp", "TLP:WHITE"), self._ceiling):
             return NotFound()
         return Visible(value=record, scope=self.scope())
 
