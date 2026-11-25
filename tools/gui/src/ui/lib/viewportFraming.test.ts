@@ -34,6 +34,13 @@ describe('the framing a diagram window opens on', () => {
     expect(framing.ty + 3 * LARGE_OPENING).toBeLessThan(50)
   })
 
+  it('opens a large picture on its top-left box where it has one, lines above it left out of the window', () => {
+    const framing = openingFramingOf(picture(34237, 1944), WINDOW, { x: 40, y: 700 })!
+    expect(framing.scale).toBe(LARGE_OPENING)
+    expect(framing.tx + 40 * LARGE_OPENING).toBeCloseTo(24)
+    expect(framing.ty + 700 * LARGE_OPENING).toBeCloseTo(24.5)
+  })
+
   it('centres a large picture narrower than the window at 60 % across it', () => {
     const tall = picture(800, 20000)
     const framing = openingFramingOf(tall, WINDOW)!

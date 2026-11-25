@@ -5,7 +5,7 @@ import { useWheelZoom, zoomAbout } from './useWheelZoom'
 import type { ReadingView } from '../../domain/diagramReading'
 import type { Extent, Point } from '../../domain/layout/geometry'
 import { motionAllowed } from '../lib/motionPreference'
-import { drawingExtentOf } from '../lib/svgExtent'
+import { drawingExtentOf, topLeftBoxOf } from '../lib/svgExtent'
 import {
   type Framing, LARGE_BELOW, openingFramingOf, wholeFramingOf, wholeScaleOf,
 } from '../lib/viewportFraming'
@@ -84,11 +84,11 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
   )
 
   /** The window's size, and the extent of what the picture draws: what every framing is reckoned from. */
-  const framingInputs = (): { window: DOMRect; content: Extent } | null => {
-    const svgEl = svgContainer.value?.querySelector('svg') as SVGSVGElement | null
+  const framingInputs = (): { window: DOMRect; content: Extent; svg: SVGSVGElement } | null => {
+    const svg = svgContainer.value?.querySelector('svg') as SVGSVGElement | null
     const window = containerRef.value?.getBoundingClientRect()
-    const content = svgEl && drawingExtentOf(svgEl)
-    return window && content ? { window, content } : null
+    const content = svg && drawingExtentOf(svg)
+    return svg && window && content ? { window, content, svg } : null
   }
 
   const apply = (framing: Framing) => {
@@ -104,9 +104,12 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
   const fitDiagramToViewport = async () => {
     await nextTick()
     const inputs = framingInputs()
-    const framing = inputs && openingFramingOf(inputs.content, inputs.window)
-    if (!inputs || !framing) return
+    if (!inputs) return
     wholeScale.value = wholeScaleOf(inputs.content, inputs.window)
+    // Only a large picture opens on its top-left box, and only it is searched for one.
+    const corner = large.value ? topLeftBoxOf(inputs.svg, inputs.content) ?? undefined : undefined
+    const framing = openingFramingOf(inputs.content, inputs.window, corner)
+    if (!framing) return
     fitScale.value = framing.scale
     fitTx.value = framing.tx
     fitTy.value = framing.ty

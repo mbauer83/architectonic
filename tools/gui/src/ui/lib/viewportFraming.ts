@@ -1,4 +1,4 @@
-import type { Extent } from '../../domain/layout/geometry'
+import type { Extent, Point } from '../../domain/layout/geometry'
 import { heightOf, widthOf } from '../../domain/layout/geometry'
 
 /**
@@ -8,8 +8,9 @@ import { heightOf, widthOf } from '../../domain/layout/geometry'
  * - it fits at half its size or more: the whole picture, centred;
  * - it fits only between 35 % and half its size: fitted to the window's width at up to its natural
  *   size, top aligned, the rest reached by panning — a squeezed strip reads worse than a pan;
- * - it fits only below 35 % (owner, Q19): at 60 % on its top-left corner, where its first box is, and
- *   the overview shows where the window is. Fitted, such a picture is specks with no word readable.
+ * - it fits only below 35 % (owner, Q19): at 60 % on its top-left box — the drawn box nearest its top-left
+ *   corner, since lines may run above every box — and the overview shows where the window is. Fitted,
+ *   such a picture is specks with no word readable.
  */
 
 /** A whole-picture fit below this is a large diagram: it opens at `LARGE_OPENING` instead (Q19, Q22). */
@@ -74,12 +75,33 @@ export const wholeFramingOf = (content: Extent, window: { width: number; height:
   }
 }
 
-/** What a window of *window*'s size opens on for *content* (see the module's three framings). */
-export const openingFramingOf = (content: Extent, window: { width: number; height: number }): Framing | null => {
+/**
+ * A large *content* at `LARGE_OPENING`, *corner* — its top-left box's — just inside the window's top-left
+ * corner; centred across the window instead where the picture is narrower than it.
+ */
+const openedOnCorner = (content: Extent, window: { width: number }, room: Room, corner: Point): Framing => {
+  const framing = framedAt(content, window, room, LARGE_OPENING, 'side')
+  const narrower = widthOf(content) * LARGE_OPENING <= room.width
+  return {
+    ...framing,
+    tx: narrower ? framing.tx : room.side - corner.x * LARGE_OPENING,
+    ty: room.top - corner.y * LARGE_OPENING,
+  }
+}
+
+/**
+ * What a window of *window*'s size opens on for *content* (see the module's three framings); *corner*, the
+ * top-left corner of the picture's top-left box, is where a large picture opens, else its own corner.
+ */
+export const openingFramingOf = (
+  content: Extent, window: { width: number; height: number }, corner?: Point,
+): Framing | null => {
   const whole = wholeScaleOf(content, window)
   if (!Number.isFinite(whole) || whole <= 0) return null
   const room = roomOf(window)
-  if (whole < LARGE_BELOW) return framedAt(content, window, room, LARGE_OPENING, 'side')
+  if (whole < LARGE_BELOW) {
+    return openedOnCorner(content, window, room, corner ?? { x: content.left, y: content.top })
+  }
   const scale = whole >= LEGIBLE_MIN_SCALE ? whole : Math.min(room.width / widthOf(content), 1)
   return framedAt(content, window, room, scale, 'centre')
 }
