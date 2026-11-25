@@ -7,7 +7,7 @@
  */
 import { computed, watch, type Ref } from 'vue'
 import type { DiagramContext } from '../../domain'
-import { stableEntityId } from '../../domain/artifactId'
+import { stableConnectionId, stableEntityId } from '../../domain/artifactId'
 import { DRAFT_STATUS, draftAliases } from '../../domain/layout/canvasComposition'
 import { pictureExtentOf } from '../lib/svgExtent'
 import type { DiagramEditing } from './useDiagramEditing'
@@ -58,6 +58,9 @@ export function useDiagramDrafts(options: {
     const now = context.value
     return now ? draftAliases(now, editing.session.state.value, editing.session.geometry.value) : new Set()
   })
+  /** The relations the session would create, by the key the picture draws them under (sketch 03·8). */
+  const pendingLines = computed((): ReadonlySet<string> => new Set((editing.session.state.value?.commands ?? [])
+    .filter((one) => one.op === 'model.relation.create').map((one) => stableConnectionId(one.artifact_id))))
   watch([nodeElements, drafts], ([nodes, ids]) => markPicture(nodes, ids), { flush: 'post' })
-  return { inEdit }
+  return { inEdit, pendingLines }
 }

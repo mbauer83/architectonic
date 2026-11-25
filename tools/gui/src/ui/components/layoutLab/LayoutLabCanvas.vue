@@ -36,6 +36,8 @@ const props = defineProps<{
   surround?: readonly PlacedPart[]
   /** The shapes that draw a draft, by alias: each is marked, and announced as one. */
   drafts?: ReadonlySet<string>
+  /** The relations the session would create, by key: drawn in the accent until they are saved (03·8). */
+  pendingLines?: ReadonlySet<string>
 }>()
 const emit = defineEmits<{ pick: [alias: string] }>()
 
@@ -161,6 +163,11 @@ const ends = (relationIndex: number): Extent[] => {
 const marks = computed((): BreachMark[] =>
   (props.showBreaches ? breachMarksOf(props.session.breaches.value, ends) : []))
 
+/** The shapes selected, whose own outline shows it; and the lines still to be created, by their place. */
+const chosen = computed(() => new Set(gesture.selection.value))
+const pending = computed(() => new Set((geometry.value?.relations ?? [])
+  .filter((one) => one.key !== undefined && props.pendingLines?.has(one.key)).map((one) => one.index)))
+
 /** The shapes back to front, as painted: what the marks read what covers what from. */
 const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind === 'shape' ? [piece.shape.alias] : [])))
 
@@ -198,8 +205,11 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
       >
         <g
           v-if="piece.kind === 'shape'"
-          :class="[piece.shape.isBox ? 'lab-box' : 'lab-element', { 'lab-carried': piece.shape.alias === carried }]"
+          :class="[piece.shape.isBox ? 'lab-box' : 'lab-element', {
+            'lab-carried': piece.shape.alias === carried, 'lab-selected': chosen.has(piece.shape.alias),
+          }]"
           :data-alias="piece.shape.alias"
+          :data-selected="chosen.has(piece.shape.alias) ? '' : undefined"
           data-painted="shape"
           @pointerdown="readonly ? pick($event, piece.shape.alias) : pressShape($event, piece.shape.alias)"
         >
@@ -228,7 +238,7 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
              the band and is what a click aimed at the line lands on. -->
         <g
           v-else-if="piece.kind === 'line'"
-          class="lab-line"
+          :class="['lab-line', { 'lab-line--pending': pending.has(piece.relation) }]"
           :data-relation="piece.relation"
           data-painted="line"
           @pointerdown="readonly || lineGesture.pressLine($event, piece.relation)"
@@ -276,6 +286,8 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
     <CanvasMarks
       :session="session"
       :order="shapeOrder"
+      :pixel="pixel"
+      :moving="gesture.dragging.value"
     />
 
     <CanvasDraftMarks
@@ -339,4 +351,12 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
 /* While a shape is dragged, it is drawn see-through, so what it is passing over — and the lines into
    what it covers — stay in sight until it is dropped. */
 .lab-carried { opacity: 0.55; }
+/* One selection look in both modes (01·3): an element's own outline turns blue, as the viewer's does. */
+.lab-element.lab-selected > g > :deep(g > :first-child) {
+  stroke: var(--paper-accent) !important; stroke-width: 2px !important; vector-effect: non-scaling-stroke;
+}
+/* A relation the session would create is drawn in the accent until Save (03·8). */
+.lab-line--pending :deep(:is(path, polyline, polygon, line):not(.lab-line-hit)) {
+  stroke: var(--paper-accent) !important;
+}
 </style>

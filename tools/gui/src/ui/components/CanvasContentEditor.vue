@@ -3,7 +3,9 @@ import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { DiagramContext } from '../../domain'
 import { canvasMembers } from '../../domain/layout/canvasComposition'
-import { modelServiceKey } from '../keys'
+import { modelServiceKey, toastKey } from '../keys'
+import { useDropFeedback } from '../composables/useDropFeedback'
+import CanvasGestureCues from './CanvasGestureCues.vue'
 import type { DiagramEditing } from '../composables/useDiagramEditing'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import { elementAt, useContentGestures } from '../composables/useContentGestures'
@@ -59,19 +61,27 @@ const nameOf = (alias: string) => members.value.find((e) => e.alias === alias)?.
 const drafted = computed(() => props.editing.session.state.value?.commands?.some(
   (c) => c.op === 'model.element.create' && c.artifact_id === selected.value?.id) ?? false)
 
-/** A step the session took closes the popover; one it refused says why, there. */
-async function settle(step: Promise<boolean>) {
-  if (await step) close(true)
+/** A step the session took closes the popover; one it refused says why, there. Answers which it was. */
+async function settle(step: Promise<boolean>): Promise<boolean> {
+  const kept = await step
+  if (kept) close(true)
   else error.value = props.editing.error.value ?? 'The drawing has changed. Try again.'
+  return kept
 }
 const apply = (c: CanvasCommand, overlay?: Record<string, unknown>) => settle(props.editing.propose(c, overlay))
+const toast = inject(toastKey, () => undefined)
+const drop = useDropFeedback(svc, props.editing, host, () => props.context, members)
 const relation = useCanvasRelation(
   svc, props.editing, () => props.context, members, { source, target },
   () => { mode.value = 'relation' }, (message) => { error.value = message }, (c, overlay) => void apply(c, overlay),
+  (id, overlay) => void settle(props.editing.drawRelation(id, overlay)),
 )
-const { kind, label, srcCount, tgtCount, description, options, currentLine } = relation
+const { kind, drawing, inModel, label, srcCount, tgtCount, description, options, currentLine } = relation
 const { anchor, drawAgain, ownBoxes, boxOfSelected, nestIn, nestUnder, asked, dropped, dontNest } = useCanvasNesting(
-  props.editing, host, source, members, { mode, error, position, close }, (c) => void apply(c),
+  props.editing, host, source, members, { mode, error, position, close }, (c) => apply(c), {
+    settled: drop.settled, say: (line) => toast(line, 'info', 6000),
+    nested: (part, whole) => words.value.nested(part, whole),
+  },
 )
 const adding = useCanvasCreate(
   props.editing, host, () => props.context, members, { mode, error, close, source, asked },
@@ -140,8 +150,9 @@ function menu(event: MouseEvent) {
 }
 // A line's menu belongs to the line it was opened on: another line picked, or none, closes it.
 watch(() => props.line, () => { if (mode.value === 'line') close() })
-const { focusCanvas, up, release, moving } = useContentGestures(
-  host, props.editing, source, position, rename, relation.editLine, (alias) => void relation.pair(alias), dropped,
+const { focusCanvas, up, release, moving, leave, side } = useContentGestures(
+  host, props.editing, source, position, rename, relation.editLine, (alias) => void relation.pair(alias),
+  (alias, target, x, y) => void dropped(alias, target, x, y), drop.over,
 )
 const cornerOf = (alias: string) =>
   host.value?.querySelector(`[data-alias="${CSS.escape(alias)}"]`)?.getBoundingClientRect()
@@ -185,6 +196,7 @@ function double(e: MouseEvent) {
   <div
     ref="host"
     class="content-canvas"
+    :class="{ 'edge-hover': side }"
     tabindex="0"
     @keydown="key"
     @dragover.prevent
@@ -195,8 +207,15 @@ function double(e: MouseEvent) {
     @pointerup.capture="up"
     @pointercancel="release"
     @pointermove="moving"
+    @pointerleave="leave"
   >
     <slot />
+    <Teleport to="body">
+      <CanvasGestureCues
+        :side="side"
+        :lit="drop.lit.value"
+      />
+    </Teleport>
     <p
       class="live"
       aria-live="polite"
@@ -299,12 +318,15 @@ function double(e: MouseEvent) {
         <CanvasRelationForm
           v-else-if="mode === 'relation'"
           v-model:kind="kind"
+          v-model:drawing="drawing"
           v-model:src-count="srcCount"
           v-model:tgt-count="tgtCount"
           v-model:description="description"
           v-model:label="label"
-          :title="`${nameOf(source)} → ${nameOf(target)}`"
+          :source="nameOf(source)"
+          :target="nameOf(target)"
           :options="options"
+          :in-model="inModel"
           :editing="Boolean(currentLine)"
           @keep="relation.keep"
           @cancel="close(true)"

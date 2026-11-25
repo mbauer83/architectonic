@@ -10,6 +10,8 @@ import type { DiagramEditMode } from '../composables/useDiagramEditMode'
 import { breachSentence, distinctBreaches } from '../../domain/layout/lab/labBreaches'
 import { useEditingPreferences } from '../composables/useEditingPreferences'
 import { arrowsAcross } from '../lib/arrowsAcross'
+import { usePulse } from '../composables/usePulse'
+import DiagramChangeList from './DiagramChangeList.vue'
 
 const props = defineProps<{ edit: DiagramEditMode }>()
 
@@ -62,6 +64,23 @@ defineExpose({
 })
 
 const plural = (count: number): string => `${count} change${count === 1 ? '' : 's'}`
+/** How many of the changes go to the model, which the count beside Save names. */
+const toTheModel = computed(() => changes.value.filter((change) => change.model).length)
+/** Undo's and Redo's tooltips name the step each would take (sketch 01·6). */
+const undoTitle = computed(() => {
+  const step = editing.value.undoStep.value
+  return step ? `Undo: ${step} (Ctrl+Z)` : 'Nothing to undo'
+})
+const redoTitle = computed(() => {
+  const step = editing.value.redoStep.value
+  return step ? `Redo: ${step} (Ctrl+Shift+Z)` : 'Nothing to redo'
+})
+/** The chip pulses when the picture changes hands; the count when a change joins it. */
+const chip = usePulse(() => byHand.value)
+const count = usePulse(
+  () => [changes.value.length, toTheModel.value] as const,
+  ([all, model], [allWas, modelWas]) => all > allWas || model > modelWas,
+)
 </script>
 
 <template>
@@ -71,8 +90,9 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
   >
     <span
       class="state-chip"
-      :class="{ hand: byHand }"
+      :class="{ hand: byHand, pulse: chip.pulsing.value }"
       data-testid="layout-state"
+      @animationend="chip.settle()"
     >
       <template v-if="byHand">
         Arranged by hand ·
@@ -89,7 +109,7 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
       type="button"
       class="btn btn-plain btn-sm"
       :disabled="!edit.canUndo.value"
-      title="Undo (Ctrl+Z)"
+      :title="undoTitle"
       data-testid="edit-undo"
       @click="session.undo()"
     >
@@ -99,7 +119,7 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
       type="button"
       class="btn btn-plain btn-sm"
       :disabled="!edit.canRedo.value"
-      title="Redo (Ctrl+Shift+Z)"
+      :title="redoTitle"
       data-testid="edit-redo"
       @click="session.redo()"
     >
@@ -182,36 +202,20 @@ const plural = (count: number): string => `${count} change${count === 1 ? '' : '
         <button
           type="button"
           class="summary"
+          :class="{ pulse: count.pulsing.value }"
           :aria-expanded="listOpen"
           data-testid="change-count"
           @click="listOpen = !listOpen"
-        >{{ plural(changes.length) }} ▾</button>
-        <div
+          @animationend="count.settle()"
+        >{{ plural(changes.length) }}<template v-if="toTheModel"> · <b>{{ toTheModel }} to the model</b></template>
+          ▾</button>
+        <DiagramChangeList
           v-if="listOpen"
-          class="pop"
-          role="dialog"
-          aria-label="What Save will write"
-          data-testid="change-list"
-        >
-          <h3>Save will write</h3>
-          <p class="group">
-            <span class="tag">Diagram</span> {{ plural(changes.filter(c => !c.model).length) }} to this diagram
-          </p>
-          <ul>
-            <li
-              v-for="change in changes"
-              :key="change.key"
-            >{{ change.text }}</li>
-          </ul>
-          <button
-            v-if="confirmFirst"
-            type="button"
-            :disabled="saving"
-            @click="confirm"
-          >
-            Confirm and save
-          </button>
-        </div>
+          :changes="changes"
+          :confirming="confirmFirst"
+          :saving="saving"
+          @confirm="confirm"
+        />
       </span>
       <button
         type="button"
@@ -312,19 +316,14 @@ kbd {
   font-size: 12.5px;
 }
 .summary:hover { background: var(--accent-soft); }
-.pop {
-  position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: 400px; padding: 10px 12px;
-  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; box-shadow: var(--shadow);
-  color: var(--text);
+/* Once, when the chip changes hands or a change joins the count; not under reduced motion. */
+.pulse { animation: pulse 1.2s ease-out 1; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 var(--accent-ring); background: var(--accent-soft); }
+  40% { box-shadow: 0 0 0 6px var(--accent-ring); }
+  100% { box-shadow: 0 0 0 0 transparent; }
 }
-.pop h3 { font-size: 13px; margin: 0 0 6px; }
-.pop .group { font-weight: 600; margin: 0 0 4px; }
-.pop .tag {
-  background: var(--soft); color: var(--text-2); border-radius: 3px; padding: 1px 6px; font-size: 11px;
-  margin-right: 4px;
-}
-.pop ul { margin: 0 0 6px 16px; padding: 0; }
-.pop li { margin-bottom: 3px; }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
 .leave {
   display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 6px;
   background: var(--warn-soft); color: var(--warn-text); border: 1px solid var(--warn-border);

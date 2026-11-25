@@ -2,6 +2,7 @@
 /**
  * Check layout in the edit bar (owner): a quiet control, off until asked for. Off, it says nothing about
  * breaches and asks for none; on, it shows how many there are beside it and names each in its tooltip.
+ * And what the bar says of the session (01·6): Undo names its step, and the count names the model's share.
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { computed, createApp, h, nextTick, ref, type App } from 'vue'
@@ -20,7 +21,9 @@ const breach = (rule: Breach['rule'], at: Breach['at'] = []): Breach => ({ relat
 let app: App | null = null
 afterEach(() => { app?.unmount(); app = null })
 
-const mounted = (breaches: readonly Breach[]) => {
+interface Change { readonly key: string; readonly text: string; readonly model?: boolean }
+
+const mounted = (breaches: readonly Breach[], changes: readonly Change[] = [], undoStep: string | null = null) => {
   let asked = 0
   const checking = ref(false)
   const edit = {
@@ -32,11 +35,12 @@ const mounted = (breaches: readonly Breach[]) => {
       redo: () => undefined,
     },
     editing: {
-      changes: ref([]), saving: ref(false), error: ref(null),
+      changes: ref(changes), saving: ref(false), error: ref(null),
+      undoStep: ref(undoStep), redoStep: ref(null),
       returnToAutomatic: () => undefined, discard: () => undefined, save: () => Promise.resolve(true),
     },
     leaving: ref(false),
-    canUndo: ref(false),
+    canUndo: ref(undoStep !== null),
     canRedo: ref(false),
     checking,
     toggleCheck: () => { checking.value = !checking.value },
@@ -84,5 +88,27 @@ describe('check layout', () => {
 
     expect(host.querySelector('[data-testid="edit-check-count"]')?.textContent).toBe('0')
     expect(control?.getAttribute('title')).toBe('No layout rule is broken')
+  })
+})
+
+describe('what the bar says of the session', () => {
+  it("names the step Undo would take, and says there is none to redo", () => {
+    const { host } = mounted([], [], 'Removed from the diagram: Billing — it stays in the model')
+    expect(host.querySelector('[data-testid="edit-undo"]')?.getAttribute('title'))
+      .toBe('Undo: Removed from the diagram: Billing — it stays in the model (Ctrl+Z)')
+    expect(host.querySelector('[data-testid="edit-redo"]')?.getAttribute('title')).toBe('Nothing to redo')
+  })
+
+  it('names how many changes go to the model, and lists them under Model and Diagram', async () => {
+    const { host } = mounted([], [
+      { key: 'r', text: 'Create relationship: Order System — serving → Billing', model: true },
+      { key: 'A', text: 'Arranged: Order System' },
+    ])
+    const count = host.querySelector<HTMLButtonElement>('[data-testid="change-count"]')
+    expect(count?.textContent?.replace(/\s+/g, ' ').trim()).toBe('2 changes · 1 to the model ▾')
+    count?.click()
+    await nextTick()
+    expect(host.querySelector('[data-testid="change-group-model"]')?.textContent).toContain('1 change to the model')
+    expect(host.querySelector('[data-testid="change-group-diagram"]')?.textContent).toContain('1 change to this diagram')
   })
 })

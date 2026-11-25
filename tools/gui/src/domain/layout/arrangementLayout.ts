@@ -213,6 +213,19 @@ export const shapedLines = (geometry: LayoutGeometry, before: Arrangement, after
     && !sameRoute(before.routes.get(relation.key), after.routes.get(relation.key))).map((relation) => relation.index)
 
 /**
+ * The lines an edit arranged of themselves (sketch 01·6): stated anew from *before* to *after* while
+ * neither end was placed elsewhere. A line that follows an end moved, or carried by its box, is part of
+ * that end's arranging and no change of its own.
+ */
+export const linesArranged = (geometry: LayoutGeometry, before: Arrangement, after: Arrangement): readonly number[] => {
+  const [was, now] = [placementOf(geometry, before), placementOf(geometry, after)]
+  const stayed = (alias: string): boolean => sameExtent(
+    was.elements.get(alias) ?? was.boxes.get(alias), now.elements.get(alias) ?? now.boxes.get(alias))
+  const ends = new Map(geometry.relations.map((relation) => [relation.index, [relation.source, relation.target]]))
+  return shapedLines(geometry, before, after).filter((index) => (ends.get(index) ?? []).every(stayed))
+}
+
+/**
  * What Save states for the lines the session moved (owner, 2026-11-24): each line with an end on an
  * element now placed elsewhere than in *reference* is written as the course the editor showed, so a
  * saved diagram keeps the lines that were seen. Lines nothing moved stay the router's, and a route the

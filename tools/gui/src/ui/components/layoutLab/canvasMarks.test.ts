@@ -13,8 +13,8 @@ describe('an element hidden on the canvas', () => {
     boxes: new Map([['G', at(0, 0, 100, 100)], ['H', at(50, 10, 200, 90)]]),
   }
 
-  it('is one a box painted after it covers, but not the box that holds it', () => {
-    expect(hiddenElements(['G', 'A', 'H', 'C'], placement, insideOf)).toEqual(['A'])
+  it('is one a box painted after it covers, named as what hides it, but not the box that holds it', () => {
+    expect(hiddenElements(['G', 'A', 'H', 'C'], placement, insideOf)).toEqual([{ alias: 'A', by: 'H' }])
     expect(hiddenElements(['H', 'G', 'A', 'C'], placement, insideOf)).toEqual([])
   })
 })

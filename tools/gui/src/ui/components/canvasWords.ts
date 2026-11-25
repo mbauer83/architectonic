@@ -11,6 +11,8 @@ export interface CanvasWords {
   readonly removeHint?: string
   /** The key on the canvas that removes the selection too, shown beside the entry. */
   readonly removeKey?: string
+  /** What nesting *part* in *whole* by a containment relationship has done, said once it is chosen (03·10). */
+  readonly nested: (part: string, whole: string) => string
 }
 
 export const DIAGRAM_WORDS: CanvasWords = {
@@ -21,6 +23,7 @@ export const DIAGRAM_WORDS: CanvasWords = {
   removeEntry: 'Remove from diagram',
   removeHint: 'it stays in the model',
   removeKey: 'Del',
+  nested: (part, whole) => `${part} becomes part of ${whole}: a model change, written to the model when you Save.`,
 }
 
 /** A candidate's words (06·5): removing records a remove-entity operation; the model keeps it until Apply. */
@@ -32,4 +35,5 @@ export const CANDIDATE_WORDS: CanvasWords = {
   deleteConfirm: 'Remove from the candidate',
   removeEntry: 'Remove from view',
   removeHint: 'records nothing; the candidate keeps it',
+  nested: (part, whole) => `${part} becomes part of ${whole}: recorded in the candidate as a new relationship.`,
 }

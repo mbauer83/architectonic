@@ -277,6 +277,7 @@ const executeDelete = () => {
                     :show-breaches="edit.checking.value"
                     :surround="edit.surround.value"
                     :drafts="drafts.inEdit.value"
+                    :pending-lines="drafts.pendingLines.value"
                   />
                 </CanvasContentEditor>
               </div>

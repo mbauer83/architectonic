@@ -37,9 +37,11 @@ test('creating and connecting a model element requires confirmation and can be d
   await page.getByRole('menuitem', {name: 'Connect to…'}).click()
   await page.getByRole('dialog', {name: 'target'}).getByRole('option').nth(1).click()
   const relation = page.getByRole('dialog', {name:'relation'})
-  await expect(relation.locator('option').first()).toBeAttached()
+  // A draft has no relation in the model yet: the first type the ontology permits is chosen to create.
+  await expect(relation.getByRole('radio', {checked: true})).toBeAttached()
+  await relation.getByText('Description and attributes').click()
   await relation.getByLabel('Source cardinality').fill('1')
-  await relation.getByLabel('Diagram label').fill('supports')
+  await relation.getByLabel('Label', {exact: true}).fill('supports')
   await relation.getByRole('button', {name:'Keep relationship'}).click()
   await expect(relation).toHaveCount(0)
   await page.getByTestId('edit-save').click()
