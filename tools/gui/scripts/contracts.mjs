@@ -30,8 +30,12 @@ const HEADER = `/**
  */
 `
 
-const run = (command, args, options = {}) =>
-  execFileSync(command, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], ...options })
+/** Room for the generated types, which passed the 1 MiB `execFileSync` holds by default (ENOBUFS). */
+const MAX_OUTPUT = 64 * 1024 * 1024
+
+const run = (command, args, options = {}) => execFileSync(
+  command, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], maxBuffer: MAX_OUTPUT, ...options },
+)
 
 /** The OpenAPI document, straight from the application object. */
 const dumpDocument = (destination) => {
