@@ -16,6 +16,17 @@ export const containedTypes = (
   new Set(Object.entries(outgoing)
     .flatMap(([target, kinds]) => (kinds.some((kind) => containing.has(kind)) ? [target] : [])))
 
+/**
+ * The relationships of the containment kind the ontology permits from a *container* type to a *part*
+ * type: what nesting one in the other may mean (03·10), and none where it may not be nested at all.
+ */
+export const containmentKinds = async (
+  svc: Pick<ModelService, 'getOntologyPair'>, container: string, part: string,
+): Promise<readonly string[]> => {
+  const pair = await Effect.runPromise(svc.getOntologyPair(container, part))
+  return pair.connection_types.filter((kind) => pair.relationship_kind_map[kind] === CONTAINMENT)
+}
+
 export const partsTypes = async (
   svc: Pick<ModelService, 'getOntologyClassification' | 'getDiagramTypeConnectionTypes'>,
   diagramType: string, containerType: string,

@@ -2,7 +2,8 @@
 /**
  * Dropping an element on another asks whether to make it part of that one (03·10); *Don't nest* puts it
  * back where the drag started, as one step Undo takes back, leaving the session as it was before the
- * drop. Opened from the menu instead, *Don't nest* only closes the question.
+ * drop. Opened from the menu instead, *Don't nest* only closes the question. A drop on a shape that
+ * refuses it asks nothing and offers no list: one line says why (Q13). A nesting chosen is said in passing.
  */
 import { describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, nextTick, ref } from 'vue'
@@ -15,6 +16,7 @@ import { useArrangementSession } from '../useArrangementSession'
 import type { CanvasPopoverLevel } from '../useCanvasPopover'
 import { useCanvasNesting } from '../useCanvasNesting'
 import type { DiagramEditing } from '../useDiagramEditing'
+import type { DropVerdict } from '../../../domain/layout/dropVerdict'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 const element = (alias: string, extent: Extent) => ({
@@ -28,7 +30,7 @@ const geometry: LayoutGeometry = {
   boxes: [], relations: [],
 }
 
-const nesting = () => {
+const nesting = (verdict: DropVerdict | null = { kind: 'nest', words: 'Nest in B…' }) => {
   const session = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
   session.open(geometry)
   const mode = ref<CanvasPopoverLevel | null>(null)
@@ -36,11 +38,16 @@ const nesting = () => {
   const editing = { session, error: ref(null) } as unknown as DiagramEditing
   const members = computed(() => geometry.elements
     .map((one) => ({ alias: one.alias, id: one.key ?? one.alias, name: one.label })))
+  const said: string[] = []
+  const applied: unknown[] = []
+  const source = ref('')
   const scope = effectScope()
   const used = scope.run(() => useCanvasNesting(
-    editing, ref(null), ref(''), members, { mode, error: ref(''), position: () => {}, close }, () => {},
+    editing, ref(null), source, members, { mode, error: ref(''), position: () => {}, close },
+    async (command) => { applied.push(command); return true },
+    { settled: async () => verdict, say: (line) => said.push(line), nested: (part, whole) => `${part} in ${whole}` },
   ))!
-  return { session, mode, close, used }
+  return { session, mode, close, used, said, applied, source }
 }
 
 describe("Don't nest", () => {
@@ -49,7 +56,7 @@ describe("Don't nest", () => {
     const started = session.state.value
     // The drag's own step: A dropped onto B.
     session.change((drawn, now) => moved(drawn, now, 'A', 390, 210))
-    used.dropped('A', 'B', 0, 0)
+    await used.dropped('A', 'B', 0, 0)
     expect(mode.value).toBe('nest')
     expect(used.asked.value).toBe('B')
 
@@ -71,5 +78,34 @@ describe("Don't nest", () => {
     expect(close).toHaveBeenCalledWith(true)
     expect(session.state.value).toBe(before)
     expect(session.history.value).toHaveLength(0)
+  })
+})
+
+describe('a drop that is refused', () => {
+  it('asks nothing and opens no list: one line says why, and the element stays where it was dropped', async () => {
+    const { session, mode, used, said } = nesting({ kind: 'refused', why: 'B cannot hold A.' })
+    session.change((drawn, now) => moved(drawn, now, 'A', 390, 210))
+    await used.dropped('A', 'B', 0, 0)
+    expect(mode.value).toBeNull()
+    expect(used.asked.value).toBeNull()
+    expect(said).toEqual(['B cannot hold A.'])
+    expect(session.arrangement.value?.elements.get('A')).toEqual(at(410, 250, 510, 290))
+  })
+
+  it('says nothing where there is nothing to say', async () => {
+    const { mode, used, said } = nesting(null)
+    await used.dropped('A', 'B', 0, 0)
+    expect(mode.value).toBeNull()
+    expect(said).toEqual([])
+  })
+})
+
+describe('a nesting chosen', () => {
+  it('is kept as the containment relationship, and said to be a pending change', async () => {
+    const { used, said, applied, source } = nesting()
+    source.value = 'A'
+    await used.nestUnder('B', 'archimate-composition')
+    expect(applied).toEqual([expect.objectContaining({ op: 'model.relation.create' })])
+    expect(said).toEqual(['A in B'])
   })
 })

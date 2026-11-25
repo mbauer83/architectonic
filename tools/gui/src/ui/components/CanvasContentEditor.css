@@ -4,3 +4,5 @@
   pointer-events: visiblePainted;
   cursor: pointer;
 }
+/* Over an element's edge band a drag draws a relation (01·3): the cursor says so. */
+.content-canvas.edge-hover, .content-canvas.edge-hover :deep(*) { cursor: crosshair !important; }

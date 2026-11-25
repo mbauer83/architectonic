@@ -64,7 +64,8 @@ export const receivingBoxAt = (
   return { alias: inner.alias, label: element?.name ?? inner.label, admits: admissionOf(inner, stated, element) }
 }
 
-const admissionOf = (
+/** What *box* admits: by its rule, by the rule its stated grouping states, or the parts its element may hold. */
+export const admissionOf = (
   box: GeometryBox, stated: readonly AuthoredGroupingWire[], element: DrawnElement | undefined,
 ): Admission => {
   if (box.kind === 'element') {

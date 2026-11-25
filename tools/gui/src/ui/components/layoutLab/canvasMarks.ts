@@ -11,10 +11,16 @@ import { overlaps } from '../../../domain/layout/geometry'
 import type { Breach } from '../../../domain/layout/lab/labBreaches'
 import type { Placement } from '../../../domain/layout/lab/labRouting'
 
+/** An element covered, and the first shape painted after it that covers it: what it is hidden behind. */
+export interface Hidden {
+  readonly alias: string
+  readonly by: string
+}
+
 /** Each element covered by a shape painted after it that does not hold it, by alias. */
 export const hiddenElements = (
   order: readonly string[], placement: Placement, insideOf: ReadonlyMap<string, string | undefined>,
-): readonly string[] => {
+): readonly Hidden[] => {
   const holders = (alias: string): ReadonlySet<string> => {
     const chain = new Set<string>()
     for (let at = insideOf.get(alias); at !== undefined && !chain.has(at); at = insideOf.get(at)) chain.add(at)
@@ -25,11 +31,11 @@ export const hiddenElements = (
     const extent = placement.elements.get(alias)
     if (!extent) return []
     const held = holders(alias)
-    const covered = order.slice(index + 1).some((later) => {
+    const by = order.slice(index + 1).find((later) => {
       const over = extentOf(later)
       return !held.has(later) && !holders(later).has(alias) && over !== undefined && overlaps(over, extent)
     })
-    return covered ? [alias] : []
+    return by === undefined ? [] : [{ alias, by }]
   })
 }
 

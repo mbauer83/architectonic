@@ -8,8 +8,8 @@
  * permitted into is not listed. The field is focused on opening; Down walks into the list.
  */
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
-import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
+import { containmentKinds } from './canvasParts'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 import { toGlyphKey } from '../lib/glyphKey'
 import { menuStep } from './canvasMenu'
@@ -44,8 +44,7 @@ onMounted(async () => {
   const types = [...new Set(props.members.flatMap((one) => (one.type ? [one.type] : [])))]
   const answers = await Promise.all(types.map(async (container): Promise<readonly [string, readonly string[]]> => {
     try {
-      const pair = await Effect.runPromise(svc.getOntologyPair(container, type))
-      return [container, pair.connection_types.filter((kind) => pair.relationship_kind_map[kind] === 'containment')]
+      return [container, await containmentKinds(svc, container, type)]
     } catch {
       return [container, []]
     }
@@ -108,7 +107,8 @@ const sentence = (kind: string, container: Shape) =>
     >
       {{ refused }}
     </p>
-    <template v-if="!asking">
+    <!-- A drop on an element that may not hold it says why, and offers no list of somewhere else (03·10). -->
+    <template v-if="!asking && !refused">
       <p class="nest__heading">
         Nest {{ element.name }} in…
       </p>
@@ -162,7 +162,7 @@ const sentence = (kind: string, container: Shape) =>
       </div>
     </template>
     <div
-      v-else
+      v-else-if="asking"
       class="cp-form"
       role="menu"
       :aria-label="`Make ${element.name} part of ${asking.name}?`"

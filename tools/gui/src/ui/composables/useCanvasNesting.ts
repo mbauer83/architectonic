@@ -10,6 +10,7 @@ import { pointOnPicture } from '../components/layoutLab/pointerOnPicture'
 import type { CanvasPopoverLevel } from './useCanvasPopover'
 import type { DiagramEditing } from './useDiagramEditing'
 import type { ArrangementState } from './useArrangementSession'
+import type { DropVerdict } from '../../domain/layout/dropVerdict'
 
 type Member = { readonly alias: string; readonly id: string; readonly name: string }
 
@@ -22,7 +23,14 @@ export function useCanvasNesting(
     readonly position: (x: number, y: number) => void
     readonly close: (refocus?: boolean) => void
   },
-  apply: (command: CanvasCommand) => void,
+  apply: (command: CanvasCommand) => Promise<boolean>,
+  feedback: {
+    /** What a drop on a shape does, once every answer it waits on has come (`useDropFeedback`). */
+    readonly settled: (alias: string, target: string) => Promise<DropVerdict | null>
+    /** One line said in passing: why a drop was refused, or that a nesting is a pending change. */
+    readonly say: (line: string) => void
+    readonly nested: (part: string, whole: string) => string
+  },
 ) {
   const { mode, error, position, close } = popover
   const failed = () => { error.value = editing.error.value ?? 'The drawing has changed. Try again.' }
@@ -51,14 +59,16 @@ export function useCanvasNesting(
     else failed()
   }
   /** Nested in an element: the containment relationship from it, kept as a model change. */
-  const nestUnder = (container: string, kind: string) => {
+  const nestUnder = async (container: string, kind: string) => {
     const whole = members.value.find((one) => one.alias === container)
     const part = chosen.value
     if (!whole || !part) return
-    apply({
+    const kept = await apply({
       op: 'model.relation.create', artifact_id: connectionId(whole.id, kind, part.id),
       description: '', src_multiplicity: '', tgt_multiplicity: '',
     })
+    // A model change is never silent (03·10): said in passing, while the count beside Save pulses.
+    if (kept) feedback.say(feedback.nested(part.name, whole.name))
   }
 
   /** The element a drop asked to nest in, which *Nest in…* opens on; null when opened from the menu. */
@@ -80,30 +90,26 @@ export function useCanvasNesting(
     close(true)
   }
   /**
-   * An element dropped on a shape (03·9, Q13): onto one of the diagram's own boxes it is nested there,
-   * as diagram content; onto an element the question of making it part of that element is asked; onto a
-   * box a rule draws, one line says the box draws by its rule. Dropped where it already is, nothing is.
+   * An element dropped on a shape (03·9, Q13): into a box that takes it, as diagram content; onto an
+   * element that may hold it, the question of making it part of that element is asked; onto a box or an
+   * element that refuses it, one line says why, and it stays where it was dropped. Dropped where it
+   * already is, or on a box that draws it by its rule anyway, nothing is said.
    */
-  const dropped = (alias: string, target: string, x: number, y: number) => {
-    const geometry = editing.session.geometry.value
-    const moved = geometry?.elements.find((one) => one.alias === alias)
-    if (!geometry || !moved || moved.inside === target) return
+  const dropped = async (alias: string, target: string, x: number, y: number) => {
+    // The drop is the session's last step: the state before it is where the element came from.
+    const [before, now] = [editing.session.history.value.at(-1), editing.session.state.value]
+    const said = await feedback.settled(alias, target)
+    if (said?.kind === 'refused') return feedback.say(said.why)
+    // Acted on only while the element is still where it was dropped: an undo meanwhile asks nothing.
+    const where = editing.session.state.value?.arrangement.elements.get(alias)
+    if (!said || where !== now?.arrangement.elements.get(alias)) return
     source.value = alias
     position(x, y)
-    const box = geometry.boxes.find((one) => one.alias === target)
-    if (box?.kind === 'authored-grouping') void nestIn(target)
-    else if (box) {
-      mode.value = 'nest'
-      error.value = `${box.label} draws what its rule admits; ${moved.label} is not put in it by hand.`
-    } else if (geometry.elements.some((one) => one.alias === target)) {
-      // The drop is the session's last step: the state before it is where the element came from.
-      const before = editing.session.history.value.at(-1)
-      const now = editing.session.state.value
-      beforeDrop.value = before && now && before.arrangement.elements.get(alias) !== now.arrangement.elements.get(alias)
-        ? before : null
-      asked.value = target
-      mode.value = 'nest'
-    }
+    if (said.kind === 'into') return void nestIn(target)
+    beforeDrop.value = before && now && before.arrangement.elements.get(alias) !== now.arrangement.elements.get(alias)
+      ? before : null
+    asked.value = target
+    mode.value = 'nest'
   }
 
   return { anchor, drawAgain, ownBoxes, boxOfSelected, nestIn, nestUnder, asked, dropped, dontNest }
