@@ -49,6 +49,7 @@ from src.application.verification.artifact_verifier_types import (
 )
 from src.application.verification.verifier_ports import IconLibrary, PumlSyntaxPort
 from src.application.viewpoints.registry_snapshot import RegistrySnapshot
+from src.domain.diagrams.diagram_type_field import stated_diagram_type
 
 if TYPE_CHECKING:
     from src.application.verification._verifier_snapshot import RepositorySnapshot
@@ -95,7 +96,7 @@ def _check_layout(
 ) -> None:
     """The layout rules, told the two things only the catalogs know: a type's domain, and who draws the body."""
     entity_types = ctx.catalogs.ontology.all_entity_types()
-    module = ctx.catalogs.diagram_types.find_diagram_type(str(fm.get("diagram-type", "")))
+    module = ctx.catalogs.diagram_types.find_diagram_type(stated_diagram_type(fm))
 
     def domain_of_type(artifact_type: str) -> str:
         info = entity_types.get(artifact_type)

@@ -17,6 +17,7 @@ from collections.abc import Mapping
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
 from src.application.verification.datatype_consistency import admissible_backing_kinds, corresponds
 from src.domain.artifact_id import stable_conn_id
+from src.domain.diagrams.diagram_type_field import stated_diagram_type
 from src.domain.modules.catalogs import DiagramTypeCatalog, OntologyCatalog
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
 
@@ -40,7 +41,7 @@ def check_datatype_backing_consistency(
 
     Skips silently when diagram-type is not 'datatype'.
     """
-    if str(fm.get("diagram-type", "")) != _DATATYPE:
+    if stated_diagram_type(fm) != _DATATYPE:
         return
 
     entity_to_dob = _build_entity_dob_map(fm)

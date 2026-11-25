@@ -15,6 +15,7 @@ import yaml  # type: ignore[import-untyped]
 
 from src.application.modeling.diagram_identities import diagram_identities
 from src.domain.diagrams.authored_groupings import NOT_YET_UPGRADED, stored_before_groupings_had_ids
+from src.domain.diagrams.diagram_type_field import DIAGRAM_TYPE_KEY
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, layout_as_written, read_layout
 from src.domain.diagrams.layout.layout_checks import pruned_to
 
@@ -124,7 +125,7 @@ def format_diagram_puml(
     }
     if keywords:
         frontmatter["keywords"] = keywords
-    frontmatter["diagram-type"] = diagram_type
+    frontmatter[DIAGRAM_TYPE_KEY] = diagram_type
     if diagram_format_version is not None:
         frontmatter["diagram-format-version"] = diagram_format_version
     if manual_layout:

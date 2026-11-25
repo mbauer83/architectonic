@@ -11,6 +11,7 @@ from typing import Any, NamedTuple
 import yaml  # type: ignore[import-untyped]
 
 from src.application.identifier_allocator import IdentifierAllocator, get_default_allocator
+from src.domain.diagrams.diagram_type_field import stated_diagram_type
 from src.domain.ontology_representation.artifact_types import RepoMount, infer_engagement_label
 from src.domain.repository.frontmatter import Frontmatter, read_frontmatter
 from src.domain.repository.repo_scope import MountScope, infer_repo_scope
@@ -71,7 +72,7 @@ def _datatype_files(repo_root: Path) -> list[Path]:
     result: list[Path] = []
     for path in sorted(diagram_root.rglob("*.puml")):
         frontmatter, _ = _parse(path)
-        if frontmatter.get("diagram-type") == "datatype":
+        if stated_diagram_type(frontmatter) == "datatype":
             result.append(path)
     return result
 

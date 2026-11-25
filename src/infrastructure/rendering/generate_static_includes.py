@@ -21,6 +21,7 @@ from typing import Any
 
 from src.config.repo_paths import DIAGRAM_CATALOG
 from src.config.settings import archimate_type_markers
+from src.domain.diagrams.diagram_type_field import stated_diagram_type
 from src.domain.viewpoints.viewpoint_style_values import PAGE_GROUND
 
 # ---------------------------------------------------------------------------
@@ -301,7 +302,7 @@ def stale_generated_headers(repo_root: Path) -> list[str]:
         if is_render_scratch(path):
             continue
         text = path.read_text(encoding="utf-8")
-        diagram_type = str(parse_frontmatter(text).get("diagram-type", ""))
+        diagram_type = stated_diagram_type(parse_frontmatter(text))
         if not diagram_type:
             continue
         try:

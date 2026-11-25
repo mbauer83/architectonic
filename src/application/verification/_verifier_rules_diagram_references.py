@@ -32,6 +32,7 @@ from src.domain.artifact_id import (
     stable_conn_id,
     stable_id,
 )
+from src.domain.diagrams.diagram_type_field import stated_diagram_type
 from src.domain.modules.catalogs import DiagramTypeCatalog
 
 
@@ -80,7 +81,7 @@ def check_diagram_references_scoped(
         allowed_entities, allowed_connections,
         all_entities, all_connections,
         result, loc,
-        allowed_bindings=get_allowed_bindings(str(fm.get("diagram-type", "")), diagram_type_catalog),
+        allowed_bindings=get_allowed_bindings(stated_diagram_type(fm), diagram_type_catalog),
     )
 
 

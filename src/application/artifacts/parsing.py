@@ -12,6 +12,7 @@ from src.application.puml_alias_declarations import (
 )
 from src.application.verification.artifact_verifier_types import entity_id_from_path
 from src.domain.artifact_id import stable_id
+from src.domain.diagrams.diagram_type_field import stated_diagram_type
 from src.domain.ontology_representation.artifact_types import (
     STANDARD_DIAGRAM_FIELDS,
     STANDARD_DOCUMENT_FIELDS,
@@ -347,7 +348,7 @@ def parse_diagram(path: Path) -> DiagramRecord | None:
         artifact_id=str(frontmatter.get("artifact-id", path.stem)),
         artifact_type=str(frontmatter.get("artifact-type", "diagram")),
         name=str(frontmatter.get("name", "")),
-        diagram_type=str(frontmatter.get("diagram-type", "")),
+        diagram_type=stated_diagram_type(frontmatter),
         version=str(frontmatter.get("version", "")),
         status=str(frontmatter.get("status", "draft")),
         path=path,

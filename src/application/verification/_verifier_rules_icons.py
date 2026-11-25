@@ -28,6 +28,7 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
 from src.application.verification.verifier_ports import IconLibrary
+from src.domain.diagrams.diagram_type_field import stated_diagram_type
 from src.domain.icons.applicability import Applicability
 from src.domain.icons.icon_ref import IconRef, LocalIcon, SharedIcon
 from src.domain.ontology_representation.ontology_protocol import icon_styles_drawn_by
@@ -48,7 +49,7 @@ def check_icon_assignments(
     if not (assignments.by_instance or assignments.by_name or malformed):
         return
     issues = [_error("E364", f"{statement} {key!r}: {reason}", loc) for statement, key, reason in malformed]
-    styles = _styles_drawn(str(fm.get("diagram-type", "")), catalogs)
+    styles = _styles_drawn(stated_diagram_type(fm), catalogs)
     local_keys = _local_keys(diagram_entities)
     known = icon_applicability_names(catalogs)
     for key, ref in assignments.by_instance.items():

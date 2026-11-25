@@ -10,6 +10,7 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 
 from src.application.repo_path_helpers import all_model_roots, diagram_source_root, docs_root
+from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.recorded_references import grouping_member_ids
 from src.domain.repository.artifact_location import model_file_kind
 from src.infrastructure.mutation_adapters import run_git
@@ -187,7 +188,7 @@ def _rewrite_foreign_diagram(diagram_path: Path, drec: dict, repo_root: Path, wa
                 "any manual customisations have been replaced."
             )
         new_body = _render_diagram_entities_puml(
-            str(fm.get("diagram-type", "archimate")), str(fm.get("name", "")), new_de, new_dc, repo_root,
+            diagram_type_of(fm), str(fm.get("name", "")), new_de, new_dc, repo_root,
         )
     else:
         new_body = parsed.puml_body
@@ -204,7 +205,7 @@ def _rewrite_foreign_diagram(diagram_path: Path, drec: dict, repo_root: Path, wa
             del carried["authored_groupings"]
     return format_diagram_puml(
         artifact_id=str(fm.get("artifact-id", "")),
-        diagram_type=str(fm.get("diagram-type", "archimate")),
+        diagram_type=diagram_type_of(fm),
         name=str(fm.get("name", "")), version=str(fm.get("version", "0.1.0")),
         status=str(fm.get("status", "draft")), last_updated=modification_stamp(),
         entity_ids_used=new_eids or None, connection_ids_used=new_cids or None,

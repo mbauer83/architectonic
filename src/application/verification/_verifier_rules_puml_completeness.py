@@ -66,6 +66,7 @@ from src.application.verification._verifier_rules_puml_relations import (
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
 from src.domain.artifact_id import stable_conn_id, stable_id
+from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.recorded_references import body_contradicts_reference
 from src.domain.modules.catalogs import DiagramTypeCatalog
 from src.domain.ontology_representation.ontology_protocol import StoreGraphProjectingDiagramType
@@ -112,7 +113,7 @@ def diagram_body_is_reconcile_owned(fm: dict, diagram_type_catalog: DiagramTypeC
     The write path's refresh asks this same question to decide whether to reconcile, so the two cannot
     disagree about which diagrams the model reconcile owns.
     """
-    module = diagram_type_catalog.find_diagram_type(str(fm.get("diagram-type", "archimate")))
+    module = diagram_type_catalog.find_diagram_type(diagram_type_of(fm))
     if module is None:
         # A type no module in this deployment describes — the assurance family without the confidential
         # store, say — is neither reconciled nor checked as ArchiMate: its stored state is all there is.

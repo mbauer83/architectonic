@@ -12,6 +12,7 @@ from src.application.verification.artifact_verifier_syntax import (
     plantuml_command,
 )
 from src.config.settings import plantuml_limit_size, render_dpi
+from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.ontology_protocol import IconPresentingRenderer
@@ -39,7 +40,7 @@ def _confidential_render_skip(puml_path: Path) -> str | None:
     (above the publishability ceiling, or unclassified) are withheld.
     """
     fm = parse_diagram_file(puml_path).frontmatter
-    diagram_type = str(fm.get("diagram-type", "archimate"))
+    diagram_type = diagram_type_of(fm)
     tlp = fm.get("tlp")
     if is_confidential_diagram_source(diagram_type, tlp if isinstance(tlp, str) else None):
         return (
@@ -194,7 +195,7 @@ def _render_diagram_png(
         return None
 
     puml_body = content[start : end + len("@enduml")]
-    diagram_type = str(parse_diagram_file(puml_path).frontmatter.get("diagram-type", "archimate"))
+    diagram_type = diagram_type_of(parse_diagram_file(puml_path).frontmatter)
 
     if (skip := _confidential_render_skip(puml_path)) is not None:
         warnings.append(skip)
@@ -303,7 +304,7 @@ def _render_diagram_svg(
         return None
 
     puml_body = content[start : end + len("@enduml")]
-    diagram_type = str(parse_diagram_file(puml_path).frontmatter.get("diagram-type", "archimate"))
+    diagram_type = diagram_type_of(parse_diagram_file(puml_path).frontmatter)
 
     if (skip := _confidential_render_skip(puml_path)) is not None:
         warnings.append(skip)

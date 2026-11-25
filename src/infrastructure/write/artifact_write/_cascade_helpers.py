@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.repository.frontmatter import Frontmatter, read_frontmatter
 from src.domain.yaml_documents import parse_yaml
 from src.infrastructure.mutation_adapters import run_git
@@ -87,7 +88,7 @@ def is_puml_customised(diagram_path: Path, fm: dict) -> bool:
     dc = fm.get("connections")
     try:
         expected = _render_diagram_entities_puml(
-            str(fm.get("diagram-type", "archimate")),
+            diagram_type_of(fm),
             str(fm.get("name", "")),
             de,
             dc if isinstance(dc, list) else None,

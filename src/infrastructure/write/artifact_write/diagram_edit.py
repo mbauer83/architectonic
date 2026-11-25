@@ -9,6 +9,7 @@ from src.application.modeling.artifact_write import format_diagram_puml
 from src.application.modeling.artifact_write_layout import ensure_puml_layout, rebuild_puml_layout
 from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path
 from src.application.verification.artifact_verifier import ArtifactVerifier
+from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY
 
 from ._diagram_edge_labels import merged_edge_labels
@@ -139,7 +140,7 @@ def edit_diagram(
         with_icons_prepared(diagram_entities) if diagram_entities is not None else fm.get("diagram-entities")
     )
     eff_diagram_connections = diagram_connections if diagram_connections is not None else fm.get("connections")
-    diagram_type = str(fm.get("diagram-type", "archimate"))
+    diagram_type = diagram_type_of(fm)
 
     if diagram_type == "matrix":
         from ._diagram_matrix_edit import edit_matrix_diagram  # noqa: PLC0415

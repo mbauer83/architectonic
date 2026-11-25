@@ -21,6 +21,7 @@ from src.application.verification.artifact_verifier_types import Issue, Severity
 from src.application.viewpoints.artifact_projection import project_artifact_local
 from src.application.viewpoints.placed_occurrences import resolve_placed_connections, resolve_placed_entities
 from src.domain.concept_scope import ConceptScope
+from src.domain.diagrams.diagram_type_field import stated_diagram_type
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramTypeModule
 from src.domain.ontology_representation.ontology_types import EntityTypeInfo
@@ -46,7 +47,7 @@ def check_viewpoint_for_diagram_type(
     """Resolve this file's diagram-type module (matrix files are always type "matrix") and,
     if resolved, run the viewpoint-application check against it. Returns the resolved
     module (or ``None``) so callers needing it for other checks don't re-resolve it."""
-    diag_type = "matrix" if target_kind == "matrix" else str(fm.get("diagram-type", ""))
+    diag_type = "matrix" if target_kind == "matrix" else stated_diagram_type(fm)
     module = runtime_catalogs.diagram_types.find_diagram_type(diag_type)
     if module is not None and registry is not None:
         check_viewpoint_application(

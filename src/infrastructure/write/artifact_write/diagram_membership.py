@@ -27,6 +27,7 @@ from typing import NamedTuple
 
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.diagrams.bindings import SCOPE_KEYS, scope_entity_ids
+from src.domain.diagrams.diagram_type_field import diagram_type_of, stated_diagram_type
 from src.domain.diagrams.relation_key import labels_by_relation
 from src.infrastructure.rendering.diagram_selection import connections_among, resolve_diagram_selection
 
@@ -63,7 +64,7 @@ def is_standalone(parsed: ParsedDiagram, verifier: ArtifactVerifier) -> bool:
     return (
         isinstance(de, dict)
         and not is_scope_bound(parsed)
-        and diagram_entities_are_authoritative(verifier, str(parsed.frontmatter.get("diagram-type") or ""))
+        and diagram_entities_are_authoritative(verifier, stated_diagram_type(parsed.frontmatter))
     )
 
 
@@ -162,7 +163,7 @@ def rendered_membership(
             str(fm.get("name", "")),
             entities,
             connections,
-            diagram_type=str(fm.get("diagram-type", "archimate")),
+            diagram_type=diagram_type_of(fm),
             edge_labels=labels_by_relation(fm.get("edge-labels")) or None,
             authored_groupings=groupings or None,
         ),

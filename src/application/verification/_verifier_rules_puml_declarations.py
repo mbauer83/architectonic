@@ -39,6 +39,7 @@ from collections import Counter
 
 from src.application.puml_alias_declarations import declared_aliases
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
+from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.modules.catalogs import DiagramTypeCatalog
 
 
@@ -48,7 +49,7 @@ def _body_declares_elements(fm: dict, diagram_type_catalog: DiagramTypeCatalog) 
     Asked of the type's owner of that fact (``body_is_rendered_from_diagram_entities``), as the
     completeness rules ask it: a type may keep its nodes without declaring them as types (GSN).
     """
-    module = diagram_type_catalog.find_diagram_type(str(fm.get("diagram-type", "archimate")))
+    module = diagram_type_catalog.find_diagram_type(diagram_type_of(fm))
     return module is None or not module.body_is_rendered_from_diagram_entities
 
 
