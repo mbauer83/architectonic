@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds, joined_to_its_picture
+from src.domain.diagrams.authored_groupings import GroupingRule
 from src.domain.diagrams.layout.arrange_intents import ArrangeIntent, arranges, read_intents
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
@@ -32,7 +33,7 @@ from src.domain.diagrams.layout.route_quality import square_course
 from src.domain.diagrams.layout.text_clearance import padded, text_extent, title_band
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
 from src.infrastructure.rendering.layout._svg_relations import RelationMarkup
-from src.infrastructure.rendering.layout.box_identities import box_keys_by_alias
+from src.infrastructure.rendering.layout.box_identities import box_keys_by_alias, computed_box_rules
 from src.infrastructure.rendering.layout.composer import diagram_extent_drawn
 from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, measure_composition, plantuml_svg
 from src.infrastructure.rendering.layout.drawing_wire import node_of, relation_drawing
@@ -75,8 +76,12 @@ def _element(element: DrawnElement, diagram: LaidOutDiagram, drawing: RenderedDr
     }
 
 
-def _box(box: DrawnBox, diagram: LaidOutDiagram, keys: Mapping[str, str], drawing: RenderedDrawing) -> Wire:
+def _box(
+    box: DrawnBox, diagram: LaidOutDiagram, keys: Mapping[str, str], rules: Mapping[str, GroupingRule],
+    drawing: RenderedDrawing,
+) -> Wire:
     kind = box.kind(element_aliases=diagram.instance_by_alias)
+    rule = rules.get(box.alias)
     instance = diagram.instance_by_alias.get(box.alias)
     title = text_extent(box.words)
     return {
@@ -90,6 +95,8 @@ def _box(box: DrawnBox, diagram: LaidOutDiagram, keys: Mapping[str, str], drawin
         "inside": box.inside,
         "words": _words(box.words),
         "title_band": _extent(title_band(box.extent, title)) if title is not None else None,
+        # What a computed box admits, as a stated grouping's rule is written: what may be added to it.
+        "rule": {rule.kind: rule.value} if rule is not None else None,
         "drawing": node_of(drawing.shapes[box.alias]),
     }
 
@@ -132,13 +139,14 @@ def geometry_of(drawing: RenderedDrawing, diagram: LaidOutDiagram) -> Wire:
     with PlantUML's own drawing of each — and of the backdrop behind them — to draw it with."""
     picture = drawing.picture
     keys = box_keys_by_alias(picture, diagram)
+    rules = computed_box_rules(picture, diagram)
     drawn_as = relation_keys_by_index(picture, diagram)
     return {
         "canvas": _extent(picture.canvas),
         "backdrop": [node_of(part) for part in drawing.backdrop],
         "surround": _surround(drawing),
         "elements": [_element(element, diagram, drawing) for element in picture.elements.values()],
-        "boxes": [_box(box, diagram, keys, drawing) for box in picture.boxes.values()],
+        "boxes": [_box(box, diagram, keys, rules, drawing) for box in picture.boxes.values()],
         "relations": [
             _relation(index, relation, drawn_as.get(index), markup, picture)
             for index, (relation, markup) in enumerate(zip(picture.relations, drawing.relations, strict=True))

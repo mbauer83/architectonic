@@ -84,6 +84,9 @@ const GeometryBoxSchema = Schema.Struct({
   inside: Schema.optional(Schema.String),
   words: Schema.Array(MeasuredWordSchema),
   title_band: Schema.optional(ExtentSchema),
+  /** What a box the renderer computes admits, written as a stated grouping's rule is: one of
+   * `domain` or `type` to the name it selects. Absent for any other box. */
+  rule: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.String })),
   drawing: DrawingNodeSchema,
 })
 

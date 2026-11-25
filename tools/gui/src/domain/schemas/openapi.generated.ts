@@ -10322,6 +10322,10 @@ export interface components {
             kind: "domain" | "type" | "authored-grouping" | "element";
             /** Label */
             label: string;
+            /** Rule */
+            rule?: {
+                [key: string]: string;
+            };
             /**
              * Section
              * @enum {string}

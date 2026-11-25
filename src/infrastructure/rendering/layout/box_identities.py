@@ -67,7 +67,7 @@ def _kind_drawn_inside(picture: RenderedPicture, diagram: LaidOutDiagram, box: s
     )
 
 
-def _computed_boxes(picture: RenderedPicture, diagram: LaidOutDiagram) -> Iterator[tuple[str, str]]:
+def _computed_boxes(picture: RenderedPicture, diagram: LaidOutDiagram) -> Iterator[tuple[str, RuleKey]]:
     """Each computed box's alias with the rule key that addresses it."""
     drawn_so_far: dict[tuple[GroupingRule, ...], int] = defaultdict(int)
     for alias, box in picture.boxes.items():
@@ -78,12 +78,20 @@ def _computed_boxes(picture: RenderedPicture, diagram: LaidOutDiagram) -> Iterat
         domain = GroupingRule("domain", inside.domain)
         path = (domain,) if kind is BoxKind.DOMAIN else (domain, GroupingRule("type", inside.element_type))
         drawn_so_far[path] += 1
-        yield alias, RuleKey(path, drawn_so_far[path]).text
+        yield alias, RuleKey(path, drawn_so_far[path])
 
 
 def box_keys_by_alias(picture: RenderedPicture, diagram: LaidOutDiagram) -> dict[str, str]:
     """The layout key of every box of *picture* that has one: a grouping's id, or a computed box's rule."""
     keys = dict(found for grouping in diagram.groupings for found in _stated_boxes(picture, diagram, grouping))
     if diagram.boxes_are_computed:
-        keys.update(_computed_boxes(picture, diagram))
+        keys.update((alias, rule_key.text) for alias, rule_key in _computed_boxes(picture, diagram))
     return keys
+
+
+def computed_box_rules(picture: RenderedPicture, diagram: LaidOutDiagram) -> dict[str, GroupingRule]:
+    """What each computed box of *picture* admits: the innermost rule of its path — a domain's box its
+    domain, a type's box its element type. A box an author states is not computed and is not here."""
+    if not diagram.boxes_are_computed:
+        return {}
+    return {alias: rule_key.path[-1] for alias, rule_key in _computed_boxes(picture, diagram)}
