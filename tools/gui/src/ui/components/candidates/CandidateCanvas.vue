@@ -32,7 +32,7 @@ const props = withDefaults(defineProps<{
   stack?: string
   /** What *Done sketching* says, where it leads somewhere: the naive architecture's points on to Stressors. */
   doneLabel?: string
-}>(), { doneLabel: 'Done sketching' })
+}>(), { doneLabel: 'Done sketching', stack: '' })
 const emit = defineEmits<{ recorded: []; done: [] }>()
 const svc = inject(modelServiceKey)!
 provide(detailsSourceKey, useCandidateDetails(svc, () => props.candidateId))
