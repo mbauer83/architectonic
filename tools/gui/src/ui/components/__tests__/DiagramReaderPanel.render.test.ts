@@ -41,7 +41,7 @@ const mount = (over: Record<string, unknown> = {}) => {
     render: () => h(DiagramReaderPanel, {
       ...props(over),
       'onUpdate:reach': on('reach'), onToggleFlow: on('flow'), onFrame: on('frame'), onCopyLink: on('copy'),
-      onClear: on('clear'), onSelect: on('select'), onHover: on('hover'),
+      onClear: on('clear'), onSelect: on('select'), onHover: on('hover'), onPoint: on('point'),
     } as never),
   }).mount(host)
   const button = (selector: string) => host.querySelector<HTMLElement>(selector) as HTMLElement
@@ -87,11 +87,15 @@ describe('the Reading panel', () => {
     const reached = button('[data-reached="B"]')
     reached.dispatchEvent(new Event('mouseenter'))
     reached.click()
-    const row = button('[data-testid="reader-not-drawn"] li.ent-item')
-    row.dispatchEvent(new Event('focus'))
-    row.dispatchEvent(new Event('blur'))
+    // A not-drawn row points at the ends the picture draws: the selection, and the other end where drawn.
+    const elsewhere = button('[data-testid="reader-not-drawn-r1"]')
+    elsewhere.dispatchEvent(new Event('focus'))
+    elsewhere.dispatchEvent(new Event('blur'))
+    button('[data-testid="reader-not-drawn-r2"]').dispatchEvent(new Event('mouseenter'))
     await nextTick()
-    expect(events).toEqual(expect.arrayContaining([['hover', 'B'], ['select', 'B'], ['hover', 'S'], ['hover', null]]))
+    expect(events).toEqual(expect.arrayContaining([
+      ['hover', 'B'], ['select', 'B'], ['point', ['S']], ['point', []], ['point', ['S', 'Y']],
+    ]))
   })
 
   it('says what it is still reading, what it could not, and when nothing is reached', () => {
