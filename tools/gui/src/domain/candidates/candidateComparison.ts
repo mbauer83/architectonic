@@ -43,7 +43,9 @@ export interface ComparedDiff {
  * The elements more than one compared candidate changes, by stable id, each with the other
  * candidates that change it as well. A changed relation is not counted, as `diffMarks` marks neither end.
  */
-export const changedByOthers = (compared: readonly ComparedDiff[]): ReadonlyMap<string, ReadonlyMap<string, readonly string[]>> => {
+export const changedByOthers = (
+  compared: readonly ComparedDiff[],
+): ReadonlyMap<string, ReadonlyMap<string, readonly string[]>> => {
   const changers = new Map<string, Set<string>>()
   for (const { id, diff } of compared) {
     for (const row of diff) {
@@ -58,8 +60,11 @@ export const changedByOthers = (compared: readonly ComparedDiff[]): ReadonlyMap<
 }
 
 /** *marks*, with each element another candidate also changes saying so in its title. */
-export const withOthers = (marks: Marks, others: ReadonlyMap<string, readonly string[]>, nameOf: (id: string) => string): Marks =>
+export const withOthers = (
+  marks: Marks, others: ReadonlyMap<string, readonly string[]>, nameOf: (id: string) => string,
+): Marks =>
   new Map([...marks].map(([element, mark]) => {
     const also = others.get(element)
-    return [element, also?.length ? { ...mark, title: `${mark.title} · also changed in ${also.map(nameOf).join(', ')}` } : mark]
+    return [element, also?.length
+      ? { ...mark, title: `${mark.title} · also changed in ${also.map(nameOf).join(', ')}` } : mark]
   }))

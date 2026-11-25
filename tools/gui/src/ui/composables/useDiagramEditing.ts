@@ -261,7 +261,10 @@ export function useDiagramEditing(
     const drawn = savedMembers.value
     const now = session.state.value
     if (!drawn || !now) return false
-    const stated = { ...drawn.diagram_entities, occurrence: [...occurrenceItems(drawn.diagram_entities ?? {}), ...now.occurrences ?? []] }
+    const stated = {
+      ...drawn.diagram_entities,
+      occurrence: [...occurrenceItems(drawn.diagram_entities ?? {}), ...now.occurrences ?? []],
+    }
     const { occurrenceId } = addOccurrenceFor(stated, entity)
     const occurrence = { id: occurrenceId, backing_entity_id: entity.artifact_id }
     return preview({ ...now, occurrences: [...now.occurrences ?? [], occurrence] }, now, true, at && [occurrenceId, at])

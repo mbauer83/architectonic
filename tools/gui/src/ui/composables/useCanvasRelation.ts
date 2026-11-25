@@ -62,7 +62,8 @@ export function useCanvasRelation(
     const prior = context().diagram.extra?.connections
     const stored = Array.isArray(prior) ? (prior as unknown[]).filter(isRecord) : []
     const overlays = [...stored, ...(pending?.overlays ?? [])]
-    const overlay = overlays.reverse().find(r => stableConnectionId(String(r.artifact_id ?? r.connection_id)) === row.key)
+    const overlay = overlays.reverse()
+      .find(r => stableConnectionId(String(r.artifact_id ?? r.connection_id)) === row.key)
     const stated = overlay?.label ?? record.edge_label_override
     label.value = typeof stated === 'string' ? stated : ''
     description.value = record.content_text

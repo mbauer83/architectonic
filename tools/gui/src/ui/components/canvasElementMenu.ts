@@ -8,7 +8,9 @@ import type { CanvasMenuItem } from './canvasMenu'
 import type { CanvasWords } from './canvasWords'
 import type { Restack } from '../../domain/layout/stacking'
 
-export type ElementMenuChoice = 'rename' | 'details' | 'connect' | 'nest' | 'unnest' | 'occurrence' | 'open' | 'remove' | 'delete' | `stack:${Restack}`
+export type ElementMenuChoice =
+  | 'rename' | 'details' | 'connect' | 'nest' | 'unnest' | 'occurrence' | 'open' | 'remove' | 'delete'
+  | `stack:${Restack}`
 
 /** Stacking among siblings (02·7), with the keys that do the same on the selection. */
 export const STACKING_ITEMS: readonly CanvasMenuItem[] = [

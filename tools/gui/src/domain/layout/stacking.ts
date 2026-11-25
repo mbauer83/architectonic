@@ -63,7 +63,8 @@ export const restacked = (
   geometry: LayoutGeometry, arrangement: Arrangement, placement: Placement,
   aliases: readonly string[], how: Restack,
 ): Arrangement => {
-  const parentOf = new Map([...geometry.boxes, ...geometry.elements].map((shape) => [shape.alias, shape.inside ?? null]))
+  const parentOf = new Map([...geometry.boxes, ...geometry.elements]
+    .map((shape) => [shape.alias, shape.inside ?? null]))
   const children = childrenOf(geometry)
   const z = new Map(arrangement.z ?? [])
   let changed = false

@@ -36,7 +36,9 @@ export function useDocumentsListState(svc: ModelService) {
   /** The type the list is narrowed to, kept in the address so a narrowed list can be linked. */
   const docTypeFilter = computed({
     get: () => (typeof route.query.doc_type === 'string' ? route.query.doc_type : ''),
-    set: (value: string) => { void router.replace({ query: { ...route.query, doc_type: value || undefined }, hash: route.hash }) },
+    set: (value: string) => {
+      void router.replace({ query: { ...route.query, doc_type: value || undefined }, hash: route.hash })
+    },
   })
   const titleFilter = ref('')
   const showArchivedGroups = ref(false)

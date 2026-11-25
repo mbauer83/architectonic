@@ -240,7 +240,9 @@ function double(e: MouseEvent) {
           :heading="selected.name"
           :type="selected.type"
           :label="`${selected.name}: element`"
-          :items="elementMenuItems(words, drafted, boxOfSelected?.name ?? null, isArchimateDiagramType(context.diagram.diagram_type))"
+          :items="elementMenuItems(
+            words, drafted, boxOfSelected?.name ?? null, isArchimateDiagramType(context.diagram.diagram_type),
+          )"
           @choose="onElement"
           @close="close(true)"
         />
