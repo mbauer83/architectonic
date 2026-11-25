@@ -13,6 +13,7 @@ from collections.abc import Mapping
 
 from src.application.repository_upgrade.ports import UpgradeStep
 from src.application.repository_upgrade.steps.connection_metadata_scan import ConnectionMetadataScanStep
+from src.application.repository_upgrade.steps.default_document_types_ensure import DefaultDocumentTypesEnsureStep
 from src.application.repository_upgrade.steps.default_schemata_ensure import DefaultSchemataEnsureStep
 from src.application.repository_upgrade.steps.diagram_identity_keys import DiagramIdentityKeysStep
 from src.application.repository_upgrade.steps.group_meta_ontology_rename import GroupMetaOntologyRenameStep
@@ -85,6 +86,7 @@ def build_registry(selection_resolutions: Mapping[str, SelectionMode] | None = N
     registry.register(ViewpointSelectionModeStampStep(selection_resolutions))
     registry.register(SchemaFileScanStep())
     registry.register(DefaultSchemataEnsureStep())
+    registry.register(DefaultDocumentTypesEnsureStep())
     registry.register(OrdinalEnumDeclarationStep())
     registry.register(ProfileReconciliationScanStep())
     registry.register(ConnectionMetadataScanStep())

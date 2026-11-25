@@ -28,12 +28,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.domain.repository.repo_default_schemata import DEFAULT_SCHEMATA
+from src.domain.repository.repo_default_schemata import BASE_DOCUMENT_SCHEMAS, DEFAULT_SCHEMATA
 
-_SCHEMATA = (
-    Path(__file__).resolve().parents[2]
-    / "engagements" / "ENG-ARCH-REPO" / "architecture-repository" / ".arch-repo" / "schemata"
+_ARCH_REPO = (
+    Path(__file__).resolve().parents[2] / "engagements" / "ENG-ARCH-REPO" / "architecture-repository" / ".arch-repo"
 )
+_SCHEMATA = _ARCH_REPO / "schemata"
 
 
 def test_every_shipped_default_schema_is_in_the_self_model() -> None:
@@ -52,3 +52,16 @@ def test_the_shipped_default_set_is_not_empty() -> None:
     """A guard on the guard: were `DEFAULT_SCHEMATA` to resolve empty, the check above would pass
     over any repository at all, including one holding nothing."""
     assert len(DEFAULT_SCHEMATA) > 10
+
+
+def test_every_shipped_document_type_is_in_the_self_model() -> None:
+    """Regression: the self-model predated the stress-analysis type, and nothing added it, so a stress
+    analysis could not be started on it."""
+    present = {p.stem for p in (_ARCH_REPO / "documents").iterdir() if p.suffix == ".json"}
+    missing = sorted(set(BASE_DOCUMENT_SCHEMAS) - present)
+
+    assert missing == [], (
+        "the dogfood repository is missing shipped document types. Add them with "
+        "`uv run arch-repair upgrade --repo-root engagements/ENG-ARCH-REPO/architecture-repository "
+        f"--commit` rather than by hand: {missing}"
+    )

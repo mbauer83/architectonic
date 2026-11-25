@@ -114,6 +114,7 @@ def test_default_registry_reports_every_applicable_finding(tmp_path: Path) -> No
         "viewpoint-declaration-scan",
         "schema-file-scan",
         "default-schemata-ensure",
+        "default-document-types-ensure",
         "group-meta-ontology-archimate-4-rename",
         # The outgoing-file fixture carries a date-only `last-updated`.
         "modification-stamp-datetime",
