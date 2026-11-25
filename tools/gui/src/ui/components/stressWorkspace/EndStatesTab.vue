@@ -3,8 +3,10 @@
  * End states as cards holding their stressors, *Ungrouped* first (06·4). A stressor moves by dragging
  * it onto a card, or by `M` and the same chooser as the End state column. Each card carries
  * **◎ Focus**, a toggle: the grid turns to that end state and the canvas marks what its stressors hit.
+ * An end state ends in an adaptation (the Adaptations tab) or in **No change needed, because…** written
+ * on its card (§4.5); its card says which. The reason is kept with Enter and dropped with Esc.
  */
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import type { DocumentTableRow } from '../../../domain/schemas/candidates'
 import type { Tick } from '../../../domain/stressAnalysis/analysisRows'
 import { cell, groupedByEndState } from '../../../domain/stressAnalysis/analysisRows'
@@ -18,6 +20,8 @@ const props = defineProps<{
   focus: string | null
   selectedRow: string | null
   nameOf: (id: string) => string
+  /** The names of the adaptations that answer an end state. */
+  answeredBy: (endState: string) => readonly string[]
 }>()
 const emit = defineEmits<{
   focus: [rowId: string | null]
@@ -26,7 +30,27 @@ const emit = defineEmits<{
   untick: [tick: Tick]
   tick: [stressor: string, component: string]
   note: [tick: Tick, note: string]
+  noChange: [endState: DocumentTableRow, reason: string]
 }>()
+/** The adaptations answering each end state, by name, as the Adaptations tab lists them. */
+const answered = (endState: string): string => props.answeredBy(endState).join(', ')
+
+/** The end state whose reason for needing no change is being written, and what is written so far. */
+const reasoning = ref<string | null>(null)
+const reason = ref('')
+const reasonField = ref<HTMLInputElement[] | HTMLInputElement | null>(null)
+const writeReason = async (row: DocumentTableRow) => {
+  reasoning.value = row.row_id
+  reason.value = cell(row, 'no_change_reason')
+  await nextTick()
+  const field = Array.isArray(reasonField.value) ? reasonField.value[0] : reasonField.value
+  field?.focus()
+}
+const keepReason = (row: DocumentTableRow) => {
+  const kept = reason.value.trim()
+  reasoning.value = null
+  if (kept !== cell(row, 'no_change_reason')) emit('noChange', row, kept)
+}
 
 const groups = computed(() => groupedByEndState(props.stressors, props.endStates))
 const focused = computed(() => props.endStates.find((row) => row.row_id === props.focus) ?? null)
@@ -108,9 +132,40 @@ const keepChooser = (rowId: string, chooser: unknown) => {
           Required behaviour:
           {{ cell(group.endState, 'required_behaviour') ? nameOf(cell(group.endState, 'required_behaviour')) : '—' }}
         </span>
-        <span v-if="cell(group.endState, 'no_change_reason')">
-          No change needed: {{ cell(group.endState, 'no_change_reason') }}
-        </span>
+        <span
+          v-if="answered(group.endState.row_id)"
+          class="answer"
+        >Adapted by {{ answered(group.endState.row_id) }}</span>
+        <input
+          v-if="reasoning === group.endState.row_id"
+          ref="reasonField"
+          v-model="reason"
+          class="reason-in"
+          aria-label="Why no change is needed"
+          placeholder="No change needed, because…"
+          @keydown.enter.prevent="keepReason(group.endState)"
+          @keydown.esc.stop.prevent="reasoning = null"
+          @blur="reasoning === group.endState.row_id && keepReason(group.endState)"
+        >
+        <button
+          v-else-if="cell(group.endState, 'no_change_reason')"
+          type="button"
+          class="link-btn"
+          data-testid="no-change-reason"
+          title="Edit the reason"
+          @click="writeReason(group.endState)"
+        >
+          No change needed, because {{ cell(group.endState, 'no_change_reason') }}
+        </button>
+        <button
+          v-else-if="!answered(group.endState.row_id)"
+          type="button"
+          class="btn btn-sm"
+          data-testid="no-change-needed"
+          @click="writeReason(group.endState)"
+        >
+          No change needed, because…
+        </button>
       </div>
     </div>
     <IncidenceGrid
@@ -164,6 +219,10 @@ const keepChooser = (rowId: string, chooser: unknown) => {
 .rid { font-family: ui-monospace, monospace; color: var(--text-2); }
 .m-chooser { visibility: hidden; }
 .st:focus-within .m-chooser, .st:hover .m-chooser { visibility: visible; }
+.answer { color: var(--ok-text); }
+.reason-in { flex: 1; min-width: 200px; font: inherit; padding: 2px 6px; }
+.link-btn { border: none; background: none; color: var(--text-2); cursor: text; padding: 0; font: inherit; text-align: left; }
+.link-btn:hover { text-decoration: underline; }
 .es-f {
   display: flex;
   gap: 8px;

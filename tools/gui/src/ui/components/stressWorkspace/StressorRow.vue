@@ -15,6 +15,8 @@ type Column = 'stressor' | 'consequence' | 'kind'
 const props = defineProps<{
   row: DocumentTableRow
   selected: boolean
+  /** Whether this stressor ticks the element selected on the canvas. */
+  ticksSelected?: boolean
   kinds: readonly string[]
   hits: number
   missing: readonly string[]
@@ -74,7 +76,7 @@ const onRowKey = (event: KeyboardEvent) => {
 <template>
   <tr
     class="st-row"
-    :class="{ sel: selected }"
+    :class="{ sel: selected, ticks: ticksSelected }"
     tabindex="0"
     :data-row="row.row_id"
     @click="emit('select')"
@@ -82,6 +84,11 @@ const onRowKey = (event: KeyboardEvent) => {
   >
     <td class="rid">
       {{ row.row_id }}
+      <span
+        v-if="ticksSelected"
+        class="ticks-mark"
+        title="Ticks the element selected on the canvas"
+      >✓</span>
     </td>
     <td>
       <input
@@ -184,6 +191,8 @@ const onRowKey = (event: KeyboardEvent) => {
 .st-row td { padding: 6px 8px; border-top: 1px solid var(--border); vertical-align: top; font-size: 12.5px; }
 .st-row.sel td { background: var(--accent-soft); }
 .st-row.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
+.st-row.ticks td { background: var(--warn-soft); }
+.ticks-mark { color: var(--warn-text); font-weight: 700; margin-left: 2px; }
 .rid { font-family: ui-monospace, monospace; color: var(--text-2); }
 .num { text-align: center; }
 .happens { display: block; color: var(--text-2); font-size: 12px; }
