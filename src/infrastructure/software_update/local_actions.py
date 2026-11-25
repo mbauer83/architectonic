@@ -140,7 +140,11 @@ class LocalCheckoutActions:
 
     def restore_checkpoint(self, checkpoint_set: str) -> None:
         run_checked(
-            self._tool("arch-repair", "upgrade", "--restore", checkpoint_set, *self.deployment_arguments),
+            # Rolling back its own update: whatever the new version wrote since the migration goes too.
+            self._tool(
+                "arch-repair", "upgrade", "--restore", checkpoint_set, "--discard-later-work",
+                *self.deployment_arguments,
+            ),
             cwd=self.root, timeout=_MIGRATION_TIMEOUT_SECONDS, doing=f"arch-repair upgrade --restore {checkpoint_set}",
         )
 

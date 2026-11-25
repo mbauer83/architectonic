@@ -207,7 +207,7 @@ class ComposeActions:
     def restore_checkpoint(self, checkpoint_set: str) -> None:
         self.project.stop()
         result = self.project.run_tool(
-            "arch-repair", "upgrade", "--restore", checkpoint_set, *CONTAINER_UPGRADE_ARGUMENTS,
+            "arch-repair", "upgrade", "--restore", checkpoint_set, *CONTAINER_UPGRADE_ARGUMENTS, "--discard-later-work",
         )
         if result.returncode != 0:
             raise ComposeError(f"arch-repair upgrade --restore {checkpoint_set} failed: {result.stderr[-2000:]}")

@@ -74,8 +74,10 @@ from src.infrastructure.cli._upgrade_checkpoints import (
     list_checkpoint_sets,
     load_checkpoint_set,
     prune_previous_sets,
+    record_state_after,
     restore_checkpoint_set,
     take_checkpoint_set,
+    work_since_upgrade,
 )
 from src.infrastructure.cli._upgrade_deployment import (
     DeploymentSide,
@@ -158,6 +160,10 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--restore", metavar="CHECKPOINT-SET",
         help="Return every target to the state a previous --commit recorded before it wrote (see --list-checkpoints)",
+    )
+    p.add_argument(
+        "--discard-later-work", action="store_true", default=False,
+        help="With --restore: restore even though files changed after the upgrade, discarding those changes",
     )
     p.add_argument(
         "--list-checkpoints", action="store_true", default=False,
@@ -284,7 +290,10 @@ def main_upgrade(
     )
     try:
         checkpoint_set = (
-            take_checkpoint_set(roots, side.handles, base)
+            take_checkpoint_set(
+                roots, side.handles, base,
+                settings_document=side.manifest.settings_document.path if side.manifest else None,
+            )
             if _has_work(gate_report, gate_operational) else None
         )
     except CheckpointFailed as exc:
@@ -316,6 +325,7 @@ def main_upgrade(
         for root in tiers.written:
             record_format_upgrade(root, clean_before=clean_before[root], software_version=version)
     if outcome == "success" and checkpoint_set is not None:
+        checkpoint_set = record_state_after(checkpoint_set, base)
         for pruned in prune_previous_sets(base, keep=checkpoint_set.id):
             print(f"  checkpoint set {pruned}: pruned (one is kept)", file=sys.stderr)
     emit_deployment(
@@ -358,8 +368,26 @@ def _restore_or_list(args: argparse.Namespace, side: DeploymentSide, roots: list
                       f"{len(s.operational)} operational target(s)")
         return 0
     checkpoint_set = load_checkpoint_set(base, args.restore)
+    if not side.active and checkpoint_set.operational and checkpoint_set.settings_document:
+        # The set names the deployment it was taken under; its operational copies belong to that one.
+        args.settings = checkpoint_set.settings_document
+        side = build_deployment_side(args, os.environ)
     for repository in checkpoint_set.repositories:
         _guard_backend_not_serving(Path(repository.root))
+    later = work_since_upgrade(checkpoint_set)
+    if later and not args.discard_later_work:
+        print(
+            f"NOT RESTORED — restoring checkpoint set {checkpoint_set.id} would discard work done since the "
+            "upgrade:",
+            file=sys.stderr,
+        )
+        for line in later:
+            print(f"  {line}", file=sys.stderr)
+        print(
+            "Save or commit what you need elsewhere, then re-run with --discard-later-work to restore anyway.",
+            file=sys.stderr,
+        )
+        return EXIT_UNRESOLVED_MIGRATION
     done = restore_checkpoint_set(
         checkpoint_set, side.handles, rebuild_index=lambda root: FilesystemRepoUpgradeWriter(root).rebuild_index()
     )

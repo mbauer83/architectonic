@@ -75,6 +75,9 @@ def discover_operational_handles(
                     stable_id=_stable_id("guidance_cache", str(cache_root)),
                     display_location=str(cache_root),
                     current_version=guidance_cache_version(cache_root),
+                    # Only the home-directory default is the user's; a deployment root or a settings
+                    # key gives this deployment a cache of its own.
+                    per_user=manifest.guidance_cache_root.source == "compat_default",
                 ),
                 root=cache_root,
             )

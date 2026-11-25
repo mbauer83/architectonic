@@ -39,7 +39,7 @@ from src.infrastructure.software_update.compose import ComposeActions, ComposePr
 from src.infrastructure.software_update.credentials import CredentialsUnavailable, answer_questions
 from src.infrastructure.software_update.journal_store import FileJournalStore, UpdateInProgress
 from src.infrastructure.software_update.local_actions import LocalCheckoutActions
-from src.infrastructure.software_update.observation import deployment_identity_arguments
+from src.infrastructure.software_update.observation import checkpoint_restore_command, deployment_identity_arguments
 
 EXIT_USAGE = 2
 ASSETS_DIR = "assets"
@@ -230,7 +230,13 @@ def _finish(
     shutil.rmtree(store.directory / ASSETS_DIR, ignore_errors=True)
     store.release()
     render = render_outcome_json if json_output else render_outcome_human
-    print(render(journal, outcome, failure=failure, restored=restored, remaining=remaining))
+    restore_command = (
+        checkpoint_restore_command(store.directory.parent.parent, journal.checkpoint_set, deployment=journal.deployment)
+        if journal.checkpoint_set else None
+    )
+    print(render(
+        journal, outcome, failure=failure, restored=restored, remaining=remaining, restore_command=restore_command,
+    ))
     return EXIT_BY_OUTCOME[outcome]
 
 

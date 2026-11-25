@@ -44,9 +44,9 @@ def source_file(tmp_path: Path) -> Path:
 
 @pytest.fixture(autouse=True)
 def _isolated_cache_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_dir = tmp_path / ".config" / "arch-repo"
-    monkeypatch.setattr(guidance_cache_module, "_CONFIG_DIR", config_dir)
-    return config_dir / guidance_cache_module.GUIDANCE_CACHE_DIRNAME
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("ARCH_SETTINGS_PATH", raising=False)
+    return tmp_path / ".config" / "arch-repo" / guidance_cache_module.GUIDANCE_CACHE_DIRNAME
 
 
 class TestRunImportHappyPath:

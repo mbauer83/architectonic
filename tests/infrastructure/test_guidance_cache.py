@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 
-import src.infrastructure.guidance_cache as guidance_cache_module
 from src.domain.guidance.guidance import GUIDANCE_FORMAT, GuidanceKey
 from src.infrastructure.guidance_cache import (
     guidance_cache_root,
@@ -17,7 +16,8 @@ _ALIAS = "archimate-4"
 
 @pytest.fixture(autouse=True)
 def _isolated_config_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(guidance_cache_module, "_CONFIG_DIR", tmp_path / ".config" / "arch-repo")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("ARCH_SETTINGS_PATH", raising=False)
 
 
 def _write_cache(text: str) -> None:
