@@ -27,10 +27,11 @@ def test_promotion_outage_tracks_the_naive_queue_even_after_it_is_removed(tmp_pa
                          **{"scope-diagram": "ARC@1783185029.4Ayzz3.one-enterprise-repository-many-engagements"})
     tables = read_document_tables(document_path(tmp_path, schema), body, schema)
     view = CandidateView({ref: {} for ref in (ENTERPRISE, ENGAGEMENT, SERVICE, "$ref:queue")}, {})
-    report = analyse(tables, view, kinds=("outage", "capacity"))
+    report = analyse(tables, view)
     assert report["stressors"][0]["missing_elements"] == []
     assert report["coupling"] == [{"left": "$ref:queue", "right": SERVICE, "count": 1}]
-    assert report["coverage"]["unused_kinds"] == ["capacity"]
+    assert report["coverage"]["by_kind"] == {"outage": 1}
+    assert "pestle.political" in report["coverage"]["unwritten_perspectives"]
     assert report["progress"]["without_adaptation"] == ["E1"]
     del view.entities["$ref:queue"]
     assert analyse(tables, view)["stressors"][0]["missing_elements"] == ["$ref:queue"]

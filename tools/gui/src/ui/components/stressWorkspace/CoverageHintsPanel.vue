@@ -2,7 +2,8 @@
 /**
  * Coverage hints (F13), which replaced *Suggest stressors*: gaps in what the analysis has looked at,
  * from the scope and the rows. A name shows the element on the canvas; *Add a stressor about this*
- * adds a row about it; a kind adds a row of that kind. Nothing is proposed or drawn here.
+ * adds a row about it. Which perspectives no stressor is written from is the perspectives line's to
+ * mark. Nothing is proposed or drawn here.
  */
 import type { CoverageHints, UntouchedHint } from '../../../domain/stressAnalysis/analysisProgress'
 
@@ -10,7 +11,6 @@ defineProps<{ hints: CoverageHints; endStateName: (rowId: string) => string }>()
 const emit = defineEmits<{
   show: [id: string]
   aboutElement: [id: string]
-  ofKind: [kind: string]
   openRow: [tab: 'stressors' | 'end-states', rowId: string]
   close: []
 }>()
@@ -71,23 +71,6 @@ const groups = (hints: CoverageHints): readonly { title: string; items: readonly
           </button>
         </li>
       </ul>
-    </div>
-    <div
-      v-if="hints.unusedKinds.length"
-      class="hint-grp"
-    >
-      <p class="hg-h">
-        Kinds with no rows
-      </p>
-      <button
-        v-for="kind in hints.unusedKinds"
-        :key="kind"
-        type="button"
-        class="btn btn-sm kind"
-        @click="emit('ofKind', kind)"
-      >
-        + {{ kind }}
-      </button>
     </div>
     <div
       v-if="hints.singleStressorEndStates.length"

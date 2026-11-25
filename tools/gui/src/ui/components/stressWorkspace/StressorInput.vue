@@ -6,14 +6,13 @@
  */
 import { computed, inject, ref } from 'vue'
 import type { StressPerspective } from '../../../domain/schemas/stressEvaluation'
-import { unwritten } from '../../../domain/stressAnalysis/perspectives'
 import { modelServiceKey } from '../../keys'
 import { usePerspectives } from '../../composables/usePerspectives'
 import PerspectivesLine from './PerspectivesLine.vue'
 
 const props = defineProps<{
-  /** The kinds the stressors of this set already carry, which say which perspectives have none. */
-  kinds: readonly string[]
+  /** The perspectives no stressor of this set is written from, by id, as the server reads them. */
+  unwritten: readonly string[]
   placeholder: string
   disabled?: boolean
 }>()
@@ -22,7 +21,7 @@ const emit = defineEmits<{ write: [text: string, kind: string | undefined] }>()
 const frameworks = usePerspectives(inject(modelServiceKey)!)
 const text = ref('')
 const chosen = ref<StressPerspective | null>(null)
-const open = computed(() => unwritten(frameworks.value, props.kinds))
+const open = computed(() => new Set(props.unwritten))
 
 const keep = () => {
   const written = text.value.trim()

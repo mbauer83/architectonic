@@ -2281,7 +2281,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read unfinished stress analysis and coverage hints */
+        /**
+         * Read unfinished stress analysis and coverage hints
+         * @description Coverage reads the shipped perspectives (`/api/stress-perspectives`), the one vocabulary of kinds.
+         */
         get: operations["documents_analysis_progress"];
         put?: never;
         post?: never;
@@ -4081,6 +4084,11 @@ export interface components {
             stage: components["schemas"]["EvaluationStage"];
             /** Stressors */
             stressors: components["schemas"]["HeldApartStressor"][];
+            /**
+             * Unwritten Perspectives
+             * @description Perspectives no test stressor is written from, by id; empty while no stressor names a kind.
+             */
+            unwritten_perspectives: string[];
             /** Verdicts */
             verdicts: components["schemas"]["StressVerdict"][];
         };
@@ -6755,7 +6763,10 @@ export interface components {
         };
         /** CoverageHints */
         CoverageHints: {
-            /** By Kind */
+            /**
+             * By Kind
+             * @description Design stressors by kind, each kind as written; only kinds in use.
+             */
             by_kind: {
                 [key: string]: number;
             };
@@ -6763,8 +6774,11 @@ export interface components {
             single_stressor_end_states: string[];
             /** Untouched */
             untouched: components["schemas"]["UntouchedElement"][];
-            /** Unused Kinds */
-            unused_kinds: string[];
+            /**
+             * Unwritten Perspectives
+             * @description Perspectives no design stressor is written from, by id; empty while no stressor names a kind.
+             */
+            unwritten_perspectives: string[];
         };
         /** CreateAnalysisBody */
         CreateAnalysisBody: {
@@ -22749,10 +22763,7 @@ export interface operations {
     };
     documents_analysis_progress: {
         parameters: {
-            query?: {
-                /** @description Stress categories to check for coverage. */
-                kinds?: string[];
-            };
+            query?: never;
             header?: never;
             path: {
                 artifact_id: string;

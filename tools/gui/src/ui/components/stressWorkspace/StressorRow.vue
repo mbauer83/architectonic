@@ -5,7 +5,7 @@
  * text. `Enter` keeps, `Esc` cancels. The End state cell is a control and opens on the first press.
  * `M` opens it from the keyboard; `Delete` removes the row.
  */
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { DocumentTableRow } from '../../../domain/schemas/candidates'
 import { cell } from '../../../domain/stressAnalysis/analysisRows'
 import EndStateChooser from './EndStateChooser.vue'
@@ -19,8 +19,6 @@ const props = defineProps<{
   hits: number
   missing: readonly string[]
   endStates: readonly DocumentTableRow[]
-  /** Just added: its text field opens for typing. */
-  fresh?: boolean
 }>()
 const emit = defineEmits<{
   select: []
@@ -28,8 +26,6 @@ const emit = defineEmits<{
   remove: []
   endState: [rowId: string]
   createEndState: [name: string]
-  /** The fresh row's text field is open: it is fresh no longer. */
-  opened: []
 }>()
 
 const editing = ref<Column | null>(null)
@@ -73,12 +69,6 @@ const onRowKey = (event: KeyboardEvent) => {
   event.preventDefault()
   action()
 }
-
-watch(() => props.fresh, async (fresh) => {
-  if (!fresh) return
-  await begin('stressor')
-  emit('opened')
-}, { immediate: true })
 </script>
 
 <template>

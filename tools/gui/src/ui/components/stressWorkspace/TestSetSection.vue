@@ -141,7 +141,7 @@ const holdOut = async () => {
         />
         <template v-else>
           <StressorInput
-            :kinds="held.map((row) => cell(row, 'kind'))"
+            :unwritten="evaluation?.unwritten_perspectives ?? []"
             placeholder="Write a test stressor and press Enter"
             :disabled="analysis.saving.value"
             @write="testSet.write"

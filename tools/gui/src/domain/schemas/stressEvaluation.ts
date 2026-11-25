@@ -48,6 +48,7 @@ export const AnalysisEvaluationSchema = Schema.Struct({
   design_stressors: Schema.Number,
   stressors: Schema.Array(HeldApartStressorSchema),
   verdicts: Schema.Array(StressVerdictSchema),
+  unwritten_perspectives: Schema.Array(Schema.String),
   architectures: Schema.Array(ArchitectureStandingSchema),
   stage: Schema.Struct({
     naive_judged: Schema.Boolean,

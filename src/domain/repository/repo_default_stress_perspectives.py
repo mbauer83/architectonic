@@ -5,12 +5,21 @@ environment an organisation lives in — markets, law, people, partners — and 
 the architecture under analysis: which components a stressor hits is found in the walk, not given in
 advance. A perspective's `kind` is what choosing it may put in a stressor's optional kind column.
 
+This declaration is the one vocabulary of stressor kinds. A stressor may carry a kind outside it,
+written freely; that kind is counted as written and stands for no perspective.
+
 The frameworks are data. Another framework is one more entry here, and the workspace offers it.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
+
+
+def kind_of(written: str) -> str:
+    """A kind as it is compared with a perspective's: trimmed, and in lower case."""
+    return written.strip().lower()
 
 
 @dataclass(frozen=True)
@@ -24,7 +33,7 @@ class Perspective:
     @property
     def kind(self) -> str:
         """The value a stressor written from this perspective may carry as its kind."""
-        return self.name.lower()
+        return kind_of(self.name)
 
 
 @dataclass(frozen=True)
@@ -83,4 +92,16 @@ STRESS_PERSPECTIVES: tuple[PerspectiveFramework, ...] = (
         ("Culture", "What if the way decisions are made changes: new leadership, a merger, a loss of trust?"),
     ),
 )
+
+
+def unwritten_perspectives(kinds: Iterable[str]) -> list[str]:
+    """The perspectives no stressor is written from, by id, in the declaration's order.
+
+    None while no stressor names a kind: the kind is optional, so an empty column says nothing about
+    which perspectives are missing. A kind outside the declaration is allowed and stands for none.
+    """
+    used = {kind_of(kind) for kind in kinds} - {""}
+    if not used:
+        return []
+    return [one.id for framework in STRESS_PERSPECTIVES for one in framework.perspectives if one.kind not in used]
 

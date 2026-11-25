@@ -25,6 +25,7 @@ from typing import Any
 from src.application.artifacts.document_table_rows import DocumentTables
 from src.application.stress_analysis.rows import Row, in_test_set, rows_of
 from src.domain.repository.repo_default_stress_analysis import DEGRADES, NAIVE_ARCHITECTURE, SURVIVES
+from src.domain.repository.repo_default_stress_perspectives import unwritten_perspectives
 
 #: The share of the design set a hold-out moves into the test set.
 HELD_OUT_SHARE = Fraction(1, 3)
@@ -136,6 +137,7 @@ def evaluate(tables: DocumentTables, *, integrated: Sequence[str], adapted: bool
         "verdicts": [_stated({"id": one.row, "stressor": one.stressor, "architecture": one.architecture,
                               "verdict": one.verdict, "usable": one.usable, "reasoning": one.reasoning})
                      for one in verdicts],
+        "unwritten_perspectives": unwritten_perspectives(str(row.get("kind") or "") for row in stressors),
         "architectures": [standing_as_read(standing, naive, integrated=name in integrated)
                           for name, standing in standings.items()],
         "stage": {

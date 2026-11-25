@@ -35,7 +35,7 @@ looking entirely normal. See
 |---|---|---|
 | `analysis_incidence` | Read-only | Read stressors, missing subjects and hits, end states, adaptations and pairwise coupling. |
 | `analysis_perspectives` | Read-only | List the perspectives offered for writing stressors (PESTLE, five forces, business model canvas, organisation), each with a guiding question. |
-| `analysis_progress` | Read-only | Read outstanding analysis work and coverage, including unused categories from kinds. |
+| `analysis_progress` | Read-only | Read outstanding analysis work and coverage: stressors by kind, and the perspectives (analysis_perspectives) none is written from. |
 | `analysis_test_set` | Read-only | Read an analysis's test set, its verdicts, each judged architecture's residuality (Y − X) / n and the stage. |
 | `artifact_aibom_coverage` | Read-only | Per-AI-component AIBOM coverage over the architecture model: blocking gaps (missing required attributes, missing dataset linkage, missing governance edge) vs advisory gaps (missing recommended attributes), plus repo-wide derivation roles that no connection type is bound to. |
 | `artifact_aibom_export` | Read-only | Emit a CycloneDX 1.6 ML-BOM DERIVED from the architecture model: every entity carrying an AI specialization (ai-model, ai-agent, ai-inference-service, ai-dataset, ai-prompt-asset, ai-vector-store, ai-runtime, ai-tool-interface) becomes a component, with its authored model card, dataset/governance links resolved from connections, and a dependency graph between AI components. |

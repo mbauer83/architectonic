@@ -4,6 +4,7 @@
  * suggestions, so nothing is drawn or invented here.
  */
 import type { AnalysisProgress } from '../schemas/candidates'
+import type { PerspectiveFramework } from '../schemas/stressEvaluation'
 
 export type WorkspaceTab = 'naive' | 'stressors' | 'end-states' | 'adaptations' | 'integration'
 
@@ -39,6 +40,21 @@ export const whatIsLeft = (progress: AnalysisProgress['progress']): readonly Lef
   })),
 ].map((item, index) => ({ ...item, key: `${index}:${item.text}` }))
 
+/**
+ * The kinds the design stressors carry, each as written with its count, most used first. Only kinds
+ * in use: a perspective no stressor is written from is the perspectives line's to mark, quietly.
+ */
+export const kindsInUse = (byKind: Readonly<Record<string, number>>): readonly (readonly [string, number])[] =>
+  Object.entries(byKind).filter(([, count]) => count > 0).sort(([a, x], [b, y]) => y - x || a.localeCompare(b))
+
+/** The kinds a stressor's kind cell offers: every declared perspective's, then any free kind in use. */
+export const kindChoices = (
+  frameworks: readonly PerspectiveFramework[], byKind: Readonly<Record<string, number>>,
+): readonly string[] => [...new Set([
+  ...frameworks.flatMap((framework) => framework.perspectives.map((one) => one.kind)),
+  ...kindsInUse(byKind).map(([kind]) => kind),
+])]
+
 /** An element no stressor touches, by how connected it is in the naive architecture. */
 export interface UntouchedHint {
   readonly id: string
@@ -50,7 +66,6 @@ export interface UntouchedHint {
 export interface CoverageHints {
   readonly wellConnected: readonly UntouchedHint[]
   readonly otherUntouched: readonly UntouchedHint[]
-  readonly unusedKinds: readonly string[]
   readonly singleStressorEndStates: readonly string[]
   readonly withoutEndState: readonly string[]
 }
@@ -68,7 +83,6 @@ export const coverageHints = (
   return {
     wellConnected: untouched.filter(well),
     otherUntouched: untouched.filter((hint) => !well(hint)),
-    unusedKinds: progress.coverage.unused_kinds,
     singleStressorEndStates: progress.coverage.single_stressor_end_states,
     withoutEndState: progress.progress.without_end_state,
   }

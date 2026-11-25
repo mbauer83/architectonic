@@ -109,9 +109,9 @@ def change_set_check(candidates: list[str], repo_root: str | None = None) -> dic
     return _service(repo_root).check(candidates)
 
 
-def analysis_progress(artifact_id: str, kinds: list[str] | None = None, repo_root: str | None = None) -> dict[str, Any]:
-    """Read outstanding analysis work and coverage, including unused categories from kinds."""
-    return _service(repo_root).progress(artifact_id, kinds or ())
+def analysis_progress(artifact_id: str, repo_root: str | None = None) -> dict[str, Any]:
+    """Read outstanding analysis work and coverage: stressors by kind, and the perspectives (analysis_perspectives) none is written from."""  # noqa: E501
+    return _service(repo_root).progress(artifact_id)
 
 
 def analysis_incidence(artifact_id: str, repo_root: str | None = None) -> dict[str, Any]:

@@ -12,9 +12,7 @@ from typing import Any
 from src.application.artifacts.document_table_rows import DocumentTables, TypedRow
 from src.application.change_sets.candidate_view import CandidateView
 from src.application.stress_analysis.rows import held_apart, rows_of
-
-# The categories offered by the stress-analysis workspace.
-STRESSOR_KINDS = ("scale", "organisation", "technology", "actor", "regulation", "time")
+from src.domain.repository.repo_default_stress_perspectives import unwritten_perspectives
 
 
 def _incomplete_design_rows(tables: DocumentTables, held: frozenset[str]) -> list[dict[str, str]]:
@@ -42,7 +40,7 @@ def _held_apart_row(table: str, row: TypedRow, held: frozenset[str]) -> bool:
             return False
 
 
-def analyse(tables: DocumentTables, naive: CandidateView, *, kinds: tuple[str, ...] = ()) -> dict[str, Any]:
+def analyse(tables: DocumentTables, naive: CandidateView) -> dict[str, Any]:
     held = held_apart(tables)
     stressors = [row for row in rows_of(tables, "stressors") if row["id"] not in held]
     ends = rows_of(tables, "end-states")
@@ -88,7 +86,7 @@ def analyse(tables: DocumentTables, naive: CandidateView, *, kinds: tuple[str, .
             "incomplete_rows": _incomplete_design_rows(tables, held),
         },
         "coverage": {
-            "by_kind": dict(counts), "unused_kinds": sorted(set(kinds or STRESSOR_KINDS) - counts.keys()),
+            "by_kind": dict(counts), "unwritten_perspectives": unwritten_perspectives(counts),
             "single_stressor_end_states": [row["id"] for row in ends if grouped[row["id"]] == 1],
             "untouched": [
                 {"id": ref, "fan_in": fan_in[ref], "fan_out": fan_out[ref]}
