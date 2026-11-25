@@ -136,6 +136,7 @@ const editBar = ref<EditBarHandle | null>(null)
 const edit = useDiagramEditMode(
   svc, diagramId, {
     canvas: editCanvas, bar: editBar, membership: () => membershipOf(detail.value), lens: () => lens.value,
+    context: () => contextQuery.data.value,
     view: panZoom, host: containerRef, large: () => panZoom.fitScale.value < LARGE_BELOW,
   }, load, toast,
 )

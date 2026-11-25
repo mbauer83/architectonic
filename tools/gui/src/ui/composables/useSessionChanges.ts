@@ -20,13 +20,25 @@ import type { ArrangementSession, ArrangementState } from './useArrangementSessi
 export const referenceOf = (geometry: LayoutGeometry, before: ArrangementState, now: ArrangementState): Arrangement =>
   before.byHand ? before.arrangement : (now.takenOver ?? widenedArrangement(geometry, before.arrangement))
 
-export function useSessionChanges(session: ArrangementSession, saved: ShallowRef<ArrangementState | null>) {
+/** The drawings of *picture* that draw an element, with the element's name in the model. */
+export type MembersOf = (
+  picture: LayoutGeometry, state: ArrangementState | null,
+) => readonly { readonly alias: string; readonly name: string }[]
+
+/**
+ * *members* names a drawing by its element's name, as the model and the session have it; a shape it does
+ * not name — a box, or any shape when no names are given — goes by the label the picture draws.
+ */
+export function useSessionChanges(
+  session: ArrangementSession, saved: ShallowRef<ArrangementState | null>, members: MembersOf = () => [],
+) {
   /** The pictures a shape may be named from: the one drawn now, and the one saved, which still draws what
    * the session removed. */
   const pictures = () => [session.drawnPicture.value, saved.value?.picture].flatMap((one) => (one ? [one] : []))
   const nameOf = (alias: string): string => pictures()
-    .flatMap((geometry) => [...geometry.elements, ...geometry.boxes])
-    .find((one) => one.alias === alias)?.label ?? alias
+    .flatMap((geometry) => members(geometry, session.state.value)).find((one) => one.alias === alias)?.name
+    ?? pictures().flatMap((geometry) => [...geometry.elements, ...geometry.boxes])
+      .find((one) => one.alias === alias)?.label ?? alias
   /** The alias the pictures draw the entity *id* under; the id itself where they draw none. */
   const aliasOf = (id: string): string => pictures()
     .flatMap((geometry) => geometry.elements.find((one) => one.key === stableEntityId(id))?.alias ?? [])[0] ?? id

@@ -12,6 +12,7 @@
 import { ref, shallowRef } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
+import type { DiagramContext } from '../../domain'
 import type { ArrangedLayout, StoredLayout } from '../../domain/layout/arrangementLayout'
 import {
   arrangedBy, layoutOf, layoutPatchBetween, patchIsEmpty, shownRoutesOfMoved,
@@ -25,7 +26,7 @@ import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import { referenceOf, useSessionChanges } from './useSessionChanges'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { membershipOf } from '../../domain/layout/diagramMembership'
-import { composeCanvas, withCommand, withoutDraft } from '../../domain/layout/canvasComposition'
+import { canvasMembers, composeCanvas, withCommand, withoutDraft } from '../../domain/layout/canvasComposition'
 import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import { stableEntityId } from '../../domain/artifactId'
@@ -37,10 +38,20 @@ import { useArrangementSession } from './useArrangementSession'
 
 export type { PendingChange }
 
+/** What a page adds to its edit session: told when a save changed what the diagram holds, the lens it
+ * reads with, and the diagram's context read, which names the elements the session lists. */
+export interface EditingOptions {
+  readonly onMembershipSaved?: () => void
+  readonly lens?: () => ReadingLens | undefined
+  readonly context?: () => DiagramContext | null
+}
+
 export function useDiagramEditing(
   svc: ModelService, diagramId: () => string, membership: () => DrawnMembership | null,
-  onMembershipSaved: () => void = () => {}, lens: () => ReadingLens | undefined = () => undefined,
+  options: EditingOptions = {},
 ) {
+  const onMembershipSaved = options.onMembershipSaved ?? (() => {})
+  const lens = options.lens ?? (() => undefined)
   const session = useArrangementSession(
     (shapes) => svc.drawResizedShapes(diagramId(), shapes),
     (geometry, automatic) => widenedArrangement(geometry, automatic),
@@ -89,7 +100,12 @@ export function useDiagramEditing(
     }
   }
 
-  const { changes, undoStep, redoStep } = useSessionChanges(session, saved)
+  /** Each drawing of *picture* that draws an element, by its name in the model as the session has it. */
+  const members = (picture: LayoutGeometry, state: ArrangementState | null) => {
+    const context = options.context?.()
+    return context ? canvasMembers(context, state, picture) : []
+  }
+  const { changes, undoStep, redoStep } = useSessionChanges(session, saved, members)
 
   const wanted = (): ArrangedLayout | null => {
     const geometry = session.geometry.value

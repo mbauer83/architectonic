@@ -8,6 +8,7 @@ import type { ModelService } from '../../application/ModelService'
 import type { Extent } from '../../domain/layout/geometry'
 import { moved } from '../../domain/layout/lab/labArrangement'
 import { LINE_DRAWING, SHAPE_DRAWING } from '../../domain/layout/lab/__tests__/labDrawingFixtures'
+import type { DiagramContext } from '../../domain'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import type { DiagramReplaceBody } from '../../ports/diagramWriteBodies'
@@ -169,5 +170,31 @@ describe('removing an element from the diagram', () => {
     // One write: the layout travels with the membership, never as a second request after it.
     expect(written[0].layout_patch).toBeDefined()
     expect(sent).toHaveLength(0)
+  })
+})
+
+describe('the names a session lists', () => {
+  it('are the elements\' names in the model, not the labels the picture draws with their «type»', async () => {
+    const pictured: LayoutGeometry = {
+      ...geometry,
+      elements: geometry.elements.map((one) => ({ ...one, label: `«application component»\n${one.alias}` })),
+    }
+    const context = {
+      entities: [
+        { artifact_id: 'APP@1.a', name: 'Portal', artifact_type: 'application-component' },
+        { artifact_id: 'APP@3.c', name: 'Ledger', artifact_type: 'application-component' },
+      ],
+      suggested_entities: [], diagram: { diagram_entities: {} },
+    } as unknown as DiagramContext
+    const named = useDiagramEditing(
+      { ...service, readLayoutGeometry: () => Effect.succeed(pictured) } as unknown as ModelService,
+      () => 'ARC@1.a.test', () => MEMBERSHIP, { context: () => context },
+    )
+    await named.open()
+    move(named, 'C', 30)
+    expect(named.changes.value.map((change) => change.text)).toEqual(['Arranged: Ledger'])
+    expect(named.undoStep.value).toBe('Arranged: Ledger')
+    named.remove(['A'])
+    expect(named.undoStep.value).toBe('Removed from the diagram: Portal — it stays in the model')
   })
 })

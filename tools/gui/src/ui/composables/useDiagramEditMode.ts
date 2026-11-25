@@ -19,6 +19,7 @@ import { type BendRef, withBendsMoved } from '../../domain/layout/lab/labSelecti
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import type { Extent } from '../../domain/layout/geometry'
 import type { ReadingLens } from '../../domain/readingLens'
+import type { DiagramContext } from '../../domain'
 import { extentOfMarks, type OverviewMark } from '../lib/diagramOverview'
 import type { CanvasFocus } from '../components/layoutLab/useCanvasFocus'
 import { useEditPanel } from './useEditPanel'
@@ -76,11 +77,15 @@ export function useDiagramEditMode(
     view: EditWindow; host: Ref<HTMLElement | null>; large: () => boolean
     /** The reader's lens, which the picture being arranged keeps showing (owner, 2026-11-25). */
     lens?: () => ReadingLens
+    /** The diagram's context read: what names the elements in the list of changes. */
+    context?: () => DiagramContext | null
   },
   onLeft: () => void,
   toast: ShowToast,
 ) {
-  const editing = useDiagramEditing(svc, () => diagramId.value, parts.membership, onLeft, () => parts.lens?.())
+  const editing = useDiagramEditing(svc, () => diagramId.value, parts.membership, {
+    onMembershipSaved: onLeft, lens: () => parts.lens?.(), context: parts.context,
+  })
   const active = ref(false)
   const leaving = ref(false)
   const spaceHeld = ref(false)
