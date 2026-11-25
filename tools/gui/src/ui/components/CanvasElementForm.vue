@@ -10,9 +10,12 @@ import CanvasElementPicker from './CanvasElementPicker.vue'
 import { noteRecentType, typeWords } from './canvasTypeList'
 import { projectsByUse } from './canvasProjects'
 import { NO_COLLECTION } from './ArtifactHomeSelect.helpers'
+import type { ReceivingBox } from '../../domain/layout/receivingBox'
 
-const props = defineProps<{ context: DiagramContext }>()
-const emit = defineEmits<{ apply: [command: CanvasCommand]; add: [entity: EntityDisplayInfo]; cancel: [] }>()
+const props = defineProps<{ context: DiagramContext; into?: ReceivingBox | null; drawsAgain?: boolean }>()
+const emit = defineEmits<{
+  apply: [command: CanvasCommand]; add: [entity: EntityDisplayInfo]; again: [entity: EntityDisplayInfo]; cancel: []
+}>()
 const svc = inject(modelServiceKey)!
 const type = ref('')
 const name = ref('')
@@ -90,7 +93,10 @@ const submit = async () => {
   <CanvasElementPicker
     v-if="!type"
     :context="context"
+    :into="into"
+    :draws-again="drawsAgain"
     @add="emit('add', $event)"
+    @again="emit('again', $event)"
     @create="chosen"
   />
   <form

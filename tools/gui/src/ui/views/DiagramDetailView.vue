@@ -265,6 +265,7 @@ const executeDelete = () => {
                   :line="editCanvas?.selectedLine"
                   :selected-shapes="editCanvas?.selection"
                   :focused="editCanvas?.announced"
+                  @select="editCanvas?.select($event)"
                 >
                   <LayoutLabCanvas
                     ref="editCanvas"

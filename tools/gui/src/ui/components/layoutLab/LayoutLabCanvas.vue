@@ -96,6 +96,8 @@ defineExpose({
   /** The line selected, by its place on the picture; null when none is. */
   selectedLine: lineGesture.line,
   clearSelection: () => { gesture.clear(); lineGesture.clear(); focus.clear() },
+  /** Select the one shape *alias*, as a press on it would: what was just added, so the arrows move it. */
+  select: (alias: string) => { lineGesture.clear(); gesture.selection.value = [alias]; focus.pointed(alias) },
   /** The element focus the keys move (`useCanvasFocus`): where it is, as announced; and the arrows on a label. */
   focus: { step: focus.step, enter: focus.enter, towards: focus.towards, selectAll: focus.selectAll },
   focusedExtent: focus.extent,

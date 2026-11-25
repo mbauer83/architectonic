@@ -147,6 +147,7 @@ onMounted(async () => {
             :selection="canvas?.selected"
             :selected-shapes="canvas?.selection"
             :words="CANDIDATE_WORDS"
+            @select="canvas?.select($event)"
           >
             <LayoutLabCanvas
               ref="canvas"

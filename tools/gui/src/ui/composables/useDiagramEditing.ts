@@ -270,7 +270,8 @@ export function useDiagramEditing(
     return preview({ ...now, occurrences: [...now.occurrences ?? [], occurrence] }, now, true, at && [occurrenceId, at])
   }
 
-  const add = async (id: string, name: string, type?: string) => {
+  /** *id* drawn on the diagram, as one undoable step; *at*, on the picture, is where it is placed. */
+  const add = async (id: string, name: string, type?: string, at?: Point) => {
     const drawn = savedMembers.value
     const now = session.state.value
     if (!drawn || !now || loading.value || saving.value) return
@@ -286,7 +287,8 @@ export function useDiagramEditing(
     }
     if (drawn.entity_ids.some(key => stableEntityId(key) === stableEntityId(id)) || now.additions?.has(id)) return
     const additions = new Map(now.additions).set(id, name)
-    await preview({ ...now, additions, addedTypes: type ? new Map(now.addedTypes).set(id, type) : now.addedTypes }, now)
+    const addedTypes = type ? new Map(now.addedTypes).set(id, type) : now.addedTypes
+    await preview({ ...now, additions, addedTypes }, now, true, at && [id, at])
   }
 
   /** Draw *next*'s content: as one undoable step, or (*undoable* false) as the state the session opens on. */
@@ -304,7 +306,8 @@ export function useDiagramEditing(
         diagramId(), { ...request, ...(carried ? {arrangement: carried} : {}) }, lens()))
       if (session.state.value !== previous) return false
       const read = carried ? arrangedBy(picture, picture.layout ?? carried) : drawnArrangement(picture)
-      const alias = place && picture.elements.find((one) => one.key === place[0])?.alias
+      const key = place && stableEntityId(place[0])
+      const alias = key && picture.elements.find((one) => stableEntityId(one.key ?? '') === key)?.alias
       const arrangement = place && alias ? placedAt(picture, read, new Map([[alias, place[1]]])) : read
       if (undoable) session.step({ ...next, picture, arrangement })
       else session.open(picture, { ...next, arrangement })
@@ -317,12 +320,18 @@ export function useDiagramEditing(
     }
   }
 
-  /** *proposed* kept in the session as one undoable step, each over what it supersedes (`withCommand`). */
-  const propose = async (proposed: CanvasCommand | readonly CanvasCommand[], overlay?: Record<string, unknown>) => {
+  /**
+   * *proposed* kept in the session as one undoable step, each over what it supersedes (`withCommand`);
+   * *place* puts the element it draws at a point on the picture.
+   */
+  const propose = async (
+    proposed: CanvasCommand | readonly CanvasCommand[], overlay?: Record<string, unknown>,
+    place?: readonly [string, Point],
+  ) => {
     const now = session.state.value
     if (!now) return false
     const commands = [proposed].flat().reduce(withCommand, now.commands ?? [])
-    return preview({ ...now, commands, overlays: overlay ? [...now.overlays ?? [], overlay] : now.overlays }, now)
+    return preview({ ...now, commands, overlays: overlay ? [...now.overlays ?? [], overlay] : now.overlays }, now, true, place)
   }
 
   /** The draft *id* discarded with everything the session proposed about it, as one undoable step. */

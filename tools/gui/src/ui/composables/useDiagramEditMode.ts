@@ -40,6 +40,7 @@ export interface CanvasHandle {
   readonly selectedBends: readonly BendRef[]
   readonly removeSelectedBends: () => boolean
   readonly clearSelection: () => void
+  readonly select: (alias: string) => void
   readonly sweepFrom: (event: PointerEvent) => void
   readonly focus: Pick<CanvasFocus, 'step' | 'enter' | 'towards' | 'selectAll'>
   readonly focusedExtent: Extent | null
