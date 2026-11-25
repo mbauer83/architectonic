@@ -23,7 +23,7 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
   createCandidate: (record, diagram) =>
     postJson(buildUrl('/change-sets'), { record, ...(diagram ? { diagram } : {}) }, CandidateResponseSchema),
   startAnalysis: (start) => postJson(buildUrl('/stress-analyses'), start, AnalysisStartedSchema),
-  deleteCandidate: (id) => deleteNoContent(candidateUrl(id)),
+  deleteCandidate: (id) => deleteNoContent(candidateUrl(id, '', { dry_run: 'false' })),
   rebaseCandidate: (id, basedOn) =>
     postJson(candidateUrl(id, '/rebase'), { based_on: basedOn }, CandidateResponseSchema),
   applyCandidate: (id, dryRun) =>

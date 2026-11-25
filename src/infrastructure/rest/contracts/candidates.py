@@ -30,6 +30,15 @@ class CandidateResponse(Closed):
     version: str
 
 
+class CandidateDeletion(Closed):
+    """What deleting a candidate does: on a dry run, what it would."""
+
+    candidate: str
+    dry_run: bool
+    deleted: bool
+    version: str = Field(description="The version the deletion was checked against.")
+
+
 class CandidateRebase(Closed):
     """Re-base a candidate's drifted operations on the model as it stands now."""
 

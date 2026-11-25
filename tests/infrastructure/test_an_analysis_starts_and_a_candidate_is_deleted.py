@@ -5,15 +5,18 @@ import json
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 
 from src.application.artifacts.repository import ArtifactRepository
+from src.domain.artifact_id import stable_id
 from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_SCHEMA
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
+from src.infrastructure.mcp import mcp_artifact_server as model
 from src.infrastructure.mcp.artifact_mcp import candidate_tools as mcp
-from src.infrastructure.rest.routers import candidates, state
+from src.infrastructure.rest.routers import candidates, documents, state
 from tests.support.api_app import build_api_app
 from tests.support.rest_state import reset_state_for_test
 from tests.support.typed_table_documents import entity_in, repository_in
@@ -33,7 +36,7 @@ def _candidate_files(root: Path) -> list[Path]:
 def _served(root: Path) -> Iterator[TestClient]:
     state.init_state(ArtifactRepository(shared_artifact_index([root])), root, None)
     try:
-        with TestClient(build_api_app(candidates.router)) as served:
+        with TestClient(build_api_app(candidates.router, documents.router)) as served:
             served.root = root  # type: ignore[attr-defined]
             yield served
     finally:
@@ -86,6 +89,10 @@ def test_a_start_refused_only_by_the_write_takes_its_naive_back(tmp_path: Path) 
     assert _candidate_files(root) == []
 
 
+def _delete(client: TestClient, ref: str, **query: str) -> Any:
+    return client.delete(f"/api/change-sets/{ref}", params={"dry_run": "false", **query})
+
+
 def test_a_candidate_is_deleted_only_when_nothing_depends_on_it(client: TestClient) -> None:
     root = client.root  # type: ignore[attr-defined]
     started = mcp.analysis_start("Stress analysis — delete", {"name": "Naive"}, repo_root=str(root))
@@ -93,18 +100,67 @@ def test_a_candidate_is_deleted_only_when_nothing_depends_on_it(client: TestClie
     adaptation = client.post("/api/change-sets", json={"record": {"name": "On top", "parent": naive}}).json()
     on_top = adaptation["record"]["id"]
 
-    stacked = client.delete(f"/api/change-sets/{naive}")
+    stacked = _delete(client, naive)
     assert stacked.status_code == 409 and on_top in stacked.text
-    assert client.delete(f"/api/change-sets/{on_top}").status_code == 204
-    named = client.delete(f"/api/change-sets/{naive}")
+    assert _delete(client, on_top).status_code == 204
+    named = _delete(client, naive)
     assert named.status_code == 409 and started["document"] in named.text
     with pytest.raises(ValueError, match="naive architecture of"):
-        mcp.change_set_delete(naive, str(root))
-    assert client.delete(f"/api/change-sets/{on_top}").status_code == 404
+        mcp.change_set_delete(naive, dry_run=False, repo_root=str(root))
+    assert _delete(client, on_top).status_code == 404
 
     loose = mcp.change_set_create({"name": "Loose"}, repo_root=str(root))["record"]["id"]
-    assert mcp.change_set_delete(loose, str(root)) == {"deleted": loose}
+    planned = mcp.change_set_delete(loose, repo_root=str(root))
+    assert (planned["dry_run"], planned["deleted"]) == (True, False)
+    assert mcp.change_set_delete(loose, dry_run=False, repo_root=str(root))["deleted"] is True
     assert [c["id"] for c in client.get("/api/change-sets").json()["candidates"]] == [naive]
+
+
+def test_a_delete_is_a_dry_run_unless_asked_and_refuses_a_version_it_was_not_read_at(client: TestClient) -> None:
+    created = client.post("/api/change-sets", json={"record": {"name": "Loose"}}).json()
+    ref, version = created["record"]["id"], created["version"]
+
+    planned = client.delete(f"/api/change-sets/{ref}")
+    stale = _delete(client, ref, based_on="0000000000000000")
+    deleted = _delete(client, ref, based_on=version)
+
+    assert planned.status_code == 200 and planned.json()["deleted"] is False
+    assert stale.status_code == 409 and version in stale.json()["detail"]["message"]
+    assert deleted.status_code == 204
+    assert client.get(f"/api/change-sets/{ref}").status_code == 404
+
+
+def test_a_candidate_a_verdict_names_or_that_was_integrated_is_kept(client: TestClient) -> None:
+    """Regression: a judged candidate was deleted and its verdicts read on under an id that answered 404."""
+    root = client.root  # type: ignore[attr-defined]
+    started = mcp.analysis_start("Stress analysis — kept", {"name": "Naive"}, repo_root=str(root))
+    document, naive = started["document"], started["naive_candidate"]["record"]["id"]
+    judged = client.post("/api/change-sets", json={"record": {"name": "Judged", "parent": naive}}).json()
+    ref = judged["record"]["id"]
+    for table, cells in (("stressors", {"stressor": "Outage", "set": "test"}),
+                         ("survival", {"stressor": "S1", "architecture": stable_id(ref), "verdict": "fails"})):
+        written = client.patch(f"/api/documents/{document}/tables/{table}", json={
+            "rows": [{"op": "add", "cells": cells}], "dry_run": False})
+        assert written.status_code == 200, written.text
+
+    named = _delete(client, ref)
+
+    assert named.status_code == 409, named.text
+    assert "survival T1" in named.json()["detail"]["message"]
+    assert client.get(f"/api/change-sets/{ref}").status_code == 200
+
+    entity = model.artifact_create_entity(
+        artifact_type="application-component", name="Catalog", dry_run=False, repo_root=str(root),
+    )["artifact_id"]
+    applied = client.post("/api/change-sets", json={"record": {"name": "Applied"}}).json()
+    integrated = applied["record"]["id"]
+    client.post(f"/api/change-sets/{integrated}/operations", json={"based_on": applied["version"], "operation": {
+        "op": "edit_entity", "artifact_id": entity, "field": "name", "value": "Registry"}}).raise_for_status()
+    assert client.post(f"/api/change-sets/{integrated}/apply", json={"dry_run": False}).json()["integrated"]
+
+    kept = _delete(client, integrated)
+
+    assert kept.status_code == 409 and "record of what was written" in kept.json()["detail"]["message"]
 
 
 def test_a_drifted_candidate_is_rebased_and_then_applies(client: TestClient) -> None:

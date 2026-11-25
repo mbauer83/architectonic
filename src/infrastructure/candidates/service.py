@@ -124,31 +124,63 @@ class CandidateService:
             raise
         return {"document": written.artifact_id, "naive_candidate": created}
 
-    def delete(self, ref: str) -> None:
-        """Delete a candidate nothing depends on: none stacks on it, and no analysis starts from it."""
-        ref = self.resolved(ref)
-        stacked = sorted(
-            c.id for c in self.store.list()
-            if c.parent_id and canonical_entity_key(c.parent_id) == canonical_entity_key(ref)
-        )
+    def delete(self, ref: str, *, based_on: str | None = None, dry_run: bool = False) -> dict[str, Any]:
+        """Delete a candidate nothing refers to, or say what refers to it.
+
+        Refused (409) while a candidate stacks on it, an analysis starts from it, an analysis's verdicts
+        or adaptations name it, or it is integrated — an integrated candidate is the record of what was
+        written to the model. *based_on*, when given, is the version the caller read: a candidate changed
+        since is not deleted unseen. A dry run answers what a deletion would do and deletes nothing.
+        """
+        candidate = self.store.require(ref)
+        ref = candidate.id
+        version = record_revision(to_mapping(candidate))
+        if based_on is not None and based_on != version:
+            raise CandidateConflict(
+                f"The candidate changed: its current version is {version}. Read it before deleting it."
+            )
+        if candidate.state == "integrated":
+            raise CandidateConflict(
+                f"{ref} is integrated, and is kept as the record of what was written to the model. "
+                "An integrated candidate is not deleted."
+            )
+        refusal = self._held_by(ref)
+        if refusal:
+            raise CandidateConflict(f"{ref} cannot be deleted: {refusal}")
+        if not dry_run:
+            self._remove(ref, version)
+        return {"candidate": ref, "dry_run": dry_run, "deleted": not dry_run, "version": version}
+
+    def _held_by(self, ref: str) -> str | None:
+        """What still refers to the candidate *ref*, in a sentence that says what to do, or None."""
+        key = canonical_entity_key(ref)
+        stacked = sorted(c.id for c in self.store.list() if c.parent_id and canonical_entity_key(c.parent_id) == key)
         if stacked:
             verb = "stacks" if len(stacked) == 1 else "stack"
-            raise CandidateConflict(
-                f"{ref} cannot be deleted: {', '.join(stacked)} {verb} on it. Delete what stacks on it first."
-            )
+            return f"{', '.join(stacked)} {verb} on it. Delete what stacks on it first."
+        analyses = self.index.list_documents(doc_type=STRESS_ANALYSIS)
         naming = sorted(
-            doc.artifact_id for doc in self.index.list_documents(doc_type=STRESS_ANALYSIS)
-            if canonical_entity_key(str(doc.extra.get(NAIVE_CANDIDATE) or "")) == canonical_entity_key(ref)
+            doc.artifact_id for doc in analyses
+            if canonical_entity_key(str(doc.extra.get(NAIVE_CANDIDATE) or "")) == key
         )
         if naming:
-            raise CandidateConflict(
-                f"{ref} cannot be deleted: it is the naive architecture of {', '.join(naming)}. "
-                "Delete the analysis first."
+            return f"it is the naive architecture of {', '.join(naming)}. Delete the analysis first."
+        rows = [
+            f"{doc.artifact_id} ({table} {row.row_id})"
+            for doc in analyses
+            for table, column in (("survival", "architecture"), ("adaptations", "candidate_architecture"))
+            for row in _rows_of(tables_of_stored_document(doc.path, doc.doc_type, [self.root]), table)
+            if canonical_entity_key(str(row.cells[column].value if column in row.cells else "")) == key
+        ]
+        if rows:
+            return (
+                f"an analysis names it in {', '.join(rows)}. Remove or re-point those rows first, so no "
+                "verdict or adaptation names a candidate that is gone."
             )
-        self._remove(ref)
+        return None
 
-    def _remove(self, ref: str) -> None:
-        self.store.delete(ref)
+    def _remove(self, ref: str, based_on: str | None = None) -> None:
+        self.store.delete(ref, based_on)
         notify_paths_changed([self.store.path(ref)])
 
     def rebase(self, ref: str, based_on: str) -> dict[str, Any]:
@@ -297,3 +329,8 @@ def _refuse_unwritten(result: WriteResult, *, wrote: bool) -> None:
     if result.error_messages or result.wrote != wrote:
         said = " ".join(result.error_messages) or "it was refused"
         raise ValueError(f"The analysis document cannot be {'written' if wrote else 'planned'}: {said}")
+
+
+def _rows_of(tables: DocumentTables, name: str) -> tuple[Any, ...]:
+    table = tables.table(name)
+    return tuple(table.rows) if table else ()

@@ -15,6 +15,7 @@ from src.infrastructure.rest.contracts.candidates import (
     CandidateApply,
     CandidateComparison,
     CandidateCreate,
+    CandidateDeletion,
     CandidateEdit,
     CandidateList,
     CandidateOperation,
@@ -104,16 +105,34 @@ def changes_record_operation(artifact_id: str, body: CandidateOperation) -> dict
     "/api/change-sets/{artifact_id}",
     operation_id="changes_delete_candidate",
     tags=[TAG_CHANGES],
-    summary="Delete a candidate nothing stacks on and no analysis starts from",
+    summary="Delete a candidate nothing refers to",
     response_model=None,
-    responses={**WRITE_RESPONSES, **READ_RESPONSES},
+    responses={
+        **WRITE_RESPONSES, **READ_RESPONSES,
+        200: {"model": CandidateDeletion, "description": "Dry-run plan; nothing was deleted"},
+    },
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def changes_delete_candidate(artifact_id: str) -> Response:
-    """Refused with 409, saying why, while a candidate stacks on it or an analysis names it as its naive."""
+def changes_delete_candidate(
+    artifact_id: str,
+    response: Response,
+    dry_run: bool = Query(True, description="Answer what the deletion would do and delete nothing (the default)."),
+    based_on: str | None = Query(
+        None, description="The version last read; a candidate changed since is refused with 409 instead of deleted.",
+    ),
+) -> dict[str, Any] | None:
+    """Refused with 409, saying why and what to do first, while a candidate stacks on it, an analysis starts
+    from it, an analysis's verdicts or adaptations name it, or it is integrated (kept as the record of what was
+    written). A committed deletion answers 204; a dry run answers 200 with the plan."""
     with refusals():
-        s.authorized_write("changes_delete_candidate", service().delete, artifact_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+        plan = s.authorized_write(
+            "changes_delete_candidate", service().delete, artifact_id, based_on=based_on, dry_run=dry_run,
+        )
+    if dry_run:
+        response.status_code = status.HTTP_200_OK
+        return dict(plan)
+    response.status_code = status.HTTP_204_NO_CONTENT
+    return None
 
 
 @router.post(

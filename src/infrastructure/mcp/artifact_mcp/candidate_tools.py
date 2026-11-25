@@ -70,10 +70,11 @@ def change_set_edit(
     return _service(repo_root).edit(artifact_id, based_on, patch)
 
 
-def change_set_delete(artifact_id: str, repo_root: str | None = None) -> dict[str, Any]:
-    """Delete a candidate; refused while another candidate stacks on it or an analysis starts from it."""
-    _service(repo_root).delete(artifact_id)
-    return {"deleted": artifact_id}
+def change_set_delete(
+    artifact_id: str, based_on: str | None = None, dry_run: bool = True, repo_root: str | None = None,
+) -> dict[str, Any]:
+    """Delete a candidate nothing refers to; refused while one stacks on it, an analysis starts from it, verdicts or adaptations name it, or it is integrated."""  # noqa: E501
+    return _service(repo_root).delete(artifact_id, based_on=based_on, dry_run=dry_run)
 
 
 def change_set_rebase(artifact_id: str, based_on: str, repo_root: str | None = None) -> dict[str, Any]:

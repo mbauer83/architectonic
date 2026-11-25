@@ -120,10 +120,14 @@ class CandidateArchitectureStore:
             write_atomic(self.path(candidate.id), dump_candidate(candidate))
             return version
 
-    def delete(self, ref: str) -> None:
-        """Remove the candidate's file. Whether anything still depends on it is the caller's to ask."""
+    def delete(self, ref: str, based_on: str | None = None) -> None:
+        """Remove the candidate's file, unless it changed since *based_on*. Whether anything still depends
+        on it is the caller's to ask."""
         stored = self.stored_id(ref)
         if stored is None:
             raise FileNotFoundError(ref)
         with self._locked(stored):
+            current = self.find(stored)
+            if based_on is not None and current is not None and record_revision(to_mapping(current)) != based_on:
+                raise CandidateConflict("The candidate changed while it was being deleted. Read it again.")
             self.path(stored).unlink()
