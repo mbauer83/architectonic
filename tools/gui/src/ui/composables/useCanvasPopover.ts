@@ -33,6 +33,14 @@ export function useCanvasPopover(host: Ref<HTMLElement | null>, pop: Ref<HTMLEle
     if (x !== at.value.x || y !== at.value.y) at.value = { x, y }
   }
   watch([mode, at], () => void nextTick(fit), { flush: 'post' })
+  // A level grows within itself — the picker opening into the create form — and is fitted again as it
+  // does, or what it grew by lands below the window, out of reach.
+  const grown = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => fit())
+  watch(pop, (now, before) => {
+    if (before) grown?.unobserve(before)
+    if (now) grown?.observe(now)
+  })
+  onBeforeUnmount(() => grown?.disconnect())
   // On what the level marks to start on, or on the popover itself when its content took no focus.
   watch(mode, () => void nextTick(() => nextTick(() => {
     if (!pop.value || pop.value.contains(document.activeElement)) return
