@@ -93,10 +93,13 @@ const canvas = useWorkspaceCanvas(svc, analysis, candidates, edits, {
 /** The candidate being sketched on the canvas, if any. */
 const sketching = ref<string | null>(null)
 const sketched = computed(() => candidates.all.value.find((one) => one.id === sketching.value) ?? null)
-/** A change recorded in the sketched candidate: its table, its count and the naive architecture's names follow. */
-const recorded = async () => {
+/**
+ * A change recorded in candidate *id* (the one sketched): its table, its count and, for the naive architecture,
+ * the analysis's reading of it follow. Named rather than read off the sketch, which Done sketching has closed.
+ */
+const recorded = async (id = sketching.value) => {
   await Promise.all([candidates.compareWith(candidates.against.value), candidates.load()])
-  if (sketching.value === analysis.naiveId.value) await analysis.reload()
+  if (id === analysis.naiveId.value) await analysis.reload()
 }
 /** The candidate read on the left, which the "model moved" band speaks about. */
 const read = computed(() => candidates.all.value.find((one) => one.id === candidates.selected.value) ?? null)
@@ -113,11 +116,11 @@ const rebase = async () => {
 const introducing = ref(route.query.sketch === 'naive')
 /** Done sketching: the naive architecture points on to the stressors written against it. */
 const doneSketching = async () => {
-  const wasNaive = sketching.value === analysis.naiveId.value
+  const done = sketching.value
   sketching.value = null
   introducing.value = false
-  if (wasNaive) tab.value = 'stressors'
-  await recorded()
+  if (done === analysis.naiveId.value) tab.value = 'stressors'
+  await recorded(done)
 }
 /** The adaptations answering an end state, by name. */
 const answeredBy = (endState: string): readonly string[] => analysis.adaptations.value
