@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test'
 import type { APIRequestContext, Page } from '@playwright/test'
 
 /**
- * The stress-analysis workspace, driven as an analyst drives it: starting an analysis from a diagram
- * and sketching its naive architecture straight away,
+ * The stress-analysis workspace, driven as an analyst drives it: starting an analysis and defining its naive
+ * architecture straight away on its own canvas,
  * a stressor written, grouped and ticked on the canvas, an end state in focus, and a test set held out
  * of the design stressors and judged on the naive architecture.
  *
@@ -129,27 +129,36 @@ test('undo on the sketching canvas takes the recorded operation back out of the 
   await expect.poll(() => operationsOf(request, naive.record.id)).toHaveLength(0)
 })
 
-test('starting an analysis from a diagram opens its naive architecture for sketching', async ({ page, request }) => {
+test('starting an analysis opens its empty naive architecture on its own canvas, where model elements are placed', async ({ page, request }) => {
   await page.goto('/stress-analyses/new')
   await expect(page.getByText('Question')).toHaveCount(0)
-  await page.getByTestId('scope-diagram').selectOption(DIAGRAM)
+  await expect(page.getByTestId('scope-diagram')).toHaveCount(0)
   await expect(page.getByTestId('analysis-name')).toHaveValue(/^Stress analysis — /)
   await page.getByTestId('analysis-name').fill('Stress analysis — start flow')
   await page.getByTestId('analysis-context').fill('Promotion volumes double; the evaluation informs tiering.')
-  await expect(page.getByTestId('scope-count')).not.toContainText(/^0 elements/)
-  await expect(element(page, SERVICE_ALIAS)).toBeAttached()
   await page.getByTestId('start-naive').click()
 
   await page.waitForURL(/\/workspace\?tab=naive&sketch=naive$/)
   const document = decodeURIComponent(page.url().split('/documents/')[1].split('/workspace')[0])
   created.push(document)
   const read = await (await request.get(`/api/documents/${encodeURIComponent(document)}`)).json() as { extra: Record<string, string> }
-  candidates.push(read.extra['naive-candidate'])
+  const naive = read.extra['naive-candidate']
+  candidates.push(naive)
   await expect(page.getByRole('tab', { name: /Naive architecture/ })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByTestId('candidate-operations')).toContainText('naive architecture · the initial candidate')
   await expect(page.getByTestId('analysis-context')).toContainText('the evaluation informs tiering')
   await expect(page.getByTestId('naive-intro')).toBeVisible()
   await expect(page.getByTestId('candidate-canvas')).toBeVisible()
+  // No stored diagram: the naive starts empty, offers a diagram to start from, and finds elements by search.
+  await expect(page.getByTestId('candidate-seed')).toBeVisible()
+  await page.getByTestId('edit-panel-search').fill('Repository Promotion Service')
+  await page.locator('[data-row]', { hasText: 'Repository Promotion Service' }).first().click()
+  await expect(page.getByTestId('candidate-canvas').locator(`g.lab-element[data-alias="${SERVICE_ALIAS}"]`)).toBeAttached()
+  await expect.poll(async () => {
+    const record = await (await request.get(`/api/change-sets/${encodeURIComponent(naive)}`)).json() as
+      { record: { scope: string[]; diagram?: string } }
+    return record.record.scope.some((ref) => ref.startsWith('SRV@1712870400.Uv9Wx9'))
+  }).toBe(true)
   await page.getByTestId('done-sketching').click()
   await expect(page.getByRole('tab', { name: /Stressors/ })).toHaveAttribute('aria-selected', 'true')
   await expect(element(page, SERVICE_ALIAS)).toBeAttached()
