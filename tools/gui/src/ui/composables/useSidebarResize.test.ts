@@ -46,3 +46,47 @@ describe('the initial sidebar width', () => {
     expect(mountedWith(700, 660).value).toBe(660)
   })
 })
+
+const mountedOnTheLeft = (gridWidth: number): ReturnType<typeof useSidebarResize> => {
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+    { width: gridWidth, left: 100, right: 100 + gridWidth, top: 0, bottom: 0, height: 0, x: 100, y: 0,
+      toJSON: () => ({}) },
+  )
+  const held: { resize?: ReturnType<typeof useSidebarResize> } = {}
+  const Host = defineComponent({
+    setup() {
+      const gridRef = ref<HTMLElement | null>(null)
+      held.resize = useSidebarResize(gridRef, {
+        initialWidth: 500, minWidth: 440, maxWidth: 900, edge: 'left', maxShare: 0.6,
+      })
+      return () => h('div', { ref: gridRef })
+    },
+  })
+  const host = document.createElement('div')
+  document.body.appendChild(host)
+  app = createApp(Host)
+  app.mount(host)
+  if (!held.resize) throw new Error('not mounted')
+  return held.resize
+}
+
+describe('a panel on the left edge', () => {
+  it('is as wide as the drag is from the left edge, within its share of the grid', () => {
+    const resize = mountedOnTheLeft(1200)
+    resize.startResize(new MouseEvent('mousedown'))
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 100 + 650 }))
+    expect(resize.sidebarWidth.value).toBe(650)
+    // 60% of 1200 is 720: the farthest a drag reaches.
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 100 + 1100 }))
+    expect(resize.sidebarWidth.value).toBe(720)
+    window.dispatchEvent(new MouseEvent('mouseup'))
+  })
+
+  it('grows with → and shrinks with ←, never below its least width', () => {
+    const resize = mountedOnTheLeft(1200)
+    resize.nudge(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    expect(resize.sidebarWidth.value).toBe(524)
+    for (let step = 0; step < 10; step += 1) resize.nudge(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+    expect(resize.sidebarWidth.value).toBe(440)
+  })
+})
