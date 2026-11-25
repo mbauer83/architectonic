@@ -23,8 +23,13 @@ export const architectureName = (
   return `The integration of ${integrated.join(' and ')}`
 }
 
-/** Whether a stressor row is held apart in the test set. A row naming no set is a design stressor. */
-export const inTestSet = (row: DocumentTableRow): boolean => cell(row, 'set') === 'test'
+/**
+ * The stressors held apart in the test set, by row id, as the server's evaluation reads them. Which
+ * rows those are is the server's convention (`stress_analysis.rows.in_test_set`), not this view's;
+ * before the evaluation is read, none is held apart.
+ */
+export const heldApartIds = (evaluation: AnalysisEvaluation | null): ReadonlySet<string> =>
+  new Set((evaluation?.stressors ?? []).map((stressor) => stressor.id))
 
 /** The survival row holding *architecture*'s verdict on *stressor*: the last, as a later one replaces it. */
 export const verdictRow = (

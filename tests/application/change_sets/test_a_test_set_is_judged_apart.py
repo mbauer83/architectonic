@@ -19,6 +19,7 @@ from src.application.stress_analysis.evaluation import (
     residuality,
     verdicts_of,
 )
+from src.application.stress_analysis.rows import in_test_set
 from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_SCHEMA
 from tests.support.typed_table_documents import document_path, document_text, table_of, table_text
 
@@ -146,6 +147,15 @@ class TestWhatStandsForTheIntegration:
 
 
 class TestWhatTheTestSetCounts:
+    def test_a_stressor_is_held_apart_only_where_its_set_says_test(self, tmp_path: Path) -> None:
+        # The one reading of the convention; the GUI reads the evaluation's `stressors` rather than the rows.
+        stressors = [{"stressor": "a", "set": "test"}, {"stressor": "b", "set": "design"}, {"stressor": "c"}]
+
+        read = evaluate(_tables(tmp_path, stressors=stressors), integrated=[], adapted=False)
+
+        assert [in_test_set(row) for row in stressors] == [True, False, False]
+        assert [one["id"] for one in read["stressors"]] == ["S1"]
+
     def test_a_struck_stressor_leaves_the_denominator_with_its_reason(self, tmp_path: Path) -> None:
         tables = _tables(
             tmp_path,

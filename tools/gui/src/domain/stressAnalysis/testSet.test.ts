@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import type { DocumentTableRow } from '../schemas/candidates'
-import type { ArchitectureStanding } from '../schemas/stressEvaluation'
+import type { AnalysisEvaluation, ArchitectureStanding } from '../schemas/stressEvaluation'
 import {
-  architectureName, inTestSet, judgement, procedure, residualityDetail, residualityLine, signed, verdictRow,
+  architectureName, heldApartIds, judgement, procedure, residualityDetail, residualityLine, signed, verdictRow,
 } from './testSet'
 
 const row = (row_id: string, values: Record<string, string | boolean>): DocumentTableRow =>
   ({ row_id, values, unreadable: {} })
+
+const emptyEvaluation: AnalysisEvaluation = {
+  document: 'STA@1.a', naive_candidate: '', design_stressors: 0, stressors: [], verdicts: [],
+  unwritten_perspectives: [], architectures: [],
+  stage: { naive_judged: false, adapted: false, integrated: false, integration_judged: false },
+}
 
 const standing = (overrides: Partial<ArchitectureStanding>): ArchitectureStanding => ({
   architecture: 'CAND@1', integrated: false, usable: 12, judged: 12, survives: 8, degrades: 0, fails: 4,
@@ -61,9 +67,10 @@ describe('a judgement', () => {
 })
 
 describe('the test set and its procedure', () => {
-  it('holds a stressor in the test set only where its set says so', () => {
-    expect([row('S1', { set: 'test' }), row('S2', { set: 'design' }), row('S3', {})].map(inTestSet))
-      .toEqual([true, false, false])
+  it('holds apart exactly the stressors the evaluation reads as the test set', () => {
+    const stressors = [{ id: 'S1', stressor: 'Flood', usable: true }, { id: 'S4', stressor: 'Fire', usable: false }]
+    expect([...heldApartIds({ ...emptyEvaluation, stressors })]).toEqual(['S1', 'S4'])
+    expect(heldApartIds(null).size).toBe(0)
   })
 
   it('shows the order as progress, each step done or not', () => {
