@@ -9,6 +9,7 @@ import { computed, createApp, h, nextTick, ref, type App } from 'vue'
 import type { Breach } from '../../../domain/layout/lab/labBreaches'
 import type { DiagramEditMode } from '../../composables/useDiagramEditMode'
 import DiagramEditBar from '../DiagramEditBar.vue'
+import type { AuthoredGrouping } from '../../../domain/authoredGrouping'
 
 const geometry = {
   elements: [{ alias: 'A', label: 'Order System' }, { alias: 'B', label: 'Billing' }],
@@ -23,18 +24,23 @@ afterEach(() => { app?.unmount(); app = null })
 
 interface Change { readonly key: string; readonly text: string; readonly model?: boolean }
 
-const mounted = (breaches: readonly Breach[], changes: readonly Change[] = [], undoStep: string | null = null) => {
+const mounted = (
+  breaches: readonly Breach[], changes: readonly Change[] = [], undoStep: string | null = null,
+  stated: readonly AuthoredGrouping[] = [],
+) => {
   let asked = 0
   const checking = ref(false)
+  const session = {
+    state: ref({ byHand: true }),
+    geometry: ref(geometry),
+    breaches: computed(() => { asked += 1; return breaches }),
+    undo: () => undefined,
+    redo: () => undefined,
+  }
   const edit = {
-    session: {
-      state: ref({ byHand: true }),
-      geometry: ref(geometry),
-      breaches: computed(() => { asked += 1; return breaches }),
-      undo: () => undefined,
-      redo: () => undefined,
-    },
+    session,
     editing: {
+      session, statedGroupings: () => stated, restate: () => Promise.resolve(true),
       changes: ref(changes), saving: ref(false), error: ref(null),
       undoStep: ref(undoStep), redoStep: ref(null),
       returnToAutomatic: () => undefined, discard: () => undefined, save: () => Promise.resolve(true),
@@ -110,5 +116,15 @@ describe('what the bar says of the session', () => {
     await nextTick()
     expect(host.querySelector('[data-testid="change-group-model"]')?.textContent).toContain('1 change to the model')
     expect(host.querySelector('[data-testid="change-group-diagram"]')?.textContent).toContain('1 change to this diagram')
+  })
+})
+
+describe('the boxes the bar offers back', () => {
+  it('offers Return to automatic boxes only while the diagram states layer or type boxes of its own', () => {
+    const offered = (stated: readonly AuthoredGrouping[]) =>
+      mounted([], [], null, stated).host.querySelector('[data-testid="return-to-automatic-boxes"]') !== null
+    expect(offered([])).toBe(false)
+    expect(offered([{ id: 'g-Front1', label: 'Front office', 'entity-ids': ['APP@1.a'] }])).toBe(false)
+    expect(offered([{ id: 'g-Biz1', label: 'Business', 'entity-ids': [], rule: { domain: 'business' } }])).toBe(true)
   })
 })
