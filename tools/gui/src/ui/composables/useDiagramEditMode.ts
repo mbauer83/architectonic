@@ -108,6 +108,15 @@ export function useDiagramEditMode(
     }) : []
   })
   const selectionExtent = computed(() => extentOfMarks(marks.value))
+  /** The shapes the panel points at — the two ends of a relation its row would draw (01·8), by alias. */
+  const outlined = ref<readonly string[]>([])
+  const outline = (aliases: readonly string[]) => { outlined.value = aliases }
+  /** Select the shape *alias*, as the panel does for an element already drawn, and bring it into view. */
+  const select = (alias: string) => {
+    parts.canvas.value?.select(alias)
+    const extent = session.placement.value?.elements.get(alias) ?? session.placement.value?.boxes.get(alias)
+    if (extent) parts.view.reveal(extent)
+  }
 
   const enter = async () => {
     leaving.value = false
@@ -274,6 +283,7 @@ export function useDiagramEditMode(
 
   return {
     editing, session, active, leaving, spaceHeld, panel, marks, checking, toggleCheck, surround,
+    outlined, outline, select, escape,
     canUndo: computed(() => session.history.value.length > 0),
     canRedo: computed(() => session.future.value.length > 0),
     enter, done, saveAndExit, discardAndExit, keepEditing, panPress,

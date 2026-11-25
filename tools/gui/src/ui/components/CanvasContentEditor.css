@@ -6,3 +6,5 @@
 }
 /* Over an element's edge band a drag draws a relation (01·3): the cursor says so. */
 .content-canvas.edge-hover, .content-canvas.edge-hover :deep(*) { cursor: crosshair !important; }
+/* While a panel row is dragged over it, the canvas lights up where the drop lands (01·8). */
+.content-canvas.drop-lit { outline: 2px dashed var(--accent); outline-offset: -2px; background: var(--accent-soft); }

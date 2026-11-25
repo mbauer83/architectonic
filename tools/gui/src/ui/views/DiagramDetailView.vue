@@ -37,6 +37,7 @@ import DiagramMatrixView from '../components/DiagramMatrixView.vue'
 import { diagramEditRoute, matrixEditRoute } from '../router/artifactRoutes'
 import DiagramEditBar from '../components/DiagramEditBar.vue'
 import LayoutLabCanvas from '../components/layoutLab/LayoutLabCanvas.vue'
+import CanvasOutlines from '../components/layoutLab/CanvasOutlines.vue'
 import type { CanvasHandle, EditBarHandle } from '../composables/useDiagramEditMode'
 import { useDiagramEditMode } from '../composables/useDiagramEditMode'
 import { useDiagramPageReader } from '../composables/useDiagramPageReader'
@@ -279,7 +280,12 @@ const executeDelete = () => {
                     :surround="edit.surround.value"
                     :drafts="drafts.inEdit.value"
                     :pending-lines="drafts.pendingLines.value"
-                  />
+                  >
+                    <CanvasOutlines
+                      :session="edit.session"
+                      :aliases="edit.outlined.value"
+                    />
+                  </LayoutLabCanvas>
                 </CanvasContentEditor>
               </div>
               <div

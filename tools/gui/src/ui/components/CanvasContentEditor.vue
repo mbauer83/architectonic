@@ -5,6 +5,7 @@ import type { DiagramContext } from '../../domain'
 import { canvasMembers } from '../../domain/layout/canvasComposition'
 import { modelServiceKey, toastKey } from '../keys'
 import { useDropFeedback } from '../composables/useDropFeedback'
+import { useEntityDrop } from '../composables/useEntityDrop'
 import CanvasGestureCues from './CanvasGestureCues.vue'
 import type { DiagramEditing } from '../composables/useDiagramEditing'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
@@ -127,12 +128,7 @@ const containersFor = (element: { readonly id: string }) => [...new Map(members.
 const details = ref<string | null>(null)
 const keepDetails = async (commands: readonly CanvasCommand[]): Promise<string | null> =>
   await props.editing.propose(commands) ? null : props.editing.error.value ?? 'The drawing has changed. Try again.'
-const dropMember = (event: DragEvent) => {
-  const id = event.dataTransfer?.getData('application/x-architectonic-entity')
-  const member = props.context.suggested_entities.flatMap(group => group.items)
-    .find(item => item.artifact_id === id)
-  if (member) void props.editing.add(member.artifact_id, member.name)
-}
+const panelDrop = useEntityDrop(host, props.editing)
 function menu(event: MouseEvent) {
   event.preventDefault()
   position(event.clientX, event.clientY)
@@ -196,11 +192,12 @@ function double(e: MouseEvent) {
   <div
     ref="host"
     class="content-canvas"
-    :class="{ 'edge-hover': side }"
+    :class="{ 'edge-hover': side, 'drop-lit': panelDrop.lit.value }"
     tabindex="0"
     @keydown="key"
-    @dragover.prevent
-    @drop.prevent="dropMember"
+    @dragover="panelDrop.over"
+    @dragleave="panelDrop.leave"
+    @drop="panelDrop.drop"
     @contextmenu="menu"
     @dblclick="double"
     @pointerdown.capture="focusCanvas"

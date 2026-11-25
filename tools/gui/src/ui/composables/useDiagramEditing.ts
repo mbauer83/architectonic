@@ -235,8 +235,8 @@ export function useDiagramEditing(
 
   /**
    * *entity*, already on the diagram, drawn once more (03·5): a further drawing with its own id, written
-   * as the diagram's occurrence statement at Save, one undoable step. *at*, on the picture, is where it
-   * is placed; without it the composer places it beside its neighbours.
+   * as the diagram's occurrence statement at Save, one undoable step. *at*, on a picture arranged by hand, is
+   * where it is placed; without it the composer places it beside its neighbours.
    */
   const addOccurrence = async (entity: { artifact_id: string; name: string; display_alias: string }, at?: Point) => {
     const drawn = savedMembers.value
@@ -251,7 +251,7 @@ export function useDiagramEditing(
     return preview({ ...now, occurrences: [...now.occurrences ?? [], occurrence] }, now, true, at && [occurrenceId, at])
   }
 
-  /** *id* drawn on the diagram, as one undoable step; *at*, on the picture, is where it is placed. */
+  /** *id* drawn on the diagram, as one undoable step; *at*, on a picture arranged by hand, is where it is placed. */
   const add = async (id: string, name: string, type?: string, at?: Point) => {
     const drawn = savedMembers.value
     const now = session.state.value
@@ -289,7 +289,8 @@ export function useDiagramEditing(
       const read = carried ? arrangedBy(picture, picture.layout ?? carried) : drawnArrangement(picture)
       const key = place && stableEntityId(place[0])
       const alias = key && picture.elements.find((one) => stableEntityId(one.key ?? '') === key)?.alias
-      const arrangement = place && alias ? placedAt(picture, read, new Map([[alias, place[1]]])) : read
+      // Placed where it was put on a picture arranged by hand; an automatic one is PlantUML's to lay out (D15).
+      const arrangement = place && alias && carried ? placedAt(picture, read, new Map([[alias, place[1]]])) : read
       if (undoable) session.step({ ...next, picture, arrangement })
       else session.open(picture, { ...next, arrangement })
       return true

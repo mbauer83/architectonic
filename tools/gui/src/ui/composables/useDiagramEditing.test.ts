@@ -173,6 +173,31 @@ describe('removing an element from the diagram', () => {
   })
 })
 
+describe('an element added at a point', () => {
+  const added: LayoutGeometry = {
+    ...geometry, elements: [...geometry.elements, element('N', 'APP@9.n', at(250, 200, 350, 240))],
+  }
+  const adding = () => useDiagramEditing(
+    { ...service, previewLayoutGeometry: () => Effect.succeed(added) } as unknown as ModelService,
+    () => 'ARC@1.a.test', () => MEMBERSHIP,
+  )
+
+  it('is laid out by PlantUML on an automatic picture, wherever it was dropped', async () => {
+    const editing = adding()
+    await editing.open()
+    await editing.add('APP@9.n', 'New', 'application-component', { x: 40, y: 300 })
+    expect(editing.session.placement.value?.elements.get('N')).toEqual(at(250, 200, 350, 240))
+  })
+
+  it('lands where it was dropped on a picture arranged by hand', async () => {
+    const editing = adding()
+    await editing.open()
+    move(editing, 'C', 30)
+    await editing.add('APP@9.n', 'New', 'application-component', { x: 40, y: 300 })
+    expect(editing.session.placement.value?.elements.get('N')).not.toEqual(at(250, 200, 350, 240))
+  })
+})
+
 describe('the names a session lists', () => {
   it('are the elements\' names in the model, not the labels the picture draws with their «type»', async () => {
     const pictured: LayoutGeometry = {
