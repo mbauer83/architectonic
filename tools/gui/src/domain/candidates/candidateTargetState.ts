@@ -25,17 +25,19 @@ export const targetStateOf = (record: Readonly<Record<string, unknown>>): Target
 const plural = (count: number, one: string, many = `${one}s`): string => `${count} ${count === 1 ? one : many}`
 
 /** What applying as a target state writes, in one sentence, from the ids a dry run answered. */
-export const targetSentence = (ids: TargetStateIds, operations: number): string => [
-  `Writes ${plural(operations, 'operation')} beside the baseline in one write:`,
-  [
-    Object.keys(ids.added).length
-      ? `${plural(Object.keys(ids.added).length, 'added element')} as ${Object.keys(ids.added).length === 1 ? 'a draft' : 'drafts'}`
-      : '',
-    Object.keys(ids.copies).length ? `${plural(Object.keys(ids.copies).length, '"(target)" copy', '"(target)" copies')} of what it changes` : '',
-    'a Baseline and a Target plateau with a gap between them',
-  ].filter(Boolean).join(', ') + '.',
-  'The elements it changes stay as they are until it is moved into the baseline.',
-].join(' ')
+export const targetSentence = (ids: TargetStateIds, operations: number): string => {
+  const added = Object.keys(ids.added).length
+  const copies = Object.keys(ids.copies).length
+  return [
+    `Writes ${plural(operations, 'operation')} beside the baseline in one write:`,
+    [
+      added ? `${plural(added, 'added element')} as ${added === 1 ? 'a draft' : 'drafts'}` : '',
+      copies ? `${plural(copies, '"(target)" copy', '"(target)" copies')} of what it changes` : '',
+      'a Baseline and a Target plateau with a gap between them',
+    ].filter(Boolean).join(', ') + '.',
+    'The elements it changes stay as they are until it is moved into the baseline.',
+  ].join(' ')
+}
 
 /**
  * The generated operations as lines a reader follows: an element named by what the operations create it as,

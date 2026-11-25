@@ -30,6 +30,7 @@ import CandidateCanvas from '../components/candidates/CandidateCanvas.vue'
 import MarkedCanvas from '../components/candidates/MarkedCanvas.vue'
 import ModelMovedBanner from '../components/candidates/ModelMovedBanner.vue'
 import SaveAsDiagram from '../components/candidates/SaveAsDiagram.vue'
+import StackCandidate from '../components/candidates/StackCandidate.vue'
 
 const svc = inject(modelServiceKey)!
 const toast = inject(toastKey, () => undefined)
@@ -115,15 +116,7 @@ const applied = async (how: string) => {
   await candidates.compareWith(candidates.against.value)
 }
 
-const stacking = ref(false)
-const stackName = ref('')
-const stackOn = async () => {
-  const id = await candidates.stackOn(candidateId.value, stackName.value.trim())
-  if (!id) return
-  stacking.value = false
-  stackName.value = ''
-  await router.push({ path: candidateDetailRoute(id), query: route.query })
-}
+const stacked = (id: string) => router.push({ path: candidateDetailRoute(id), query: route.query })
 
 const remove = async () => {
   const label = summary.value?.name ?? candidateId.value
@@ -164,15 +157,13 @@ onMounted(async () => {
         ← Candidate architectures
       </RouterLink>
       <h1>{{ summary?.name ?? candidateId }}</h1>
-      <button
-        v-if="summary && !stacking"
-        type="button"
-        class="btn btn-sm"
-        data-testid="stack-candidate"
-        @click="stacking = true"
-      >
-        New candidate on top…
-      </button>
+      <StackCandidate
+        v-if="summary"
+        :candidates="candidates"
+        :candidate-id="candidateId"
+        :name="summary.name"
+        @stacked="stacked"
+      />
       <RouterLink
         v-if="summary"
         class="btn btn-sm"
@@ -211,31 +202,6 @@ onMounted(async () => {
         Delete
       </button>
     </div>
-    <form
-      v-if="stacking"
-      class="stack-form"
-      @submit.prevent="stackOn"
-    >
-      <label>Name <input
-        v-model="stackName"
-        required
-        autofocus
-      ></label>
-      <button
-        type="submit"
-        class="btn btn-sm btn-primary"
-        :disabled="!stackName.trim()"
-      >
-        Stack on {{ summary?.name }}
-      </button>
-      <button
-        type="button"
-        class="btn btn-sm"
-        @click="stacking = false"
-      >
-        Cancel
-      </button>
-    </form>
     <div class="meta">
       <span class="badge">candidate architecture</span>
       <label>Drawn on
@@ -374,8 +340,6 @@ onMounted(async () => {
 .meta { display: flex; gap: 10px; align-items: center; margin: 8px 0 8px; font-size: 12px; color: var(--muted); }
 .meta select { font: inherit; margin-left: 4px; max-width: 320px; }
 .badge { background: var(--accent-soft); color: var(--accent-strong); border-radius: 3px; padding: 2px 8px; }
-.stack-form { display: flex; gap: 8px; align-items: center; margin: 8px 0; font-size: 12.5px; }
-.stack-form input { font: inherit; margin-left: 4px; }
 .err { color: var(--danger-strong); font-size: 12.5px; }
 .hint { color: var(--muted); font-size: 12px; padding: 6px 10px; margin: 0; }
 .ws { display: grid; grid-template-columns: minmax(440px, 46%) minmax(0, 1fr); gap: 12px; align-items: start; }
