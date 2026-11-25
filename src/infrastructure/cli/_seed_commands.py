@@ -168,6 +168,13 @@ def cmd_seed(args: argparse.Namespace) -> int:
         return 1
     if not seed_path.is_file():
         print(f"Error: seed bundle not found: {seed_path}", file=sys.stderr)
+        if not getattr(args, "input", None):
+            print(
+                f"  `seed` loads the example analysis a repository ships in {SEED_REPO_SUBDIR}/"
+                f"{DEFAULT_SEED_FILENAME}; this engagement repository ships none. The bundled self-model "
+                "does. A new repository starts with an empty store, which needs no seeding.",
+                file=sys.stderr,
+            )
         return 1
     try:
         bundle = json.loads(seed_path.read_text())
