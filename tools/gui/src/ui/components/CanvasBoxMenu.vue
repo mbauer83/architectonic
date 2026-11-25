@@ -40,7 +40,9 @@ const items = computed((): readonly CanvasMenuItem[] => (page.value === 'types'
     { id: 'back', label: '‹ Back', divider: true }]
   : [
     { id: 'rename', label: 'Rename box…', hint: 'on this diagram only', command: 'box.rename' },
-    ...types.value.length ? [{ id: 'types', label: 'Box by type ▸', hint: 'a box of one element type inside it', command: 'box.by-type' as const }]
+    ...types.value.length
+      ? [{ id: 'types', label: 'Box by type ▸', hint: 'a box of one element type inside it',
+        command: 'box.by-type' as const }]
       : [],
     {
       id: 'delete', label: 'Delete box', hint: 'what it holds stays on the diagram', danger: true, divider: true,

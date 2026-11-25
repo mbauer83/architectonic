@@ -65,10 +65,12 @@ const items = computed((): readonly CanvasMenuItem[] => {
       { id: 'back', label: '‹ Back', divider: true }]
   }
   return [
-    { id: 'align', label: 'Align ▸', hint: 'left · centres · right · top · middles · bottoms', command: 'selection.align',
+    { id: 'align', label: 'Align ▸', hint: 'left · centres · right · top · middles · bottoms',
+      command: 'selection.align',
       disabled: elements.value < LEAST_TO_ALIGN },
     ...elements.value >= LEAST_TO_DISTRIBUTE
-      ? [{ id: 'distribute', label: 'Distribute ▸', hint: 'horizontally · vertically', command: 'selection.distribute' as const }]
+      ? [{ id: 'distribute', label: 'Distribute ▸', hint: 'horizontally · vertically',
+        command: 'selection.distribute' as const }]
       : [],
     ...props.words.newBoxEntry
       ? [{ id: 'box', label: props.words.newBoxEntry, hint: 'a labelled box on this diagram round what is selected',

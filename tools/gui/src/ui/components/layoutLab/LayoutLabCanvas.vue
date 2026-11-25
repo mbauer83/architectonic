@@ -4,8 +4,6 @@
  * one paint order of `labPaintOrder`, with the rule breaches over them and handles on the selected
  * shape. Press and drag a shape to move it; a box carries what it holds. Drag a handle to resize.
  * Press a line, or where it ends on an element's edge, to select it and shape it (`useLineGesture`).
- * Moving and sizing, and shaping a line, are offered only where the permission answer allows them
- * (`gesture.move`, `gesture.bend`); refused, a press still selects, so the menus can say why.
  */
 import { computed, ref, watch } from 'vue'
 import type { Extent } from '../../../domain/layout/geometry'
@@ -31,7 +29,7 @@ import { useCanvasFocus } from './useCanvasFocus'
 import { useCanvasView } from './useCanvasView'
 import { useLabGesture } from './useLabGesture'
 import { useLineGesture } from './useLineGesture'
-import { useCommandPermission } from '../../composables/usePermissions'
+import { useArrangingPermitted } from '../../composables/usePermissions'
 
 /** *readonly*: a press picks a shape and nothing moves. The default slot draws over the picture. */
 const props = defineProps<{
@@ -51,10 +49,7 @@ const emit = defineEmits<{ pick: [alias: string] }>()
 
 const svg = ref<SVGSVGElement | null>(null)
 const prefs = useEditingPreferences()
-const permit = useCommandPermission()
-/** Whether a press may move and size shapes, and shape lines: not on a read-only canvas, nor where refused. */
-const placing = computed(() => !props.readonly && permit.value('gesture.move').allowed)
-const routing = computed(() => !props.readonly && permit.value('gesture.bend').allowed)
+const { placing, routing } = useArrangingPermitted(() => props.readonly)
 const gesture = useLabGesture(props.session, svg, {
   snapping: () => prefs.snapping.value.value, rectangle: () => prefs.rectangle.value.value,
 })

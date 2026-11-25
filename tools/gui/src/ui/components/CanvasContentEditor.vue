@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, provide, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { DiagramContext } from '../../domain'
 import { canvasMembers } from '../../domain/layout/canvasComposition'
@@ -33,8 +33,7 @@ import { isGroupingBox } from '../../domain/layout/canvasBoxes'
 import CanvasBoxMenu from './CanvasBoxMenu.vue'
 import CanvasLabelForm from './CanvasLabelForm.vue'
 import { type CanvasWords, DIAGRAM_WORDS } from './canvasWords'
-import type { CanvasCommandName } from './canvasCommands'
-import { canvasOperationsKey, useCommandPermission } from '../composables/usePermissions'
+import { useCommandGate } from '../composables/usePermissions'
 
 const props = defineProps<{
   editing: DiagramEditing
@@ -77,15 +76,7 @@ async function settle(step: Promise<boolean>): Promise<boolean> {
 }
 const apply = (c: CanvasCommand, overlay?: Record<string, unknown>) => settle(props.editing.propose(c, overlay))
 const toast = inject(toastKey, () => undefined)
-// What each command is on this page, for the menus and the picture under the editor (A-02.24).
-provide(canvasOperationsKey, words.value.operations)
-const permit = useCommandPermission(words.value.operations)
-/** *run*, where the permission answer allows *command*; otherwise its reason, said, and nothing done. */
-const gated = <A extends unknown[]>(command: CanvasCommandName, run: (...args: A) => void) => (...args: A) => {
-  const answer = permit.value(command)
-  if (answer.allowed) run(...args)
-  else toast(answer.reason, 'warn')
-}
+const gated = useCommandGate(words.value.operations, (reason) => toast(reason, 'warn'))
 const drop = useDropFeedback(svc, props.editing, host, () => props.context, members)
 const relation = useCanvasRelation(
   svc, props.editing, () => props.context, members, { source, target },
@@ -145,10 +136,8 @@ const keepDetails = async (commands: readonly CanvasCommand[]): Promise<string |
   await props.editing.propose(commands) ? null : props.editing.error.value ?? 'The drawing has changed. Try again.'
 const panelDrop = useEntityDrop(host, props.editing)
 /** Adding by the menu on empty paper, or by a row dropped from the panel, as the permission answer allows. */
-const add = {
-  created: gated('canvas.create', adding.created), found: gated('canvas.place', adding.found),
-  again: gated('element.occurrence', adding.again), dropped: gated('canvas.place', panelDrop.drop),
-}
+const add = { created: gated('canvas.create', adding.created), found: gated('canvas.place', adding.found),
+  again: gated('element.occurrence', adding.again), dropped: gated('canvas.place', panelDrop.drop) }
 function menu(event: MouseEvent) {
   event.preventDefault()
   position(event.clientX, event.clientY)

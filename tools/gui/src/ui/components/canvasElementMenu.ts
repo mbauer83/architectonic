@@ -48,7 +48,10 @@ const removing = (words: CanvasWords): readonly CanvasMenuItem[] => [
       command: 'element.remove' as const,
     }]
     : [],
-  { id: 'delete', label: words.deleteEntry, hint: words.deleteHint, danger: true, divider: true, command: 'element.delete' },
+  {
+    id: 'delete', label: words.deleteEntry, hint: words.deleteHint, danger: true, divider: true,
+    command: 'element.delete',
+  },
 ]
 
 /**
@@ -70,14 +73,17 @@ export const elementMenuItems = (
     hint: 'pick the other element by name, then the relation; also drag from its edge',
   },
   {
-    id: 'open', label: 'Open', command: 'element.open', hint: drafted ? 'it has no page until it is saved' : 'its page, in a new tab',
+    id: 'open', label: 'Open', command: 'element.open',
+    hint: drafted ? 'it has no page until it is saved' : 'its page, in a new tab',
     disabled: drafted,
   },
   {
     id: 'nest', label: 'Nest in…', command: 'element.nest',
     hint: 'a box (diagram only), or an element that may contain it (a model change)',
   },
-  ...nestedIn === null ? [] : [{ id: 'unnest', label: `Take out of ${nestedIn}`, hint: 'onto the box around it', command: 'element.unnest' as const }],
+  ...nestedIn === null ? [] : [{
+    id: 'unnest', label: `Take out of ${nestedIn}`, hint: 'onto the box around it', command: 'element.unnest' as const,
+  }],
   ...drawsAgain
     ? [{
       id: 'occurrence', label: 'Add another occurrence here', disabled: drafted, command: 'element.occurrence' as const,

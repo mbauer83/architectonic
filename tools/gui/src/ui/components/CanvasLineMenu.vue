@@ -65,7 +65,8 @@ const items = computed((): readonly CanvasMenuItem[] => {
       { id: 'straighten', label: 'Straighten', hint: 'remove every bend; routed round anything in the way',
         command: 'line.straighten',
         disabled: !stated.value.via?.length },
-      { id: 'sides', label: 'Move end to side ▸', hint: 'either end, to any side of its element', command: 'line.move-end',
+      { id: 'sides', label: 'Move end to side ▸', hint: 'either end, to any side of its element',
+        command: 'line.move-end',
         disabled: one.key === undefined },
     ]
   }
