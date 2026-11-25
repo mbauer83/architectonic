@@ -11,6 +11,7 @@ import {
 } from '../../../domain/candidates/candidateTargetState'
 import type { CandidateTargetState } from '../../composables/useCandidateTargetState'
 import { entityDetailRoute } from '../../router/artifactRoutes'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{ target: CandidateTargetState; candidateId: string; name: string }>()
 
@@ -54,17 +55,17 @@ const lines = computed(() => preview.value
       {{ copies }} "(target)" {{ copies === 1 ? 'copy' : 'copies' }}.
     </span>
     <span class="sp" />
-    <button
-      type="button"
+    <PermittedButton
+      operation="changes_move_candidate_into_baseline"
       class="btn btn-sm"
       data-testid="move-into-baseline"
       :disabled="target.busy.value"
       @click="target.open('move', candidateId)"
     >
       Move into the baseline…
-    </button>
-    <button
-      type="button"
+    </PermittedButton>
+    <PermittedButton
+      operation="changes_withdraw_candidate_target_state"
       class="btn btn-sm"
       data-testid="withdraw-target-state"
       title="Take the target state out of the model instead, leaving the baseline as it was"
@@ -72,7 +73,7 @@ const lines = computed(() => preview.value
       @click="target.open('withdraw', candidateId)"
     >
       Withdraw…
-    </button>
+    </PermittedButton>
   </div>
   <section
     v-if="preview"

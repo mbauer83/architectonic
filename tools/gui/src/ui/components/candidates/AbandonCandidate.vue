@@ -10,6 +10,7 @@
 import { computed, ref } from 'vue'
 import type { Candidates } from '../../composables/useCandidates'
 import type { CandidateTargetState } from '../../composables/useCandidateTargetState'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{
   candidates: Candidates; target: CandidateTargetState; candidateId: string; name: string; state: string
@@ -51,15 +52,15 @@ const withdraw = () => {
         again, and can be rejected or deleted.
       </p>
       <footer>
-        <button
-          type="button"
+        <PermittedButton
+          operation="changes_withdraw_candidate_target_state"
           class="btn btn-sm btn-primary"
           data-testid="abandon-withdraw"
           :disabled="target.busy.value"
           @click="withdraw"
         >
           Withdraw the target state…
-        </button>
+        </PermittedButton>
         <button
           type="button"
           class="btn btn-sm"
@@ -84,25 +85,25 @@ const withdraw = () => {
         {{ candidates.error.value }}
       </p>
       <footer>
-        <button
+        <PermittedButton
           v-if="rejectable"
-          type="button"
+          operation="changes_edit_candidate"
           class="btn btn-sm btn-primary"
           data-testid="abandon-reject"
           :disabled="busy"
           @click="reject"
         >
           Reject
-        </button>
-        <button
-          type="button"
+        </PermittedButton>
+        <PermittedButton
+          operation="changes_delete_candidate"
           class="btn btn-sm"
           data-testid="abandon-delete"
           :disabled="busy"
           @click="remove"
         >
           Delete
-        </button>
+        </PermittedButton>
         <button
           type="button"
           class="btn btn-sm"

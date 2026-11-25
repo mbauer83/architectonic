@@ -179,16 +179,16 @@ onMounted(async () => {
       >
         Apply to the model…
       </PermittedButton>
-      <button
+      <PermittedButton
         v-if="summary && applicable"
-        type="button"
+        operation="changes_apply_candidate_as_target_state"
         class="btn btn-sm"
         data-testid="apply-as-target-state"
         :disabled="target.busy.value"
         @click="target.open('apply', candidateId)"
       >
         Apply as a target state…
-      </button>
+      </PermittedButton>
       <button
         v-if="summary"
         type="button"
