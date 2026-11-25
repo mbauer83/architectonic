@@ -8347,6 +8347,11 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             layout_patch?: components["schemas"]["LayoutPatch"] | null;
+            /**
+             * Manual Layout
+             * @description false gives a manual-layout diagram's hand-written body up: the body is generated from the composition from then on, and the diagram can be laid out. Absent keeps the diagram's own.
+             */
+            manual_layout?: boolean | null;
             /** Name */
             name: string;
             /** Status */
