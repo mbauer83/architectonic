@@ -10,7 +10,8 @@ layout is.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
 
@@ -31,7 +32,12 @@ from src.infrastructure.rendering.layout.diagram_geometry import (
     read_and_measured,
     stored_geometry,
 )
-from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, first_layout_of, placed_on_its_picture
+from src.infrastructure.rendering.layout.diagram_picture import (
+    NotDrawn,
+    RendererUnavailable,
+    first_layout_of,
+    placed_on_its_picture,
+)
 from src.infrastructure.rendering.layout.drawing_wire import reshaped
 from src.infrastructure.rendering.layout.surround_placement import carried_by, occupied
 from src.infrastructure.rest.contracts.diagram_layout_editing import (
@@ -172,10 +178,20 @@ def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs, lens: Len
     ))
 
 
+@contextmanager
+def _renderer_available() -> Iterator[None]:
+    """A server that cannot run PlantUML answers 503: the request was not at fault, and may be retried."""
+    try:
+        yield
+    except RendererUnavailable as unavailable:
+        raise HTTPException(503, str(unavailable)) from unavailable
+
+
 def _geometry(read: Callable[[], dict[str, object]]) -> dict[str, object]:
     """A geometry read, refused as 422 where the picture cannot be drawn or the layout cannot be read."""
     try:
-        return read()
+        with _renderer_available():
+            return read()
     except ValueError as refusal:  # MalformedLayout is a ValueError
         raise HTTPException(422, str(refusal)) from refusal
 
@@ -289,8 +305,9 @@ def arrange_diagram_layout_gui(artifact_id: str, body: LayoutIntentsBody, catalo
 
     root = _repo_root()
     try:
-        intents, drawn = read_and_measured(body.intents, _stored_diagram(artifact_id), artifact_id, root,
-                                           catalogs.ontology)
+        with _renderer_available():
+            intents, drawn = read_and_measured(body.intents, _stored_diagram(artifact_id), artifact_id, root,
+                                               catalogs.ontology)
     except ValueError as refusal:  # MalformedLayout is a ValueError
         raise HTTPException(400 if isinstance(refusal, MalformedLayout) else 422, str(refusal)) from refusal
     return _written_layout(
@@ -313,15 +330,16 @@ def _written_layout(
     """
     repo_root, _, verifier = s.get_write_deps(catalogs)
     try:
-        result = s.authorized_write(
-            operation, write,
-            repo_root=repo_root, verifier=verifier, clear_repo_caches=s.clear_caches,
-            assert_write_root=assert_engagement_write_root,
-            first_layout=lambda body_text, frontmatter: first_layout_of(
-                body_text, frontmatter, repo_root, catalogs.ontology
-            ),
-            **arguments,
-        )
+        with _renderer_available():
+            result = s.authorized_write(
+                operation, write,
+                repo_root=repo_root, verifier=verifier, clear_repo_caches=s.clear_caches,
+                assert_write_root=assert_engagement_write_root,
+                first_layout=lambda body_text, frontmatter: first_layout_of(
+                    body_text, frontmatter, repo_root, catalogs.ontology
+                ),
+                **arguments,
+            )
     except LayoutConflict as conflict:
         raise HTTPException(409, str(conflict)) from conflict
     except NotDrawn as refusal:

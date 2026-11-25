@@ -72,11 +72,26 @@ class DeleteElement:
 
 @dataclass(frozen=True)
 class ConnectElements:
+    """A relation drawn on the canvas, or one whose details the canvas edits.
+
+    As `EditElement`'s fields are, each detail is stated or left `None`: an edit changes what it states
+    and keeps the rest, and `""` removes a multiplicity or empties the description. A create states what
+    the new relation carries; what it leaves `None` it does not carry.
+    """
+
     op: Literal["model.relation.create", "model.relation.edit"]
     artifact_id: str
-    description: str = ""
-    src_multiplicity: str = ""
-    tgt_multiplicity: str = ""
+    description: str | None = None
+    src_multiplicity: str | None = None
+    tgt_multiplicity: str | None = None
+
+    def stated(self) -> dict[str, str]:
+        """The details this command states, by `edit_connection`'s and `add_connection`'s names."""
+        details = {
+            "description": self.description, "src_multiplicity": self.src_multiplicity,
+            "tgt_multiplicity": self.tgt_multiplicity,
+        }
+        return {name: value for name, value in details.items() if value is not None}
 
 
 def _stated(value: object) -> object:
@@ -156,16 +171,14 @@ def canvas_save(
                         require(edit_connection(
                             repo_root=staged, registry=registry, verifier=verifier, clear_repo_caches=touched.add,
                             source_entity=source, connection_type=kind, target_entity=target,
-                            description=command.description, src_multiplicity=command.src_multiplicity,
-                            tgt_multiplicity=command.tgt_multiplicity, dry_run=False,
+                            dry_run=False, **command.stated(),
                         ))
                         continue
+                    created = {"description": "", "src_multiplicity": "", "tgt_multiplicity": ""} | command.stated()
                     require(add_connection(
                         repo_root=staged, registry=registry, verifier=verifier, clear_repo_caches=touched.add,
                         source_entity=source, connection_type=kind, target_entity=target,
-                        description=command.description, src_multiplicity=command.src_multiplicity,
-                        tgt_multiplicity=command.tgt_multiplicity, version="0.1.0", status="draft",
-                        last_updated=None, dry_run=False,
+                        version="0.1.0", status="draft", last_updated=None, dry_run=False, **created,
                     ))
         repo, _, verifier = context()
         diagram = save_diagram(staged, repo, verifier, touched.add, False)

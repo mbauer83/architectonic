@@ -23,13 +23,26 @@ class NotDrawn(ValueError):
     """PlantUML drew no picture of a diagram, or drew one the reader cannot read, with why."""
 
 
+class RendererUnavailable(RuntimeError):
+    """This installation cannot run PlantUML at all: a condition of the server, not of the diagram asked about.
+
+    Not a `NotDrawn`, and not a `ValueError`, so no caller reports it as the request's fault.
+    """
+
+
 def plantuml_svg(
     puml_body: str, repo_root: Path, diagram_type: str, restyle_prepared: Callable[[str], str] | None = None,
 ) -> str:
     """PlantUML's own SVG of *puml_body*, its prepared body restyled where *restyle_prepared* says. Raises
-    `NotDrawn` with PlantUML's warnings when there is none."""
+    `NotDrawn` with PlantUML's warnings when there is none, `RendererUnavailable` when PlantUML is absent."""
+    from src.application.verification.artifact_verifier_syntax import find_plantuml_jar  # noqa: PLC0415
     from src.infrastructure.rendering.puml_runtime import render_puml_svg  # noqa: PLC0415 - starts the renderer
 
+    if find_plantuml_jar() is None:
+        raise RendererUnavailable(
+            "PlantUML is not installed for this server (plantuml.jar not found), so no diagram can be drawn "
+            "or arranged here. Install it (`get-plantuml`) and retry."
+        )
     svg, warnings = render_puml_svg(puml_body, repo_root, diagram_type, restyle_prepared=restyle_prepared)
     if svg is None:
         raise NotDrawn(f"PlantUML could not draw the diagram: {'; '.join(warnings)}")

@@ -202,6 +202,48 @@ def test_canvas_commands_and_membership_publish_together(model: RenderedModel, c
     assert proposed in client.get(f"/api/diagrams/{artifact_id}").json()["entity_ids_used"]
 
 
+def test_a_server_without_plantuml_answers_503_not_a_fault_of_the_request(
+    model: RenderedModel, client: TestClient, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression: a missing plantuml.jar was answered 422 `validation_error`, telling the caller to fix its request."""
+    from src.application.verification import artifact_verifier_syntax  # noqa: PLC0415
+
+    artifact_id, _ = _diagram(model, "top-to-bottom")
+    monkeypatch.setattr(artifact_verifier_syntax, "find_plantuml_jar", lambda: None)
+
+    read = client.get(f"/api/diagrams/{artifact_id}/layout/geometry")
+
+    assert read.status_code == 503, read.text
+    assert "plantuml.jar" in read.json()["detail"]["message"]
+
+
+def test_a_canvas_relation_edit_changes_what_it_states_and_keeps_the_rest(model: RenderedModel, client: TestClient):
+    """Regression: an edit stating only a description removed both multiplicities (defaults of "")."""
+    artifact_id, _ = _diagram(model, "top-to-bottom")
+    key = f"{model.ids['customer']}---{model.ids['clerk']}@@archimate-assignment"
+    detail = client.get(f"/api/diagrams/{artifact_id}").json()
+    body = {
+        "diagram_type": detail["diagram_type"], "name": detail["name"], "entity_ids": detail["entity_ids_used"],
+        "connection_ids": detail["connection_ids_used"], "dry_run": False,
+    }
+
+    def edit(**stated: str) -> None:
+        answer = client.put(f"/api/diagrams/{artifact_id}", json={
+            **body, "commands": [{"op": "model.relation.edit", "artifact_id": key, **stated}],
+        })
+        assert answer.status_code == 200, answer.text
+
+    edit(src_multiplicity="1", tgt_multiplicity="0..*")
+    edit(description="Serves the counter")
+    kept = s.get_repo().get_connection(key)
+    assert kept is not None
+    assert (kept.src_multiplicity, kept.tgt_multiplicity) == ("1", "0..*")
+    assert "Serves the counter" in kept.content_text
+
+    edit(tgt_multiplicity="")
+    assert s.get_repo().get_connection(key).tgt_multiplicity in (None, "")  # type: ignore[union-attr]
+
+
 def test_membership_write_with_a_stale_layout_answers_conflict(model: RenderedModel, client: TestClient):
     artifact_id, path = _diagram(model, "top-to-bottom")
     before = path.read_bytes()
