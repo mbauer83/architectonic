@@ -185,7 +185,7 @@ describe('the boxes a session edits', () => {
     const getDiagram = vi.fn(() => Effect.succeed({ ...MEMBERSHIP, authored_groupings: stated }))
     const editing = overDiagram(
       { ...service, previewLayoutGeometry: () => Effect.succeed(geometry), getDiagram } as unknown as ModelService,
-       () => MEMBERSHIP,
+      () => MEMBERSHIP,
     )
     await editing.open()
     const boxes = [{ label: 'Front office', 'entity-ids': ['APP@1.a'] }]
@@ -205,7 +205,7 @@ describe('an element added at a point', () => {
   }
   const adding = () => overDiagram(
     { ...service, previewLayoutGeometry: () => Effect.succeed(added) } as unknown as ModelService,
-     () => MEMBERSHIP,
+    () => MEMBERSHIP,
   )
 
   it('is laid out by PlantUML on an automatic picture, wherever it was dropped', async () => {
@@ -239,7 +239,7 @@ describe('the names a session lists', () => {
     } as unknown as DiagramContext
     const named = overDiagram(
       { ...service, readLayoutGeometry: () => Effect.succeed(pictured) } as unknown as ModelService,
-       () => MEMBERSHIP, { context: () => context },
+      () => MEMBERSHIP, { context: () => context },
     )
     await named.open()
     move(named, 'C', 30)

@@ -92,9 +92,10 @@ export function useCandidateEditing(
       return false
     }
   }
-  const readOver = (scope: readonly string[]) => queued(async () => {
+  /** Record that the candidate reads over *scope*; run inside a recording, which queues it. */
+  const readOver = async (scope: readonly string[]): Promise<void> => {
     answered(await Effect.runPromise(svc.editCandidate(candidateId(), version, { scope })))
-  })
+  }
 
   /**
    * Read the candidate, and open its picture with what it already creates, renames and connects drawn, and the
@@ -143,12 +144,13 @@ export function useCandidateEditing(
   /** Remove *aliases* from view; the model elements among them are no longer read over by the candidate. */
   const remove: DiagramEditing['remove'] = (aliases) => {
     const before = editing.session.state.value
-    editing.remove(aliases)
-    if (editing.session.state.value === before) return
+    // Read off the picture before the removal, which takes them off it.
     const gone = new Set(aliases.flatMap((alias) => {
       const key = editing.session.geometry.value?.elements.find((one) => one.alias === alias)?.key
       return key === undefined ? [] : [stableEntityId(key)]
     }))
+    editing.remove(aliases)
+    if (editing.session.state.value === before) return
     const kept = held.scope.filter((one) => !gone.has(stableEntityId(one)))
     void recording(async () => { if (kept.length !== held.scope.length) await readOver(kept) })
   }
