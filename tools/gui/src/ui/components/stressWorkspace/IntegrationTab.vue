@@ -8,7 +8,6 @@
  * Every resolution is asked of the server at once, so the cards are always the conflicts still standing.
  * No merge proves behaviour, and the tab says so.
  */
-import { useCan } from '../../composables/usePermissions'
 import { computed, inject, reactive, watch } from 'vue'
 import type { WorkspaceTab } from '../../../domain/stressAnalysis/analysisProgress'
 import type { IntegrationConflict } from '../../../domain/schemas/candidates'
@@ -22,6 +21,7 @@ import { documentDetailRoute } from '../../router/artifactRoutes'
 import type { Candidates } from '../../composables/useCandidates'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import { useIntegration } from '../../composables/useIntegration'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{ candidates: Candidates; analysis: StressAnalysis }>()
 const emit = defineEmits<{ open: [tab: WorkspaceTab, row: string] }>()
@@ -61,7 +61,6 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
   if (integration.chosen.value.length || integration.answer.value) return
   void integration.choose(integrable.value.filter((one) => one.state === 'candidate').map((one) => one.id))
 }, { immediate: true })
-const mayIntegrate = useCan('changes_integrate_candidates')
 </script>
 
 <template>
@@ -214,16 +213,15 @@ const mayIntegrate = useCan('changes_integrate_candidates')
     </p>
     <footer>
       <label>Name <input v-model="integration.name.value"></label>
-      <button
-        type="button"
+      <PermittedButton
+        operation="changes_integrate_candidates"
         class="btn btn-sm btn-primary"
         data-testid="integrate"
-        :disabled="!integration.ready.value || !mayIntegrate.allowed"
-        :title="mayIntegrate.allowed ? undefined : mayIntegrate.reason"
+        :disabled="!integration.ready.value"
         @click="integration.integrate()"
       >
         Integrate
-      </button>
+      </PermittedButton>
     </footer>
     <p class="foot">
       Integrating compares what the candidates change, not how the result behaves. No merge proves behaviour; the

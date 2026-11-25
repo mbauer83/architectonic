@@ -6,7 +6,6 @@
  * be applied incomplete, knowingly. Any draft in the analysis's stack can be applied; the one read on
  * the left is offered first.
  */
-import { useCan } from '../../composables/usePermissions'
 import { computed, ref } from 'vue'
 import { whatIsLeft, type LeftItem, type WorkspaceTab } from '../../../domain/stressAnalysis/analysisProgress'
 import type { ModelService } from '../../../application/ModelService'
@@ -14,6 +13,7 @@ import type { Candidates } from '../../composables/useCandidates'
 import { useCandidateApply } from '../../composables/useCandidateApply'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import ApplyCandidate from '../candidates/ApplyCandidate.vue'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{
   svc: Pick<ModelService, 'applyCandidate'>; analysis: StressAnalysis; candidates: Candidates
@@ -46,7 +46,6 @@ const applied = () => {
   close()
   emit('applied', name)
 }
-const mayApply = useCan('changes_apply_candidate')
 </script>
 
 <template>
@@ -116,16 +115,15 @@ const mayApply = useCan('changes_apply_candidate')
             >{{ one.name }}{{ one.id === analysis.naiveId.value ? ' (naive architecture)' : '' }}</option>
           </select>
         </label>
-        <button
-          type="button"
+        <PermittedButton
+          operation="changes_apply_candidate"
           class="btn btn-sm btn-primary"
           data-testid="workspace-apply-check"
-          :disabled="!candidate || apply.busy.value || !mayApply.allowed"
-          :title="mayApply.allowed ? undefined : mayApply.reason"
+          :disabled="!candidate || apply.busy.value"
           @click="apply.open(chosen)"
         >
           Check what it writes…
-        </button>
+        </PermittedButton>
       </div>
       <ApplyCandidate
         v-if="candidate && apply.preview.value?.candidate === candidate.id"

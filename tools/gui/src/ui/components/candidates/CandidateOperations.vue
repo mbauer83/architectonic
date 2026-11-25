@@ -8,13 +8,13 @@
  * unchanged rows greyed. A comparison of several candidates reads each *fixed* to their common base: the
  * base is named, not chosen, and nothing is sketched there.
  */
-import { useCan } from '../../composables/usePermissions'
 import { computed, nextTick, ref, watch } from 'vue'
 import { stableEntityId } from '../../../domain/artifactId'
 import type { ChangeDifference } from '../../../domain/schemas/candidates'
 import { chosenIds } from '../../../domain/candidates/candidateCanvas'
 import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{
   candidates: Candidates; role: string; nameOf: (id: string) => string; fixed?: boolean
@@ -89,7 +89,6 @@ const cardRows = (row: ChangeDifference) => {
     .filter((name) => typeof fields[name] !== 'object' || row.fields[name])
   return names.map((name) => ({ name, changed: row.fields[name], value: fields[name] }))
 }
-const maySketch = useCan('changes_record_operation')
 </script>
 
 <template>
@@ -104,17 +103,15 @@ const maySketch = useCan('changes_record_operation')
         <span class="role">{{ role }} · {{ summary.state }}</span>
         <span class="stack-of">{{ stackLine(summary.id, candidates.all.value) }}</span>
       </div>
-      <button
+      <PermittedButton
         v-if="summary.state === 'draft' && !fixed"
-        type="button"
+        operation="changes_record_operation"
         class="btn btn-sm"
         data-testid="sketch"
-        :disabled="!maySketch.allowed"
-        :title="maySketch.allowed ? undefined : maySketch.reason"
         @click="emit('sketch', summary.id)"
       >
         Sketch on the canvas
-      </button>
+      </PermittedButton>
     </div>
     <div class="reads">
       <span v-if="fixed">against {{ baseLabel }}</span>

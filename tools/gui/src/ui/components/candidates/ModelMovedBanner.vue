@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import type { OperationStanding } from '../../../domain/schemas/candidates'
 import { hasMoved, modelMoved, movedSentence } from '../../../domain/candidates/modelMoved'
-import { useCan } from '../../composables/usePermissions'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{ name: string; standing: readonly OperationStanding[]; busy?: boolean }>()
 const emit = defineEmits<{ rebase: [] }>()
@@ -15,7 +15,6 @@ const emit = defineEmits<{ rebase: [] }>()
 const moved = computed(() => modelMoved(props.standing))
 const open = ref(false)
 const reasons = computed(() => [...moved.value.drifted, ...moved.value.conflicting])
-const mayRebase = useCan('changes_rebase_candidate')
 </script>
 
 <template>
@@ -37,19 +36,17 @@ const mayRebase = useCan('changes_rebase_candidate')
       >
         {{ open ? 'Hide them' : 'Show them' }}
       </button>
-      <button
+      <PermittedButton
         v-if="moved.drifted.length"
-        type="button"
+        operation="changes_rebase_candidate"
         class="btn btn-sm"
         data-testid="rebase"
-        :disabled="busy || !mayRebase.allowed"
-        :title="mayRebase.allowed
-          ? 'Write each drifted operation again against the model as it stands now, keeping what it asks for'
-          : mayRebase.reason"
+        :disabled="busy"
+        title="Write each drifted operation again against the model as it stands now, keeping what it asks for"
         @click="emit('rebase')"
       >
         Re-base
-      </button>
+      </PermittedButton>
     </div>
     <ul v-if="open">
       <li

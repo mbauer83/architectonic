@@ -8,7 +8,6 @@
  * *Start the naive architecture* creates the naive as a draft candidate and the analysis document naming
  * it, in one write the server makes whole or not at all, then opens the naive for sketching.
  */
-import { useCan } from '../composables/usePermissions'
 import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Effect } from 'effect'
@@ -26,6 +25,7 @@ import MarkedCanvas from '../components/candidates/MarkedCanvas.vue'
 import StressStartArchitecture from '../components/stressWorkspace/StressStartArchitecture.vue'
 import type { Marks } from '../../domain/candidates/canvasMarks'
 import { framedMarks } from '../../domain/candidates/canvasMarks'
+import PermittedButton from '../components/PermittedButton.vue'
 
 type Origin = 'model' | 'existing' | 'empty'
 
@@ -120,7 +120,6 @@ onMounted(async () => {
   viewpoints.value = defined
   candidates.value = open
 })
-const mayStart = useCan('documents_start_stress_analysis')
 </script>
 
 <template>
@@ -202,16 +201,15 @@ const mayStart = useCan('documents_start_stress_analysis')
         >
           {{ error ?? scope.error.value }}
         </p>
-        <button
-          type="button"
+        <PermittedButton
+          operation="documents_start_stress_analysis"
           class="btn btn-primary"
           data-testid="start-naive"
-          :disabled="!canStart || !mayStart.allowed"
-          :title="mayStart.allowed ? undefined : mayStart.reason"
+          :disabled="!canStart"
           @click="start"
         >
           Start the naive architecture
-        </button>
+        </PermittedButton>
       </section>
       <section aria-label="Canvas">
         <MarkedCanvas

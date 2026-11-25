@@ -5,13 +5,13 @@
  * *against*. *New candidate on top…* stacks a new candidate on the selected one and records it as an
  * adaptation of the end state it answers. A row takes focus, and Enter or Space selects it.
  */
-import { useCan } from '../../composables/usePermissions'
 import { computed, ref } from 'vue'
 import { cell, cellIds, endStateName } from '../../../domain/stressAnalysis/analysisRows'
 import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import CandidateOperations from '../candidates/CandidateOperations.vue'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{
   analysis: StressAnalysis; candidates: Candidates
@@ -46,7 +46,6 @@ const create = async () => {
   name.value = ''
   emit('sketch', id)
 }
-const mayCreate = useCan('changes_create_candidate')
 </script>
 
 <template>
@@ -86,17 +85,15 @@ const mayCreate = useCan('changes_create_candidate')
       that answers an end state.
     </p>
     <div class="new">
-      <button
+      <PermittedButton
         v-if="!stacking"
-        type="button"
+        operation="changes_create_candidate"
         class="btn btn-sm"
         data-testid="new-candidate"
-        :disabled="!mayCreate.allowed"
-        :title="mayCreate.allowed ? undefined : mayCreate.reason"
         @click="stacking = true"
       >
         New candidate on top of {{ stackOnName }}…
-      </button>
+      </PermittedButton>
       <form
         v-else
         class="new-form"

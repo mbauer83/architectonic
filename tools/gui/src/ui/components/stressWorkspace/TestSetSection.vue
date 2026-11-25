@@ -6,7 +6,6 @@
  * test set shows only a link to add one. *Hold out a random third* asks first, in the section itself:
  * Cancel holds the focus and Esc cancels, so a stray Enter moves nothing.
  */
-import { useCan } from '../../composables/usePermissions'
 import { computed, nextTick, ref } from 'vue'
 import type { Verdict } from '../../../domain/schemas/stressEvaluation'
 import { cell } from '../../../domain/stressAnalysis/analysisRows'
@@ -17,6 +16,7 @@ import type { TestSet } from '../../composables/useTestSet'
 import ResidualityLine from '../candidates/ResidualityLine.vue'
 import JudgeWalk from './JudgeWalk.vue'
 import StressorInput from './StressorInput.vue'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{
   analysis: StressAnalysis
@@ -61,7 +61,6 @@ const holdOut = async () => {
   asking.value = false
   await props.testSet.holdOut()
 }
-const mayHoldOut = useCan('documents_hold_out_test_set')
 </script>
 
 <template>
@@ -155,17 +154,16 @@ const mayHoldOut = useCan('documents_hold_out_test_set')
             @write="testSet.write"
           />
           <div class="acts">
-            <button
+            <PermittedButton
               v-if="design >= 3"
-              type="button"
+              operation="documents_hold_out_test_set"
               class="btn btn-sm"
               data-testid="hold-out"
-              :disabled="testSet.holding.value || asking || !mayHoldOut.allowed"
-              :title="mayHoldOut.allowed ? undefined : mayHoldOut.reason"
+              :disabled="testSet.holding.value || asking"
               @click="askHoldOut"
             >
               Hold out a random third
-            </button>
+            </PermittedButton>
             <label
               v-if="held.length && evaluable.length"
               class="evaluate"

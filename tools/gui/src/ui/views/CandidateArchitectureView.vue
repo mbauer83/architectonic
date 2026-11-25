@@ -9,7 +9,6 @@
  * the model, not on any one picture of it. *Compare with…* opens a comparison holding this candidate,
  * on the same diagram, for others to be added to.
  */
-import { useCan } from '../composables/usePermissions'
 import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Effect } from 'effect'
@@ -29,6 +28,7 @@ import CandidateCanvas from '../components/candidates/CandidateCanvas.vue'
 import MarkedCanvas from '../components/candidates/MarkedCanvas.vue'
 import ModelMovedBanner from '../components/candidates/ModelMovedBanner.vue'
 import SaveAsDiagram from '../components/candidates/SaveAsDiagram.vue'
+import PermittedButton from '../components/PermittedButton.vue'
 
 const svc = inject(modelServiceKey)!
 const toast = inject(toastKey, () => undefined)
@@ -143,9 +143,6 @@ onMounted(async () => {
   await read()
   loaded.value = true
 })
-const mayCreate = useCan('changes_create_candidate')
-const mayApply = useCan('changes_apply_candidate')
-const mayDelete = useCan('changes_delete_candidate')
 </script>
 
 <template>
@@ -158,17 +155,15 @@ const mayDelete = useCan('changes_delete_candidate')
         ← Candidate architectures
       </RouterLink>
       <h1>{{ summary?.name ?? candidateId }}</h1>
-      <button
+      <PermittedButton
         v-if="summary && !stacking"
-        type="button"
+        operation="changes_create_candidate"
         class="btn btn-sm"
         data-testid="stack-candidate"
-        :disabled="!mayCreate.allowed"
-        :title="mayCreate.allowed ? undefined : mayCreate.reason"
         @click="stacking = true"
       >
         New candidate on top…
-      </button>
+      </PermittedButton>
       <RouterLink
         v-if="summary"
         class="btn btn-sm"
@@ -177,28 +172,25 @@ const mayDelete = useCan('changes_delete_candidate')
       >
         Compare with…
       </RouterLink>
-      <button
+      <PermittedButton
         v-if="summary && applicable"
-        type="button"
+        operation="changes_apply_candidate"
         class="btn btn-sm"
         data-testid="apply-to-model"
-        :disabled="apply.busy.value || !mayApply.allowed"
-        :title="mayApply.allowed ? undefined : mayApply.reason"
+        :disabled="apply.busy.value"
         @click="apply.open(candidateId)"
       >
         Apply to the model…
-      </button>
-      <button
+      </PermittedButton>
+      <PermittedButton
         v-if="summary"
-        type="button"
+        operation="changes_delete_candidate"
         class="btn btn-sm"
         data-testid="delete-candidate"
-        :disabled="!mayDelete.allowed"
-        :title="mayDelete.allowed ? undefined : mayDelete.reason"
         @click="remove"
       >
         Delete
-      </button>
+      </PermittedButton>
     </div>
     <form
       v-if="stacking"
