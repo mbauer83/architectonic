@@ -208,7 +208,9 @@ uv run arch-repair upgrade --workspace <path> --restore <set>      # every targe
 After a successful commit the set also records the state the commit left. A `--restore` compares
 the targets with it and refuses while anything changed since — a document written, a candidate
 architecture created, the settings edited — listing each path. Save what you need, then add
-`--discard-later-work`. `arch-update` prints the restore command for the set its migration took.
+`--discard-later-work`. The assurance store and the signals database are not compared: a backend
+rewrites their files each time it starts, so the restore names them before it puts them back as they
+were before the upgrade. `arch-update` prints the restore command for the set its migration took.
 
 `--restore` uses the same backend-not-serving gate as `--commit`. Copies live under
 `.arch/upgrade-checkpoints/<set>/` in the workspace, or beside the deployment settings document when

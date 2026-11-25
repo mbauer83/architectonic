@@ -40,6 +40,10 @@ _RECORD = "checkpoint-set.json"
 #: The pinned ref of a repository as the commit left it sits beside the pre-upgrade one.
 _AFTER_SUFFIX = ".after"
 
+#: Targets whose file a backend rewrites just by opening and closing it (a write-ahead-log
+#: checkpoint), so a digest cannot tell later work from a restart. A restore names them instead.
+_DATABASE_KINDS = frozenset({"assurance_sqlcipher", "signals_sqlite"})
+
 
 class CheckpointFailed(RuntimeError):
     """The safety point could not be taken; nothing was pinned, copied or written."""
@@ -137,7 +141,8 @@ def record_state_after(checkpoint_set: CheckpointSet, base: Path) -> CheckpointS
             release_worktree_checkpoint(root, transient)
         repositories.append(replace(repository, after_ref=after_ref))
     operational = [
-        replace(backup, after_digest=_file_digest(Path(backup.location))) for backup in checkpoint_set.operational
+        backup if backup.kind in _DATABASE_KINDS else replace(backup, after_digest=_file_digest(Path(backup.location)))
+        for backup in checkpoint_set.operational
     ]
     recorded = replace(checkpoint_set, repositories=tuple(repositories), operational=tuple(operational))
     _write_record(base, recorded)
@@ -170,6 +175,12 @@ def work_since_upgrade(checkpoint_set: CheckpointSet) -> list[str]:
         if backup.after_digest is not None and _file_digest(Path(backup.location)) != backup.after_digest:
             changed.append(f"{backup.kind} {backup.location}: changed since the upgrade")
     return changed
+
+
+def databases_restored_whole(checkpoint_set: CheckpointSet) -> list[str]:
+    """The database copies a restore puts back whole: what was recorded in them since cannot be told
+    from a backend having opened them, so it is named before the restore rather than compared."""
+    return [f"{b.kind} {b.location}" for b in checkpoint_set.operational if b.kind in _DATABASE_KINDS]
 
 
 def _file_digest(path: Path) -> str | None:
@@ -233,6 +244,7 @@ def restore_checkpoint_set(
             continue
         handle.restore(Path(backup.backup_path))
         done.append(f"{backup.kind} {backup.location}: restored from {backup.backup_path}")
+
     return done
 
 

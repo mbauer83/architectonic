@@ -184,3 +184,24 @@ def test_a_deployment_with_its_own_guidance_cache_reads_and_checkpoints_that_one
 
     monkeypatch.setenv("ARCH_SETTINGS_PATH", str(settings))
     assert guidance_cache_root() == own
+
+
+def test_a_database_is_named_before_it_is_put_back_rather_than_compared(tmp_path: Path) -> None:
+    # A backend rewrites its store's file on every start (a write-ahead-log checkpoint), so a digest
+    # would report "changed since the upgrade" after any restart. The store is named instead.
+    from src.domain.repository.operational_upgrade import OperationalBackup
+    from src.infrastructure.cli._upgrade_checkpoints import databases_restored_whole, record_state_after
+
+    store, settings = tmp_path / "store.db", tmp_path / "settings.yaml"
+    store.write_bytes(b"sqlite")
+    settings.write_text("backend: {}\n", encoding="utf-8")
+    base = tmp_path / "sets"
+    (base / "S1").mkdir(parents=True)
+    recorded = record_state_after(CheckpointSet(id="S1", operational=(
+        OperationalBackup(kind="assurance_sqlcipher", location=str(store), backup_path=str(store)),
+        OperationalBackup(kind="deployment_settings", location=str(settings), backup_path=str(settings)),
+    )), base)
+
+    digests = {backup.kind: backup.after_digest for backup in recorded.operational}
+    assert digests["assurance_sqlcipher"] is None and digests["deployment_settings"] is not None
+    assert databases_restored_whole(recorded) == [f"assurance_sqlcipher {store}"]

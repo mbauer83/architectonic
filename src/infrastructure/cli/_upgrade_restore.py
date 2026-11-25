@@ -15,6 +15,7 @@ from pathlib import Path
 
 from src.infrastructure.cli._upgrade_checkpoints import (
     checkpoint_base,
+    databases_restored_whole,
     list_checkpoint_sets,
     load_checkpoint_set,
     restore_checkpoint_set,
@@ -72,6 +73,11 @@ def restore_or_list(
             file=sys.stderr,
         )
         return EXIT_REFUSED
+    for database in databases_restored_whole(checkpoint_set):
+        print(
+            f"  {database}: put back as it was before the upgrade; anything recorded in it since is lost",
+            file=sys.stderr,
+        )
     done = restore_checkpoint_set(
         checkpoint_set, side.handles, rebuild_index=rebuild_index
     )
