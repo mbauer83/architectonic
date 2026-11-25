@@ -138,3 +138,17 @@ def test_a_main_with_local_commits_is_seen_as_diverged(tmp_path: Path) -> None:
 
     assert not relation.fast_forwardable and relation.local_commits == 1
     assert relation.merge_base == _git(clone, "rev-parse", "HEAD~1")
+
+
+def test_the_remedy_s_two_commands_clear_either_flag(tmp_path: Path) -> None:
+    # `git update-index --no-skip-worktree --no-assume-unchanged <file>` applies only the last option,
+    # which left a skip-worktree flag in place; the remedy names one command per flag.
+    _, clone = _pair(tmp_path)
+    (clone / _WORKSPACE).write_text(_EDITED)
+    _git(clone, "update-index", "--skip-worktree", _WORKSPACE)
+
+    _git(clone, "update-index", "--no-skip-worktree", _WORKSPACE)
+    _git(clone, "update-index", "--no-assume-unchanged", _WORKSPACE)
+
+    observed = GitCheckout(clone).observe()
+    assert observed.hidden_configuration == () and observed.local_configuration == (_WORKSPACE,)

@@ -187,7 +187,9 @@ def _checkout_refusal(
         listed = " ".join(hidden)
         return UpdateRefused(
             f"git is told to ignore changes to {', '.join(hidden)}, so their edits cannot be carried across",
-            f"clear the flag with `git update-index --no-skip-worktree --no-assume-unchanged {listed}` and re-run",
+            # Two commands: `update-index` applies only the last of several marking options it is given.
+            f"clear the flags with `git update-index --no-skip-worktree {listed}` and "
+            f"`git update-index --no-assume-unchanged {listed}`, then re-run",
             "blocked",
         )
     if relation is None:

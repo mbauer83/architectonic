@@ -245,4 +245,5 @@ def test_configuration_hidden_from_git_is_refused_with_the_command_that_shows_it
     plan = plan_update(_observation(software=hidden), RELEASE, GOOD, CLEAR, relation=_relation())
 
     assert isinstance(plan, UpdateRefused)
-    assert "git update-index --no-skip-worktree --no-assume-unchanged arch-workspace.yaml" in plan.remedy
+    assert "`git update-index --no-skip-worktree arch-workspace.yaml`" in plan.remedy
+    assert "`git update-index --no-assume-unchanged arch-workspace.yaml`" in plan.remedy
