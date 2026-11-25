@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 from src.application.modeling.enterprise_reference import enterprise_target
 from src.application.modeling.proposal_standing import PendingProposal, pending_reader, standing_reader
+from src.application.repository_confinement import is_within
 from src.domain.baseline_standing import BASELINE_STANDING, BaselineStanding
 
 if TYPE_CHECKING:
@@ -116,7 +117,7 @@ def configured_roots() -> list[Path]:
 def is_global(path: Path) -> bool:
     with _state_lock:
         ent = _enterprise_root
-    return ent is not None and path.is_relative_to(ent)
+    return ent is not None and is_within(path, ent)
 
 
 def baseline_standing_reader() -> Callable[[str], BaselineStanding]:

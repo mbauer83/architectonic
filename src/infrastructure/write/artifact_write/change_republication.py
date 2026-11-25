@@ -38,6 +38,7 @@ from typing import TYPE_CHECKING
 
 from src.application.modeling.proposal_standing import PendingProposal
 from src.application.modeling.proposed_change import SUBMITTED_STATE
+from src.application.repository_confinement import canonical, is_within
 from src.infrastructure.git import enterprise_sync_state
 from src.infrastructure.git.enterprise_branch_lifecycle import (
     open_replacement_branch,
@@ -135,9 +136,9 @@ def refuse_a_branch_carrying_more(
             "behind. Nothing was changed."
         )
     accounted = {
-        path.relative_to(enterprise_root).as_posix()
+        canonical(path).relative_to(canonical(enterprise_root)).as_posix()
         for path in (repo.find_file_by_id(proposal.target_id) for proposal in replayed)
-        if path is not None and path.is_relative_to(enterprise_root)
+        if path is not None and is_within(path, enterprise_root)
     }
     left_behind = sorted(set(changed) - accounted)
     if left_behind:

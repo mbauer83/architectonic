@@ -4,6 +4,7 @@ from typing import Any, Literal
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
+from src.application.repository_confinement import canonical, is_within
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_types import VerificationFileType, VerificationResult
 from src.application.verification.evaluation import PassCancellation
@@ -21,8 +22,8 @@ from src.infrastructure.workspace.mutation_gate import get_workspace_gate
 def _kind_at(path: Path, roots: Sequence[Path]) -> ArtifactKindName | None:
     """The kind the repository layout gives *path* under whichever root holds it; None when none does."""
     for root in roots:
-        if path.is_relative_to(root):
-            return artifact_kind_at(path.relative_to(root))
+        if is_within(path, root):
+            return artifact_kind_at(canonical(path).relative_to(canonical(root)))
     return None
 
 

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from src.application.document_links import relocated_links
 from src.application.repo_path_helpers import all_model_roots, diagram_source_root, docs_root
+from src.application.repository_confinement import is_within
 from src.domain.artifact_id import full_ids_with_stem, stable_id
 from src.domain.repository.repo_layout import RENDERED
 from src.infrastructure.write.artifact_write.staged_workspace import live_root_for, overlay_paths
@@ -158,9 +159,9 @@ def _referrer_sources(repo_root: Path) -> Iterator[Path]:
 def _diagram_sources(repo_root: Path, patterns: tuple[str, ...]) -> Iterator[Path]:
     """Authored diagram sources matching *patterns*; rendered output is regenerated from them."""
     diagram_root = diagram_source_root(repo_root)
-    rendered = (diagram_root.parent / RENDERED).resolve()
+    rendered = diagram_root.parent / RENDERED
     for path in overlay_paths(diagram_root, patterns):
-        if not path.resolve().is_relative_to(rendered):
+        if not is_within(path, rendered):
             yield path
 
 

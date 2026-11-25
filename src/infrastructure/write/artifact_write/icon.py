@@ -19,6 +19,7 @@ from pathlib import Path
 from src.application.icons.icon_usage import icon_users, uses_outside
 from src.application.icons.icon_vocabulary import icon_applicability_names, unknown_applicability_names
 from src.application.identifier_allocator import get_default_allocator
+from src.application.repository_confinement import is_within
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.config.repo_paths import DIAGRAM_CATALOG
 from src.domain.icons.applicability import InvalidApplicabilityError, applicability_from
@@ -161,7 +162,7 @@ def _uses_lost(
 def library_icon_here(repo_root: Path, artifact_id: str) -> IconRecord:
     """The icon *artifact_id* names in this repository's own library; an enterprise icon is not editable here."""
     icon = get_repository(repo_root).get_icon(artifact_id)
-    if icon is None or not icon.path.is_relative_to(repo_root):
+    if icon is None or not is_within(icon.path, repo_root):
         raise FileNotFoundError(f"Icon '{artifact_id}' is not in this repository's library")
     return icon
 

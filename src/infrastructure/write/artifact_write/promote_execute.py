@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from src.application.artifacts.query import ArtifactRepository
+from src.application.repository_confinement import is_within
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.domain.repository.artifact_location import artifact_kind_at
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
@@ -309,7 +310,7 @@ def _replace_artifact_with_gar(
 ) -> None:
     """Replace a promoted engagement artifact with a GAR proxy."""
     src = registry.find_file_by_id(aid)
-    if src is None or not src.is_relative_to(eng_root):
+    if src is None or not is_within(src, eng_root):
         return
     name, entity_subtype = _infer_gar_name_subtype(src, aid, artifact_type, name)
 
