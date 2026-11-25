@@ -3,6 +3,38 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.11.5] — 2026-11-20
+
+**[Full detail → `changelog-assets/0.11.5-detail.md`](changelog-assets/0.11.5-detail.md)**
+
+### Fixed
+
+- **A pull brings everything a teammate committed.** In a repository that keeps its entities in groups
+  under `projects/`, a pull installed only what lay under `model/`, `docs/` and `diagram-catalog/`. A
+  teammate's changes to grouped entities, to scratchpads and to the repository's configuration were left
+  at their old content, and the next save committed that old content over theirs, without a conflict.
+  A pull now installs every file the fetched commit holds, including files a teammate added, deleted or
+  renamed. **If you share such a repository, update every installation before saving after a pull.**
+- **A pull does not overwrite unsaved work.** Where a pull would install a file that holds unsaved
+  changes, nothing is written and a sync conflict is reported. Unsaved changes to other files are left
+  as they are.
+- **A repository holding its own unpublished commit can pull.** Such a pull failed every time.
+- **Unsaved scratchpads and grouped entities are offered for saving.** The sync status reported nothing
+  to save for a new or changed scratchpad and for an entity under `projects/`, so **Save** was not
+  offered, although a save would have committed them.
+- **The save dialog lists every file a save commits**, with scratchpads and files that are not artifacts
+  as rows of their own kind.
+- **An entity's page and a search show a scratchpad reference as soon as it exists.** A browser or an
+  agent that revalidated its copy went on showing the references from before a scratchpad bound or
+  released the entity, and a search did not return a note that had just been saved.
+
+### Upgrading
+
+- No data migration.
+- A repository without a tracked `.arch-repo/.gitignore` gets one on its next write. It shows as
+  unsaved; save it once.
+- `GET /api/sync/changes` may answer rows of two further kinds, `scratchpad` and `file`.
+
 ## [0.11.4] — 2026-11-20
 
 **[Full detail → `changelog-assets/0.11.4-detail.md`](changelog-assets/0.11.4-detail.md)**
@@ -1387,6 +1419,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.11.5]: https://github.com/mbauer83/architectonic/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/mbauer83/architectonic/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/mbauer83/architectonic/compare/v0.11.2...v0.11.3
 [0.11.2]: https://github.com/mbauer83/architectonic/compare/v0.11.1...v0.11.2
