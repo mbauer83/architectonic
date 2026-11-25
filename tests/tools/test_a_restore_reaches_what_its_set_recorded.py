@@ -76,6 +76,13 @@ def _repo(path: Path) -> Path:
     return path
 
 
+def _settings(tmp_path: Path, port: int) -> str:
+    # The assurance store's default location is the source checkout's own; a checkout that holds a real,
+    # locked store would make the upgrade refuse to proceed without its key. State one under tmp_path.
+    store = tmp_path / "assurance" / "assurance.db"
+    return f"backend:\n  port: {port}\ndeployment:\n  assurance_db_path: {store}\n"
+
+
 def _only_set(base: Path) -> CheckpointSet:
     sets = list_checkpoint_sets(base)
     assert len(sets) == 1
@@ -123,12 +130,12 @@ def test_a_restore_without_settings_reaches_the_settings_document_the_set_copied
 ) -> None:
     repo = _repo(tmp_path / "repo")
     settings = tmp_path / "settings.yaml"
-    settings.write_text("backend:\n  port: 8123\n", encoding="utf-8")
+    settings.write_text(_settings(tmp_path, 8123), encoding="utf-8")
     assert _run("--repo-root", str(repo), "--settings", str(settings), "--commit") == 0
     checkpoint_set = _only_set(tmp_path / ".arch" / "upgrade-checkpoints")
     assert checkpoint_set.settings_document == str(settings)
     assert [backup.kind for backup in checkpoint_set.operational] == ["deployment_settings"]
-    settings.write_text("backend:\n  port: 9999\n", encoding="utf-8")
+    settings.write_text(_settings(tmp_path, 9999), encoding="utf-8")
     capsys.readouterr()
 
     code = _run("--repo-root", str(repo), "--restore", checkpoint_set.id, "--discard-later-work")
@@ -136,7 +143,7 @@ def test_a_restore_without_settings_reaches_the_settings_document_the_set_copied
     out = capsys.readouterr().out
     assert code == 0
     assert "not restored" not in out, out
-    assert settings.read_text(encoding="utf-8") == "backend:\n  port: 8123\n"
+    assert settings.read_text(encoding="utf-8") == _settings(tmp_path, 8123)
 
 
 def test_the_per_user_guidance_cache_is_migrated_but_never_checkpointed(
@@ -150,7 +157,7 @@ def test_the_per_user_guidance_cache_is_migrated_but_never_checkpointed(
     cache.mkdir(parents=True)
     (cache / "archimate-4.guidance.yaml").write_text("{}\n", encoding="utf-8")
     settings = tmp_path / "settings.yaml"
-    settings.write_text("backend:\n  port: 8123\n", encoding="utf-8")
+    settings.write_text(_settings(tmp_path, 8123), encoding="utf-8")
 
     handles = discover_operational_handles(resolve_manifest(CliSelectors(settings=str(settings))))
     guidance = [h for h in handles if h.target.kind == "guidance_cache"]
