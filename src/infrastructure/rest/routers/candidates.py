@@ -225,11 +225,10 @@ def changes_check_candidates(body: CandidateSelection) -> dict[str, Any]:
     response_model=AnalysisProgress,
     responses=READ_RESPONSES,
 )
-def documents_analysis_progress(
-    artifact_id: str, kinds: list[str] = Query(default=[], description="Stress categories to check for coverage.")
-) -> dict[str, Any]:
+def documents_analysis_progress(artifact_id: str) -> dict[str, Any]:
+    """Coverage reads the shipped perspectives (`/api/stress-perspectives`), the one vocabulary of kinds."""
     with refusals():
-        return service().progress(artifact_id, kinds)
+        return service().progress(artifact_id)
 
 
 @router.get(

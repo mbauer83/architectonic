@@ -163,8 +163,10 @@ class UntouchedElement(Closed):
 
 
 class CoverageHints(Closed):
-    by_kind: dict[str, int]
-    unused_kinds: list[str]
+    by_kind: dict[str, int] = Field(description="Design stressors by kind, each kind as written; only kinds in use.")
+    unwritten_perspectives: list[str] = Field(
+        description="Perspectives no design stressor is written from, by id; empty while no stressor names a kind.",
+    )
     single_stressor_end_states: list[str]
     untouched: list[UntouchedElement]
 

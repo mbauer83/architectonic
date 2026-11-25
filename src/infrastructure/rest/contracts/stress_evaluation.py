@@ -57,6 +57,9 @@ class AnalysisEvaluation(NullsOmitted):
     design_stressors: int = Field(description="How many stressors the design set holds, which a hold-out draws from.")
     stressors: list[HeldApartStressor]
     verdicts: list[StressVerdict]
+    unwritten_perspectives: list[str] = Field(
+        description="Perspectives no test stressor is written from, by id; empty while no stressor names a kind.",
+    )
     architectures: list[ArchitectureStanding] = Field(description="The naive first, then integrated, then judged.")
     stage: EvaluationStage
 

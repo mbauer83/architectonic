@@ -200,10 +200,10 @@ class CandidateService:
             raise ValueError("Set naive-candidate on the stress-analysis document.")
         return doc.artifact_id, naive, tables_of_stored_document(doc.path, doc.doc_type, [self.root])
 
-    def analysis(self, ref: str, kinds: Sequence[str] = ()) -> dict[str, Any]:
+    def analysis(self, ref: str) -> dict[str, Any]:
         document, naive, tables = self.analysis_tables(ref)
         view = read_view(self.store.require(naive), self.store, self.registry)
-        return {"document": document, "naive_candidate": naive, **analyse(tables, view, kinds=tuple(kinds))}
+        return {"document": document, "naive_candidate": naive, **analyse(tables, view)}
 
     def check(self, ids: Sequence[str]) -> dict[str, Any]:
         if not ids or len(set(ids)) != len(ids):
@@ -223,8 +223,8 @@ class CandidateService:
     def standing(self, ref: str) -> dict[str, Any]:
         return {"candidate": ref, "standing": standing_report(self.store.require(ref), self.store, self.registry)}
 
-    def progress(self, ref: str, kinds: Sequence[str] = ()) -> dict[str, Any]:
-        report = self.analysis(ref, kinds)
+    def progress(self, ref: str) -> dict[str, Any]:
+        report = self.analysis(ref)
         return {key: report[key] for key in ("document", "naive_candidate", "progress", "coverage")}
 
     def incidence(self, ref: str) -> dict[str, Any]:

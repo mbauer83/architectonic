@@ -117,9 +117,9 @@ def test_analysis_reads_the_scoped_naive_candidate_on_both_surfaces(tmp_path: Pa
         assert grid == mcp.analysis_incidence(document.stem, str(root))
         assert grid["stressors"][0]["missing_elements"] == []
         assert grid["coupling"] == [{"left": "$ref:queue", "right": service, "count": 1}]
-        assert client.get(path + "/progress?kinds=capacity").json() == mcp.analysis_progress(
-            document.stem, ["capacity"], str(root)
-        )
+        progress = client.get(path + "/progress").json()
+        assert progress == mcp.analysis_progress(document.stem, str(root))
+        assert progress["coverage"]["by_kind"] == {"outage": 1}
         current = mcp.change_set_read(naive_id, repo_root=str(root))
         original_changes = naive["record"]["changes"]
         mcp.change_set_edit(naive_id, current["version"], {"changes": original_changes}, str(root))
