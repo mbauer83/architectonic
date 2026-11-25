@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, TypeAlias
 
 from src.application.artifacts.document_table_rows import DocumentTables, tables_of_stored_document
 from src.application.change_sets.base import record_revision
 from src.application.change_sets.candidate_apply import TERMINAL, application_of
+from src.application.change_sets.candidate_architecture import CandidateArchitecture
 from src.application.change_sets.candidate_reads import (
     comparison,
     read_view,
@@ -164,20 +166,41 @@ class CandidateService:
         """
         candidate = self.store.require(ref)
         ref = candidate.id
-        version = record_revision(to_mapping(candidate))
         application = application_of(candidate, self.store, self.registry)
         written = None if application.refusal else write_operations(application, self.root, dry_run=dry_run)
         refusal = application.refusal or (written.refusal if written else None)
         if refusal and not dry_run:
             raise CandidateConflict(refusal)
-        integrated = bool(written and written.committed)
-        if integrated:
-            self.save(to_mapping(application.integrated), version, ref=ref, applied=True)
+        integrated = bool(written and written.committed) and self._mark_integrated(candidate)
         return {
             "candidate": ref, "dry_run": dry_run, "integrated": integrated, "refusal": refusal,
             "operation_id": written.operation_id if written else None,
             "standing": wire_standing(application.standing),
         }
+
+    def _mark_integrated(self, applied: CandidateArchitecture) -> bool:
+        """Record that *applied*'s operations are in the model, once they are.
+
+        The write has committed by now, so a header edit made meanwhile (a rename, say) is no reason to
+        answer as if nothing happened: the candidate is read again and marked over its current version.
+        Only operations changed since the apply read them leave it unmarked, since the model then holds
+        what the candidate no longer says; a retried apply finds them written and marks it.
+        """
+        for _attempt in range(3):
+            current = self.store.require(applied.id)
+            if current.state == "integrated":
+                return True
+            if current.changes != applied.changes:
+                return False
+            try:
+                self.store.save(
+                    replace(current, state="integrated"), record_revision(to_mapping(current)), applied=True,
+                )
+            except CandidateConflict:
+                continue
+            notify_paths_changed([self.store.path(applied.id)])
+            return True
+        return False
 
     def edit(self, ref: str, based_on: str, patch: Mapping[str, Any]) -> dict[str, Any]:
         current = self.read(ref)

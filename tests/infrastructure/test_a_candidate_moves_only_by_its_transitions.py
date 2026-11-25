@@ -106,6 +106,49 @@ def test_applying_is_the_way_in_to_integrated(client: TestClient) -> None:
     assert client.get(f"/api/change-sets/{ref}").json()["record"]["state"] == "integrated"
 
 
+def test_a_rename_during_an_apply_does_not_turn_a_committed_write_into_a_409(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression: the integrated mark was saved over the version read before the write, so a header edit
+    made while the write ran answered 409 "the candidate changed" for a write that had committed."""
+    from src.infrastructure.candidates import service as candidate_service  # noqa: PLC0415
+
+    root = client.root  # type: ignore[attr-defined]
+    made = model.artifact_create_entity(
+        artifact_type="application-component", name="Catalog", dry_run=False, repo_root=str(root),
+    )
+    ref = _create(client)
+    version = client.get(f"/api/change-sets/{ref}").json()["version"]
+    client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operation": {
+        "op": "edit_entity", "artifact_id": made["artifact_id"], "field": "name", "value": "Registry"}})
+    write = candidate_service.write_operations
+
+    def write_then_rename(*args: Any, **kwargs: Any) -> Any:
+        # Another writer (a second process, say) renames it while the write runs, past this one's queue.
+        written = write(*args, **kwargs)
+        other = candidate_service.CandidateService(root)
+        current = other.read(ref)
+        other.edit(ref, current["version"], {"name": "Renamed"})
+        return written
+
+    monkeypatch.setattr(candidate_service, "write_operations", write_then_rename)
+
+    applied = client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": False})
+
+    assert applied.status_code == 200, applied.text
+    assert applied.json()["integrated"] is True
+    record = client.get(f"/api/change-sets/{ref}").json()["record"]
+    assert (record["state"], record["name"]) == ("integrated", "Renamed")
+
+
+def test_a_very_long_name_is_given_a_bounded_slug_rather_than_a_500(client: TestClient) -> None:
+    """Regression: a 5000-character name became a file name the file system refused."""
+    created = client.post("/api/change-sets", json={"record": {"name": "very long name " * 400}})
+
+    assert created.status_code == 200, created.text
+    assert len(created.json()["record"]["id"]) < 120
+
+
 def test_a_draft_is_checked_for_overlaps_as_it_may_be_applied(client: TestClient) -> None:
     drafts = [_create(client, name=f"Draft {n}") for n in (1, 2)]
 
