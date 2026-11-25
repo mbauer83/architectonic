@@ -13,6 +13,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from src.application.modeling.diagram_identities import strings_of
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.candidates.picture import (
     PictureStart,
@@ -77,8 +78,8 @@ def changes_read_candidate_picture_context(artifact_id: str, catalogs: Catalogs)
     else:
         diagram = {
             "artifact_id": "", "name": start.name, "diagram_type": start.generated.diagram_type,
-            "entity_ids_used": list(record.extra.get("entity-ids-used") or []),
-            "connection_ids_used": list(record.extra.get("connection-ids-used") or []),
+            "entity_ids_used": strings_of(record.extra.get("entity-ids-used")),
+            "connection_ids_used": strings_of(record.extra.get("connection-ids-used")),
         }
     return {"diagram": diagram, **picture_context_payload(
         repo, record, body, catalogs, read_entities=diagram.get("diagram_entities") or {}, reach=start.scope,
