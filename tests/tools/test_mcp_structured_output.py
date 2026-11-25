@@ -137,12 +137,14 @@ class TestProductionReadServerStructuredOutputTools:
         missing = expected - structured
         assert not missing, f"Structured-output tools not registered on mcp_read: {missing}"
 
-    def test_artifact_query_stats_returns_structured_content(self, tmp_path):
+    def test_artifact_query_stats_returns_structured_content(self, tmp_path, monkeypatch):
         """End-to-end: artifact_query_stats populates structuredContent through the normalizer."""
         from src.infrastructure.mcp.mcp_artifact_server import mcp_read
 
         repo_root = tmp_path / "repo"
         (repo_root / "model").mkdir(parents=True)
+        # A client may name only a configured repository; this one is configured for the test.
+        monkeypatch.setenv("ARCH_REPO_ROOT", str(repo_root))
 
         result = _invoke(
             mcp_read,
@@ -155,11 +157,13 @@ class TestProductionReadServerStructuredOutputTools:
             "if None the normalizer is not handling output_schema tools correctly"
         )
 
-    def test_artifact_query_stats_yaml_matches_structured_content(self, tmp_path):
+    def test_artifact_query_stats_yaml_matches_structured_content(self, tmp_path, monkeypatch):
         from src.infrastructure.mcp.mcp_artifact_server import mcp_read
 
         repo_root = tmp_path / "repo"
         (repo_root / "model").mkdir(parents=True)
+        # A client may name only a configured repository; this one is configured for the test.
+        monkeypatch.setenv("ARCH_REPO_ROOT", str(repo_root))
 
         result = _invoke(
             mcp_read,

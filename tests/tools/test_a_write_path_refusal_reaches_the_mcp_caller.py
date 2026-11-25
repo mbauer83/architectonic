@@ -66,7 +66,11 @@ def test_a_crash_still_reads_as_a_crash() -> None:
 
 
 def test_an_authorization_denial_names_its_reason(tmp_path: Path) -> None:
-    """End to end through the shipped write server: a write outside the served root is denied by policy."""
+    """End to end through the shipped write server: a write outside the served root is refused.
+
+    The refusal now comes before the policy is asked, at the dispatch that confines every location a
+    client names; it still reaches the caller as its sentence.
+    """
     repo = tmp_path / "engagements" / "ENG-REF" / "architecture-repository"
     (repo / "model").mkdir(parents=True)
 
@@ -75,4 +79,4 @@ def test_an_authorization_denial_names_its_reason(tmp_path: Path) -> None:
     })
 
     assert result.is_error
-    assert "active engagement root" in _text(result), _text(result)
+    assert "configured repositories" in _text(result), _text(result)

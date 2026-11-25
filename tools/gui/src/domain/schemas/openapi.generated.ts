@@ -1694,7 +1694,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Serve a rendered diagram image */
+        /**
+         * Serve a rendered diagram image
+         * @description A rendered image, found by its file name anywhere in the rendered tree.
+         *
+         *     Group collections mirror the source tree under `rendered/<collection>/`, and a rendered file
+         *     name is unique by artifact id, so the name alone finds it. It is compared as a name, never used
+         *     as a pattern: handed to a glob, `*` matched any file. A match must still lie inside the rendered
+         *     tree once links are followed.
+         */
         get: operations["diagrams_read_diagram_image"];
         put?: never;
         post?: never;

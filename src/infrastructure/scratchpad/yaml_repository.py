@@ -23,6 +23,7 @@ from typing import Any
 
 import yaml
 
+from src.application.repository_confinement import path_inside
 from src.application.scratchpad.document import from_document, to_document
 from src.application.scratchpad.ports import (
     ScratchpadNotFoundError,
@@ -137,7 +138,7 @@ class YamlScratchpadRepository:
             layout=scratchpad.layout.snapped(),
         )
         current.validate()
-        target = self._root / group / f"{current.artifact_id}{SUFFIX}"
+        target = path_inside(self._root, group, f"{current.artifact_id}{SUFFIX}")
         # A re-home writes even an identical document, because the file has to move.
         if existing == target and serialize(current) == on_disk:
             return current

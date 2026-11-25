@@ -141,6 +141,14 @@ over the whole working tree (it may contain manual edits); only content-neutral 
 operations — Submit's push of already-committed work and Discard's branch cleanup — are
 exempt.
 
+Every location a client names stays inside the configured repositories, on reads and writes
+alike. A `repo_root` must be the engagement or the enterprise repository the backend serves, and
+an `enterprise_root` the enterprise one; the `path` given to `artifact_verify` must lie inside one
+of them. A collection's slug (`group`, `new_slug`) must be a single name. Symlinks and `..` are
+followed before the comparison. A refused call names the configured repositories and nothing
+about the location it asked for. REST takes no repository roots, and its slug and file-name
+parameters follow the same rule.
+
 > The optional **assurance** MCP servers (`arch-assurance-read` / `arch-assurance-write`)
 > are documented separately under [Assurance MCP tools](../04-assurance/mcp-tools.md).
 

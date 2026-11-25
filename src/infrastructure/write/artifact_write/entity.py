@@ -8,6 +8,7 @@ from src.application.identifier_allocator import get_default_allocator
 from src.application.modeling.artifact_write import format_entity_markdown
 from src.application.profile_quarantine import assert_not_quarantined
 from src.application.repo_path_helpers import model_root_legacy
+from src.application.repository_confinement import path_inside
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.ontology_types import EntityTypeInfo
@@ -44,8 +45,8 @@ def entity_path(repo_root: Path, info: EntityTypeInfo, eid: str, group: str = UN
     Group-aware (target)   : <repo>/projects/<group>/model/<domain>/<type>/<id>.md
     """
     if group == UNCATEGORIZED:
-        return model_root_legacy(repo_root) / Path(*info.hierarchy) / f"{eid}.md"
-    return repo_root / "projects" / group / "model" / Path(*info.hierarchy) / f"{eid}.md"
+        return path_inside(repo_root, model_root_legacy(repo_root) / Path(*info.hierarchy) / f"{eid}.md")
+    return path_inside(repo_root, "projects", group, "model", *info.hierarchy, f"{eid}.md")
 
 
 def _alias_for(info: EntityTypeInfo, eid: str) -> str:

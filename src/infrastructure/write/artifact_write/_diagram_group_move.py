@@ -17,6 +17,7 @@ from src.application.repo_path_helpers import (
     diagram_source_root,
     rendered_path_for,
 )
+from src.application.repository_confinement import path_inside
 from src.application.verification.artifact_verifier import ArtifactVerifier, VerificationResult
 from src.application.verification.artifact_verifier_types import Issue, Severity
 from src.domain.repository.groups import UNCATEGORIZED
@@ -63,8 +64,8 @@ def _resolve_diagram_group_path(
     )
     filename = f"{artifact_id}{current_path.suffix}"
     if group == UNCATEGORIZED:
-        return diag_src_root / filename
-    return diag_src_root / group / filename
+        return path_inside(repo_root, diag_src_root, filename)
+    return path_inside(repo_root, diag_src_root, group, filename)
 
 
 def _relocate_rendered_outputs(old_diagram_path: Path, repo_root: Path) -> None:

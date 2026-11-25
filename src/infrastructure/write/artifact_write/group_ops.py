@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Literal
 
 from src.application.group_registry import load_group_registry
+from src.application.repository_confinement import require_segment
 from src.domain.repository.groups import UNCATEGORIZED, GroupAxis, GroupEntry, GroupRegistry
 
 from ._group_fs import (
@@ -105,7 +106,8 @@ def group_create(
     type_filter: tuple[str, ...] = (),
     effects: GroupEffects = APPLIED,
 ) -> dict[str, object]:
-    """Register a new group (and lazily create the directory)."""
+    """Register a new group (and lazily create the directory). Its slug names a directory."""
+    require_segment(slug, what="A group's slug")
     registry = load_group_registry(repo_root)
     if registry.find(axis, slug) is not None:
         raise GroupOpError(f"Group {slug!r} already exists on axis {axis!r}.")
@@ -129,6 +131,8 @@ def group_rename(
     effects: GroupEffects = APPLIED,
 ) -> dict[str, object]:
     """Rename a group: display name only (registry edit) or slug (git mv subtree + registry)."""
+    if new_slug is not None:
+        require_segment(new_slug, what="A group's new slug")
     registry = load_group_registry(repo_root)
     entry = _require_entry(registry, axis, slug)
 

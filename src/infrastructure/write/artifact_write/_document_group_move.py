@@ -9,6 +9,7 @@ from pathlib import Path
 
 from src.application.artifacts.document_schema import get_document_schema, get_document_subdirectory
 from src.application.repo_path_helpers import docs_root
+from src.application.repository_confinement import path_inside
 from src.domain.repository.groups import UNCATEGORIZED
 
 from ._entity_rename import rewrite_document_links_for_moved_artifact
@@ -16,10 +17,10 @@ from .file_transaction import FileChange, commit_file_changes
 
 
 def _doc_dir(repo_root: Path, doc_subdirectory: str, group: str = UNCATEGORIZED) -> Path:
-    base = docs_root(repo_root) / doc_subdirectory
+    base = path_inside(repo_root, docs_root(repo_root), doc_subdirectory)
     if group == UNCATEGORIZED:
         return base
-    return base / group
+    return path_inside(repo_root, base, group)
 
 
 def _resolve_document_group_path(

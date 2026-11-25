@@ -24,9 +24,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse, Response
 
 from src.application.repo_path_helpers import rendered_dir_for_diagram
+from src.application.repository_confinement import is_within
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, RENDERED
 from src.domain.ontology_representation.artifact_types import DiagramRecord
+from src.infrastructure.rest.contracts.path_components import PathComponentParameter
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, media_response
 from src.infrastructure.rest.routers.diagrams._lensed_reading import kind_muting, reading_body
@@ -97,22 +99,28 @@ def _rendered_path(d: DiagramRecord, suffix: str) -> Path | None:
 @router.get("/api/diagram-images/{filename}", tags=[TAG_DIAGRAMS], summary="Serve a rendered diagram image",
     response_class=FileResponse,
     responses={**READ_RESPONSES, **media_response("image/png", "The rendered image")})
-def get_diagram_image(filename: str) -> FileResponse:
+def get_diagram_image(filename: PathComponentParameter) -> FileResponse:
+    """A rendered image, found by its file name anywhere in the rendered tree.
+
+    Group collections mirror the source tree under `rendered/<collection>/`, and a rendered file
+    name is unique by artifact id, so the name alone finds it. It is compared as a name, never used
+    as a pattern: handed to a glob, `*` matched any file. A match must still lie inside the rendered
+    tree once links are followed.
+    """
     repo_root = s.maybe_engagement_root()
     if repo_root is None:
         raise HTTPException(500, "Repository not initialized")
-    if "/" in filename or "\\" in filename or ".." in filename:
-        raise HTTPException(400, "Invalid filename")
     rendered_root = repo_root / DIAGRAM_CATALOG / RENDERED
-    path = rendered_root / filename
-    if not path.exists():
-        # Group collections mirror the source tree under rendered/<coll>/; the rendered
-        # filename is artifact-id-unique, so resolve it wherever it lives in that tree.
-        found = next((p for p in rendered_root.rglob(filename) if p.is_file()), None)
-        if found is None:
-            raise HTTPException(404, f"Rendered image not found: {filename}")
-        path = found
-    return FileResponse(path, media_type="image/png")
+    found = next(
+        (
+            path for path in (rendered_root / filename, *rendered_root.rglob("*"))
+            if path.name == filename and path.is_file() and is_within(path, rendered_root)
+        ),
+        None,
+    )
+    if found is None:
+        raise HTTPException(404, f"Rendered image not found: {filename}")
+    return FileResponse(found, media_type="image/png")
 
 
 @router.get("/api/diagrams/{artifact_id}/svg", tags=[TAG_DIAGRAMS], summary="Serve a diagram as SVG",
