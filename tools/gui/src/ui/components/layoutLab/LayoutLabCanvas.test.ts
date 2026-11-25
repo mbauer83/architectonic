@@ -177,4 +177,17 @@ describe('the diagram canvas', () => {
     await nextTick()
     expect(host.querySelector('[data-selected-line]')).toBeNull()
   })
+
+  it('selects a line on a press of its drawn stroke, which is painted over its band', async () => {
+    const { lab, host } = await mounted()
+    lab.change((_drawn, now) => now)
+    await nextTick()
+    const line = host.querySelector('[data-painted="line"]')
+    const stroke = [...line?.querySelectorAll('*') ?? []].find((one) => !one.classList.contains('lab-line-hit')
+      && one.tagName.toLowerCase() !== 'g')
+    if (stroke === undefined) throw new Error('the line is drawn without a stroke of its own')
+    pointer(stroke, 'pointerdown', 200, 60)
+    await nextTick()
+    expect(host.querySelector('[data-selected-line="0"]')).not.toBeNull()
+  })
 })

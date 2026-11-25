@@ -219,17 +219,19 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
             :height="heightOf(piece.shape.region)"
           />
         </g>
+        <!-- A press anywhere on the line selects it: its band, or its drawn stroke, which is painted over
+             the band and is what a click aimed at the line lands on. -->
         <g
           v-else-if="piece.kind === 'line'"
           class="lab-line"
           :data-relation="piece.relation"
           data-painted="line"
+          @pointerdown="readonly || lineGesture.pressLine($event, piece.relation)"
         >
           <polyline
             v-if="!readonly"
             class="lab-line-hit"
             :points="pointsAttribute(session.courses.value.get(piece.relation) ?? [])"
-            @pointerdown="lineGesture.pressLine($event, piece.relation)"
           />
           <LabDrawn
             v-if="piece.drawn.asDrawn"
