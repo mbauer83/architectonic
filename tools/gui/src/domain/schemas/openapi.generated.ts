@@ -2242,6 +2242,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/document-types/{doc_type}/free-title": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the first name a new document of a type may take
+         * @description *title* where no document of *doc_type* is named so, else *title* numbered "(2)", "(3)", … — the name
+         *     the document create would not refuse as taken. A form proposing a default name asks this, so a second
+         *     analysis of the same architecture is not refused for the first one's name. 404 for an unknown type.
+         */
+        get: operations["documents_read_free_document_title"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/documents": {
         parameters: {
             query?: never;
@@ -10337,6 +10359,24 @@ export interface components {
             slug: string;
             /** Version */
             version: number;
+        };
+        /**
+         * FreeDocumentTitle
+         * @description The first name a new document of a type may take, starting from the one asked about.
+         */
+        FreeDocumentTitle: {
+            /**
+             * Asked
+             * @description The name asked about.
+             */
+            asked: string;
+            /** Doc Type */
+            doc_type: string;
+            /**
+             * Title
+             * @description *asked* where no document of the type is named so, else the first of "asked (2)", "asked (3)", … that none is: the name a document created now would not be refused for.
+             */
+            title: string;
         };
         /** GeometryBoxContract */
         GeometryBoxContract: {
@@ -23028,6 +23068,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentTypeListResponse"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_read_free_document_title: {
+        parameters: {
+            query: {
+                /** @description The name a form would propose. */
+                title: string;
+            };
+            header?: never;
+            path: {
+                doc_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreeDocumentTitle"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Request validation failed */

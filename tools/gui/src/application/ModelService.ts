@@ -24,6 +24,7 @@ export const makeModelService = (repo: ModelRepository) =>
     getClassificationLevels: () => repo.getClassificationLevels(),
     search: (query: string, limit?: number) => repo.search(query, limit),
     listDocumentTypes: () => repo.listDocumentTypes(),
+    freeDocumentTitle: (docType: string, title: string) => repo.freeDocumentTitle(docType, title),
     listDocuments: (params?: Parameters<ModelRepository['listDocuments']>[0]) => repo.listDocuments(params),
     getDocument: (id: string) => repo.getDocument(id),
     createDocument: (body: Parameters<ModelRepository['createDocument']>[0]) => repo.createDocument(body),

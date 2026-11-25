@@ -60,6 +60,10 @@ DOCUMENT_ROWS: tuple[RouteRow, ...] = (
         "GET", "/api/document-schemata", "catalog", "documents_read_document_schemata",
         TYPED, cache_directive="no-cache",
     ),
+    RouteRow(
+        "GET", "/api/document-types/{doc_type}/free-title", "subresource", "documents_read_free_document_title",
+        TYPED, identity_parameters=("doc_type",), cache_directive="no-cache",
+    ),
 )
 
 GROUP_ROWS: tuple[RouteRow, ...] = (

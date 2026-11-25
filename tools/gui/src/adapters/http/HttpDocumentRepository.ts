@@ -9,6 +9,7 @@ import {
   DocumentTypesSchema,
   WriteResultSchema,
 } from '../../domain/schemas'
+import { FreeDocumentTitleSchema } from '../../domain/schemas/documents'
 import type { ChangeRepository } from '../../ports/ChangeRepository'
 import type { DocumentRepository } from '../../ports/DocumentRepository'
 import {
@@ -30,6 +31,10 @@ export const documentAndChangeMethods = (): DocumentRepository & ChangeRepositor
     fetchJson(buildUrl('/document-types'), DocumentTypesSchema).pipe(
       Effect.map((envelope) => [...envelope.document_types] as import('../../domain').DocumentType[]),
     ),
+
+  freeDocumentTitle: (docType, title) => fetchJson(
+    buildUrl(`/document-types/${encodeURIComponent(docType)}/free-title`, { title }), FreeDocumentTitleSchema,
+  ),
 
   listDocuments: (
     params: {

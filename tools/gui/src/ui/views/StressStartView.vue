@@ -3,7 +3,8 @@
  * Starting a stress analysis (06·0; owner decisions of 2026-11-25): an analysis evaluates a proposed
  * architecture. One step names it — the architecture under evaluation, the naive candidate, from the
  * current model within a scope, from an existing candidate, or empty — while the canvas previews it.
- * A name (by default the architecture's) and an optional context are all the document asks.
+ * A name (by default the architecture's, numbered where another analysis has it) and an optional context
+ * are all the document asks.
  * *Start the naive architecture* creates the naive as a draft candidate and the analysis document naming
  * it, in one write the server makes whole or not at all, then opens the naive for sketching.
  */
@@ -18,6 +19,8 @@ import { modelServiceKey } from '../keys'
 import { formatEffectError } from '../lib/errors'
 import { candidateDetailRoute, stressAnalysisWorkspaceRoute } from '../router/artifactRoutes'
 import { LARGE_SCOPE, useAnalysisScope } from '../composables/useAnalysisScope'
+import { useFreeDocumentTitle } from '../composables/useFreeDocumentTitle'
+import { STRESS_ANALYSIS_DOC_TYPE } from '../lib/documentListLinks'
 import MarkedCanvas from '../components/candidates/MarkedCanvas.vue'
 import StressStartArchitecture from '../components/stressWorkspace/StressStartArchitecture.vue'
 import type { Marks } from '../../domain/candidates/canvasMarks'
@@ -45,10 +48,13 @@ const evaluated = computed((): string => ({
   existing: candidates.value.find((one) => one.id === fromCandidate.value)?.name ?? '',
   empty: naiveName.value.trim(),
 })[origin.value])
+/** The name the architecture under evaluation proposes, made free of another analysis's name by the server. */
+const defaultTitle = useFreeDocumentTitle(svc, STRESS_ANALYSIS_DOC_TYPE,
+  () => (evaluated.value ? `Stress analysis — ${evaluated.value}` : ''))
 /** The name typed, or none yet: until one is typed, the name follows the architecture under evaluation. */
 const typedTitle = ref<string | null>(null)
 const title = computed({
-  get: () => typedTitle.value ?? (evaluated.value ? `Stress analysis — ${evaluated.value}` : ''),
+  get: () => typedTitle.value ?? defaultTitle.value,
   set: (typed: string) => { typedTitle.value = typed },
 })
 

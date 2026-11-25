@@ -252,6 +252,7 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
     from src.infrastructure.rest.routers.connections.router import router as connections_router
     from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
     from src.infrastructure.rest.routers.diagrams.types import router as diagram_types_router
+    from src.infrastructure.rest.routers.document_titles import router as document_titles_router
     from src.infrastructure.rest.routers.documents import router as documents_router
     from src.infrastructure.rest.routers.entities.router import router as entities_router
     from src.infrastructure.rest.routers.entities.search import router as entity_search_router
@@ -359,7 +360,7 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
 
     for router in (
         entities_router, entity_search_router, connections_router, diagram_types_router,
-        diagrams_router, documents_router, changes_router, groups_router, identifiers_router,
+        diagrams_router, documents_router, document_titles_router, changes_router, groups_router, identifiers_router,
         modules_router, promote_router,
         candidates_router, stress_evaluation_router,
         exchange_router,
