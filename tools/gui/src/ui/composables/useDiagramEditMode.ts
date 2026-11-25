@@ -24,6 +24,7 @@ import { useEditPanel } from './useEditPanel'
 import { useDiagramEditing } from './useDiagramEditing'
 import { type EditKey, editKeyOf } from './editModeKeys'
 import { useEditingPreferences } from './useEditingPreferences'
+import { useSurroundPlacement } from './useSurroundPlacement'
 
 /** How far the arrows nudge a picked label: two pixels, or one with Shift (02·5). */
 const LABEL_STEP = 2
@@ -87,6 +88,8 @@ export function useDiagramEditMode(
   const session = editing.session
   const panel = useEditPanel(parts.large)
   const prefs = useEditingPreferences()
+  /** The title and the legend where the saved picture will draw them, placed by the composer's rule. */
+  const surround = useSurroundPlacement(session, (placement) => svc.placeSurround(diagramId.value, placement))
 
   /** The shapes selected, where they are now: what the overview marks and `F` frames. */
   const marks = computed((): OverviewMark[] => {
@@ -246,7 +249,7 @@ export function useDiagramEditMode(
   })
 
   return {
-    editing, session, active, leaving, spaceHeld, panel, marks, checking, toggleCheck,
+    editing, session, active, leaving, spaceHeld, panel, marks, checking, toggleCheck, surround,
     canUndo: computed(() => session.history.value.length > 0),
     canRedo: computed(() => session.future.value.length > 0),
     enter, done, saveAndExit, discardAndExit, keepEditing, panPress,

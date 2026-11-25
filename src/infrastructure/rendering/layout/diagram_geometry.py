@@ -33,6 +33,7 @@ from src.domain.diagrams.layout.text_clearance import padded, text_extent, title
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
 from src.infrastructure.rendering.layout._svg_relations import RelationMarkup
 from src.infrastructure.rendering.layout.box_identities import box_keys_by_alias
+from src.infrastructure.rendering.layout.composer import diagram_extent_drawn
 from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, measure_composition, plantuml_svg
 from src.infrastructure.rendering.layout.drawing_wire import node_of, relation_drawing
 from src.infrastructure.rendering.layout.membership_placement import with_new_members
@@ -114,13 +115,16 @@ def _relation(
     }
 
 
-def _surround(drawing: RenderedDrawing) -> list[Wire]:
-    """What PlantUML draws round the diagram — its title, its legend — with where each is drawn: what the
-    canvas carries along as the diagram is arranged, as the composer does (`composer._carried_with`)."""
-    return [
-        {"drawing": node_of(part), "extent": _extent(extent)}
-        for part in drawing.chrome if (extent := drawn_extent(part)) is not None
-    ]
+def _surround(drawing: RenderedDrawing) -> Wire:
+    """What PlantUML draws round the diagram — its title, its legend — with where each is drawn, and what the
+    diagram occupied when they were drawn: what the layout surround route carries them from as it is arranged."""
+    return {
+        "drawn": _extent(diagram_extent_drawn(drawing)),
+        "parts": [
+            {"drawing": node_of(part), "extent": _extent(extent)}
+            for part in drawing.chrome if (extent := drawn_extent(part)) is not None
+        ],
+    }
 
 
 def geometry_of(drawing: RenderedDrawing, diagram: LaidOutDiagram) -> Wire:

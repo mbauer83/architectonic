@@ -270,6 +270,7 @@ const executeDelete = () => {
                     ref="editCanvas"
                     :session="edit.session"
                     :show-breaches="edit.checking.value"
+                    :surround="edit.surround.value"
                   />
                 </CanvasContentEditor>
               </div>

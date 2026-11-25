@@ -2,6 +2,7 @@ import { describe, expectTypeOf, it } from 'vitest'
 import type { Immutable, SchemaType } from './contractOracle'
 import type {
   DiagramLayoutGeometrySchema, DiagramLayoutPatchResultSchema, DrawingNodeSchema, ShapeDrawingsSchema,
+  SurroundPlacementSchema,
 } from './diagramLayoutGeometry'
 import type { components } from './openapi.generated'
 
@@ -18,6 +19,9 @@ describe('arranging a diagram', () => {
   it('decodes resized shapes drawn anew, and what a layout patch did', () => {
     expectTypeOf<SchemaType<typeof ShapeDrawingsSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['ShapeDrawingsResponse']>
+    >()
+    expectTypeOf<SchemaType<typeof SurroundPlacementSchema>>().toEqualTypeOf<
+      Immutable<components['schemas']['SurroundPlacementResponse']>
     >()
     expectTypeOf<SchemaType<typeof DiagramLayoutPatchResultSchema>>().toEqualTypeOf<
       Immutable<components['schemas']['DiagramLayoutPatchResponse']>

@@ -108,6 +108,20 @@ class SurroundPartContract(NullsOmitted):
     extent: ExtentContract
 
 
+class SurroundContract(NullsOmitted):
+    """What PlantUML draws round the diagram, and what the diagram occupied when it was drawn: where the layout
+    surround route carries each part from."""
+
+    drawn: ExtentContract
+    parts: list[SurroundPartContract]
+
+
+class SurroundPlacementResponse(NullsOmitted):
+    """How far each part drawn round the diagram moves, in the order asked, as ``[dx, dy]``."""
+
+    moves: list[tuple[float, float]]
+
+
 class DiagramLayoutGeometryResponse(NullsOmitted):
     """PlantUML's own picture of a diagram as an editor arranges it, and the layout the diagram states."""
 
@@ -117,7 +131,7 @@ class DiagramLayoutGeometryResponse(NullsOmitted):
     #: What PlantUML draws behind everything: the background.
     backdrop: list[DrawingNodeContract]
     #: What PlantUML draws round the diagram: its title and its legend.
-    surround: list[SurroundPartContract]
+    surround: SurroundContract
     elements: list[GeometryElementContract]
     boxes: list[GeometryBoxContract]
     relations: list[GeometryRelationContract]

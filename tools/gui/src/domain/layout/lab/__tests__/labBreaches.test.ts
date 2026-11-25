@@ -17,7 +17,7 @@ const geometry: LayoutGeometry = {
   name: 'Test',
   canvas: at(0, 0, 600, 400),
   backdrop: [],
-  surround: [],
+  surround: { drawn: { left: 0, top: 0, right: 0, bottom: 0 }, parts: [] },
   elements: [
     { alias: 'S', key: 'APP@1.s', label: 'S', extent: at(0, 100, 80, 140), inside: undefined, words: [], outside_label: undefined, drawing: SHAPE_DRAWING },
     { alias: 'T', key: 'APP@2.t', label: 'T', extent: at(400, 100, 480, 140), inside: undefined, words: [], outside_label: undefined, drawing: SHAPE_DRAWING },

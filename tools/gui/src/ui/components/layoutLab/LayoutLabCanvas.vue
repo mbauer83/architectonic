@@ -21,17 +21,18 @@ import LabBreachMarks from './LabBreachMarks.vue'
 import LabSelection from './LabSelection.vue'
 import LabLineHandles from './LabLineHandles.vue'
 import LabGuides from './LabGuides.vue'
-import { type CarriedPart, carriedSurround, occupiedBy } from '../../../domain/layout/lab/labSurround'
-import { pointsOf } from '../../../domain/schemas/diagramLayoutGeometry'
-import { drawnArrangement } from '../../../domain/layout/lab/labArrangement'
-import { type Placement, placementOf } from '../../../domain/layout/lab/labRouting'
+import type { PlacedPart } from '../../composables/useSurroundPlacement'
 import { useCanvasFocus } from './useCanvasFocus'
 import { useCanvasView } from './useCanvasView'
 import { useLabGesture } from './useLabGesture'
 import { useLineGesture } from './useLineGesture'
 
 /** *readonly*: a press picks a shape and nothing moves. The default slot draws over the picture. */
-const props = defineProps<{ session: ArrangementSession; showBreaches?: boolean; readonly?: boolean }>()
+const props = defineProps<{
+  session: ArrangementSession; showBreaches?: boolean; readonly?: boolean
+  /** The title and the legend, where the page placed them (`useSurroundPlacement`); none, none drawn. */
+  surround?: readonly PlacedPart[]
+}>()
 const emit = defineEmits<{ pick: [alias: string] }>()
 
 const svg = ref<SVGSVGElement | null>(null)
@@ -44,18 +45,8 @@ const focus = useCanvasFocus(props.session, gesture)
 
 const geometry = computed(() => props.session.geometry.value)
 const placement = computed(() => props.session.placement.value)
-/** The title and the legend, carried with the diagram as it is arranged (`labSurround`). */
-const surround = computed((): CarriedPart[] => {
-  const drawn = geometry.value
-  const where = placement.value
-  if (!drawn || !where) return []
-  const shapes = (at: Placement) => [...at.elements.values(), ...at.boxes.values()]
-  const was = occupiedBy(shapes(placementOf(drawn, drawnArrangement(drawn))),
-    drawn.relations.map((relation) => pointsOf(relation.course)))
-  return carriedSurround(drawn.surround, was, occupiedBy(shapes(where), [...props.session.courses.value.values()]))
-})
 const { viewBox, pixel, aspect, backdropTransform } = useCanvasView(
-  props.session, svg, gesture.dragging, () => surround.value.map((part) => part.extent))
+  props.session, svg, gesture.dragging, () => (props.surround ?? []).map((part) => part.extent))
 
 /** A handle is the same size on screen however far the picture is zoomed out to fit. */
 const HANDLE_PIXELS = 9
@@ -172,7 +163,7 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
         :transform="backdropTransform"
       />
       <LabDrawn
-        v-for="(around, index) in surround"
+        v-for="(around, index) in surround ?? []"
         :key="`surround-${index}`"
         class="lab-surround"
         data-testid="canvas-surround"
