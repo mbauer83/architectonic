@@ -27,7 +27,8 @@ describe('useCandidateApply', () => {
     const { access, calls } = fakeAccess({
       candidate: 'CAND-1', standing: [standing('edit_entity', 'applies'), standing('create_entity', 'already-there')],
     })
-    const apply = useCandidateApply(access)
+    const told: string[] = []
+    const apply = useCandidateApply(access, (candidate) => told.push(candidate))
 
     await apply.open('CAND-1')
     expect(calls).toEqual(['preview CAND-1'])
@@ -35,6 +36,9 @@ describe('useCandidateApply', () => {
     expect(apply.preview.value?.skipped.map((one) => one.operation.op)).toEqual(['create_entity'])
 
     expect(await apply.confirm()).toBe(true)
+    // The page is told while the confirmation is still there to be closed: an event from a component
+    // the apply has already unmounted reaches nobody.
+    expect(told).toEqual(['CAND-1'])
     expect(calls).toEqual(['preview CAND-1', 'apply CAND-1'])
     expect(apply.preview.value).toBeNull()
   })
@@ -43,14 +47,16 @@ describe('useCandidateApply', () => {
     const { access } = fakeAccess({
       candidate: 'CAND-1', refusal: 'CAND-1 cannot be applied: it conflicts.', standing: [standing('x', 'conflicting')],
     })
-    const apply = useCandidateApply(access)
+    const told: string[] = []
+    const apply = useCandidateApply(access, (candidate) => told.push(candidate))
     await apply.open('CAND-1')
     expect(apply.preview.value?.refusal).toBe('CAND-1 cannot be applied: it conflicts.')
   })
 
   it('keeps the preview open and says why when the apply itself is refused', async () => {
     const { access } = fakeAccess({ candidate: 'CAND-1', standing: [standing('edit_entity', 'applies')] }, true)
-    const apply = useCandidateApply(access)
+    const told: string[] = []
+    const apply = useCandidateApply(access, (candidate) => told.push(candidate))
     await apply.open('CAND-1')
 
     expect(await apply.confirm()).toBe(false)

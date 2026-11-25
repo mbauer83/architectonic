@@ -2,19 +2,16 @@
 /**
  * The confirmation for *Apply to the model…*: what the dry run says would be written, what is skipped
  * because the model already holds it, and the refusal when there is one — in the server's words. The
- * apply runs only from here, and writes every operation in one write or none.
+ * apply runs only from here, and writes every operation in one write or none. The page that owns the
+ * apply (`useCandidateApply`) is told it was applied: this confirmation is gone by then.
  */
 import { computed } from 'vue'
 import { canApply, operationLabel, previewSentence } from '../../../domain/candidates/candidateApply'
 import type { CandidateApply } from '../../composables/useCandidateApply'
 
 const props = defineProps<{ apply: CandidateApply; name: string }>()
-const emit = defineEmits<{ applied: [] }>()
 
 const preview = computed(() => props.apply.preview.value)
-const confirm = async () => {
-  if (await props.apply.confirm()) emit('applied')
-}
 </script>
 
 <template>
@@ -69,7 +66,7 @@ const confirm = async () => {
         class="btn btn-sm btn-primary"
         data-testid="apply-confirm"
         :disabled="!canApply(preview) || apply.busy.value"
-        @click="confirm"
+        @click="apply.confirm()"
       >
         Apply
       </button>

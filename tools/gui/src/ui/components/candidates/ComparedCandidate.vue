@@ -3,14 +3,17 @@
  * One candidate in a comparison: its operations against the comparison's common base and the
  * diagram marked with what it changes — the candidate page's own `CandidateOperations` and
  * `MarkedCanvas`, read with the base fixed. An element another compared candidate changes as well
- * says so on its mark; a row selected here frames its element on this candidate's picture.
+ * says so on its mark; a row selected here frames its element on this candidate's picture, and an element
+ * pressed there selects its rows. The picture draws the candidate as it composes (`useComposedDrawing`).
  */
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { stableEntityId } from '../../../domain/artifactId'
 import type { Marks } from '../../../domain/candidates/canvasMarks'
 import { diffMarks, framedMarks } from '../../../domain/candidates/canvasMarks'
 import { withOthers } from '../../../domain/candidates/candidateComparison'
 import type { Candidates } from '../../composables/useCandidates'
+import { useComposedDrawing } from '../../composables/useComposedDrawing'
+import { modelServiceKey } from '../../keys'
 import { candidateDetailRoute } from '../../router/artifactRoutes'
 import CandidateOperations from './CandidateOperations.vue'
 import CandidateResiduality from './CandidateResiduality.vue'
@@ -28,6 +31,8 @@ const props = defineProps<{
 const emit = defineEmits<{ remove: [id: string] }>()
 
 const framed = ref<string | null>(null)
+/** The picture with this candidate drawn as it composes. */
+const drawing = useComposedDrawing(inject(modelServiceKey)!, () => props.reading.comparison.value)
 const marks = computed((): Marks => new Map([
   ...withOthers(diffMarks(props.reading.comparison.value?.diff ?? []), props.others, props.nameOfSet),
   ...(framed.value ? framedMarks([framed.value], 'The row selected above') : new Map()),
@@ -62,15 +67,17 @@ const nameOf = (id: string): string => id
         role="candidate architecture"
         :name-of="nameOf"
         fixed
+        :framed="framed"
         @frame="framed = $event && stableEntityId($event)"
       />
     </div>
     <MarkedCanvas
       :diagram-id="diagramId"
-      :drawing="reading.comparison.value?.drawing ?? null"
+      :drawing="drawing"
       :marks="marks"
-      hint="Select a row to frame its element · Scroll to zoom · Drag to pan"
+      hint="Select a row to frame its element, or an element to find its rows · Scroll to zoom · Drag to pan"
       empty-text="No diagram to draw: choose one above."
+      @pick="framed = framed === $event ? null : $event"
     />
   </section>
 </template>

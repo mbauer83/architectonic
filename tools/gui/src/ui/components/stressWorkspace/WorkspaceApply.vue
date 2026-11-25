@@ -20,7 +20,7 @@ const props = defineProps<{
 const emit = defineEmits<{ open: [tab: WorkspaceTab, row: string]; applied: [name: string] }>()
 
 const open = ref(false)
-const apply = useCandidateApply(props.svc)
+const apply = useCandidateApply(props.svc, () => applied())
 const left = computed(() => props.analysis.progress.value ? whatIsLeft(props.analysis.progress.value.progress) : [])
 const drafts = computed(() => props.candidates.inStack.value.filter((one) => one.state === 'draft'))
 const chosen = ref('')
@@ -128,7 +128,6 @@ const applied = () => {
         v-if="candidate && apply.preview.value?.candidate === candidate.id"
         :apply="apply"
         :name="candidate.name"
-        @applied="applied"
       />
       <p
         v-else-if="apply.error.value"
