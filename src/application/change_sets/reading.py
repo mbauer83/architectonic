@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol, TypeAlias
 
 from src.application.change_sets.operations import ConnectionAddress
+from src.domain.artifact_id import canonical_entity_key
 
 #: One artifact's current fields, by the edit vocabulary's names.
 FieldValues: TypeAlias = Mapping[str, Any]
@@ -46,8 +47,13 @@ class RecordedReading:
     entities: Mapping[str, FieldValues] = field(default_factory=dict)
     connections: Mapping[ConnectionAddress, FieldValues] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        # Held by the stable id, as operations name what they touch: either spelling finds the record.
+        stable = {canonical_entity_key(ref): fields for ref, fields in self.entities.items()}
+        object.__setattr__(self, "entities", stable)
+
     def entity(self, reference: str) -> FieldValues | None:
-        return self.entities.get(reference)
+        return self.entities.get(canonical_entity_key(reference))
 
     def connection(self, address: ConnectionAddress) -> FieldValues | None:
         return self.connections.get(address)

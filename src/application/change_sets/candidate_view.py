@@ -9,6 +9,7 @@ from src.application.change_sets.composition import compose
 from src.application.change_sets.operations import ConnectionAddress
 from src.application.change_sets.reading import FieldValues, RecordedReading
 from src.application.change_sets.stacking import sets_beneath
+from src.domain.artifact_id import canonical_entity_key
 
 
 @dataclass(frozen=True)
@@ -33,7 +34,7 @@ class CandidateView:
 
 def view_of(stack: tuple[CandidateArchitecture, ...], live: RecordedReading) -> CandidateView:
     reading = compose(stack[-1].changes, live, beneath=sets_beneath(stack))
-    references = {ref for layer in stack for ref in layer.scope} | set(reading.entities)
+    references = {canonical_entity_key(ref) for layer in stack for ref in layer.scope} | set(reading.entities)
     entities = {ref: fields for ref in references if (fields := reading.entity(ref)) is not None}
     addresses = live.connections.keys() | reading.connections.keys()
     connections = {

@@ -47,6 +47,7 @@ from src.application.change_sets.operations import (
 )
 from src.application.change_sets.reading import FieldValues, ModelReading
 from src.application.modeling.edit_field_catalogue import KEYED, PROSE, ArtifactKind
+from src.domain.artifact_id import MalformedArtifactIdError, canonical_entity_key, parse_entity_id
 
 Intent = Mapping[str, Any]
 
@@ -101,13 +102,20 @@ class _Set:
 
     def __init__(self, operations: tuple[Operation, ...]) -> None:
         self.operations = operations
-        self.created = {op.artifact_id: op for op in operations if isinstance(op, CreateEntity) and op.artifact_id}
+        self.created = {
+            canonical_entity_key(op.artifact_id): op
+            for op in operations if isinstance(op, CreateEntity) and op.artifact_id
+        }
         self.added = {op.address: op for op in operations if isinstance(op, AddConnection)}
 
     def reference(self, artifact_id: str) -> str:
-        """How the set names *artifact_id*: the alias of what it creates, else the id."""
-        create = self.created.get(artifact_id)
+        """How the set names *artifact_id*: the alias of what it creates, else the id, in either spelling."""
+        create = self.creating(artifact_id)
         return create.reference if create else artifact_id
+
+    def creating(self, artifact_id: str) -> CreateEntity | None:
+        """The create that chose *artifact_id*, however the caller spells it."""
+        return self.created.get(canonical_entity_key(artifact_id))
 
     def address(self, intent: Intent) -> ConnectionAddress:
         return ConnectionAddress(
@@ -143,13 +151,18 @@ def _base(kind: ArtifactKind, field: str, value: Any) -> Base:
 
 def _create_entity(held: _Set, intent: Intent, _: ModelReading) -> tuple[Operation, ...]:
     chosen = str(intent["artifact_id"])
-    alias = chosen.split("@", 1)[-1].replace(".", "-")
+    try:
+        stable = parse_entity_id(chosen)
+    except MalformedArtifactIdError as refusal:
+        raise MalformedChangeSet(f"{chosen!r} is not an artifact id a new entity can be given: {refusal}") from refusal
+    earlier = held.creating(chosen)
+    alias = earlier.ref if earlier else f"{stable.epoch}-{stable.random}"
     return held.put(CreateEntity(ref=alias, fields=dict(intent["fields"]), artifact_id=chosen))
 
 
 def _edit_entity(held: _Set, intent: Intent, beneath: ModelReading) -> tuple[Operation, ...]:
     target, field, key, value = str(intent["artifact_id"]), str(intent["field"]), _key(intent), intent.get("value")
-    create = held.created.get(target)
+    create = held.creating(target)
     if create is not None:
         edit = EditEntity(target=create.reference, field=field, value=value, base=_base("entity", field, None), key=key)
         return held.put(replace(create, fields=patched("entity", create.fields, edit)))
@@ -164,13 +177,13 @@ def _edit_entity(held: _Set, intent: Intent, beneath: ModelReading) -> tuple[Ope
 
 def _remove_entity(held: _Set, intent: Intent, beneath: ModelReading) -> tuple[Operation, ...]:
     target = str(intent["artifact_id"])
-    create = held.created.get(target)
+    create = held.creating(target)
     if create is not None:
         return held.without(lambda op: op is create or create.reference in entities_used(op))
     current = beneath.entity(target)
     if current is None:
         raise MalformedChangeSet(f"{target!r} is not an entity this candidate can see, so it cannot be removed here.")
-    kept = held.without(lambda op: isinstance(op, EditEntity) and op.target == target)
+    kept = held.without(lambda op: isinstance(op, EditEntity) and op.target == canonical_entity_key(target))
     return _Set(kept).put(RemoveEntity(target=target, base=BaseRevision(record_revision(current))))
 
 

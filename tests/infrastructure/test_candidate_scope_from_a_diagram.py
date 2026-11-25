@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from src.domain.artifact_id import stable_id
 from src.infrastructure.candidates import service as candidate_service
 from tests.support.typed_table_documents import repository_in
 
@@ -22,4 +23,5 @@ def test_an_entity_drawn_twice_is_scoped_once(tmp_path: Path, monkeypatch: pytes
 
     created = service.create({"name": "Naive architecture"}, diagram="ARC@1000000003.diagra.diagram")
 
-    assert created["record"]["scope"] == [ENTITY, OTHER]
+    # Held by the stable id, as every operation names an entity (ADR: emitted ids use the short form).
+    assert created["record"]["scope"] == [stable_id(ENTITY), stable_id(OTHER)]

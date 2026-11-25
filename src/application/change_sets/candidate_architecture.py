@@ -18,7 +18,7 @@ vocabulary about a different thing and are not touched.
 architecture started from an existing candidate, then adaptations of it, then a candidate built on
 an adaptation. Which candidates a stack holds, and that it is not a circle, is `stacking`'s.
 
-**Its scope is what it reads live.** `scope` names the model's entities the candidate is drawn over
+**Its scope is what it reads live.** `scope` names, by stable id, the model's entities the candidate is drawn over
 without changing them: a naive architecture started from the current model within a scope copies
 nothing, and the model's later changes show through. A candidate started empty has none.
 
@@ -33,6 +33,7 @@ from typing import Literal, TypeAlias, get_args
 
 from src.application.change_sets.change_set import ChangeSet
 from src.application.change_sets.coherence import dangling
+from src.domain.artifact_id import canonical_entity_key
 
 #: Where a candidate is in the work. `draft` is the only state in which its operations may change;
 #: `candidate` offers it for integration; the other three are terminal.
@@ -66,6 +67,8 @@ class CandidateArchitecture:
     scope: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        # The model's entities by their stable id, as operations name them (`operations`).
+        object.__setattr__(self, "scope", tuple(canonical_entity_key(ref) for ref in self.scope))
         refusal = _refusal(self)
         if refusal is not None:
             raise MalformedCandidateArchitecture(refusal)

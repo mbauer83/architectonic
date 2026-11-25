@@ -29,6 +29,7 @@ from src.application.stress_analysis.workspace import analyse
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.viewpoints.placed_occurrences import resolve_placed_entities
+from src.domain.artifact_id import canonical_entity_key
 from src.domain.repository.repo_default_stress_analysis import NAIVE_CANDIDATE, STRESS_ANALYSIS
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
 from src.infrastructure.candidates.apply import write_operations
@@ -54,15 +55,21 @@ class CandidateService:
                  "scope": list(c.scope), "operations": len(c.changes.operations)}
                 for c in self.store.list()]
 
+    def resolved(self, ref: str) -> str:
+        """The id the candidate is stored under, for *ref* in either spelling; refused as not found."""
+        return self.store.require(ref).id
+
     def read(self, ref: str) -> dict[str, Any]:
         record = to_mapping(self.store.require(ref))
         return {"record": record, "version": record_revision(record)}
 
     def save(self, record: Mapping[str, Any], based_on: str | None, *, ref: str | None = None) -> dict[str, Any]:
         body = dict(record)
-        if ref and body.get("id", ref) != ref:
+        if ref and canonical_entity_key(str(body.get("id", ref))) != canonical_entity_key(ref):
             raise ValueError("The addressed candidate and record id must agree.")
         body["id"] = ref or body.get("id") or generate_entity_id(str(KIND.id_prefix), str(body.get("name") or ""))
+        if (parent := body.get("parent")) and (beneath := self.store.find(str(parent))) is not None:
+            body["parent"] = beneath.id  # a parent is held under the id it is stored by, however it was named
         candidate = from_mapping(body)
         version = self.store.save(candidate, based_on)
         notify_paths_changed([self.store.path(candidate.id)])
@@ -80,7 +87,7 @@ class CandidateService:
                 raise FileNotFoundError(diagram)
             # A diagram may draw one entity more than once; the scope is the entities, each once.
             placed = resolve_placed_entities(dict(drawing.extra), self.registry)
-            body["scope"] = list(dict.fromkeys(e.artifact_id for e in placed))
+            body["scope"] = list(dict.fromkeys(canonical_entity_key(e.artifact_id) for e in placed))
         return self.save(body, None)
 
     def start(
@@ -115,8 +122,11 @@ class CandidateService:
 
     def delete(self, ref: str) -> None:
         """Delete a candidate nothing depends on: none stacks on it, and no analysis starts from it."""
-        self.store.require(ref)
-        stacked = sorted(c.id for c in self.store.list() if c.parent_id == ref)
+        ref = self.resolved(ref)
+        stacked = sorted(
+            c.id for c in self.store.list()
+            if c.parent_id and canonical_entity_key(c.parent_id) == canonical_entity_key(ref)
+        )
         if stacked:
             verb = "stacks" if len(stacked) == 1 else "stack"
             raise CandidateConflict(
@@ -124,7 +134,7 @@ class CandidateService:
             )
         naming = sorted(
             doc.artifact_id for doc in self.index.list_documents(doc_type=STRESS_ANALYSIS)
-            if doc.extra.get(NAIVE_CANDIDATE) == ref
+            if canonical_entity_key(str(doc.extra.get(NAIVE_CANDIDATE) or "")) == canonical_entity_key(ref)
         )
         if naming:
             raise CandidateConflict(
@@ -140,6 +150,7 @@ class CandidateService:
     def rebase(self, ref: str, based_on: str) -> dict[str, Any]:
         """Write each drifted operation again against the model as it stands now. Nothing drifted, nothing changes."""
         candidate = self.store.require(ref)
+        ref = candidate.id
         moved = rebase(candidate, self.store, self.registry, self.index.read_model_version().etag)
         return self.save(to_mapping(moved), based_on, ref=ref)
 
@@ -150,6 +161,7 @@ class CandidateService:
         raises it, and leaves both the model and the candidate as they were.
         """
         candidate = self.store.require(ref)
+        ref = candidate.id
         version = record_revision(to_mapping(candidate))
         application = application_of(candidate, self.store, self.registry)
         written = None if application.refusal else write_operations(application, self.root, dry_run=dry_run)
@@ -167,11 +179,12 @@ class CandidateService:
 
     def edit(self, ref: str, based_on: str, patch: Mapping[str, Any]) -> dict[str, Any]:
         current = self.read(ref)
-        return self.save(current["record"] | dict(patch), based_on, ref=ref)
+        return self.save(current["record"] | dict(patch), based_on, ref=str(current["record"]["id"]))
 
     def record(self, ref: str, based_on: str, intent: Mapping[str, Any]) -> dict[str, Any]:
         """Record an edit among the candidate's operations, its base read from the stack beneath it."""
         candidate = self.store.require(ref)
+        ref = candidate.id
         named = [str(intent[part]) for part in ("artifact_id", "source_entity", "target_entity") if part in intent]
         beneath = reading_beneath(candidate, self.store, self.registry, named)
         return self.save(to_mapping(recorded(candidate, intent, beneath)), based_on, ref=ref)
@@ -198,7 +211,9 @@ class CandidateService:
         naive = str(doc.extra.get(NAIVE_CANDIDATE) or "")
         if not naive:
             raise ValueError("Set naive-candidate on the stress-analysis document.")
-        return doc.artifact_id, naive, tables_of_stored_document(doc.path, doc.doc_type, [self.root])
+        stored = self.store.find(naive)
+        tables = tables_of_stored_document(doc.path, doc.doc_type, [self.root])
+        return doc.artifact_id, stored.id if stored else naive, tables
 
     def analysis(self, ref: str) -> dict[str, Any]:
         document, naive, tables = self.analysis_tables(ref)
@@ -206,22 +221,23 @@ class CandidateService:
         return {"document": document, "naive_candidate": naive, **analyse(tables, view)}
 
     def check(self, ids: Sequence[str]) -> dict[str, Any]:
-        if not ids or len(set(ids)) != len(ids):
-            raise ValueError("Select one or more distinct candidates.")
         selected = [self.store.require(ref) for ref in ids]
+        if not selected or len({candidate.id for candidate in selected}) != len(selected):
+            raise ValueError("Select one or more distinct candidates.")
         layers = {}
         for candidate in selected:
             if candidate.state != "candidate":
                 raise ValueError(f"Offer {candidate.id} as a candidate before checking integration.")
             layers.update((c.id, c) for c in stack_of(candidate, self.store.find))
-        return {"candidates": list(ids), "overlaps": [
+        return {"candidates": [candidate.id for candidate in selected], "overlaps": [
             {"kind": overlap.kind, "subject": overlap.subject, "parties": [
                 {"set_id": p.set_id, "operation": operation_to_mapping(p.operation)} for p in overlap.parties
             ]} for overlap in conflicts_between(tuple(layers.values()))
         ]}
 
     def standing(self, ref: str) -> dict[str, Any]:
-        return {"candidate": ref, "standing": standing_report(self.store.require(ref), self.store, self.registry)}
+        candidate = self.store.require(ref)
+        return {"candidate": candidate.id, "standing": standing_report(candidate, self.store, self.registry)}
 
     def progress(self, ref: str) -> dict[str, Any]:
         report = self.analysis(ref)

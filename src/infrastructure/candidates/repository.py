@@ -12,7 +12,7 @@ from src.application.change_sets.candidate_architecture import CandidateArchitec
 from src.application.change_sets.candidate_recorded_form import dump_candidate, load_candidate, to_mapping
 from src.application.change_sets.ordering import application_order
 from src.application.change_sets.stacking import sets_beneath, stack_of
-from src.domain.artifact_id import parse_entity_id
+from src.domain.artifact_id import canonical_entity_key, parse_entity_id
 from src.domain.repository.artifact_location import artifact_kind
 from src.infrastructure.atomic_file import write_atomic
 
@@ -42,13 +42,30 @@ class CandidateArchitectureStore:
             raise MalformedCandidateArchitecture("A candidate file and its directory must be local repository paths.")
         return path
 
+    def stored_id(self, ref: str) -> str | None:
+        """The id a stored candidate carries, for *ref* in either spelling; None when none is stored.
+
+        A candidate's file is named by the id it was given, slug included. A caller may hold the short
+        form (`PREFIX@epoch.random`), which is the same identity (`canonical_entity_key`).
+        """
+        if self.path(ref).is_file():  # also refuses what is not a candidate id, in the store's own words
+            return ref
+        wanted = canonical_entity_key(ref)
+        return next((
+            identity for identity in (KIND.file_identity(p) for p in self.directory.glob("*" + KIND.suffixes[0]))
+            if canonical_entity_key(identity) == wanted
+        ), None)
+
     def find(self, ref: str) -> CandidateArchitecture | None:
-        path = self.path(ref)
+        stored = self.stored_id(ref)
+        if stored is None:
+            return None
+        path = self.path(stored)
         try:
             candidate = load_candidate(path.read_text(encoding="utf-8"))
         except FileNotFoundError:
             return None
-        if candidate.id != ref:
+        if candidate.id != stored:
             raise MalformedCandidateArchitecture(f"{path.name} declares another candidate, {candidate.id}.")
         return candidate
 
@@ -96,5 +113,8 @@ class CandidateArchitectureStore:
 
     def delete(self, ref: str) -> None:
         """Remove the candidate's file. Whether anything still depends on it is the caller's to ask."""
-        with self._locked(ref):
-            self.path(ref).unlink()
+        stored = self.stored_id(ref)
+        if stored is None:
+            raise FileNotFoundError(ref)
+        with self._locked(stored):
+            self.path(stored).unlink()

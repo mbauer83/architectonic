@@ -78,6 +78,9 @@ class SyntaxReader:
     literal_probe: re.Pattern[str] | None = None
     #: Calls that locate this syntax beyond `_LOCATING_CALLS`, where it is read some other way.
     also_located_by: frozenset[str] = frozenset()
+    #: Where this syntax is read *only* by these calls, in place of `_LOCATING_CALLS`: a glyph so
+    #: common (a dot) that splitting at it is no evidence, while cutting at the last one is.
+    only_located_by: frozenset[str] = frozenset()
     #: Modules that legitimately read it anyway, each because of something this rule cannot see.
     exempt: frozenset[Path] = field(default_factory=frozenset)
 
@@ -182,6 +185,12 @@ _RELATION_ENDS_SEPARATOR = re.compile(r"\A>\Z")
 #: The prefix of a rule key. A literal carrying it, handed to a locating call, is deciding whether a
 #: layout key addresses a box by its rule.
 _RULE_KEY_PREFIX = re.compile(r"\Arule:")
+
+#: The dot an artifact id's slug follows, handed to a call that cuts or counts at it: deciding which
+#: part of an id is its stable identity. Only those calls (`only_located_by`): a `split(".")` over a
+#: dotted version or a file name is not a reading of an id, and was the noise a broader probe met.
+_ID_SLUG_SEPARATOR = re.compile(r"\A\.\Z")
+_CUTS_AT_THE_SLUG = frozenset({"rsplit", "rpartition", "count"})
 
 #: Two words only a reading of the layout block asks a mapping for: where a relation bends, and the
 #: section that sizes boxes. Whole literals, and deliberately not `layout` itself — a diagram type's
@@ -642,6 +651,32 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
         ),
         literal_probe=_RULE_KEY_PREFIX,
     ),
+    SyntaxReader(
+        syntax="which spelling of an artifact id is its identity — the short form, or the id with its slug",
+        owners=(Path("src/domain/artifact_id.py"),),
+        instead=(
+            "`src.domain.artifact_id`: `canonical_entity_key` to compare or key ids in either spelling, "
+            "`stable_id` for the short form of an id known to be one, `parse_entity_id(...).long(slug)` "
+            "to spell one with a new slug"
+        ),
+        incident=(
+            "0.12.0's candidate and stress-analysis surfaces compared ids as strings, so the short form "
+            "of an id meant something else than its slugged form in six places at once: a candidate "
+            "read by its short id answered 404, an overlap check missed two renames of one element, a "
+            "connection to an entity the candidate created was refused as joining nothing, an "
+            "incidence hit read as missing, a residuality went unfound, and an occurrence was stored "
+            "and never drawn. A rename's id was meanwhile composed by cutting at the last dot, which "
+            "for a short id cuts off its random key"
+        ),
+        literal_probe=_ID_SLUG_SEPARATOR,
+        only_located_by=_CUTS_AT_THE_SLUG,
+        exempt=frozenset({
+            # A browser asset's file extension, read from the last path segment: not an id.
+            Path("src/infrastructure/backend/_spa_static.py"),
+            # Whether a kind's file suffix is a plain extension or compound (`.outgoing.md`): not an id.
+            Path("src/domain/repository/artifact_location.py"),
+        }),
+    ),
 )
 
 #: What each row's exemptions cost today. A ratchet in the spirit of the project's other shrink-only
@@ -652,6 +687,7 @@ _EXEMPTION_BUDGET: dict[str, int] = {
     "what a document's prose refers to — a markdown link and the file it addresses": 1,
     "what it means for a PUML line to declare an alias": 1,
     "the arrow form of a connection — a `###` section, or a standalone reference": 3,
+    "which spelling of an artifact id is its identity — the short form, or the id with its slug": 2,
 }
 
 
@@ -695,16 +731,18 @@ def _names_used(path: Path, reserved: frozenset[str], module: str) -> list[str]:
 
 
 def _literals_deciding(
-    path: Path, probe: re.Pattern[str], also_located_by: frozenset[str] = frozenset()
+    path: Path, probe: re.Pattern[str], also_located_by: frozenset[str] = frozenset(),
+    only_located_by: frozenset[str] = frozenset(),
 ) -> list[str]:
     """Literals this file hands to a locating call that spell the syntax itself."""
     tree = ast.parse(path.read_text(encoding="utf-8"))
     found: set[str] = set()
+    locating = only_located_by or _LOCATING_CALLS | also_located_by
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         literal = _first_string_argument(node)
-        if literal is None or _called_name(node) not in _LOCATING_CALLS | also_located_by:
+        if literal is None or _called_name(node) not in locating:
             continue
         if probe.search(literal):
             found.add(literal)
@@ -723,7 +761,9 @@ def _second_readers(reader: SyntaxReader) -> dict[str, list[str]]:
             else []
         )
         if reader.literal_probe is not None:
-            found += _literals_deciding(path, reader.literal_probe, reader.also_located_by)
+            found += _literals_deciding(
+                path, reader.literal_probe, reader.also_located_by, reader.only_located_by,
+            )
         if found:
             offenders[str(relative)] = found
     return offenders

@@ -28,12 +28,13 @@ TableWriter: TypeAlias = Callable[[str, TableRowEdits, bool], WriteResult]
 def evaluation(service: CandidateService, ref: str) -> dict[str, Any]:
     """The analysis's test set, its verdicts, the standing of every judged or integrated architecture, and the stage."""
     document, naive, tables = service.analysis_tables(ref)
-    stacked = descendants(naive, service.store.list())
-    integrated = [one.id for one in service.store.list() if one.id in stacked and one.state == "integrated"]
+    candidates = service.store.list()
+    stacked = descendants(naive, candidates)
+    integrated = [one.id for one in candidates if one.id in stacked and one.state == "integrated"]
     design = [row for row in rows_of(tables, "stressors") if not in_test_set(row)]
     return {
         "document": document, "naive_candidate": naive, "design_stressors": len(design),
-        **evaluate(tables, integrated=integrated, adapted=bool(stacked)),
+        **evaluate(tables, integrated=integrated, adapted=bool(stacked), known=[one.id for one in candidates]),
     }
 
 
@@ -60,7 +61,7 @@ def hold_out(
 
 def residuality_by_analysis(service: CandidateService, candidate: str) -> dict[str, Any]:
     """The candidate's standing in every analysis that judged it, or integrated it, against its test set."""
-    service.store.require(candidate)
+    candidate = service.resolved(candidate)
     standings = []
     for doc in service.index.list_documents(doc_type=STRESS_ANALYSIS):
         if not doc.extra.get(NAIVE_CANDIDATE):

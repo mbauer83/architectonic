@@ -37,6 +37,7 @@ from src.application.change_sets.operations import (
 from src.application.change_sets.ordering import application_order
 from src.application.change_sets.reading import FieldValues, ModelReading
 from src.application.modeling.edit_field_catalogue import KEYED, ArtifactKind
+from src.domain.artifact_id import canonical_entity_key
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,9 +53,10 @@ class ComposedReading:
     unapplied: tuple[Operation, ...] = ()
 
     def entity(self, reference: str) -> FieldValues | None:
-        if reference in self.entities:
-            return self.entities[reference]
-        return self.beneath.entity(reference)
+        key = canonical_entity_key(reference)
+        if key in self.entities:
+            return self.entities[key]
+        return self.beneath.entity(key)
 
     def connection(self, address: ConnectionAddress) -> FieldValues | None:
         if any(self.entities.get(end, ...) is None for end in address.endpoints):

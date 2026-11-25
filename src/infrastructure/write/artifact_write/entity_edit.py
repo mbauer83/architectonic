@@ -9,6 +9,7 @@ from src.application.modeling.artifact_write import slugify
 from src.application.profile_quarantine import assert_not_quarantined
 from src.application.rename_followers import ArtifactRenamed, announce_rename
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
+from src.domain.artifact_id import parse_entity_id
 from src.domain.modules.module_types import EntityTypeName
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 
@@ -60,7 +61,7 @@ def _resolve_target_identity(
 
     if new_name is not None and slugify(eff_name) != slugify(current_name):
         next_slug = slugify(eff_name)
-        effective_artifact_id = f"{artifact_id.rsplit('.', 1)[0]}.{next_slug}"
+        effective_artifact_id = parse_entity_id(artifact_id).long(next_slug)
         target_entity_file = entity_file.with_name(f"{effective_artifact_id}.md")
         if target_entity_file.exists() and target_entity_file != entity_file:
             raise ValueError(f"Target entity file already exists: {target_entity_file.name}")

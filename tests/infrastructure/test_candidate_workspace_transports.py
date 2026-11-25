@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.application.artifacts.document_schema import normalize_document_schema
+from src.domain.artifact_id import stable_id
 from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_SCHEMA
 from src.infrastructure.mcp.artifact_mcp import candidate_tools as mcp
 from src.infrastructure.rest.routers import candidates, state
@@ -97,7 +98,8 @@ def test_analysis_reads_the_scoped_naive_candidate_on_both_surfaces(tmp_path: Pa
     monkeypatch.setattr(state, "maybe_engagement_root", lambda: root)
     with TestClient(build_api_app(candidates.router)) as client:
         naive = mcp.change_set_create({"name": "Queued promotion", "id": naive_id}, diagram, str(root))
-        assert service in naive["record"]["scope"]
+        stable_service = stable_id(service)  # scope and view hold an entity by its stable id
+        assert stable_service in naive["record"]["scope"]
         ops = [
             {
                 "op": "create_entity",
@@ -111,12 +113,12 @@ def test_analysis_reads_the_scoped_naive_candidate_on_both_surfaces(tmp_path: Pa
         ).raise_for_status()
         comparison = client.get(f"/api/change-sets/{naive_id}/diff")
         comparison.raise_for_status()
-        assert {row["id"] for row in comparison.json()["view"]["entities"]} >= {service, "$ref:queue"}
+        assert {row["id"] for row in comparison.json()["view"]["entities"]} >= {stable_service, "$ref:queue"}
         path = f"/api/documents/{document.stem}"
         grid = client.get(path + "/incidence").json()
         assert grid == mcp.analysis_incidence(document.stem, str(root))
         assert grid["stressors"][0]["missing_elements"] == []
-        assert grid["coupling"] == [{"left": "$ref:queue", "right": service, "count": 1}]
+        assert grid["coupling"] == [{"left": "$ref:queue", "right": stable_service, "count": 1}]
         progress = client.get(path + "/progress").json()
         assert progress == mcp.analysis_progress(document.stem, str(root))
         assert progress["coverage"]["by_kind"] == {"outage": 1}
