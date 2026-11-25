@@ -1,6 +1,6 @@
 /**
- * Draws a piece of PlantUML's own drawing, as the lab's geometry hands it over: an outline, a glyph,
- * words, a line, a decoration — with the attributes PlantUML gave them, so the lab looks as the
+ * Draws a piece of PlantUML's own drawing, as the canvas's geometry hands it over: an outline, a glyph,
+ * words, a line, a decoration — with the attributes PlantUML gave them, so the canvas looks as the
  * composed picture does.
  *
  * Only drawing passes: an element that is not one a rendered shape or line is drawn with is left

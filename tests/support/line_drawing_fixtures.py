@@ -2,7 +2,7 @@
 
 The composer draws a relation along its course with rounded bends, stops it short of a hollow head and
 turns the decorations PlantUML drew to face the course's ends (`relation_drawing`,
-`relation_decorations`). The layout lab draws its lines the same way while something is dragged, in
+`relation_decorations`). The diagram canvas draws its lines the same way while something is dragged, in
 TypeScript (`tools/gui/src/domain/layout/lab/labLineDrawing.ts`); these cases are what both answer.
 """
 

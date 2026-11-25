@@ -1,5 +1,5 @@
 /**
- * A shape in the lab is drawn with PlantUML's own drawing: shifted where it was only moved, and as the
+ * A shape on the canvas is drawn with PlantUML's own drawing: shifted where it was only moved, and as the
  * composer drew it at its new size where it was resized — the same drawing for every occurrence of
  * one element at one size, whichever was moved.
  */
@@ -13,7 +13,7 @@ const at = (left: number, top: number, right: number, bottom: number): Extent =>
 const plantuml = drawingNode('path', { fill: '#B5FFFF', style: 'stroke:#181818;stroke-width:0.5;' })
 const composed = drawingNode('path', { fill: '#B5FFFF', d: 'M0,0 L200,0' })
 
-describe('a shape drawn in the lab', () => {
+describe('a shape drawn on the canvas', () => {
   const drawn = at(100, 100, 220, 150)
 
   it('is PlantUML\'s own drawing, shifted, where it was only moved', () => {

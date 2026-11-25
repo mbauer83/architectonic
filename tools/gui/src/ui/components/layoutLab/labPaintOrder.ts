@@ -1,5 +1,5 @@
 /**
- * The one order the lab paints its picture in, back to front: shapes by nesting — a box, then
+ * The one order the canvas paints its picture in, back to front: shapes by nesting — a box, then
  * everything it holds — then the lines, then their labels. The backdrop is behind all of it and the
  * lab's own marks (breaches, handles) in front; neither is part of this order.
  *

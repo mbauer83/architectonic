@@ -1,5 +1,5 @@
 /**
- * The lab's arrangement keeps the composer's box rule: a box holds its members because it grows to
+ * The canvas's arrangement keeps the composer's box rule: a box holds its members because it grows to
  * hold them, moving a box carries what it holds, a stated size widens and never narrows, and the
  * layout block states only what differs from PlantUML's picture.
  */
@@ -46,7 +46,7 @@ const geometry: LayoutGeometry = {
   ],
 }
 
-describe('the lab arrangement', () => {
+describe('the canvas arrangement', () => {
   it('fits a box round its members with the padding PlantUML gave it', () => {
     const boxes = fittedBoxes(geometry, drawnArrangement(geometry))
     expect(boxes.get('G')).toEqual(at(10, 10, 250, 90))
@@ -83,7 +83,7 @@ describe('the lab arrangement', () => {
 
 })
 
-describe('the lab picture as the router sees it', () => {
+describe('the canvas picture as the router sees it', () => {
   it('names the shapes a change moved, boxes that grew among them', () => {
     const before = placementOf(geometry, drawnArrangement(geometry))
     const after = placementOf(geometry, moved(geometry, drawnArrangement(geometry), 'B', 100, 0))

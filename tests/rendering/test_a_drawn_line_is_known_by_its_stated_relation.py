@@ -1,4 +1,4 @@
-"""Which stated relation a drawn line is: one join, made for the composer and the layout lab alike.
+"""Which stated relation a drawn line is: one join, made for the composer and the diagram canvas alike.
 
 A picture names a line's ends in the renderer's order, which need not be the relation's own, and draws
 two relations between one pair as two lines no alias tells apart. The join answers both: the key, and

@@ -1,5 +1,5 @@
 /**
- * The lab counts each rule a line breaks, by the tier the rules state — not a tier of its own.
+ * The canvas counts each rule a line breaks, by the tier the rules state — not a tier of its own.
  */
 import { describe, expect, it } from 'vitest'
 import type { Extent, Point } from '../../geometry'
@@ -31,7 +31,7 @@ const geometry: LayoutGeometry = {
 const placement = placementOf(geometry, drawnArrangement(geometry))
 const text = textRegions(geometry, placement)
 
-describe('the lab breaches', () => {
+describe('the canvas breaches', () => {
   it('takes the readability tiers from the rules as stated', () => {
     for (const [rule, tier] of Object.entries(RULE_TIERS)) {
       if (rule === 'text' || rule === 'bend-at-an-end' || rule === 'runs-along' || rule === 'jog') {
