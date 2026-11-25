@@ -363,6 +363,12 @@ class TestListGroups:
         data = r.json()
         assert "document-collections" in data
 
+    def test_refuses_an_axis_it_does_not_have(self, group_client) -> None:
+        # The answer's key, plural, asked for as the axis: it used to answer `{}`, which a create
+        # form read as a repository with no projects.
+        r = group_client.get("/api/groups?kind=model-projects")
+        assert r.status_code == 422
+
 
 class TestGroupIdentityComesFromThePath:
     """A group is named by the pair ``(kind, slug)``, and after 0.2.0 both live in the URL.

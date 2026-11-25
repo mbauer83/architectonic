@@ -46,6 +46,15 @@ describe('the element focus of the edit canvas', () => {
     expect(focus.announced.value).toBe('Group, box, selected, 1 of 4')
   })
 
+  it('announces a shape that draws a draft as one (sketch 03·4)', () => {
+    const session = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
+    session.open(geometry)
+    const focus = useCanvasFocus(session, { selection: ref<readonly string[]>([]) }, (alias) => alias === 'A')
+    focus.enter(false)
+    focus.step(true)
+    expect(focus.announced.value).toBe('Alpha, draft, selected, 2 of 4')
+  })
+
   it('walks with Tab and Shift+Tab, selecting each, and leaves past the last', () => {
     const { selection, focus } = opened()
     expect(focus.step(true)).toBe(false)

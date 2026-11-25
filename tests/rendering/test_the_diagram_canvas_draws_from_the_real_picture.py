@@ -19,7 +19,7 @@ from fastapi.testclient import TestClient
 
 from src.application.artifacts.repository import ArtifactRepository
 from src.application.modeling.diagram_identities import alias_by_instance
-from src.domain.diagrams.authored_groupings import GROUPING_ID_KEY
+from src.domain.diagrams.authored_groupings import GROUPING_ID_KEY, read_rule_key
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.repository.frontmatter import parse_frontmatter
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
@@ -103,6 +103,22 @@ def test_a_grouping_box_is_addressed_by_its_grouping_id(model: RenderedModel) ->
     grouping_keys = {row["key"] for row in boxes if row["kind"] == "authored-grouping"}
     assert stated[0][GROUPING_ID_KEY] in grouping_keys
     assert all(row["section"] == "boxes" for row in boxes if row["kind"] == "authored-grouping")
+
+
+def test_a_computed_box_says_what_it_admits_and_a_stated_one_does_not(model: RenderedModel) -> None:
+    # What the canvas narrows its palette by when something is added inside a box (sketch 03·2).
+    computed = _rows(_geometry(model, "type-boxes"), "boxes")
+    domains = [row for row in computed if row["kind"] == "domain"]
+    types = [row for row in computed if row["kind"] == "type"]
+
+    assert domains and types
+    assert all(isinstance(row["rule"], dict) and set(row["rule"]) == {"domain"} for row in domains)
+    assert all(isinstance(row["rule"], dict) and set(row["rule"]) == {"type"} for row in types)
+    for row in [*domains, *types]:
+        innermost = read_rule_key(str(row["key"])).path[-1]
+        assert row["rule"] == {innermost.kind: innermost.value}
+    stated = _rows(_geometry(model, "groupings"), "boxes")
+    assert all(row.get("rule") is None for row in stated if row["kind"] == "authored-grouping")
 
 
 @pytest.fixture

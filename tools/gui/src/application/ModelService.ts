@@ -146,7 +146,7 @@ export const makeModelService = (repo: ModelRepository) =>
     createMatrixDiagram: (body: Parameters<ModelRepository['createMatrixDiagram']>[0]) => repo.createMatrixDiagram(body),
     editMatrixDiagram: (id: string, body: Parameters<ModelRepository['editMatrixDiagram']>[1]) =>
       repo.editMatrixDiagram(id, body),
-    listGroups: (kind?: string) => repo.listGroups(kind),
+    listGroups: (kind?: Parameters<ModelRepository['listGroups']>[0]) => repo.listGroups(kind),
     createGroup: (body: Parameters<ModelRepository['createGroup']>[0]) => repo.createGroup(body),
     renameGroup: (kind: string, slug: string, body: Parameters<ModelRepository['renameGroup']>[2]) =>
       repo.renameGroup(kind, slug, body),

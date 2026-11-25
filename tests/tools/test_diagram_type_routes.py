@@ -131,6 +131,16 @@ def test_diagram_kind_connection_types_endpoint_exposes_effective_vocabulary() -
     assert "dynamic" in flow_item["classes"]
 
 
+def test_diagram_kind_connection_types_say_which_relations_contain() -> None:
+    # What the canvas narrows its palette by inside a container element (sketch 03·2): the relation
+    # kinds in schema vocabulary, so the reader never names an ontology's types.
+    items = get_diagram_kind_connection_types("archimate-layered", catalogs=_catalogs())["items"]
+
+    containing = {item["connection_type"] for item in items if item["relationship_kind"] == "containment"}
+    assert {"archimate-composition", "archimate-aggregation"} <= containing
+    assert "archimate-serving" not in containing
+
+
 def test_diagram_kind_ui_config_endpoint_shape() -> None:
     kinds = list_diagram_types(catalogs=_catalogs())
     activity = read_diagram_kind_ui_config("activity", catalogs=_catalogs())

@@ -7,7 +7,7 @@ import type {
 } from '../../ports/diagramWriteBodies'
 import { membershipWithout } from './diagramMembership'
 import type { DrawnMembership } from './diagramMembership'
-import { stableConnectionId, stableEntityId } from '../artifactId'
+import { connectionParts, stableConnectionId, stableEntityId } from '../artifactId'
 
 import type { DiagramContext, EntityDetail } from '..'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
@@ -140,6 +140,23 @@ export const withCommand = (commands: readonly CanvasCommand[], command: CanvasC
 }
 
 /**
+ * *content* without the draft *id*, as though it had never been created: its creation, and everything
+ * the session proposed about it — a rename, details, a relation from or to it, a move into a box.
+ */
+export const withoutDraft = <C extends Content>(content: C, id: string): C => {
+  const own = stableEntityId(id)
+  const about = (command: CanvasCommand): boolean => {
+    const ends = connectionParts(command.artifact_id)
+    return ends ? [ends.source, ends.target].some((end) => stableEntityId(end) === own)
+      : stableEntityId(command.artifact_id) === own
+  }
+  const regroupings = (content.regroupings ?? [])
+    .map((intent) => ({ ...intent, keys: intent.keys.filter((key) => stableEntityId(key) !== own) }))
+    .filter((intent) => intent.keys.length > 0)
+  return { ...content, commands: (content.commands ?? []).filter((one) => !about(one)), regroupings }
+}
+
+/**
  * *detail* as the session would leave it: its last pending rename, and its pending details over what the
  * model holds — what the entity form opens on when an element's details are edited a second time.
  */
@@ -197,4 +214,20 @@ export function canvasMembers(context: DiagramContext, state: Content | null, pi
     const item = lookup.get(s.key ?? '') ?? lookup.get(backing.get(s.key ?? '') ?? '')
     return item ? [{ ...item, alias: s.alias }] : []
   })
+}
+
+/** The status a draft has: an element the model holds provisionally, as everything a canvas creates is. */
+export const DRAFT_STATUS = 'draft'
+
+/**
+ * The shapes of *picture* that draw a draft (sketch 03·4, D19): an element the model holds as a draft,
+ * or one this session creates, which is written as one — however often it is drawn. By alias.
+ */
+export function draftAliases(context: DiagramContext, state: Content | null, picture: LayoutGeometry | null) {
+  const drafts = new Set([
+    ...context.entities.filter((one) => one.status === DRAFT_STATUS).map((one) => stableEntityId(one.artifact_id)),
+    ...(state?.commands ?? []).filter((c) => c.op === 'model.element.create').map((c) => stableEntityId(c.artifact_id)),
+  ])
+  return new Set(canvasMembers(context, state, picture)
+    .filter((one) => drafts.has(stableEntityId(one.id))).map((one) => one.alias))
 }

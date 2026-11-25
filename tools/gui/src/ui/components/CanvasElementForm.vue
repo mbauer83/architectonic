@@ -8,9 +8,14 @@ import { toGlyphKey } from '../lib/glyphKey'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import CanvasElementPicker from './CanvasElementPicker.vue'
 import { noteRecentType, typeWords } from './canvasTypeList'
+import { projectsByUse } from './canvasProjects'
+import { NO_COLLECTION } from './ArtifactHomeSelect.helpers'
+import type { ReceivingBox } from '../../domain/layout/receivingBox'
 
-const props = defineProps<{ context: DiagramContext }>()
-const emit = defineEmits<{ apply: [command: CanvasCommand]; add: [entity: EntityDisplayInfo]; cancel: [] }>()
+const props = defineProps<{ context: DiagramContext; into?: ReceivingBox | null; drawsAgain?: boolean }>()
+const emit = defineEmits<{
+  apply: [command: CanvasCommand]; add: [entity: EntityDisplayInfo]; again: [entity: EntityDisplayInfo]; cancel: []
+}>()
 const svc = inject(modelServiceKey)!
 const type = ref('')
 const name = ref('')
@@ -22,20 +27,13 @@ const fields = ref<readonly string[]>([])
 const attributes = ref<Record<string, string>>({})
 const error = ref('')
 const nameField = ref<HTMLInputElement | null>(null)
-const projects = ref<{ slug: string; name: string }[]>([])
+const projects = ref<readonly { slug: string; name: string }[]>([])
 const more = ref(false)
-const counts = new Map<string, number>()
-for (const entity of props.context.entities)
-  counts.set(entity.group ?? '', (counts.get(entity.group ?? '') ?? 0) + 1)
 onMounted(async () => {
   try {
-    const groups = await Effect.runPromise(svc.listGroups('model-projects'))
-    projects.value = [...(groups['model-projects'] ?? [])]
-      .filter((p) => !p.archived)
-      .sort(
-        (a, b) => (counts.get(b.slug) ?? 0) - (counts.get(a.slug) ?? 0) || a.name.localeCompare(b.name),
-      )
-    group.value = projects.value[0]?.slug ?? 'uncategorized'
+    const list = await Effect.runPromise(svc.listGroups('model-project'))
+    projects.value = projectsByUse(list, props.context.entities.map((entity) => entity.group))
+    group.value = projects.value[0]?.slug ?? NO_COLLECTION
   } catch (e) {
     error.value = String(e)
   }
@@ -95,7 +93,10 @@ const submit = async () => {
   <CanvasElementPicker
     v-if="!type"
     :context="context"
+    :into="into"
+    :draws-again="drawsAgain"
     @add="emit('add', $event)"
+    @again="emit('again', $event)"
     @create="chosen"
   />
   <form

@@ -51,6 +51,7 @@ import type {
   ModuleSummary,
   WriteHelp,
   GroupList,
+  GroupAxis,
   EntityTaxonomy,
   AuthoringGuidance,
   DiagramViewpointProjection,
@@ -347,7 +348,7 @@ export interface ModelRepository
   readonly createMatrixDiagram: (body: object) => Effect.Effect<WriteResult, RepoError>
   readonly editMatrixDiagram: (id: string, body: object) => Effect.Effect<WriteResult, RepoError>
   // ── Group lifecycle ───────────────────────────────────────────────────────────
-  readonly listGroups: (kind?: string) => Effect.Effect<GroupList, RepoError>
+  readonly listGroups: (kind?: GroupAxis) => Effect.Effect<GroupList, RepoError>
   readonly createGroup: (body: { kind: string; slug: string; name: string; description?: string; order?: number; meta_ontology?: string; type_filter?: string[] }) => Effect.Effect<Record<string, unknown>, RepoError>
   // A group is named by the pair (axis kind, slug), and both are path parameters — so both are
   // arguments here rather than fields of a body that would say the same thing twice.

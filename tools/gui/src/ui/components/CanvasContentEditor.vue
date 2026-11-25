@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import type { DiagramContext, EntityDisplayInfo } from '../../domain'
+import type { DiagramContext } from '../../domain'
 import { canvasMembers } from '../../domain/layout/canvasComposition'
 import { modelServiceKey } from '../keys'
 import type { DiagramEditing } from '../composables/useDiagramEditing'
@@ -10,6 +10,7 @@ import { elementAt, useContentGestures } from '../composables/useContentGestures
 import { useCanvasPopover } from '../composables/useCanvasPopover'
 import { useCanvasRelation } from '../composables/useCanvasRelation'
 import { useCanvasNesting } from '../composables/useCanvasNesting'
+import { useCanvasCreate } from '../composables/useCanvasCreate'
 import CanvasElementForm from './CanvasElementForm.vue'
 import CanvasSelectionMenu from './CanvasSelectionMenu.vue'
 import CanvasLineMenu from './CanvasLineMenu.vue'
@@ -39,6 +40,8 @@ const props = defineProps<{
   /** The shape the keyboard is on, as it is announced (`useCanvasFocus`). */
   focused?: string
 }>()
+/** *select*: what the editor added, which the canvas then selects so the arrows move it. */
+const emit = defineEmits<{ select: [alias: string] }>()
 const words = computed(() => props.words ?? DIAGRAM_WORDS)
 const several = computed(() => props.selectedShapes ?? [])
 const svc = inject(modelServiceKey)!
@@ -56,10 +59,12 @@ const nameOf = (alias: string) => members.value.find((e) => e.alias === alias)?.
 const drafted = computed(() => props.editing.session.state.value?.commands?.some(
   (c) => c.op === 'model.element.create' && c.artifact_id === selected.value?.id) ?? false)
 
-async function apply(c: CanvasCommand, overlay?: Record<string, unknown>) {
-  if (await props.editing.propose(c, overlay)) close(true)
+/** A step the session took closes the popover; one it refused says why, there. */
+async function settle(step: Promise<boolean>) {
+  if (await step) close(true)
   else error.value = props.editing.error.value ?? 'The drawing has changed. Try again.'
 }
+const apply = (c: CanvasCommand, overlay?: Record<string, unknown>) => settle(props.editing.propose(c, overlay))
 const relation = useCanvasRelation(
   svc, props.editing, () => props.context, members, { source, target },
   () => { mode.value = 'relation' }, (message) => { error.value = message }, (c, overlay) => void apply(c, overlay),
@@ -68,6 +73,11 @@ const { kind, label, srcCount, tgtCount, description, options, currentLine } = r
 const { anchor, drawAgain, ownBoxes, boxOfSelected, nestIn, nestUnder, asked, dropped, dontNest } = useCanvasNesting(
   props.editing, host, source, members, { mode, error, position, close }, (c) => void apply(c),
 )
+const adding = useCanvasCreate(
+  props.editing, host, () => props.context, members, { mode, error, close, source, asked },
+  (alias) => emit('select', alias),
+)
+const drawsAgain = computed(() => isArchimateDiagramType(props.context.diagram.diagram_type))
 
 function rename(alias: string) {
   source.value = alias
@@ -90,6 +100,7 @@ function onElement(choice: string) {
     close()
   }
   else if (choice === 'delete') mode.value = 'delete'
+  else if (choice === 'discard') void settle(props.editing.discardDraft(el.id))
   else if (choice === 'open') {
     window.open(router.resolve(entityDetailRoute(el.id)).href, '_blank', 'noopener')
     close()
@@ -106,10 +117,6 @@ const containersFor = (element: { readonly id: string }) => [...new Map(members.
 const details = ref<string | null>(null)
 const keepDetails = async (commands: readonly CanvasCommand[]): Promise<string | null> =>
   await props.editing.propose(commands) ? null : props.editing.error.value ?? 'The drawing has changed. Try again.'
-const addFound = (entity: EntityDisplayInfo) => {
-  void props.editing.add(entity.artifact_id, entity.name, entity.artifact_type)
-  close(true)
-}
 const dropMember = (event: DragEvent) => {
   const id = event.dataTransfer?.getData('application/x-architectonic-entity')
   const member = props.context.suggested_entities.flatMap(group => group.items)
@@ -126,7 +133,10 @@ function menu(event: MouseEvent) {
     return
   }
   const onSelection = several.value.length > 1 && (!source.value || several.value.includes(source.value))
-  mode.value = onSelection ? 'selection' : selected.value ? 'element' : 'create'
+  // A container element's body, below its title, is a box's body: the menu there adds to it (03·2).
+  const box = adding.openedAt(event)
+  const inContainer = box?.alias === source.value && (event.target as Element).classList.contains('lab-body')
+  mode.value = onSelection ? 'selection' : selected.value && !inContainer ? 'element' : 'create'
 }
 // A line's menu belongs to the line it was opened on: another line picked, or none, closes it.
 watch(() => props.line, () => { if (mode.value === 'line') close() })
@@ -217,8 +227,11 @@ function double(e: MouseEvent) {
         <CanvasElementForm
           v-if="mode === 'create'"
           :context="context"
-          @apply="apply"
-          @add="addFound"
+          :into="adding.into.value"
+          :draws-again="drawsAgain"
+          @apply="adding.created"
+          @add="adding.found"
+          @again="adding.again"
           @cancel="close(true)"
         />
         <CanvasSelectionMenu
@@ -243,7 +256,7 @@ function double(e: MouseEvent) {
           :type="selected.type"
           :label="`${selected.name}: element`"
           :items="elementMenuItems(
-            words, drafted, boxOfSelected?.name ?? null, isArchimateDiagramType(context.diagram.diagram_type),
+            words, drafted, boxOfSelected?.name ?? null, drawsAgain,
           )"
           @choose="onElement"
           @close="close(true)"
@@ -277,6 +290,7 @@ function double(e: MouseEvent) {
         <CanvasDeleteConfirm
           v-else-if="mode === 'delete' && selected"
           :name="selected.name"
+          :entity-id="selected.id"
           :words="words"
           @confirm="apply({ op: 'model.element.delete', artifact_id: selected.id })"
           @remove="onElement('remove')"

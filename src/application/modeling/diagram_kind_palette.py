@@ -71,12 +71,15 @@ def diagram_kind_connection_types(
     (`conn_lang`) groups it well enough that alphabetical is the readable choice.
     """
     kind = catalogs.diagram_types.get_diagram_type(diagram_type)
-    items = [
+    items: list[dict[str, Any]] = [
         {
             "connection_type": connection_type,
             "conn_lang": info.conn_lang,
             "symmetric": info.symmetric,
             "classes": list(info.classes),
+            # The ontology's kind of relation, in schema vocabulary: what lets a reader ask which of a
+            # diagram's relations contain without naming any ontology's types.
+            "relationship_kind": info.relationship_kind,
         }
         for connection_type, info in kind.effective_connection_types().items()
         if scope is None or scope.admits_connection_type(connection_type)

@@ -9,7 +9,7 @@ import type { CanvasWords } from './canvasWords'
 import type { Restack } from '../../domain/layout/stacking'
 
 export type ElementMenuChoice =
-  | 'rename' | 'details' | 'connect' | 'nest' | 'unnest' | 'occurrence' | 'open' | 'remove' | 'delete'
+  | 'rename' | 'details' | 'connect' | 'nest' | 'unnest' | 'occurrence' | 'open' | 'remove' | 'delete' | 'discard'
   | `stack:${Restack}`
 
 /** Stacking among siblings (02·7), with the keys that do the same on the selection. */
@@ -30,6 +30,23 @@ export const restackOf = (choice: string): Restack | null => {
 export const restackKey = (event: Pick<KeyboardEvent, 'key' | 'shiftKey'>): Restack | null =>
   event.key === 'PageUp' ? (event.shiftKey ? 'front' : 'forward')
     : event.key === 'PageDown' ? (event.shiftKey ? 'back' : 'backward') : null
+
+/**
+ * A draft created in this session and not saved is not yet in the model: it is discarded, which takes
+ * it and everything the session proposed about it away, rather than removed or deleted (03·6).
+ */
+const DISCARD_ITEM: CanvasMenuItem = {
+  id: 'discard', label: 'Discard this draft', hint: 'it was never saved; Undo brings it back', danger: true,
+  divider: true,
+}
+
+/** Taking a saved element off the view, and deleting it from the model, in the page's words. */
+const removing = (words: CanvasWords): readonly CanvasMenuItem[] => [
+  ...words.removeEntry
+    ? [{ id: 'remove', label: words.removeEntry, hint: words.removeHint, shortcut: words.removeKey, divider: true }]
+    : [],
+  { id: 'delete', label: words.deleteEntry, hint: words.deleteHint, danger: true, divider: true },
+]
 
 /**
  * *drafted*: the element is created in this session, so it has no page to open until Save. *nestedIn*:
@@ -62,8 +79,6 @@ export const elementMenuItems = (
     }]
     : [],
   ...STACKING_ITEMS,
-  ...words.removeEntry
-    ? [{ id: 'remove', label: words.removeEntry, hint: words.removeHint, shortcut: words.removeKey, divider: true }]
-    : [],
-  { id: 'delete', label: words.deleteEntry, hint: words.deleteHint, danger: true, divider: true },
+  ...drafted ? [DISCARD_ITEM] : removing(words),
 ]
+

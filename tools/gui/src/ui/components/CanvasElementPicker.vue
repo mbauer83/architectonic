@@ -16,15 +16,30 @@ import { toGlyphKey } from '../lib/glyphKey'
 import { domainStyle, getDomainLabel } from '../lib/domains'
 import { type TypeRow, recentTypes, typeSections, typeWords } from './canvasTypeList'
 import { menuStep } from './canvasMenu'
+import { type ReceivingBox, admitsType } from '../../domain/layout/receivingBox'
+import { partsTypes } from './canvasParts'
 
-const props = defineProps<{ context: DiagramContext }>()
-const emit = defineEmits<{ add: [entity: EntityDisplayInfo]; create: [type: string, name: string] }>()
+const props = defineProps<{
+  context: DiagramContext
+  /** The box under the point the menu was opened at, which the new element joins; null on open paper. */
+  into?: ReceivingBox | null
+  /** The diagram type draws an element more than once, so one already drawn may be drawn again. */
+  drawsAgain?: boolean
+}>()
+const emit = defineEmits<{
+  add: [entity: EntityDisplayInfo]; again: [entity: EntityDisplayInfo]; create: [type: string, name: string]
+}>()
 const svc = inject(modelServiceKey)!
 
 const query = ref('')
 const filter = ref('')
 const hits = ref<readonly EntityDisplayInfo[]>([])
-const palette = ref<readonly TypeRow[]>([])
+const accepted = ref<readonly TypeRow[]>([])
+/** What a container may hold, as the ontology answers it; null until it has, or where the box is no container. */
+const parts = ref<ReadonlySet<string> | null>(null)
+/** The types the diagram type accepts that the box under the point admits: all of them on open paper. */
+const palette = computed(() => accepted.value.filter((row) =>
+  !props.into || admitsType(props.into.admits, row.type, row.domain, parts.value ?? undefined)))
 const error = ref('')
 const root = ref<HTMLElement | null>(null)
 const search = ref<HTMLInputElement | null>(null)
@@ -40,8 +55,11 @@ onMounted(async () => {
   await nextTick()
   search.value?.focus()
   try {
-    const rows = await Effect.runPromise(svc.listDiagramElementTypes(props.context.diagram.diagram_type))
-    palette.value = rows.map((row) => ({ type: String(row.artifact_type), domain: String(row.domain) }))
+    const diagramType = props.context.diagram.diagram_type
+    const rows = await Effect.runPromise(svc.listDiagramElementTypes(diagramType))
+    accepted.value = rows.map((row) => ({ type: String(row.artifact_type), domain: String(row.domain) }))
+    const admits = props.into?.admits
+    if (admits?.kind === 'parts') parts.value = await partsTypes(svc, diagramType, admits.containerType)
   } catch (e) {
     error.value = String(e)
   }
@@ -65,7 +83,11 @@ watch(query, (text) => {
 
 const choose = (hit: EntityDisplayInfo) => {
   if (!onDiagram(hit)) emit('add', hit)
+  else if (props.drawsAgain) emit('again', hit)
 }
+/** What choosing a hit already drawn does, or that it does nothing: said under its name (03·1). */
+const drawnHint = computed(() =>
+  (props.drawsAgain ? 'on this diagram — adds a second occurrence' : 'already on this diagram'))
 
 const options = () => [...root.value?.querySelectorAll<HTMLElement>('[role="option"]') ?? []]
 const walk = (event: KeyboardEvent) => {
@@ -108,8 +130,11 @@ const walk = (event: KeyboardEvent) => {
     class="picker"
     @keydown="walk"
   >
-    <p class="picker__meta">
-      Add here
+    <p
+      class="picker__meta"
+      data-testid="picker-heading"
+    >
+      {{ into ? `Add to ${into.label}` : 'Add here' }}
     </p>
     <input
       ref="search"
@@ -135,7 +160,7 @@ const walk = (event: KeyboardEvent) => {
           class="picker__opt"
           role="option"
           tabindex="-1"
-          :aria-disabled="onDiagram(hit) ? 'true' : undefined"
+          :aria-disabled="onDiagram(hit) && !drawsAgain ? 'true' : undefined"
           :aria-selected="false"
           @click="choose(hit)"
         >
@@ -146,7 +171,7 @@ const walk = (event: KeyboardEvent) => {
           <span class="picker__grow">
             {{ hit.name }}
             <span class="picker__hint">{{ typeWords(hit.artifact_type) }}{{
-              onDiagram(hit) ? ' · already on this diagram' : '' }}</span>
+              onDiagram(hit) ? ` · ${drawnHint}` : '' }}</span>
           </span>
         </div>
       </div>
@@ -225,7 +250,8 @@ const walk = (event: KeyboardEvent) => {
       </p>
     </div>
     <p class="picker__foot">
-      All {{ palette.length }} types this diagram type accepts.
+      {{ palette.length === accepted.length ? `All ${accepted.length} types this diagram type accepts.`
+        : `${palette.length} of ${accepted.length} types: those ${into?.label} takes.` }}
     </p>
     <p
       v-if="error"

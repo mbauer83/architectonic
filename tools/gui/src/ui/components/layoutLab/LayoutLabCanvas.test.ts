@@ -38,13 +38,13 @@ const geometry: LayoutGeometry = {
 
 let app: App | null = null
 
-const mounted = async () => {
+const mounted = async (drafts?: ReadonlySet<string>) => {
   const lab = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
   lab.open(geometry)
   const shown = reactive({ breaches: true })
   const host = document.createElement('div')
   document.body.appendChild(host)
-  app = createApp({ render: () => h(LayoutLabCanvas, { session: lab, showBreaches: shown.breaches }) })
+  app = createApp({ render: () => h(LayoutLabCanvas, { session: lab, showBreaches: shown.breaches, drafts }) })
   app.mount(host)
   await nextTick()
   return { lab, host, shown }
@@ -176,5 +176,27 @@ describe('the diagram canvas', () => {
     pointer(host.querySelector('svg') as Element, 'pointerdown', 590, 390)
     await nextTick()
     expect(host.querySelector('[data-selected-line]')).toBeNull()
+  })
+
+  it('selects a line on a press of its drawn stroke, which is painted over its band', async () => {
+    const { lab, host } = await mounted()
+    lab.change((_drawn, now) => now)
+    await nextTick()
+    const line = host.querySelector('[data-painted="line"]')
+    const stroke = [...line?.querySelectorAll('*') ?? []].find((one) => !one.classList.contains('lab-line-hit')
+      && one.tagName.toLowerCase() !== 'g')
+    if (stroke === undefined) throw new Error('the line is drawn without a stroke of its own')
+    pointer(stroke, 'pointerdown', 200, 60)
+    await nextTick()
+    expect(host.querySelector('[data-selected-line="0"]')).not.toBeNull()
+  })
+
+  it('marks a shape that draws a draft with a quiet "d" in its top right corner, hidden from a reader', async () => {
+    const { host } = await mounted(new Set(['C']))
+    const marks = [...host.querySelectorAll('[data-draft]')]
+    expect(marks.map((mark) => [mark.getAttribute('data-draft'), mark.textContent?.trim()])).toEqual([['C', 'd']])
+    expect(Number(marks[0]?.getAttribute('x'))).toBeLessThan(500)
+    expect(Number(marks[0]?.getAttribute('y'))).toBeGreaterThan(40)
+    expect(marks[0]?.closest('[aria-hidden="true"]')).not.toBeNull()
   })
 })

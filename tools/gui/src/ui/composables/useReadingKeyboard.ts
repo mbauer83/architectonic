@@ -22,7 +22,8 @@ interface Stop {
 export function useReadingKeyboard(options: {
   host: Ref<HTMLElement | null>
   nodeElements: Ref<ReadonlyMap<string, readonly Element[]>>
-  describe: (id: string) => { name: string; type: string } | null
+  /** How an element is announced: its name and type, and whether it is a draft (03·4). */
+  describe: (id: string) => { name: string; type: string; draft?: boolean } | null
   selectedIds: Ref<readonly string[]>
   select: (id: string, additive: boolean) => void
   clear: () => void
@@ -44,7 +45,8 @@ export function useReadingKeyboard(options: {
       stop.element.setAttribute('role', 'button')
       stop.element.setAttribute('data-reading-stop', '')
       stop.element.setAttribute('aria-label',
-        `${about?.name ?? stop.id}, ${about?.type ?? 'element'}, ${index + 1} of ${stops.length}`)
+        `${about?.name ?? stop.id}, ${about?.type ?? 'element'}${about?.draft ? ', draft' : ''}, `
+        + `${index + 1} of ${stops.length}`)
     })
   }, { flush: 'post' })
 

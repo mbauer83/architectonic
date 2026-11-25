@@ -85,6 +85,9 @@ class GeometryBoxContract(NullsOmitted):
     inside: str | None = None
     words: list[MeasuredWordContract]
     title_band: ExtentContract | None = None
+    #: What a box the renderer computes admits — `{"domain": …}` or `{"type": …}`, as a stated
+    #: grouping's rule is written; absent for any other box.
+    rule: dict[str, str] | None = None
     drawing: DrawingNodeContract
 
 

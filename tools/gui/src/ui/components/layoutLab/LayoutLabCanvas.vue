@@ -17,6 +17,7 @@ import type { DrawnRelation, DrawnShape, Piece } from './labPieces'
 import { drawnRelations, drawnShapes, pieceOf } from './labPieces'
 import LabDrawn from './LabDrawn'
 import CanvasMarks from './CanvasMarks.vue'
+import CanvasDraftMarks from './CanvasDraftMarks.vue'
 import LabBreachMarks from './LabBreachMarks.vue'
 import LabSelection from './LabSelection.vue'
 import LabLineHandles from './LabLineHandles.vue'
@@ -33,6 +34,8 @@ const props = defineProps<{
   session: ArrangementSession; showBreaches?: boolean; readonly?: boolean
   /** The title and the legend, where the page placed them (`useSurroundPlacement`); none, none drawn. */
   surround?: readonly PlacedPart[]
+  /** The shapes that draw a draft, by alias: each is marked, and announced as one. */
+  drafts?: ReadonlySet<string>
 }>()
 const emit = defineEmits<{ pick: [alias: string] }>()
 
@@ -42,7 +45,7 @@ const gesture = useLabGesture(props.session, svg, {
   snapping: () => prefs.snapping.value.value, rectangle: () => prefs.rectangle.value.value,
 })
 const pick = (event: PointerEvent, alias: string) => { gesture.select(event, alias); emit('pick', alias) }
-const focus = useCanvasFocus(props.session, gesture)
+const focus = useCanvasFocus(props.session, gesture, (alias) => props.drafts?.has(alias) ?? false)
 
 const geometry = computed(() => props.session.geometry.value)
 const placement = computed(() => props.session.placement.value)
@@ -96,6 +99,8 @@ defineExpose({
   /** The line selected, by its place on the picture; null when none is. */
   selectedLine: lineGesture.line,
   clearSelection: () => { gesture.clear(); lineGesture.clear(); focus.clear() },
+  /** Select the one shape *alias*, as a press on it would: what was just added, so the arrows move it. */
+  select: (alias: string) => { lineGesture.clear(); gesture.selection.value = [alias]; focus.pointed(alias) },
   /** The element focus the keys move (`useCanvasFocus`): where it is, as announced; and the arrows on a label. */
   focus: { step: focus.step, enter: focus.enter, towards: focus.towards, selectAll: focus.selectAll },
   focusedExtent: focus.extent,
@@ -219,17 +224,19 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
             :height="heightOf(piece.shape.region)"
           />
         </g>
+        <!-- A press anywhere on the line selects it: its band, or its drawn stroke, which is painted over
+             the band and is what a click aimed at the line lands on. -->
         <g
           v-else-if="piece.kind === 'line'"
           class="lab-line"
           :data-relation="piece.relation"
           data-painted="line"
+          @pointerdown="readonly || lineGesture.pressLine($event, piece.relation)"
         >
           <polyline
             v-if="!readonly"
             class="lab-line-hit"
             :points="pointsAttribute(session.courses.value.get(piece.relation) ?? [])"
-            @pointerdown="lineGesture.pressLine($event, piece.relation)"
           />
           <LabDrawn
             v-if="piece.drawn.asDrawn"
@@ -269,6 +276,12 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
     <CanvasMarks
       :session="session"
       :order="shapeOrder"
+    />
+
+    <CanvasDraftMarks
+      v-if="drafts?.size"
+      :session="session"
+      :drafts="drafts"
     />
 
     <slot />

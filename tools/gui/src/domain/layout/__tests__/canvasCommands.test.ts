@@ -4,9 +4,10 @@
  * second edit on what the first one kept.
  */
 import { describe, expect, it } from 'vitest'
-import type { EntityDetail } from '../..'
+import type { DiagramContext, EntityDetail } from '../..'
 import type { CanvasCommand } from '../../../ports/diagramWriteBodies'
-import { composeCanvas, withCommand, withPendingDetails } from '../canvasComposition'
+import type { LayoutGeometry } from '../../schemas/diagramLayoutGeometry'
+import { composeCanvas, draftAliases, withCommand, withPendingDetails, withoutDraft } from '../canvasComposition'
 
 const ID = 'SRV@1712870400.Uv9Wx9.repository-promotion-service'
 const kept = (...commands: CanvasCommand[]) => commands.reduce(withCommand, [] as CanvasCommand[])
@@ -91,5 +92,50 @@ describe('a further drawing of an element', () => {
     expect(composeCanvas(drawn, {}, new Set(['occ-svc-2'])).write.diagram_entities?.occurrence).toEqual([])
     const deleted = composeCanvas(drawn, { commands: [{ op: 'model.element.delete', artifact_id: ID }] }, new Set())
     expect(deleted.write.diagram_entities?.occurrence).toEqual([])
+  })
+})
+
+describe('a draft discarded', () => {
+  const DRAFT = 'BOB@1795000000.Abc123.audit-note'
+  const relation = (source: string, target: string): CanvasCommand => ({
+    op: 'model.relation.create', artifact_id: `${source}---${target}@@archimate-association`,
+    description: '', src_multiplicity: '', tgt_multiplicity: '',
+  })
+
+  it('takes its creation and everything proposed about it, and leaves the rest of the session', () => {
+    const rest: CanvasCommand[] = [{ op: 'model.element.rename', artifact_id: ID, name: 'Kept' }, relation(ID, 'APP@1.a.b')]
+    const session = {
+      commands: [
+        { op: 'model.element.create', artifact_type: 'business-object', artifact_id: DRAFT, name: 'Note', group: 'g' },
+        { op: 'model.element.rename', artifact_id: DRAFT, name: 'Audit note' },
+        relation(ID, DRAFT), relation(DRAFT, 'APP@1.a.b'), ...rest,
+      ] satisfies CanvasCommand[],
+      regroupings: [{ intent: 'nest' as const, keys: [DRAFT, 'APP@1.a.b'], grouping: 'g-1' },
+        { intent: 'unnest' as const, keys: [DRAFT] }],
+    }
+    const left = withoutDraft(session, DRAFT)
+    expect(left.commands).toEqual(rest)
+    expect(left.regroupings).toEqual([{ intent: 'nest', keys: ['APP@1.a.b'], grouping: 'g-1' }])
+  })
+})
+
+describe('the shapes that draw a draft', () => {
+  it('are the model\'s drafts and the session\'s creations, each wherever it is drawn', () => {
+    const entity = (artifact_id: string, status: string) => ({ artifact_id, name: artifact_id, artifact_type: 'role', status })
+    const context = {
+      diagram: { diagram_entities: { occurrence: [{ id: 'occ-1', backing_entity_id: 'ROL@1.a.kept' }] } },
+      entities: [entity('ROL@1.a.kept', 'draft'), entity('ROL@2.b.done', 'active')], suggested_entities: [],
+    } as unknown as DiagramContext
+    // A picture keys an element by its stable id, as the geometry read does.
+    const shape = (alias: string, key: string) => ({ alias, key })
+    const picture = {
+      elements: [shape('Kept', 'ROL@1.a'), shape('Kept2', 'occ-1'), shape('Done', 'ROL@2.b'),
+        shape('New', 'ROL@3.c')],
+      boxes: [],
+    } as unknown as LayoutGeometry
+    const commands: CanvasCommand[] = [
+      { op: 'model.element.create', artifact_type: 'role', artifact_id: 'ROL@3.c.new', name: 'New', group: 'g' },
+    ]
+    expect([...draftAliases(context, { commands }, picture)].sort()).toEqual(['Kept', 'Kept2', 'New'])
   })
 })
