@@ -8,7 +8,13 @@ from typing import Any, Protocol
 from pydantic_core import to_jsonable_python
 
 from src.application.change_sets.candidate_architecture import CandidateArchitecture
-from src.application.change_sets.candidate_view import CandidateView, difference, view_of
+from src.application.change_sets.candidate_view import (
+    CandidateView,
+    created_ids,
+    difference,
+    named_by_reference,
+    view_of,
+)
 from src.application.change_sets.change_set import ChangeSet
 from src.application.change_sets.composition import compose
 from src.application.change_sets.operations import ConnectionAddress, CreateEntity
@@ -74,9 +80,11 @@ def comparison(
     live = live_reading(stack, registry)
     after = view_of(stack, live)
     if base == "model":
+        # Under the names the stack uses: an entity it creates that the model already holds is one entity.
+        model = named_by_reference(live, created_ids(stack))
         before = CandidateView(
-            dict(live.entities),
-            {a: f for a, f in live.connections.items() if all(end in live.entities for end in a.endpoints)},
+            dict(model.entities),
+            {a: f for a, f in model.connections.items() if all(end in model.entities for end in a.endpoints)},
         )
     else:
         named = naive if base == "naive" else base

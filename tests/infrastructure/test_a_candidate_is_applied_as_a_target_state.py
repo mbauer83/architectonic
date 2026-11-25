@@ -258,6 +258,26 @@ def test_both_transports_answer_alike(root: Path, client: TestClient, scene: dic
         mcp.change_set_move_into_baseline(ref, dry_run=False, repo_root=str(root))
 
 
+def test_an_element_the_candidate_created_is_compared_once_when_the_model_holds_it(
+    client: TestClient, scene: dict[str, str],
+) -> None:
+    """Once applied as a target state, the element the candidate creates is in the model under the id chosen for
+    it. The comparison read it from the model by that id and from the candidate by its alias, and listed it twice:
+    once removed, once added."""
+    ref, new_rule = scene["candidate"], scene["new_rule"]
+    assert client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False}).status_code == 200
+
+    compared = client.get(f"/api/change-sets/{ref}/diff", params={"base": "model"}).json()
+
+    about_it = [row for row in compared["diff"] if row["kind"] == "entity"
+                and stable_id(str(row["target"]).removeprefix("$ref:")) in {new_rule, "new-rule"}
+                or "New rule" in str(row["fields"])]
+    assert len(about_it) <= 1, about_it  # held by the model as the candidate creates it: no change at all
+    named = [one for one in compared["view"]["entities"]
+             if stable_id(one.get("artifact_id") or one["id"]) == new_rule or one["id"] == new_rule]
+    assert len(named) == 1, compared["view"]["entities"]
+
+
 def test_withdrawing_a_target_state_leaves_the_baseline_as_it_was(
     root: Path, client: TestClient, commits: list[Path], scene: dict[str, str],
 ) -> None:
