@@ -96,6 +96,10 @@ function onElement(choice: string) {
     close(true)
   }
 }
+/** What an element may be nested in: every other element, each once, however often it is drawn. */
+const containersFor = (element: { readonly id: string }) => [...new Map(members.value
+  .filter((m) => m.id !== element.id && !ownBoxes.value.some((box) => box.alias === m.alias))
+  .map((m) => [m.id, m])).values()]
 /** The element whose details are being edited in the modal; null while none is. */
 const details = ref<string | null>(null)
 const keepDetails = async (commands: readonly CanvasCommand[]): Promise<string | null> =>
@@ -250,7 +254,7 @@ function double(e: MouseEvent) {
           v-else-if="mode === 'nest' && selected"
           :element="selected"
           :boxes="ownBoxes.filter((box) => box.alias !== boxOfSelected?.alias)"
-          :members="members.filter((m) => m.alias !== source && !ownBoxes.some((box) => box.alias === m.alias))"
+          :members="containersFor(selected)"
           :ask="asked"
           @box="nestIn"
           @relate="nestUnder"
