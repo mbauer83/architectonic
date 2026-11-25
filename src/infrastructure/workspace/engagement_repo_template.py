@@ -184,6 +184,11 @@ def _scaffold_arch_dirs(path: Path) -> None:
     (path / DIAGRAM_CATALOG / RENDERED).mkdir(parents=True, exist_ok=True)
     # Empty-repo init gets the full current default (base + assurance doc-types).
     ensure_arch_repo_defaults(path, document_schemas=DEFAULT_DOCUMENT_SCHEMAS)
+    # The generated diagram includes are tracked content. Written here, they go into the scaffold's
+    # first commit; written after it (as `arch-init` did), a freshly published repository started dirty.
+    from src.infrastructure.rendering.generate_static_includes import generate_static_includes  # noqa: PLC0415
+
+    generate_static_includes(path)
 
 
 def _commit_scaffold_changes(path: Path, *, commit_author_name: str, commit_author_email: str) -> None:
