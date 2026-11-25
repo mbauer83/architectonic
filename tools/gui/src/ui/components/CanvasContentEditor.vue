@@ -277,6 +277,7 @@ function double(e: MouseEvent) {
         <CanvasDeleteConfirm
           v-else-if="mode === 'delete' && selected"
           :name="selected.name"
+          :entity-id="selected.id"
           :words="words"
           @confirm="apply({ op: 'model.element.delete', artifact_id: selected.id })"
           @remove="onElement('remove')"
