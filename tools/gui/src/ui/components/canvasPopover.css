@@ -51,6 +51,8 @@
 }
 .canvas-pop .cp-btn--danger:hover:not(:disabled) { background: var(--danger-soft); border-color: var(--danger-strong); }
 .canvas-pop .cp-btn--sm { padding: 2px 8px; font-size: 12px; }
+/* A choice that is a whole sentence wraps in the popover's width rather than being cut off. */
+.canvas-pop .cp-btn--sentence { white-space: normal; text-align: left; overflow-wrap: anywhere; }
 .canvas-pop .cp-btn--start { margin-right: auto; }
 .canvas-pop .cp-type { display: inline-flex; gap: 6px; align-items: center; justify-self: start; }
 .canvas-pop .cp-alert {

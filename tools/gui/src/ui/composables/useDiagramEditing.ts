@@ -12,6 +12,8 @@
 import { ref, shallowRef } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
+import type { DiagramContext } from '../../domain'
+import type { AuthoredGrouping } from '../../domain/authoredGrouping'
 import type { ArrangedLayout, StoredLayout } from '../../domain/layout/arrangementLayout'
 import {
   arrangedBy, layoutOf, layoutPatchBetween, patchIsEmpty, shownRoutesOfMoved,
@@ -25,7 +27,7 @@ import { widenedArrangement } from '../../domain/layout/lab/labRouting'
 import { referenceOf, useSessionChanges } from './useSessionChanges'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { membershipOf } from '../../domain/layout/diagramMembership'
-import { composeCanvas, withCommand, withoutDraft } from '../../domain/layout/canvasComposition'
+import { canvasMembers, composeCanvas, withCommand, withoutDraft } from '../../domain/layout/canvasComposition'
 import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import { stableEntityId } from '../../domain/artifactId'
@@ -37,10 +39,20 @@ import { useArrangementSession } from './useArrangementSession'
 
 export type { PendingChange }
 
+/** What a page adds to its edit session: told when a save changed what the diagram holds, the lens it
+ * reads with, and the diagram's context read, which names the elements the session lists. */
+export interface EditingOptions {
+  readonly onMembershipSaved?: () => void
+  readonly lens?: () => ReadingLens | undefined
+  readonly context?: () => DiagramContext | null
+}
+
 export function useDiagramEditing(
   svc: ModelService, diagramId: () => string, membership: () => DrawnMembership | null,
-  onMembershipSaved: () => void = () => {}, lens: () => ReadingLens | undefined = () => undefined,
+  options: EditingOptions = {},
 ) {
+  const onMembershipSaved = options.onMembershipSaved ?? (() => {})
+  const lens = options.lens ?? (() => undefined)
   const session = useArrangementSession(
     (shapes) => svc.drawResizedShapes(diagramId(), shapes),
     (geometry, automatic) => widenedArrangement(geometry, automatic),
@@ -89,7 +101,14 @@ export function useDiagramEditing(
     }
   }
 
-  const { changes, undoStep, redoStep } = useSessionChanges(session, saved)
+  /** Each drawing of *picture* that draws an element, by its name in the model as the session has it. */
+  const members = (picture: LayoutGeometry, state: ArrangementState | null) => {
+    const context = options.context?.()
+    return context ? canvasMembers(context, state, picture) : []
+  }
+  const { changes, undoStep, redoStep } = useSessionChanges(session, saved, {
+    members, stated: () => savedMembers.value?.authored_groupings ?? [],
+  })
 
   const wanted = (): ArrangedLayout | null => {
     const geometry = session.geometry.value
@@ -128,8 +147,8 @@ export function useDiagramEditing(
     if (!written.wrote) {
       throw new Error(`The diagram was not written: ${written.warnings.join(' ') || 'it was refused'}`)
     }
-    // Regrouped, the groupings are the server's to compile: read back what it wrote, never restated here.
-    savedMembers.value = state.regroupings?.length
+    // Regrouped or with boxes edited, the groupings are the server's to identify: read back what it wrote.
+    savedMembers.value = state.regroupings?.length || state.groupings
       ? membershipOf(await Effect.runPromise(svc.getDiagram(diagramId()))) : write
     await reopen()
     onMembershipSaved()
@@ -149,7 +168,7 @@ export function useDiagramEditing(
       // One write when what the diagram holds changes: membership and layout together, so the stored
       // layout always matches the body that write generates (D12).
       if (removed.size > 0 || now.additions?.size || now.commands?.length || now.overlays?.length
-        || now.regroupings?.length || now.occurrences?.length || now.drawnRelations?.length) {
+        || now.regroupings?.length || now.occurrences?.length || now.drawnRelations?.length || now.groupings) {
         await writeMembership(removed, patch)
         return true
       }
@@ -219,8 +238,8 @@ export function useDiagramEditing(
 
   /**
    * *entity*, already on the diagram, drawn once more (03·5): a further drawing with its own id, written
-   * as the diagram's occurrence statement at Save, one undoable step. *at*, on the picture, is where it
-   * is placed; without it the composer places it beside its neighbours.
+   * as the diagram's occurrence statement at Save, one undoable step. *at*, on a picture arranged by hand, is
+   * where it is placed; without it the composer places it beside its neighbours.
    */
   const addOccurrence = async (entity: { artifact_id: string; name: string; display_alias: string }, at?: Point) => {
     const drawn = savedMembers.value
@@ -235,7 +254,7 @@ export function useDiagramEditing(
     return preview({ ...now, occurrences: [...now.occurrences ?? [], occurrence] }, now, true, at && [occurrenceId, at])
   }
 
-  /** *id* drawn on the diagram, as one undoable step; *at*, on the picture, is where it is placed. */
+  /** *id* drawn on the diagram, as one undoable step; *at*, on a picture arranged by hand, is where it is placed. */
   const add = async (id: string, name: string, type?: string, at?: Point) => {
     const drawn = savedMembers.value
     const now = session.state.value
@@ -273,7 +292,8 @@ export function useDiagramEditing(
       const read = carried ? arrangedBy(picture, picture.layout ?? carried) : drawnArrangement(picture)
       const key = place && stableEntityId(place[0])
       const alias = key && picture.elements.find((one) => stableEntityId(one.key ?? '') === key)?.alias
-      const arrangement = place && alias ? placedAt(picture, read, new Map([[alias, place[1]]])) : read
+      // Placed where it was put on a picture arranged by hand; an automatic one is PlantUML's to lay out (D15).
+      const arrangement = place && alias && carried ? placedAt(picture, read, new Map([[alias, place[1]]])) : read
       if (undoable) session.step({ ...next, picture, arrangement })
       else session.open(picture, { ...next, arrangement })
       return true
@@ -337,9 +357,18 @@ export function useDiagramEditing(
   const restack = (aliases: readonly string[], how: Restack) =>
     session.change((geometry, now, where) => restacked(geometry, now, where, aliases, how))
 
+  /** The content *change* makes of the session's, drawn as one undoable step; nothing where it makes none. */
+  const restate = (change: (now: ArrangementState) => ArrangementState | null): Promise<boolean> => {
+    const now = session.state.value
+    const next = now && change(now)
+    return next ? preview(next, now) : Promise.resolve(false)
+  }
+
   return {
     add, propose, session, changes, undoStep, redoStep, loading, saving, error, open, save, discard, returnToAutomatic,
-    remove, restack, nest, addOccurrence, discardDraft, drawRelation,
+    remove, restack, nest, addOccurrence, discardDraft, drawRelation, restate,
+    /** The boxes the diagram states, as last read or saved. */
+    statedGroupings: (): readonly AuthoredGrouping[] => savedMembers.value?.authored_groupings ?? [],
   }
 }
 

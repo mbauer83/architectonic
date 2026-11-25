@@ -68,6 +68,12 @@
    strokes and text, not a nested group, which may be lit. */
 .svg-wrap :deep(.reading-dim) > :not(g):not(title),
 .svg-wrap :deep(:not(g).reading-dim) { opacity: 0.16; transition: opacity 0.15s ease; }
+/* What a Reading panel row points at (05·5): ringed apart from the selection's blue, never dimmed. */
+.svg-wrap :deep(.reading-pointed) > :not(g):not(title) { opacity: 1 !important; }
+.svg-wrap :deep(.reading-pointed) { filter: drop-shadow(0 0 2px var(--paper-warn)) drop-shadow(0 0 4px var(--paper-warn)); }
+.svg-wrap :deep(.reading-pointed) :is(polygon, rect, path, ellipse) {
+  stroke: var(--paper-warn) !important; stroke-width: 3 !important; stroke-dasharray: 6 3;
+}
 .svg-wrap :deep(.reading-dim.svg-hovered) > :not(g):not(title),
 .svg-wrap :deep(.reading-dim[data-conn-id]:hover) > :not(title) { opacity: 0.6; }
 /* Flow, laid over a line as a copy of its stroke: dots travelling in the model direction, or, for a

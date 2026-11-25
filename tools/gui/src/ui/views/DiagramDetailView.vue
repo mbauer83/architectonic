@@ -12,7 +12,7 @@ import { renderMatrixMarkdown } from '../lib/matrixMarkdown'
 import type { C4Navigation } from '../../domain'
 import {
   buildDrilldownByEntityId, c4NavigationOf, diagramNeedsSvg, editRouteFor, editsOnCanvas,
-  editableMetadataByEntityType, isADifferentDiagram, matrixHtmlOf, viewportHint,
+  editableMetadataByEntityType, isADifferentDiagram, matrixHtmlOf, offersAutomaticLayout, viewportHint,
 } from './DiagramDetailView.helpers'
 import { membershipOf } from '../../domain/layout/diagramMembership'
 import DrilldownMenu from '../components/DrilldownMenu.vue'
@@ -136,6 +136,7 @@ const editBar = ref<EditBarHandle | null>(null)
 const edit = useDiagramEditMode(
   svc, diagramId, {
     canvas: editCanvas, bar: editBar, membership: () => membershipOf(detail.value), lens: () => lens.value,
+    context: () => contextQuery.data.value,
     view: panZoom, host: containerRef, large: () => panZoom.fitScale.value < LARGE_BELOW,
   }, load, toast,
 )
@@ -186,11 +187,13 @@ const executeDelete = () => {
       :admin-mode="adminMode"
       :lens="lens"
       :edits-on-canvas="editsOnCanvas(detail)"
+      :lays-out-automatically="offersAutomaticLayout(detail)"
       :editing="editing"
       @sync="syncPanel?.requestSync()"
       @delete="deletePanel?.requestDelete()"
       @edit="edit.enter()"
       @done="edit.done()"
+      @laid-out="load"
     />
 
     <!-- Only while there is nothing to show. A refresh keeps the rendered canvas mounted, because
@@ -278,6 +281,7 @@ const executeDelete = () => {
                     :surround="edit.surround.value"
                     :drafts="drafts.inEdit.value"
                     :pending-lines="drafts.pendingLines.value"
+                    :outlined="edit.outlined.value"
                   />
                 </CanvasContentEditor>
               </div>

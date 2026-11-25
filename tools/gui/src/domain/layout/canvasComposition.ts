@@ -7,6 +7,7 @@ import type {
 } from '../../ports/diagramWriteBodies'
 import { membershipWithout } from './diagramMembership'
 import type { DrawnMembership } from './diagramMembership'
+import type { AuthoredGrouping } from '../authoredGrouping'
 import { connectionParts, stableConnectionId, stableEntityId } from '../artifactId'
 
 import type { DiagramContext, EntityDetail } from '..'
@@ -17,6 +18,8 @@ import { type ArchimateOccurrence, occurrenceItems } from '../archimateOccurrenc
 
 interface Content {
   readonly regroupings?: readonly GroupingIntent[]
+  /** The diagram's boxes as the session states them; absent keeps the diagram's own. */
+  readonly groupings?: readonly AuthoredGrouping[]
   /** Further drawings of elements the diagram already draws, added in this session. */
   readonly occurrences?: readonly ArchimateOccurrence[]
   readonly addedTypes?: ReadonlyMap<string, string>
@@ -41,6 +44,7 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
   const kept = membershipWithout(
     {
       ...drawn,
+      ...(state.groupings ? { authored_groupings: state.groupings } : {}),
       entity_ids: [
         ...drawn.entity_ids,
         ...(state.additions?.keys() ?? []),
@@ -234,4 +238,27 @@ export function draftAliases(context: DiagramContext, state: Content | null, pic
   ])
   return new Set(canvasMembers(context, state, picture)
     .filter((one) => drafts.has(stableEntityId(one.id))).map((one) => one.alias))
+}
+
+/**
+ * The relations a session draws, by stable id: those the diagram draws — as an arrow, or as one element
+ * nested in another, which the context's connections leave out — those drawn from the model in the
+ * session, and those it creates: what is not offered to be drawn again.
+ */
+export const relationsDrawn = (context: DiagramContext, state: Content | null): ReadonlySet<string> => new Set([
+  ...context.connections.map((one) => one.artifact_id), ...context.diagram.connection_ids_used ?? [],
+  ...state?.drawnRelations ?? [],
+  ...(state?.commands ?? []).flatMap((c) => (c.op === 'model.relation.create' ? [c.artifact_id] : [])),
+].map(stableConnectionId))
+
+/** What a session draws, by the element's stable id, to the alias it is drawn under (the first, if several). */
+export const drawnByEntity = (
+  context: DiagramContext, state: Content | null, picture: LayoutGeometry | null,
+): ReadonlyMap<string, string> => {
+  const drawn = new Map<string, string>()
+  for (const member of canvasMembers(context, state, picture)) {
+    const key = stableEntityId(member.id)
+    if (!drawn.has(key)) drawn.set(key, member.alias)
+  }
+  return drawn
 }

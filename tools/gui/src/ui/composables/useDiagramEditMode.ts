@@ -19,6 +19,7 @@ import { type BendRef, withBendsMoved } from '../../domain/layout/lab/labSelecti
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import type { Extent } from '../../domain/layout/geometry'
 import type { ReadingLens } from '../../domain/readingLens'
+import type { DiagramContext } from '../../domain'
 import { extentOfMarks, type OverviewMark } from '../lib/diagramOverview'
 import type { CanvasFocus } from '../components/layoutLab/useCanvasFocus'
 import { useEditPanel } from './useEditPanel'
@@ -76,11 +77,15 @@ export function useDiagramEditMode(
     view: EditWindow; host: Ref<HTMLElement | null>; large: () => boolean
     /** The reader's lens, which the picture being arranged keeps showing (owner, 2026-11-25). */
     lens?: () => ReadingLens
+    /** The diagram's context read: what names the elements in the list of changes. */
+    context?: () => DiagramContext | null
   },
   onLeft: () => void,
   toast: ShowToast,
 ) {
-  const editing = useDiagramEditing(svc, () => diagramId.value, parts.membership, onLeft, () => parts.lens?.())
+  const editing = useDiagramEditing(svc, () => diagramId.value, parts.membership, {
+    onMembershipSaved: onLeft, lens: () => parts.lens?.(), context: parts.context,
+  })
   const active = ref(false)
   const leaving = ref(false)
   const spaceHeld = ref(false)
@@ -103,6 +108,15 @@ export function useDiagramEditMode(
     }) : []
   })
   const selectionExtent = computed(() => extentOfMarks(marks.value))
+  /** The shapes the panel points at — the two ends of a relation its row would draw (01·8), by alias. */
+  const outlined = ref<readonly string[]>([])
+  const outline = (aliases: readonly string[]) => { outlined.value = aliases }
+  /** Select the shape *alias*, as the panel does for an element already drawn, and bring it into view. */
+  const select = (alias: string) => {
+    parts.canvas.value?.select(alias)
+    const extent = session.placement.value?.elements.get(alias) ?? session.placement.value?.boxes.get(alias)
+    if (extent) parts.view.reveal(extent)
+  }
 
   const enter = async () => {
     leaving.value = false
@@ -269,6 +283,7 @@ export function useDiagramEditMode(
 
   return {
     editing, session, active, leaving, spaceHeld, panel, marks, checking, toggleCheck, surround,
+    outlined, outline, select, escape,
     canUndo: computed(() => session.history.value.length > 0),
     canRedo: computed(() => session.future.value.length > 0),
     enter, done, saveAndExit, discardAndExit, keepEditing, panPress,

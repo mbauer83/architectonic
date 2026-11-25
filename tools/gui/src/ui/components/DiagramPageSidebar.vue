@@ -13,6 +13,7 @@ import type { useDiagramPageReader } from '../composables/useDiagramPageReader'
 import type { useDiagramSvgSelection } from '../composables/useDiagramSvgSelection'
 import DiagramEntitySidebar from './DiagramEntitySidebar.vue'
 import DiagramMemberPicker from './DiagramMemberPicker.vue'
+import { drawnByEntity, relationsDrawn } from '../../domain/layout/canvasComposition'
 import DiagramReaderPanel from './DiagramReaderPanel.vue'
 import FullscreenDock from './FullscreenDock.vue'
 
@@ -73,7 +74,13 @@ const choose = (id: string) => {
           v-if="editing && context"
           :context="context"
           :busy="edit.editing.loading.value || edit.editing.saving.value"
-          @add="edit.editing.add"
+          :drawn="drawnByEntity(context, edit.session.state.value, edit.session.geometry.value)"
+          :drawn-relations="relationsDrawn(context, edit.session.state.value)"
+          @add="(entity) => edit.editing.add(entity.artifact_id, entity.name, entity.artifact_type)"
+          @draw="(id) => edit.editing.drawRelation(id)"
+          @select="edit.select"
+          @outline="edit.outline"
+          @outward="edit.escape"
         />
         <DiagramReaderPanel
           v-if="reader.reading.value"

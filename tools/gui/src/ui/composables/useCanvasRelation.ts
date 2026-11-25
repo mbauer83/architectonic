@@ -11,6 +11,8 @@ import type { ModelService } from '../../application/ModelService'
 import type { DiagramContext } from '../../domain'
 import { connectionId, stableConnectionId, stableEntityId } from '../../domain/artifactId'
 import { isRecord } from '../../domain/records'
+import { relationsDrawn } from '../../domain/layout/canvasComposition'
+import { connectionTypeLabel } from '../../domain/connectionTypeLabel'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import type { DiagramEditing } from './useDiagramEditing'
 
@@ -36,13 +38,6 @@ export function useCanvasRelation(
   const currentLine = ref('')
   const member = (alias: string) => members.value.find((e) => e.alias === alias)
 
-  /** The relations the session already draws or creates, by id: what is not offered again. */
-  const drawnIds = (): ReadonlySet<string> => {
-    const now = editing.session.state.value
-    const created = (now?.commands ?? []).flatMap((c) => (c.op === 'model.relation.create' ? [c.artifact_id] : []))
-    return new Set([...context().connections.map((one) => one.artifact_id), ...now?.drawnRelations ?? [], ...created]
-      .map(stableConnectionId))
-  }
 
   /**
    * A relation from the source to *alias*: offered first those the model holds and this diagram does not
@@ -65,7 +60,7 @@ export function useCanvasRelation(
       ])
       if (ends.target.value !== alias || ends.source.value !== from.alias) return
       const same = (one: string, other: string) => stableEntityId(one) === stableEntityId(other)
-      const drawn = drawnIds()
+      const drawn = relationsDrawn(context(), editing.session.state.value)
       inModel.value = held.filter((one) => same(one.source, from.id) && same(one.target, to.id)
         && !drawn.has(stableConnectionId(one.artifact_id))).map((one) => ({ id: one.artifact_id, type: one.conn_type }))
       const types = [...new Set([...permitted.connection_types, ...permitted.symmetric])]
@@ -78,36 +73,62 @@ export function useCanvasRelation(
     }
   }
 
-  /** The drawn relation at *index*, read back with its stated label and any pending edit over the model's. */
-  const editLine = (index: number) => {
+  /**
+   * The drawn relation at *index* as the session has it: its record, the label this diagram states on it,
+   * and its description and multiplicities with any pending edit over the model's. Null for a line that
+   * draws no relation of the context read.
+   */
+  const drawnLine = (index: number) => {
     const row = editing.session.geometry.value?.relations.find((r) => r.index === index)
     const record = row && context().connections.find((c) => c.edge_key === row.key)
-    if (!row || !record) return
-    ends.source.value = row.source
-    ends.target.value = row.target
-    currentLine.value = record.artifact_id
-    options.value = [record.conn_type]
-    kind.value = record.conn_type
-    drawing.value = ''
-    inModel.value = []
+    if (!row || !record) return null
     const pending = editing.session.state.value
-    const prior = context().diagram.extra?.connections
-    const stored = Array.isArray(prior) ? (prior as unknown[]).filter(isRecord) : []
-    const overlays = [...stored, ...(pending?.overlays ?? [])]
-    const overlay = overlays.reverse()
+    const prior: unknown = context().diagram.extra?.connections
+    const stored = Array.isArray(prior) ? prior.filter(isRecord) : []
+    const overlay = [...stored, ...(pending?.overlays ?? [])].reverse()
       .find(r => stableConnectionId(String(r.artifact_id ?? r.connection_id)) === row.key)
     const stated = overlay?.label ?? record.edge_label_override
-    label.value = typeof stated === 'string' ? stated : ''
-    description.value = record.content_text
-    srcCount.value = record.src_multiplicity ?? ''
-    tgtCount.value = record.tgt_multiplicity ?? ''
     const edit = pending?.commands?.find(c => c.artifact_id === record.artifact_id && c.op === 'model.relation.edit')
-    if (edit && 'src_multiplicity' in edit) {
-      description.value = edit.description
-      srcCount.value = edit.src_multiplicity
-      tgtCount.value = edit.tgt_multiplicity
+    const edited = edit && 'src_multiplicity' in edit ? edit : null
+    return {
+      row, record, label: typeof stated === 'string' ? stated : '',
+      description: edited?.description ?? record.content_text,
+      src: edited?.src_multiplicity ?? record.src_multiplicity ?? '',
+      tgt: edited?.tgt_multiplicity ?? record.tgt_multiplicity ?? '',
     }
+  }
+
+  /** The drawn relation at *index*, read back with its stated label and any pending edit over the model's. */
+  const editLine = (index: number) => {
+    const line = drawnLine(index)
+    if (!line) return
+    ends.source.value = line.row.source
+    ends.target.value = line.row.target
+    currentLine.value = line.record.artifact_id
+    options.value = [line.record.conn_type]
+    kind.value = line.record.conn_type
+    drawing.value = ''
+    inModel.value = []
+    label.value = line.label
+    description.value = line.description
+    srcCount.value = line.src
+    tgtCount.value = line.tgt
     opened()
+  }
+
+  /**
+   * The label of the drawn relation at *index*, to be typed in place (02·5): the relation, its sentence,
+   * the label this diagram states, and its multiplicities, which are drawn before the label and are not
+   * part of it. Null for a line that draws no relation of the context read.
+   */
+  const labelOf = (index: number) => {
+    const line = drawnLine(index)
+    return line && {
+      id: line.record.artifact_id, text: line.label,
+      sentence:
+        `${line.record.source_name} — ${connectionTypeLabel(line.record.conn_type)} → ${line.record.target_name}`,
+      multiplicity: line.src || line.tgt ? `${line.src || '·'} → ${line.tgt || '·'}` : '',
+    }
   }
 
   const keep = () => {
@@ -132,6 +153,6 @@ export function useCanvasRelation(
   }
 
   return {
-    options, inModel, drawing, kind, label, srcCount, tgtCount, description, currentLine, pair, editLine, keep,
+    options, inModel, drawing, kind, label, srcCount, tgtCount, description, currentLine, pair, editLine, keep, labelOf,
   }
 }

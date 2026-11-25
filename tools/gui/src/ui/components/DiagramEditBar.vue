@@ -12,6 +12,7 @@ import { useEditingPreferences } from '../composables/useEditingPreferences'
 import { arrowsAcross } from '../lib/arrowsAcross'
 import { usePulse } from '../composables/usePulse'
 import DiagramChangeList from './DiagramChangeList.vue'
+import { useCanvasBoxes } from '../composables/useCanvasBoxes'
 
 const props = defineProps<{ edit: DiagramEditMode }>()
 
@@ -22,6 +23,7 @@ const changes = computed(() => editing.value.changes.value)
 const saving = computed(() => editing.value.saving.value)
 const leaving = computed(() => props.edit.leaving.value)
 const error = computed(() => editing.value.error.value)
+const boxes = useCanvasBoxes(props.edit.editing)
 /** The layout's rule breaches as the canvas marks them, read only while they are asked for. */
 const breaches = computed(() => (props.edit.checking.value ? distinctBreaches(session.value.breaches.value) : []))
 const checkTitle = computed(() => {
@@ -124,6 +126,17 @@ const count = usePulse(
       @click="session.redo()"
     >
       Redo
+    </button>
+    <!-- The layer and type boxes are the diagram's own once one was edited (D9): this gives them back. -->
+    <button
+      v-if="boxes.owned.value"
+      type="button"
+      class="btn btn-plain btn-sm"
+      title="Drop the layer and type boxes written down for this diagram: they are drawn automatically again"
+      data-testid="return-to-automatic-boxes"
+      @click="boxes.automatic()"
+    >
+      Return to automatic boxes
     </button>
     <!-- Check layout (owner): as quiet as its neighbours, off until asked for; on, a count beside it and
          each breach named in its tooltip and on hover over its mark. -->
@@ -278,69 +291,4 @@ const count = usePulse(
   </div>
 </template>
 
-<style scoped>
-.edit-bar {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 10px; margin-bottom: 8px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 12.5px;
-  color: var(--text-2);
-}
-.sp { flex: 1; }
-.vr { width: 1px; align-self: stretch; background: var(--border); }
-.state-chip {
-  display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 4px;
-  font-size: 11.5px; font-weight: 500; background: var(--soft); color: var(--text-2);
-}
-.state-chip.hand { background: var(--accent-soft); color: var(--accent-strong); }
-.state-chip button {
-  background: none; border: none; color: inherit; text-decoration: underline; cursor: pointer;
-  font-size: 11.5px; padding: 0;
-}
-.btn {
-  padding: 3px 10px; border: 1px solid var(--border-strong); border-radius: 6px; font-size: 12px;
-  font-weight: 500; color: var(--text-2); cursor: pointer; white-space: nowrap; background: var(--soft);
-}
-.btn:disabled { opacity: 0.45; cursor: default; }
-.btn-plain { background: var(--surface); }
-.btn-plain:hover:not(:disabled) { background: var(--hover); }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.btn-primary:hover:not(:disabled) { background: var(--accent-strong); }
-.btn-danger { background: var(--surface); border-color: var(--danger-border); color: var(--danger-strong); }
-kbd {
-  font: 10px ui-monospace, monospace; padding: 0 4px; margin-left: 4px; border: 1px solid var(--border-strong);
-  border-bottom-width: 2px; border-radius: 3px; background: var(--surface);
-}
-.none { color: var(--accent-strong); padding: 3px 8px; }
-.changes { position: relative; }
-.summary {
-  background: none; border: none; cursor: pointer; padding: 3px 8px; border-radius: 5px; color: var(--accent-strong);
-  font-size: 12.5px;
-}
-.summary:hover { background: var(--accent-soft); }
-/* Once, when the chip changes hands or a change joins the count; not under reduced motion. */
-.pulse { animation: pulse 1.2s ease-out 1; }
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 var(--accent-ring); background: var(--accent-soft); }
-  40% { box-shadow: 0 0 0 6px var(--accent-ring); }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
-@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
-.leave {
-  display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 6px;
-  background: var(--warn-soft); color: var(--warn-text); border: 1px solid var(--warn-border);
-}
-.err { color: var(--danger-strong); }
-.check { display: inline-flex; align-items: center; gap: 5px; }
-.check svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.3; }
-.check[aria-pressed='true'] { border-color: var(--accent-border); color: var(--accent-strong); }
-.check .count { padding: 0 5px; border-radius: 8px; background: var(--soft); color: var(--text-2); font-size: 11px; }
-.panel-toggle {
-  width: 30px; height: 26px; display: inline-grid; place-items: center; flex: none; cursor: pointer;
-  border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: var(--text-2);
-}
-.panel-toggle svg { width: 18px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.3; }
-.panel-toggle .pane { fill: transparent; stroke: none; }
-.panel-toggle:hover { background: var(--hover); }
-.panel-toggle.on { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-strong); }
-.panel-toggle.on .pane { fill: currentColor; opacity: 0.35; }
-.panel-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-</style>
+<style scoped src="./DiagramEditBar.css"></style>

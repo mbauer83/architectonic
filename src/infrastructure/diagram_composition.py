@@ -127,6 +127,13 @@ class DiagramReplacement(DiagramComposition, _Body, Rehomeable):
     #: the stored layout in the same write that changes the membership, which then drops whatever names
     #: what the diagram no longer holds (D12). So the stored layout always matches the body written.
     layout_patch: LayoutPatch | None = None
+    manual_layout: bool | None = Field(
+        default=None,
+        description=(
+            "false gives a manual-layout diagram's hand-written body up: the body is generated from the "
+            "composition from then on, and the diagram can be laid out. Absent keeps the diagram's own."
+        ),
+    )
     version: str | None = None
     status: str | None = None
     tlp: str | None = None
@@ -324,7 +331,7 @@ def replace_diagram(
             connection_ids_used=composed.connection_ids_used, authored_groupings=body.authored_groupings,
             layout=layout, version=body.version, status=body.status, tlp=body.tlp,
             bindings=composed.conn_bindings or None, viewpoint=body.viewpoint, dry_run=dry_run,
-            committed_repo=committed_repository(repo),
+            committed_repo=committed_repository(repo), manual_layout=body.manual_layout,
         )
 
     if body.commands:

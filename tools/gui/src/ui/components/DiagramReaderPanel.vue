@@ -16,7 +16,7 @@ import { REACH_STEPS } from '../../domain/diagramReading'
 import type { DerivedRow, NotDrawnRow, ReachedRow } from '../../domain/diagramReadingLists'
 import { getDomainColor } from '../lib/domains'
 import { toGlyphKey } from '../lib/glyphKey'
-import { connectionTypeLabel } from '../lib/connectionTypeGuidance'
+import { connectionTypeLabel } from '../../domain/connectionTypeLabel'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 
 const props = defineProps<{
@@ -41,8 +41,12 @@ const emit = defineEmits<{
   clear: []
   select: [id: string]
   hover: [id: string | null]
+  /** The elements a row is about that the picture draws, outlined while it is hovered or focused. */
+  point: [ids: readonly string[]]
 }>()
 
+/** The ends of a not-drawn relation that the picture draws: the selected one, and the other where drawn. */
+const endsDrawn = (row: NotDrawnRow): readonly string[] => (row.otherDrawn ? [row.here, row.other] : [row.here])
 const WAY_WORD = { incoming: 'incoming', outgoing: 'outgoing', undirected: 'either way' } as const
 const FLOW_TITLE = 'Animate the direction of flow along the reading; stays on until switched off'
 const STEP_LABEL: Record<string, string> = { 0: 'none', 1: '1 step', 2: '2 steps', all: 'all' }
@@ -199,10 +203,11 @@ const notDrawnGroups = computed(() => NOT_DRAWN_WAYS
             :key="row.id"
             class="ent-item ent-item--plain"
             tabindex="0"
-            @mouseenter="emit('hover', row.here)"
-            @mouseleave="emit('hover', null)"
-            @focus="emit('hover', row.here)"
-            @blur="emit('hover', null)"
+            :data-testid="`reader-not-drawn-${row.id}`"
+            @mouseenter="emit('point', endsDrawn(row))"
+            @mouseleave="emit('point', [])"
+            @focus="emit('point', endsDrawn(row))"
+            @blur="emit('point', [])"
           >
             <span class="ent-name">{{ row.otherName }}</span>
             <span class="ent-sub">

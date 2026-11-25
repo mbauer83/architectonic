@@ -27,6 +27,7 @@ import { pointsOf } from '../../domain/schemas/diagramLayoutGeometry'
 import { shapedLines, withoutElements } from '../../domain/layout/arrangementLayout'
 import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
 import type { ArchimateOccurrence } from '../../domain/archimateOccurrences'
+import type { AuthoredGrouping } from '../../domain/authoredGrouping'
 import type { ShapeToDraw } from '../../ports/DiagramLayoutRepository'
 
 /** What a session holds at one moment, and what undo returns to: where shapes are, and whether by hand. */
@@ -34,6 +35,8 @@ export interface ArrangementState {
   readonly commands?: readonly CanvasCommand[]
   /** Elements moved into and out of the diagram's own boxes, in order, compiled by the server. */
   readonly regroupings?: readonly GroupingIntent[]
+  /** The diagram's boxes as the session states them, once one was renamed, deleted or added (D9). */
+  readonly groupings?: readonly AuthoredGrouping[]
   /** Further drawings of elements the diagram already draws, added in this session. */
   readonly occurrences?: readonly ArchimateOccurrence[]
   readonly overlays?: readonly Record<string, unknown>[]

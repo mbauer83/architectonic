@@ -8,7 +8,10 @@
  * delete act on the stored diagram, which is not what is on the screen. */
 import type { DiagramDetail } from '../../domain'
 import { EMPTY_READING_LENS, type ReadingLens } from '../../domain/readingLens'
+import { inject, ref } from 'vue'
 import DiagramDownloadMenu from './DiagramDownloadMenu.vue'
+import DiagramAutoLayoutDialog from './DiagramAutoLayoutDialog.vue'
+import { toastKey } from '../keys'
 
 withDefaults(defineProps<{
   detail: DiagramDetail
@@ -22,8 +25,21 @@ withDefaults(defineProps<{
   /** Edited on its canvas, on this page, rather than on the editor's own page. */
   editsOnCanvas?: boolean
   editing?: boolean
-}>(), { lens: () => EMPTY_READING_LENS, editsOnCanvas: false, editing: false })
-const emit = defineEmits<{ sync: []; delete: []; edit: []; done: [] }>()
+  /** Written by hand, and may be given up for a generated body arranged on the canvas. */
+  laysOutAutomatically?: boolean
+}>(), { lens: () => EMPTY_READING_LENS, editsOnCanvas: false, editing: false, laysOutAutomatically: false })
+/** *laid-out*: the hand-written body was given up for a generated one, so the diagram is to be read again. */
+const emit = defineEmits<{ sync: []; delete: []; edit: []; done: []; 'laid-out': [] }>()
+const toast = inject(toastKey, () => undefined)
+
+/** *Lay out automatically…* (A-02.42): asked in its dialog; once done, Edit on the canvas is offered. */
+const layingOut = ref(false)
+const laidOut = () => {
+  layingOut.value = false
+  emit('laid-out')
+  toast('Laid out automatically. It is arranged on its canvas from now on.', 'info', 10000,
+    { label: 'Edit', run: () => emit('edit') })
+}
 </script>
 
 <template>
@@ -75,6 +91,16 @@ const emit = defineEmits<{ sync: []; delete: []; edit: []; done: [] }>()
         Edit
       </RouterLink>
       <button
+        v-if="laysOutAutomatically"
+        type="button"
+        class="edit-btn"
+        data-testid="diagram-lay-out"
+        title="Give the hand-written picture up for a generated one, arranged on the canvas"
+        @click="layingOut = true"
+      >
+        Lay out automatically…
+      </button>
+      <button
         v-if="!isGlobalDiagram"
         class="sync-btn"
         @click="emit('sync')"
@@ -89,6 +115,12 @@ const emit = defineEmits<{ sync: []; delete: []; edit: []; done: [] }>()
         Delete{{ isGlobalDiagram && adminMode ? ' ⚠' : '' }}
       </button>
     </template>
+    <DiagramAutoLayoutDialog
+      v-if="layingOut"
+      :detail="detail"
+      @close="layingOut = false"
+      @laid-out="laidOut"
+    />
   </div>
 </template>
 

@@ -1,4 +1,4 @@
-import { computed, type Ref } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import type { ModelService } from '../../application/ModelService'
 import type { DiagramContext } from '../../domain'
@@ -12,6 +12,9 @@ import { useReadingKeyboard } from './useReadingKeyboard'
 import { drawnExtentOf } from '../lib/svgExtent'
 import { extentOfMarks, type OverviewMark } from '../lib/diagramOverview'
 import { DRAFT_STATUS } from '../../domain/layout/canvasComposition'
+
+/** The class an element a Reading panel row points at carries on the picture. */
+const POINTED = 'reading-pointed'
 
 /**
  * The diagram reader as the diagram page mounts it: the reading (`useDiagramReader`), its address
@@ -98,6 +101,13 @@ export function useDiagramPageReader(options: {
     }
   })
 
+  /** The elements a panel row points at, outlined on the picture apart from the selection's own blue. */
+  const pointed = ref<readonly string[]>([])
+  watch([pointed, selection.nodeElements], ([ids, nodes], [before]) => {
+    for (const id of before ?? []) for (const node of nodes.get(id) ?? []) node.classList.remove(POINTED)
+    for (const id of ids) for (const node of nodes.get(id) ?? []) node.classList.add(POINTED)
+  })
+
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(address.link())
@@ -126,6 +136,7 @@ export function useDiagramPageReader(options: {
       clear: () => selection.clearSelection(),
       select: (id: string) => select([id]),
       hover: (id: string | null) => selection.setHovered(id),
+      point: (ids: readonly string[]) => { pointed.value = ids },
     },
   }
 }

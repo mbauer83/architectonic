@@ -8,6 +8,7 @@ import type { ModelService } from '../../application/ModelService'
 import type { Extent } from '../../domain/layout/geometry'
 import { moved } from '../../domain/layout/lab/labArrangement'
 import { LINE_DRAWING, SHAPE_DRAWING } from '../../domain/layout/lab/__tests__/labDrawingFixtures'
+import type { DiagramContext } from '../../domain'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import type { DiagramReplaceBody } from '../../ports/diagramWriteBodies'
@@ -169,5 +170,76 @@ describe('removing an element from the diagram', () => {
     // One write: the layout travels with the membership, never as a second request after it.
     expect(written[0].layout_patch).toBeDefined()
     expect(sent).toHaveLength(0)
+  })
+})
+
+describe('the boxes a session edits', () => {
+  it('are written with the diagram, and read back so the server\'s ids are what the next edit starts from', async () => {
+    const stated = [{ id: 'g-Front1', label: 'Front office', 'entity-ids': ['APP@1.a'] }]
+    const getDiagram = vi.fn(() => Effect.succeed({ ...MEMBERSHIP, authored_groupings: stated }))
+    const editing = useDiagramEditing(
+      { ...service, previewLayoutGeometry: () => Effect.succeed(geometry), getDiagram } as unknown as ModelService,
+      () => 'ARC@1.a.test', () => MEMBERSHIP,
+    )
+    await editing.open()
+    const boxes = [{ label: 'Front office', 'entity-ids': ['APP@1.a'] }]
+    expect(await editing.restate((now) => ({ ...now, groupings: boxes }))).toBe(true)
+    expect(await editing.save()).toBe(true)
+    expect(written).toHaveLength(1)
+    expect(written[0].authored_groupings).toEqual(boxes)
+    expect(sent).toHaveLength(0)
+    expect(getDiagram).toHaveBeenCalledOnce()
+    expect(editing.statedGroupings()).toEqual(stated)
+  })
+})
+
+describe('an element added at a point', () => {
+  const added: LayoutGeometry = {
+    ...geometry, elements: [...geometry.elements, element('N', 'APP@9.n', at(250, 200, 350, 240))],
+  }
+  const adding = () => useDiagramEditing(
+    { ...service, previewLayoutGeometry: () => Effect.succeed(added) } as unknown as ModelService,
+    () => 'ARC@1.a.test', () => MEMBERSHIP,
+  )
+
+  it('is laid out by PlantUML on an automatic picture, wherever it was dropped', async () => {
+    const editing = adding()
+    await editing.open()
+    await editing.add('APP@9.n', 'New', 'application-component', { x: 40, y: 300 })
+    expect(editing.session.placement.value?.elements.get('N')).toEqual(at(250, 200, 350, 240))
+  })
+
+  it('lands where it was dropped on a picture arranged by hand', async () => {
+    const editing = adding()
+    await editing.open()
+    move(editing, 'C', 30)
+    await editing.add('APP@9.n', 'New', 'application-component', { x: 40, y: 300 })
+    expect(editing.session.placement.value?.elements.get('N')).not.toEqual(at(250, 200, 350, 240))
+  })
+})
+
+describe('the names a session lists', () => {
+  it('are the elements\' names in the model, not the labels the picture draws with their «type»', async () => {
+    const pictured: LayoutGeometry = {
+      ...geometry,
+      elements: geometry.elements.map((one) => ({ ...one, label: `«application component»\n${one.alias}` })),
+    }
+    const context = {
+      entities: [
+        { artifact_id: 'APP@1.a', name: 'Portal', artifact_type: 'application-component' },
+        { artifact_id: 'APP@3.c', name: 'Ledger', artifact_type: 'application-component' },
+      ],
+      suggested_entities: [], diagram: { diagram_entities: {} },
+    } as unknown as DiagramContext
+    const named = useDiagramEditing(
+      { ...service, readLayoutGeometry: () => Effect.succeed(pictured) } as unknown as ModelService,
+      () => 'ARC@1.a.test', () => MEMBERSHIP, { context: () => context },
+    )
+    await named.open()
+    move(named, 'C', 30)
+    expect(named.changes.value.map((change) => change.text)).toEqual(['Arranged: Ledger'])
+    expect(named.undoStep.value).toBe('Arranged: Ledger')
+    named.remove(['A'])
+    expect(named.undoStep.value).toBe('Removed from the diagram: Portal — it stays in the model')
   })
 })

@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import type { WizardSuggestion } from '../composables/useWizardSession'
 import type { AuthoringGuidance } from '../../domain'
-import { connectionCreationGuidance, connectionTypeLabel } from '../lib/connectionTypeGuidance'
+import { connectionCreationGuidance } from '../lib/connectionTypeGuidance'
+import { connectionTypeLabel } from '../../domain/connectionTypeLabel'
 
 /**
  * Ranked connection suggestions with accept/later/dismiss. Each row can disclose the relationship

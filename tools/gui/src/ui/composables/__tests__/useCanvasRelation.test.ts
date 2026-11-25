@@ -15,7 +15,7 @@ const A = 'FNC@1.a.record'
 const B = 'BOB@2.b.repository'
 const held = (type: string) => ({ artifact_id: `${A}---${B}@@${type}`, source: A, target: B, conn_type: type })
 
-const dialog = (drawnOnDiagram: readonly string[]) => {
+const dialog = (drawnOnDiagram: readonly string[], nested: readonly string[] = []) => {
   const svc = {
     getOntologyPair: () => Effect.succeed({
       connection_types: ['archimate-access', 'archimate-association'], symmetric: [], relationship_kind_map: {},
@@ -23,7 +23,10 @@ const dialog = (drawnOnDiagram: readonly string[]) => {
     getConnectionsAmong: () => Effect.succeed([held('archimate-access'), held('archimate-serving')]),
   } as unknown as ModelService
   const editing = { session: { state: ref({ commands: [] }), geometry: ref(null) } } as unknown as DiagramEditing
-  const context = { connections: drawnOnDiagram.map((artifact_id) => ({ artifact_id })) } as unknown as DiagramContext
+  const context = {
+    connections: drawnOnDiagram.map((artifact_id) => ({ artifact_id })),
+    diagram: { connection_ids_used: [...drawnOnDiagram, ...nested] },
+  } as unknown as DiagramContext
   const members = computed(() => [{ alias: 'a', id: A, type: 'function' }, { alias: 'b', id: B, type: 'business-object' }])
   const [apply, draw] = [vi.fn(), vi.fn()]
   const relation = useCanvasRelation(
@@ -39,6 +42,12 @@ describe('the relation dialog between two drawn elements', () => {
     expect(relation.inModel.value.map((one) => one.type)).toEqual(['archimate-access'])
     expect(relation.options.value).toEqual(['archimate-association'])
     expect(relation.drawing.value).toBe(held('archimate-access').artifact_id)
+  })
+
+  it('does not offer a relation the diagram draws by nesting one element in the other', async () => {
+    const { relation } = dialog([held('archimate-serving').artifact_id], [held('archimate-access').artifact_id])
+    await relation.pair('b')
+    expect(relation.inModel.value).toEqual([])
   })
 
   it('draws a model relation chosen, and creates a type chosen instead', async () => {
