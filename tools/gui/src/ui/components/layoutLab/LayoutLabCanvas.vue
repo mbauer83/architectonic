@@ -22,6 +22,7 @@ import LabSelection from './LabSelection.vue'
 import LabLineHandles from './LabLineHandles.vue'
 import LabGuides from './LabGuides.vue'
 import type { PlacedPart } from '../../composables/useSurroundPlacement'
+import { withoutBends } from '../../../domain/layout/lab/labSelection'
 import { useCanvasFocus } from './useCanvasFocus'
 import { useCanvasView } from './useCanvasView'
 import { useLabGesture } from './useLabGesture'
@@ -45,6 +46,11 @@ const focus = useCanvasFocus(props.session, gesture)
 
 const geometry = computed(() => props.session.geometry.value)
 const placement = computed(() => props.session.placement.value)
+/** Where the bends the selection holds are, which the selection marks. */
+const selectedBends = computed(() => gesture.bends.value.flatMap(({ key, index }) => {
+  const at = props.session.arrangement.value?.routes.get(key)?.via?.[index]
+  return at ? [{ x: at[0], y: at[1] }] : []
+}))
 const { viewBox, pixel, aspect, backdropTransform } = useCanvasView(
   props.session, svg, gesture.dragging, () => (props.surround ?? []).map((part) => part.extent))
 
@@ -73,10 +79,20 @@ const selectedLine = computed(() => {
 defineExpose({
   /** Whether anything is selected or focused; and clearing both, as Escape's first step does. */
   hasSelection: computed(() =>
-    gesture.selection.value.length > 0 || lineGesture.line.value !== null || focus.focused.value !== null),
+    gesture.selection.value.length > 0 || gesture.bends.value.length > 0 || lineGesture.line.value !== null
+    || focus.focused.value !== null),
   /** The one shape selected, or null when none or several are; and every shape selected. */
   selected: gesture.selected,
   selection: gesture.selection,
+  /** The bends a selection rectangle picked up (sketch 02·8); and removing them, as Delete does. */
+  selectedBends: gesture.bends,
+  removeSelectedBends: (): boolean => {
+    const picked = gesture.bends.value
+    if (picked.length === 0) return false
+    props.session.change((_drawn, now) => withoutBends(now, picked))
+    gesture.bends.value = []
+    return true
+  },
   /** The line selected, by its place on the picture; null when none is. */
   selectedLine: lineGesture.line,
   clearSelection: () => { gesture.clear(); lineGesture.clear(); focus.clear() },
@@ -265,6 +281,7 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
       :rectangle="gesture.rectangle.value"
       :rule="prefs.rectangle.value.value"
       :ring="focus.ring.value"
+      :bends="selectedBends"
       :pixel="pixel"
       :handle-side="handleSide"
       :readonly="readonly"

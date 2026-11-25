@@ -15,6 +15,7 @@ import { useArrangementSession } from '../../composables/useArrangementSession'
 import { layoutOf } from '../../../domain/layout/arrangementLayout'
 import type { Handle } from '../../../domain/layout/lab/labArrangement'
 import { type ArrangingAids, useLabGesture } from './useLabGesture'
+import { withRouteStated } from '../../../domain/layout/lab/labRouteEdits'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 
@@ -239,4 +240,23 @@ describe('the gesture with the reader’s aids (sketch 02·1, 02·2, 01·5)', ()
     expect(enclosing.selection.value).toEqual([])
   })
 
+  it('picks up the bends a line states inside the rectangle, and carries them with the selection', () => {
+    const { lab, gesture } = opened(SNAPPING)
+    lab.change((_drawn, now) => withRouteStated(now, 'r', { via: [[320, 60], [320, 150]] }))
+    gesture.sweepFrom(down(10, 30))
+    pointer('pointermove', 330, 100)
+    pointer('pointerup', 330, 100)
+    expect(gesture.selection.value).toEqual(['A', 'B'])
+    expect(gesture.bends.value).toEqual([{ key: 'r', index: 0 }])
+
+    press(gesture, 'A', 30, 50)
+    pointer('pointermove', 30, 66)
+    pointer('pointerup', 30, 66)
+    expect(lab.arrangement.value?.routes.get('r')?.via?.[0]).toEqual([320, 76])
+    expect(lab.arrangement.value?.routes.get('r')?.via?.[1]).toEqual([320, 150])
+
+    gesture.sweepFrom(down(550, 380))
+    pointer('pointerup', 550, 380)
+    expect(gesture.bends.value).toEqual([])
+  })
 })

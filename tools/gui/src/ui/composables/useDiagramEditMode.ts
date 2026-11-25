@@ -15,6 +15,7 @@ import type { Ref } from 'vue'
 import type { ModelService } from '../../application/ModelService'
 import { SMALLEST_ELEMENT, movedTogether, resized, resizedExtent } from '../../domain/layout/lab/labArrangement'
 import { GRID } from '../../domain/layout/lab/labSnapping'
+import { type BendRef, withBendsMoved } from '../../domain/layout/lab/labSelection'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import type { Extent } from '../../domain/layout/geometry'
 import type { ReadingLens } from '../../domain/readingLens'
@@ -36,6 +37,8 @@ export interface CanvasHandle {
   readonly selectedLine: number | null
   readonly hasSelection: boolean
   readonly removePickedBend: () => boolean
+  readonly selectedBends: readonly BendRef[]
+  readonly removeSelectedBends: () => boolean
   readonly clearSelection: () => void
   readonly sweepFrom: (event: PointerEvent) => void
   readonly focus: Pick<CanvasFocus, 'step' | 'enter' | 'towards' | 'selectAll'>
@@ -137,11 +140,17 @@ export function useDiagramEditMode(
    * The selection moved by the arrows, or one selected shape resized by Alt and the arrows from its
    * right and bottom edges (Q35): one undoable step each, *by* pixels at a time.
    */
-  const nudge = (selection: readonly string[], [x, y]: readonly [number, number], by: number, resize: boolean) => {
+  const nudge = (
+    selection: readonly string[], bends: readonly BendRef[], [x, y]: readonly [number, number], by: number,
+    resize: boolean,
+  ) => {
     const [alias] = selection
     if (resize && selection.length !== 1) return
     session.change((geometry, from, placement) => {
-      if (!resize) return movedTogether(geometry, from, selection, x * by, y * by)
+      if (!resize) {
+        return movedTogether(geometry, withBendsMoved(geometry, from, bends, selection, x * by, y * by), selection,
+          x * by, y * by)
+      }
       const extent = placement.elements.get(alias) ?? placement.boxes.get(alias)
       const least = placement.boxes.has(alias) ? 1 : SMALLEST_ELEMENT
       return extent ? resized(geometry, from, alias, resizedExtent(extent, 'se', x * by, y * by, least)) : from
@@ -160,7 +169,9 @@ export function useDiagramEditMode(
     const [x, y] = key.direction
     const label = key.fine ? 1 : LABEL_STEP
     if (!canvas || (!key.resize && canvas.nudgeLabel(x * label, y * label))) return Boolean(canvas)
-    if (canvas.selection.length) nudge(canvas.selection, key.direction, key.fine ? 1 : GRID, key.resize)
+    if (canvas.selection.length || canvas.selectedBends.length) {
+      nudge(canvas.selection, canvas.selectedBends, key.direction, key.fine ? 1 : GRID, key.resize)
+    }
     else if (!inCanvas) return false
     else if (canvas.focus.towards({ x, y })) followFocus()
     else parts.view.panBy(x / 5, y / 5)
@@ -179,7 +190,8 @@ export function useDiagramEditMode(
         // rule) — deleting from the model is a menu command, and a line is not removed here.
         if (!canvas?.hasSelection) return false
         if (!canvas.removePickedBend() && canvas.selectedLine === null) {
-          editing.remove(canvas.selection)
+          canvas.removeSelectedBends()
+          if (canvas.selection.length) editing.remove(canvas.selection)
           canvas.clearSelection()
         }
         return true

@@ -5,7 +5,7 @@
  * dashed when it selects what it touches, solid when only what it encloses (sketch 01·5, D20).
  */
 import { computed } from 'vue'
-import type { Extent } from '../../../domain/layout/geometry'
+import type { Extent, Point } from '../../../domain/layout/geometry'
 import { heightOf, widthOf } from '../../../domain/layout/geometry'
 import type { Handle } from '../../../domain/layout/lab/labArrangement'
 import type { Placement } from '../../../domain/layout/lab/labRouting'
@@ -23,6 +23,8 @@ const props = defineProps<{
   /** The shape the keyboard is on, ringed while the keyboard is in use (sketch 01·3); and a screen pixel. */
   ring?: Extent | null
   pixel?: number
+  /** The bends a selection rectangle picked up, marked as selected (sketch 02·8). */
+  bends?: readonly Point[]
 }>()
 const emit = defineEmits<{ handle: [event: PointerEvent, handle: Handle] }>()
 
@@ -77,6 +79,15 @@ const resizable = computed((): Extent | null =>
         @pointerdown="emit('handle', $event, handle)"
       />
     </template>
+    <circle
+      v-for="(at, index) in bends ?? []"
+      :key="`bend-${index}`"
+      class="lab-handles__bend-selected"
+      data-testid="selected-bend"
+      :cx="at.x"
+      :cy="at.y"
+      :r="5 * (pixel ?? 1)"
+    />
     <rect
       v-if="ringed"
       class="lab-focus-ring"
@@ -112,6 +123,10 @@ const resizable = computed((): Extent | null =>
    solid, only what it encloses. */
 .lab-rectangle { fill: var(--paper-accent-soft); stroke: var(--paper-accent); stroke-width: 1px; pointer-events: none; }
 .lab-rectangle--touches { stroke-dasharray: 4 3; }
+.lab-handles__bend-selected {
+  fill: var(--paper-accent); stroke: var(--paper-handle); stroke-width: 1.5px; pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
 /* Keyboard focus: a dashed ring, apart from the selection's outline. */
 .lab-focus-ring {
   fill: none; stroke: var(--paper-accent); stroke-width: 1.5px; stroke-dasharray: 3 3; pointer-events: none;
