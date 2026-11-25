@@ -104,6 +104,14 @@ _WRITES: Mapping[str, tuple[str, frozenset[str]]] = {
     "changes_apply_candidate": (
         "Apply a candidate to the model", frozenset({"changes_apply_candidate", "change_set_apply"}),
     ),
+    "changes_apply_candidate_as_target_state": (
+        "Apply a candidate as a target state beside the baseline",
+        frozenset({"changes_apply_candidate_as_target_state", "change_set_apply_as_target_state"}),
+    ),
+    "changes_move_candidate_into_baseline": (
+        "Move a candidate's target state into the baseline",
+        frozenset({"changes_move_candidate_into_baseline", "change_set_move_into_baseline"}),
+    ),
     "changes_save_candidate_diagram": (
         "Save a candidate's picture as a diagram",
         frozenset({"changes_save_candidate_diagram", "change_set_save_diagram"}),
