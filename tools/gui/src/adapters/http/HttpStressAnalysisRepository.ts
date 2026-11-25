@@ -8,6 +8,7 @@ import {
 import {
   AnalysisEvaluationSchema, CandidateResidualitySchema, HeldOutSchema, StressPerspectivesSchema,
 } from '../../domain/schemas/stressEvaluation'
+import { DiagramLayoutGeometrySchema } from '../../domain/schemas/diagramLayoutGeometry'
 import { encodeIdentitySegment } from '../../domain/identitySegments'
 import type { StressAnalysisRepository } from '../../ports/StressAnalysisRepository'
 import { buildUrl, deleteNoContent, fetchJson, patchJson, postJson } from './httpTransport'
@@ -20,9 +21,9 @@ const documentUrl = (id: string, part: string): string => buildUrl(`/documents/$
 export const stressAnalysisMethods = (): StressAnalysisRepository => ({
   listCandidates: () => fetchJson(buildUrl('/change-sets'), CandidateListSchema)
     .pipe(Effect.map((envelope) => envelope.candidates)),
-  createCandidate: (record, diagram) =>
-    postJson(buildUrl('/change-sets'), { record, ...(diagram ? { diagram } : {}) }, CandidateResponseSchema),
+  createCandidate: (record) => postJson(buildUrl('/change-sets'), { record }, CandidateResponseSchema),
   startAnalysis: (start) => postJson(buildUrl('/stress-analyses'), start, AnalysisStartedSchema),
+  drawScope: (scope, name) => postJson(buildUrl('/scope-drawings'), { scope, name }, DiagramLayoutGeometrySchema),
   deleteCandidate: (id) => deleteNoContent(candidateUrl(id, '', { dry_run: 'false' })),
   rebaseCandidate: (id, basedOn) =>
     postJson(candidateUrl(id, '/rebase'), { based_on: basedOn }, CandidateResponseSchema),

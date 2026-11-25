@@ -30,10 +30,11 @@ _PARENT = "parent"
 _ANSWERS = "answers"
 _SATISFIES = "satisfies"
 _SCOPE = "scope"
+_DIAGRAM = "diagram"
 _CHANGES = "changes"
 
 _REQUIRED = (_ID, _NAME, _STATE, _CHANGES)
-_OPTIONAL = (_RATIONALE, _PARENT, _ANSWERS, _SATISFIES, _SCOPE)
+_OPTIONAL = (_RATIONALE, _PARENT, _ANSWERS, _SATISFIES, _SCOPE, _DIAGRAM)
 
 
 def to_mapping(candidate: CandidateArchitecture) -> dict[str, Any]:
@@ -47,6 +48,7 @@ def to_mapping(candidate: CandidateArchitecture) -> dict[str, Any]:
         _ANSWERS: list(candidate.answers),
         _SATISFIES: list(candidate.satisfies),
         _SCOPE: list(candidate.scope),
+        _DIAGRAM: candidate.diagram,
         _CHANGES: recorded_form.to_mapping(candidate.changes),
     }
     return {key: value for key, value in recorded.items() if key in _REQUIRED or value}
@@ -60,8 +62,10 @@ def from_mapping(recorded: Mapping[str, Any]) -> CandidateArchitecture:
         )
     except MalformedChangeSet as refusal:
         raise MalformedCandidateArchitecture(str(refusal)) from refusal
-    for key in (_ID, _NAME, _STATE, _RATIONALE, _PARENT):
-        if key in recorded and not isinstance(recorded[key], str) and not (key == _PARENT and recorded[key] is None):
+    for key in (_ID, _NAME, _STATE, _RATIONALE, _PARENT, _DIAGRAM):
+        if key in recorded and not isinstance(recorded[key], str) and not (
+            key in (_PARENT, _DIAGRAM) and recorded[key] is None
+        ):
             raise MalformedCandidateArchitecture(f"The candidate field {key!r} must be text.")
     for key in (_ANSWERS, _SATISFIES, _SCOPE):
         if key in recorded and not (
@@ -78,6 +82,7 @@ def from_mapping(recorded: Mapping[str, Any]) -> CandidateArchitecture:
         answers=tuple(recorded.get(_ANSWERS, ())),
         satisfies=tuple(recorded.get(_SATISFIES, ())),
         scope=tuple(recorded.get(_SCOPE, ())),
+        diagram=recorded.get(_DIAGRAM),
     )
 
 

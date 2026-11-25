@@ -10,12 +10,9 @@ type Fields = dict[str, JsonValue]
 
 
 class CandidateCreate(Closed):
-    """A new candidate: its header, optionally scoped by a diagram, optionally with edits recorded in it."""
+    """A new candidate: its header, optionally with edits recorded in it."""
 
     record: CandidateHeader
-    diagram: str | None = Field(
-        None, description="A stored diagram whose entities become the scope. Exclusive with `record.scope`.",
-    )
     operations: list[RecordedEdit] = Field(
         default_factory=list, description="Edits recorded in order, as `POST …/operations` records them.",
     )
@@ -66,10 +63,12 @@ class AnalysisStart(Closed):
     """Start a stress analysis: the document and its naive architecture, in one write."""
 
     title: str = Field(min_length=1)
-    question: str | None = None
-    naive: CandidateHeader = Field(description="The naive architecture's header: a name, and its scope or parent.")
-    scope_diagram: str | None = Field(
-        None, description="The diagram the analysis is drawn on; its entities scope a naive that states none.",
+    context: str | None = Field(
+        None, description="The environment, and the decision the evaluation informs; free text.",
+    )
+    naive: CandidateHeader = Field(
+        description="The architecture under evaluation: a name, and its scope, the diagram it is drawn on, or the "
+        "candidate it stacks on.",
     )
 
 
@@ -84,6 +83,7 @@ class CandidateSummary(Closed):
     state: str
     parent: str | None
     scope: list[str] = Field(description="The model's entities it is read over, by id; empty when started empty.")
+    diagram: str | None = Field(description="The stored diagram it names to be drawn on; null where it names none.")
     operations: int = Field(description="How many operations it records itself, not counting what it stacks on.")
 
 
@@ -146,6 +146,13 @@ class CandidateComparison(CandidateStanding):
     view: ScopedView
     diff: list[ChangeDifference]
     drawing: DiagramLayoutGeometryResponse | None = None
+
+
+class ScopeDrawingRequest(Closed):
+    """A scope that no stored diagram draws, to be drawn as a generated view before a candidate holds it."""
+
+    scope: list[str] = Field(min_length=1, description="The model's entities in the scope, by id in either spelling.")
+    name: str = Field(min_length=1, description="What the generated view is called.")
 
 
 class CandidateSelection(Closed):

@@ -52,7 +52,7 @@ def client(tmp_path: Path) -> Iterator[TestClient]:
 
 def test_a_start_writes_the_naive_and_the_document_naming_it(client: TestClient) -> None:
     started = client.post("/api/stress-analyses", json={
-        "title": "Stress analysis — start", "question": "Does it hold?", "naive": {"name": "Naive architecture"},
+        "title": "Stress analysis — start", "context": "Volumes double.", "naive": {"name": "Naive architecture"},
     })
     assert started.status_code == 200, started.text
     body = started.json()

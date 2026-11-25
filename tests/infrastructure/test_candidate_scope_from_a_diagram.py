@@ -17,11 +17,11 @@ def test_an_entity_drawn_twice_is_scoped_once(tmp_path: Path, monkeypatch: pytes
     """Regression: a diagram drawing one role in two teams refused the candidate as naming it twice."""
     root = repository_in(tmp_path)
     service = candidate_service.CandidateService(root)
-    monkeypatch.setattr(service.index, "get_diagram", lambda _: SimpleNamespace(extra={}))
+    monkeypatch.setattr(service.index, "get_diagram", lambda ref: SimpleNamespace(artifact_id=ref, extra={}))
     occurrences = [SimpleNamespace(artifact_id=ref) for ref in (ENTITY, OTHER, ENTITY)]
     monkeypatch.setattr(candidate_service, "resolve_placed_entities", lambda *_: occurrences)
 
-    created = service.create({"name": "Naive architecture"}, diagram="ARC@1000000003.diagra.diagram")
+    created = service.create({"name": "Naive architecture", "diagram": "ARC@1000000003.diagra.diagram"})
 
     # Held by the stable id, as every operation names an entity (ADR: emitted ids use the short form).
     assert created["record"]["scope"] == [stable_id(ENTITY), stable_id(OTHER)]

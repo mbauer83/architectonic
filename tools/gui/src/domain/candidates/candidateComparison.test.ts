@@ -4,7 +4,7 @@ import { diffMarks } from './canvasMarks'
 import { changedByOthers, commonBase, comparedIds, sharedBases, withOthers } from './candidateComparison'
 
 const candidate = (id: string, parent: string | null = null): CandidateSummary =>
-  ({ id, name: `${id} name`, state: 'draft', parent, scope: [], operations: 0 })
+  ({ id, name: `${id} name`, state: 'draft', parent, scope: [], diagram: null, operations: 0 })
 
 // naive ← queue ← bounded; naive ← queue ← retry; naive ← drift; elsewhere stands alone.
 const ALL = [

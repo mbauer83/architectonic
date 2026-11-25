@@ -6,7 +6,7 @@ import type { CandidateComparison, CandidateSummary } from '../../domain/schemas
 import { type CandidateAccess, useCandidates } from './useCandidates'
 
 const candidate = (id: string, parent: string | null = null): CandidateSummary =>
-  ({ id, name: `${id} name`, state: 'draft', parent, scope: [], operations: 0 })
+  ({ id, name: `${id} name`, state: 'draft', parent, scope: [], diagram: null, operations: 0 })
 
 const comparisonOf = (id: string, base: string): CandidateComparison =>
   ({ candidate: id, base, standing: [], stack: [], view: { entities: [], connections: [] }, diff: [] })
@@ -17,9 +17,9 @@ const fakeAccess = (initial: CandidateSummary[], refuseDelete = false) => {
   const calls: string[] = []
   const access: CandidateAccess = {
     listCandidates: () => Effect.succeed([...store]),
-    createCandidate: (record, diagram) => {
+    createCandidate: (record) => {
       const id = `new-${store.length}`
-      calls.push(`create ${JSON.stringify(record)} ${diagram ?? '-'}`)
+      calls.push(`create ${JSON.stringify(record)}`)
       store.push(candidate(id, typeof record.parent === 'string' ? record.parent : null))
       return Effect.succeed({ record: { id, ...record }, version: 'v1' })
     },
@@ -95,14 +95,14 @@ describe('useCandidates', () => {
     const { access, calls } = fakeAccess(ALL)
     const candidates = useCandidates(access, { scopeDiagram: () => '' })
     await candidates.load()
-    const scoped = await candidates.create({ name: 'From a diagram' }, 'DIA-2')
+    const scoped = await candidates.create({ name: 'From a diagram', diagram: 'DIA-2' })
     expect(scoped).toBe('new-4')
     expect(candidates.all.value.some((one) => one.id === 'new-4')).toBe(true)
     const stacked = await candidates.stackOn('bounded', 'On top')
     expect(candidates.selected.value).toBe(stacked)
     expect(candidates.against.value).toBe('bounded')
     expect(calls.slice(0, 2)).toEqual([
-      'create {"name":"From a diagram"} DIA-2', 'create {"name":"On top","parent":"bounded"} -',
+      'create {"name":"From a diagram","diagram":"DIA-2"}', 'create {"name":"On top","parent":"bounded"}',
     ])
   })
 

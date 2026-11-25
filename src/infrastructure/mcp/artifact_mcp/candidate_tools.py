@@ -65,7 +65,9 @@ def change_set_compare(
     artifact_id: CandidateId,
     base: Annotated[str, Field(description="`model`, `naive`, or another candidate's id.")] = "model",
     naive: Annotated[str | None, Field(description="The naive candidate's id, with base `naive`.")] = None,
-    diagram: Annotated[str | None, Field(description="A stored diagram whose geometry is added.")] = None,
+    diagram: Annotated[
+        str | None, Field(description="A stored diagram to draw on, instead of the one the candidate is drawn on."),
+    ] = None,
     repo_root: RepoRoot = None,
 ) -> dict[str, Any]:
     return _service(repo_root).compare(artifact_id, base, naive, diagram, process_runtime_catalogs().ontology)
@@ -84,11 +86,10 @@ def change_set_check(
 
 def change_set_create(
     record: CandidateHeader,
-    diagram: Annotated[str | None, Field(description="A stored diagram whose entities become the scope.")] = None,
     operations: Annotated[list[RecordedEdit] | None, Field(description="Edits recorded in the same write.")] = None,
     repo_root: RepoRoot = None,
 ) -> dict[str, Any]:
-    return _service(repo_root).create(record.model_dump(exclude_unset=True), diagram, _dumped(operations or []))
+    return _service(repo_root).create(record.model_dump(exclude_unset=True), _dumped(operations or []))
 
 
 def change_set_record(
@@ -126,8 +127,9 @@ def change_set_apply(artifact_id: CandidateId, dry_run: bool = True, repo_root: 
 def analysis_start(
     title: Annotated[str, Field(min_length=1, description="The analysis document's title.")],
     naive: CandidateHeader,
-    question: Annotated[str | None, Field(description="The question the analysis asks.")] = None,
-    scope_diagram: Annotated[str | None, Field(description="The diagram the analysis is drawn on.")] = None,
+    context: Annotated[
+        str | None, Field(description="The environment, and the decision the evaluation informs; free text."),
+    ] = None,
     repo_root: RepoRoot = None,
 ) -> dict[str, Any]:
     roots = _roots(repo_root)
@@ -135,7 +137,7 @@ def analysis_start(
     writer = document_writer(roots[0], verifier_for(roots_key(roots), include_registry=False), clear_repo_caches)
     try:
         return CandidateService(roots[0]).start(
-            title, naive.model_dump(exclude_unset=True), writer, question=question, scope_diagram=scope_diagram,
+            title, naive.model_dump(exclude_unset=True), writer, context=context,
         )
     finally:
         mutation_context.finalize()

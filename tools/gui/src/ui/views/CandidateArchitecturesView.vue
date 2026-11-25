@@ -39,9 +39,13 @@ const canCreate = computed(() => name.value.trim() !== '' && !busy.value
 
 const create = async () => {
   busy.value = true
-  const record = { name: name.value.trim(), ...(origin.value === 'parent' ? { parent: parent.value } : {}) }
   const scoped = origin.value === 'diagram' ? diagram.value : undefined
-  const id = await catalog.create(record, scoped)
+  const record = {
+    name: name.value.trim(),
+    ...(origin.value === 'parent' ? { parent: parent.value } : {}),
+    ...(scoped ? { diagram: scoped } : {}),
+  }
+  const id = await catalog.create(record)
   busy.value = false
   if (!id) return
   creating.value = false
@@ -89,7 +93,7 @@ onMounted(async () => {
     <p class="lead">
       A candidate architecture proposes changes to the model without making them. Each one records its
       operations against what it stacks on — the current model, or another candidate — and nothing
-      reaches the model before it is committed.
+      reaches the model before it is applied.
     </p>
     <form
       v-if="creating"

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, TypeAlias
 
 from src.application.artifacts.document_table_rows import DocumentTables, tables_of_stored_document
+from src.application.artifacts.repository import ArtifactRepository
 from src.application.change_sets.base import record_revision
 from src.application.change_sets.candidate_apply import TERMINAL, application_of
 from src.application.change_sets.candidate_architecture import CandidateArchitecture
@@ -24,7 +25,7 @@ from src.application.change_sets.change_set import ChangeSet
 from src.application.change_sets.recorded_form import operation_to_mapping
 from src.application.change_sets.recorded_form import to_mapping as set_to_mapping
 from src.application.change_sets.recording import recorded
-from src.application.change_sets.stacking import stack_of
+from src.application.change_sets.stacking import drawn_on, stack_of
 from src.application.identifier_allocator import get_default_allocator
 from src.application.modeling.artifact_write import generate_entity_id
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds
@@ -34,7 +35,7 @@ from src.application.verification.artifact_verifier_registry import ArtifactRegi
 from src.application.viewpoints.placed_occurrences import resolve_placed_entities
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.modules.module_types import EntityTypeName
-from src.domain.repository.repo_default_stress_analysis import NAIVE_CANDIDATE, STRESS_ANALYSIS
+from src.domain.repository.repo_default_stress_analysis import ANALYSIS_CONTEXT, NAIVE_CANDIDATE, STRESS_ANALYSIS
 from src.infrastructure.app_bootstrap import get_module_registry
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
 from src.infrastructure.candidates.apply import write_operations
@@ -44,9 +45,8 @@ from src.infrastructure.candidates.repository import (
     CandidateConflict,
     NotStored,
 )
-from src.infrastructure.rendering.layout.diagram_geometry import stored_geometry
+from src.infrastructure.candidates.scope_drawing import NoStoredDiagram, generated_drawing, stored_drawing
 from src.infrastructure.write.artifact_write.document import create_document
-from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
 from src.infrastructure.write.artifact_write.types import WriteResult
 
 #: The analysis document's writer, bound by the transport to its verifier: title, frontmatter, dry run.
@@ -62,7 +62,7 @@ class CandidateService:
 
     def list(self) -> list[dict[str, Any]]:
         return [{"id": c.id, "name": c.name, "state": c.state, "parent": c.parent_id,
-                 "scope": list(c.scope), "operations": len(c.changes.operations)}
+                 "scope": list(c.scope), "diagram": c.diagram, "operations": len(c.changes.operations)}
                 for c in self.store.list()]
 
     def resolved(self, ref: str) -> str:
@@ -87,49 +87,46 @@ class CandidateService:
         notify_paths_changed([self.store.path(candidate.id)])
         return {"record": to_mapping(candidate), "version": version}
 
-    def create(
-        self, record: Mapping[str, Any], diagram: str | None = None, edits: Sequence[Mapping[str, Any]] = (),
-    ) -> dict[str, Any]:
-        """A new candidate from its header, scoped by *diagram* where named, with *edits* recorded, in one write."""
+    def create(self, record: Mapping[str, Any], edits: Sequence[Mapping[str, Any]] = ()) -> dict[str, Any]:
+        """A new candidate from its header, with *edits* recorded, in one write.
+
+        A header that names the diagram it is drawn on and states no scope is scoped by what the diagram draws.
+        """
         body = {key: value for key, value in record.items() if value is not None}
         body.setdefault("state", "draft")
         body.setdefault("changes", set_to_mapping(ChangeSet((), self.index.read_model_version().etag)))
-        if diagram:
-            if "scope" in body:
-                raise ValueError("Select either diagram scope or explicit scope.")
-            drawing = self.index.get_diagram(diagram)
+        if diagram := body.get("diagram"):
+            drawing = self.index.get_diagram(str(diagram))
             if drawing is None:
                 raise NotStored(f"No diagram {diagram} is stored.")
-            # A diagram may draw one entity more than once; the scope is the entities, each once.
-            placed = resolve_placed_entities(dict(drawing.extra), self.registry)
-            body["scope"] = list(dict.fromkeys(canonical_entity_key(e.artifact_id) for e in placed))
+            body["diagram"] = drawing.artifact_id
+            if "scope" not in body:
+                # A diagram may draw one entity more than once; the scope is the entities, each once.
+                placed = resolve_placed_entities(dict(drawing.extra), self.registry)
+                body["scope"] = list(dict.fromkeys(canonical_entity_key(e.artifact_id) for e in placed))
         if edits:
             body["id"] = body.get("id") or generate_entity_id(str(KIND.id_prefix), str(body.get("name") or ""))
             body = to_mapping(self._recorded_all(from_mapping(body), edits))
         return self.save(body, None)
 
     def start(
-        self, title: str, naive: Mapping[str, Any], write_document: DocumentWriter,
-        *, question: str | None = None, scope_diagram: str | None = None,
+        self, title: str, naive: Mapping[str, Any], write_document: DocumentWriter, *, context: str | None = None,
     ) -> dict[str, Any]:
         """Start an analysis: its naive architecture and the document naming it, both or neither.
 
         The document is planned before anything is written, so the refusals a plan can see leave
         nothing behind; a refusal only the write sees takes the naive architecture back with it. The
-        naive states its own scope, or takes the scope diagram's entities when it states none.
+        naive owns the scope and the diagram it is drawn on; the document names the naive and, where
+        given, the *context* the evaluation is made in.
         """
         record = dict(naive)
         record.setdefault("id", generate_entity_id(str(KIND.id_prefix), str(record.get("name") or "")))
         ref = str(record["id"])
-        frontmatter: dict[str, object] = {NAIVE_CANDIDATE: ref}
-        if question:
-            frontmatter["question"] = question
-        if scope_diagram:
-            frontmatter["scope-diagram"] = scope_diagram
+        frontmatter: dict[str, object] = {NAIVE_CANDIDATE: ref, **({ANALYSIS_CONTEXT: context} if context else {})}
         _refuse_unwritten(write_document(title, frontmatter, True), wrote=False)
         if self.store.find(ref) is not None:
             raise CandidateConflict(f"{ref} already exists; a naive architecture starts as a new candidate.")
-        created = self.create(record, None if "scope" in record else scope_diagram)
+        created = self.create(record)
         try:
             written = write_document(title, frontmatter, False)
             _refuse_unwritten(written, wrote=True)
@@ -277,14 +274,24 @@ class CandidateService:
     def compare(
         self, ref: str, base: str, naive: str | None, diagram: str | None, ontology: DeclaresElementKinds,
     ) -> dict[str, Any]:
-        result = comparison(self.store.require(ref), self.store, self.registry, base=base, naive=naive)
-        if diagram:
-            record = self.index.get_diagram(diagram)
-            if record is None:
-                raise NotStored(f"No diagram {diagram} is stored.")
-            parsed = parse_diagram_file(record.path)
-            result["drawing"] = stored_geometry(parsed, record.artifact_id, self.root, ontology)
-        return result
+        """*ref* against *base*, with the drawing it is read on: *diagram*, else what its stack is drawn on."""
+        candidate = self.store.require(ref)
+        result = comparison(candidate, self.store, self.registry, base=base, naive=naive)
+        stack = stack_of(candidate, self.store.find)
+        drawing = self.drawing(diagram or drawn_on(stack), [ref for layer in stack for ref in layer.scope],
+                               candidate.name, ontology)
+        return result | ({"drawing": drawing} if drawing else {})
+
+    def drawing(
+        self, diagram: str | None, scope: Sequence[str], name: str, ontology: DeclaresElementKinds,
+    ) -> dict[str, Any] | None:
+        """The stored *diagram*'s geometry, else a view generated from *scope*; None where there is neither."""
+        repo = ArtifactRepository(self.index)
+        try:
+            return (stored_drawing(repo, diagram, self.root, ontology) if diagram
+                    else generated_drawing(repo, scope, name, self.root, ontology))
+        except NoStoredDiagram as missing:
+            raise NotStored(str(missing)) from missing
 
     def analysis_tables(self, ref: str) -> tuple[str, str, DocumentTables]:
         """The analysis document's id, its naive candidate's id and its typed tables; refused for any other document."""

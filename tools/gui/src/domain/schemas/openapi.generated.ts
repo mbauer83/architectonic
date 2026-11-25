@@ -3110,6 +3110,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/scope-drawings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draw a generated view of a scope no stored diagram draws
+         * @description The model's entities in the scope and the relations among them, laid out as a candidate with no stored
+         *     diagram is drawn: what a scope chosen by a viewpoint or a search previews before an analysis starts. Writes
+         *     nothing. 422 when none of the scope is in the model.
+         */
+        post: operations["changes_draw_scope"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/scratchpads": {
         parameters: {
             query?: never;
@@ -4299,15 +4321,13 @@ export interface components {
          * @description Start a stress analysis: the document and its naive architecture, in one write.
          */
         AnalysisStart: {
-            /** @description The naive architecture's header: a name, and its scope or parent. */
-            naive: components["schemas"]["CandidateHeader"];
-            /** Question */
-            question?: string | null;
             /**
-             * Scope Diagram
-             * @description The diagram the analysis is drawn on; its entities scope a naive that states none.
+             * Context
+             * @description The environment, and the decision the evaluation informs; free text.
              */
-            scope_diagram?: string | null;
+            context?: string | null;
+            /** @description The architecture under evaluation: a name, and its scope, the diagram it is drawn on, or the candidate it stacks on. */
+            naive: components["schemas"]["CandidateHeader"];
             /** Title */
             title: string;
         };
@@ -6175,14 +6195,9 @@ export interface components {
         };
         /**
          * CandidateCreate
-         * @description A new candidate: its header, optionally scoped by a diagram, optionally with edits recorded in it.
+         * @description A new candidate: its header, optionally with edits recorded in it.
          */
         CandidateCreate: {
-            /**
-             * Diagram
-             * @description A stored diagram whose entities become the scope. Exclusive with `record.scope`.
-             */
-            diagram?: string | null;
             /**
              * Operations
              * @description Edits recorded in order, as `POST …/operations` records them.
@@ -6230,6 +6245,11 @@ export interface components {
              */
             answers?: string[] | null;
             /**
+             * Diagram
+             * @description The stored diagram it is drawn on, by id. Where `scope` is omitted, the diagram's entities become the scope.
+             */
+            diagram?: string | null;
+            /**
              * Id
              * @description Its id, when the caller chooses one (`CAND@epoch.random.slug`); minted if omitted.
              */
@@ -6253,7 +6273,7 @@ export interface components {
             satisfies?: string[] | null;
             /**
              * Scope
-             * @description The model's entities it is read over without changing them. Exclusive with `diagram`.
+             * @description The model's entities it is read over without changing them. Omitted with `diagram`: the diagram's entities.
              */
             scope?: string[] | null;
             /**
@@ -6308,6 +6328,11 @@ export interface components {
             changes?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+            /**
+             * Diagram
+             * @description The stored diagram it is drawn on; null draws it on what it stacks on.
+             */
+            diagram?: string | null;
             /** Name */
             name?: string | null;
             /** Parent */
@@ -6362,6 +6387,11 @@ export interface components {
         };
         /** CandidateSummary */
         CandidateSummary: {
+            /**
+             * Diagram
+             * @description The stored diagram it names to be drawn on; null where it names none.
+             */
+            diagram: string | null;
             /** Id */
             id: string;
             /** Name */
@@ -13420,6 +13450,22 @@ export interface components {
             /** Id */
             id: string;
         };
+        /**
+         * ScopeDrawingRequest
+         * @description A scope that no stored diagram draws, to be drawn as a generated view before a candidate holds it.
+         */
+        ScopeDrawingRequest: {
+            /**
+             * Name
+             * @description What the generated view is called.
+             */
+            name: string;
+            /**
+             * Scope
+             * @description The model's entities in the scope, by id in either spelling.
+             */
+            scope: string[];
+        };
         /** ScopedView */
         ScopedView: {
             /** Connections */
@@ -19418,7 +19464,7 @@ export interface operations {
             query?: {
                 /** @description Model, naive or a candidate id. */
                 base?: string;
-                /** @description Stored diagram for canvas geometry. */
+                /** @description A stored diagram to draw on, instead of the one the candidate is drawn on. */
                 diagram?: string | null;
                 /** @description Naive candidate id when base is naive. */
                 naive?: string | null;
@@ -26381,6 +26427,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RelationNotationsResponse"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    changes_draw_scope: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScopeDrawingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagramLayoutGeometryResponse"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Request validation failed */

@@ -17,6 +17,8 @@ export const CandidateSummarySchema = Schema.Struct({
   state: Schema.String,
   parent: Schema.NullOr(Schema.String),
   scope: Schema.Array(Schema.String),
+  /** The stored diagram it names to be drawn on; null where it is drawn on what it stacks on, or generated. */
+  diagram: Schema.NullOr(Schema.String),
   operations: Schema.Number,
 })
 export type CandidateSummary = typeof CandidateSummarySchema.Type

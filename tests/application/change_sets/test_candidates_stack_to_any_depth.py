@@ -13,10 +13,11 @@ from src.application.change_sets.candidate_architecture import (
     CandidateArchitecture,
     MalformedCandidateArchitecture,
 )
+from src.application.change_sets.candidate_recorded_form import from_mapping, to_mapping
 from src.application.change_sets.composition import compose
 from src.application.change_sets.operations import AddConnection
 from src.application.change_sets.reading import RecordedReading
-from src.application.change_sets.stacking import descendants, sets_beneath, stack_of
+from src.application.change_sets.stacking import descendants, drawn_on, sets_beneath, stack_of
 from tests.support.change_sets import candidate, create, edit, joins
 
 _A = "ENT@1.a"
@@ -82,3 +83,25 @@ class TestDescendants:
         ]
         assert descendants("CA-naive", held) == {"CA-a", "CA-b"}
         assert descendants("CA-b", held) == frozenset()
+
+
+class TestWhatAStackIsDrawnOn:
+    def test_the_nearest_layer_naming_a_diagram_decides(self) -> None:
+        naive = candidate(id="CA-naive", diagram="ARC@1.scope")
+        middle = candidate(id="CA-mid", parent_id="CA-naive")
+        top = candidate(id="CA-top", parent_id="CA-mid", diagram="ARC@2.closer")
+
+        assert drawn_on(stack_of(middle, _finder(naive))) == "ARC@1.scope"
+        assert drawn_on(stack_of(top, _finder(naive, middle))) == "ARC@2.closer"
+
+    def test_a_stack_naming_none_is_drawn_on_none(self) -> None:
+        assert drawn_on((candidate(),)) is None
+
+    def test_the_diagram_survives_being_written_down_and_read_back(self) -> None:
+        drawn = candidate(id="CA-drawn", diagram="ARC@1.scope")
+        assert from_mapping(to_mapping(drawn)) == drawn
+        assert "diagram" not in to_mapping(candidate())
+
+    def test_an_empty_diagram_is_refused(self) -> None:
+        with pytest.raises(MalformedCandidateArchitecture, match="empty diagram"):
+            candidate(diagram="")

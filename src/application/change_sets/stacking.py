@@ -85,3 +85,8 @@ def _refuse_reused_aliases(stack: tuple[CandidateArchitecture, ...]) -> None:
             "candidate in one stack, so a reference to it could not say which entity it means. "
             "Give the upper candidate's create another alias."
         )
+
+
+def drawn_on(stack: tuple[CandidateArchitecture, ...]) -> str | None:
+    """The stored diagram the top of *stack* is drawn on: the nearest one a layer names, top first."""
+    return next((layer.diagram for layer in reversed(stack) if layer.diagram), None)
