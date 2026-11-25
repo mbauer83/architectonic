@@ -16,6 +16,7 @@ from src.config.settings import request_thread_dump_seconds, slow_request_warnin
 from src.infrastructure.artifact_index.coordination import get_write_queue_state_snapshot
 from src.infrastructure.backend._teardown import teardown_steps
 from src.infrastructure.backend.cache_directive import apply_cache_directive
+from src.infrastructure.backend.host_guard import HostGuard
 from src.infrastructure.backend.read_model_caching import conditional_read_middleware
 from src.infrastructure.backend.request_body_limit import RequestBodyLimit
 from src.infrastructure.backend.shutdown import run_teardown
@@ -350,6 +351,9 @@ def _build_app(credentials: "GitCredentials | None" = None):  # type: ignore[no-
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    # Outermost: a request addressed to a name this backend does not serve is refused before any
+    # other layer, the MCP mounts and the GUI's files included (DNS rebinding).
+    app.add_middleware(HostGuard)
 
     app.add_api_route("/health", _health_check, include_in_schema=False)
 
