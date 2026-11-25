@@ -17,6 +17,7 @@ import CanvasConnectTarget from './CanvasConnectTarget.vue'
 import CanvasRelationForm from './CanvasRelationForm.vue'
 import CanvasRenameForm from './CanvasRenameForm.vue'
 import CanvasDeleteConfirm from './CanvasDeleteConfirm.vue'
+import CanvasDetailsDialog from './CanvasDetailsDialog.vue'
 import { elementMenuItems, restackOf } from './canvasElementMenu'
 import { entityDetailRoute } from '../router/artifactRoutes'
 import { asksForTheMenu, isOnALine, selectedLineMiddle } from './lineMenuPlace'
@@ -73,6 +74,10 @@ function onElement(choice: string) {
     close(true)
   } else if (choice === 'rename') rename(source.value)
   else if (choice === 'connect') mode.value = 'target'
+  else if (choice === 'details') {
+    details.value = el.id
+    close()
+  }
   else if (choice === 'delete') mode.value = 'delete'
   else if (choice === 'open') {
     window.open(router.resolve(entityDetailRoute(el.id)).href, '_blank', 'noopener')
@@ -82,6 +87,10 @@ function onElement(choice: string) {
     close(true)
   }
 }
+/** The element whose details are being edited in the modal; null while none is. */
+const details = ref<string | null>(null)
+const keepDetails = async (commands: readonly CanvasCommand[]): Promise<string | null> =>
+  await props.editing.propose(commands) ? null : props.editing.error.value ?? 'The drawing has changed. Try again.'
 const addFound = (entity: EntityDisplayInfo) => {
   void props.editing.add(entity.artifact_id, entity.name, entity.artifact_type)
   close(true)
@@ -169,6 +178,14 @@ function double(e: MouseEvent) {
     >
       {{ several.length > 1 ? `${several.length} items selected` : '' }}
     </p>
+    <CanvasDetailsDialog
+      v-if="details"
+      :key="details"
+      :artifact-id="details"
+      :pending="editing.session.state.value?.commands ?? []"
+      :keep="keepDetails"
+      @close="details = null; host?.focus({ preventScroll: true })"
+    />
     <Teleport to="body">
       <div
         v-if="mode"

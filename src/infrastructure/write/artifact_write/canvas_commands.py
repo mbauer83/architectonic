@@ -20,7 +20,7 @@ from .connection import add_connection
 from .connection_edit import edit_connection
 from .entity import create_entity
 from .entity_delete import delete_entity
-from .entity_edit import edit_entity
+from .entity_edit import _UNSET, edit_entity
 from .staged_state import StagedStore
 from .types import WriteResult
 
@@ -45,6 +45,26 @@ class RenameElement:
 
 
 @dataclass(frozen=True)
+class EditElement:
+    """An element's details as its entity form edits them (`edit_entity`); a field left None is not changed.
+
+    `properties` and `attribute_types` are patches key by key, as the form sends them: a key mapped to
+    None is removed, an omitted key is kept.
+    """
+
+    op: Literal["model.element.edit"]
+    artifact_id: str
+    summary: str | None = None
+    notes: str | None = None
+    status: str | None = None
+    group: str | None = None
+    keywords: tuple[str, ...] | None = None
+    specializations: tuple[str, ...] | None = None
+    properties: dict[str, str | None] | None = None
+    attribute_types: dict[str, str | None] | None = None
+
+
+@dataclass(frozen=True)
 class DeleteElement:
     op: Literal["model.element.delete"]
     artifact_id: str
@@ -59,7 +79,16 @@ class ConnectElements:
     tgt_multiplicity: str = ""
 
 
-type CanvasCommand = CreateElement | RenameElement | DeleteElement | ConnectElements
+def _stated(value: object) -> object:
+    """*value* as `edit_entity` reads a field: None, which the command uses for "not stated", is unset."""
+    return _UNSET if value is None else value
+
+
+def _listed(values: tuple[str, ...] | None) -> object:
+    return _UNSET if values is None else list(values)
+
+
+type CanvasCommand = CreateElement | RenameElement | EditElement | DeleteElement | ConnectElements
 type SaveDiagram = Callable[[Path, StagedStore, ArtifactVerifier, Callable[[Path], None], bool], WriteResult]
 
 
@@ -110,6 +139,16 @@ def canvas_save(
                     require(edit_entity(
                         repo_root=staged, registry=registry, verifier=verifier, clear_repo_caches=touched.add,
                         artifact_id=command.artifact_id, name=command.name, repo=live_repo, dry_run=False,
+                    ))
+                case EditElement():
+                    require(edit_entity(
+                        repo_root=staged, registry=registry, verifier=verifier, clear_repo_caches=touched.add,
+                        artifact_id=command.artifact_id, repo=live_repo, dry_run=False,
+                        summary=_stated(command.summary), notes=_stated(command.notes),
+                        keywords=_listed(command.keywords),
+                        specializations=_listed(command.specializations),
+                        properties=_stated(command.properties), attribute_types=_stated(command.attribute_types),
+                        status=command.status, group=command.group,
                     ))
                 case ConnectElements():
                     source, target, kind = connection_id_as_written(command.artifact_id)

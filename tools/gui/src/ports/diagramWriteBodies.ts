@@ -48,6 +48,7 @@ export type CanvasCommand =
       attributes?: Record<string, string>
     }
   | { op: 'model.element.rename'; artifact_id: string; name: string }
+  | ({ op: 'model.element.edit'; artifact_id: string } & ElementDetailsEdit)
   | { op: 'model.element.delete'; artifact_id: string }
   | {
       op: 'model.relation.create' | 'model.relation.edit'
@@ -56,6 +57,21 @@ export type CanvasCommand =
       src_multiplicity: string
       tgt_multiplicity: string
     }
+
+/**
+ * An element's details as its entity form edits them, kept in a canvas session until Save: the fields
+ * `editEntity` takes, an omitted one left as it is; `properties` and `attribute_types` patch key by key.
+ */
+export interface ElementDetailsEdit {
+  summary?: string
+  notes?: string
+  status?: string
+  group?: string
+  keywords?: string[]
+  specializations?: string[]
+  properties?: Record<string, string | null>
+  attribute_types?: Record<string, string | null>
+}
 
 export type DiagramReplaceBody = DiagramWriteBody & {
   layout_patch?: LayoutPatch

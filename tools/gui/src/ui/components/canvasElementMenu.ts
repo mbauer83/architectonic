@@ -8,7 +8,7 @@ import type { CanvasMenuItem } from './canvasMenu'
 import type { CanvasWords } from './canvasWords'
 import type { Restack } from '../../domain/layout/stacking'
 
-export type ElementMenuChoice = 'rename' | 'connect' | 'open' | 'remove' | 'delete' | `stack:${Restack}`
+export type ElementMenuChoice = 'rename' | 'details' | 'connect' | 'open' | 'remove' | 'delete' | `stack:${Restack}`
 
 /** Stacking among siblings (02·7), with the keys that do the same on the selection. */
 export const STACKING_ITEMS: readonly CanvasMenuItem[] = [
@@ -32,6 +32,11 @@ export const restackKey = (event: Pick<KeyboardEvent, 'key' | 'shiftKey'>): Rest
 /** *drafted*: the element is created in this session, so it has no page to open until Save. */
 export const elementMenuItems = (words: CanvasWords, drafted: boolean): readonly CanvasMenuItem[] => [
   { id: 'rename', label: 'Rename', hint: 'also a double-click on it', shortcut: 'F2' },
+  {
+    id: 'details', label: 'Edit details…',
+    hint: drafted ? 'its form holds them until it is saved' : 'summary, status, keywords, specializations, attributes',
+    disabled: drafted,
+  },
   {
     id: 'connect', label: 'Connect to…',
     hint: 'pick the other element by name, then the relation; also drag from its edge',

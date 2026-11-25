@@ -14,7 +14,12 @@ import TypedPropertyInput from './TypedPropertyInput.vue'
 import SchemaQuarantineBanner from './SchemaQuarantineBanner.vue'
 import { editBlockedReason, editOutcome } from '../lib/entityEditBlocking'
 
-const props = defineProps<{ adminMode: boolean; isGlobalEntity: boolean }>()
+const props = defineProps<{
+  adminMode: boolean
+  isGlobalEntity: boolean
+  /** What Save is called where it keeps the edit rather than writing it (a canvas session). */
+  saveLabel?: string
+}>()
 const emit = defineEmits<{ 'open-reference-picker': [field: 'summary' | 'notes'] }>()
 const edit = inject(entityEditFormKey)!
 // The same question the header's Edit control answers in a title, said here in full: a form
@@ -234,7 +239,7 @@ const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode
         :title="editBlockedReason(edit.editQuarantine.quarantined, edit.editRequiredMissing)"
         @click="edit.saveEdit()"
       >
-        Save
+        {{ saveLabel ?? 'Save' }}
       </button>
     </div>
   </div>

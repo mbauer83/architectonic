@@ -65,12 +65,14 @@ export function useCandidateEditing(
   }
 
   /** Draw the command, then record it in the candidate; a refused record says why on the canvas. */
-  const propose = async (command: CanvasCommand, overlay?: Record<string, unknown>): Promise<boolean> => {
-    if (!(await editing.propose(command, overlay))) return false
+  const propose = async (
+    proposed: CanvasCommand | readonly CanvasCommand[], overlay?: Record<string, unknown>,
+  ): Promise<boolean> => {
+    if (!(await editing.propose(proposed, overlay))) return false
     const drawn = commandsNow()
     try {
       await queued(async () => {
-        for (const edit of editsOf(command)) {
+        for (const edit of [proposed].flat().flatMap(editsOf)) {
           const answer = await Effect.runPromise(svc.recordOperation(candidateId(), version, edit))
           version = answer.version
           held = answer.record.changes

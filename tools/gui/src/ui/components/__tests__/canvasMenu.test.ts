@@ -103,7 +103,7 @@ describe("an element's menu", () => {
   it('lists what the editor can do, removing before the destructive entry at the bottom', () => {
     const ids = elementMenuItems(DIAGRAM_WORDS, false).map((one) => one.id)
     expect(ids).toEqual([
-      'rename', 'connect', 'open', 'stack:front', 'stack:forward', 'stack:backward', 'stack:back', 'remove', 'delete',
+      'rename', 'details', 'connect', 'open', 'stack:front', 'stack:forward', 'stack:backward', 'stack:back', 'remove', 'delete',
     ])
     const last = elementMenuItems(DIAGRAM_WORDS, false).at(-1)
     expect(last?.danger).toBe(true)

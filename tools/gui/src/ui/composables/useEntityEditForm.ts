@@ -37,8 +37,14 @@ export function useEntityEditForm(options: {
   detail: Ref<EntityDetail | null>
   editFn: Ref<ModelService['editEntity'] | ModelService['adminEditEntity']>
   onSaved: (newArtifactId: string) => void
+  /**
+   * Where Save keeps the edit instead of writing it (a canvas session, written at its own Save): given
+   * the body `editFn` would have written, it answers why it was refused, or null. Preview still asks
+   * `editFn` for a dry run, so what is kept is what the write path would accept.
+   */
+  keep?: (body: Record<string, unknown>) => Promise<string | null>
 }) {
-  const { svc, entityId, detail, editFn, onSaved } = options
+  const { svc, entityId, detail, editFn, onSaved, keep } = options
 
   const editing = ref(false)
   const editName = ref('')
@@ -220,9 +226,26 @@ export function useEntityEditForm(options: {
     })
   }
 
+  const keepEdit = async (kept: NonNullable<typeof keep>): Promise<void> => {
+    const { dry_run: _, ...body } = buildEditBody(false)
+    const refused = await kept(body)
+    editBusy.value = false
+    if (refused !== null) {
+      editError.value = refused
+      return
+    }
+    editing.value = false
+    editPreview.value = null
+    onSaved(entityId.value)
+  }
+
   const saveEdit = (): void => {
     editBusy.value = true
     editError.value = null
+    if (keep) {
+      void keepEdit(keep)
+      return
+    }
     void Effect.runPromise(
       editFn.value(entityId.value, buildEditBody(false) as Parameters<ModelService['editEntity']>[1]),
     ).then((r) => {

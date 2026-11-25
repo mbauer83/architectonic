@@ -25,6 +25,7 @@ import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import { stableEntityId } from '../../domain/artifactId'
 import { type Restack, restacked } from '../../domain/layout/stacking'
+import { withCommand } from '../../domain/layout/canvasComposition'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { ArrangementState } from './useArrangementSession'
 import { useArrangementSession } from './useArrangementSession'
@@ -93,6 +94,9 @@ export function useDiagramEditing(
     return geometry?.elements.find((one) => one.alias === alias)?.label
       ?? geometry?.boxes.find((one) => one.alias === alias)?.label ?? alias
   }
+  /** The alias the picture draws the entity *id* under; the id itself where it draws none. */
+  const aliasOf = (id: string): string =>
+    session.drawnPicture.value?.elements.find((one) => one.key === stableEntityId(id))?.alias ?? id
 
   /** What Save would write, read off the state against the last save. */
   const changes = computed((): readonly PendingChange[] => {
@@ -105,6 +109,7 @@ export function useDiagramEditing(
       text: c.op === 'model.element.create' ? `Create element: ${c.name}`
         : c.op === 'model.element.rename' ? `Rename element: ${c.name}`
         : c.op === 'model.element.delete' ? `Delete from model: ${c.artifact_id}`
+        : c.op === 'model.element.edit' ? `Edit details: ${nameOf(aliasOf(c.artifact_id))}`
         : `${c.op === 'model.relation.edit' ? 'Edit' : 'Create'} relationship: ${c.artifact_id}`,
     }))
     const added = [...now.additions ?? []].map(([id, name]) => ({ key: id, text: `Added to diagram: ${name}` }))
@@ -296,14 +301,11 @@ export function useDiagramEditing(
     }
   }
 
-  const propose = async (command: CanvasCommand, overlay?: Record<string, unknown>) => {
+  /** *proposed* kept in the session as one undoable step, each over what it supersedes (`withCommand`). */
+  const propose = async (proposed: CanvasCommand | readonly CanvasCommand[], overlay?: Record<string, unknown>) => {
     const now = session.state.value
     if (!now) return false
-    let commands = [...now.commands ?? []]
-    if (command.op === 'model.element.rename' || command.op === 'model.relation.edit') {
-      commands = commands.filter(c => c.op !== command.op || c.artifact_id !== command.artifact_id)
-    }
-    commands.push(command)
+    const commands = [proposed].flat().reduce(withCommand, now.commands ?? [])
     return preview({ ...now, commands, overlays: overlay ? [...now.overlays ?? [], overlay] : now.overlays }, now)
   }
 

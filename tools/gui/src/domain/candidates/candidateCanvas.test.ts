@@ -16,6 +16,18 @@ describe('a canvas command as a candidate edit', () => {
     })).toEqual([{ op: 'create_entity', artifact_id: QUEUE, fields: { artifact_type: 'data-object', name: 'Queue', group: 'g' } }])
   })
 
+  it('edits an element\'s details field by field, and a keyed field key by key', () => {
+    expect(editsOf({
+      op: 'model.element.edit', artifact_id: SERVICE, summary: 'Serves', keywords: ['a'],
+      properties: { owner: 'Ops', retired: null },
+    })).toEqual([
+      { op: 'edit_entity', artifact_id: SERVICE, field: 'summary', value: 'Serves' },
+      { op: 'edit_entity', artifact_id: SERVICE, field: 'keywords', value: ['a'] },
+      { op: 'edit_entity', artifact_id: SERVICE, field: 'properties', key: 'owner', value: 'Ops' },
+      { op: 'edit_entity', artifact_id: SERVICE, field: 'properties', key: 'retired', value: null },
+    ])
+  })
+
   it('addresses a relation by its triple, and edits it field by field', () => {
     const relation = { artifact_id: ACCESS, description: 'reads', src_multiplicity: '1', tgt_multiplicity: '' }
     expect(editsOf({ op: 'model.relation.create', ...relation })).toEqual([{

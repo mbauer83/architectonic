@@ -8,7 +8,7 @@ import { membershipWithout } from './diagramMembership'
 import type { DrawnMembership } from './diagramMembership'
 import { stableConnectionId, stableEntityId } from '../artifactId'
 
-import type { DiagramContext } from '..'
+import type { DiagramContext, EntityDetail } from '..'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 import { isRecord } from '../records'
 
@@ -104,6 +104,54 @@ export function composeCanvas(drawn: DrawnMembership, state: Content, removed: R
       : {}),
   }
   return { preview, write }
+}
+
+/**
+ * *commands* with *command* kept: a rename or a relation edit replaces the one before it for the same
+ * artifact; an element's details merge over the ones before them, key by key for a keyed field, as the
+ * write path applies successive edits — so a second edit that left a field alone does not drop the first.
+ */
+export const withCommand = (commands: readonly CanvasCommand[], command: CanvasCommand): CanvasCommand[] => {
+  const same = (one: CanvasCommand) => one.op === command.op && one.artifact_id === command.artifact_id
+  if (command.op === 'model.element.edit') {
+    const before = commands.find(same)
+    const merged = before?.op === 'model.element.edit' ? {
+      ...before, ...command,
+      ...(before.properties || command.properties
+        ? { properties: { ...before.properties, ...command.properties } } : {}),
+      ...(before.attribute_types || command.attribute_types
+        ? { attribute_types: { ...before.attribute_types, ...command.attribute_types } } : {}),
+    } : command
+    return [...commands.filter((one) => !same(one)), merged]
+  }
+  const replaces = command.op === 'model.element.rename' || command.op === 'model.relation.edit'
+  return [...(replaces ? commands.filter((one) => !same(one)) : commands), command]
+}
+
+/**
+ * *detail* as the session would leave it: its last pending rename, and its pending details over what the
+ * model holds — what the entity form opens on when an element's details are edited a second time.
+ */
+export const withPendingDetails = (detail: EntityDetail, commands: readonly CanvasCommand[]): EntityDetail => {
+  const own = commands.filter((one) => stableEntityId(one.artifact_id) === stableEntityId(detail.artifact_id))
+  const renamed = own.filter((one) => one.op === 'model.element.rename').at(-1)
+  const edit = own.find((one) => one.op === 'model.element.edit')
+  if (!renamed && !edit) return detail
+  const properties = { ...detail.properties }
+  for (const [key, value] of Object.entries(edit?.properties ?? {})) {
+    if (value === null) delete properties[key]
+    else properties[key] = value
+  }
+  return {
+    ...detail,
+    ...(renamed ? { name: renamed.name } : {}),
+    ...(edit ? {
+      summary: edit.summary ?? detail.summary, notes: edit.notes ?? detail.notes,
+      status: edit.status ?? detail.status, group: edit.group ?? detail.group,
+      keywords: edit.keywords ?? detail.keywords, specializations: edit.specializations ?? detail.specializations,
+      properties,
+    } : {}),
+  }
 }
 
 /** Resolve drawing aliases to their model identity, including unsaved additions and renames. */
