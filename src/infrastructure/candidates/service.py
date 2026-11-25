@@ -45,7 +45,7 @@ from src.infrastructure.candidates.repository import (
     CandidateConflict,
     NotStored,
 )
-from src.infrastructure.candidates.scope_drawing import NoStoredDiagram, generated_drawing, stored_drawing
+from src.infrastructure.candidates.scope_drawing import drawing as scope_drawing
 from src.infrastructure.write.artifact_write.document import create_document
 from src.infrastructure.write.artifact_write.types import WriteResult
 
@@ -286,12 +286,7 @@ class CandidateService:
         self, diagram: str | None, scope: Sequence[str], name: str, ontology: DeclaresElementKinds,
     ) -> dict[str, Any] | None:
         """The stored *diagram*'s geometry, else a view generated from *scope*; None where there is neither."""
-        repo = ArtifactRepository(self.index)
-        try:
-            return (stored_drawing(repo, diagram, self.root, ontology) if diagram
-                    else generated_drawing(repo, scope, name, self.root, ontology))
-        except NoStoredDiagram as missing:
-            raise NotStored(str(missing)) from missing
+        return scope_drawing(ArtifactRepository(self.index), diagram, scope, name, self.root, ontology)
 
     def analysis_tables(self, ref: str) -> tuple[str, str, DocumentTables]:
         """The analysis document's id, its naive candidate's id and its typed tables; refused for any other document."""

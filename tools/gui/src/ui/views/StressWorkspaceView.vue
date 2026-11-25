@@ -32,6 +32,8 @@ import TestSetSection from '../components/stressWorkspace/TestSetSection.vue'
 import CandidateOperations from '../components/candidates/CandidateOperations.vue'
 import CandidateCanvas from '../components/candidates/CandidateCanvas.vue'
 import ModelMovedBanner from '../components/candidates/ModelMovedBanner.vue'
+import NaiveIntroNote from '../components/stressWorkspace/NaiveIntroNote.vue'
+import AnalysisMeta from '../components/stressWorkspace/AnalysisMeta.vue'
 
 const svc = inject(modelServiceKey)!
 const toast = inject(toastKey, () => undefined)
@@ -194,22 +196,7 @@ onMounted(async () => {
         @open="openRow"
       />
     </div>
-    <div class="meta">
-      <span class="badge">stress analysis</span>
-      <span class="status">{{ analysis.document.value?.status }}</span>
-      <span
-        v-if="analysis.naive.value"
-        class="mono"
-      >scope: {{ analysis.drawnOn.value ? analysis.naive.value.drawing?.name : 'a view generated from it' }}
-        ({{ analysis.naive.value.view.entities.length }} elements)</span>
-    </div>
-    <p
-      v-if="analysis.context.value"
-      class="context"
-      data-testid="analysis-context"
-    >
-      Context: {{ analysis.context.value }}
-    </p>
+    <AnalysisMeta :analysis="analysis" />
     <p
       v-if="analysis.error.value"
       class="err"
@@ -301,24 +288,10 @@ onMounted(async () => {
         />
       </div>
       <section aria-label="Canvas">
-        <p
+        <NaiveIntroNote
           v-if="introducing && sketched?.id === analysis.naiveId.value"
-          class="intro"
-          role="note"
-          data-testid="naive-intro"
-        >
-          <span>This is the <b>naive architecture</b>: the architecture under evaluation as it stands before
-            any stressor, and the first candidate architecture of this analysis. Sketch it as you would a
-            diagram; every change is one of its operations, listed on the left, and nothing reaches the
-            model before it is applied. When it is done, the stressors are written against it.</span>
-          <button
-            type="button"
-            class="btn btn-sm"
-            @click="introducing = false"
-          >
-            Understood
-          </button>
-        </p>
+          @dismiss="introducing = false"
+        />
         <CandidateCanvas
           v-if="sketched && analysis.drawnOn.value"
           :key="sketched.id"
@@ -357,15 +330,6 @@ onMounted(async () => {
 .page-hdr { display: flex; gap: 14px; align-items: center; }
 .page-hdr h1 { flex: 1; font-size: 20px; margin: 0; }
 .back { color: var(--muted); text-decoration: none; font-size: 13px; }
-.meta { display: flex; gap: 10px; align-items: center; margin: 8px 0 2px; font-size: 12px; color: var(--muted); }
-.badge { background: var(--accent-soft); color: var(--accent-strong); border-radius: 3px; padding: 2px 8px; }
-.mono { font-family: ui-monospace, monospace; }
-.context { color: var(--text-2); font-size: 12.5px; margin: 2px 0 10px; white-space: pre-line; }
-.intro {
-  display: flex; gap: 10px; align-items: flex-start; margin: 0 0 8px; padding: 8px 10px; font-size: 12.5px;
-  border: 1px solid var(--accent-border); background: var(--accent-soft); border-radius: 6px; color: var(--text);
-}
-.intro .btn { flex: none; }
 .err { color: var(--danger-strong); font-size: 12.5px; }
 .ws { display: grid; grid-template-columns: minmax(440px, 46%) minmax(0, 1fr); gap: 12px; align-items: start; }
 .left, .pane { min-width: 0; }

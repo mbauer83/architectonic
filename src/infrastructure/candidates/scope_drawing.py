@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds
+from src.infrastructure.candidates.repository import NotStored
 from src.infrastructure.diagram_composition import DiagramComposition, render_composition
 from src.infrastructure.rendering.layout.diagram_geometry import geometry_response, stored_geometry
 from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
@@ -21,15 +22,19 @@ from src.infrastructure.write.artifact_write.parse_existing import parse_diagram
 GENERATED_VIEW_TYPE = "archimate-layered"
 
 
-class NoStoredDiagram(LookupError):
-    """The diagram named to draw on is not stored."""
+def drawing(
+    repo: Any, diagram: str | None, scope: Iterable[str], name: str, root: Path, ontology: DeclaresElementKinds,
+) -> dict[str, Any] | None:
+    """The stored *diagram*'s geometry, else a view generated from *scope*; None where there is neither."""
+    return (stored_drawing(repo, diagram, root, ontology) if diagram
+            else generated_drawing(repo, scope, name, root, ontology))
 
 
 def stored_drawing(repo: Any, diagram: str, root: Path, ontology: DeclaresElementKinds) -> dict[str, Any]:
     """The geometry of the stored *diagram*, as it is drawn now."""
     record = repo.get_diagram(diagram)
     if record is None:
-        raise NoStoredDiagram(f"No diagram {diagram} is stored.")
+        raise NotStored(f"No diagram {diagram} is stored.")
     return stored_geometry(parse_diagram_file(record.path), record.artifact_id, root, ontology)
 
 
