@@ -75,6 +75,10 @@ def verdict_from_report(report: Mapping[str, object]) -> RehearsalVerdict:
     blocking = tuple(f"{where}{f.get('finding_id')}" for where, f in findings if f.get("blocks_commit"))
     errors = tuple(f"{where}{f.get('finding_id')}" for where, f in findings if f.get("outcome") == "error")
     uninspectable = tuple(str(target.get("kind")) for target in targets if target.get("state") == "uninspectable")
+    left_alone = tuple(
+        f"{tier.get('root', '?')}: {tier.get('pending')} finding(s)"
+        for tier in _mappings(report.get("tiers_left_alone")) if tier.get("pending")
+    )
     return RehearsalVerdict(
         repositories=len(repos),
         operational_targets=len(targets),
@@ -82,6 +86,7 @@ def verdict_from_report(report: Mapping[str, object]) -> RehearsalVerdict:
         blocking=blocking,
         uninspectable=uninspectable,
         errors=errors,
+        left_alone=left_alone,
     )
 
 

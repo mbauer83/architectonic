@@ -119,7 +119,9 @@ def wired(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):  # noqa: ANN201
 
     def wire(actions: FakeActions) -> list[list[str]]:
         monkeypatch.setattr(_update_commit, "LocalCheckoutActions", lambda *a, **k: actions)
-        monkeypatch.setattr(_update_commit, "deployment_identity_arguments", lambda root: ("--workspace", str(root)))
+        monkeypatch.setattr(
+            _update_commit, "deployment_identity_arguments", lambda root, **_k: ("--workspace", str(root)),
+        )
         monkeypatch.setattr(_update_commit, "answer_questions", lambda *a, **k: ())
         monkeypatch.setattr(_update_commit.os, "execv", lambda executable, argv: execs.append(list(argv)))
         return execs

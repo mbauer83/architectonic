@@ -22,6 +22,7 @@ from src.application.software_update.installation import (
     StorePolicy,
     Tooling,
 )
+from src.infrastructure.backend.backend_process import ADMIN_MODE_FLAG
 from src.infrastructure.software_update.uv_environment import derive_selection
 
 #: How a serving backend's output is told apart from a terminal's: a detached backend writes to the
@@ -158,14 +159,23 @@ def observe_store(root: Path) -> StoreObservation:
     return StoreObservation(configured, held_open, policy, key_readable, missing_env)
 
 
-def deployment_identity_arguments(root: Path) -> tuple[str, ...]:
+def deployment_identity_arguments(root: Path, *, admin_mode: bool = False) -> tuple[str, ...]:
     """The `arch-repair upgrade` arguments that name this deployment — its workspace and the settings
     document the backend runs with — so the rehearsal and the migration inspect the same operational
-    targets the live process has. Without `--settings`, that command sees repositories only."""
+    targets the live process has. Without `--settings`, that command sees repositories only.
+
+    A deployment whose backend serves with `--admin-mode` administers its enterprise tier, and the
+    upgrade guide has such a deployment pass `--admin-mode` to the upgrade as well; the updater does
+    so for it, or that tier would be left at the older format on every update."""
     from src.infrastructure.deployment.layout import resolve_manifest  # noqa: PLC0415
 
     manifest = resolve_manifest()
-    return ("--workspace", str(root), "--settings", str(manifest.settings_document.path))
+    admin = (ADMIN_MODE_FLAG,) if admin_mode else ()
+    return ("--workspace", str(root), "--settings", str(manifest.settings_document.path), *admin)
+
+
+def serves_in_admin_mode(backend: BackendObservation) -> bool:
+    return ADMIN_MODE_FLAG in backend.flags
 
 
 def checkpoint_restore_command(root: Path, checkpoint_set: str, *, deployment: str) -> str:

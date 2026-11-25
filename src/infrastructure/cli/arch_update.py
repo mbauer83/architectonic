@@ -32,7 +32,11 @@ from src.infrastructure.cli._update_report import render_human, render_json
 from src.infrastructure.deployment.layout import source_tree_root
 from src.infrastructure.software_update.checkout import CheckoutError, GitCheckout
 from src.infrastructure.software_update.github_releases import GitHubReleases, token_from_environment
-from src.infrastructure.software_update.observation import deployment_identity_arguments, observe_installation
+from src.infrastructure.software_update.observation import (
+    deployment_identity_arguments,
+    observe_installation,
+    serves_in_admin_mode,
+)
 from src.infrastructure.software_update.rehearsal import RehearsalFailed, rehearse
 
 #: The checkout this command is installed from.
@@ -158,7 +162,9 @@ def _rehearsed(release: PublishedRelease, observation: InstallationObservation) 
     try:
         return rehearse(
             PROJECT_ROOT, start_point=release.tag, selection=observation.selection,
-            upgrade_arguments=deployment_identity_arguments(PROJECT_ROOT),
+            upgrade_arguments=deployment_identity_arguments(
+                PROJECT_ROOT, admin_mode=serves_in_admin_mode(observation.backend),
+            ),
         )
     except RehearsalFailed as exc:
         return RehearsalVerdict.not_run(str(exc))

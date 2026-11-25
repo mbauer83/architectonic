@@ -102,6 +102,12 @@ def render_human(
         lines.append(f"provenance  {check.verification.provenance.replace('_', ' ')}")
     if rehearsal is not None:
         lines.append(f"rehearsal   {_rehearsal_line(check, rehearsal)}")
+        for tier in rehearsal.left_alone:
+            lines.append(
+                f"not applied enterprise tier {tier} — this deployment does not administer it (its backend does "
+                "not run with --admin-mode); upgrade it where it is maintained with `arch-repair upgrade --commit "
+                "--repo-root <it>` and push"
+            )
     if isinstance(planning, UpToDate):
         lines.append(f"status      up to date ({planning.installed} is the newest release)")
     elif isinstance(planning, UpdateRefused):

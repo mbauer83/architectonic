@@ -221,6 +221,14 @@ class CheckpointSet:
 
 
 @dataclass(frozen=True)
+class TierLeftAlone:
+    """An enterprise tier a run does not write, because this deployment does not administer it."""
+
+    root: str
+    pending: int
+
+
+@dataclass(frozen=True)
 class DeploymentUpgradeReport:
     """The full additive report: existing `repos` retained, operational sections new."""
 
@@ -230,6 +238,8 @@ class DeploymentUpgradeReport:
     outcome: DeploymentApplyOutcome = "success"
     checkpoint_set: CheckpointSet | None = None
     """What a commit recorded before its first write; None for a dry run or a no-op commit."""
+    tiers_left_alone: tuple[TierLeftAlone, ...] = ()
+    """Enterprise tiers this run evaluated but does not write, and what is pending in each."""
 
     def to_dict(self) -> Mapping[str, object]:
         base: dict[str, object] = dict(self.repos.to_dict())
@@ -238,6 +248,7 @@ class DeploymentUpgradeReport:
         base["deployment_preflight"] = self.preflight.to_dict() if self.preflight else None
         base["outcome"] = self.outcome
         base["checkpoint_set"] = self.checkpoint_set.to_dict() if self.checkpoint_set else None
+        base["tiers_left_alone"] = [{"root": tier.root, "pending": tier.pending} for tier in self.tiers_left_alone]
         return base
 
 

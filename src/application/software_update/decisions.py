@@ -33,6 +33,9 @@ class RehearsalVerdict:
     blocking: tuple[str, ...]
     uninspectable: tuple[str, ...]
     errors: tuple[str, ...]
+    #: Enterprise tiers the migration will leave as they are, with what stays pending in each — said
+    #: plainly before the update, since this deployment does not administer them.
+    left_alone: tuple[str, ...] = ()
 
     @classmethod
     def not_run(cls, reason: str) -> RehearsalVerdict:

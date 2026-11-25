@@ -219,7 +219,7 @@ def main_upgrade(
         return _restore_or_list(args, side, roots)
     version = software_version()
     targets = [RepoUpgradeTarget(FilesystemRepoUpgradeView(r), FilesystemRepoUpgradeWriter(r)) for r in roots]
-    upstream = report_tiers_left_alone(tiers, registry=registry, software_version=version)
+    upstream, left_alone = report_tiers_left_alone(tiers, registry=registry, software_version=version)
 
     if operational_registry is None:
         # Built after the roots are known: the confidential store cannot look up how an
@@ -237,7 +237,8 @@ def main_upgrade(
         operational = evaluate_targets(side.handles, operational_registry)
         emit_deployment(
             DeploymentUpgradeReport(
-                repos=repo_report, operational_targets=operational, preflight=side.preflight
+                repos=repo_report, operational_targets=operational, preflight=side.preflight,
+                tiers_left_alone=left_alone,
             ),
             args.json_output,
         )
@@ -335,6 +336,7 @@ def main_upgrade(
             preflight=preflight,
             outcome=outcome,
             checkpoint_set=checkpoint_set,
+            tiers_left_alone=left_alone,
         ),
         args.json_output,
     )

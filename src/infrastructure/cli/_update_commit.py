@@ -39,7 +39,11 @@ from src.infrastructure.software_update.compose import ComposeActions, ComposePr
 from src.infrastructure.software_update.credentials import CredentialsUnavailable, answer_questions
 from src.infrastructure.software_update.journal_store import FileJournalStore, UpdateInProgress
 from src.infrastructure.software_update.local_actions import LocalCheckoutActions
-from src.infrastructure.software_update.observation import checkpoint_restore_command, deployment_identity_arguments
+from src.infrastructure.software_update.observation import (
+    checkpoint_restore_command,
+    deployment_identity_arguments,
+    serves_in_admin_mode,
+)
 
 EXIT_USAGE = 2
 ASSETS_DIR = "assets"
@@ -250,7 +254,10 @@ def _actions(
             root, project, installed_version=journal.previous.version, resolve_selection=resolve_selection, uv=uv,
         )
     return LocalCheckoutActions(
-        root, assets_dir=store.directory / ASSETS_DIR, deployment_arguments=deployment_identity_arguments(root),
+        root, assets_dir=store.directory / ASSETS_DIR,
+        deployment_arguments=deployment_identity_arguments(
+            root, admin_mode=serves_in_admin_mode(journal.previous.backend),
+        ),
         resolve_selection=resolve_selection, uv=uv,
     )
 
