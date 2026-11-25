@@ -2,7 +2,7 @@ import { describe, expectTypeOf, it } from 'vitest'
 import type { Immutable, SchemaType } from './contractOracle'
 import type {
   AnalysisIncidenceSchema, AnalysisProgressSchema, AnalysisStartedSchema, CandidateApplicationSchema,
-  CandidateDiagramSavedSchema, CandidateIntegrationSchema,
+  CandidateDiagramSavedSchema, CandidateIntegrationSchema, CandidateMoveSchema, CandidateTargetStateApplicationSchema,
   CandidateComparisonSchema,
   CandidateListSchema,
   CandidateResponseSchema, DocumentTablesSchema, DocumentTableWriteSchema, IntegrationCheckSchema,
@@ -21,6 +21,9 @@ describe('candidate architectures', () => {
     expectTypeOf<SchemaType<typeof CandidateApplicationSchema>>().toEqualTypeOf<Served<'CandidateApplication'>>()
     expectTypeOf<SchemaType<typeof CandidateDiagramSavedSchema>>().toEqualTypeOf<Served<'CandidateDiagramSaved'>>()
     expectTypeOf<SchemaType<typeof CandidateIntegrationSchema>>().toEqualTypeOf<Served<'CandidateIntegration'>>()
+    expectTypeOf<SchemaType<typeof CandidateTargetStateApplicationSchema>>()
+      .toEqualTypeOf<Served<'CandidateTargetStateApplication'>>()
+    expectTypeOf<SchemaType<typeof CandidateMoveSchema>>().toEqualTypeOf<Served<'CandidateMove'>>()
   })
 })
 

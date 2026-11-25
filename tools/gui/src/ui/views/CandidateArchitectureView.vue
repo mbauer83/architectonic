@@ -21,7 +21,9 @@ import { candidateCompareRoute, candidateDetailRoute, candidateListRoute } from 
 import { useCandidates } from '../composables/useCandidates'
 import { useComposedDrawing } from '../composables/useComposedDrawing'
 import { useCandidateApply } from '../composables/useCandidateApply'
+import { useCandidateTargetState } from '../composables/useCandidateTargetState'
 import ApplyCandidate from '../components/candidates/ApplyCandidate.vue'
+import CandidateTargetState from '../components/candidates/CandidateTargetState.vue'
 import CandidateResiduality from '../components/candidates/CandidateResiduality.vue'
 import CandidateOperations from '../components/candidates/CandidateOperations.vue'
 import CandidateCanvas from '../components/candidates/CandidateCanvas.vue'
@@ -98,10 +100,17 @@ const rebase = async () => {
   rebasing.value = false
 }
 
-const apply = useCandidateApply(svc, () => { void applied() })
-const applicable = computed(() => summary.value?.state === 'draft' || summary.value?.state === 'candidate')
-const applied = async () => {
-  toast(`Applied ${summary.value?.name ?? candidateId.value} to the model; it is integrated.`)
+const apply = useCandidateApply(svc, () => { void applied('to the model; it is integrated') })
+/** A candidate in the model as a target state is applied by moving that into the baseline, not again. */
+const target = useCandidateTargetState(svc, (write) => {
+  void applied(write === 'apply'
+    ? 'as a target state beside the baseline'
+    : 'by moving its target state into the baseline; it is integrated')
+})
+const applicable = computed(() => (summary.value?.state === 'draft' || summary.value?.state === 'candidate')
+  && !target.standing.value)
+const applied = async (how: string) => {
+  toast(`Applied ${summary.value?.name ?? candidateId.value} ${how}.`)
   await candidates.load()
   await candidates.compareWith(candidates.against.value)
 }
@@ -130,7 +139,8 @@ const read = async () => {
   offering.value = null
   framed.value = null
   apply.close()
-  await candidates.select(candidateId.value)
+  target.close()
+  await Promise.all([candidates.select(candidateId.value), target.load(candidateId.value)])
 }
 watch(candidateId, read)
 watch(chosenDiagram, async () => {
@@ -180,6 +190,16 @@ onMounted(async () => {
         @click="apply.open(candidateId)"
       >
         Apply to the model…
+      </button>
+      <button
+        v-if="summary && applicable"
+        type="button"
+        class="btn btn-sm"
+        data-testid="apply-as-target-state"
+        :disabled="target.busy.value"
+        @click="target.open('apply', candidateId)"
+      >
+        Apply as a target state…
       </button>
       <button
         v-if="summary"
@@ -280,6 +300,12 @@ onMounted(async () => {
     >
       {{ apply.error.value }}
     </p>
+    <CandidateTargetState
+      v-if="summary"
+      :target="target"
+      :candidate-id="summary.id"
+      :name="summary.name"
+    />
     <ModelMovedBanner
       v-if="summary && candidates.comparison.value?.candidate === summary.id"
       :name="summary.name"
