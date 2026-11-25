@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import glyphs from '../lib/archimateGlyphs.json'
+import { archimateGlyphMarkup } from '../lib/glyphKey'
 
 const props = withDefaults(defineProps<{
   type: string
@@ -13,8 +13,7 @@ const props = withDefaults(defineProps<{
   size: 16,
 })
 
-const kind = computed(() => glyphs.types[props.type as keyof typeof glyphs.types] ?? 'generic')
-const markup = computed(() => glyphs.kinds[kind.value as keyof typeof glyphs.kinds] ?? glyphs.kinds.generic)
+const markup = computed(() => archimateGlyphMarkup(props.type) ?? '')
 const x = computed(() => props.x)
 const y = computed(() => props.y)
 const size = computed(() => props.size)
