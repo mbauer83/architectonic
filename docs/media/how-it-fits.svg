@@ -37,11 +37,11 @@
       <text class="h" x="450" y="36" text-anchor="middle">Ask &amp; check</text>
       <text class="s" x="450" y="54" text-anchor="middle">any question, any time</text>
       <rect class="band" x="320" y="96" width="260" height="22"/>
-      <text class="bl" x="450" y="111" text-anchor="middle">MCP · REST</text>
+      <text class="bl" x="450" y="111" text-anchor="middle">Web · REST · MCP</text>
       <rect class="band" x="286" y="118" width="22" height="330"/>
-      <text class="bl" x="301" y="340" text-anchor="middle" transform="rotate(-90 301 340)">MCP · REST</text>
+      <text class="bl" x="301" y="200" text-anchor="middle" transform="rotate(-90 301 200)">Web · REST · MCP</text>
       <rect class="band" x="592" y="118" width="22" height="330"/>
-      <text class="bl" x="607" y="360" text-anchor="middle" transform="rotate(90 607 360)">MCP · REST</text>
+      <text class="bl" x="607" y="360" text-anchor="middle" transform="rotate(90 607 360)">Web · REST · MCP</text>
       <rect class="graph" x="320" y="128" width="260" height="320" rx="8"/>
       <text class="h" x="450" y="152" text-anchor="middle">Architecture knowledge graph</text>
       <rect class="repo" x="345" y="166" width="210" height="64" rx="4"/>
