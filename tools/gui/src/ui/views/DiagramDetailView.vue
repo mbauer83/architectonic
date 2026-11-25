@@ -270,6 +270,7 @@ const executeDelete = () => {
                   <LayoutLabCanvas
                     ref="editCanvas"
                     :session="edit.session"
+                    :show-breaches="edit.checking.value"
                   />
                 </CanvasContentEditor>
               </div>

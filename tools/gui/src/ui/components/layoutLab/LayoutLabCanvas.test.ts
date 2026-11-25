@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * The lab's canvas draws its pieces in the one paint order, as the pointer leaves them: a box dragged
+ * The diagram canvas draws its pieces in the one paint order, as the pointer leaves them: a box dragged
  * over an element is drawn after it, with the lines into that element drawn just before the box, so
  * the box hides them as it hides the element; and a breach is marked only while breaches are shown,
  * tagged with the rule it breaks.
@@ -75,7 +75,7 @@ afterEach(() => {
   Reflect.deleteProperty(SVGSVGElement.prototype, 'getScreenCTM')
 })
 
-describe('the layout lab canvas', () => {
+describe('the diagram canvas', () => {
   it('draws shapes by nesting, then the lines over them', async () => {
     const { host } = await mounted()
     expect(drawnOrder(host)).toEqual(['G', 'A', 'C', 'line:0'])
@@ -110,17 +110,18 @@ describe('the layout lab canvas', () => {
     expect(host.querySelectorAll('.lab-carried')).toHaveLength(0)
   })
 
-  it('marks a breach with the rule it breaks while breaches are shown, and not otherwise', async () => {
+  it('marks a breach quietly while breaches are shown, naming it on hover, and not otherwise', async () => {
     const { lab, host, shown } = await mounted()
     const drawn = drawnArrangement(geometry)
     // C put over A: two connected elements over each other, which no route can satisfy.
     lab.state.value = { byHand: true, arrangement: { ...drawn, elements: new Map([...drawn.elements, ['C', at(60, 50, 160, 90)]]) } }
     lab.routeEverything()
     await nextTick()
-    expect([...host.querySelectorAll('.lab-breach-tag')].map((tag) => tag.textContent)).toContain('ends overlap')
-    // Set off in a box of its own with a leader, never as a stroke laid along the line.
-    expect(host.querySelectorAll('.lab-breach-tag-box').length).toBe(host.querySelectorAll('.lab-breach-tag').length)
-    expect(host.querySelectorAll('.lab-breach-leader').length).toBe(host.querySelectorAll('.lab-breach-tag').length)
+    const overlap = host.querySelector('.lab-breach-mark[data-rule="ends-overlap"]')
+    expect(overlap?.querySelector('title')?.textContent).toBe('A → C joins two elements drawn over each other')
+    // Both ends outlined, and no word set on the picture: what is broken is said on hover only.
+    expect(overlap?.querySelectorAll('.lab-breach-frame')).toHaveLength(2)
+    expect(host.querySelectorAll('.lab-breaches text')).toHaveLength(0)
 
     shown.breaches = false
     await nextTick()
