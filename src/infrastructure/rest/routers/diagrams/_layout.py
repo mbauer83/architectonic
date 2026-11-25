@@ -30,14 +30,12 @@ from src.infrastructure.rendering.laid_out_rendering import stored_layout
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
 from src.infrastructure.rendering.layout.diagram_geometry import (
     geometry_response,
-    read_and_measured,
     stored_geometry,
 )
 from src.infrastructure.rendering.layout.diagram_picture import (
     NotDrawn,
     RendererUnavailable,
     first_layout_of,
-    placed_on_its_picture,
 )
 from src.infrastructure.rendering.layout.drawing_wire import reshaped
 from src.infrastructure.rendering.layout.surround_placement import carried_by, occupied
@@ -289,20 +287,11 @@ class LayoutIntentsBody(BaseModel):
 def arrange_diagram_layout_gui(artifact_id: str, body: LayoutIntentsBody, catalogs: Catalogs) -> dict[str, object]:
     from src.infrastructure.write.artifact_write.diagram_arrangement import arrange_diagram  # noqa: PLC0415
 
-    root = _repo_root()
-    try:
-        with _renderer_available():
-            intents, drawn = read_and_measured(
-                stated_intents(body.intents), _stored_diagram(artifact_id), artifact_id, root, catalogs.ontology,
-            )
-    except ValueError as refusal:  # MalformedLayout is a ValueError
-        raise HTTPException(400 if isinstance(refusal, MalformedLayout) else 422, str(refusal)) from refusal
+    _stored_record(artifact_id)
     return _written_layout(
         "diagrams_arrange_diagram_layout", arrange_diagram, catalogs, with_patch=True,
-        artifact_id=artifact_id, intents=intents, drawn=drawn, store=s.get_repo(), dry_run=body.dry_run,
-        place_members=lambda source, frontmatter, layout: placed_on_its_picture(
-            source, frontmatter, layout, new=frozenset(), repo_root=root, ontology=catalogs.ontology,
-        ),
+        artifact_id=artifact_id, stated=stated_intents(body.intents), ontology=catalogs.ontology,
+        store=s.get_repo(), dry_run=body.dry_run,
     )
 
 

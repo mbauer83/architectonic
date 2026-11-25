@@ -27,11 +27,11 @@ from src.infrastructure.mcp.artifact_mcp.context import (
 from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_mutation_tool
 from src.infrastructure.mcp.artifact_mcp.write._common import _out
 from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, READ_ONLY
-from src.infrastructure.rendering.layout.diagram_geometry import read_and_measured, stored_geometry
-from src.infrastructure.rendering.layout.diagram_picture import first_layout_of, placed_on_its_picture
+from src.infrastructure.rendering.layout.diagram_geometry import stored_geometry
+from src.infrastructure.rendering.layout.diagram_picture import first_layout_of
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.diagram_arrangement import arrange_diagram
-from src.infrastructure.write.artifact_write.diagram_layout_patch import patch_diagram_layout, stored_diagram
+from src.infrastructure.write.artifact_write.diagram_layout_patch import patch_diagram_layout
 from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
 
 DiagramId = Annotated[str, Field(description="The diagram's id, in either spelling.")]
@@ -137,14 +137,8 @@ def artifact_arrange_diagram(
     try:
         if patch is not None:
             return patch_diagram_layout(patch=patch.stated(), **common).as_answer(with_patch=True)
-        read, drawn = read_and_measured(
-            stated_intents(intents or []), stored_diagram(root, verifier, artifact_id), artifact_id, root, ontology,
-        )
         return arrange_diagram(
-            intents=read, drawn=drawn, store=repo_cached(key), **common,
-            place_members=lambda source, frontmatter, layout: placed_on_its_picture(
-                source, frontmatter, layout, new=frozenset(), repo_root=root, ontology=ontology,
-            ),
+            stated=stated_intents(intents or []), ontology=ontology, store=repo_cached(key), **common,
         ).as_answer(with_patch=True)
     finally:
         mutation_context.finalize()
