@@ -11,12 +11,12 @@ import pytest
 from src.application.artifacts.document_schema import normalize_document_schema
 from src.application.artifacts.document_table_rows import DocumentTables, read_document_tables
 from src.application.stress_analysis.evaluation import (
-    Standing,
+    ArchitectureStanding,
+    architecture_standing,
     evaluate,
     held_out,
     integration_of,
     residuality,
-    standing_of,
     verdicts_of,
 )
 from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_SCHEMA
@@ -42,21 +42,21 @@ def _verdict(stressor: str, architecture: str, verdict: str, **more: str) -> dic
 
 class TestTheCoefficient:
     def test_a_degraded_verdict_counts_one_half_and_the_strict_figure_none(self) -> None:
-        naive = Standing("naive", usable=4, survives=1, degrades=0, fails=3)
-        adapted = Standing("CAND@1", usable=4, survives=2, degrades=2, fails=0)
+        naive = ArchitectureStanding("naive", usable=4, survives=1, degrades=0, fails=3)
+        adapted = ArchitectureStanding("CAND@1", usable=4, survives=2, degrades=2, fails=0)
 
         assert residuality(adapted, naive) == pytest.approx(0.5)
         assert residuality(adapted, naive, strict=True) == pytest.approx(0.25)
 
     def test_no_figure_until_both_are_judged_on_every_usable_stressor(self) -> None:
-        naive = Standing("naive", usable=3, survives=1, degrades=0, fails=1)
-        adapted = Standing("CAND@1", usable=3, survives=3, degrades=0, fails=0)
+        naive = ArchitectureStanding("naive", usable=3, survives=1, degrades=0, fails=1)
+        adapted = ArchitectureStanding("CAND@1", usable=3, survives=3, degrades=0, fails=0)
 
         assert residuality(adapted, naive) is None
         assert residuality(naive, adapted) is None
 
     def test_an_empty_test_set_gives_no_figure_rather_than_a_division_by_zero(self) -> None:
-        empty = Standing("naive", usable=0, survives=0, degrades=0, fails=0)
+        empty = ArchitectureStanding("naive", usable=0, survives=0, degrades=0, fails=0)
 
         assert residuality(empty, empty) is None
 
@@ -67,7 +67,7 @@ class TestTheCoefficient:
             {"id": "T3", **_verdict("S1", "CAND@1", "fails")},
         ]
 
-        standing = standing_of("naive", ["S1"], verdicts_of(rows))
+        standing = architecture_standing("naive", ["S1"], verdicts_of(rows))
 
         assert (standing.survives, standing.fails, standing.judged) == (1, 0, 1)
 
