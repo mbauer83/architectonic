@@ -43,7 +43,9 @@ current version.
 | Change the header or the state | `change_set_edit` | `PATCH /api/change-sets/{id}` |
 | How each operation stands against the model | `change_set_standing` | `GET /api/change-sets/{id}/standing` |
 | Compare against the model, the naive or another candidate | `change_set_compare` | `GET /api/change-sets/{id}/diff` |
-| Draw a scope no stored diagram draws, as a generated view | — | `POST /api/scope-drawings` |
+| The picture a candidate is sketched on | — | `GET /api/change-sets/{id}/picture` |
+| That picture's elements, relations and neighbourhood, for its editor | — | `GET /api/change-sets/{id}/picture/context` |
+| Draw an edit session's composition, or resized shapes, over that picture | — | `POST /api/change-sets/{id}/picture/preview`, `POST /api/change-sets/{id}/picture/shapes/preview` |
 | Save the generated view a candidate is drawn on as a diagram | `change_set_save_diagram` | `POST /api/change-sets/{id}/save-as-diagram` |
 | Check candidates for conflicting claims | `change_set_check` | `POST /api/change-set-checks` |
 | Integrate candidates into a new one, resolving conflicts | `change_set_integrate` | `POST /api/change-set-integrations` |
@@ -51,6 +53,7 @@ current version.
 | Apply to the model | `change_set_apply` | `POST /api/change-sets/{id}/apply` |
 | Apply as a target state beside the baseline | `change_set_apply_as_target_state` | `POST /api/change-sets/{id}/apply-as-target-state` |
 | Move the target state into the baseline | `change_set_move_into_baseline` | `POST /api/change-sets/{id}/move-into-baseline` |
+| Withdraw the target state instead | `change_set_withdraw_target_state` | `POST /api/change-sets/{id}/withdraw-target-state` |
 | Delete | `change_set_delete` | `DELETE /api/change-sets/{id}` |
 | Residuality in each analysis that judged it | `change_set_residuality` | `GET /api/change-sets/{id}/residuality` |
 
@@ -115,6 +118,14 @@ relation drawn to a "(target)" copy since onto its original, removes the copies,
 gap with their relations, and sets each added element `active`. It is one generated operation list,
 refused while an operation conflicts or has drifted, and on success the candidate is `integrated`.
 
+`change_set_withdraw_target_state` takes the target state out of the model instead and leaves the
+baseline as it was before the apply: it removes the "(target)" copies with their relations and traces,
+the elements the candidate added, the plateaus and the gap, as one generated operation list. The
+candidate becomes a `draft` again, so it can be applied, applied as a target state again, rejected or
+deleted. A relation to one of those elements that the target state did not write, and a diagram that
+draws one of them, are named in the answer, and the withdrawal is refused until they are removed. A dry
+run, the default, answers the removals and the refusal.
+
 ### Integrating
 
 `change_set_integrate` makes a new draft candidate that holds the operations of two or more drafts or
@@ -142,36 +153,63 @@ integration is applied.
  "dry_run": false}
 ```
 
-### Deleting
+### Abandoning: rejecting or deleting
+
+A candidate that is not going to be applied is either rejected or deleted. Rejecting it
+(`change_set_edit` with `state` `rejected`) keeps it, with its operations, as a considered alternative
+that lost. Deleting it removes it.
 
 A candidate is kept while anything refers to it: a candidate stacked on it, an analysis that starts
-from it, a verdict or an adaptation that names it, or its own integration. The refusal names what to
-remove first. A delete is a dry run unless `dry_run` is false, and accepts `based_on`.
+from it, a verdict or an adaptation that names it, its own integration, or its target state in the
+model. The refusal names what to remove first; a target state is withdrawn first. A delete is a dry
+run unless `dry_run` is false, and accepts `based_on`. In the GUI, **Abandon…** on a candidate's page
+and on an adaptation in the stress-analysis workspace offers both, and offers withdrawing a target state
+first where one stands.
 
 &nbsp;
 
 ## Stress analyses
 
-A stress analysis evaluates a proposed architecture: its naive candidate. `analysis_start`
+A stress analysis evaluates an architecture: its naive candidate. `analysis_start`
 (`POST /api/stress-analyses`) creates the naive candidate and the stress-analysis document in one
-write. The naive candidate holds the scope and the stored diagram it is drawn on; the document names
-the naive candidate and, optionally, a `context`: the environment the architecture is evaluated in
-and the decision the evaluation informs. A document's title is unique within its type, so the start
-page asks `GET /api/document-types/stress-analysis/free-title` for its default title: the proposed
-title, or that title numbered `(2)`, `(3)` and so on where another analysis already has it.
+write. The document names the naive candidate and, optionally, a `context`: the environment the
+architecture is evaluated in and the decision the evaluation informs. A document's title is unique
+within its type, so the start page asks `GET /api/document-types/stress-analysis/free-title` for its
+default title: the proposed title, or that title numbered `(2)`, `(3)` and so on where another analysis
+already has it.
+
+The naive candidate starts empty and is defined on its canvas. The start page asks for the name, the
+optional context and what the architecture under evaluation is called, then opens the naive candidate
+for sketching. On the canvas the author:
+
+- finds model elements in the panel beside it and drags them onto the canvas, or chooses them from the
+  elements one and two steps away; the candidate then reads over each of them (its `scope`), live, as
+  the model changes;
+- creates elements and relations on the canvas, and renames, edits and removes, each recorded as an
+  operation of the candidate;
+- takes an element of the model off the canvas with **Remove from view**, which stops the candidate
+  reading over it and changes nothing in the model.
+
+Nothing reaches the model before the candidate is applied. An empty candidate can also start from a
+stored diagram, whose elements it then reads over and whose picture it is drawn on, or stack on an
+existing candidate; both are offered in the panel while the candidate holds nothing.
 
 The canvases of the workspace and of a candidate's page draw a candidate with its own changes on the
 picture. An element it removes stays drawn as a faded dashed ghost. **Apply…** in the workspace lists what is left in the analysis, then shows the chosen
 candidate's dry run before it is applied.
 
-A candidate records the diagram it is drawn on as `diagram`. A candidate stacked on another is drawn
-on the nearest diagram its stack names. Where none is named, as for a scope chosen by a search or by a
-viewpoint that no stored diagram applies, a comparison is drawn on a view generated from the scope:
-its elements and the relations among them. `change_set_save_diagram` stores that view as a new
-diagram, through the same create as any diagram, and records it as the candidate's `diagram`, so the
-candidate can be sketched on it. The diagram draws only what the model holds; what the candidate
-creates or changes is drawn over it on the canvas and reaches the model only when the candidate is
-applied. A candidate whose scope holds nothing of the model has no view to save. Stressors, end states, incidence, adaptations and verdicts are rows of the
+A candidate's picture needs no stored diagram. A candidate records the diagram it is drawn on as
+`diagram`, and one stacked on another is drawn on the nearest diagram its stack names. Where none is
+named, its picture is a view generated from the model elements it reads over and the relations among
+them, and for a candidate that reads over nothing yet it is empty. The picture routes serve the
+diagram editor's reads for that picture, so the same editor sketches a diagram and a candidate. What
+the candidate creates or changes is drawn over the picture and reaches the model only when the
+candidate is applied.
+
+`change_set_save_diagram` (**Save as diagram…** on a candidate's page) stores the generated view as a
+new diagram, through the same create as any diagram, and records it as the candidate's `diagram`. The
+diagram draws only what the model holds. A candidate that reads over nothing of the model has no view
+to save. Stressors, end states, incidence, adaptations and verdicts are rows of the
 document's tables, written with `artifact_edit_document_table`
 (`PATCH /api/documents/{id}/tables/{table}`). The reads are `analysis_progress`, `analysis_incidence`
 and `analysis_test_set`. Holding out a test set and reading residuality are described in
