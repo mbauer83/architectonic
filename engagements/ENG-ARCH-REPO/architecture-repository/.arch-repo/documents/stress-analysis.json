@@ -1,0 +1,221 @@
+{
+  "abbreviation": "STRESS",
+  "name": "Stress analysis",
+  "subdirectory": "stress-analyses",
+  "frontmatter_schema": {
+    "type": "object",
+    "required": [
+      "title",
+      "status"
+    ],
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "accepted",
+          "rejected",
+          "superseded"
+        ]
+      },
+      "question": {
+        "type": "string"
+      },
+      "naive-candidate": {
+        "type": "string"
+      },
+      "scope-diagram": {
+        "type": "string"
+      }
+    }
+  },
+  "sections": [
+    {
+      "name": "Naive Architecture",
+      "suggested_connections": [
+        "diagram:@all"
+      ]
+    },
+    {
+      "name": "Stressors",
+      "tables": [
+        {
+          "name": "stressors",
+          "row_id": "S",
+          "columns": [
+            {
+              "name": "stressor",
+              "required": true
+            },
+            {
+              "name": "kind"
+            },
+            {
+              "name": "origin",
+              "enum": [
+                "drawn",
+                "elicited",
+                "model-prompted"
+              ]
+            },
+            {
+              "name": "plausible",
+              "type": "boolean"
+            },
+            {
+              "name": "set",
+              "enum": [
+                "design",
+                "test"
+              ],
+              "required": true
+            },
+            {
+              "name": "end_state",
+              "type": "row",
+              "table": "end-states"
+            },
+            {
+              "name": "subject"
+            },
+            {
+              "name": "consequence"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "End States",
+      "tables": [
+        {
+          "name": "end-states",
+          "row_id": "E",
+          "columns": [
+            {
+              "name": "end_state",
+              "required": true
+            },
+            {
+              "name": "required_behaviour",
+              "type": "reference",
+              "to": [
+                "requirement"
+              ]
+            },
+            {
+              "name": "affects",
+              "type": "reference",
+              "to": [
+                "driver",
+                "goal",
+                "stakeholder"
+              ],
+              "many": true
+            },
+            {
+              "name": "no_change_reason"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Adaptations",
+      "tables": [
+        {
+          "name": "adaptations",
+          "row_id": "A",
+          "columns": [
+            {
+              "name": "end_states",
+              "type": "row",
+              "table": "end-states",
+              "many": true,
+              "required": true
+            },
+            {
+              "name": "candidate_architecture",
+              "required": true
+            },
+            {
+              "name": "integration",
+              "enum": [
+                "candidate",
+                "integrated",
+                "decided-out",
+                "superseded"
+              ]
+            },
+            {
+              "name": "reasoning"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Incidence",
+      "tables": [
+        {
+          "name": "incidence",
+          "row_id": "I",
+          "columns": [
+            {
+              "name": "stressor",
+              "type": "row",
+              "table": "stressors",
+              "required": true
+            },
+            {
+              "name": "component",
+              "required": true
+            },
+            {
+              "name": "note"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Test Set",
+      "tables": [
+        {
+          "name": "survival",
+          "row_id": "T",
+          "columns": [
+            {
+              "name": "stressor",
+              "type": "row",
+              "table": "stressors",
+              "required": true
+            },
+            {
+              "name": "architecture",
+              "required": true
+            },
+            {
+              "name": "verdict",
+              "enum": [
+                "survives",
+                "degrades",
+                "fails"
+              ]
+            },
+            {
+              "name": "usable",
+              "type": "boolean"
+            },
+            {
+              "name": "reasoning"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
