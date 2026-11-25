@@ -28,7 +28,7 @@ export const CANDIDATE_WORDS: CanvasWords = {
   deleteEntry: 'Remove from the candidate…',
   deleteHint: 'records a remove-entity operation; asks first',
   deleteQuestion: (name) =>
-    `Remove ${name} from this candidate? It records a remove-entity operation; the model keeps it until the candidate is applied.`,
+    `Remove ${name} from this candidate? It records a remove-entity operation; the model keeps it until Apply.`,
   deleteConfirm: 'Remove from the candidate',
   removeEntry: 'Remove from view',
   removeHint: 'records nothing; the candidate keeps it',

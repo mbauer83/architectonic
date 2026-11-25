@@ -70,7 +70,8 @@ export function useAnalysisScope(svc: ScopeAccess, choices: ScopeChoices) {
   /** What the scope is of, in words: the diagram, the viewpoint or the search it was chosen by. */
   const subject = computed((): string => {
     if (source.value === 'search') return searched.value ? `search “${searched.value}”` : ''
-    if (source.value === 'viewpoint') return choices.viewpoints().find((one) => one.slug === viewpoint.value)?.name ?? ''
+    const named = choices.viewpoints().find((one) => one.slug === viewpoint.value)
+    if (source.value === 'viewpoint') return named?.name ?? ''
     return choices.diagrams().find((one) => one.artifact_id === diagramId.value)?.name ?? ''
   })
 
