@@ -21,6 +21,7 @@ from src.infrastructure.rest.routers._openapi import (
     WRITE_RESPONSES,
     WriteResultResponse,
 )
+from src.infrastructure.rest.routers.connections.neighbor_routes import register_neighbor_routes
 from src.infrastructure.rest.routers.connections.read_routes import register_connection_read_routes
 
 # Accepted multiplicity formats: n  |  n..m  |  n..*  |  *
@@ -37,6 +38,7 @@ router = APIRouter()
 
 
 register_connection_read_routes(router)
+register_neighbor_routes(router)
 
 
 class _Body(BaseModel):

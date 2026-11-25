@@ -18,6 +18,7 @@ from src.application.change_sets import recorded_form
 from src.application.change_sets.candidate_architecture import (
     CandidateArchitecture,
     MalformedCandidateArchitecture,
+    TargetState,
 )
 from src.application.change_sets.operations import MalformedChangeSet
 from src.domain.yaml_documents import parse_yaml_with_unique_keys
@@ -32,9 +33,13 @@ _SATISFIES = "satisfies"
 _SCOPE = "scope"
 _DIAGRAM = "diagram"
 _CHANGES = "changes"
+_TARGET_STATE = "target-state"
+#: The parts of a recorded target state: three ids, then two mappings of ids.
+_TARGET_IDS = ("baseline", "target", "gap")
+_TARGET_MAPS = ("copies", "added")
 
 _REQUIRED = (_ID, _NAME, _STATE, _CHANGES)
-_OPTIONAL = (_RATIONALE, _PARENT, _ANSWERS, _SATISFIES, _SCOPE, _DIAGRAM)
+_OPTIONAL = (_RATIONALE, _PARENT, _ANSWERS, _SATISFIES, _SCOPE, _DIAGRAM, _TARGET_STATE)
 
 
 def to_mapping(candidate: CandidateArchitecture) -> dict[str, Any]:
@@ -50,6 +55,7 @@ def to_mapping(candidate: CandidateArchitecture) -> dict[str, Any]:
         _SCOPE: list(candidate.scope),
         _DIAGRAM: candidate.diagram,
         _CHANGES: recorded_form.to_mapping(candidate.changes),
+        _TARGET_STATE: _target_state_to_mapping(candidate.target_state),
     }
     return {key: value for key, value in recorded.items() if key in _REQUIRED or value}
 
@@ -83,7 +89,37 @@ def from_mapping(recorded: Mapping[str, Any]) -> CandidateArchitecture:
         satisfies=tuple(recorded.get(_SATISFIES, ())),
         scope=tuple(recorded.get(_SCOPE, ())),
         diagram=recorded.get(_DIAGRAM),
+        target_state=_target_state_from(recorded.get(_TARGET_STATE)),
     )
+
+
+def _target_state_to_mapping(state: TargetState | None) -> dict[str, Any] | None:
+    if state is None:
+        return None
+    return {
+        "baseline": state.baseline, "target": state.target, "gap": state.gap,
+        "copies": dict(state.copies), "added": dict(state.added),
+    }
+
+
+def _target_state_from(recorded: object) -> TargetState | None:
+    """A recorded target state, refused unless it names its three ids and maps ids to ids."""
+    if recorded is None:
+        return None
+    if not isinstance(recorded, Mapping) or set(recorded) - {*_TARGET_IDS, *_TARGET_MAPS}:
+        raise MalformedCandidateArchitecture(
+            f"The candidate field {_TARGET_STATE!r} names {', '.join((*_TARGET_IDS, *_TARGET_MAPS))} and nothing else."
+        )
+    ids = [recorded.get(key) for key in _TARGET_IDS]
+    maps: list[object] = [recorded.get(key) or {} for key in _TARGET_MAPS]
+    if not all(isinstance(value, str) for value in ids) or not all(
+        isinstance(mapping, Mapping) and all(isinstance(part, str) for pair in mapping.items() for part in pair)
+        for mapping in maps
+    ):
+        raise MalformedCandidateArchitecture(f"The candidate field {_TARGET_STATE!r} holds ids, by text.")
+    baseline, target, gap = (str(value) for value in ids)
+    copies, added = (dict(mapping) if isinstance(mapping, Mapping) else {} for mapping in maps)
+    return TargetState(baseline, target, gap, copies=copies, added=added)
 
 
 

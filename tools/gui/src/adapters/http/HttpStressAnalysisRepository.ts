@@ -1,7 +1,8 @@
 import { Effect } from 'effect'
 import {
   AnalysisIncidenceSchema, AnalysisProgressSchema, AnalysisStartedSchema, CandidateApplicationSchema,
-  CandidateComparisonSchema, CandidateDiagramSavedSchema, CandidateIntegrationSchema,
+  CandidateComparisonSchema, CandidateDiagramSavedSchema, CandidateIntegrationSchema, CandidateMoveSchema,
+  CandidateTargetStateApplicationSchema,
   CandidateListSchema,
   CandidateResponseSchema, DocumentTablesSchema, DocumentTableWriteSchema, IntegrationCheckSchema,
 } from '../../domain/schemas/candidates'
@@ -29,6 +30,11 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
     postJson(candidateUrl(id, '/rebase'), { based_on: basedOn }, CandidateResponseSchema),
   applyCandidate: (id, dryRun) =>
     postJson(candidateUrl(id, '/apply'), { dry_run: dryRun }, CandidateApplicationSchema),
+  applyCandidateAsTargetState: (id, dryRun) => postJson(
+    candidateUrl(id, '/apply-as-target-state'), { dry_run: dryRun }, CandidateTargetStateApplicationSchema,
+  ),
+  moveCandidateIntoBaseline: (id, dryRun) =>
+    postJson(candidateUrl(id, '/move-into-baseline'), { dry_run: dryRun }, CandidateMoveSchema),
   saveCandidateDiagram: (id, basedOn, name) => postJson(
     candidateUrl(id, '/save-as-diagram'), { based_on: basedOn, ...(name ? { name } : {}), dry_run: false },
     CandidateDiagramSavedSchema,

@@ -1,6 +1,7 @@
 import type { Effect } from 'effect'
 import type {
-  AnalysisIncidence, AnalysisProgress, AnalysisStarted, CandidateApplication, CandidateComparison,
+  AnalysisIncidence, AnalysisProgress, AnalysisStarted, CandidateApplication, CandidateComparison, CandidateMove,
+  CandidateTargetStateApplication,
   CandidateDiagramSaved,
   CandidateIntegration, CandidateResponse, Resolution,
   CandidateSummary,
@@ -41,6 +42,15 @@ export interface StressAnalysisRepository {
    * run answers what would be written and the refusal; a refused apply answers 409, saying why.
    */
   readonly applyCandidate: (id: string, dryRun: boolean) => Effect.Effect<CandidateApplication, RepoError>
+  /**
+   * Write the candidate into the model as a target state beside the baseline, which it leaves as it is: added
+   * elements as drafts, "(target)" copies of changed ones, Baseline and Target plateaus and a «gap».
+   */
+  readonly applyCandidateAsTargetState: (
+    id: string, dryRun: boolean,
+  ) => Effect.Effect<CandidateTargetStateApplication, RepoError>
+  /** Apply a target state's kept operations to the originals, take the target state away, and integrate it. */
+  readonly moveCandidateIntoBaseline: (id: string, dryRun: boolean) => Effect.Effect<CandidateMove, RepoError>
   /**
    * Save the view generated from the scope of a candidate drawn on no stored diagram as a new diagram, and
    * draw the candidate on it; *name* defaults to the candidate's. Writes nothing of the candidate's operations.

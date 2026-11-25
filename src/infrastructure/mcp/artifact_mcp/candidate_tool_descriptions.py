@@ -83,6 +83,25 @@ CHANGE_SET_APPLY = (
     "be written and the refusal, if any, instead of raising it. operation_id is for artifact_get_operation."
 )
 
+CHANGE_SET_APPLY_AS_TARGET_STATE = (
+    "Write a draft or offered candidate into the model as a target state beside the baseline, in one "
+    "transaction: each element it adds as a draft, each element it changes as a \"‹name› (target)\" copy of the "
+    "same type with the candidate's values, its relations and an association tracing it to the original, and a "
+    "Baseline and a Target plateau aggregating originals and replacements with a «gap» assessment associated "
+    "with both. The originals are not changed; the candidate keeps its operations and is offered (state "
+    "candidate) with its target_state recorded. Refused as change_set_apply is. dry_run (default true) answers "
+    "the generated operations and the target_state ids. Move it into the baseline with "
+    "change_set_move_into_baseline."
+)
+
+CHANGE_SET_MOVE_INTO_BASELINE = (
+    "Move a candidate's target state into the baseline as one generated operation list: its own operations "
+    "applied to the originals, relations drawn to a copy moved to its original, the copies, plateaus and gap "
+    "removed with their relations, and the added elements set active. Refused while an operation conflicts or "
+    "has drifted (re-base with change_set_rebase). On success the candidate is integrated. dry_run (default "
+    "true) answers the generated operations and their standing."
+)
+
 CHANGE_SET_INTEGRATE = (
     "Integrate two or more drafts or offered candidates that stack on the same one into a new draft holding "
     "every operation of each, converging ones once. Each conflict between them (as change_set_check reports "

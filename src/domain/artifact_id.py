@@ -73,6 +73,15 @@ class MalformedArtifactIdError(ValueError):
     pass
 
 
+def held_record_id(diagram_id: str, entity_type: str, local_id: str) -> str:
+    """The id of a record a diagram holds: ``DIAGRAM_ID#type/local``, which `stable_id` reads.
+
+    Composed here so the form is written where it is read. A transport that cannot carry the slash
+    in one path segment addresses the three parts separately and joins them with this.
+    """
+    return f"{diagram_id}#{entity_type}/{local_id}"
+
+
 def stable_id(s: str) -> str:
     """Return the short (rename-stable) form of an artifact ID.
 

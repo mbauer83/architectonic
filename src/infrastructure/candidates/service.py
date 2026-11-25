@@ -119,6 +119,10 @@ class CandidateService:
             raise CandidateConflict(
                 f"The candidate changed: its current version is {version}. Read it before deleting it."
             )
+        if candidate.target_state is not None:
+            raise CandidateConflict(
+                f"{ref} is in the model as a target state, which names it. Move it into the baseline first."
+            )
         if candidate.state == "integrated":
             raise CandidateConflict(
                 f"{ref} is integrated, and is kept as the record of what was written to the model. "
@@ -167,7 +171,9 @@ class CandidateService:
 
     def rebase(self, ref: str, based_on: str) -> dict[str, Any]:
         """Write each drifted operation again against the model as it stands now. Nothing drifted, nothing changes."""
-        candidate = _a_draft(self.store.require(ref), "re-based")
+        found = self.store.require(ref)
+        # A candidate in the model as a target state is re-based too: the move applies its operations.
+        candidate = found if found.target_state else _a_draft(found, "re-based")
         ref = candidate.id
         moved = rebase(candidate, self.store, self.registry, self.index.read_model_version().etag)
         return self.save(to_mapping(moved), based_on, ref=ref)
@@ -300,14 +306,19 @@ def _with_minted_id(edit: Mapping[str, Any]) -> Mapping[str, Any]:
     if edit.get("op") != "create_entity" or edit.get("artifact_id"):
         return edit
     fields: Mapping[str, Any] = edit.get("fields") or {}
-    info = get_module_registry().find_entity_type(EntityTypeName(str(fields.get("artifact_type") or "")))
+    minted = minted_entity_id(str(fields.get("artifact_type") or ""), str(fields.get("name") or ""))
+    return {**edit, "artifact_id": minted}
+
+
+def minted_entity_id(artifact_type: str, name: str) -> str:
+    """A new id for an entity of *artifact_type* named *name*, minted as the write path mints one."""
+    info = get_module_registry().find_entity_type(EntityTypeName(artifact_type))
     if info is None:
         raise ValueError(
-            f"A new entity names its artifact_type, and {fields.get('artifact_type')!r} is not one: see the "
+            f"A new entity names its artifact_type, and {artifact_type!r} is not one: see the "
             "entity types `artifact_help` lists."
         )
-    minted = get_default_allocator().allocate(prefix=info.prefix, name_hint=str(fields.get("name") or ""))
-    return {**edit, "artifact_id": minted}
+    return str(get_default_allocator().allocate(prefix=info.prefix, name_hint=name))
 
 
 def _rows_of(tables: DocumentTables, name: str) -> tuple[Any, ...]:

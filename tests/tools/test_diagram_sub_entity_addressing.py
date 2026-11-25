@@ -138,3 +138,46 @@ def test_the_sub_entity_route_does_not_shadow_the_metadata_routes(diagram_client
         json={"patch": {"description": "x"}, "dry_run": True},
     )
     assert response.status_code != 405, "the metadata route was shadowed by the sub-entity read"
+
+
+@pytest.fixture()
+def neighbourhood_client(diagram_client):
+    """The same repository, with the connection routes the neighbourhood is served by."""
+    from starlette.testclient import TestClient
+
+    from src.infrastructure.app_bootstrap import install_module_registry
+    from src.infrastructure.rest.routers.connections.router import router as connections_router
+
+    app = build_api_app(connections_router)
+    install_module_registry(app)
+    return TestClient(app)
+
+
+def test_a_diagram_owned_construct_has_its_neighbourhood_at_its_sub_entity_address(neighbourhood_client) -> None:
+    """The regression: a GSN goal selected on its diagram asked `/api/entities/{id}/neighbors`, which the
+    slash in its id made unroutable (404 from the router, not the handler). The neighbourhood is served at
+    the construct's own address, and reads the record the flat address names."""
+    response = neighbourhood_client.get(f"/api/diagrams/{_DIAGRAM_ID}/entities/nodes/g11/neighbors")
+    assert response.status_code == 200, response.text
+    assert response.json()["traversal"] == "direct"
+    derived = neighbourhood_client.get(
+        f"/api/diagrams/{_DIAGRAM_ID}/entities/nodes/g11/neighbors",
+        params={"traversal": "derived", "include_potential": True},
+    )
+    assert derived.status_code == 200, derived.text
+    assert derived.json()["traversal"] == "derived"
+
+
+def test_an_unknown_construct_has_no_neighbourhood(neighbourhood_client) -> None:
+    response = neighbourhood_client.get(f"/api/diagrams/{_DIAGRAM_ID}/entities/nodes/does-not-exist/neighbors")
+    assert response.status_code == 404
+    assert "does-not-exist" in response.text
+
+
+def test_the_held_record_id_is_composed_as_stable_id_reads_it() -> None:
+    """The writer and the reader of `DIAGRAM#type/local` agree: the stable form keeps the local part."""
+    from src.domain.artifact_id import held_record_id, stable_id
+
+    composed = held_record_id(_DIAGRAM_ID, "nodes", "g11")
+    assert composed == f"{_DIAGRAM_ID}#nodes/g11"
+    assert stable_id(composed) == "GSN@1781338120.SubEnt1#nodes/g11"

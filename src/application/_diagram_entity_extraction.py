@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 
+from src.domain.artifact_id import held_record_id
 from src.domain.diagrams.drawn_relations import held_connection_id
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, DiagramRecord, EntityRecord
 from src.domain.ontology_representation.ontology_protocol import DiagramTypeModule
@@ -168,7 +169,7 @@ def extract_diagram_entities(diag: DiagramRecord, scope: HeldRecordScope) -> lis
             local_id = _diagram_local_id(item)
             if not local_id:
                 continue
-            artifact_id = local_id if is_workspace else f"{diag.artifact_id}#{entity_type}/{local_id}"
+            artifact_id = local_id if is_workspace else held_record_id(diag.artifact_id, entity_type, local_id)
             name = str(item.get("label") or item.get("text") or item.get("name") or local_id)
             content_text = _diagram_entity_content_text(item)
             result.append(
@@ -213,7 +214,7 @@ def diagram_local_to_full(diag: DiagramRecord, scope: HeldRecordScope) -> dict[s
             local_id = _diagram_local_id(item)
             if not local_id:
                 continue
-            result[local_id] = local_id if is_workspace else f"{diag.artifact_id}#{entity_type}/{local_id}"
+            result[local_id] = local_id if is_workspace else held_record_id(diag.artifact_id, entity_type, local_id)
     return result
 
 

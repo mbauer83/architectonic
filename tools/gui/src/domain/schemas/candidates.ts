@@ -97,6 +97,45 @@ export const CandidateApplicationSchema = Schema.Struct({
 export type CandidateApplication = typeof CandidateApplicationSchema.Type
 
 /**
+ * Where a candidate applied as a target state stands in the model: its two plateaus and its gap, the
+ * "(target)" copy of each element it changes (by the original's id), and the elements it adds (by alias).
+ */
+export const TargetStateIdsSchema = Schema.Struct({
+  baseline: Schema.String,
+  target: Schema.String,
+  gap: Schema.String,
+  copies: Schema.Record({ key: Schema.String, value: Schema.String }),
+  added: Schema.Record({ key: Schema.String, value: Schema.String }),
+})
+export type TargetStateIds = typeof TargetStateIdsSchema.Type
+
+/** A candidate applied as a target state beside the baseline, or a dry run of it: what is written, and where. */
+export const CandidateTargetStateApplicationSchema = Schema.Struct({
+  candidate: Schema.String,
+  dry_run: Schema.Boolean,
+  applied: Schema.Boolean,
+  refusal: Schema.optional(Schema.String),
+  operation_id: Schema.optional(Schema.String),
+  standing: Schema.Array(OperationStandingSchema),
+  target_state: Schema.optional(TargetStateIdsSchema),
+  operations: Schema.optional(Schema.Array(FieldsSchema)),
+  unheld: Schema.optional(Schema.Array(Schema.String)),
+})
+export type CandidateTargetStateApplication = typeof CandidateTargetStateApplicationSchema.Type
+
+/** A target state moved into the baseline, or a dry run of it: the generated operations and their standing. */
+export const CandidateMoveSchema = Schema.Struct({
+  candidate: Schema.String,
+  dry_run: Schema.Boolean,
+  integrated: Schema.Boolean,
+  refusal: Schema.optional(Schema.String),
+  operation_id: Schema.optional(Schema.String),
+  standing: Schema.Array(OperationStandingSchema),
+  operations: Schema.optional(Schema.Array(FieldsSchema)),
+})
+export type CandidateMove = typeof CandidateMoveSchema.Type
+
+/**
  * The generated view a candidate is drawn on, saved as a diagram (or a dry run of it): what the diagram
  * draws of the model, and the candidate's version once it is drawn on it.
  */

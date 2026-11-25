@@ -245,6 +245,44 @@ class CandidateApplication(NullsOmitted):
     )
 
 
+class TargetStateIds(NullsOmitted):
+    """Where a candidate applied as a target state stands in the model, by the ids the application wrote."""
+
+    baseline: str = Field(description="The Baseline plateau.")
+    target: str = Field(description="The Target plateau.")
+    gap: str = Field(description="The «gap» assessment associated with both plateaus.")
+    copies: dict[str, str] = Field(description="Each changed element's id, to its \"(target)\" copy's.")
+    added: dict[str, str] = Field(description="Each element the candidate adds, by its alias, to its id.")
+
+
+class CandidateTargetStateApplication(NullsOmitted):
+    """What applying a candidate as a target state writes beside the baseline, or why it would not."""
+
+    candidate: str
+    dry_run: bool
+    applied: bool = Field(description="Whether the target state was written and recorded on the candidate.")
+    refusal: str | None = Field(None, description="Why the candidate cannot be applied, in the refusing rule's words.")
+    operation_id: str | None = Field(None, description="The write's operation, when one ran.")
+    standing: list[OperationStanding] = Field(description="Each of the candidate's own operations' standing.")
+    target_state: TargetStateIds | None = Field(None, description="Where it stands, or would, once written.")
+    operations: list[Fields] = Field(default_factory=list, description="The generated operations, as written.")
+    unheld: list[str] = Field(
+        default_factory=list, description="Types of elements a plateau may not aggregate, left unheld.",
+    )
+
+
+class CandidateMove(NullsOmitted):
+    """What moving a target state into the baseline writes, or why it would not."""
+
+    candidate: str
+    dry_run: bool
+    integrated: bool = Field(description="Whether the move was written and the candidate integrated.")
+    refusal: str | None = Field(None, description="Why the move is refused, in the refusing rule's words.")
+    operation_id: str | None = Field(None, description="The write's operation, when one ran.")
+    standing: list[OperationStanding] = Field(description="Each generated operation's standing.")
+    operations: list[Fields] = Field(default_factory=list, description="The generated operations.")
+
+
 class CandidateDiagramSave(Closed):
     """Store the view a candidate drawn on no stored diagram is generated as, and draw the candidate on it."""
 

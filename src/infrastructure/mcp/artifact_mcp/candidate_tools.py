@@ -19,6 +19,7 @@ from src.infrastructure.candidates.analysis_start import document_writer, start_
 from src.infrastructure.candidates.diagram_save import diagram_writer, save_as_diagram
 from src.infrastructure.candidates.integrate import integrate_candidates
 from src.infrastructure.candidates.service import CandidateService
+from src.infrastructure.candidates.target_state import apply_as_target_state, move_target_into_baseline
 from src.infrastructure.mcp.artifact_mcp import candidate_tool_descriptions as said
 from src.infrastructure.mcp.artifact_mcp.context import (
     authoritative_callbacks_for,
@@ -125,6 +126,18 @@ def change_set_rebase(artifact_id: CandidateId, based_on: BasedOn, repo_root: Re
 
 def change_set_apply(artifact_id: CandidateId, dry_run: bool = True, repo_root: RepoRoot = None) -> dict[str, Any]:
     return _service(repo_root).apply(artifact_id, dry_run=dry_run)
+
+
+def change_set_apply_as_target_state(
+    artifact_id: CandidateId, dry_run: bool = True, repo_root: RepoRoot = None,
+) -> dict[str, Any]:
+    return apply_as_target_state(_service(repo_root), artifact_id, dry_run=dry_run)
+
+
+def change_set_move_into_baseline(
+    artifact_id: CandidateId, dry_run: bool = True, repo_root: RepoRoot = None,
+) -> dict[str, Any]:
+    return move_target_into_baseline(_service(repo_root), artifact_id, dry_run=dry_run)
 
 
 def change_set_integrate(
@@ -243,6 +256,8 @@ _WRITE_TOOLS = (
     (change_set_edit, said.CHANGE_SET_EDIT, DESTRUCTIVE_LOCAL_WRITE),
     (change_set_rebase, said.CHANGE_SET_REBASE, DESTRUCTIVE_LOCAL_WRITE),
     (change_set_apply, said.CHANGE_SET_APPLY, DESTRUCTIVE_LOCAL_WRITE),
+    (change_set_apply_as_target_state, said.CHANGE_SET_APPLY_AS_TARGET_STATE, LOCAL_WRITE),
+    (change_set_move_into_baseline, said.CHANGE_SET_MOVE_INTO_BASELINE, DESTRUCTIVE_LOCAL_WRITE),
     (change_set_save_diagram, said.CHANGE_SET_SAVE_DIAGRAM, LOCAL_WRITE),
     (change_set_integrate, said.CHANGE_SET_INTEGRATE, LOCAL_WRITE),
     (change_set_delete, said.CHANGE_SET_DELETE, DESTRUCTIVE_LOCAL_WRITE),

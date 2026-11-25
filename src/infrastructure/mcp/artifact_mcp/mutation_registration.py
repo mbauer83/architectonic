@@ -172,6 +172,8 @@ MUTATION_TOOL_MANIFEST: dict[str, MutationToolManifestRow] = {
     "change_set_edit": _ENGAGEMENT_ROW,
     "change_set_rebase": _ENGAGEMENT_ROW,
     "change_set_apply": _ENGAGEMENT_ROW,
+    "change_set_apply_as_target_state": _ENGAGEMENT_ROW,
+    "change_set_move_into_baseline": _ENGAGEMENT_ROW,
     "change_set_save_diagram": _ENGAGEMENT_ROW,
     "change_set_integrate": _ENGAGEMENT_ROW,
     "change_set_delete": _ENGAGEMENT_ROW,

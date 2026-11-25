@@ -29,7 +29,7 @@ current version.
 |---|---|---|
 | `draft` | yes | `candidate`, `rejected`, `superseded` |
 | `candidate` | no | `draft`, `rejected`, `superseded` |
-| `integrated` | no | — (reached only by applying it) |
+| `integrated` | no | — (reached only by applying it, or by moving its target state into the baseline) |
 | `rejected`, `superseded` | no | — |
 
 ### The operations
@@ -49,6 +49,8 @@ current version.
 | Integrate candidates into a new one, resolving conflicts | `change_set_integrate` | `POST /api/change-set-integrations` |
 | Re-base drifted operations | `change_set_rebase` | `POST /api/change-sets/{id}/rebase` |
 | Apply to the model | `change_set_apply` | `POST /api/change-sets/{id}/apply` |
+| Apply as a target state beside the baseline | `change_set_apply_as_target_state` | `POST /api/change-sets/{id}/apply-as-target-state` |
+| Move the target state into the baseline | `change_set_move_into_baseline` | `POST /api/change-sets/{id}/move-into-baseline` |
 | Delete | `change_set_delete` | `DELETE /api/change-sets/{id}` |
 | Residuality in each analysis that judged it | `change_set_residuality` | `GET /api/change-sets/{id}/residuality` |
 
@@ -86,6 +88,32 @@ it is now, keeping the value it asks for.
 It is refused while an operation conflicts or has drifted, or while a candidate beneath it is not
 integrated. Operations already in the model are skipped. A dry run, the default, answers what would be
 written and the refusal, if any.
+
+### Applying as a target state
+
+`change_set_apply_as_target_state` writes the candidate into the model beside the baseline and leaves
+the elements it changes as they are:
+
+| The candidate | In the model |
+|---|---|
+| adds an element | the element, as a `draft` |
+| changes an element, or a relation between elements the model holds | "‹name› (target)", of the same type, with the candidate's values and the element's relations, and an association to the original |
+| removes an element | nothing new: the element stays |
+| (always) | a "Baseline: ‹candidate›" and a "Target: ‹candidate›" plateau, and a "Gap: ‹candidate›" assessment with the `gap` specialization, associated with both |
+
+The Target plateau aggregates the added elements and the "(target)" copies. The Baseline plateau
+aggregates the originals they replace and the elements the candidate removes. An element type a plateau
+may not aggregate is left out and listed as `unheld`. Everything is written in one transaction and is
+refused as a direct apply is. A dry run, the default, answers the generated operations and the ids.
+
+The candidate becomes `candidate` (offered) and records where its target state stands under
+`target-state`. While it stands, the candidate cannot be applied directly, deleted, returned to draft
+or given other operations; a re-base still works.
+
+`change_set_move_into_baseline` applies the candidate's own operations to the originals, moves any
+relation drawn to a "(target)" copy since onto its original, removes the copies, the plateaus and the
+gap with their relations, and sets each added element `active`. It is one generated operation list,
+refused while an operation conflicts or has drifted, and on success the candidate is `integrated`.
 
 ### Integrating
 

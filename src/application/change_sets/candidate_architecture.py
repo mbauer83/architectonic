@@ -29,11 +29,15 @@ generated from its scope.
 
 **What `answers` and `satisfies` hold is opaque here.** They are references whose form is decided by
 whoever stores a candidate. The value only keeps them.
+
+**It may stand in the model as a target state** (`target_state`): applied beside the baseline rather than
+onto it, until it is moved into the baseline (`target_state.py`, `target_move.py`).
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from typing import Literal, TypeAlias, get_args
 
 from src.application.change_sets.change_set import ChangeSet
@@ -88,8 +92,76 @@ def refused_transition(was: CandidateState | None, becomes: CandidateState, *, a
     return None
 
 
+def refused_while_targeted(
+    was: CandidateArchitecture | None, becomes: CandidateArchitecture, *, applied: bool = False,
+) -> str | None:
+    """Why *was* cannot be written as *becomes* given its target state, or None when it can.
+
+    A target state is recorded only by applying the candidate as one and cleared only by moving it into
+    the baseline — both *applied* writes. While it is in the model the "(target)" copies say what the
+    operations said, so the operations keep their claims and values (a re-base moves only their bases)
+    and the state stays where the application put it.
+    """
+    before = was.target_state if was else None
+    if becomes.target_state != before and not applied:
+        return (
+            "A target state is recorded by applying the candidate as one (change_set_apply_as_target_state) and "
+            "cleared by moving it into the baseline (change_set_move_into_baseline)."
+        )
+    if was is None or before is None or applied:
+        return None
+    if becomes.state != was.state:
+        return (
+            f"{was.id} is in the model as a target state, so its state stays {was.state} until it is moved into "
+            "the baseline."
+        )
+    # A re-base drops nothing here: it re-writes only drifted operations, whose value the model does not hold.
+    if _claims_and_values(becomes.changes) != _claims_and_values(was.changes):
+        return (
+            f"{was.id} is in the model as a target state, which says what its operations say. They change only "
+            "by a re-base, which moves their bases."
+        )
+    return None
+
+
+def _claims_and_values(changes: ChangeSet) -> set[str]:
+    """Each operation as what it claims and what it asks for, without what it was written against."""
+    return {
+        repr((operation.claim, getattr(operation, "value", None), getattr(operation, "fields", None)))
+        for operation in changes.operations
+    }
+
+
 class MalformedCandidateArchitecture(ValueError):
     """A candidate architecture that cannot exist as stated. The message says why."""
+
+
+@dataclass(frozen=True, slots=True)
+class TargetState:
+    """Where a candidate applied as a target state stands in the model, by the ids the application wrote.
+
+    A Baseline and a Target plateau with a «gap» assessment between them; a "(target)" copy of each
+    element the candidate changes, by the original's stable id; and the elements it adds, by the alias
+    its operations name them with. Moving the target into the baseline reads these and takes the
+    copies, the plateaus and the gap away again.
+    """
+
+    baseline: str
+    target: str
+    gap: str
+    copies: Mapping[str, str] = field(default_factory=dict)
+    added: Mapping[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        named = (self.baseline, self.target, self.gap, *self.copies, *self.copies.values(), *self.added.values())
+        if not all(named) or not all(self.added):
+            raise MalformedCandidateArchitecture("a target state names every element it wrote by its id")
+        object.__setattr__(self, "copies", {canonical_entity_key(o): c for o, c in self.copies.items()})
+
+    @property
+    def written(self) -> tuple[str, ...]:
+        """What the target state wrote that a move into the baseline takes away again."""
+        return (self.baseline, self.target, self.gap, *self.copies.values())
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,6 +181,8 @@ class CandidateArchitecture:
     scope: tuple[str, ...] = ()
     #: The stored diagram the candidate is drawn on, by id; None where it is drawn on what it stacks on.
     diagram: str | None = None
+    #: Where its target state stands in the model, while it is there; None when it was not applied as one.
+    target_state: TargetState | None = None
 
     def __post_init__(self) -> None:
         # The model's entities by their stable id, as operations name them (`operations`).

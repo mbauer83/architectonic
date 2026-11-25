@@ -72,6 +72,8 @@ _ENGAGEMENT_OPERATIONS: tuple[str, ...] = (
     "matrices_replace_matrix",
     "changes_create_candidate",
     "changes_apply_candidate",
+    "changes_apply_candidate_as_target_state",
+    "changes_move_candidate_into_baseline",
     "changes_delete_candidate",
     "changes_edit_candidate",
     "changes_integrate_candidates",
