@@ -47,7 +47,7 @@ class TestTheTwoExampleTypesAreExpressible:
             "End States": ["end-states"],
             "Adaptations": ["adaptations"],
             "Incidence": ["incidence"],
-            "Test": ["survival"],
+            "Test Set": ["survival"],
         }
 
     def test_the_incidence_relation_is_rows_of_stressor_component_and_note(self) -> None:

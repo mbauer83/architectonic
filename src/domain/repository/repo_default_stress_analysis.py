@@ -1,8 +1,21 @@
-"""Default stress-analysis document type. Subject and hit ids resolve in the naive candidate."""
+"""Default stress-analysis document type. Subject and hit ids resolve in the naive candidate.
+
+A stressor belongs to the design set, which the analysis is walked and adapted against, or to the test
+set, held apart and judged at the end. A verdict names the architecture it was reached on: the naive
+architecture, or a candidate by id.
+"""
 
 #: The document type an analysis is, and the frontmatter key naming its naive candidate.
 STRESS_ANALYSIS = "stress-analysis"
 NAIVE_CANDIDATE = "naive-candidate"
+
+#: The two sets a stressor belongs to.
+DESIGN_SET = "design"
+TEST_SET = "test"
+#: How a verdict names the naive architecture; any other architecture is named by its candidate id.
+NAIVE_ARCHITECTURE = "naive"
+#: What an architecture does under a test stressor.
+SURVIVES, DEGRADES, FAILS = "survives", "degrades", "fails"
 
 STRESS_ANALYSIS_SCHEMA = {
     "abbreviation": "STRESS",
@@ -32,7 +45,7 @@ STRESS_ANALYSIS_SCHEMA = {
                         {"name": "kind"},
                         {"name": "origin", "enum": ["drawn", "elicited", "model-prompted"]},
                         {"name": "plausible", "type": "boolean"},
-                        {"name": "set", "enum": ["design", "test"], "required": True},
+                        {"name": "set", "enum": [DESIGN_SET, TEST_SET], "required": True},
                         {"name": "end_state", "type": "row", "table": "end-states"},
                         {"name": "subject"},
                         {"name": "consequence"},
@@ -85,15 +98,17 @@ STRESS_ANALYSIS_SCHEMA = {
             ],
         },
         {
-            "name": "Test",
+            "name": "Test Set",
             "tables": [
                 {
                     "name": "survival",
                     "row_id": "T",
                     "columns": [
                         {"name": "stressor", "type": "row", "table": "stressors", "required": True},
-                        {"name": "naive_survives", "type": "boolean"},
-                        {"name": "integrated_survives", "type": "boolean"},
+                        {"name": "architecture", "required": True},
+                        {"name": "verdict", "enum": [SURVIVES, DEGRADES, FAILS]},
+                        {"name": "usable", "type": "boolean"},
+                        {"name": "reasoning"},
                     ],
                 }
             ],

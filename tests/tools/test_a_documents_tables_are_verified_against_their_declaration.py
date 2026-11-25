@@ -68,7 +68,8 @@ def _complete_stress_analysis(repo: Path, doc: Path) -> Rows:
             {"end_states": "E1", "candidate_architecture": "queue-payments", "integration": "candidate"}
         ],
         "incidence": [{"stressor": "S1", "component": component, "note": "calls the provider inline"}],
-        "survival": [{"stressor": "S2", "naive_survives": "false", "integrated_survives": "true"}],
+        "survival": [{"stressor": "S2", "architecture": "naive", "verdict": "fails", "usable": "true",
+                      "reasoning": "every payment waits on the provider"}],
     }
 
 
@@ -156,17 +157,23 @@ class TestWhatIsNotThereYetWarns:
         assert "add one headed Id | End state | Required behaviour | Affects" in _messages(result)
 
     def test_a_declared_column_missing_from_the_header(self, stress: Stress) -> None:
-        table = "| Id | Stressor | Naive survives |\n|---|---|---|\n| T1 | S2 | false |"
+        table = (
+            "| Id | Stressor | Architecture | Verdict | Usable |\n|---|---|---|---|---|\n"
+            "| T1 | S2 | naive | fails | true |"
+        )
 
         findings, result = self._one(stress, texts={"survival": table})
 
         assert findings == [("W163", "warning")]
-        assert "has no column 'Integrated survives'" in result.issues[0].message
+        assert "has no column 'Reasoning'" in result.issues[0].message
 
     def test_a_missing_required_column_is_said_once_and_not_per_row(
         self, stress: Stress
     ) -> None:
-        table = "| Id | Naive survives |\n|---|---|\n| T1 | false |\n| T2 | true |"
+        table = (
+            "| Id | Verdict | Usable | Reasoning |\n|---|---|---|---|\n"
+            "| T1 | fails | true | x |\n| T2 | survives | true | y |"
+        )
 
         findings, _ = self._one(stress, texts={"survival": table})
 
@@ -174,8 +181,8 @@ class TestWhatIsNotThereYetWarns:
 
     def test_a_column_the_declaration_does_not_have(self, stress: Stress) -> None:
         table = (
-            "| Id | Stressor | Naive survives | Integrated survives | Owner |\n|---|---|---|---|---|\n"
-            "| T1 | S2 | false | true | me |"
+            "| Id | Stressor | Architecture | Verdict | Usable | Reasoning | Owner |\n|---|---|---|---|---|---|---|\n"
+            "| T1 | S2 | naive | fails | true | waits | me |"
         )
 
         findings, result = self._one(stress, texts={"survival": table})
@@ -309,7 +316,7 @@ class TestWhatIsSaidElsewhereIsNotSaidTwice:
     def test_a_missing_section_is_the_sections_finding_and_not_the_tables(self, tmp_path: Path) -> None:
         repo = repository_in(tmp_path, STRESS_ANALYSIS)
         schema = document_type(STRESS_ANALYSIS)
-        content = document_text(schema, {}).replace("## Test\n", "## Trial\n")
+        content = document_text(schema, {}).replace("## Test Set\n", "## Trial\n")
 
         result = _verify(repo, document_path(repo, schema), content)
 
@@ -372,7 +379,10 @@ class TestCreatingADocumentScaffoldsItsTables:
         created = _create(repo, STRESS_ANALYSIS, None, dry_run=True)
 
         assert created.content is not None
-        survival = "## Test\n\n| Id | Stressor | Naive survives | Integrated survives |\n|---|---|---|---|\n"
+        survival = (
+            "## Test Set\n\n| Id | Stressor | Architecture | Verdict | Usable | Reasoning |\n"
+            "|---|---|---|---|---|---|\n"
+        )
         assert survival in created.content
         assert "## Naive Architecture\n\n<!-- Expected links for this section: suggested: diagram:@all -->\n" in (
             created.content
