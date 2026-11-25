@@ -80,7 +80,8 @@ test('starting writes the naive architecture and the document together, and a re
   expect(refused.status()).toBe(422)
   expect(await listedCandidates(request)).toEqual(before)
 
-  const named = await request.delete(`/api/change-sets/${encodeURIComponent(naive.record.id)}`)
+  // A real delete, so the refusal is the one a reader meets, not a plan that answers the same way.
+  const named = await request.delete(`/api/change-sets/${encodeURIComponent(naive.record.id)}?dry_run=false`)
   expect(named.status()).toBe(409)
   expect(await named.text()).toContain('naive architecture of')
 })

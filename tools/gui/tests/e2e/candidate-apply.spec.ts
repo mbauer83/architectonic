@@ -27,7 +27,7 @@ test.beforeEach(async ({ request }) => {
 })
 
 test.afterEach(async ({ request }) => {
-  if (candidate) await request.delete(`/api/change-sets/${encodeURIComponent(candidate)}`, { params: { dry_run: 'false' } })
+  if (candidate) await request.delete(`/api/change-sets/${encodeURIComponent(candidate)}?dry_run=false`)
   candidate = ''
 })
 
