@@ -10,14 +10,22 @@ export interface ViewTransform {
   scale: Ref<number>
   tx: Ref<number>
   ty: Ref<number>
+  /**
+   * The least scale this view may be zoomed out to, where it may go below `MIN_SCALE`: a picture whose
+   * whole fits the window only at a smaller scale must still be reachable whole, and zoomed in from there
+   * a step at a time rather than in one jump to the floor.
+   */
+  least?: () => number
 }
 
 /**
  * Zoom *view* by *factor*, keeping the point *at* (pixels from the viewport's top left) where it is;
  * never past the range the scale may not leave.
  */
-export const zoomAbout = ({ scale, tx, ty }: ViewTransform, factor: number, at: { x: number; y: number }): void => {
-  const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale.value * factor))
+export const zoomAbout = (
+  { scale, tx, ty, least }: ViewTransform, factor: number, at: { x: number; y: number },
+): void => {
+  const next = Math.min(MAX_SCALE, Math.max(Math.min(MIN_SCALE, least?.() ?? MIN_SCALE), scale.value * factor))
   const ratio = next / scale.value
   tx.value = at.x * (1 - ratio) + tx.value * ratio
   ty.value = at.y * (1 - ratio) + ty.value * ratio
@@ -42,7 +50,7 @@ export const zoomAbout = ({ scale, tx, ty }: ViewTransform, factor: number, at: 
  */
 export function useWheelZoom(
   containerRef: Readonly<Ref<HTMLElement | null>>,
-  { scale, tx, ty }: ViewTransform,
+  view: ViewTransform,
 ): void {
   /** The nearest thing between *target* and the viewport that scrolls, if any. */
   const scrollableUnderPointer = (target: EventTarget | null, container: HTMLElement): boolean => {
@@ -66,7 +74,7 @@ export function useWheelZoom(
     if (scrollableUnderPointer(event.target, container)) return
     event.preventDefault()
     const rect = container.getBoundingClientRect()
-    zoomAbout({ scale, tx, ty }, event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP,
+    zoomAbout(view, event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP,
       { x: event.clientX - rect.left, y: event.clientY - rect.top })
   }
 

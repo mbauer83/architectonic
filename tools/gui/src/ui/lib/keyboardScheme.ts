@@ -56,3 +56,8 @@ export const viewportKeyOf = (
 
 /** How the zoom-in key is named under *scheme*. */
 export const zoomInKeyName = (scheme: KeyScheme): string => (scheme === 'qwerty' ? '+ or =' : '+')
+
+/** Whether a key pressed on *target* is typed into a field, rather than meant for the window or the canvas. */
+export const isTypingIn = (target: EventTarget | null): boolean =>
+  target instanceof HTMLElement
+  && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))

@@ -5,15 +5,11 @@
  */
 import { onBeforeUnmount, watch, type Ref } from 'vue'
 import type { ViewportZoom } from '../components/viewportZoom'
-import { viewportKeyOf } from '../lib/keyboardScheme'
+import { isTypingIn, viewportKeyOf } from '../lib/keyboardScheme'
 import { useEditingPreferences } from './useEditingPreferences'
 
 /** How far one press of `+` or `−` zooms. */
 const KEY_STEP = 1.2
-
-const typingIn = (target: EventTarget | null): boolean =>
-  target instanceof HTMLElement
-  && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
 
 export function useCanvasHostKeys(
   host: Readonly<Ref<HTMLElement | null>>, zoom: () => ViewportZoom | undefined,
@@ -22,14 +18,14 @@ export function useCanvasHostKeys(
 ) {
   const prefs = useEditingPreferences()
   const onKeydown = (event: KeyboardEvent) => {
-    if (typingIn(event.target) || event.defaultPrevented) return
+    if (isTypingIn(event.target) || event.defaultPrevented) return
     const view = zoom()
     const command = view ? viewportKeyOf(event, prefs.scheme.value) : null
     const enter = (event.key === 'e' || event.key === 'E') && !event.ctrlKey && !event.metaKey && !event.altKey
       ? edit() : null
     if (command === null && enter === null) return
     event.preventDefault()
-    if (command === 'fit') view?.resetView()
+    if (command === 'fit') view?.fitWhole()
     else if (command !== null) view?.zoomBy(command === 'in' ? KEY_STEP : 1 / KEY_STEP)
     else enter?.()
   }
