@@ -24,7 +24,9 @@ const queried = (value: unknown): readonly unknown[] => (Array.isArray(value) ? 
 const ids = computed(() => comparedIds(queried(route.query.candidate)))
 const askedBase = computed(() => (typeof route.query.base === 'string' ? route.query.base : ''))
 const diagramId = computed(() => (typeof route.query.diagram === 'string' ? route.query.diagram : ''))
-const comparison = useCandidateComparison(svc, { ids: () => ids.value, base: () => askedBase.value, diagram: () => diagramId.value })
+const comparison = useCandidateComparison(svc, {
+  ids: () => ids.value, base: () => askedBase.value, diagram: () => diagramId.value,
+})
 
 const diagrams = shallowRef<readonly DiagramSummary[]>([])
 const loaded = ref(false)
@@ -36,7 +38,8 @@ const showing = computed(() => (comparison.known.value.includes(shown.value) ? s
 
 const address = (change: Readonly<Record<string, string | string[]>>) => {
   const query = { ...route.query, ...change }
-  void router.replace({ query: Object.fromEntries(Object.entries(query).filter(([, value]) => value !== null && value !== '')) })
+  const kept = Object.entries(query).filter(([, value]) => value !== null && value !== '')
+  void router.replace({ query: Object.fromEntries(kept) })
 }
 const add = (id: string) => {
   if (id) address({ candidate: [...ids.value, id] })
@@ -207,13 +210,17 @@ onMounted(async () => {
 .page-hdr { display: flex; gap: 10px; align-items: center; }
 .page-hdr h1 { flex: 1; font-size: 20px; margin: 0; }
 .back { color: var(--muted); text-decoration: none; font-size: 13px; }
-.meta { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 8px 0; font-size: 12px; color: var(--muted); }
+.meta {
+  display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 8px 0; font-size: 12px; color: var(--muted);
+}
 .meta select { font: inherit; margin-left: 4px; max-width: 280px; }
 .err { color: var(--danger-strong); font-size: 12.5px; }
 .hint { color: var(--muted); font-size: 12.5px; }
 .overlaps { padding: 8px 10px; margin-bottom: 12px; font-size: 12.5px; }
 .ov-h { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; color: var(--text-2); }
-.side-by-side { display: grid; grid-template-columns: repeat(var(--panes), minmax(0, 1fr)); gap: 12px; align-items: start; }
+.side-by-side {
+  display: grid; grid-template-columns: repeat(var(--panes), minmax(0, 1fr)); gap: 12px; align-items: start;
+}
 .page > .tabs { display: none; margin-bottom: 8px; }
 .legend { font-size: 11.5px; color: var(--text-2); margin: 6px 2px; }
 @media (max-width: 1100px) {
