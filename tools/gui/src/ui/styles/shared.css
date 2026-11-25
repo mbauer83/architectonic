@@ -4,6 +4,10 @@
    dark grey. Zero specificity, so any component rule still wins. */
 :where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]), select, textarea) {
   background-color: var(--surface); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 6px; padding: 5px 8px; outline: none;
+}
+:where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]), select, textarea):focus-visible {
+  border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .domain-badge,

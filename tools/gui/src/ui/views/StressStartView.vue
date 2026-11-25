@@ -295,6 +295,7 @@ onMounted(async () => {
   margin-top: 3px;
   font: inherit;
   font-size: 13px;
+  font-weight: 400;
   text-transform: none;
   padding: 5px 8px;
 }
