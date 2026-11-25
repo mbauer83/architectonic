@@ -4,12 +4,12 @@
  * the diagram context the caller already holds.
  */
 import { computed } from 'vue'
-import type { DiagramContext } from '../../domain'
+import type { PictureContext } from '../../domain'
 import { stableEntityId } from '../../domain/artifactId'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import { occurrenceItems } from '../lib/archimateOccurrences'
 
-export function useDrawnEntities(context: () => DiagramContext | null, picture: () => LayoutGeometry | null) {
+export function useDrawnEntities(context: () => PictureContext | null, picture: () => LayoutGeometry | null) {
   const occurrences = computed(() => new Map(occurrenceItems(context()?.diagram.diagram_entities ?? {})
     .map((item) => [item.id, stableEntityId(item.backing_entity_id)])))
 

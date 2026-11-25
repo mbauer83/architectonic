@@ -12,7 +12,9 @@ import type { DiagramContext } from '../../domain'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import type { DiagramReplaceBody } from '../../ports/diagramWriteBodies'
-import { useDiagramEditing } from './useDiagramEditing'
+import { diagramPicture } from './pictureSource'
+import type { DrawnMembership } from '../../domain/layout/diagramMembership'
+import { type EditingOptions, useDiagramEditing } from './useDiagramEditing'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 
@@ -52,8 +54,12 @@ const service = {
   },
 } as unknown as ModelService
 
+/** The session over the stored diagram the tests arrange, read and saved through *svc*. */
+const overDiagram = (svc: ModelService, membership: () => DrawnMembership | null, options?: EditingOptions) =>
+  useDiagramEditing(svc, diagramPicture(svc, () => 'ARC@1.a.test'), membership, options)
+
 const opened = async () => {
-  const editing = useDiagramEditing(service, () => 'ARC@1.a.test', () => MEMBERSHIP)
+  const editing = useDiagramEditing(service, diagramPicture(service, () => 'ARC@1.a.test'), () => MEMBERSHIP)
   await editing.open()
   return editing
 }
@@ -177,9 +183,9 @@ describe('the boxes a session edits', () => {
   it('are written with the diagram, and read back so the server\'s ids are what the next edit starts from', async () => {
     const stated = [{ id: 'g-Front1', label: 'Front office', 'entity-ids': ['APP@1.a'] }]
     const getDiagram = vi.fn(() => Effect.succeed({ ...MEMBERSHIP, authored_groupings: stated }))
-    const editing = useDiagramEditing(
+    const editing = overDiagram(
       { ...service, previewLayoutGeometry: () => Effect.succeed(geometry), getDiagram } as unknown as ModelService,
-      () => 'ARC@1.a.test', () => MEMBERSHIP,
+       () => MEMBERSHIP,
     )
     await editing.open()
     const boxes = [{ label: 'Front office', 'entity-ids': ['APP@1.a'] }]
@@ -197,9 +203,9 @@ describe('an element added at a point', () => {
   const added: LayoutGeometry = {
     ...geometry, elements: [...geometry.elements, element('N', 'APP@9.n', at(250, 200, 350, 240))],
   }
-  const adding = () => useDiagramEditing(
+  const adding = () => overDiagram(
     { ...service, previewLayoutGeometry: () => Effect.succeed(added) } as unknown as ModelService,
-    () => 'ARC@1.a.test', () => MEMBERSHIP,
+     () => MEMBERSHIP,
   )
 
   it('is laid out by PlantUML on an automatic picture, wherever it was dropped', async () => {
@@ -231,9 +237,9 @@ describe('the names a session lists', () => {
       ],
       suggested_entities: [], diagram: { diagram_entities: {} },
     } as unknown as DiagramContext
-    const named = useDiagramEditing(
+    const named = overDiagram(
       { ...service, readLayoutGeometry: () => Effect.succeed(pictured) } as unknown as ModelService,
-      () => 'ARC@1.a.test', () => MEMBERSHIP, { context: () => context },
+       () => MEMBERSHIP, { context: () => context },
     )
     await named.open()
     move(named, 'C', 30)

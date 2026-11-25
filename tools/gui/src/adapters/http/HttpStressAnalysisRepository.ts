@@ -10,7 +10,6 @@ import {
 import {
   AnalysisEvaluationSchema, CandidateResidualitySchema, HeldOutSchema, StressPerspectivesSchema,
 } from '../../domain/schemas/stressEvaluation'
-import { DiagramLayoutGeometrySchema } from '../../domain/schemas/diagramLayoutGeometry'
 import { encodeIdentitySegment } from '../../domain/identitySegments'
 import type { StressAnalysisRepository } from '../../ports/StressAnalysisRepository'
 import { buildUrl, deleteNoContent, fetchJson, patchJson, postJson } from './httpTransport'
@@ -25,7 +24,6 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
     .pipe(Effect.map((envelope) => envelope.candidates)),
   createCandidate: (record) => postJson(buildUrl('/change-sets'), { record }, CandidateResponseSchema),
   startAnalysis: (start) => postJson(buildUrl('/stress-analyses'), start, AnalysisStartedSchema),
-  drawScope: (scope, name) => postJson(buildUrl('/scope-drawings'), { scope, name }, DiagramLayoutGeometrySchema),
   deleteCandidate: (id) => deleteNoContent(candidateUrl(id, '', { dry_run: 'false' })),
   rebaseCandidate: (id, basedOn) =>
     postJson(candidateUrl(id, '/rebase'), { based_on: basedOn }, CandidateResponseSchema),

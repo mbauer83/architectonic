@@ -11,7 +11,6 @@ import type {
 import type {
   AnalysisEvaluation, CandidateResiduality, HeldOut, StressPerspectives,
 } from '../domain/schemas/stressEvaluation'
-import type { LayoutGeometry } from '../domain/schemas/diagramLayoutGeometry'
 import type { RepoError } from './repositoryErrors'
 import type { TableRowEdit } from '../domain/stressAnalysis/analysisRows'
 
@@ -32,8 +31,6 @@ export interface StressAnalysisRepository {
   readonly startAnalysis: (start: {
     readonly title: string; readonly context?: string; readonly naive: Readonly<Record<string, unknown>>
   }) => Effect.Effect<AnalysisStarted, RepoError>
-  /** A view generated from a scope no stored diagram draws: its entities and the relations among them. */
-  readonly drawScope: (scope: readonly string[], name: string) => Effect.Effect<LayoutGeometry, RepoError>
   /** Delete a candidate; refused (409, saying why) while one stacks on it or an analysis starts from it. */
   readonly deleteCandidate: (id: string) => Effect.Effect<void, RepoError>
   /** Write each drifted operation again against the model as it stands now, keeping what it asks for. */

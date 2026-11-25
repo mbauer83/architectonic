@@ -8,6 +8,7 @@ import type {
   CandidateListSchema,
   CandidateResponseSchema, DocumentTablesSchema, DocumentTableWriteSchema, IntegrationCheckSchema,
 } from './candidates'
+import type { PictureContextSchema, PictureStartSchema } from './diagrams'
 import type { components } from './openapi.generated'
 
 type Served<Name extends keyof components['schemas']> = Immutable<components['schemas'][Name]>
@@ -26,6 +27,11 @@ describe('candidate architectures', () => {
       .toEqualTypeOf<Served<'CandidateTargetStateApplication'>>()
     expectTypeOf<SchemaType<typeof CandidateMoveSchema>>().toEqualTypeOf<Served<'CandidateMove'>>()
     expectTypeOf<SchemaType<typeof CandidateWithdrawalSchema>>().toEqualTypeOf<Served<'CandidateWithdrawal'>>()
+  })
+
+  it('decodes the picture a candidate is sketched on, as a diagram editor reads a diagram', () => {
+    expectTypeOf<SchemaType<typeof PictureStartSchema>>().toEqualTypeOf<Served<'PictureStartResponse'>>()
+    expectTypeOf<SchemaType<typeof PictureContextSchema>>().toEqualTypeOf<Served<'CandidatePictureContext'>>()
   })
 })
 

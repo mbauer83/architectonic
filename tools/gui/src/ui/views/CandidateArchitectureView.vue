@@ -71,22 +71,17 @@ const nameOf = (id: string): string => id
 /** Drawn on a view generated from its scope: there is a picture, and no stored diagram behind it. */
 const generated = computed(() => !chosenDiagram.value && !!candidates.comparison.value?.drawing
   && !candidates.comparison.value.drawing.artifact_id)
-/** *Save as diagram* offered: to sketch on the saved diagram, or only to keep the view. */
-const offering = ref<'sketch' | 'keep' | null>(null)
+/** *Save as diagram…*: the generated view kept as a diagram, an explicit act of its own. */
+const offering = ref(false)
 
+/** A candidate is sketched on its own picture, which needs no stored diagram. */
 const sketching = ref(false)
-/** A candidate is sketched on a stored diagram; on a generated view, saving it as one is offered first. */
-const sketch = () => {
-  if (diagramId.value !== '') sketching.value = true
-  else if (generated.value) offering.value = 'sketch'
-}
-const savedAsDiagram = async (diagram: string) => {
-  const then = offering.value
-  offering.value = null
+const sketch = () => { sketching.value = true }
+const savedAsDiagram = async () => {
+  offering.value = false
   toast(`Saved the view as a diagram; ${summary.value?.name ?? candidateId.value} is drawn on it.`)
   await Promise.all([listDiagrams(), candidates.load()])
   await candidates.compareWith(candidates.against.value)
-  sketching.value = then === 'sketch' && diagramId.value === diagram
 }
 const recorded = () => candidates.compareWith(candidates.against.value)
 const doneSketching = async () => {
@@ -130,7 +125,7 @@ const abandoned = (how: 'Rejected' | 'Deleted') => {
 
 const read = async () => {
   sketching.value = false
-  offering.value = null
+  offering.value = false
   framed.value = null
   apply.close()
   target.close()
@@ -236,7 +231,7 @@ onMounted(async () => {
         type="button"
         class="btn btn-sm"
         data-testid="offer-save-as-diagram"
-        @click="offering = 'keep'"
+        @click="offering = true"
       >
         Save as diagram…
       </button>
@@ -245,9 +240,8 @@ onMounted(async () => {
       v-if="summary && offering"
       :candidate-id="summary.id"
       :name="summary.name"
-      :reason="offering"
       @saved="savedAsDiagram"
-      @cancel="offering = null"
+      @cancel="offering = false"
     />
     <CandidateResiduality
       v-if="summary"
@@ -308,21 +302,14 @@ onMounted(async () => {
           @frame="framed = $event && stableEntityId($event)"
           @sketch="sketch"
         />
-        <p
-          v-if="!diagramId && !generated && summary.state === 'draft'"
-          class="hint"
-        >
-          Choose a diagram to draw this candidate on, and to sketch it there.
-        </p>
       </section>
       <section aria-label="Canvas">
         <CandidateCanvas
-          v-if="sketching && diagramId"
-          :key="`${summary.id} ${diagramId}`"
+          v-if="sketching"
+          :key="summary.id"
           :candidate-id="summary.id"
           :name="summary.name"
           role="Candidate architecture"
-          :diagram-id="diagramId"
           :changed="diffMarks(candidates.comparison.value?.diff ?? [])"
           @recorded="recorded"
           @done="doneSketching"

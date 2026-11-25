@@ -9,7 +9,7 @@
 import { ref, shallowRef, type ComputedRef, type Ref } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
-import type { DiagramContext } from '../../domain'
+import type { PictureContext } from '../../domain'
 import { type DropTarget, type DropVerdict, dropVerdict } from '../../domain/layout/dropVerdict'
 import type { Extent } from '../../domain/layout/geometry'
 import { admissionOf } from '../../domain/layout/receivingBox'
@@ -26,7 +26,7 @@ export interface LitTarget {
 }
 
 export function useDropFeedback(
-  svc: ModelService, editing: DiagramEditing, host: Ref<HTMLElement | null>, context: () => DiagramContext,
+  svc: ModelService, editing: DiagramEditing, host: Ref<HTMLElement | null>, context: () => PictureContext,
   members: ComputedRef<readonly Member[]>,
 ) {
   /** The layer each element type belongs to, for the diagram type: what a ruled box admits by. */

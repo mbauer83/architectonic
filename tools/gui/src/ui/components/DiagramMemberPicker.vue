@@ -10,7 +10,7 @@
  */
 import { computed, inject, ref, watch } from 'vue'
 import { Effect, Exit } from 'effect'
-import type { DiagramContext, EntityDisplayInfo } from '../../domain'
+import type { PictureContext, EntityDisplayInfo } from '../../domain'
 import {
   type Discovered, discovered, undrawnRelationsAmong, type UndrawnRelation,
 } from '../../domain/layout/editDiscovery'
@@ -21,7 +21,7 @@ import { toGlyphKey } from '../lib/glyphKey'
 import ArchimateTypeGlyph from './ArchimateTypeGlyph.vue'
 
 const props = defineProps<{
-  context: DiagramContext
+  context: PictureContext
   busy: boolean
   /** What the session draws now, by the element's stable id, to the alias it is drawn under. */
   drawn: ReadonlyMap<string, string>

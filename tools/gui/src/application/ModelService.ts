@@ -196,7 +196,12 @@ export const makeModelService = (repo: ModelRepository) =>
     moveCandidateIntoBaseline: (id: string, dryRun: boolean) => repo.moveCandidateIntoBaseline(id, dryRun),
     withdrawCandidateTargetState: (id: string, dryRun: boolean) => repo.withdrawCandidateTargetState(id, dryRun),
     startAnalysis: (...args: Parameters<ModelRepository['startAnalysis']>) => repo.startAnalysis(...args),
-    drawScope: (scope: readonly string[], name: string) => repo.drawScope(scope, name),
+    readCandidatePictureContext: (id: string) => repo.readCandidatePictureContext(id),
+    readCandidatePicture: (id: string) => repo.readCandidatePicture(id),
+    previewCandidatePicture: (...args: Parameters<ModelRepository['previewCandidatePicture']>) =>
+      repo.previewCandidatePicture(...args),
+    drawCandidatePictureShapes: (...args: Parameters<ModelRepository['drawCandidatePictureShapes']>) =>
+      repo.drawCandidatePictureShapes(...args),
     deleteCandidate: (id: string) => repo.deleteCandidate(id),
     rebaseCandidate: (...args: Parameters<ModelRepository['rebaseCandidate']>) => repo.rebaseCandidate(...args),
     editCandidate: (...args: Parameters<ModelRepository['editCandidate']>) => repo.editCandidate(...args),

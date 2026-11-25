@@ -6,8 +6,9 @@
  * (`useWorkspaceCanvas`); a splitter between the two moves by drag or by ← and →. Not a wizard: any
  * tab, any order. Below the tabs the test set, apart from them; while an architecture is judged against
  * it, the canvas shows that architecture. Opened from the start page, it sketches the naive
- * architecture straight away, with a note saying once what it is; done sketching it, the stressors come
- * next. *Apply…* answers with what is left, then with the candidate's dry run.
+ * architecture straight away on its own canvas — no stored diagram needed — with a note saying once what it
+ * is; done sketching it, the stressors come next. *Apply…* answers with what is left, then with the
+ * candidate's dry run.
  */
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -37,7 +38,7 @@ import CandidateOperations from '../components/candidates/CandidateOperations.vu
 import CandidateCanvas from '../components/candidates/CandidateCanvas.vue'
 import ModelMovedBanner from '../components/candidates/ModelMovedBanner.vue'
 import NaiveIntroNote from '../components/stressWorkspace/NaiveIntroNote.vue'
-import SaveAsDiagram from '../components/candidates/SaveAsDiagram.vue'
+import TouchingCandidates from '../components/stressWorkspace/TouchingCandidates.vue'
 import AnalysisMeta from '../components/stressWorkspace/AnalysisMeta.vue'
 
 const svc = inject(modelServiceKey)!
@@ -149,8 +150,8 @@ onMounted(async () => {
   await candidates.load()
   // The band says whether the model moved under the naive architecture on every tab, not only its own.
   if (!candidates.selected.value && analysis.naiveId.value) await candidates.select(analysis.naiveId.value)
-  // Started a moment ago: the naive architecture opens for sketching — on a generated view, by first saving it.
-  if (introducing.value && analysis.naive.value?.drawing) sketching.value = analysis.naiveId.value
+  // Started a moment ago: the naive architecture opens for sketching on its own canvas.
+  if (introducing.value && analysis.naiveId.value) sketching.value = analysis.naiveId.value
 })
 </script>
 
@@ -231,8 +232,14 @@ onMounted(async () => {
               @frame="framed = $event && stableEntityId($event)"
               @sketch="sketching = $event"
             />
+            <TouchingCandidates
+              v-if="tab === 'naive' && naiveSummary"
+              :scope="naiveSummary.scope"
+              :candidates="candidates.all.value"
+              :own="candidates.inStack.value.map((one) => one.id)"
+            />
             <StressorsTab
-              v-else-if="tab === 'stressors'"
+              v-if="tab === 'stressors'"
               :analysis="analysis"
               :edits="edits"
               :selected="selected"
@@ -289,25 +296,16 @@ onMounted(async () => {
             @dismiss="introducing = false"
           />
           <CandidateCanvas
-            v-if="sketched && analysis.drawnOn.value"
+            v-if="sketched"
             :key="sketched.id"
             :candidate-id="sketched.id"
             :name="sketched.name"
             :role="sketched.id === analysis.naiveId.value ? 'Naive architecture' : 'Adaptation'"
             :stack="stackLine(sketched.id, candidates.all.value)"
             :done-label="sketched.id === analysis.naiveId.value ? 'Done sketching · on to Stressors' : 'Done sketching'"
-            :diagram-id="analysis.drawnOn.value"
             :changed="diffMarks(candidates.comparison.value?.diff ?? [])"
             @recorded="recorded"
             @done="doneSketching"
-          />
-          <SaveAsDiagram
-            v-else-if="sketched && analysis.naive.value?.drawing && naiveSummary"
-            :candidate-id="naiveSummary.id"
-            :name="naiveSummary.name"
-            reason="sketch"
-            @saved="analysis.reload"
-            @cancel="sketching = null"
           />
           <MarkedCanvas
             v-else
@@ -315,7 +313,7 @@ onMounted(async () => {
             :drawing="canvas.drawing.value"
             :marks="canvas.marks.value"
             :hint="canvas.hint.value"
-            empty-text="Nothing to draw: the naive architecture is empty."
+            empty-text="Nothing to draw yet: sketch the naive architecture to define it."
             @pick="canvas.pick"
           />
           <p

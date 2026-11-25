@@ -10,7 +10,7 @@ import type { DrawnMembership } from './diagramMembership'
 import type { AuthoredGrouping } from '../authoredGrouping'
 import { connectionParts, stableConnectionId, stableEntityId } from '../artifactId'
 
-import type { DiagramContext, EntityDetail } from '..'
+import type { PictureContext, EntityDetail } from '..'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 import { isRecord } from '../records'
 import { type ArchimateOccurrence, occurrenceItems } from '../archimateOccurrences'
@@ -191,7 +191,7 @@ export const withPendingDetails = (detail: EntityDetail, commands: readonly Canv
 }
 
 /** Resolve drawing aliases to their model identity, including unsaved additions and renames. */
-export function canvasMembers(context: DiagramContext, state: Content | null, picture: LayoutGeometry | null) {
+export function canvasMembers(context: PictureContext, state: Content | null, picture: LayoutGeometry | null) {
   const lookup = new Map(
     [...context.entities, ...context.suggested_entities.flatMap((s) => s.items)].map((e) => [
       stableEntityId(e.artifact_id),
@@ -231,7 +231,7 @@ export const DRAFT_STATUS = 'draft'
  * The shapes of *picture* that draw a draft (sketch 03·4, D19): an element the model holds as a draft,
  * or one this session creates, which is written as one — however often it is drawn. By alias.
  */
-export function draftAliases(context: DiagramContext, state: Content | null, picture: LayoutGeometry | null) {
+export function draftAliases(context: PictureContext, state: Content | null, picture: LayoutGeometry | null) {
   const drafts = new Set([
     ...context.entities.filter((one) => one.status === DRAFT_STATUS).map((one) => stableEntityId(one.artifact_id)),
     ...(state?.commands ?? []).filter((c) => c.op === 'model.element.create').map((c) => stableEntityId(c.artifact_id)),
@@ -245,7 +245,7 @@ export function draftAliases(context: DiagramContext, state: Content | null, pic
  * nested in another, which the context's connections leave out — those drawn from the model in the
  * session, and those it creates: what is not offered to be drawn again.
  */
-export const relationsDrawn = (context: DiagramContext, state: Content | null): ReadonlySet<string> => new Set([
+export const relationsDrawn = (context: PictureContext, state: Content | null): ReadonlySet<string> => new Set([
   ...context.connections.map((one) => one.artifact_id), ...context.diagram.connection_ids_used ?? [],
   ...state?.drawnRelations ?? [],
   ...(state?.commands ?? []).flatMap((c) => (c.op === 'model.relation.create' ? [c.artifact_id] : [])),
@@ -253,7 +253,7 @@ export const relationsDrawn = (context: DiagramContext, state: Content | null): 
 
 /** What a session draws, by the element's stable id, to the alias it is drawn under (the first, if several). */
 export const drawnByEntity = (
-  context: DiagramContext, state: Content | null, picture: LayoutGeometry | null,
+  context: PictureContext, state: Content | null, picture: LayoutGeometry | null,
 ): ReadonlyMap<string, string> => {
   const drawn = new Map<string, string>()
   for (const member of canvasMembers(context, state, picture)) {
