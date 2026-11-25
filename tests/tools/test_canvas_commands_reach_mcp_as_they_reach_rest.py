@@ -266,3 +266,32 @@ def test_every_command_of_the_fixture_names_an_operation_of_the_catalog_or_none(
     named = {one[page]["operation"] for one in COMMANDS for page in ("diagram", "candidate")} - {None}
     assert named <= OPERATION_CATALOG.keys()
     assert len({one["command"] for one in COMMANDS}) == len(COMMANDS)
+
+
+def test_an_element_created_with_no_group_is_refused_over_both(
+    sides: tuple[RenderedModel, RenderedModel, TestClient],
+) -> None:
+    """A canvas create with an empty project was accepted and filed the element under `projects/model/`,
+    where the index reads nothing. It is refused on both surfaces, and neither repository changes."""
+    over_rest, over_mcp, client = sides
+    before = _tree(over_rest.repo)
+    request = {"carrier": "replace", "add_entities": ["$new"], "fields": {"commands": [{
+        "op": "model.element.create", "artifact_id": "$new", "artifact_type": "application-component",
+        "name": "Ledger", "group": ""}]}}
+    path = Path(over_rest.scenes[SCENE].path)
+
+    answer = client.put(f"/api/diagrams/{path.stem}", json=_replacement(path, request, _names(over_rest, path)))
+    mcp_path = Path(over_mcp.scenes[SCENE].path)
+    replacement = DiagramReplacement.model_validate(_replacement(mcp_path, request, _names(over_mcp, mcp_path)))
+    try:
+        refused_over_mcp = artifact_replace_diagram(
+            artifact_id=mcp_path.stem, replacement=replacement, repo_root=str(over_mcp.repo),
+        )["wrote"] is False
+    except ValueError as refusal:
+        refused_over_mcp = "group" in str(refusal).lower()
+
+    assert answer.status_code != 200 or answer.json()["wrote"] is False, answer.text
+    assert "group" in answer.text.lower(), answer.text
+    assert refused_over_mcp
+    assert _tree(over_rest.repo) == before
+    _assert_same(over_rest.repo, over_mcp.repo)

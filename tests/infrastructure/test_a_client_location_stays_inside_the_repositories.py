@@ -145,6 +145,19 @@ class TestTheWritePath:
         with pytest.raises(LocationRefused):
             entity_path(tmp_path, info, "../../../../elsewhere")  # type: ignore[arg-type]
 
+    def test_an_artifact_is_not_filed_under_an_empty_group(self, tmp_path: Path) -> None:
+        """An empty group vanished from the joined path: an element went under `projects/model/`."""
+        from src.application.repository_confinement import group_segments
+        from src.infrastructure.write.artifact_write.entity import entity_path
+
+        info = type("Info", (), {"hierarchy": ("motivation", "requirement")})()
+        with pytest.raises(LocationRefused):
+            entity_path(tmp_path, info, "REQ@1.a.b", "")  # type: ignore[arg-type]
+        with pytest.raises(LocationRefused):
+            group_segments("")
+        assert group_segments("uncategorized") == ()
+        assert group_segments("core") == ("core",)
+
     def test_a_group_is_not_created_under_a_name_that_leaves_its_directory(self, tmp_path: Path) -> None:
         from src.infrastructure.write.artifact_write.group_ops import group_create
 
