@@ -85,6 +85,10 @@ _WRITES: Mapping[str, tuple[str, frozenset[str]]] = {
     "diagrams_patch_diagram_layout": (
         "Save changes to a diagram's layout", _PATCH,
     ),
+    "diagrams_create_diagram": (
+        "Create a diagram, as saving a generated view does",
+        frozenset({"diagrams_create_diagram", "artifact_create_diagram"}),
+    ),
     "diagrams_arrange_diagram_layout": ("Arrange a diagram by align, distribute, straighten or grouping", _ARRANGE),
     "changes_create_candidate": (
         "Create a candidate architecture", frozenset({"changes_create_candidate", "change_set_create"}),
