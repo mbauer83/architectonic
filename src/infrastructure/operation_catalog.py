@@ -90,6 +90,17 @@ _WRITES: Mapping[str, tuple[str, frozenset[str]]] = {
         frozenset({"diagrams_create_diagram", "artifact_create_diagram"}),
     ),
     "diagrams_arrange_diagram_layout": ("Arrange a diagram by align, distribute, straighten or grouping", _ARRANGE),
+    "diagrams_sync_diagram_to_model": (
+        "Bring a diagram's drawn elements and relations into the model",
+        frozenset({"diagrams_sync_diagram_to_model"}),
+    ),
+    "diagrams_delete_diagram": (
+        "Delete a diagram", frozenset({"diagrams_delete_diagram", "artifact_delete_diagram"}),
+    ),
+    "promotion_execute_promotion": (
+        "Promote artifacts to the enterprise repository",
+        frozenset({"promotion_execute_promotion", "artifact_promote_to_enterprise"}),
+    ),
     "changes_create_candidate": (
         "Create a candidate architecture", frozenset({"changes_create_candidate", "change_set_create"}),
     ),

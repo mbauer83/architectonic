@@ -9,6 +9,8 @@
 import type { DiagramDetail } from '../../domain'
 import { EMPTY_READING_LENS, type ReadingLens } from '../../domain/readingLens'
 import { computed, inject, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import PermittedButton from './PermittedButton.vue'
 import DiagramDownloadMenu from './DiagramDownloadMenu.vue'
 import DiagramAutoLayoutDialog from './DiagramAutoLayoutDialog.vue'
 import { toastKey } from '../keys'
@@ -33,6 +35,7 @@ withDefaults(defineProps<{
 /** *laid-out*: the hand-written body was given up for a generated one, so the diagram is to be read again. */
 const emit = defineEmits<{ sync: []; delete: []; edit: []; done: []; 'laid-out': [] }>()
 const toast = inject(toastKey, () => undefined)
+const router = useRouter()
 /** What editing on the canvas saves through, and what laying out automatically is: offered as they are permitted. */
 const canEdit = useCan('diagrams_replace_diagram')
 const permit = useCommandPermission(DIAGRAM_OPERATIONS)
@@ -73,13 +76,15 @@ const laidOut = () => {
         :diagram-id="diagramId"
         :lens="lens"
       />
-      <RouterLink
+      <PermittedButton
         v-if="!isGlobalDiagram"
-        :to="{ path: '/promote', query: { diagram_id: diagramId } }"
+        operation="promotion_execute_promotion"
         class="promote-btn"
+        data-testid="diagram-promote"
+        @click="router.push({ path: '/promote', query: { diagram_id: diagramId } })"
       >
         ↑ Promote to Enterprise
-      </RouterLink>
+      </PermittedButton>
       <button
         v-if="editsOnCanvas"
         type="button"
@@ -110,20 +115,24 @@ const laidOut = () => {
       >
         Lay out automatically…
       </button>
-      <button
+      <PermittedButton
         v-if="!isGlobalDiagram"
+        operation="diagrams_sync_diagram_to_model"
         class="sync-btn"
+        data-testid="diagram-sync"
         @click="emit('sync')"
       >
         Sync to model
-      </button>
-      <button
+      </PermittedButton>
+      <PermittedButton
         v-if="!isGlobalDiagram || adminMode"
+        operation="diagrams_delete_diagram"
         class="delete-btn"
+        data-testid="diagram-delete"
         @click="emit('delete')"
       >
         Delete{{ isGlobalDiagram && adminMode ? ' ⚠' : '' }}
-      </button>
+      </PermittedButton>
     </template>
     <DiagramAutoLayoutDialog
       v-if="layingOut && !editing"
@@ -159,4 +168,8 @@ const laidOut = () => {
 .sync-btn:hover { background: var(--type-soft); }
 .delete-btn { padding: 5px 16px; background: var(--danger-soft); border: 1px solid var(--danger-border); border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--danger-strong); cursor: pointer; flex-shrink: 0; }
 .delete-btn:hover { background: var(--danger-soft); }
+.promote-btn { cursor: pointer; }
+.promote-btn:disabled, .sync-btn:disabled, .delete-btn:disabled {
+  background: var(--soft); border-color: var(--border); color: var(--faint); cursor: not-allowed;
+}
 </style>
