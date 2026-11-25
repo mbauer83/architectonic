@@ -5,6 +5,7 @@
  * told its id, to open it.
  */
 import { ref } from 'vue'
+import PermittedButton from '../PermittedButton.vue'
 import type { useCandidates } from '../../composables/useCandidates'
 
 const props = defineProps<{ candidates: ReturnType<typeof useCandidates>; candidateId: string; name: string }>()
@@ -22,15 +23,15 @@ const stackOn = async () => {
 </script>
 
 <template>
-  <button
+  <PermittedButton
     v-if="!open"
-    type="button"
+    operation="changes_create_candidate"
     class="btn btn-sm"
     data-testid="stack-candidate"
     @click="open = true"
   >
     New candidate on top…
-  </button>
+  </PermittedButton>
   <form
     v-else
     class="stack-form"

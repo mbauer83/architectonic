@@ -25,6 +25,7 @@ import MarkedCanvas from '../components/candidates/MarkedCanvas.vue'
 import StressStartArchitecture from '../components/stressWorkspace/StressStartArchitecture.vue'
 import type { Marks } from '../../domain/candidates/canvasMarks'
 import { framedMarks } from '../../domain/candidates/canvasMarks'
+import PermittedButton from '../components/PermittedButton.vue'
 
 type Origin = 'model' | 'existing' | 'empty'
 
@@ -200,15 +201,15 @@ onMounted(async () => {
         >
           {{ error ?? scope.error.value }}
         </p>
-        <button
-          type="button"
+        <PermittedButton
+          operation="documents_start_stress_analysis"
           class="btn btn-primary"
           data-testid="start-naive"
           :disabled="!canStart"
           @click="start"
         >
           Start the naive architecture
-        </button>
+        </PermittedButton>
       </section>
       <section aria-label="Canvas">
         <MarkedCanvas

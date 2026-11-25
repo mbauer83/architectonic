@@ -21,6 +21,7 @@ import { documentDetailRoute } from '../../router/artifactRoutes'
 import type { Candidates } from '../../composables/useCandidates'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import { useIntegration } from '../../composables/useIntegration'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{ candidates: Candidates; analysis: StressAnalysis }>()
 const emit = defineEmits<{ open: [tab: WorkspaceTab, row: string] }>()
@@ -212,15 +213,15 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
     </p>
     <footer>
       <label>Name <input v-model="integration.name.value"></label>
-      <button
-        type="button"
+      <PermittedButton
+        operation="changes_integrate_candidates"
         class="btn btn-sm btn-primary"
         data-testid="integrate"
         :disabled="!integration.ready.value"
         @click="integration.integrate()"
       >
         Integrate
-      </button>
+      </PermittedButton>
     </footer>
     <p class="foot">
       Integrating compares what the candidates change, not how the result behaves. No merge proves behaviour; the

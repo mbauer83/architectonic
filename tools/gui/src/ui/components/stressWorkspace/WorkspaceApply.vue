@@ -13,6 +13,7 @@ import type { Candidates } from '../../composables/useCandidates'
 import { useCandidateApply } from '../../composables/useCandidateApply'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import ApplyCandidate from '../candidates/ApplyCandidate.vue'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{
   svc: Pick<ModelService, 'applyCandidate'>; analysis: StressAnalysis; candidates: Candidates
@@ -114,15 +115,15 @@ const applied = () => {
             >{{ one.name }}{{ one.id === analysis.naiveId.value ? ' (naive architecture)' : '' }}</option>
           </select>
         </label>
-        <button
-          type="button"
+        <PermittedButton
+          operation="changes_apply_candidate"
           class="btn btn-sm btn-primary"
           data-testid="workspace-apply-check"
           :disabled="!candidate || apply.busy.value"
           @click="apply.open(chosen)"
         >
           Check what it writes…
-        </button>
+        </PermittedButton>
       </div>
       <ApplyCandidate
         v-if="candidate && apply.preview.value?.candidate === candidate.id"

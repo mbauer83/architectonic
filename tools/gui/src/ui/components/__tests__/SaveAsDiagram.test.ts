@@ -8,6 +8,7 @@ import { createApp, h, nextTick, type App } from 'vue'
 import { Effect } from 'effect'
 import SaveAsDiagram from '../candidates/SaveAsDiagram.vue'
 import { modelServiceKey } from '../../keys'
+import { answered } from '../../composables/__tests__/permissionFixtures'
 import type { ModelService } from '../../../application/ModelService'
 
 const ID = 'CAND@1.abc.searched'
@@ -31,7 +32,7 @@ const mounted = async (save: ModelService['saveCandidateDiagram']) => {
     render: () => h(SaveAsDiagram, { candidateId: ID, name: 'Searched', reason: 'sketch', onSaved: saved }),
   })
   app.provide(modelServiceKey, { readCandidate, saveCandidateDiagram } as Partial<ModelService> as ModelService)
-  app.mount(host)
+  answered(app).mount(host)
   await settle()
   return { saved, saveCandidateDiagram }
 }

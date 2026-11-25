@@ -100,6 +100,9 @@ class SyncAuthorityResponse(Closed):
     blocked_reason: SyncHealthReason | None
     blocked_message: str | None
     denied_intents: dict[str, DeniedIntentResponse]
+    #: The same decision for every named operation of the operation catalog: what the GUI enables a menu
+    #: entry, a key or a gesture by, and says why it does not. Keyed by operation name, as the intents are.
+    denied_operations: dict[str, DeniedIntentResponse]
 
 
 class SyncStatusResponse(Closed):

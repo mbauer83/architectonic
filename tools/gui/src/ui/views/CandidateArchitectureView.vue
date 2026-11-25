@@ -31,6 +31,7 @@ import MarkedCanvas from '../components/candidates/MarkedCanvas.vue'
 import ModelMovedBanner from '../components/candidates/ModelMovedBanner.vue'
 import SaveAsDiagram from '../components/candidates/SaveAsDiagram.vue'
 import StackCandidate from '../components/candidates/StackCandidate.vue'
+import PermittedButton from '../components/PermittedButton.vue'
 
 const svc = inject(modelServiceKey)!
 const toast = inject(toastKey, () => undefined)
@@ -172,16 +173,16 @@ onMounted(async () => {
       >
         Compare with…
       </RouterLink>
-      <button
+      <PermittedButton
         v-if="summary && applicable"
-        type="button"
+        operation="changes_apply_candidate"
         class="btn btn-sm"
         data-testid="apply-to-model"
         :disabled="apply.busy.value"
         @click="apply.open(candidateId)"
       >
         Apply to the model…
-      </button>
+      </PermittedButton>
       <button
         v-if="summary && applicable"
         type="button"
@@ -192,15 +193,15 @@ onMounted(async () => {
       >
         Apply as a target state…
       </button>
-      <button
+      <PermittedButton
         v-if="summary"
-        type="button"
+        operation="changes_delete_candidate"
         class="btn btn-sm"
         data-testid="delete-candidate"
         @click="remove"
       >
         Delete
-      </button>
+      </PermittedButton>
     </div>
     <div class="meta">
       <span class="badge">candidate architecture</span>

@@ -6,17 +6,21 @@
  */
 import { ref } from 'vue'
 import { formatEffectError } from '../lib/errors'
+import { useCan } from '../composables/usePermissions'
 
 const props = defineProps<{
   /** The diagram's name until the author changes it. */
   name: string
   /** Writes the diagram under the name given, answering its id. */
   save: (name: string) => Promise<string>
+  /** The named operation the save is, which the permission answer offers or refuses it by. */
+  operation: string
 }>()
 const emit = defineEmits<{ saved: [diagram: string]; cancel: [] }>()
 
 const diagramName = ref(props.name)
 const busy = ref(false)
+const may = useCan(() => props.operation)
 const error = ref<string | null>(null)
 
 const submit = async () => {
@@ -51,7 +55,8 @@ const submit = async () => {
       type="submit"
       class="btn btn-sm btn-primary"
       data-testid="save-as-diagram-confirm"
-      :disabled="busy || !diagramName.trim()"
+      :disabled="busy || !diagramName.trim() || !may.allowed"
+      :title="may.allowed ? undefined : may.reason"
     >
       Save as diagram
     </button>

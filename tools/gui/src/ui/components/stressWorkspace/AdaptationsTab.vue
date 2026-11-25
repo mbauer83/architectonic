@@ -11,6 +11,7 @@ import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import CandidateOperations from '../candidates/CandidateOperations.vue'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{
   analysis: StressAnalysis; candidates: Candidates
@@ -84,15 +85,15 @@ const create = async () => {
       that answers an end state.
     </p>
     <div class="new">
-      <button
+      <PermittedButton
         v-if="!stacking"
-        type="button"
+        operation="changes_create_candidate"
         class="btn btn-sm"
         data-testid="new-candidate"
         @click="stacking = true"
       >
         New candidate on top of {{ stackOnName }}…
-      </button>
+      </PermittedButton>
       <form
         v-else
         class="new-form"

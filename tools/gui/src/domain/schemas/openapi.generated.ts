@@ -14771,6 +14771,10 @@ export interface components {
             denied_intents: {
                 [key: string]: components["schemas"]["DeniedIntentResponse"];
             };
+            /** Denied Operations */
+            denied_operations: {
+                [key: string]: components["schemas"]["DeniedIntentResponse"];
+            };
         };
         /**
          * SyncChangedArtifact

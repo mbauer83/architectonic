@@ -15,6 +15,7 @@ import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeomet
 import { Effect } from 'effect'
 import { useArrangementSession } from '../../composables/useArrangementSession'
 import LayoutLabCanvas from './LayoutLabCanvas.vue'
+import { answered } from '../../composables/__tests__/permissionFixtures'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 
@@ -38,13 +39,13 @@ const geometry: LayoutGeometry = {
 
 let app: App | null = null
 
-const mounted = async (drafts?: ReadonlySet<string>) => {
+const mounted = async (drafts?: ReadonlySet<string>, refused: readonly string[] = []) => {
   const lab = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
   lab.open(geometry)
   const shown = reactive({ breaches: true })
   const host = document.createElement('div')
   document.body.appendChild(host)
-  app = createApp({ render: () => h(LayoutLabCanvas, { session: lab, showBreaches: shown.breaches, drafts }) })
+  app = answered(createApp({ render: () => h(LayoutLabCanvas, { session: lab, showBreaches: shown.breaches, drafts }) }), refused)
   app.mount(host)
   await nextTick()
   return { lab, host, shown }
@@ -92,6 +93,21 @@ describe('the diagram canvas', () => {
     await nextTick()
 
     expect(drawnOrder(host)).toEqual(['C', 'line:0', 'G', 'A'])
+  })
+
+  it('where moving is refused, a press selects and a drag moves nothing (A-02.24)', async () => {
+    const { lab, host } = await mounted(undefined, ['diagram.layout.place'])
+    const before = lab.placement.value?.boxes.get('G')
+    const grip = host.querySelector('[data-alias="G"] > .lab-grip')
+    if (grip === null) throw new Error('the grouping is drawn without a grip')
+    pointer(grip, 'pointerdown', 15, 15)
+    pointer(window, 'pointermove', 400, 15)
+    pointer(window, 'pointerup', 400, 15)
+    await nextTick()
+
+    expect(before).toBeDefined()
+    expect(lab.placement.value?.boxes.get('G')).toEqual(before)
+    expect(host.querySelector('[data-alias="G"]')?.hasAttribute('data-selected')).toBe(true)
   })
 
   it('draws the shape being dragged see-through until it is dropped, and nothing else', async () => {

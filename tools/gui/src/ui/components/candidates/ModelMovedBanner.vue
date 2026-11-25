@@ -7,6 +7,7 @@
 import { computed, ref } from 'vue'
 import type { OperationStanding } from '../../../domain/schemas/candidates'
 import { hasMoved, modelMoved, movedSentence } from '../../../domain/candidates/modelMoved'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{ name: string; standing: readonly OperationStanding[]; busy?: boolean }>()
 const emit = defineEmits<{ rebase: [] }>()
@@ -35,9 +36,9 @@ const reasons = computed(() => [...moved.value.drifted, ...moved.value.conflicti
       >
         {{ open ? 'Hide them' : 'Show them' }}
       </button>
-      <button
+      <PermittedButton
         v-if="moved.drifted.length"
-        type="button"
+        operation="changes_rebase_candidate"
         class="btn btn-sm"
         data-testid="rebase"
         :disabled="busy"
@@ -45,7 +46,7 @@ const reasons = computed(() => [...moved.value.drifted, ...moved.value.conflicti
         @click="emit('rebase')"
       >
         Re-base
-      </button>
+      </PermittedButton>
     </div>
     <ul v-if="open">
       <li

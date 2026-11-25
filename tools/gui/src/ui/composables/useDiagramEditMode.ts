@@ -29,6 +29,8 @@ import { useEditingPreferences } from './useEditingPreferences'
 import { useSurroundPlacement } from './useSurroundPlacement'
 import type { ShowToast } from '../keys'
 import { isTypingIn } from '../lib/keyboardScheme'
+import { type CanvasCommandName, DIAGRAM_OPERATIONS } from '../components/canvasCommands'
+import { useCommandPermission } from './usePermissions'
 
 /** How far the arrows nudge a picked label: two pixels, or one with Shift (02·5). */
 const LABEL_STEP = 2
@@ -91,6 +93,13 @@ export function useDiagramEditMode(
   const toggleCheck = () => { checking.value = !checking.value }
   const told = new Set<string>()
   const session = editing.session
+  const permit = useCommandPermission(DIAGRAM_OPERATIONS)
+  /** Whether the permission answer allows *command*; where it does not, the reason is said (A-02.24). */
+  const allowed = (command: CanvasCommandName): boolean => {
+    const answer = permit.value(command)
+    if (!answer.allowed) toast(answer.reason, 'warn', 3000)
+    return answer.allowed
+  }
   const panel = useEditPanel(parts.large)
   const prefs = useEditingPreferences()
   /** The title and the legend where the saved picture will draw them, placed by the composer's rule. */
@@ -179,9 +188,13 @@ export function useDiagramEditMode(
     const canvas = parts.canvas.value
     const [x, y] = key.direction
     const label = key.fine ? 1 : LABEL_STEP
-    if (!canvas || (!key.resize && canvas.nudgeLabel(x * label, y * label))) return Boolean(canvas)
+    if (!canvas) return false
+    // A label is picked only where a line may be shaped (`LayoutLabCanvas`), so this refuses nothing it offered.
+    if (!key.resize && permit.value('key.nudge-label').allowed && canvas.nudgeLabel(x * label, y * label)) return true
     if (canvas.selection.length || canvas.selectedBends.length) {
-      nudge(canvas.selection, canvas.selectedBends, key.direction, key.fine ? 1 : GRID, key.resize)
+      if (allowed(key.resize ? 'key.resize' : 'key.nudge')) {
+        nudge(canvas.selection, canvas.selectedBends, key.direction, key.fine ? 1 : GRID, key.resize)
+      }
     }
     else if (!inCanvas) return false
     else if (canvas.focus.towards({ x, y })) followFocus()
@@ -200,6 +213,7 @@ export function useDiagramEditMode(
         // A picked bend goes; otherwise the selection is removed from the diagram only (owner's standing
         // rule) — deleting from the model is a menu command, and a line is not removed here.
         if (!canvas?.hasSelection) return false
+        if (!allowed(canvas.selection.length ? 'key.remove' : 'key.remove-bend')) return true
         if (!canvas.removePickedBend() && canvas.selectedLine === null) {
           canvas.removeSelectedBends()
           if (canvas.selection.length) editing.remove(canvas.selection)
@@ -208,7 +222,7 @@ export function useDiagramEditMode(
         return true
       case 'arrow': return arrow(key, inCanvas)
       case 'restack':
-        if (canvas?.selection.length) editing.restack(canvas.selection, key.how)
+        if (canvas?.selection.length && allowed('key.restack')) editing.restack(canvas.selection, key.how)
         return Boolean(canvas?.selection.length)
       case 'frame':
         if (selectionExtent.value) parts.view.frame(selectionExtent.value)

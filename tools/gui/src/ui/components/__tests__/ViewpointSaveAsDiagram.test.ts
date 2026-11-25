@@ -9,6 +9,7 @@ import { createApp, h, nextTick, type App } from 'vue'
 import { Effect } from 'effect'
 import ViewpointSaveAsDiagram from '../ViewpointSaveAsDiagram.vue'
 import { modelServiceKey } from '../../keys'
+import { answered } from '../../composables/__tests__/permissionFixtures'
 import type { ModelService } from '../../../application/ModelService'
 import type { ViewpointExecutionResult } from '../../../domain/schemas/viewpoints'
 
@@ -37,7 +38,7 @@ const mounted = async (createDiagram: ModelService['createDiagram']) => {
   document.body.appendChild(host)
   app = createApp({ render: () => h(ViewpointSaveAsDiagram, { name: 'Application Cooperation', execution, onSaved: saved }) })
   app.provide(modelServiceKey, { createDiagram: create } as Partial<ModelService> as ModelService)
-  app.mount(host)
+  answered(app).mount(host)
   await settle()
   host.querySelector<HTMLButtonElement>('[data-testid="save-as-diagram-confirm"]')!.click()
   await settle()

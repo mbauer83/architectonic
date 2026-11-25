@@ -60,17 +60,20 @@ const items = computed((): readonly CanvasMenuItem[] => {
   if (!one) return []
   if (page.value === 'top') {
     return [
-      { id: 'edit', label: 'Edit relation…', hint: 'its type, cardinalities, description and label' },
+      { id: 'edit', label: 'Edit relation…', hint: 'its type, cardinalities, description and label',
+        command: 'line.edit' },
       { id: 'straighten', label: 'Straighten', hint: 'remove every bend; routed round anything in the way',
+        command: 'line.straighten',
         disabled: !stated.value.via?.length },
       { id: 'sides', label: 'Move end to side ▸', hint: 'either end, to any side of its element',
+        command: 'line.move-end',
         disabled: one.key === undefined },
     ]
   }
   const ends = (['from', 'to'] as const).flatMap((end) => {
     const now = sideNow(end)
     return SIDES.map((side, at): CanvasMenuItem => ({
-      id: `${end}:${side}`, label: capital(side), shortcut: side === now ? 'now' : undefined,
+      id: `${end}:${side}`, label: capital(side), shortcut: side === now ? 'now' : undefined, command: 'line.move-end',
       caption: at === 0
         ? `${end === 'from' ? 'Source' : 'Target'} end · ${nameOf(end === 'from' ? one.source : one.target)}`
           + (now ? ` · now ${now}` : '')

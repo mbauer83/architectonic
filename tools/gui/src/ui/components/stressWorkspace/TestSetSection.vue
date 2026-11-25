@@ -16,6 +16,7 @@ import type { TestSet } from '../../composables/useTestSet'
 import ResidualityLine from '../candidates/ResidualityLine.vue'
 import JudgeWalk from './JudgeWalk.vue'
 import StressorInput from './StressorInput.vue'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{
   analysis: StressAnalysis
@@ -153,16 +154,16 @@ const holdOut = async () => {
             @write="testSet.write"
           />
           <div class="acts">
-            <button
+            <PermittedButton
               v-if="design >= 3"
-              type="button"
+              operation="documents_hold_out_test_set"
               class="btn btn-sm"
               data-testid="hold-out"
               :disabled="testSet.holding.value || asking"
               @click="askHoldOut"
             >
               Hold out a random third
-            </button>
+            </PermittedButton>
             <label
               v-if="held.length && evaluable.length"
               class="evaluate"

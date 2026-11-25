@@ -6,6 +6,10 @@ mutation executor enforces with — authority is never cached, so a live
 to the very next request with no TTL. The projection is per-intent
 (``denied_intents`` with denial codes), and a tab joining during a transient
 block reconstructs it entirely from this snapshot.
+
+``denied_operations`` is the same decision projected onto every named operation of the operation
+catalog — what the GUI offers or refuses a menu entry, a key or a gesture by. An operation is decided
+by the intent of the REST operation that carries it, so it is never more permissive than its write.
 """
 
 from __future__ import annotations
@@ -22,6 +26,8 @@ from src.application.mutation_authorization import (
     RepositoryWrite,
 )
 from src.application.mutation_policy import authorize
+from src.infrastructure.operation_catalog import OPERATION_CATALOG
+from src.infrastructure.rest.routers.rest_mutation_manifest import REST_MUTATION_MANIFEST
 
 BlockKind = Literal["none", "read_only", "sync_in_progress", "sync_health"]
 
@@ -81,6 +87,12 @@ def _block_kind(snapshot: AuthorizationSnapshot) -> BlockKind:
     return "none"
 
 
+def operation_intent(name: str) -> str:
+    """The intent an operation of the catalog is decided by: that of the REST operation carrying it."""
+    carriers = sorted(OPERATION_CATALOG[name].carriers & REST_MUTATION_MANIFEST.keys())
+    return REST_MUTATION_MANIFEST[carriers[0]]
+
+
 def authority_projection(snapshot: AuthorizationSnapshot) -> dict[str, Any]:
     """The per-intent authority view every status response carries."""
     denied: dict[str, dict[str, Any]] = {}
@@ -99,4 +111,5 @@ def authority_projection(snapshot: AuthorizationSnapshot) -> dict[str, Any]:
         "blocked_reason": snapshot.sync_health.reason,
         "blocked_message": snapshot.sync_health.message or None,
         "denied_intents": denied,
+        "denied_operations": {name: denied[operation_intent(name)] for name in OPERATION_CATALOG},
     }

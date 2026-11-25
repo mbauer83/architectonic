@@ -14,10 +14,10 @@ export type ElementMenuChoice =
 
 /** Stacking among siblings (02·7), with the keys that do the same on the selection. */
 export const STACKING_ITEMS: readonly CanvasMenuItem[] = [
-  { id: 'stack:front', label: 'Bring to front', shortcut: 'Shift+PgUp', divider: true },
-  { id: 'stack:forward', label: 'Bring forward', shortcut: 'PgUp' },
-  { id: 'stack:backward', label: 'Send backward', shortcut: 'PgDn' },
-  { id: 'stack:back', label: 'Send to back', shortcut: 'Shift+PgDn' },
+  { id: 'stack:front', label: 'Bring to front', shortcut: 'Shift+PgUp', divider: true, command: 'element.restack' },
+  { id: 'stack:forward', label: 'Bring forward', shortcut: 'PgUp', command: 'element.restack' },
+  { id: 'stack:backward', label: 'Send backward', shortcut: 'PgDn', command: 'element.restack' },
+  { id: 'stack:back', label: 'Send to back', shortcut: 'Shift+PgDn', command: 'element.restack' },
 ]
 
 /** The restacking a menu entry or a key asks for; null for anything else. */
@@ -37,15 +37,21 @@ export const restackKey = (event: Pick<KeyboardEvent, 'key' | 'shiftKey'>): Rest
  */
 const DISCARD_ITEM: CanvasMenuItem = {
   id: 'discard', label: 'Discard this draft', hint: 'it was never saved; Undo brings it back', danger: true,
-  divider: true,
+  divider: true, command: 'element.discard',
 }
 
 /** Taking a saved element off the view, and deleting it from the model, in the page's words. */
 const removing = (words: CanvasWords): readonly CanvasMenuItem[] => [
   ...words.removeEntry
-    ? [{ id: 'remove', label: words.removeEntry, hint: words.removeHint, shortcut: words.removeKey, divider: true }]
+    ? [{
+      id: 'remove', label: words.removeEntry, hint: words.removeHint, shortcut: words.removeKey, divider: true,
+      command: 'element.remove' as const,
+    }]
     : [],
-  { id: 'delete', label: words.deleteEntry, hint: words.deleteHint, danger: true, divider: true },
+  {
+    id: 'delete', label: words.deleteEntry, hint: words.deleteHint, danger: true, divider: true,
+    command: 'element.delete',
+  },
 ]
 
 /**
@@ -56,25 +62,31 @@ const removing = (words: CanvasWords): readonly CanvasMenuItem[] => [
 export const elementMenuItems = (
   words: CanvasWords, drafted: boolean, nestedIn: string | null = null, drawsAgain = false,
 ): readonly CanvasMenuItem[] => [
-  { id: 'rename', label: 'Rename', hint: 'also a double-click on it', shortcut: 'F2' },
+  { id: 'rename', label: 'Rename', hint: 'also a double-click on it', shortcut: 'F2', command: 'element.rename' },
   {
-    id: 'details', label: 'Edit details…',
+    id: 'details', label: 'Edit details…', command: 'element.details',
     hint: drafted ? 'its form holds them until it is saved' : 'summary, status, keywords, specializations, attributes',
     disabled: drafted,
   },
   {
-    id: 'connect', label: 'Connect to…',
+    id: 'connect', label: 'Connect to…', command: 'element.connect',
     hint: 'pick the other element by name, then the relation; also drag from its edge',
   },
   {
-    id: 'open', label: 'Open', hint: drafted ? 'it has no page until it is saved' : 'its page, in a new tab',
+    id: 'open', label: 'Open', command: 'element.open',
+    hint: drafted ? 'it has no page until it is saved' : 'its page, in a new tab',
     disabled: drafted,
   },
-  { id: 'nest', label: 'Nest in…', hint: 'a box (diagram only), or an element that may contain it (a model change)' },
-  ...nestedIn === null ? [] : [{ id: 'unnest', label: `Take out of ${nestedIn}`, hint: 'onto the box around it' }],
+  {
+    id: 'nest', label: 'Nest in…', command: 'element.nest',
+    hint: 'a box (diagram only), or an element that may contain it (a model change)',
+  },
+  ...nestedIn === null ? [] : [{
+    id: 'unnest', label: `Take out of ${nestedIn}`, hint: 'onto the box around it', command: 'element.unnest' as const,
+  }],
   ...drawsAgain
     ? [{
-      id: 'occurrence', label: 'Add another occurrence here', disabled: drafted,
+      id: 'occurrence', label: 'Add another occurrence here', disabled: drafted, command: 'element.occurrence' as const,
       hint: drafted ? 'once it is saved' : 'the same element drawn again, where the menu was opened',
     }]
     : [],

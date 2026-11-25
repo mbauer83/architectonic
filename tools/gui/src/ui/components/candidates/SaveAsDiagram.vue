@@ -37,6 +37,7 @@ const save = async (diagramName: string): Promise<string> => {
   <SaveAsDiagramForm
     :name="name"
     :save="save"
+    operation="changes_save_candidate_diagram"
     @saved="emit('saved', $event)"
     @cancel="emit('cancel')"
   >

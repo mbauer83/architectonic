@@ -8,6 +8,7 @@
 import { computed } from 'vue'
 import { canApply, operationLabel, previewSentence } from '../../../domain/candidates/candidateApply'
 import type { CandidateApply } from '../../composables/useCandidateApply'
+import PermittedButton from '../PermittedButton.vue'
 
 const props = defineProps<{ apply: CandidateApply; name: string }>()
 
@@ -61,15 +62,15 @@ const preview = computed(() => props.apply.preview.value)
       {{ apply.error.value }}
     </p>
     <footer>
-      <button
-        type="button"
+      <PermittedButton
+        operation="changes_apply_candidate"
         class="btn btn-sm btn-primary"
         data-testid="apply-confirm"
         :disabled="!canApply(preview) || apply.busy.value"
         @click="apply.confirm()"
       >
         Apply
-      </button>
+      </PermittedButton>
       <button
         type="button"
         class="btn btn-sm"
