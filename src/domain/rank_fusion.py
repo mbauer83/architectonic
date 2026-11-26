@@ -18,6 +18,15 @@ list contributes nothing from it. `k` damps the difference between the top ranks
 and second place differ by about 0.03% of the total, so appearing in *two* lists matters more than
 placing highly in one — which is the property fusion is for.
 
+**Agreement can also take a lead away, and one list may be held to it.** Under RRF a candidate
+placed second by both lists, `2/(k+2)`, outscores one placed first by one list and sixth by the other,
+`1/(k+1) + 1/(k+6)`, at *every* k — the function is convex in rank, so no choice of k restores it.
+Measured on the labelled suite (2026-11-26): a summary query's answer, first by keyword and sixth by
+vector, fell to third in its kind — behind one second in both and one sixth and first, which tied it
+and won on id — while the kind had two slots of the window. No k from 1 to 60 kept it there.
+`fuse_keeping_the_lead` names one list whose first place stays first; which list earns that is the
+caller's claim, and the caller says why.
+
 **This is not the product's ranking.** `rank_hits` keeps three sections earned by three noticed
 failures: an exact name match first whatever it scores, then hits carrying every term, then
 round-robin across kinds with a reserved floor for preliminary thinking. Fusion produces the candidate
@@ -38,8 +47,9 @@ from dataclasses import dataclass
 from src.domain.search_records import RECORD_TYPE_ORDER, SearchCandidate
 
 #: The damping constant from the original RRF paper, and what every hybrid-search implementation
-#: defaults to. Named rather than inlined because the labelled query suite may have something to say
-#: about it, and a number reached by measurement should be visible where it is set.
+#: defaults to. Measured against the labelled suite (2026-11-26, 120/120/76/83 queries over the name,
+#: summary, paraphrase and described strata): k from 60 down to 5 moves no stratum by more than one
+#: query, and k of 2 or 1 costs summary queries, so the paper's value stands.
 RRF_K = 60
 
 
@@ -72,6 +82,26 @@ def fuse_ranked_lists(
         FusedCandidate(candidate=candidate, score=score)
         for candidate, score in sorted(totals.items(), key=lambda pair: _order(*pair))
     ]
+
+
+def fuse_keeping_the_lead(
+    anchor: Sequence[SearchCandidate],
+    others: Iterable[Sequence[SearchCandidate]],
+    *,
+    k: int = RRF_K,
+) -> list[FusedCandidate]:
+    """Fuse as `fuse_ranked_lists` does, except that `anchor`'s first place stays first.
+
+    The lead is scored `n / (k + 1)` over the `n` non-empty lists: what a candidate placed first by
+    every list would score, the most fusion can award. No other candidate reaches it, because doing so
+    means being first in `anchor` too. Every other score, and so every other position, is RRF's own.
+    """
+    lists = [list(anchor), *others]
+    fused = fuse_ranked_lists(lists, k=k)
+    if not anchor or fused[0].candidate == anchor[0]:
+        return fused
+    lead = FusedCandidate(candidate=anchor[0], score=sum(1 for ranked in lists if ranked) / (k + 1))
+    return [lead, *(entry for entry in fused if entry.candidate != lead.candidate)]
 
 
 def _first_occurrences(ranked: Sequence[SearchCandidate]) -> list[SearchCandidate]:
