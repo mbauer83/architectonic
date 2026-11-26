@@ -26,7 +26,8 @@ from src.infrastructure.git._git_command import (
 #: What an enterprise working branch is opened from and merged back into. Spelled here because two
 #: questions need it — how far behind a branch is, and what a rebase re-applies onto — and a second
 #: spelling of the upstream is a second place to be wrong about which branch review happens against.
-UPSTREAM_REF = "origin/main"
+UPSTREAM_BRANCH = "main"
+UPSTREAM_REF = f"origin/{UPSTREAM_BRANCH}"
 
 
 def current_branch(repo: Path) -> str | None:

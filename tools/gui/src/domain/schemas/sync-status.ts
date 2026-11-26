@@ -56,6 +56,8 @@ export const EnterpriseSyncStatusSchema = Schema.Struct({
   commits_ahead: Schema.optional(Schema.NullOr(Schema.Number)),
   has_uncommitted_changes: Schema.Boolean,
   health: Schema.NullOr(SyncHealthSchema),
+  // While pending: the platform's page for opening the pull request. Absent otherwise.
+  review_url: Schema.optional(Schema.NullOr(Schema.String)),
 })
 export type EnterpriseSyncStatus = typeof EnterpriseSyncStatusSchema.Type
 
@@ -74,6 +76,7 @@ export const SyncSaveResultSchema = Schema.Struct({
   branch: Schema.optional(Schema.String),
   discarded_branch: Schema.optional(Schema.String),
   already_submitted: Schema.optional(Schema.Boolean),
+  review_url: Schema.optional(Schema.String),
 })
 export type SyncSaveResult = typeof SyncSaveResultSchema.Type
 

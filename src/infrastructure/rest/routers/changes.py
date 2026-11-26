@@ -7,6 +7,7 @@ recording visible rather than something that happens to them.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -158,11 +159,22 @@ def submit_changes_for_review(body: ChangeSubmitRequest,
         "commit": report.commit,
         "submitted": list(report.submitted),
         "pushed_now": report.pushed_now,
+        "review_url": _review_url(enterprise_root, report.branch),
         "summary": (
             f"{len(report.submitted)} change"
             f"{'' if len(report.submitted) == 1 else 's'} submitted on '{report.branch}'."
         ),
     }
+
+
+def _review_url(enterprise_root: Path | None, branch: str) -> str | None:
+    """The platform's new-pull-request page for the branch a submission published."""
+    from src.infrastructure.git.git_repository_state import UPSTREAM_BRANCH  # noqa: PLC0415
+    from src.infrastructure.git.review_link import review_url_for  # noqa: PLC0415
+
+    if enterprise_root is None:
+        return None
+    return review_url_for(enterprise_root, branch=branch, base=UPSTREAM_BRANCH)
 
 
 def _live_change(repo: Any, artifact_id: str) -> PendingProposal:

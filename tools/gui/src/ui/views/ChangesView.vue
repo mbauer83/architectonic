@@ -53,15 +53,21 @@ const submitting = ref(false)
 // What the last submission said, and what it refused. Kept apart from `error`, which is about
 // loading the page: a refusal to submit leaves the list perfectly readable.
 const submitted = ref<string | null>(null)
+const submittedReviewUrl = ref<string | null>(null)
 const submitRefusal = ref<string | null>(null)
 const submittable = computed(() => submittableIds(changes.value))
 
 const submit = () => {
   submitting.value = true
   submitted.value = null
+  submittedReviewUrl.value = null
   submitRefusal.value = null
   Effect.runPromise(reachingTheRemote(() => svc.submitChanges(submittable.value)))
-    .then((report) => { submitted.value = report.summary; load() })
+    .then((report) => {
+      submitted.value = report.summary
+      submittedReviewUrl.value = report.review_url ?? null
+      load()
+    })
     .catch((event: unknown) => { submitRefusal.value = String(event) })
     .finally(() => { submitting.value = false })
 }
@@ -136,6 +142,12 @@ onMounted(load)
       role="status"
     >
       {{ submitted }}
+      <a
+        v-if="submittedReviewUrl"
+        :href="submittedReviewUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+      >Open the pull request ↗</a>
     </p>
 
     <p

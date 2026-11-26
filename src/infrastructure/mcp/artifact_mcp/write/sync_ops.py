@@ -138,14 +138,20 @@ def artifact_submit_for_review(*, dry_run: bool = True) -> dict[str, object]:
                 ),
             }
         branch = enterprise_branch_lifecycle.push_enterprise_branch(ent_root)
+        from src.infrastructure.git.git_repository_state import UPSTREAM_BRANCH  # noqa: PLC0415
+        from src.infrastructure.git.review_link import review_url_for  # noqa: PLC0415
+
+        review_url = review_url_for(ent_root, branch=branch, base=UPSTREAM_BRANCH)
+        where = f" at {review_url}" if review_url else " in your version-control platform"
         return {
             "ok": True,
             "dry_run": False,
             "pushed": True,
             "branch": branch,
+            **({"review_url": review_url} if review_url else {}),
             "message": (
                 f"Enterprise changes pushed to branch '{branch}'. "
-                "Create a pull request from this branch in your version-control platform "
+                f"Create a pull request from this branch{where} "
                 "to request a team review. The system will automatically detect when it is merged."
             ),
         }

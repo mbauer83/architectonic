@@ -90,5 +90,8 @@ export const ChangeSubmittedSchema = Schema.Struct({
   submitted: Schema.Array(Schema.String),
   pushed_now: Schema.Boolean,
   summary: Schema.String,
+  // The platform's page for opening a pull request from `branch`; null where the remote is not one
+  // the backend knows how to link to.
+  review_url: Schema.optional(Schema.NullOr(Schema.String)),
 })
 export type ChangeSubmitted = typeof ChangeSubmittedSchema.Type

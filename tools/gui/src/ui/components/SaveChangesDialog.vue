@@ -35,6 +35,9 @@ const pushToRemote = ref(true)
 
 const changesQuery = useQuery<SyncChangesResult, RepoError>()
 const saveMutation = useMutation<string, RepoError>()
+// Where the submitted branch's pull request is opened, when the remote is a platform the backend
+// can link to.
+const reviewUrl = ref<string | null>(null)
 
 const artifacts = computed(() => changesQuery.data.value?.artifacts ?? [])
 const displayError = computed(() => changesQuery.errorMessage.value ?? saveMutation.errorMessage.value)
@@ -111,9 +114,12 @@ const buildSaveEffect = (): Effect.Effect<string, RepoError, never> => {
     case 'enterprise-submit':
       return Effect.map(
         reachingTheRemote(() => svc.submitEnterpriseChanges()),
-        (res) => res.already_submitted
+        (res) => {
+          reviewUrl.value = res.review_url ?? null
+          return res.already_submitted
           ? `Already submitted on branch ${res.branch ?? branchName.value ?? 'unknown'}`
-          : `Branch ${res.branch ?? 'unknown'} ready — open a pull request to merge into the enterprise repository`,
+          : `Branch ${res.branch ?? 'unknown'} ready — open a pull request to merge into the enterprise repository`
+        },
       )
     case 'enterprise-withdraw':
       // A no-op withdraw is a 400 from the backend now (never a silent success),
@@ -210,11 +216,18 @@ const execute = async () => {
           <div class="result-text">
             {{ saveMutation.result.value }}
           </div>
+          <a
+            v-if="mode === 'enterprise-submit' && reviewUrl"
+            class="result-link"
+            :href="reviewUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >Open the pull request ↗</a>
           <div
-            v-if="mode === 'enterprise-submit'"
+            v-else-if="mode === 'enterprise-submit'"
             class="result-hint"
           >
-            Push the branch and open a pull request in your enterprise repository to complete the review.
+            Open a pull request from this branch in your enterprise repository's platform to complete the review.
           </div>
         </div>
 
@@ -363,6 +376,7 @@ const execute = async () => {
 .result-msg { display: flex; flex-direction: column; gap: 6px; }
 .result-text { font-size: 13px; font-weight: 600; color: var(--ok-text); }
 .result-hint { font-size: 12px; color: var(--text-2); }
+.result-link { font-size: 13px; font-weight: 600; }
 .error-msg { font-size: 12px; color: var(--danger-strong); background: var(--danger-soft); border: 1px solid var(--danger-border); border-radius: 5px; padding: 8px 10px; }
 .dialog__footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--hair); }
 .btn { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; }

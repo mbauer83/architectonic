@@ -73,6 +73,12 @@ integration:
   exceptions: they introduce no artifact content and skip verification.
 - **Submitting** — pushes with upstream tracking and marks pending; the returned branch name
   is used to open a PR (`artifact_submit_for_review()` / `POST /api/sync/enterprise/submit`).
+  Where the push URL is on GitHub, GitLab (gitlab.com) or Azure DevOps, in its ssh or https form,
+  the response carries `review_url`, the platform's page for opening the pull request from that
+  branch against `main`. The GUI shows it as **Open the pull request** after the submit and in the
+  **Changes** menu while the submission awaits review. An ssh host alias such as
+  `github.com-personal` is linked only when `~/.ssh/config` gives it a `HostName` on one of these
+  platforms. Other remotes, self-hosted instances among them, get no link.
 - **Auto-merge detection** — the sync loop polls `origin/main`; when the branch content is
   detected there (content diff, so squash/rebase merges are handled), it checks out `main`,
   pulls, and transitions to *synced*.

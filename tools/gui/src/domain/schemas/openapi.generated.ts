@@ -7032,6 +7032,8 @@ export interface components {
             commit: string;
             /** Pushed Now */
             pushed_now: boolean;
+            /** Review Url */
+            review_url?: string | null;
             /** Submitted */
             submitted: string[];
             /** Summary */
@@ -10063,6 +10065,8 @@ export interface components {
             ok: boolean;
             /** Pushed At */
             pushed_at?: string;
+            /** Review Url */
+            review_url?: string;
         };
         /**
          * EnterpriseSyncStateResponse
@@ -10087,6 +10091,8 @@ export interface components {
             label: string;
             /** Pushed At */
             pushed_at: string | null;
+            /** Review Url */
+            review_url?: string | null;
             /**
              * Status
              * @enum {string}
