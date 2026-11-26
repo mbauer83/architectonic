@@ -263,7 +263,7 @@ describe('the names a session lists', () => {
 
 describe('a save the server refuses', () => {
   it('says why, from the error envelope, rather than showing the response body', async () => {
-    const why = "Diagram 'ARC@1.a.test' keeps a body written by hand: it draws what its composition does not generate"
+    const why = "Diagram 'ARC@1.a.test' has a picture drawn by hand: it draws what a generated picture would not: boxes \"Team A\""
     const envelope = JSON.stringify({ detail: { code: 'validation_error', message: why, details: null } })
     const refusing = {
       ...service,

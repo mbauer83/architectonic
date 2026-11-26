@@ -24,7 +24,7 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY
 from src.domain.ontology_representation.artifact_types import DiagramRecord
-from src.infrastructure.diagram_body_ownership import stated_diagram_entities, written_by_hand
+from src.infrastructure.diagram_body_ownership import HandWrittenBody, stated_diagram_entities, written_by_hand
 from src.infrastructure.picture_reading.shape_drawing import DrawShapesBody, shape_drawings
 from src.infrastructure.picture_reading.sources import PictureSources
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
@@ -106,7 +106,7 @@ def rendered_image(d: DiagramRecord, suffix: str) -> Path | None:
     return None
 
 
-def _written_by_hand(frontmatter: dict[str, object], body: str, catalogs: RuntimeCatalogs) -> str | None:
+def _written_by_hand(frontmatter: dict[str, object], body: str, catalogs: RuntimeCatalogs) -> HandWrittenBody | None:
     """Why a save may not regenerate this diagram's body; None where it may, or where that cannot be told.
 
     A stored composition that no longer renders is not a reason to fail the read: the replacement asks the
@@ -152,7 +152,10 @@ def diagram_read(artifact_id: str, catalogs: RuntimeCatalogs) -> dict[str, Any]:
             result["layout"] = layout
         result["viewpoint"] = frontmatter.get("viewpoint")
         if not result["is_global"]:
-            result["written_by_hand"] = _written_by_hand(frontmatter, str(parsed["puml_body"]), catalogs)
+            if (by_hand := _written_by_hand(frontmatter, str(parsed["puml_body"]), catalogs)) is not None:
+                result["written_by_hand"] = by_hand.reason()
+                if not by_hand.manual_layout:
+                    result["hand_drawn"] = by_hand.to_mapping()
         dt = catalogs.diagram_types.find_diagram_type(diag_rec.diagram_type)
         if dt:
             # Two hooks, because the module is doing two things. A replacement for a field the

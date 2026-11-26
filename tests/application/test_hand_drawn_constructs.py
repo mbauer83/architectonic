@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.application.modeling.hand_drawn_constructs import hand_drawn
+from src.application.modeling.hand_drawn_constructs import HandDrawnRelation, hand_drawn
 
 GENERATED = """@startuml
 top to bottom direction
@@ -29,7 +29,6 @@ def test_a_box_the_composition_does_not_state_is_hand_drawn() -> None:
     found = hand_drawn(body, GENERATED)
 
     assert found.boxes == ("Team A",)
-    assert "'Team A'" in found.described()
 
 
 def test_a_further_drawing_and_its_relation_are_hand_drawn() -> None:
@@ -41,7 +40,7 @@ def test_a_further_drawing_and_its_relation_are_hand_drawn() -> None:
     found = hand_drawn(body, GENERATED)
 
     assert found.elements == ("BOB_r__2",)
-    assert found.relations == ("ACT_a -- BOB_r__2",)
+    assert found.relations == (HandDrawnRelation("ACT_a", "BOB_r__2"),)
 
 
 def test_a_relation_drawn_the_other_way_round_or_hidden_is_not_hand_drawn() -> None:

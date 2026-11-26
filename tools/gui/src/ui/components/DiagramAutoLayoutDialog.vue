@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * *Lay out automatically…* on a diagram whose body is written by hand (`manual-layout`): the picture it
- * would have, generated from what it draws, beside the one it has, and a plain word that the hand-written
- * body is replaced. Confirming is the diagram's own replacement with `manual_layout: false` — the save the
- * canvas makes, no write of its own — after which the diagram is arranged on its canvas like any other.
+ * *Lay out automatically…* on a diagram whose picture is drawn by hand (`manual-layout`, or `written_by_hand`
+ * on the read): the picture it would have, generated from what it draws, beside the one it has, and a plain
+ * word that the hand-written body is replaced, with what only the hand-drawn picture has. Confirming is the
+ * diagram's own replacement with `manual_layout: false` — the save the canvas makes, no write of its own —
+ * after which the diagram is arranged on its canvas like any other.
  *
  * The preview is the composition preview every diagram editor reads (`previewDiagram`), from the
  * membership the diagram states.
@@ -14,6 +15,7 @@ import { type DiagramDetail, NetworkError } from '../../domain'
 import { membershipOf } from '../../domain/layout/diagramMembership'
 import type { DiagramComposition } from '../../ports/diagramWriteBodies'
 import { modelServiceKey } from '../keys'
+import DiagramHandDrawnDetails from './DiagramHandDrawnDetails.vue'
 
 const props = defineProps<{ detail: DiagramDetail }>()
 const emit = defineEmits<{ close: []; 'laid-out': [] }>()
@@ -103,20 +105,20 @@ const confirm = async () => {
         Lay out {{ detail.name }} automatically?
       </h3>
       <p class="auto__lead">
-        This diagram's picture is written by hand, so it cannot be arranged on the canvas. Laid out
-        automatically, the picture is generated from what the diagram draws, and you arrange it by hand
-        from there.
+        This diagram's picture is drawn by hand. Laid out automatically, the picture is generated from what
+        the diagram draws, and you arrange it and change what it draws on the canvas from there.
       </p>
-      <p
-        v-if="detail.written_by_hand"
+      <div
+        v-if="detail.hand_drawn"
         class="auto__lead"
         data-testid="auto-layout-why"
       >
-        Written by hand because {{ detail.written_by_hand }}. Laying it out automatically does not keep that.
-      </p>
+        <p>The generated picture does not keep what only the hand-drawn one has.</p>
+        <DiagramHandDrawnDetails :hand-drawn="detail.hand_drawn" />
+      </div>
       <div class="auto__pair">
         <figure>
-          <figcaption>Now, written by hand</figcaption>
+          <figcaption>Now, drawn by hand</figcaption>
           <img
             v-if="currentUrl"
             :src="currentUrl"

@@ -98,6 +98,3 @@
 .img-container:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .svg-wrap :deep([data-reading-stop]:focus) { outline: none; }
 .svg-wrap :deep([data-reading-stop]:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
-
-/* In edit mode, over a body written by hand: what a save keeps and what it refuses. */
-.kept-by-hand { margin: 0 0 8px; padding: 6px 10px; border-left: 3px solid var(--accent); color: var(--muted); }

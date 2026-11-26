@@ -168,6 +168,8 @@ interface EditedDiagram {
   readonly diagram_type: string
   readonly is_global: boolean
   readonly extra?: Readonly<Record<string, unknown>>
+  /** The server's word that the picture is drawn by hand, flagged or not. */
+  readonly written_by_hand?: string
 }
 
 /**
@@ -190,11 +192,12 @@ export const editsOnCanvas = (detail: EditedDiagram | null, arranges: boolean): 
   isOwnArranged(detail, arranges) && !isWrittenByHand(detail)
 
 /**
- * Whether the page offers to give a diagram's hand-written body up for a generated one, so it can be
- * arranged on its canvas (A-02.42): the same diagram, but written by hand.
+ * Whether the page offers to give a diagram's hand-drawn picture up for a generated one (A-02.42): one
+ * flagged `manual-layout`, so it can be arranged on its canvas, and one the server reads as drawn by hand
+ * without the flag, so what it draws can be changed there. The canvas notice over the second points here.
  */
 export const offersAutomaticLayout = (detail: EditedDiagram | null, arranges: boolean): boolean =>
-  isOwnArranged(detail, arranges) && isWrittenByHand(detail)
+  isOwnArranged(detail, arranges) && (isWrittenByHand(detail) || Boolean(detail.written_by_hand))
 
 /** What a diagram draws, as its read states it: what removing from it writes back, less the removed. */
 export const editRouteFor = <T>(

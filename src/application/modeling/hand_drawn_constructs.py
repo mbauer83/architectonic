@@ -31,27 +31,29 @@ _PLANTUMLS_DIRECTION = "top to bottom direction"
 
 
 @dataclass(frozen=True)
+class HandDrawnRelation:
+    """A relation only the body draws, by the aliases of its two ends; its type is the model's to say."""
+
+    source_alias: str
+    target_alias: str
+
+
+@dataclass(frozen=True)
 class HandDrawn:
     """The boxes (by label), declarations (by alias), relations (by their two aliases) and direction only the
-    body draws."""
+    body draws.
+
+    Aliases are the body's own spelling, which a reader never sees: whoever reports these names them first
+    (`diagram_body_ownership.named_hand_drawn`).
+    """
 
     boxes: tuple[str, ...] = ()
     elements: tuple[str, ...] = ()
-    relations: tuple[str, ...] = ()
+    relations: tuple[HandDrawnRelation, ...] = ()
     directions: tuple[str, ...] = ()
 
     def __bool__(self) -> bool:
         return bool(self.boxes or self.elements or self.relations or self.directions)
-
-    def described(self) -> str:
-        """One sentence naming each, so a refusal says what a regeneration would have lost."""
-        parts = [
-            f"{noun} {', '.join(repr(one) for one in found)}"
-            for noun, found in (("the boxes", self.boxes), ("the drawings", self.elements),
-                                ("the relations", self.relations), ("the direction", self.directions))
-            if found
-        ]
-        return "; ".join(parts)
 
 
 def _boxes(body: str) -> Counter[str]:
@@ -67,10 +69,10 @@ def _directions(body: str) -> set[str]:
     return {f"{match['direction']} direction" for match in _DIRECTION.finditer(body)} or {_PLANTUMLS_DIRECTION}
 
 
-def _relations(body: str) -> dict[frozenset[str], str]:
+def _relations(body: str) -> dict[frozenset[str], HandDrawnRelation]:
     return {
         frozenset((relation.source_alias, relation.target_alias)):
-            f"{relation.source_alias} {relation.arrow or 'in'} {relation.target_alias}"
+            HandDrawnRelation(relation.source_alias, relation.target_alias)
         for relation in declared_relations(body, {})
     }
 
@@ -82,7 +84,8 @@ def hand_drawn(body: str, generated: str) -> HandDrawn:
         boxes=tuple(sorted(_boxes(body) - _boxes(generated))),
         elements=tuple(sorted(_declarations(body) - _declarations(generated))),
         relations=tuple(sorted(
-            spelled for pair, spelled in _relations(body).items() if pair not in generated_relations
+            (relation for pair, relation in _relations(body).items() if pair not in generated_relations),
+            key=lambda relation: (relation.source_alias, relation.target_alias),
         )),
         directions=tuple(sorted(_directions(body) - _directions(generated))),
     )

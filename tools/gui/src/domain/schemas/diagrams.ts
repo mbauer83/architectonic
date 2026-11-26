@@ -1,6 +1,7 @@
 import { Schema } from 'effect'
 import { BaselineStandingSchema } from './baselineStanding'
 import { DiagramLayoutSchema } from './diagramLayout'
+import { HandDrawnSchema } from './handDrawn'
 import { ViewpointApplicationSchema } from './viewpoints'
 import { EntityContextConnectionSchema } from './connections'
 import { EntityDisplayInfoSchema } from './entities'
@@ -68,10 +69,12 @@ export const DiagramDetailSchema = Schema.Struct({
   /** The revision of what a replacement replaces, as read: sent back as `base_revision`, so a diagram changed
    * since is refused (409) rather than written over. */
   revision: Schema.String,
-  /** Why the diagram keeps a body written by hand, which a save generating its body would discard: the
-   * server's answer, `manual-layout` or what the body draws that its composition does not. Absent where the
-   * body is generated. */
+  /** Why the diagram's picture is drawn by hand, which a save generating its body would discard: the
+   * server's answer, `manual-layout` or what the picture draws that its generated picture would not. Absent
+   * where the body is generated. */
   written_by_hand: Schema.optional(Schema.String),
+  /** What only the hand-drawn picture has, by name; absent where generated or marked `manual-layout`. */
+  hand_drawn: Schema.optional(HandDrawnSchema),
 })
 export type DiagramDetail = typeof DiagramDetailSchema.Type
 
