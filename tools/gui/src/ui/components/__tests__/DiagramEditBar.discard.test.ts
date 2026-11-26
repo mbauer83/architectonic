@@ -35,7 +35,7 @@ const mounted = (changes: readonly { key: string; text: string }[]) => {
         ...exits,
         session,
         editing: {
-          session, statedGroupings: () => [], restate: () => Promise.resolve(true),
+          session, statedGroupings: () => [], restate: () => Promise.resolve(true), reference: () => null,
           changes: pending, saving: ref(false), error: ref(null), undoStep: ref(null), redoStep: ref(null),
           returnToAutomatic: () => undefined, discard: () => undefined, save: () => Promise.resolve(true),
         },

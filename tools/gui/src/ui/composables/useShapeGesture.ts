@@ -22,7 +22,7 @@ import type { Extent, Point } from '../../domain/layout/geometry'
 import { distanceBetween, extentAround } from '../../domain/layout/geometry'
 import type { Arrangement, Handle } from '../../domain/layout/canvasArrangement'
 import {
-  SMALLEST_ELEMENT, movedTogether, resized, resizedExtent, translated,
+  SMALLEST_ELEMENT, leastSizeOf, movedTogether, resized, resizedExtent, translated,
 } from '../../domain/layout/canvasArrangement'
 import { changedShapes, placementOf } from '../../domain/layout/canvasRouting'
 import type { Placement } from '../../domain/layout/canvasRouting'
@@ -153,8 +153,10 @@ export function useShapeGesture(session: ArrangementSession, svg: Ref<SVGSVGElem
     return snapped(reaching, movingLinesOf(state.handle), near, tolerance, mode)
   }
 
-  const leastOf = (state: Pressed): number =>
-    (session.geometry.value?.boxes.some((box) => box.alias === state.alias) ? 1 : SMALLEST_ELEMENT)
+  const leastOf = (state: Pressed) => {
+    const geometry = session.geometry.value
+    return geometry ? leastSizeOf(geometry, state.alias) : SMALLEST_ELEMENT
+  }
 
   const reached = (state: Pressed, travelled: number, fallen: number): Arrangement | null => {
     const geometry = session.geometry.value

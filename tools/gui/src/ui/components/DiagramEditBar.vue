@@ -133,13 +133,15 @@ const count = usePulse(
     >
       Redo
     </button>
-    <!-- The layer and type boxes are the diagram's own once one was edited (D9): this gives them back. -->
+    <!-- Offered whenever the boxes differ from the automatic ones — moved, sized, renamed, created or
+         deleted (D9, A-02.39): this gives them back. -->
     <button
-      v-if="boxes.owned.value"
+      v-if="boxes.differs.value"
       type="button"
       class="btn btn-plain btn-sm"
       :title="toAutomaticBoxes.allowed
-        ? 'Drop the layer and type boxes written down for this diagram: they are drawn automatically again'
+        ? 'Put the boxes back as they are drawn automatically: layer and type boxes computed again, '
+          + 'boxes moved or sized put back where they were'
         : toAutomaticBoxes.reason"
       :disabled="!toAutomaticBoxes.allowed"
       data-testid="return-to-automatic-boxes"

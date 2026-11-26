@@ -11,6 +11,7 @@ import {
   fittedBoxes,
   moved,
   resized,
+  leastSizeOf,
   resizedExtent,
 } from '../canvasArrangement'
 import { LINE_DRAWING, SHAPE_DRAWING } from './canvasDrawingFixtures'
@@ -80,6 +81,17 @@ describe('the canvas arrangement', () => {
   it('keeps a resize at least as large as it is told, from whichever side is dragged', () => {
     expect(resizedExtent(at(0, 0, 100, 50), 'se', 20, 10, 24)).toEqual(at(0, 0, 120, 60))
     expect(resizedExtent(at(0, 0, 100, 50), 'nw', 200, 200, 24)).toEqual(at(76, 26, 100, 50))
+  })
+
+  it('stops an element at its longest word and glyph across, and a box at what holds it open (A-02.08)', () => {
+    const worded = {
+      ...geometry,
+      elements: geometry.elements.map((one) => (one.alias === 'A' ? { ...one, least_width: 67 } : one)),
+    }
+    expect(leastSizeOf(worded, 'A')).toEqual({ across: 67, down: 24 })
+    expect(leastSizeOf(worded, 'B')).toEqual({ across: 24, down: 24 })
+    expect(leastSizeOf(worded, 'G')).toEqual({ across: 1, down: 1 })
+    expect(resizedExtent(at(20, 40, 120, 80), 'w', 200, 200, leastSizeOf(worded, 'A'))).toEqual(at(53, 40, 120, 80))
   })
 
 })

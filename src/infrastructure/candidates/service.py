@@ -84,9 +84,10 @@ class CandidateService:
         if (parent := body.get("parent")) and (beneath := self.store.find(str(parent))) is not None:
             body["parent"] = beneath.id  # a parent is held under the id it is stored by, however it was named
         candidate = from_mapping(body)
+        answered = answered_record(candidate, self.store)  # before the write: an answer that fails must not follow one
         version = self.store.save(candidate, based_on, applied=applied)
         notify_paths_changed([self.store.path(candidate.id)])
-        return {"record": answered_record(candidate, self.store), "version": version}
+        return {"record": answered, "version": version}
 
     def create(self, record: Mapping[str, Any], edits: Sequence[Mapping[str, Any]] = ()) -> dict[str, Any]:
         """A new candidate from its header, with *edits* recorded, in one write.

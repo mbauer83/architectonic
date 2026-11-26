@@ -6,7 +6,9 @@
  * of one writes them all down as ruled groupings — read off the picture, which says what each computed
  * box admits (`rule`) and which box it sits in (`inside`) — and then owns them: the same
  * harvest-then-own as the layout's takeover. Returning to automatic boxes drops every ruled grouping
- * again; the diagram's listed groupings stay.
+ * again, puts the diagram's listed groupings back as it states them, and puts each box the session
+ * moved or sized back where it was (`withBoxesReturned`): it is offered whenever the session's boxes
+ * differ from those (`boxesDiffer`), not only once a ruled grouping is written down.
  *
  * A box is found among the groupings by its grouping id where the picture gives it one, and otherwise
  * by the labels of the boxes it sits in, outermost first — which is how a box written down in this
@@ -15,6 +17,9 @@
 import { type AuthoredGrouping, withoutEmptyGroups } from '../authoredGrouping'
 import { stableEntityId } from '../artifactId'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
+import { sameExtent } from './arrangementLayout'
+import { type Arrangement, fittedBoxes, movedTogether } from './canvasArrangement'
+import { placementOf, resizedFromDrawn } from './canvasRouting'
 
 type Box = LayoutGeometry['boxes'][number]
 
@@ -185,6 +190,84 @@ export const withNewBox = (
   }))
   return [...withoutEmptyGroups(withdrawn(groupings)), { label, 'entity-ids': [...keys] }]
 }
+
+/** How many boxes *alias* sits in on *geometry*. */
+const depthOf = (geometry: LayoutGeometry, alias: string): number => {
+  const inside = new Map([...geometry.boxes, ...geometry.elements].map((shape) => [shape.alias, shape.inside]))
+  let depth = 0
+  for (let at = inside.get(alias); at && depth < inside.size; at = inside.get(at)) depth += 1
+  return depth
+}
+
+/**
+ * The boxes moved whole or sized from *reference* to *now*, outermost first. Read off where each box is,
+ * not off what is stated for it: a picture drawn again states every box where it stands, which moves none.
+ * A box that only grew round a member moved is not arranged, nor one carried by the box round it.
+ */
+export const boxesArranged = (
+  geometry: LayoutGeometry, reference: Arrangement, now: Arrangement,
+): readonly string[] => {
+  const [was, is] = [placementOf(geometry, reference).boxes, placementOf(geometry, now).boxes]
+  const contents = fittedBoxes(geometry, { ...now, stated: new Map() })
+  const shift = (alias: string): readonly [number, number] | null => {
+    const [from, to] = [was.get(alias), is.get(alias)]
+    return from && to && !resizedFromDrawn(to, from) ? [to.left - from.left, to.top - from.top] : null
+  }
+  const arranged = (alias: string): boolean => {
+    const [from, to] = [was.get(alias), is.get(alias)]
+    if (!from || !to || sameExtent(from, to)) return false
+    return shift(alias) !== null || !sameExtent(to, contents.get(alias))
+  }
+  const parents = new Map(geometry.boxes.map((box) => [box.alias, box.inside]))
+  const carried = (alias: string): boolean => {
+    const parent = parents.get(alias)
+    const [own, theirs] = [shift(alias), parent ? shift(parent) : null]
+    return parent !== undefined && arranged(parent) && own !== null && theirs !== null
+      && Math.abs(own[0] - theirs[0]) <= 0.5 && Math.abs(own[1] - theirs[1]) <= 0.5
+  }
+  return geometry.boxes.filter(isGroupingBox).map((box) => box.alias)
+    .filter((alias) => arranged(alias) && !carried(alias))
+    .sort((one, other) => depthOf(geometry, one) - depthOf(geometry, other))
+}
+
+/**
+ * *now* with each box the session moved or sized back as *reference* has it: its stated size as it was,
+ * and moved back with everything it holds. Outermost first, each from where the boxes round it put it.
+ */
+export const withBoxesReturned = (
+  geometry: LayoutGeometry, reference: Arrangement, now: Arrangement,
+): Arrangement => {
+  const was = placementOf(geometry, reference).boxes
+  return boxesArranged(geometry, reference, now).reduce((arrangement, alias) => {
+    const stated = new Map(arrangement.stated)
+    const before = reference.stated.get(alias)
+    if (before) stated.set(alias, before)
+    else stated.delete(alias)
+    const sized = { ...arrangement, stated }
+    const [from, to] = [placementOf(geometry, sized).boxes.get(alias), was.get(alias)]
+    return from && to ? movedTogether(geometry, sized, [alias], to.left - from.left, to.top - from.top) : sized
+  }, now)
+}
+
+/**
+ * Whether a session's groupings (*now*, undefined while it edited none) differ from the automatic boxes:
+ * a ruled grouping stated, or a box renamed, deleted or created against what the diagram states.
+ */
+export const groupingsDiffer = (
+  stated: readonly AuthoredGrouping[], now: readonly AuthoredGrouping[] | undefined,
+): boolean => statesRuledBoxes(now ?? stated) || (now !== undefined && boxChanges(stated, now, undefined).length > 0)
+
+/**
+ * Whether the session's boxes differ from the automatic ones: its groupings (`groupingsDiffer`), or a box
+ * moved or sized from *reference* to *arrangement* — null where the picture is not arranged by hand.
+ */
+export const boxesDiffer = (
+  stated: readonly AuthoredGrouping[], now: readonly AuthoredGrouping[] | undefined,
+  geometry: LayoutGeometry | null, reference: Arrangement | null, arrangement: Arrangement | null,
+): boolean =>
+  groupingsDiffer(stated, now)
+  || (geometry !== null && reference !== null && arrangement !== null
+    && boxesArranged(geometry, reference, arrangement).length > 0)
 
 /** *groupings* with every ruled grouping dropped, its boxes taking its place: the renderer's boxes again. */
 export const withoutRuledBoxes = (groupings: readonly AuthoredGrouping[]): AuthoredGrouping[] =>

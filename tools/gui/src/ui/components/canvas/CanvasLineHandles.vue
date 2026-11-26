@@ -3,33 +3,33 @@
  * What the canvas draws for a selected line (sketch 02·3–02·5): its course outlined, a green-edged diamond at
  * each end to slide it along its element, a handle in the middle of each segment to move it sideways,
  * a white handle on each bend, and — while its label is moved — a leader from the label to its anchor.
- * Every handle is the same size on screen however far the picture is zoomed.
+ * Every handle is the same size on screen however far the picture is zoomed. Each is pressed through the
+ * line gesture (`useLineGesture`), and so is the line's label, kept pressable over the handles: a segment's
+ * handle sits at the middle of its line, where a label no anchor states is drawn, and took the press — the
+ * segment moved instead of the label, no leader showed, and the arrows had no label to nudge (A-02.14/15).
  */
 import { computed } from 'vue'
 import type { Point } from '../../../domain/layout/geometry'
 import { distanceBetween } from '../../../domain/layout/geometry'
 import type { LabelAnchor } from '../../../domain/layout/orthogonal'
 import { pointAlong } from '../../../domain/layout/orthogonal'
-import type { End } from '../../../domain/layout/canvasRouteEdits'
-import { labelCentre } from '../../../domain/layout/canvasRouteEdits'
+import { type End, labelCentre } from '../../../domain/layout/canvasRouteEdits'
 import { pointsAttribute } from './canvasDrawing'
+import CanvasDrawn from './CanvasDrawn'
+import type { DrawnLine } from '../../../domain/layout/canvasLineDrawing'
+import type { LineGesture } from '../../composables/useLineGesture'
 
 const props = defineProps<{
   line: number
   course: readonly Point[]
-  bends: readonly Point[]
-  picked: number | null
-  anchor: LabelAnchor | null
-  leader: boolean
+  gesture: LineGesture
+  /** The line's label as the canvas draws it, which a press on it moves; null where PlantUML's line holds it. */
+  label: DrawnLine['label'] | undefined
   handleSide: number
 }>()
-const emit = defineEmits<{
-  end: [event: PointerEvent, end: End]
-  segment: [event: PointerEvent, index: number]
-  bend: [event: PointerEvent, index: number]
-  removeBend: [event: MouseEvent, index: number]
-  addBend: [event: MouseEvent]
-}>()
+const bends = computed(() => props.gesture.bends.value)
+const picked = computed(() => props.gesture.bend.value)
+const anchor = computed((): LabelAnchor | null => props.gesture.stated.value.label ?? null)
 
 /** An end's diamond is a little larger than the other handles: 10 screen pixels to their 9 (sketch 02·3). */
 const END_SCALE = 10 / 9
@@ -43,8 +43,9 @@ const middles = computed(() => props.course.slice(1).flatMap((end, index) => {
     : []
 }))
 const leaderLine = computed(() => {
-  if (!props.leader || !props.anchor) return null
-  return { from: pointAlong(props.course, props.anchor.at), to: labelCentre(props.course, props.anchor) }
+  const at = anchor.value
+  if (!props.gesture.movingLabel.value || !at) return null
+  return { from: pointAlong(props.course, at.at), to: labelCentre(props.course, at) }
 })
 </script>
 
@@ -56,7 +57,7 @@ const leaderLine = computed(() => {
     <polyline
       class="lab-line-handles__course"
       :points="pointsAttribute(course)"
-      @dblclick="emit('addBend', $event)"
+      @dblclick="gesture.doublePress($event)"
     />
     <template v-if="leaderLine">
       <line
@@ -82,8 +83,8 @@ const leaderLine = computed(() => {
       :y="at.y - (level ? handleSide / 2 : handleSide) / 2"
       :width="level ? handleSide : handleSide / 2"
       :height="level ? handleSide / 2 : handleSide"
-      @pointerdown="emit('segment', $event, index)"
-      @dblclick="emit('addBend', $event)"
+      @pointerdown="gesture.pressSegment($event, index)"
+      @dblclick="gesture.doublePress($event)"
     />
     <circle
       v-for="(at, index) in bends"
@@ -93,8 +94,8 @@ const leaderLine = computed(() => {
       :cx="at.x"
       :cy="at.y"
       :r="handleSide / 2"
-      @pointerdown="emit('bend', $event, index)"
-      @dblclick="emit('removeBend', $event, index)"
+      @pointerdown="gesture.pressBend($event, index)"
+      @dblclick="gesture.doublePress($event, index)"
     />
     <rect
       v-for="[end, at] in ends"
@@ -106,8 +107,20 @@ const leaderLine = computed(() => {
       :width="endSide"
       :height="endSide"
       :transform="`rotate(45 ${at.x} ${at.y})`"
-      @pointerdown="emit('end', $event, end)"
+      @pointerdown="gesture.pressEnd($event, end)"
     />
+    <g
+      v-if="label"
+      class="lab-line-handles__label"
+      :data-relation="line"
+      data-painted="label-over-handles"
+      @pointerdown="gesture.pressLabel($event, line)"
+    >
+      <CanvasDrawn
+        :nodes="label.texts"
+        :transform="label.transform"
+      />
+    </g>
   </g>
 </template>
 
@@ -134,4 +147,6 @@ const leaderLine = computed(() => {
   vector-effect: non-scaling-stroke;
 }
 .lab-line-handles__anchor { fill: var(--paper-accent); pointer-events: none; }
+/* Only a press target: the label itself is drawn in its place in the picture. */
+.lab-line-handles__label { opacity: 0; pointer-events: bounding-box; cursor: move; }
 </style>

@@ -18,7 +18,7 @@ import type { ArrangedLayout, StoredLayout } from '../../domain/layout/arrangeme
 import {
   arrangedBy, layoutOf, layoutPatchBetween, patchIsEmpty, shownRoutesOfMoved,
 } from '../../domain/layout/arrangementLayout'
-import { drawnArrangement, placedAt } from '../../domain/layout/canvasArrangement'
+import { type Arrangement, drawnArrangement, placedAt } from '../../domain/layout/canvasArrangement'
 import type { Point } from '../../domain/layout/geometry'
 import { occurrenceItems } from '../../domain/diagramOccurrences'
 import type { PendingChange } from '../../domain/layout/sessionChanges'
@@ -373,6 +373,9 @@ export function useDiagramEditing(
     returnToAutomatic, remove, restack, nest, addOccurrence, discardDraft, drawRelation, restate,
     /** The boxes the diagram states, as last read or saved. */
     statedGroupings: (): readonly AuthoredGrouping[] => savedMembers.value?.authored_groupings ?? [],
+    /** What the session's arranging is counted against (`referenceOf`); null before a picture is read. */
+    reference: (): Arrangement | null =>
+      (saved.value && session.state.value ? referenceOf(saved.value, session.state.value) : null),
   }
 }
 

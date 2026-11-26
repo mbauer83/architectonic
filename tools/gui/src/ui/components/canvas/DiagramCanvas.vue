@@ -331,16 +331,9 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
       v-if="routing && selectedLine"
       :line="selectedLine.line"
       :course="selectedLine.course"
-      :bends="lineGesture.bends.value"
-      :picked="lineGesture.bend.value"
-      :anchor="lineGesture.stated.value.label ?? null"
-      :leader="lineGesture.movingLabel.value"
+      :gesture="lineGesture"
+      :label="lines.get(selectedLine.line)?.asDrawn === null ? lines.get(selectedLine.line)?.along.label : null"
       :handle-side="handleSide"
-      @end="lineGesture.pressEnd"
-      @segment="lineGesture.pressSegment"
-      @bend="lineGesture.pressBend"
-      @remove-bend="lineGesture.doublePress"
-      @add-bend="lineGesture.doublePress"
     />
   </svg>
 </template>

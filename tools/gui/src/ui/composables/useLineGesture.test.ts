@@ -13,6 +13,7 @@ import { LINE_DRAWING, SHAPE_DRAWING } from '../../domain/layout/__tests__/canva
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import { useArrangementSession } from './useArrangementSession'
 import { useLineGesture } from './useLineGesture'
+import { labelCentre } from '../../domain/layout/canvasRouteEdits'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 const element = (alias: string, extent: Extent) => ({
@@ -143,5 +144,23 @@ describe('the line gestures', () => {
     expect(session.history.value.length).toBe(steps + 1)
     lines.pressLine(event('pointerdown', 0, 0), 0)
     expect(lines.nudgeLabel(2, 0)).toBe(false)
+  })
+
+  it('nudge a picked label by screen pixels, whatever the zoom: 2 px shown at 50% is 4 on the picture (A-02.15)', () => {
+    const session = useArrangementSession(() => Effect.succeed([]))
+    session.open(geometry)
+    session.change((_drawn, now) => now)
+    const lines = useLineGesture(session, ref(null), ref(2), vi.fn())
+    lines.pressLabel(event('pointerdown', 0, 0), 0)
+    pointer('pointerup', 0, 0)
+    const centre = () => {
+      const anchor = stated(session)?.label ?? { at: 0.5, dx: 0, dy: 0 }
+      const along = course(session)
+      return labelCentre(along, anchor)
+    }
+    const before = centre()
+    lines.nudgeLabel(0, 2)
+    expect(centre().y - before.y).toBeCloseTo(4, 0)
+    expect(centre().x - before.x).toBeCloseTo(0, 0)
   })
 })

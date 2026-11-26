@@ -4,7 +4,7 @@
  * rename reaches — the other diagrams that draw the element are renamed too. Kept with the session's
  * other changes; nothing is written until Save.
  */
-import { inject, nextTick, onMounted, ref } from 'vue'
+import { computed, inject, nextTick, onMounted, ref } from 'vue'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
@@ -22,6 +22,12 @@ const svc = inject(modelServiceKey)!
 const name = ref(props.element.name)
 const usages = ref<number | null>(props.drafted ? 0 : null)
 const field = ref<HTMLInputElement | null>(null)
+/** How far the rename reaches, in words that agree with the count. */
+const reach = computed(() => {
+  const count = usages.value ?? 0
+  if (count === 0) return 'No other diagram draws it'
+  return `Also renamed on ${count} other diagram${count === 1 ? '' : 's'}`
+})
 
 onMounted(async () => {
   await nextTick()
@@ -54,7 +60,7 @@ onMounted(async () => {
       v-if="usages !== null"
       class="cp-note"
     >
-      {{ usages ? 'Also renamed on ' + usages + ' other diagrams' : 'No other diagram draws it' }}
+      {{ reach }}
     </p>
     <div class="cp-row-end">
       <button

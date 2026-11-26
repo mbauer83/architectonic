@@ -225,3 +225,22 @@ def test_both_transports_answer_an_apply_alike(root: Path, client: TestClient) -
     with pytest.raises(ValueError, match="integrated"):
         mcp.change_set_apply(ref, dry_run=False, repo_root=str(root))
     assert client.post(f"/api/change-sets/{ref}/apply", json={}).json()["refusal"].startswith(ref)
+
+
+def test_an_applied_edit_of_a_list_field_differs_from_the_model_in_nothing(root: Path, client: TestClient) -> None:
+    """The model reads `keywords` as a tuple and the candidate states it as a list: compared by `==`, an edit
+    already applied was answered as its value replaced by itself, and the page struck it and added it again."""
+    made = model.artifact_create_entity(
+        artifact_type="application-component", name="Indexer", keywords=["search"], dry_run=False,
+        repo_root=str(root),
+    )
+    ref = _candidate(client, {"op": "edit_entity", "artifact_id": made["artifact_id"], "field": "keywords",
+                              "value": ["applied"]})
+    assert client.get(f"/api/change-sets/{ref}/diff").json()["diff"][0]["fields"]["keywords"] == {
+        "before": ["search"], "after": ["applied"]}
+
+    assert client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": False}).status_code == 200
+
+    after = client.get(f"/api/change-sets/{ref}/diff").json()
+    assert after["diff"] == []
+    assert [item["standing"] for item in after["standing"]] == ["already-there"]

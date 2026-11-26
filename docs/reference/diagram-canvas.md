@@ -22,7 +22,7 @@ for reading one, see [Reading a diagram](../03-modeling/diagramming.md#reading-a
 |---|---|
 | **Automatic layout** / **Arranged by hand** | Whether the picture is PlantUML's arrangement or one stored with the diagram. **Return to automatic** on the second gives the automatic arrangement back, as one undoable step |
 | **Undo**, **Redo** | Step through the session's history. The tooltip names the step |
-| **Return to automatic boxes** | Shown once layer or type boxes have been written down for this diagram. Drops them, so they are computed again |
+| **Return to automatic boxes** | Shown whenever the boxes differ from the automatic ones: moved, sized, renamed, created or deleted. Puts them back: layer and type boxes are computed again, and boxes moved or sized return to where they were |
 | **Check layout** | Marks the lines that break a layout rule; see [Check layout](#check-layout) |
 | *n* **changes · *m* to the model** | Opens the change list. Reads **No changes** when there are none |
 | **Discard** | Returns to the last save. With changes to discard, it asks first: **Cancel** has the focus, and `Esc` cancels |

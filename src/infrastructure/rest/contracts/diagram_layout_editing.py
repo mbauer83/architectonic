@@ -71,6 +71,9 @@ class GeometryElementContract(NullsOmitted):
     inside: str | None = None
     words: list[MeasuredWordContract]
     outside_label: ExtentContract | None = None
+    #: The narrowest it may be sized, in picture units: its longest word, and its first word after its glyph,
+    #: with the padding either side its label keeps when it is set again. Null where it has no label.
+    least_width: float | None = None
     drawing: DrawingNodeContract
 
 

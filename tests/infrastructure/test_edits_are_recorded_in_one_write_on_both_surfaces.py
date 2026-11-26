@@ -116,3 +116,41 @@ def test_mcp_records_edits_as_rest_does_and_reads_by_one_tool_each(client: TestC
     assert mcp.change_set_standing(ref, repo_root=root) == client.get(f"/api/change-sets/{ref}/standing").json()
     assert mcp.change_set_compare(ref, repo_root=root) == client.get(f"/api/change-sets/{ref}/diff").json()
     assert mcp.change_set_residuality(ref, repo_root=root) == {"candidate": ref, "analyses": []}
+
+
+def _with_keywords(client: TestClient) -> str:
+    entity = model.artifact_create_entity(
+        artifact_type="application-component", name="Indexer", keywords=["search", "metadata"], dry_run=False,
+        repo_root=str(client.root),  # type: ignore[attr-defined]
+    )
+    return str(entity["artifact_id"])
+
+
+def test_an_edit_of_a_list_field_is_answered_as_it_is_read_back_on_rest(client: TestClient) -> None:
+    """A list field's base is read off a record as a tuple; answered as held, the write happened and its answer
+    was a 500 (`base.value` not JSON), on the create and on the record alike."""
+    edit = {"op": "edit_entity", "artifact_id": _with_keywords(client), "field": "keywords", "value": ["probe"]}
+
+    created = client.post("/api/change-sets", json={"record": {"name": "Keywords"}, "operations": [edit]})
+    assert created.status_code == 200, created.text
+    ref = created.json()["record"]["id"]
+    assert created.json() == client.get(f"/api/change-sets/{ref}").json()
+    assert created.json()["record"]["changes"]["operations"][0]["base"] == {"value": ["search", "metadata"]}
+
+    other = client.post("/api/change-sets", json={"record": {"name": "Keywords later"}}).json()
+    later = other["record"]["id"]
+    recorded = client.post(f"/api/change-sets/{later}/operations", json={
+        "based_on": other["version"], "operations": [edit]})
+    assert recorded.status_code == 200, recorded.text
+    assert recorded.json() == client.get(f"/api/change-sets/{later}").json()
+
+
+def test_an_edit_of_a_list_field_is_answered_as_it_is_read_back_on_mcp(client: TestClient) -> None:
+    root = str(client.root)  # type: ignore[attr-defined]
+    edit = {"op": "edit_entity", "artifact_id": _with_keywords(client), "field": "keywords", "value": ["probe"]}
+    created = mcp.change_set_create(CandidateHeader(name="Over MCP"), repo_root=root)
+
+    recorded = mcp.change_set_record(
+        created["record"]["id"], created["version"], EDITS.validate_python([edit]), repo_root=root)
+
+    assert recorded == mcp.change_set_read(created["record"]["id"], repo_root=root)

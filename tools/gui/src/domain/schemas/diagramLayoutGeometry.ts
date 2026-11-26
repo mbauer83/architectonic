@@ -71,6 +71,9 @@ const GeometryElementSchema = Schema.Struct({
   inside: Schema.optional(Schema.String),
   words: Schema.Array(MeasuredWordSchema),
   outside_label: Schema.optional(ExtentSchema),
+  /** The narrowest it may be sized: its longest word, and its first word after its glyph, padded as its
+   * label is when it is set again. Absent where it has no label. */
+  least_width: Schema.optional(Schema.Number),
   drawing: DrawingNodeSchema,
 })
 

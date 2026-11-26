@@ -15,6 +15,7 @@ from src.application.change_sets.created_names import ChosenIds, chosen_ids, ref
 from src.application.change_sets.operations import ConnectionAddress
 from src.application.change_sets.reading import FieldValues, RecordedReading
 from src.application.change_sets.stacking import sets_beneath
+from src.application.modeling.edit_field_values import comparable
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.provisional_reference import provisional
 
@@ -114,16 +115,22 @@ def difference(before: CandidateView, after: CandidateView) -> list[dict[str, An
 
 
 def _changes[K](kind: str, left: dict[K, FieldValues], right: dict[K, FieldValues]) -> list[dict[str, Any]]:
+    """What differs from *left* to *right*, each field compared as the edit path compares it (`comparable`).
+
+    Not by `==`: the model reads a list field as a tuple and a stack's operation states it as a list, so an
+    edit already applied read as the value replaced by itself.
+    """
     changes = []
     for key in sorted(left.keys() | right.keys(), key=str):
         old, new = left.get(key), right.get(key)
-        if old == new:
+        if old is not None and new is not None and comparable(old) == comparable(new):
             continue
         original, proposed = old or {}, new or {}
         fields = {
             field: {"before": original.get(field), "after": proposed.get(field)}
             for field in sorted(original.keys() | proposed.keys())
-            if field not in original or field not in proposed or original[field] != proposed[field]
+            if field not in original or field not in proposed
+            or comparable(original[field]) != comparable(proposed[field])
         }
         changes.append({
             "kind": kind, "target": asdict(key) if isinstance(key, ConnectionAddress) else key,

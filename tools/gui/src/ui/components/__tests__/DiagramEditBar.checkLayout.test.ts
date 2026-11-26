@@ -26,12 +26,12 @@ interface Change { readonly key: string; readonly text: string; readonly model?:
 
 const mounted = (
   breaches: readonly Breach[], changes: readonly Change[] = [], undoStep: string | null = null,
-  stated: readonly AuthoredGrouping[] = [],
+  stated: readonly AuthoredGrouping[] = [], groupings?: readonly AuthoredGrouping[],
 ) => {
   let asked = 0
   const checking = ref(false)
   const session = {
-    state: ref({ byHand: true }),
+    state: ref({ byHand: true, groupings }),
     geometry: ref(geometry),
     breaches: computed(() => { asked += 1; return breaches }),
     undo: () => undefined,
@@ -40,7 +40,7 @@ const mounted = (
   const edit = {
     session,
     editing: {
-      session, statedGroupings: () => stated, restate: () => Promise.resolve(true),
+      session, statedGroupings: () => stated, restate: () => Promise.resolve(true), reference: () => null,
       changes: ref(changes), saving: ref(false), error: ref(null),
       undoStep: ref(undoStep), redoStep: ref(null),
       returnToAutomatic: () => undefined, discard: () => undefined, save: () => Promise.resolve(true),
@@ -121,11 +121,20 @@ describe('what the bar says of the session', () => {
 })
 
 describe('the boxes the bar offers back', () => {
-  it('offers Return to automatic boxes only while the diagram states layer or type boxes of its own', () => {
-    const offered = (stated: readonly AuthoredGrouping[]) =>
-      mounted([], [], null, stated).host.querySelector('[data-testid="return-to-automatic-boxes"]') !== null
+  const front: AuthoredGrouping = { id: 'g-Front1', label: 'Front office', 'entity-ids': ['APP@1.a'] }
+  const offered = (stated: readonly AuthoredGrouping[], groupings?: readonly AuthoredGrouping[]) =>
+    mounted([], [], null, stated, groupings).host.querySelector('[data-testid="return-to-automatic-boxes"]') !== null
+
+  it('offers Return to automatic boxes while the diagram states layer or type boxes of its own', () => {
     expect(offered([])).toBe(false)
-    expect(offered([{ id: 'g-Front1', label: 'Front office', 'entity-ids': ['APP@1.a'] }])).toBe(false)
+    expect(offered([front])).toBe(false)
     expect(offered([{ id: 'g-Biz1', label: 'Business', 'entity-ids': [], rule: { domain: 'business' } }])).toBe(true)
+  })
+
+  it('offers it too once the session renamed, created or deleted a box (A-02.39)', () => {
+    expect(offered([front], [front])).toBe(false)
+    expect(offered([front], [{ ...front, label: 'Back office' }])).toBe(true)
+    expect(offered([front], [front, { label: 'Review', 'entity-ids': ['APP@2.b'] }])).toBe(true)
+    expect(offered([front], [])).toBe(true)
   })
 })

@@ -7,9 +7,11 @@ import { describe, expect, it } from 'vitest'
 import type { AuthoredGrouping } from '../../authoredGrouping'
 import type { LayoutGeometry } from '../../schemas/diagramLayoutGeometry'
 import {
-  boxChanges, harvestedBoxes, ownedBoxes, renamedBox, statesRuledBoxes, trailOf, withNewBox, withTypeBox, withoutBox,
-  withoutRuledBoxes,
+  boxChanges, boxesArranged, boxesDiffer, harvestedBoxes, ownedBoxes, renamedBox, statesRuledBoxes, trailOf,
+  withBoxesReturned, withNewBox, withTypeBox, withoutBox, withoutRuledBoxes,
 } from '../canvasBoxes'
+import { drawnArrangement, moved, resized } from '../canvasArrangement'
+import { placementOf } from '../canvasRouting'
 
 type Box = LayoutGeometry['boxes'][number]
 const box = (alias: string, label: string, over: Partial<Box> = {}): Box => ({
@@ -104,5 +106,66 @@ describe('what Save lists for the boxes', () => {
     expect(boxChanges(LISTED, withoutRuledBoxes(owned), COMPUTED)).toEqual([])
     expect(boxChanges(owned, withoutRuledBoxes(owned), COMPUTED).map((row) => row.text))
       .toEqual(['Returned to automatic boxes'])
+  })
+})
+
+/** A layer box holding a type box holding one element and an element of its own; an element outside both. */
+const at = (left: number, top: number, right: number, bottom: number) => ({ left, top, right, bottom })
+const element = (alias: string, extent: ReturnType<typeof at>, inside?: string) => ({
+  alias, key: `APP@1.${alias}`, label: alias, extent, inside, words: [], outside_label: undefined,
+  drawing: { tag: 'g', attributes: {}, children: [] },
+})
+const ARRANGED: LayoutGeometry = {
+  ...picture([
+    box('DOM_business', 'Business', { rule: { domain: 'business' }, extent: at(0, 0, 300, 200) }),
+    box('GRPT_role', 'Business Role', {
+      kind: 'type', inside: 'DOM_business', rule: { type: 'business-role' }, extent: at(20, 30, 180, 150),
+    }),
+  ]),
+  elements: [
+    element('a', at(40, 60, 140, 110), 'GRPT_role'), element('b', at(200, 60, 280, 110), 'DOM_business'),
+    element('c', at(400, 60, 500, 110)),
+  ],
+}
+
+describe('the boxes the session moved or sized, given back', () => {
+  const start = drawnArrangement(ARRANGED)
+
+  it('finds a box moved whole, not what it carried, and not an element moved on its own', () => {
+    expect(boxesArranged(ARRANGED, start, moved(ARRANGED, start, 'DOM_business', 40, 25))).toEqual(['DOM_business'])
+    expect(boxesArranged(ARRANGED, start, moved(ARRANGED, start, 'GRPT_role', 5, 0))).toEqual(['GRPT_role'])
+    expect(boxesArranged(ARRANGED, start, moved(ARRANGED, start, 'c', 40, 25))).toEqual([])
+  })
+
+  it('puts a moved box back with what it holds, leaving what it does not hold where it was put', () => {
+    const now = moved(ARRANGED, moved(ARRANGED, start, 'DOM_business', 40, 25), 'c', 10, 10)
+    const back = withBoxesReturned(ARRANGED, start, now)
+    expect(back.elements.get('a')).toEqual(at(40, 60, 140, 110))
+    expect(back.elements.get('c')).toEqual(at(410, 70, 510, 120))
+    expect(boxesArranged(ARRANGED, start, back)).toEqual([])
+  })
+
+  it('finds none where a picture drawn again states every box where it stands', () => {
+    const fitted = placementOf(ARRANGED, start).boxes
+    expect(boxesArranged(ARRANGED, start, { ...start, stated: new Map(fitted) })).toEqual([])
+  })
+
+  it('puts a sized box back to the size it was', () => {
+    const now = resized(ARRANGED, start, 'DOM_business', at(0, 0, 360, 260))
+    expect(boxesArranged(ARRANGED, start, now)).toEqual(['DOM_business'])
+    expect(withBoxesReturned(ARRANGED, start, now).stated.size).toBe(0)
+  })
+
+  it('differs from the automatic boxes when moved, sized, renamed, created or deleted, and not otherwise', () => {
+    const differs = (now: readonly AuthoredGrouping[] | undefined, arrangement = start) =>
+      boxesDiffer(LISTED, now, ARRANGED, start, arrangement)
+    expect(differs(undefined)).toBe(false)
+    expect(differs(LISTED)).toBe(false)
+    expect(differs(undefined, moved(ARRANGED, start, 'DOM_business', 40, 25))).toBe(true)
+    expect(differs(undefined, resized(ARRANGED, start, 'DOM_business', at(0, 0, 360, 260)))).toBe(true)
+    expect(differs(renamedBox(LISTED, [0], 'Back office'))).toBe(true)
+    expect(differs(withNewBox(LISTED, ['APP@9.z'], 'Review'))).toBe(true)
+    expect(differs([])).toBe(true)
+    expect(differs(ownedBoxes(LISTED, COMPUTED))).toBe(true)
   })
 })
