@@ -64,6 +64,9 @@ test('a diagram mid-drag, with its guides and the change list', async ({ page })
   // The README's claim is the snapping and the one list of what Save writes, so both are on screen: a
   // change already made and listed, and a second drag held where the guides show what it lines up with.
   const problems = watch(page)
+  // A taller window than the others: the whole picture fits with paper above it, where the change list
+  // opens, so neither the list nor the canvas overview covers any of the picture's words.
+  await page.setViewportSize({ width: 1440, height: 1060 })
   await open(page, EDITED)
   await edit(page)
   // The change list opens over what is beside it; with the sidebar closed that is the canvas, so the figure
@@ -73,17 +76,16 @@ test('a diagram mid-drag, with its guides and the change list', async ({ page })
   await expect(panel).toHaveAttribute('aria-expanded', 'false')
   const moved = page.locator(`g.lab-element[data-alias="${MOVED}"] .lab-grip`)
   const alignedWith = page.locator(`g.lab-element[data-alias="${ALIGNED_WITH}"] .lab-grip`)
-  // The whole picture, fitted to the window the closed sidebar widened, so nothing is cut at the window's edge;
-  // panned down (middle button, pressed on the canvas's own paper) so the change list, opened below, covers
-  // paper rather than the picture's title.
-  const start = (await moved.boundingBox())!
+  // The whole picture, fitted to the window the closed sidebar widened, then moved down below where the change
+  // list opens (middle button, pressed on the canvas's own paper), so the list covers none of its words.
   const paper = (await page.getByTestId('layout-lab-canvas').boundingBox())!
-  const [panX, panY] = [paper.x + paper.width * 0.85, paper.y + paper.height * 0.6]
+  const [panX, panY] = [paper.x + paper.width * 0.85, paper.y + paper.height * 0.5]
+  const before = (await moved.boundingBox())!
   await page.mouse.move(panX, panY)
   await page.mouse.down({ button: 'middle' })
-  await page.mouse.move(panX, panY + 100, { steps: 8 })
+  await page.mouse.move(panX, panY + 90, { steps: 8 })
   await page.mouse.up({ button: 'middle' })
-  await expect.poll(async () => (await moved.boundingBox())!.y).toBeGreaterThan(start.y + 60)
+  await expect.poll(async () => (await moved.boundingBox())!.y).toBeGreaterThan(before.y + 60)
   await moved.click()
   await page.keyboard.press('ArrowRight')
   await expect(page.getByTestId('change-count')).not.toHaveText('No changes')
