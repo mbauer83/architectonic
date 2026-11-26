@@ -22,7 +22,10 @@ export type ClusterAction =
 export type ClusterTone = 'ok' | 'info' | 'warn' | 'error' | 'muted'
 
 export interface ClusterModel {
+  /** The status in a few words: what the pill shows, whole. */
   presentation: string
+  /** What the status means or asks for, in a sentence: the pill's tooltip and the menu's first line. */
+  detail: string | null
   tone: ClusterTone
   actions: ClusterAction[]
   behindWarning: string | null
@@ -50,26 +53,36 @@ const _allowed = (authority: SyncAuthority | null, action: ClusterAction): boole
   return decision !== undefined && !decision.denied
 }
 
-const _lifecycleRow = (enterprise: EnterpriseSyncStatus): { presentation: string; tone: ClusterTone; offered: ClusterAction[] } => {
+type LifecycleRow = { presentation: string; detail?: string; tone: ClusterTone; offered: ClusterAction[] }
+
+const _lifecycleRow = (enterprise: EnterpriseSyncStatus): LifecycleRow => {
   const dirty = enterprise.has_uncommitted_changes
   const ahead = enterprise.commits_ahead ?? null
   switch (enterprise.status) {
     case 'synced':
       return dirty
         ? { presentation: 'Unsaved enterprise changes', tone: 'warn', offered: ['enterprise_save'] }
-        : { presentation: 'Enterprise up to date — promote engagement work to publish it', tone: 'ok', offered: ['promote'] }
+        : {
+            presentation: 'Enterprise up to date',
+            detail: 'Promote engagement work to publish it.',
+            tone: 'ok',
+            offered: ['promote'],
+          }
     case 'accumulating':
-      if (dirty) return { presentation: 'Changes in progress — unsaved', tone: 'warn', offered: ['enterprise_save'] }
+      if (dirty) {
+        return { presentation: 'Unsaved enterprise changes', detail: 'Changes in progress on the enterprise working branch.', tone: 'warn', offered: ['enterprise_save'] }
+      }
       if (ahead === 0) return { presentation: 'Empty working branch', tone: 'muted', offered: ['enterprise_discard_local'] }
-      return { presentation: 'Ready to submit', tone: 'info', offered: ['enterprise_submit', 'enterprise_discard_local'] }
+      return { presentation: 'Ready to submit', detail: 'Submit the working branch for review.', tone: 'info', offered: ['enterprise_submit', 'enterprise_discard_local'] }
     case 'pending':
       return dirty
         ? {
-            presentation: 'Manual recovery needed — the pending branch has unsaved edits; resolve them in the repository',
+            presentation: 'Manual recovery needed',
+            detail: 'The pending branch has unsaved edits; resolve them in the repository.',
             tone: 'error',
             offered: [],
           }
-        : { presentation: 'Awaiting review', tone: 'info', offered: ['enterprise_discard_pending'] }
+        : { presentation: 'Awaiting review', detail: 'Submitted for review; open or merge its pull request on the platform.', tone: 'info', offered: ['enterprise_discard_pending'] }
   }
 }
 
@@ -82,6 +95,7 @@ export const reduceCluster = (input: ClusterInput): ClusterModel => {
   if (!authorityKnown || authority === null) {
     return {
       presentation: 'Checking repository status…',
+      detail: null,
       tone: 'muted',
       actions: [],
       behindWarning: null,
@@ -92,6 +106,7 @@ export const reduceCluster = (input: ClusterInput): ClusterModel => {
   if (enterprise === null) {
     return {
       presentation: 'Enterprise not configured',
+      detail: null,
       tone: 'muted',
       actions: [],
       behindWarning: null,
@@ -105,11 +120,11 @@ export const reduceCluster = (input: ClusterInput): ClusterModel => {
       : null
 
   if (authority.block_kind === 'read_only' || authority.block_kind === 'sync_in_progress') {
-    const presentation =
+    const [presentation, detail] =
       authority.block_kind === 'read_only'
-        ? 'Read-only mode — repository changes are disabled'
-        : 'Sync in progress — changes are paused'
-    return { presentation, tone: 'warn', actions: [], behindWarning, engagementSaveAvailable: false }
+        ? ['Read-only', 'Repository changes are disabled.']
+        : ['Sync in progress', 'Changes are paused until it finishes.']
+    return { presentation, detail, tone: 'warn', actions: [], behindWarning, engagementSaveAvailable: false }
   }
 
   const row = _lifecycleRow(enterprise)
@@ -117,7 +132,8 @@ export const reduceCluster = (input: ClusterInput): ClusterModel => {
 
   if (authority.block_kind === 'sync_health' && enterprise.health !== null) {
     return {
-      presentation: `${enterprise.health.message || enterprise.health.reason} — ${row.presentation}`,
+      presentation: 'Sync problem',
+      detail: `${enterprise.health.message || enterprise.health.reason} (${row.presentation.toLowerCase()})`,
       tone: 'error',
       actions,
       behindWarning,
@@ -125,5 +141,5 @@ export const reduceCluster = (input: ClusterInput): ClusterModel => {
     }
   }
 
-  return { presentation: row.presentation, tone: row.tone, actions, behindWarning, engagementSaveAvailable }
+  return { presentation: row.presentation, detail: row.detail ?? null, tone: row.tone, actions, behindWarning, engagementSaveAvailable }
 }
