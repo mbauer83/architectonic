@@ -8,8 +8,8 @@ find the same one.
 
 A start is a stub end, travelling outward from its port; a goal is a stub end, entered travelling
 towards its port. Reaching a goal in another direction costs the bend into the stub. The search first
-looks within a window round its terminals and widens it only when the window holds no way, or only
-one through a channel already full.
+looks within a window round its terminals — wider the further apart they are — and widens it only when
+the window holds no way, or only one through a channel already full.
 """
 
 from __future__ import annotations
@@ -36,6 +36,11 @@ EAGERNESS = 1.5
 
 #: How far round its terminals a search looks first; then three times as far; then everywhere.
 WINDOW = 200.0
+
+#: How far beyond its terminals a far-reaching search first looks, as a share of how far apart they are:
+#: a line across a wide picture that must leave its terminals' band to go round something finds that way
+#: in its first window, rather than exhausting a window a band high before widening.
+SPAN_SHARE = 0.1
 
 
 @dataclass(frozen=True)
@@ -71,8 +76,9 @@ def _windows(terminals: Sequence[Terminal]) -> list[Extent | None]:
     top = min(terminal.point.y for terminal in terminals)
     right = max(terminal.point.x for terminal in terminals)
     bottom = max(terminal.point.y for terminal in terminals)
+    first = max(WINDOW, SPAN_SHARE * max(right - left, bottom - top))
     return [
-        Extent(left - reach, top - reach, right + reach, bottom + reach) for reach in (WINDOW, 3 * WINDOW)
+        Extent(left - reach, top - reach, right + reach, bottom + reach) for reach in (first, 3 * first)
     ] + [None]
 
 

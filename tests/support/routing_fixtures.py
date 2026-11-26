@@ -312,6 +312,10 @@ def build_routing() -> dict[str, object]:
               [Connector("1", "a", "b"), Connector("3", "d", "a"),
                Connector("5", "d", "a"), Connector("6", "b", "a")]),
         _case("a synthetic arrangement of forty elements", *synthetic_scene(40, 60, seed=3)),
+        _case("a line across a wide picture looks round a tall element in its first window",
+              RoutingScene(elements={"a": _box(0, 500, 100, 60), "b": _box(4000, 500, 100, 60),
+                                     "wall": _box(2000, 200, 60, 700)}),
+              [Connector("ab", "a", "b")]),
     ]
     scene, connectors = _channel_scene()
     previous = route_all(scene, connectors)

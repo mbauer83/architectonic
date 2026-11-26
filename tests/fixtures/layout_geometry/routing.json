@@ -6626,6 +6626,87 @@
      ]
     ]
    }
+  },
+  {
+   "name": "a line across a wide picture looks round a tall element in its first window",
+   "scene": {
+    "elements": {
+     "a": {
+      "left": 0,
+      "top": 500,
+      "right": 100,
+      "bottom": 560
+     },
+     "b": {
+      "left": 4000,
+      "top": 500,
+      "right": 4100,
+      "bottom": 560
+     },
+     "wall": {
+      "left": 2000,
+      "top": 200,
+      "right": 2060,
+      "bottom": 900
+     }
+    },
+    "boxes": {},
+    "text": {},
+    "fixed_lines": []
+   },
+   "connectors": [
+    {
+     "key": "ab",
+     "source": "a",
+     "target": "b",
+     "decorated": [
+      true,
+      true
+     ]
+    }
+   ],
+   "result": {
+    "routes": {
+     "ab": {
+      "source_port": {
+       "side": "right",
+       "at": 0.5
+      },
+      "target_port": {
+       "side": "left",
+       "at": 0.5
+      },
+      "course": [
+       [
+        100,
+        530
+       ],
+       [
+        1992,
+        530
+       ],
+       [
+        1992,
+        192
+       ],
+       [
+        3970,
+        192
+       ],
+       [
+        3970,
+        530
+       ],
+       [
+        4000,
+        530
+       ]
+      ]
+     }
+    },
+    "unroutable": [],
+    "unseparated": []
+   }
   }
  ],
  "quick": {

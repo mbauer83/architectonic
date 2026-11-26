@@ -24,6 +24,9 @@ export const REVERSE: readonly number[] = [1, 0, 3, 2]
 
 export const WINDOW = 200
 
+/** How far beyond its terminals a far-reaching search first looks, as a share of how far apart they are. */
+export const SPAN_SHARE = 0.1
+
 /** How much the distance still to go is over-weighted: a promising way rather than the very cheapest. */
 export const EAGERNESS = 1.5
 
@@ -104,8 +107,9 @@ const windowsOf = (terminals: readonly Terminal[]): (Extent | null)[] => {
   const top = Math.min(...terminals.map((terminal) => terminal.point.y))
   const right = Math.max(...terminals.map((terminal) => terminal.point.x))
   const bottom = Math.max(...terminals.map((terminal) => terminal.point.y))
+  const first = Math.max(WINDOW, SPAN_SHARE * Math.max(right - left, bottom - top))
   return [
-    ...[WINDOW, 3 * WINDOW].map((reach) => ({
+    ...[first, 3 * first].map((reach) => ({
       left: left - reach,
       top: top - reach,
       right: right + reach,
