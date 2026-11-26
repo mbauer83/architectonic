@@ -87,6 +87,9 @@ class KindDeclaration:
 
     identity_field: str = "artifact-id"
     generated_paths: tuple[str, ...] = ()
+    #: Whether a document names an artifact of this kind by its id in a typed table's `id` column, rather
+    #: than by a link: a kind whose files are named by their id and that no reference term reaches.
+    named_by_id_in_documents: bool = False
 
     def file_identity(self, path: PurePath) -> str:
         """The identity carried by the file name, excluding the kind's full suffix."""
@@ -135,7 +138,7 @@ ARTIFACT_KINDS: tuple[KindDeclaration, ...] = (
     KindDeclaration(
         name="candidate-architecture", roots=(("candidate-architectures",),), placement="directly-below",
         suffixes=(".candidate.yaml",), id_prefix="CAND", verification="standalone",
-        moves_model_generation=False, identity_field="id",
+        moves_model_generation=False, identity_field="id", named_by_id_in_documents=True,
     ),
     # Not model content: unlisted by `list_artifacts`, ranked below everything in search, and saved
     # about once a second while someone is thinking — so its changes move a generation of their own.

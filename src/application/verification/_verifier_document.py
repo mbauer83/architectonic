@@ -18,7 +18,7 @@ from src.application.artifacts.reference_terms import (
     TermStatus,
     parse_reference_term,
 )
-from src.application.artifacts.stored_ids import stored_id
+from src.application.artifacts.stored_ids import stored_id_reader
 from src.application.document_links import resolve_artifact_links
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification._verifier_document_tables import document_table_issues
@@ -232,7 +232,7 @@ def verify_document(  # noqa: C901
                         read_document_tables(path, content, schema),
                         present_sections=present,
                         vocabulary=vocabulary,
-                        stored_id_of=lambda kind, named: stored_id(repo_root, kind, named),
+                        stored_id_of=stored_id_reader(repo_root),
                         loc=loc,
                     )
                 )

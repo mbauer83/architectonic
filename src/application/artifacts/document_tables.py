@@ -21,7 +21,7 @@ takes `to`, a list of reference terms (`src.application.artifacts.reference_term
 markdown link. `row` takes `table`, another table of the same document type, and its cell is that
 table's row id. Either may be `many`. A row is not a fourth kind of reference term: a term names what
 a *link* resolves to, and a row is not a file. `id` takes `kind`, an artifact kind whose files no
-document links (`ID_COLUMN_KINDS`: a candidate architecture), and its cell is the id of a stored artifact
+document links (`ID_COLUMN_KINDS`, read from the kind table), and its cell is the id of a stored artifact
 of that kind; `words` lists what the cell may say instead (`naive`). One artifact per cell.
 
 **A row's id is the first column**, written `<prefix><number>` — `S3`. In the table, because an id
@@ -45,7 +45,7 @@ from typing import Any, Literal
 from src.application.artifacts.schema import validate_against_schema
 from src.domain.markdown_table import escape_cell, format_table
 from src.domain.ontology_representation.property_value import SUPPORTED_SCHEMA_TYPES
-from src.domain.repository.artifact_location import ArtifactKindName
+from src.domain.repository.artifact_location import ARTIFACT_KINDS, ArtifactKindName
 
 TABLES_KEY = "tables"
 
@@ -54,8 +54,10 @@ ColumnKind = Literal["value", "reference", "row", "id"]
 REFERENCE_COLUMN_TYPE = "reference"
 ROW_COLUMN_TYPE = "row"
 ID_COLUMN_TYPE = "id"
-#: The artifact kinds an `id` column may name: those whose artifacts a document names by id, not by a link.
-ID_COLUMN_KINDS: tuple[ArtifactKindName, ...] = ("candidate-architecture",)
+#: The artifact kinds an `id` column may name: those the kind table says a document names by id, not by a link.
+ID_COLUMN_KINDS: tuple[ArtifactKindName, ...] = tuple(
+    kind.name for kind in ARTIFACT_KINDS if kind.named_by_id_in_documents
+)
 DEFAULT_ROW_ID_TITLE = "Id"
 
 #: The keys of a column that are this module's. Every other key of a value column is JSON Schema's.
