@@ -48,14 +48,15 @@ def _listed(client: TestClient, ref: str) -> dict[str, Any]:
 
 
 def test_a_description_written_with_the_header_is_read_and_listed_apart_from_the_rationale(client: TestClient) -> None:
+    rationale = "The rules change weekly; the code does not."
     created = client.post("/api/change-sets", json={
-        "record": {"name": "Rule set", "description": _IDEA, "rationale": "The rules change weekly; the code does not."},
+        "record": {"name": "Rule set", "description": _IDEA, "rationale": rationale},
     })
     assert created.status_code == 200, created.text
     ref = created.json()["record"]["id"]
 
     record = client.get(f"/api/change-sets/{ref}").json()["record"]
-    assert (record["description"], record["rationale"]) == (_IDEA, "The rules change weekly; the code does not.")
+    assert (record["description"], record["rationale"]) == (_IDEA, rationale)
     assert _listed(client, ref)["description"] == _IDEA
 
 
