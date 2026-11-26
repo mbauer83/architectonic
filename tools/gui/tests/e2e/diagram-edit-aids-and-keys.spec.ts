@@ -4,7 +4,8 @@
  * The diagram page's window and edit canvas by pointer aids and by keyboard (sketch 01·1–01·3, 02·1, 02·9;
  * Q7, Q8): the zoom cluster and its keys, no double-click reset, E to edit, alignment guides while a shape
  * is dragged and gone after the drop, Tab through the shapes with a focus ring, the leave choice walked
- * by the arrows, and the reader's legend and title kept on the edit canvas (owner, 2026-11-25).
+ * by the arrows, the reader's legend and title kept on the edit canvas (owner, 2026-11-25), and a moved box
+ * given back by Return to automatic boxes (A-02.39).
  *
  * Nothing here saves: every edit is left by Discard and exit.
  */
@@ -147,4 +148,29 @@ test('the legend and the title the reader sees stay on the edit canvas', async (
   const around = page.getByTestId('canvas-surround')
   await expect(around).toHaveCount(2)
   await expect(around.locator('text').filter({ hasText: 'element kinds' }).first()).toBeAttached()
+})
+
+test('a box moved by its title offers Return to automatic boxes, which puts it back', async ({ page }) => {
+  // A-02.39: the button was shown only once a ruled grouping was written down, so a moved box never offered it.
+  // A diagram whose layer boxes are computed: a box the body draws itself has no key a layout can place it by.
+  await page.goto(`/diagrams/${encodeURIComponent('ARC@1795183450.AzZkKFF.proposing-a-change-to-enterprise-owned-content')}`)
+  await expect(page.locator('.svg-wrap svg')).toBeVisible({ timeout: 30_000 })
+  await page.getByTestId('diagram-edit').click()
+  await editing(page)
+  const back = page.getByTestId('return-to-automatic-boxes')
+  await expect(back).toHaveCount(0)
+
+  const title = page.getByTestId('layout-lab-canvas').locator('g.lab-box').filter({ hasText: 'Business' }).first()
+    .locator('.lab-grip')
+  const at = await title.boundingBox()
+  await page.mouse.move(at!.x + at!.width / 2, at!.y + at!.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(at!.x + at!.width / 2 - 30, at!.y + at!.height / 2 + 24, { steps: 8 })
+  await page.mouse.up()
+  await expect(back).toBeVisible()
+
+  await back.click()
+  await expect(back).toHaveCount(0)
+  await expect(page.getByTestId('change-count')).toHaveText('No changes')
+  await page.getByRole('button', { name: /Done/ }).click()
 })
