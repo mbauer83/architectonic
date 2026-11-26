@@ -4,6 +4,7 @@
  */
 import { Effect } from 'effect'
 import { describe, expect, it } from 'vitest'
+import { shallowRef } from 'vue'
 import type { Extent } from '../../domain/layout/geometry'
 import { SHAPE_DRAWING } from '../../domain/layout/__tests__/canvasDrawingFixtures'
 import type { CandidateComparison } from '../../domain/schemas/candidates'
@@ -129,6 +130,35 @@ describe('useComposedDrawing', () => {
       label: 'Application', 'entity-ids': [], rule: { domain: 'application' },
       groups: [{ label: 'Application Components', 'entity-ids': [], rule: { type: 'application-component' } }],
     }])
+  })
+
+  it('composes a candidate drawn on a stored diagram over that diagram, reading its context once', async () => {
+    const DIAGRAM = 'ADG@1795700000.Stored1.index-store'
+    const contexts: string[] = []
+    const previews: string[] = []
+    const svc = {
+      ...fakeServer().svc,
+      getDiagramContext: (id: string) => {
+        contexts.push(id)
+        return Effect.succeed({ ...START, diagram: { ...START.diagram, artifact_id: DIAGRAM } })
+      },
+      previewLayoutGeometry: (id: string) => {
+        previews.push(id)
+        return Effect.succeed(picture(element('S', STORE), element('C', CACHE)))
+      },
+      readCandidatePictureContext: () => Effect.die('a candidate drawn on a stored diagram reads that diagram'),
+      previewCandidatePicture: () => Effect.die('a candidate drawn on a stored diagram previews into that diagram'),
+    } as unknown as ComposedDrawingAccess
+    const stored = { ...GENERATED, artifact_id: DIAGRAM }
+    const read = shallowRef(comparison(stored))
+    const drawing = useComposedDrawing(svc, () => read.value)
+    await settled()
+    read.value = comparison(stored)
+    await settled()
+
+    expect(contexts).toEqual([DIAGRAM])
+    expect(previews).toEqual([DIAGRAM, DIAGRAM])
+    expect(drawing.value?.elements.map((one) => one.key)).toEqual([STORE, CACHE])
   })
 
   it('leaves the served picture standing where the preview is refused', async () => {
