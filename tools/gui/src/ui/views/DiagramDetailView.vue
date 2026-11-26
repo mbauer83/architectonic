@@ -241,7 +241,8 @@ const executeDelete = () => {
             v-bind="reader.hostAttributes.value"
             @keydown="reader.onKeydown"
             @mousedown="editing ? edit.panPress($event, panZoom.onMouseDown) : panZoom.onMouseDown($event)"
-            @pointerdown="editing && !edit.spaceHeld.value && editCanvas?.sweepFrom($event)"
+            @pointerdown.capture="editing && edit.holdForPan($event)"
+            @pointerdown="editing && !edit.pansFrom($event) && editCanvas?.sweepFrom($event)"
           >
             <div
               class="pan-canvas"

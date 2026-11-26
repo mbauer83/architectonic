@@ -11,7 +11,7 @@
 
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import { createApp, defineComponent, ref, type Ref } from 'vue'
-import { usePanGesture } from '../usePanGesture'
+import { isDeliberatePan, usePanGesture } from '../usePanGesture'
 
 /** `usePanGesture` registers `onUnmounted`, so it is exercised where that means something. */
 const mounted = <T>(setup: () => T): { value: T; unmount: () => void } => {
@@ -146,13 +146,53 @@ describe('a press the viewport has no claim on', () => {
     expect(tx.value).toBe(0)
   })
 
-  it('ignores a non-primary button, which is a context menu rather than a pan', () => {
+  it('ignores the secondary button, which is a context menu rather than a pan', () => {
     const { entity, tx } = harness()
 
     press(entity, 100, 100, 2)
     moveTo(200, 100)
 
     expect(tx.value).toBe(0)
+  })
+})
+
+describe('the middle button', () => {
+  it('pans, as it does in every canvas tool', () => {
+    const { entity, tx, ty } = harness()
+
+    press(entity, 100, 100, 1)
+    moveTo(130, 120)
+
+    expect([tx.value, ty.value]).toEqual([30, 20])
+  })
+})
+
+/**
+ * Edit mode gives the primary drag to the canvas — it selects on paper and moves an element — so
+ * panning there is a deliberate press (ADR@1795183546: "a modifier, the middle button, the wheel and
+ * the overview"). Only Space+drag used to pan; the modifier and the middle button did nothing.
+ */
+describe('a deliberate pan, where the primary drag belongs to the canvas', () => {
+  const pressOf = (button: number, altKey = false) => ({ button, altKey })
+
+  it('is the middle button, held with nothing else', () => {
+    expect(isDeliberatePan(pressOf(1), false)).toBe(true)
+  })
+
+  it('is the primary button with Alt', () => {
+    expect(isDeliberatePan(pressOf(0, true), false)).toBe(true)
+  })
+
+  it('is the primary button while Space is held', () => {
+    expect(isDeliberatePan(pressOf(0), true)).toBe(true)
+  })
+
+  it('is not a plain primary press, which selects or moves', () => {
+    expect(isDeliberatePan(pressOf(0), false)).toBe(false)
+  })
+
+  it('is not the secondary button, with or without a modifier', () => {
+    expect(isDeliberatePan(pressOf(2, true), true)).toBe(false)
   })
 })
 

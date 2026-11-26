@@ -16,6 +16,19 @@ const PAN_THRESHOLD_PX = 4
  */
 const NON_PANNABLE = 'button, a, input, label, select, textarea'
 
+/** The primary button, which pans a viewer, and the middle one, which pans wherever it is pressed. */
+const PRIMARY = 0
+const MIDDLE = 1
+
+/**
+ * Whether a press pans where a drag with the primary button already means something else — on a
+ * canvas in edit mode, where it selects or moves (ADR "Diagrams Are Edited on Their Canvas"): the
+ * middle button, the primary with Alt, or the primary while Space is held. Shift, Ctrl and Cmd are
+ * not among them, because a press with any of those adds to the selection (`isAdditive`).
+ */
+export const isDeliberatePan = (press: Pick<MouseEvent, 'button' | 'altKey'>, spaceHeld: boolean): boolean =>
+  press.button === MIDDLE || (press.button === PRIMARY && (press.altKey || spaceHeld))
+
 /**
  * Press-and-drag panning over a viewport whose contents are also click-to-select.
  *
@@ -23,6 +36,9 @@ const NON_PANNABLE = 'button, a, input, label, select, textarea'
  * that stays put is a click and reaches whatever it landed on; a press that moves pans the
  * viewport, and the click that mouseup would otherwise produce is swallowed so the thing under the
  * pointer is not also selected.
+ *
+ * The middle button pans too, as it does in every canvas tool; its press never produces a click, so
+ * there is nothing to swallow, and holding its default back keeps the browser's autoscroll out of it.
  *
  * Both diagram viewports used to resolve the ambiguity the other way, by declining to pan at all
  * when the press landed on `[data-entity-id]` or `[data-conn-id]`. That made every model entity a
@@ -71,9 +87,10 @@ export function usePanGesture(tx: Ref<number>, ty: Ref<number>) {
   }
 
   const onMouseDown = (event: MouseEvent) => {
-    if (event.button !== 0) return
+    if (event.button !== PRIMARY && event.button !== MIDDLE) return
     if (event.target instanceof Element && event.target.closest(NON_PANNABLE)) return
-    // Stops the press selecting whatever label text is under the pointer as the diagram moves.
+    // Stops the press selecting whatever label text is under the pointer as the diagram moves, and a
+    // middle press starting the browser's autoscroll.
     event.preventDefault()
     pressed = { x: event.clientX, y: event.clientY, tx: tx.value, ty: ty.value }
     window.addEventListener('mousemove', onMouseMove)

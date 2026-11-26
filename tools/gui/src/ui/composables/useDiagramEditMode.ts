@@ -7,7 +7,8 @@
  *   editing* (Q2). A text field keeps its own Escape.
  * - **Done** is the same last step.
  * - **Save** is one press and stays in edit mode (Q4); **Discard** returns to the last save.
- * - **Space held** turns a press on the canvas into a pan; the wheel zooms as in view mode.
+ * - **A deliberate pan** — the middle button, Alt+drag, or a drag with Space held — moves the window
+ *   (`isDeliberatePan`); every other press is the canvas's. The wheel zooms as in view mode.
  * - The first move of an automatically laid-out picture takes it over (D16): said once, in a toast.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -32,6 +33,7 @@ import { isTypingIn } from '../lib/keyboardScheme'
 import { type CanvasCommandName, DIAGRAM_OPERATIONS } from '../../domain/canvasCommands'
 import { useCommandPermission } from './usePermissions'
 import { diagramPicture } from './pictureSource'
+import { isDeliberatePan } from './usePanGesture'
 
 /** How far the arrows nudge a picked label: two pixels, or one with Shift (02·5). */
 const LABEL_STEP = 2
@@ -258,9 +260,13 @@ export function useDiagramEditMode(
   }
   const onKeyUp = (event: KeyboardEvent) => { if (event.key === ' ') spaceHeld.value = false }
 
-  /** A press on the canvas pans only while Space is held: otherwise it is the canvas's to select and move. */
+  /** Whether a press on the canvas pans; otherwise it is the canvas's to select and move. */
+  const pansFrom = (press: Pick<MouseEvent, 'button' | 'altKey'>): boolean => isDeliberatePan(press, spaceHeld.value)
+  /** A pointer press that pans goes no further, so no shape, line or selection rectangle also takes it. */
+  const holdForPan = (event: PointerEvent) => { if (pansFrom(event)) event.stopPropagation() }
+  /** The mouse press that pans hands itself to the pan gesture; any other is left to the canvas. */
   const panPress = (event: MouseEvent, pan: (event: MouseEvent) => void) => {
-    if (spaceHeld.value) pan(event)
+    if (pansFrom(event)) pan(event)
   }
 
   // Said once per diagram, at the moment it happens: the picture is now arranged by hand. The toast's
@@ -298,7 +304,7 @@ export function useDiagramEditMode(
     outlined, outline, select, escape,
     canUndo: computed(() => session.history.value.length > 0),
     canRedo: computed(() => session.future.value.length > 0),
-    enter, done, saveAndExit, discardAndExit, keepEditing, panPress,
+    enter, done, saveAndExit, discardAndExit, keepEditing, pansFrom, holdForPan, panPress,
   }
 }
 
