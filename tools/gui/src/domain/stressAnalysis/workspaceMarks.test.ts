@@ -17,8 +17,8 @@ describe('the workspace marks', () => {
   })
 
   it('marks an element the naive creates by the id the picture draws it with', () => {
-    const chosen = new Map([['$ref:queue', 'APP@1795700000.PrmQueu.promotion-queue']])
-    const marks = hitMarks(new Map([['S1', ['$ref:queue', SERVICE]]]), chosen)
+    // The incidence read names it by the stable form of the id its create chose.
+    const marks = hitMarks(new Map([['S1', ['APP@1795700000.PrmQueu', SERVICE]]]))
     expect([...marks.keys()]).toEqual(['APP@1795700000.PrmQueu', 'SRV@1712870400.Uv9Wx9'])
   })
 })

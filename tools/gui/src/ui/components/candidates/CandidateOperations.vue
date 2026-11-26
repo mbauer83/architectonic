@@ -12,7 +12,6 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { stableEntityId } from '../../../domain/artifactId'
 import type { ChangeDifference } from '../../../domain/schemas/candidates'
-import { chosenIds } from '../../../domain/candidates/candidateCanvas'
 import { valueText } from '../../../domain/candidates/fieldChange'
 import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
@@ -58,11 +57,10 @@ const changeWord = (row: ChangeDifference): string =>
 const shown = (value: unknown): string => valueText(value) ?? '—'
 
 const standingOf = (row: ChangeDifference): string => {
-  const target = typeof row.target === 'string' ? row.target : null
-  // What the stack creates is named by its reference; the view says the id its create was given.
-  const chosen = target === null ? undefined : chosenIds(comparison.value?.view ?? { entities: [] }).get(target)
+  const target = typeof row.target === 'string' ? stableEntityId(row.target) : null
+  // Both name an element by its id, perhaps in different spellings (a create states its full id).
   const found = comparison.value?.standing.find(({ operation }) =>
-    target !== null && (operation.artifact_id === target || (chosen !== undefined && operation.artifact_id === chosen)))
+    target !== null && typeof operation.artifact_id === 'string' && stableEntityId(operation.artifact_id) === target)
   return found?.standing ?? ''
 }
 
@@ -70,7 +68,7 @@ const selectedRow = ref<number | null>(null)
 const table = ref<HTMLTableElement | null>(null)
 /** Whether *row* is about the element *stableId*: the element itself, or a relation at either end. */
 const about = (row: ChangeDifference, stableId: string): boolean => (typeof row.target === 'string'
-  ? stableEntityId(chosenIds(comparison.value?.view ?? { entities: [] }).get(row.target) ?? row.target) === stableId
+  ? stableEntityId(row.target) === stableId
   : [row.target.source_entity, row.target.target_entity].some((end) => stableEntityId(end) === stableId))
 const framedRows = computed(() => new Set((comparison.value?.diff ?? []).flatMap((row, index) =>
   (props.framed && about(row, props.framed) ? [index] : []))))

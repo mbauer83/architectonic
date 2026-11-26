@@ -7,7 +7,6 @@
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import { stableEntityId } from '../../domain/artifactId'
-import { chosenIds } from '../../domain/candidates/candidateCanvas'
 import type { DetailsSource } from '../components/canvasDetails'
 
 export type CandidateDetailsAccess = Pick<ModelService, 'readCandidate' | 'compareCandidate' | 'listCandidates'>
@@ -25,8 +24,7 @@ export function useCandidateDetails(svc: CandidateDetailsAccess, candidateId: ()
       Effect.runPromise(svc.compareCandidate(id, parent ?? 'model')),
       parent ? Effect.runPromise(svc.listCandidates()) : Promise.resolve([]),
     ])
-    const chosen = chosenIds(compared.view)
-    const isIt = (target: string) => stableEntityId(chosen.get(target) ?? target) === stableEntityId(artifactId)
+    const isIt = (target: string) => stableEntityId(target) === stableEntityId(artifactId)
     const fields = compared.view.entities.find((one) => isIt(one.id))?.fields ?? {}
     const changed = compared.diff.find((row) => typeof row.target === 'string' && isIt(row.target))
     return {

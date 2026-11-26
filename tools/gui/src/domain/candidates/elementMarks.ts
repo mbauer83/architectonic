@@ -6,7 +6,6 @@
  */
 import type { CandidateComparison, ConnectionKey } from '../schemas/candidates'
 import { stableEntityId } from '../artifactId'
-import { chosenIds } from './candidateCanvas'
 
 export type MarkKind = 'hit' | 'added' | 'edited' | 'removed' | 'framed'
 
@@ -33,17 +32,16 @@ export type MarkedComparison = Pick<CandidateComparison, 'diff' | 'view'>
 
 /**
  * The elements a comparison changed, marked as it changed them; a changed relation marks neither end.
- * An element the candidate creates is marked by the id chosen for it (`chosenIds`), which is the id the
- * composed picture draws it with: the comparison names it by its reference.
+ * An element the candidate creates is marked by the id chosen for it, which the comparison names it by and the
+ * composed picture draws it with.
  */
 export const diffMarks = (comparison: MarkedComparison | null): Marks => {
-  const chosen = chosenIds(comparison?.view ?? { entities: [] })
   return new Map((comparison?.diff ?? []).flatMap((row) => {
     const kind = DIFF_KIND[row.change]
     if (!kind || isConnection(row.target)) return []
     const changed = Object.keys(row.fields)
     const title = kind === 'edited' ? `${DIFF_WORD[kind]} (${changed.join(', ')})` : DIFF_WORD[kind]
-    return [[stableEntityId(chosen.get(row.target) ?? row.target), { kind, tag: DIFF_TAG[kind], title }] as const]
+    return [[stableEntityId(row.target), { kind, tag: DIFF_TAG[kind], title }] as const]
   }))
 }
 

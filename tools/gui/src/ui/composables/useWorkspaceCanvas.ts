@@ -10,7 +10,6 @@ import { computed, type Ref } from 'vue'
 import { stableEntityId } from '../../domain/artifactId'
 import type { Marks } from '../../domain/candidates/elementMarks'
 import { diffMarks, framedMarks } from '../../domain/candidates/elementMarks'
-import { chosenIds } from '../../domain/candidates/candidateCanvas'
 import type { WorkspaceTab } from '../../domain/stressAnalysis/analysisProgress'
 import { cell } from '../../domain/stressAnalysis/analysisRows'
 import { INTEGRATION, NAIVE } from '../../domain/stressAnalysis/testSet'
@@ -55,8 +54,6 @@ export function useWorkspaceCanvas(
     return (readsCandidate.value ? candidateDrawn.value : null) ?? naiveDrawn.value
   })
 
-  /** The id the picture draws each element the naive creates with, by the reference the incidence read names it by. */
-  const chosen = computed(() => chosenIds(analysis.naive.value?.view ?? { entities: [] }))
   const hitsOf = (stressors: readonly string[]): ReadonlyMap<string, readonly string[]> =>
     new Map(stressors.map((id) => [id, analysis.hitsOf(id)]))
   /** The stressor rows that tick the element selected on the canvas, while no row is in focus. */
@@ -67,11 +64,11 @@ export function useWorkspaceCanvas(
     if (readsCandidate.value) return new Map([...diffMarks(candidates.comparison.value), ...around])
     if (judging.value) return around
     if (tab.value === 'stressors' && selected.value) {
-      return new Map([...hitMarks(hitsOf([selected.value]), chosen.value), ...around])
+      return new Map([...hitMarks(hitsOf([selected.value])), ...around])
     }
     if (tab.value === 'end-states' && endStateFocus.value) {
       const under = analysis.stressors.value.filter((row) => cell(row, 'end_state') === endStateFocus.value)
-      return hitMarks(hitsOf(under.map((row) => row.row_id)), chosen.value)
+      return hitMarks(hitsOf(under.map((row) => row.row_id)))
     }
     return around
   })
