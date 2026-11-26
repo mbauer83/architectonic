@@ -1,4 +1,4 @@
-"""Assurance document type definitions for engagement repository scaffolding."""
+"""The shipped assurance document types (STPA, CAST, GRC, …): written into every repository with the base set."""
 
 from __future__ import annotations
 

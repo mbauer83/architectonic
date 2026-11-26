@@ -7,19 +7,12 @@ from pathlib import Path
 
 from src.application.artifacts.document_schema import get_document_subdirectory
 from src.config.repo_paths import ARCH_DOC_SCHEMATA, ARCH_REPO, DIAGRAM_CATALOG, DIAGRAMS, DOCS, MODEL, RENDERED
-from src.domain.repository.repo_default_schemata import BASE_DOCUMENT_SCHEMAS, DEFAULT_SCHEMATA
+from src.domain.repository.repo_default_schemata import DEFAULT_SCHEMATA, SHIPPED_DOCUMENT_SCHEMAS
 from src.domain.repository.repo_layout import ARCH_SCHEMATA
 from src.domain.repository.shipped_defaults import ensure_shipped, shipped_document_types, shipped_schemata
 from src.infrastructure.runtime_state_ignore import ensure_runtime_state_ignored
-from src.infrastructure.workspace._assurance_doc_types import ASSURANCE_DOCUMENT_SCHEMAS
 
 INITIAL_COMMIT_MESSAGE = "Initialize engagement architecture repository"
-
-# Base doc-types (adr/spec/standard) are scaffolded into every repo. Assurance doc-types are
-# added on top for empty-repo init (current default); the repair path writes the base set only,
-# so an existing non-assurance repo is not retrofitted with assurance doc-types.
-DEFAULT_DOCUMENT_SCHEMAS: dict[str, dict] = {**BASE_DOCUMENT_SCHEMAS, **ASSURANCE_DOCUMENT_SCHEMAS}
-
 
 
 _ARCH_REPO_CONFIG_TEMPLATE = """\
@@ -59,16 +52,12 @@ def _migrate_legacy_flat_schemata(arch_repo_dir: Path, schemata_dir: Path) -> li
     return removed
 
 
-def ensure_arch_repo_defaults(
-    path: Path,
-    *,
-    document_schemas: dict[str, dict] = BASE_DOCUMENT_SCHEMAS,
-) -> dict[str, list[str]]:
+def ensure_arch_repo_defaults(path: Path) -> dict[str, list[str]]:
     """Idempotently bring an existing repo's .arch-repo up to current defaults (no git).
 
-    Writes any missing doc-type schemas (`.arch-repo/documents/`), attribute + frontmatter
-    schemata (`.arch-repo/schemata/`), and `config.yaml`, and migrates legacy flat schema files
-    into `schemata/`. Existing files are never overwritten, so an operator's local edits are
+    Writes any missing shipped document type, base and assurance (`.arch-repo/documents/`),
+    attribute + frontmatter schemata (`.arch-repo/schemata/`), and `config.yaml`, and migrates
+    legacy flat schema files into `schemata/`. Existing files are never overwritten, so an operator's local edits are
     preserved. Returns a summary of what was added/migrated for reporting.
     """
     arch_repo_dir = path / ARCH_REPO
@@ -82,8 +71,8 @@ def ensure_arch_repo_defaults(
     def write(location: str, text: str) -> None:
         (path / location).write_text(text, encoding="utf-8")
 
-    added_docs = ensure_shipped(shipped_document_types(document_schemas), present=present, write=write)
-    for doc_type, schema in document_schemas.items():
+    added_docs = ensure_shipped(shipped_document_types(), present=present, write=write)
+    for doc_type, schema in SHIPPED_DOCUMENT_SCHEMAS.items():
         (path / DOCS / get_document_subdirectory(schema, doc_type)).mkdir(parents=True, exist_ok=True)
     added_schemata = ensure_shipped(shipped_schemata(), present=present, write=write)
 
@@ -169,8 +158,7 @@ def _scaffold_arch_dirs(path: Path) -> None:
     (path / DOCS).mkdir(parents=True, exist_ok=True)
     (path / DIAGRAM_CATALOG / DIAGRAMS).mkdir(parents=True, exist_ok=True)
     (path / DIAGRAM_CATALOG / RENDERED).mkdir(parents=True, exist_ok=True)
-    # Empty-repo init gets the full current default (base + assurance doc-types).
-    ensure_arch_repo_defaults(path, document_schemas=DEFAULT_DOCUMENT_SCHEMAS)
+    ensure_arch_repo_defaults(path)
     # The generated diagram includes are tracked content. Written here, they go into the scaffold's
     # first commit; written after it (as `arch-init` did), a freshly published repository started dirty.
     from src.infrastructure.rendering.generate_static_includes import generate_static_includes  # noqa: PLC0415
