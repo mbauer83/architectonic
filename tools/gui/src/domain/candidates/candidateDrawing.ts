@@ -16,7 +16,7 @@ import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 import { stableConnectionId, stableEntityId } from '../artifactId'
 import { ownedBoxes } from '../layout/canvasBoxes'
 import { type DrawnMembership, membershipOf } from '../layout/diagramMembership'
-import { chosenIds, creationCommand, drawnEnds, relationCommand } from './candidateCanvas'
+import { creationCommand, drawnEnds, relationCommand } from './candidateCanvas'
 
 /** What the picture draws already, and the relations the model holds among what it draws. */
 export interface DrawnContent {
@@ -33,7 +33,6 @@ const text = (value: unknown): string => (typeof value === 'string' ? value : ''
 
 /** The commands that draw *view*'s changes over a picture drawing *drawn*. */
 export const drawnCommands = (view: ComposedView, drawn: DrawnContent): readonly CanvasCommand[] => {
-  const chosen = chosenIds(view)
   const names = new Map(drawn.entities.map((one) => [stableEntityId(one.artifact_id), one.name]))
   const creates = view.entities.flatMap((one) => (
     one.artifact_id ? [creationCommand(one.artifact_id, one.fields)] : []))
@@ -43,7 +42,7 @@ export const drawnCommands = (view: ComposedView, drawn: DrawnContent): readonly
     return !one.artifact_id && was !== undefined && now !== '' && now !== was
       ? [{ op: 'model.element.rename', artifact_id: one.id, name: now }] : []
   })
-  const drawnAs = drawnEnds([...drawn.entities, ...creates].map((one) => one.artifact_id), chosen)
+  const drawnAs = drawnEnds([...drawn.entities, ...creates].map((one) => one.artifact_id))
   const held = new Set([...drawn.connections, ...drawn.undrawn].map((one) => stableConnectionId(one.artifact_id)))
   const relations = view.connections.flatMap((one) => {
     const command = relationCommand(one, drawnAs)

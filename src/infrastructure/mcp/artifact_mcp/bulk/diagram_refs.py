@@ -15,6 +15,7 @@ from src.application.verification.artifact_verifier_parsing import (
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, RENDERED
 from src.domain.artifact_id import (
     ConnectionReference,
+    connection_id,
     parse_connection_reference,
 )
 from src.infrastructure.artifact_index import shared_artifact_index
@@ -23,33 +24,29 @@ from src.infrastructure.write.artifact_write._sync_helpers import LookupStore
 from src.infrastructure.write.artifact_write.staged_workspace import materialize_directory_skeleton
 
 
-def connection_artifact_id(source_entity: str, connection_type: str, target_entity: str) -> str:
-    return f"{source_entity}---{target_entity}@@{connection_type}"
-
-
 def legacy_connection_ref_id(source_entity: str, connection_type: str, target_entity: str) -> str:
     return f"{source_entity} {connection_type} → {target_entity}"
 
 
 def connection_ref_ids(source_entity: str, connection_type: str, target_entity: str) -> set[str]:
     return {
-        connection_artifact_id(source_entity, connection_type, target_entity),
+        connection_id(source_entity, target_entity, connection_type),
         legacy_connection_ref_id(source_entity, connection_type, target_entity),
     }
 
 
-def parse_connection_ref_id(connection_id: str) -> ConnectionReference | None:
+def parse_connection_ref_id(reference: str) -> ConnectionReference | None:
     """Both naming forms, through the domain grammar that owns them.
 
     This used to be one of three copies, and the three disagreed — see
     `artifact_id.parse_connection_reference`. It answers a named record now rather than a tuple,
     because the copies had transposed two of its fields.
     """
-    return parse_connection_reference(connection_id)
+    return parse_connection_reference(reference)
 
 
-def connection_id_involves_entity(connection_id: str, entity_id: str) -> bool:
-    parsed = parse_connection_ref_id(connection_id)
+def connection_id_involves_entity(reference: str, entity_id: str) -> bool:
+    parsed = parse_connection_ref_id(reference)
     if parsed is None:
         return False
     return parsed.source == entity_id or parsed.target == entity_id
@@ -82,8 +79,8 @@ def scan_diagram_refs(repo_root: Path) -> dict[str, list[str]]:
         parsed = parse_diagram_refs(path) or {}
         for entity_id in parsed.get("entity_ids", []):
             refs.setdefault(entity_id, []).append(diagram_id)
-        for connection_id in parsed.get("connection_ids", []):
-            refs.setdefault(connection_id, []).append(diagram_id)
+        for listed in parsed.get("connection_ids", []):
+            refs.setdefault(listed, []).append(diagram_id)
     return refs
 
 
@@ -186,12 +183,12 @@ def _indexed_auto_sync_refs(
                     registry.diagrams_referencing_artifact(connection.artifact_id),
                 )
         elif op == "edit_connection" and item.get("operation", "update") == "remove":
-            for connection_id in connection_ref_ids(
+            for reference in connection_ref_ids(
                 str(item["source_entity"]),
                 str(item["connection_type"]),
                 str(item["target_entity"]),
             ):
-                _add_diagram_refs(refs, connection_id, registry.diagrams_referencing_artifact(connection_id))
+                _add_diagram_refs(refs, reference, registry.diagrams_referencing_artifact(reference))
     return refs
 
 
@@ -203,10 +200,10 @@ def _add_diagram_refs(refs: dict[str, list[str]], artifact_id: str, diagrams) ->
 
 def entity_owned_connection_ids(entity_id: str, connection_paths: dict[tuple[str, str, str], Path]) -> set[str]:
     return {
-        connection_id
+        reference
         for (src, conn_type, target) in connection_paths
         if src == entity_id
-        for connection_id in connection_ref_ids(src, conn_type, target)
+        for reference in connection_ref_ids(src, conn_type, target)
     }
 
 

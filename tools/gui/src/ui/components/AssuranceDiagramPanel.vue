@@ -53,11 +53,8 @@ const visibilityLimited = ref(false)
 const showPuml = ref(false)
 const svgContainer = ref<HTMLElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
-const panZoom = useFittedPanZoom(containerRef, svgContainer)
 const fullscreen = useFullscreen(containerRef)
-// Entering or leaving fullscreen is a framing request: re-fit even when the view has been
-// transformed, since the whole point of the gesture is to see the diagram against the new space.
-watch(fullscreen.isFullscreen, () => { void panZoom.fitDiagramToViewport() })
+const panZoom = useFittedPanZoom(containerRef, svgContainer, fullscreen.isFullscreen)
 
 const matrixRows = computed(() => buildUcaMatrixRows(nodes.value, edges.value))
 // Only for this panel's own no-SVG fallback list, which names an edge's endpoints inline.

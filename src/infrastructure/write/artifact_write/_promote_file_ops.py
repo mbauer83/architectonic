@@ -10,6 +10,7 @@ from typing import Any, Callable
 import yaml  # type: ignore[import-untyped]
 
 from src.config.repo_paths import DOCS, MODEL
+from src.domain.artifact_id import connection_id
 from src.domain.repository.frontmatter import Frontmatter, read_frontmatter, replace_frontmatter_text
 from src.domain.yaml_documents import parse_yaml
 
@@ -190,7 +191,7 @@ def rewrite_outgoing(
             # follows a dropped section, which must still be resolved or dropped itself.
             drop_section = False
             conn_type, target_id = m.group(1).strip(), m.group(2).strip()
-            conn_aid = f"{source_entity_id}---{target_id}@@{conn_type}" if source_entity_id else None
+            conn_aid = connection_id(source_entity_id, target_id, conn_type) if source_entity_id else None
             if conn_ids is not None and conn_aid is not None and conn_aid not in conn_ids:
                 drop_section = True
                 continue

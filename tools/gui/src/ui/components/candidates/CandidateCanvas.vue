@@ -84,11 +84,10 @@ const marks = computed((): Marks => (showChanges.value
 
 const containerRef = ref<HTMLElement | null>(null)
 const svgContainer = ref<HTMLElement | null>(null)
-const panZoom = useFittedPanZoom(containerRef, svgContainer)
-watch(() => editing.session.geometry.value, () => { void panZoom.fitDiagramToViewport() })
 const sketchRef = ref<HTMLElement | null>(null)
 const fullscreen = useFullscreen(sketchRef)
-watch(fullscreen.isFullscreen, () => { void panZoom.fitDiagramToViewport() })
+const panZoom = useFittedPanZoom(containerRef, svgContainer, fullscreen.isFullscreen)
+watch(() => editing.session.geometry.value, () => { void panZoom.fitDiagramToViewport() })
 const tagSize = computed(() => 14 / Math.max(panZoom.scale.value, 0.05))
 
 const canUndo = computed(() => editing.session.history.value.length > 0)

@@ -12,50 +12,32 @@
  */
 import { shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
-import type { ModelService } from '../../application/ModelService'
 import type { PictureContext } from '../../domain'
 import type { CandidateComparison } from '../../domain/schemas/candidates'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
-import type { GeometryComposition } from '../../ports/diagramWriteBodies'
 import { composedOver, drawnCommands } from '../../domain/candidates/candidateDrawing'
 import { arrangedBy, layoutOf } from '../../domain/layout/arrangementLayout'
 import { composeCanvas } from '../../domain/layout/canvasComposition'
+import { candidatePicture, diagramPicture, type PictureSource } from './pictureSource'
 
-export type ComposedDrawingAccess = Pick<ModelService,
-  'getDiagramContext' | 'previewLayoutGeometry' | 'readCandidatePictureContext' | 'previewCandidatePicture'>
-
-/** Where a composed picture's context is read and its composition previewed. */
-interface ComposedPictureSource {
-  readonly context: () => Promise<PictureContext>
-  readonly preview: (composition: GeometryComposition) => Promise<LayoutGeometry>
-}
+/** What the two picture sources read through (`pictureSource`). */
+export type ComposedDrawingAccess = Parameters<typeof diagramPicture>[0] & Parameters<typeof candidatePicture>[0]
 
 export function useComposedDrawing(svc: ComposedDrawingAccess, comparison: () => CandidateComparison | null) {
   const drawing = shallowRef<LayoutGeometry | null>(null)
   // A stored diagram's context is the same for every candidate drawn on it; a candidate's own moves with it.
   const contexts = new Map<string, Promise<PictureContext>>()
-  const diagramContext = (id: string): Promise<PictureContext> => {
-    const known = contexts.get(id) ?? Effect.runPromise(svc.getDiagramContext(id))
-    contexts.set(id, known)
+  const contextOf = (source: PictureSource, diagram: string | undefined): Promise<PictureContext> => {
+    if (!diagram) return Effect.runPromise(source.context())
+    const known = contexts.get(diagram) ?? Effect.runPromise(source.context())
+    contexts.set(diagram, known)
     return known
   }
 
-  const sourceOf = (read: CandidateComparison, base: LayoutGeometry | null): ComposedPictureSource => {
-    const diagram = base?.artifact_id
-    return diagram
-      ? {
-        context: () => diagramContext(diagram),
-        preview: (composition) => Effect.runPromise(svc.previewLayoutGeometry(diagram, composition)),
-      }
-      : {
-        context: () => Effect.runPromise(svc.readCandidatePictureContext(read.candidate)),
-        preview: (composition) => Effect.runPromise(svc.previewCandidatePicture(read.candidate, composition)),
-      }
-  }
-
   const composed = async (read: CandidateComparison, base: LayoutGeometry | null): Promise<LayoutGeometry | null> => {
-    const source = sourceOf(read, base)
-    const context = await source.context()
+    const diagram = base?.artifact_id || undefined
+    const source = diagram ? diagramPicture(svc, () => diagram) : candidatePicture(svc, () => read.candidate)
+    const context = await contextOf(source, diagram)
     const membership = composedOver(context.diagram, base)
     const commands = drawnCommands(read.view, {
       entities: context.entities, connections: context.connections, undrawn: context.candidate_connections,
@@ -64,7 +46,7 @@ export function useComposedDrawing(svc: ComposedDrawingAccess, comparison: () =>
     const { preview } = composeCanvas(membership, { commands }, new Set())
     // A picture arranged by hand stays as arranged; what the candidate adds is placed beside its neighbours.
     const arrangement = base?.layout ? { arrangement: layoutOf(base, arrangedBy(base, base.layout)) } : {}
-    return source.preview({ ...preview, ...arrangement })
+    return Effect.runPromise(source.preview({ ...preview, ...arrangement }))
   }
 
   watch(comparison, async (read) => {

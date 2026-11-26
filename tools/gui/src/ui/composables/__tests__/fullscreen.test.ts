@@ -9,6 +9,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, ref } from 'vue'
 import { useFullscreen } from '../useFullscreen'
+import { useOverlayHost } from '../useOverlayHost'
 
 const define = (property: string, value: unknown) =>
   Object.defineProperty(window.document, property, { value, configurable: true, writable: true })
@@ -115,6 +116,22 @@ describe('what the page believes about its own state', () => {
   })
 })
 
+
+describe('one holder of the screen for every reader', () => {
+  it('is what a canvas\'s flag and the overlay host both read, through one document listener', () => {
+    const added = vi.spyOn(window.document, 'addEventListener')
+    const harnessed = harness()
+    const host = mounted(() => useOverlayHost())
+
+    define('fullscreenElement', harnessed.element)
+    window.document.dispatchEvent(new Event('fullscreenchange'))
+
+    expect(harnessed.isFullscreen.value).toBe(true)
+    expect(host.value.value).toBe(harnessed.element)
+    expect(added.mock.calls.filter(([type]) => type === 'fullscreenchange').length).toBeLessThanOrEqual(1)
+    added.mockRestore()
+  })
+})
 
 describe('when the element the reader was viewing goes away', () => {
   /**

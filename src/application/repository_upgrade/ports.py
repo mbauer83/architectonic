@@ -14,6 +14,7 @@ from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurf
 
 if TYPE_CHECKING:
     from src.application.runtime_catalogs import RuntimeCatalogs
+    from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 
 
 class RepoUpgradeView(Protocol):
@@ -53,6 +54,13 @@ class RepoUpgradeView(Protocol):
         from its bindings, are statements its diagram type makes. A step that read them any other way
         would be a second answer to a question the verifier already asks of the same catalog.
         """
+        ...
+
+    @property
+    def registry(self) -> ArtifactRegistry:
+        """This repository's model as the verifier reads it, for a step that must answer a question exactly as
+        a verification rule does — which element a diagram's alias stands for, which connections fit a drawn
+        relation — so that what it repairs is what the rule then accepts."""
         ...
 
 

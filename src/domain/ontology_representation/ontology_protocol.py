@@ -198,6 +198,15 @@ class GeneratedHeaderRefreshingRenderer(Protocol):
     def refresh_generated_header(self, body: str, repo_root: Path) -> str: ...
 
 
+def generated_header_is_current(renderer: DiagramRenderer, body: str, repo_root: Path) -> bool:
+    """Whether *body* already states everything *renderer* generates, as it states it today; true for a
+    renderer whose header states nothing generated. The one predicate the verifier's W387 and the static
+    includes gate both ask."""
+    if not isinstance(renderer, GeneratedHeaderRefreshingRenderer):
+        return True
+    return renderer.refresh_generated_header(body, repo_root) == body
+
+
 @runtime_checkable
 class IconPresentingRenderer(Protocol):
     """Optional capability for a renderer that draws the icons a diagram assigns its elements.
@@ -355,6 +364,16 @@ class DiagramTypeModule(Protocol):
         True where the diagram's picture is the model's elements and relations as such — what a candidate's
         operations change — so the candidate's editor can sketch on it. The server refuses a candidate drawn
         on a diagram of a type that says False, and the GUI offers only the diagrams whose type says True.
+        """
+        ...
+
+    @property
+    def arranges_on_canvas(self) -> bool:
+        """Whether a diagram of this type is arranged on the canvas: its layout written by the layout and
+        arrange operations, and edited on its own page in the GUI.
+
+        The first piece of a per-type canvas profile. The layout writes refuse a diagram whose type says
+        False, naming the types that say True, and the GUI offers the canvas only where it says True.
         """
         ...
 

@@ -34,7 +34,7 @@ from src.infrastructure.rendering.layout.diagram_geometry import (
     geometry_response,
     stored_geometry,
 )
-from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, first_layout_of
+from src.infrastructure.rendering.layout.diagram_picture import NotDrawn
 from src.infrastructure.rendering.layout.surround_placement import carried_by, occupied
 from src.infrastructure.rest.contracts.diagram_layout_editing import (
     DiagramLayoutGeometryResponse,
@@ -229,7 +229,7 @@ def arrange_diagram_layout_gui(artifact_id: str, body: LayoutIntentsBody, catalo
     _stored_record(artifact_id)
     return _written_layout(
         "diagrams_arrange_diagram_layout", arrange_diagram, catalogs, with_patch=True,
-        artifact_id=artifact_id, stated=stated_intents(body.intents), ontology=catalogs.ontology,
+        artifact_id=artifact_id, stated=stated_intents(body.intents),
         store=s.get_repo(), dry_run=body.dry_run,
     )
 
@@ -250,9 +250,7 @@ def _written_layout(
                 operation, write,
                 repo_root=repo_root, verifier=verifier, clear_repo_caches=s.clear_caches,
                 assert_write_root=assert_engagement_write_root,
-                first_layout=lambda body_text, frontmatter: first_layout_of(
-                    body_text, frontmatter, repo_root, catalogs.ontology
-                ),
+                ontology=catalogs.ontology,
                 **arguments,
             )
     except LayoutConflict as conflict:

@@ -11,7 +11,7 @@ from typing import Any
 
 from src.application.change_sets.candidate_architecture import CandidateArchitecture
 from src.application.change_sets.composition import ComposedReading, compose
-from src.application.change_sets.created_names import chosen_ids, spoken
+from src.application.change_sets.created_names import ChosenIds, chosen_ids, reference_for, spoken
 from src.application.change_sets.operations import ConnectionAddress
 from src.application.change_sets.reading import FieldValues, RecordedReading
 from src.application.change_sets.stacking import sets_beneath
@@ -25,17 +25,6 @@ class CandidateView:
     connections: dict[ConnectionAddress, FieldValues]
     #: The id chosen for each entity the stack creates, as its create states it, by the id the view names it with.
     chosen: dict[str, str] = field(default_factory=dict)
-    #: The id the view names each entity the stack creates with, by the alias its operations name it with: what a
-    #: reader that kept an alias (a row written before ids were answered) is read by.
-    aliases: dict[str, str] = field(default_factory=dict)
-
-    def spelling(self) -> dict[str, str]:
-        """The id the view names each entity with, by every key it may be written under: the key of its id
-        (`canonical_entity_key`), and for one the stack creates, the alias its operations name it with too."""
-        return {
-            **{canonical_entity_key(ref): ref for ref in self.entities},
-            **{alias: ref for alias, ref in self.aliases.items() if ref in self.entities},
-        }
 
     def wire(self) -> dict[str, Any]:
         return {
@@ -59,13 +48,14 @@ def view_of(stack: tuple[CandidateArchitecture, ...], live: RecordedReading) -> 
     the model holds. The view answers it by that id.
     """
     reading = compose(stack[-1].changes, live, beneath=sets_beneath(stack))
-    created = created_ids(stack)
-    named = named_by_reference(live, created)
-    held = {canonical_entity_key(artifact_id) for artifact_id in created.values()}
+    chosen = chosen_ids(layer.changes for layer in stack)
+    named = named_by_reference(live, chosen)
+    created = {provisional(alias) for alias in chosen}
+    held = {canonical_entity_key(artifact_id) for artifact_id in chosen.values()}
     references = {canonical_entity_key(ref) for layer in stack for ref in layer.scope} | set(reading.entities)
     entities = {
         ref: {**(named.entity(ref) or {}), **fields} if ref in created else fields
-        for ref in {created_ref(ref, created) for ref in references} - held
+        for ref in {reference_for(ref, chosen) for ref in references} - held
         if (fields := reading.entity(ref)) is not None
     }
     addresses = named.connections.keys() | reading.connections.keys()
@@ -74,7 +64,6 @@ def view_of(stack: tuple[CandidateArchitecture, ...], live: RecordedReading) -> 
         if all(ref in entities for ref in address.endpoints)
         and (fields := _connection(address, reading, named)) is not None
     }
-    chosen = chosen_ids(layer.changes for layer in stack)
     return _named_by_id(CandidateView(entities, connections), {
         alias: artifact_id for alias, artifact_id in chosen.items() if provisional(alias) in entities
     })
@@ -92,33 +81,19 @@ def _named_by_id(view: CandidateView, chosen: Mapping[str, str]) -> CandidateVie
             for a, fields in view.connections.items()
         },
         chosen={canonical_entity_key(artifact_id): artifact_id for artifact_id in chosen.values()},
-        aliases={provisional(alias): canonical_entity_key(artifact_id) for alias, artifact_id in chosen.items()},
     )
 
 
-def created_ids(stack: tuple[CandidateArchitecture, ...]) -> dict[str, str]:
-    """The id chosen for each entity the stack creates, by the reference its operations name it with."""
-    return {
-        ref: create.artifact_id for layer in stack for ref, create in layer.changes.created.items()
-        if create.artifact_id
-    }
+def named_by_reference(live: RecordedReading, chosen: ChosenIds) -> RecordedReading:
+    """*live*, with each record the model holds under an id a create chose named by that create's reference
+    (`reference_for`), so the model's reading and the stack's name the same entity alike."""
+    def name(ref: str) -> str:
+        return reference_for(ref, chosen)
 
-
-def created_ref(key: str, created: Mapping[str, str]) -> str:
-    """The reference the stack names *key* with: a create's, where *key* is the id chosen for it, else *key*."""
-    by_id = {canonical_entity_key(artifact_id): ref for ref, artifact_id in created.items()}
-    return by_id.get(canonical_entity_key(key), key)
-
-
-def named_by_reference(live: RecordedReading, created: Mapping[str, str]) -> RecordedReading:
-    """*live*, with each record the model holds under an id a create chose named by that create's reference, so
-    the model's reading and the stack's name the same entity alike."""
     return RecordedReading(
-        {created_ref(ref, created): fields for ref, fields in live.entities.items()},
+        {name(ref): fields for ref, fields in live.entities.items()},
         {
-            ConnectionAddress(
-                created_ref(a.source_entity, created), a.connection_type, created_ref(a.target_entity, created),
-            ): fields
+            ConnectionAddress(name(a.source_entity), a.connection_type, name(a.target_entity)): fields
             for a, fields in live.connections.items()
         },
     )

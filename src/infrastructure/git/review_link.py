@@ -14,9 +14,10 @@ from __future__ import annotations
 import subprocess
 from collections.abc import Callable
 from pathlib import Path
-from urllib.parse import quote, urlencode, urlsplit
+from urllib.parse import quote, urlencode
 
-from src.infrastructure.git.git_auth import remote_urls
+from src.infrastructure.git.git_auth import read_remote_url, remote_urls
+from src.infrastructure.git.git_repository_state import UPSTREAM_BRANCH
 
 #: Resolves an ssh host alias to the host it names, or None when nothing resolves it.
 HostResolver = Callable[[str], str | None]
@@ -36,12 +37,12 @@ def new_pull_request_url(
     `resolve_host` maps an ssh host alias (`github.com-personal`) to the host it stands for; the
     default asks ssh, reading only `~/.ssh/config`. None for an unknown platform or alias.
     """
-    located = _host_and_path(remote_url)
+    located = read_remote_url(remote_url)
     if located is None:
         return None
-    host, path = located
+    host, path = located.host, located.path
     if not _is_known(host):
-        over_ssh = not remote_url.startswith(("https://", "http://"))
+        over_ssh = located.protocol == "ssh"
         resolved = (resolve_host or resolve_ssh_host_alias)(host) if over_ssh else None
         if resolved is None or not _is_known(resolved):
             return None
@@ -61,12 +62,11 @@ def new_pull_request_url(
     return None
 
 
-def review_url_for(repo: Path, *, branch: str, base: str) -> str | None:
-    """The new-pull-request page for `branch` as `repo` pushes it: the push URL, else the fetch URL."""
-    urls = remote_urls(repo)
-    if not urls:
-        return None
-    return new_pull_request_url(urls[-1], branch=branch, base=base)
+def review_url_for(repo: Path, *, branch: str, base: str = UPSTREAM_BRANCH) -> str | None:
+    """The new-pull-request page for `branch` as `repo` pushes it (the push URL, else the fetch URL), against
+    the branch the enterprise repository's reviews merge into unless *base* says otherwise."""
+    urls = remote_urls(repo).pushed_to
+    return new_pull_request_url(urls[-1], branch=branch, base=base) if urls else None
 
 
 def resolve_ssh_host_alias(alias: str, *, config: Path | None = None) -> str | None:
@@ -97,20 +97,6 @@ def resolve_ssh_host_alias(alias: str, *, config: Path | None = None) -> str | N
             hostname = value.strip().lower()
             return hostname if hostname and hostname != alias.lower() else None
     return None
-
-
-def _host_and_path(url: str) -> tuple[str, str] | None:
-    """The host and repository path of an https, ssh:// or scp-form remote URL."""
-    if "://" in url:
-        parts = urlsplit(url)
-        if parts.scheme not in ("https", "http", "ssh", "git+ssh") or not parts.hostname:
-            return None
-        return parts.hostname.lower(), parts.path
-    head, colon, path = url.partition(":")
-    if not colon or "/" in head:
-        return None
-    host = head.rpartition("@")[2]
-    return (host.lower(), path) if host else None
 
 
 def _is_known(host: str) -> bool:

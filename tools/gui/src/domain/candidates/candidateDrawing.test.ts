@@ -35,9 +35,9 @@ describe('a candidate drawn over its picture', () => {
     const view: ComposedView = {
       entities: [
         entity(SERVICE, 'Promotion Review Service'),
-        { ...entity('$ref:create:1', 'Promotion queue', { artifact_type: 'data-object' }), artifact_id: QUEUE },
+        { ...entity('DOB@1795000000.Queue01', 'Promotion queue', { artifact_type: 'data-object' }), artifact_id: QUEUE },
       ],
-      connections: [relation(SERVICE, 'archimate-access', '$ref:create:1')],
+      connections: [relation(SERVICE, 'archimate-access', 'DOB@1795000000.Queue01')],
     }
     expect(drawnCommands(view, drawn)).toEqual([
       { op: 'model.element.create', artifact_id: QUEUE, artifact_type: 'data-object', name: 'Promotion queue', group: 'core' },
@@ -51,8 +51,8 @@ describe('a candidate drawn over its picture', () => {
 
   it('links a created element to one its operations name by the short id, as the picture draws that one', () => {
     const view: ComposedView = {
-      entities: [{ ...entity('$ref:create:1', 'Promotion queue', { artifact_type: 'data-object' }), artifact_id: QUEUE }],
-      connections: [relation('$ref:create:1', 'archimate-serving', 'SRV@1712870400.Uv9Wx9')],
+      entities: [{ ...entity('DOB@1795000000.Queue01', 'Promotion queue', { artifact_type: 'data-object' }), artifact_id: QUEUE }],
+      connections: [relation('DOB@1795000000.Queue01', 'archimate-serving', 'SRV@1712870400.Uv9Wx9')],
     }
     expect(drawnCommands(view, drawn).filter((one) => one.op === 'model.relation.create')).toEqual([{
       op: 'model.relation.create', artifact_id: `${QUEUE}---${SERVICE}@@archimate-serving`, description: '',

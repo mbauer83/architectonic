@@ -22,6 +22,7 @@ from typing import NotRequired, TypedDict
 
 from src.application.viewpoints.parameter_binding import ViewpointParameterError
 from src.domain.viewpoints.viewpoint_binding_evaluation import BindingCardinalityError
+from src.infrastructure.git.credential_refusal import GitCredentialsRequired
 from src.infrastructure.mcp.refusal_details import RefusalDetails
 from src.infrastructure.rest.contracts.errors import ErrorCode
 
@@ -95,3 +96,13 @@ def traversal_budget_exceeded(message: str, *, path: str = "query") -> dict[str,
     and which bound was reached first is not a distinction they act on differently.
     """
     return _error("traversal_time_budget_exceeded", path, message)
+
+
+def git_credentials_refusal(exc: GitCredentialsRequired) -> str:
+    """A remote's refusal for want of a git credential, as an MCP caller is told it: the refusal, and why
+    the remedy is not a tool. An agent session would have to carry the secret in its context and transcript
+    to pass it on, so there is deliberately no tool that accepts one."""
+    return (
+        f"{exc} Secrets are not accepted over MCP: have the person enter it when the GUI asks, or set "
+        f"{exc.environment_hint} and restart the backend."
+    )

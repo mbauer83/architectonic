@@ -60,9 +60,8 @@ def analyse(
     missing: dict[str, set[str]] = defaultdict(set)
     unexplained = []
     # An element is matched by its stable id, so either spelling of it is one element, and answered
-    # as the naive view names it: by its id, one the naive creates too (`created_names`). A row that
-    # kept the handle the naive's operations name it with still reads as that element.
-    spelled = naive.spelling()
+    # as the naive view names it: by its id, one the naive creates too (`created_names`).
+    spelled = {canonical_entity_key(ref): ref for ref in naive.entities}
 
     def element(written: object) -> str:
         return spelled.get(canonical_entity_key(str(written)), str(written))

@@ -28,7 +28,6 @@ from src.infrastructure.mcp.artifact_mcp.mutation_registration import register_m
 from src.infrastructure.mcp.artifact_mcp.write._common import _out
 from src.infrastructure.mcp.tool_annotations import DESTRUCTIVE_LOCAL_WRITE, READ_ONLY
 from src.infrastructure.rendering.layout.diagram_geometry import stored_geometry
-from src.infrastructure.rendering.layout.diagram_picture import first_layout_of
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.diagram_arrangement import arrange_diagram
 from src.infrastructure.write.artifact_write.diagram_layout_patch import patch_diagram_layout
@@ -132,13 +131,13 @@ def artifact_arrange_diagram(
     common: dict[str, Any] = {
         "repo_root": root, "verifier": verifier, "clear_repo_caches": clear_repo_caches,
         "assert_write_root": assert_engagement_write_root, "artifact_id": artifact_id, "dry_run": dry_run,
-        "first_layout": lambda body, frontmatter: first_layout_of(body, frontmatter, root, ontology),
+        "ontology": ontology,
     }
     try:
         if patch is not None:
             return patch_diagram_layout(patch=patch.stated(), **common).as_answer(with_patch=True)
         return arrange_diagram(
-            stated=stated_intents(intents or []), ontology=ontology, store=repo_cached(key), **common,
+            stated=stated_intents(intents or []), store=repo_cached(key), **common,
         ).as_answer(with_patch=True)
     finally:
         mutation_context.finalize()

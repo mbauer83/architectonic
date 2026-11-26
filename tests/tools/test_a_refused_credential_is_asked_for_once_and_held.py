@@ -170,3 +170,24 @@ def test_a_malformed_body_does_not_echo_the_secret(ssh_pushing_engagement: tuple
     )
     assert response.status_code == 422
     assert PASSPHRASE not in response.text
+
+
+def test_each_transport_says_the_one_refusal_with_its_own_remedy(
+    ssh_pushing_engagement: tuple[Path, Path],
+) -> None:
+    """The refusal is the git package's sentence; REST adds the GUI prompt, MCP says why it takes no secret.
+    Not a `RuntimeError`, so neither the routes' nor the tools' handling of other failures swallows it."""
+    from src.infrastructure.git.credential_refusal import GitCredentialsRequired  # noqa: PLC0415
+    from src.infrastructure.mcp.artifact_mcp.write import sync_ops  # noqa: PLC0415
+
+    engagement, bare = ssh_pushing_engagement
+    write_entity(engagement, "REQ@1000000609.WfMcp.refused-over-both", "Refused Over Both")
+
+    over_rest = _save(_client()).json()["detail"]["message"]
+    over_mcp = sync_ops.artifact_save_changes(message="save work", push=True)
+
+    refusal = f"The SSH key passphrase for origin ({fake_ssh_remote.ssh_url(bare)}) is needed."
+    assert over_rest.startswith(refusal) and "when the GUI asks" in over_rest
+    assert over_mcp["ok"] is False
+    assert str(over_mcp["error"]).startswith(refusal) and "not accepted over MCP" in str(over_mcp["error"])
+    assert not issubclass(GitCredentialsRequired, RuntimeError)

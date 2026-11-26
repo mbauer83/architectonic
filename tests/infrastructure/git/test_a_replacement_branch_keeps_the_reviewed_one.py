@@ -190,14 +190,14 @@ class TestRetiring:
         """No claimed retirement: the ref is still there, so the record that tracks it must stay."""
         enterprise, origin, reviewed = submitted
         lifecycle.open_replacement_branch(enterprise, from_head="HEAD")
-        real = lifecycle.run_repo_git
+        real = lifecycle.push_to_origin
 
         def failing_delete(repo, *args, **kwargs):
-            if args[:3] == ("push", "origin", "--delete"):
+            if args[:2] == ("origin", "--delete"):
                 return (1, "", "injected remote failure")
             return real(repo, *args, **kwargs)
 
-        monkeypatch.setattr(lifecycle, "run_repo_git", failing_delete)
+        monkeypatch.setattr(lifecycle, "push_to_origin", failing_delete)
         with pytest.raises(RuntimeError, match="delete remote branch"):
             lifecycle.retire_superseded_branch(enterprise)
 

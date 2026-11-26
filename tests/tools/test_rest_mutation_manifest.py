@@ -25,6 +25,7 @@ from src.infrastructure.rest.route_policy import ROUTE_POLICY
 from src.infrastructure.rest.routers.rest_mutation_manifest import (
     ASSURANCE_ROUTE_PREFIX,
     NON_MUTATING_REST_OPERATIONS,
+    PROCESS_STATE_REST_OPERATIONS,
     REST_MUTATION_MANIFEST,
     build_rest_request,
 )
@@ -42,15 +43,17 @@ def _served_write_shaped_operations() -> set[str]:
 
 class TestRestRegistryManifestEquality:
     def test_every_write_shaped_operation_is_classified(self) -> None:
-        classified = set(REST_MUTATION_MANIFEST) | NON_MUTATING_REST_OPERATIONS
+        classified = set(REST_MUTATION_MANIFEST) | NON_MUTATING_REST_OPERATIONS | PROCESS_STATE_REST_OPERATIONS
         assert _served_write_shaped_operations() - classified == set()
 
     def test_every_classified_operation_exists_in_the_route_policy(self) -> None:
         declared = {row.operation_id for row in ROUTE_POLICY}
-        assert (set(REST_MUTATION_MANIFEST) | NON_MUTATING_REST_OPERATIONS) - declared == set()
+        classified = set(REST_MUTATION_MANIFEST) | NON_MUTATING_REST_OPERATIONS | PROCESS_STATE_REST_OPERATIONS
+        assert classified - declared == set()
 
     def test_manifest_and_non_mutating_sets_are_disjoint(self) -> None:
         assert not set(REST_MUTATION_MANIFEST) & NON_MUTATING_REST_OPERATIONS
+        assert not (set(REST_MUTATION_MANIFEST) | NON_MUTATING_REST_OPERATIONS) & PROCESS_STATE_REST_OPERATIONS
 
 
 class TestBuildRestRequest:

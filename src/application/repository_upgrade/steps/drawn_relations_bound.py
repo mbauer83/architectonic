@@ -12,9 +12,12 @@ This step lists those relations, as the reconcile would have listed them had it 
 guess.** A drawn pair whose model records exactly one connection that fits — any connection between
 the two, or the one of the type an arrow states — has it added. A pair two connections fit is reported
 for a person to settle, with the candidates named, and left as it is; a pair none fits is left too,
-because a drawing without a model relation is the verifier's to judge, not a binding to make. Aliases
-are resolved from the diagram's own statements only, so the answer does not depend on what else a
-checkout holds, and connections from the repository's own model files.
+because a drawing without a model relation is the verifier's to judge, not a binding to make.
+
+Which element an alias stands for and which connections fit a drawing are read exactly as E316 reads
+them (`verification.drawn_relations`), over the repository's own model (`view.registry`): an alias only
+an element's display alias resolves is bound here as the verifier resolves it, so what this step leaves
+listed is what the rule then accepts.
 
 Only the ``connection-ids-used`` block is rewritten, and only by adding to it. Applying the step twice
 changes nothing.
@@ -25,24 +28,17 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
-from src.application.artifacts.parsing import normalize_puml_alias
-from src.application.modeling.diagram_identities import entity_by_alias, strings_of
-from src.application.puml_relation_parsing import declared_relations
+from src.application.modeling.diagram_identities import strings_of
 from src.application.repository_upgrade.ports import RepoUpgradeView, RepoUpgradeWriter
 from src.application.repository_upgrade.steps._diagram_files import diagram_files, diagram_frontmatter
 from src.application.repository_upgrade.steps._frontmatter_blocks import with_block
-from src.application.repository_upgrade.steps._model_connections import model_connection_ids
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.application.verification._verifier_rules_puml_completeness import diagram_body_is_reconcile_owned
-from src.domain.artifact_id import connection_id_as_written, stable_conn_id
+from src.application.verification.artifact_verifier_registry import ArtifactRegistry
+from src.application.verification.drawn_relations import diagram_body_is_reconcile_owned, drawn_relations
 from src.domain.repository.frontmatter import Frontmatter, read_frontmatter, replace_frontmatter_text
 from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurface, UpgradeFinding
 
 _CONNECTION_IDS_USED = "connection-ids-used"
-
-#: Each recorded connection, under the pair of elements it joins in either direction: (id, type).
-_ConnectionsByPair = Mapping[frozenset[str], tuple[tuple[str, str], ...]]
-
 
 @dataclass(frozen=True)
 class _Binding:
@@ -54,35 +50,18 @@ class _Binding:
     unsettled: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
 
-def _by_pair(connection_ids: frozenset[str]) -> dict[frozenset[str], tuple[tuple[str, str], ...]]:
-    grouped: dict[frozenset[str], list[tuple[str, str]]] = {}
-    for connection_id in sorted(connection_ids):
-        source, target, conn_type = connection_id_as_written(connection_id)
-        grouped.setdefault(frozenset({source, target}), []).append((connection_id, conn_type))
-    return {pair: tuple(connections) for pair, connections in grouped.items()}
-
-
-def _binding(content: str, frontmatter: Mapping[str, object], by_pair: _ConnectionsByPair,
+def _binding(content: str, frontmatter: Mapping[str, object], registry: ArtifactRegistry,
              stereotype_map: Mapping[str, str]) -> _Binding:
-    aliases = entity_by_alias(frontmatter)
-    listed = {stable_conn_id(entry) for entry in strings_of(frontmatter.get(_CONNECTION_IDS_USED))}
+    """Each drawn relation the list does not name: settled where exactly one model connection fits it."""
     settled: dict[str, None] = {}
     unsettled: dict[str, tuple[str, ...]] = {}
-    for relation in declared_relations(content, stereotype_map):
-        source = aliases.get(normalize_puml_alias(relation.source_alias))
-        target = aliases.get(normalize_puml_alias(relation.target_alias))
-        if source is None or target is None:
+    for drawn in drawn_relations(content, frontmatter, registry, stereotype_map):
+        if drawn.listed or not drawn.fitting or any(connection_id in settled for connection_id in drawn.fitting):
             continue
-        fitting = tuple(
-            connection_id for connection_id, conn_type in by_pair.get(frozenset({source, target}), ())
-            if relation.connection_type in (None, conn_type)
-        )
-        if any(connection_id in listed or connection_id in settled for connection_id in fitting):
-            continue
-        if len(fitting) == 1:
-            settled[fitting[0]] = None
-        elif fitting:
-            unsettled[f"{relation.source_alias} -> {relation.target_alias}"] = fitting
+        if len(drawn.fitting) == 1:
+            settled[drawn.fitting[0]] = None
+        else:
+            unsettled[f"{drawn.relation.source_alias} -> {drawn.relation.target_alias}"] = drawn.fitting
     return _Binding(tuple(settled), unsettled)
 
 
@@ -93,11 +72,10 @@ class DrawnRelationsBoundStep:
     scanned_surface: ScannedSurface = "diagram_frontmatter"
 
     def detect(self, view: RepoUpgradeView) -> list[UpgradeFinding]:
-        catalogs = view.catalogs
-        by_pair = _by_pair(model_connection_ids(view))
+        catalogs, registry = view.catalogs, view.registry
         findings: list[UpgradeFinding] = []
         for diagram in diagram_files(view):
-            binding = self._binding_of(diagram.content, diagram.frontmatter, by_pair, catalogs)
+            binding = self._binding_of(diagram.content, diagram.frontmatter, registry, catalogs)
             if binding.settled:
                 count = len(binding.settled)
                 plural = "" if count == 1 else "s"
@@ -129,12 +107,11 @@ class DrawnRelationsBoundStep:
         writer: RepoUpgradeWriter,
         findings: list[UpgradeFinding],
     ) -> list[AppliedFinding]:
-        catalogs = view.catalogs
-        by_pair = _by_pair(model_connection_ids(view))
+        catalogs, registry = view.catalogs, view.registry
         outcomes: list[AppliedFinding] = []
         for finding in findings:
             content = view.read_text(finding.location)
-            updated = self._rewritten(content, by_pair, catalogs) if content is not None else None
+            updated = self._rewritten(content, registry, catalogs) if content is not None else None
             if updated is None:
                 outcomes.append(
                     AppliedFinding(finding=finding, outcome="error", detail="file no longer holds a diagram")
@@ -146,18 +123,18 @@ class DrawnRelationsBoundStep:
                 outcomes.append(AppliedFinding(finding=finding, outcome="applied"))
         return outcomes
 
-    def _binding_of(self, content: str, frontmatter: Mapping[str, object], by_pair: _ConnectionsByPair,
+    def _binding_of(self, content: str, frontmatter: Mapping[str, object], registry: ArtifactRegistry,
                     catalogs: RuntimeCatalogs) -> _Binding:
-        if not diagram_body_is_reconcile_owned(dict(frontmatter), catalogs.diagram_types):
+        if not diagram_body_is_reconcile_owned(frontmatter, catalogs.diagram_types):
             return _Binding()
-        return _binding(content, frontmatter, by_pair, catalogs.ontology.archimate_stereotype_to_connection_type())
+        return _binding(content, frontmatter, registry, catalogs.ontology.archimate_stereotype_to_connection_type())
 
-    def _rewritten(self, content: str, by_pair: _ConnectionsByPair, catalogs: RuntimeCatalogs) -> str | None:
+    def _rewritten(self, content: str, registry: ArtifactRegistry, catalogs: RuntimeCatalogs) -> str | None:
         frontmatter = diagram_frontmatter(content)
         reading = read_frontmatter(content)
         if frontmatter is None or not isinstance(reading, Frontmatter):
             return None
-        settled = self._binding_of(content, frontmatter, by_pair, catalogs).settled
+        settled = self._binding_of(content, frontmatter, registry, catalogs).settled
         if not settled:
             return content
         listed = strings_of(frontmatter.get(_CONNECTION_IDS_USED))

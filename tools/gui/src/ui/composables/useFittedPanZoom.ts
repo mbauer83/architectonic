@@ -26,7 +26,10 @@ const GLIDE_MS = 340
 /** The scale a part of the picture is shown at when it is gone to: its text at a size that reads. */
 const READABLE = 0.7
 
-export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgContainer: Ref<HTMLElement | null>) {
+export function useFittedPanZoom(
+  containerRef: Ref<HTMLElement | null>, svgContainer: Ref<HTMLElement | null>,
+  fullscreen?: Readonly<Ref<boolean>>,
+) {
   const scale = ref(1)
   const tx = ref(0)
   const ty = ref(0)
@@ -115,6 +118,10 @@ export function useFittedPanZoom(containerRef: Ref<HTMLElement | null>, svgConta
     fitTy.value = framing.ty
     apply(framing)
   }
+
+  // Entering or leaving fullscreen (`useFullscreen`) is a framing request: re-fit even when the view has been
+  // transformed, since the whole point of the gesture is to see the picture against the new space.
+  if (fullscreen) watch(fullscreen, () => { void fitDiagramToViewport() })
 
   /** The whole picture in the window, however small that makes it: the `0` key and *Fit the diagram*. */
   const fitWhole = () => {

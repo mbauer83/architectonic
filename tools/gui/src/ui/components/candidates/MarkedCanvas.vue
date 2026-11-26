@@ -55,11 +55,9 @@ const pick = (alias: string) => {
 
 const containerRef = ref<HTMLElement | null>(null)
 const svgContainer = ref<HTMLElement | null>(null)
-const panZoom = useFittedPanZoom(containerRef, svgContainer)
-watch(() => session.geometry.value, () => { void panZoom.fitDiagramToViewport() })
 const fullscreen = useFullscreen(containerRef)
-// Entering or leaving fullscreen is a framing request: the point of the gesture is to see the picture whole.
-watch(fullscreen.isFullscreen, () => { void panZoom.fitDiagramToViewport() })
+const panZoom = useFittedPanZoom(containerRef, svgContainer, fullscreen.isFullscreen)
+watch(() => session.geometry.value, () => { void panZoom.fitDiagramToViewport() })
 /** A tag is the same size on screen however far the picture is zoomed: one drawing unit is `scale` pixels. */
 const tagSize = computed(() => 12 / Math.max(panZoom.scale.value, 0.05))
 

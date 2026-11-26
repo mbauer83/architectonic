@@ -26,10 +26,10 @@ describe('the canvas marks', () => {
 
   it('marks what the candidate creates by the id chosen for it, which the picture draws it with', () => {
     const marks = diffMarks({
-      diff: [{ kind: 'entity', target: '$ref:1795700000-IdxCach', change: 'added', fields: {} }],
+      diff: [{ kind: 'entity', target: 'APP@1795700000.IdxCach', change: 'added', fields: {} }],
       view: {
         entities: [{
-          id: '$ref:1795700000-IdxCach', artifact_id: 'APP@1795700000.IdxCach.index-read-cache',
+          id: 'APP@1795700000.IdxCach', artifact_id: 'APP@1795700000.IdxCach.index-read-cache',
           fields: { name: 'Index Read Cache' },
         }],
         connections: [],

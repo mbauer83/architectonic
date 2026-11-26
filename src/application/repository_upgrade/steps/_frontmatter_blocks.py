@@ -31,20 +31,3 @@ def with_block(text: str, key: str, value: object) -> str:
         return text
     dumped = str(yaml.safe_dump({key: value}, sort_keys=False, allow_unicode=True)).rstrip("\n").split("\n")
     return "\n".join([*lines[: span[0]], *dumped, *lines[span[1]:]])
-
-
-def without_block(text: str, key: str) -> str:
-    """*text* without the block of top-level *key*."""
-    lines = text.split("\n")
-    span = block_span(lines, key)
-    return text if span is None else "\n".join([*lines[: span[0]], *lines[span[1]:]])
-
-
-def renamed_block(text: str, key: str, renamed: str) -> str:
-    """*text* with top-level *key* called *renamed*, its value as written."""
-    lines = text.split("\n")
-    span = block_span(lines, key)
-    if span is None:
-        return text
-    lines[span[0]] = renamed + lines[span[0]][len(key):]
-    return "\n".join(lines)

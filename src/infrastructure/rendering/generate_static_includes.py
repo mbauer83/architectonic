@@ -289,9 +289,7 @@ def stale_generated_headers(repo_root: Path) -> list[str]:
     edit, so the repair is an edit of the named diagram and nothing else.
     """
     from src.application.repo_path_helpers import diagram_source_root  # noqa: PLC0415
-    from src.application.verification._verifier_rules_generated_header import (  # noqa: PLC0415
-        generated_header_is_current,
-    )
+    from src.domain.ontology_representation.ontology_protocol import generated_header_is_current  # noqa: PLC0415
     from src.domain.repository.frontmatter import body_after_frontmatter, parse_frontmatter  # noqa: PLC0415
     from src.infrastructure.diagram_type_registry import get_diagram_type  # noqa: PLC0415
     from src.infrastructure.rendering.puml_runtime import is_render_scratch  # noqa: PLC0415

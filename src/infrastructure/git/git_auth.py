@@ -24,6 +24,7 @@ import tempfile
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit, urlunsplit
 
 #: The protocols this module supplies a credential for.
 RemoteProtocol = Literal["ssh", "https"]
@@ -67,8 +68,26 @@ class GitCredentials:
 # ---------------------------------------------------------------------------
 
 
-def remote_urls(repo_path: Path) -> tuple[str, ...]:
-    """Every URL git reaches `origin` by: the fetch URL, then each push URL, without repeats.
+@dataclass(frozen=True)
+class RemoteUrls:
+    """Where git reaches `origin`: the fetch URL, and the URLs a push goes to (each once)."""
+
+    fetch: str | None
+    push: tuple[str, ...] = ()
+
+    @property
+    def all(self) -> tuple[str, ...]:
+        """Every URL `origin` is fetched or pushed by: the fetch URL, then each push URL, without repeats."""
+        return tuple(dict.fromkeys(url for url in (self.fetch, *self.push) if url))
+
+    @property
+    def pushed_to(self) -> tuple[str, ...]:
+        """The URLs a push goes to; the fetch URL where no push URL is reported."""
+        return self.push or ((self.fetch,) if self.fetch else ())
+
+
+def remote_urls(repo_path: Path) -> RemoteUrls:
+    """Every URL git reaches `origin` by, the fetch URL apart from the push URLs.
 
     Asked of git rather than read from `.git/config`, because git is what decides: `pushurl`,
     `pushInsteadOf` and `insteadOf` all change where a push goes without changing the fetch URL. A
@@ -79,45 +98,74 @@ def remote_urls(repo_path: Path) -> tuple[str, ...]:
     # deployments, but not in every harness). Probing a missing path would make
     # subprocess.run raise FileNotFoundError on the cwd; treat it as "no remote".
     if not repo_path.is_dir():
-        return ()
-    urls: list[str] = []
-    for query in (("get-url", "origin"), ("get-url", "--push", "--all", "origin")):
-        result = subprocess.run(
-            ["git", "remote", *query],
-            cwd=repo_path,
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        if result.returncode != 0:
-            continue
-        urls.extend(line.strip() for line in result.stdout.splitlines() if line.strip())
-    return tuple(dict.fromkeys(urls))
+        return RemoteUrls(None)
+    fetch = _git_remote_lines(repo_path, ("get-url", "origin"))
+    push = _git_remote_lines(repo_path, ("get-url", "--push", "--all", "origin"))
+    return RemoteUrls(fetch[0] if fetch else None, tuple(dict.fromkeys(push)))
+
+
+def _git_remote_lines(repo_path: Path, query: tuple[str, ...]) -> list[str]:
+    result = subprocess.run(["git", "remote", *query], cwd=repo_path, capture_output=True, text=True, timeout=5)
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()] if result.returncode == 0 else []
 
 
 def detect_remote_protocols(repo_path: Path) -> frozenset[RemoteProtocol]:
     """The protocols ('ssh', 'https') `origin` is fetched or pushed over; empty for none or local."""
-    return frozenset(p for p in (protocol_of_url(url) for url in remote_urls(repo_path)) if p)
+    return frozenset(p for p in (protocol_of_url(url) for url in remote_urls(repo_path).all) if p)
+
+
+# ---------------------------------------------------------------------------
+# Reading a remote URL — the one reader of the forms git accepts for a remote
+# ---------------------------------------------------------------------------
+
+#: The URL schemes a credential is supplied for, by the protocol that supplies it.
+_SCHEMES: dict[str, RemoteProtocol] = {"ssh": "ssh", "git+ssh": "ssh", "https": "https", "http": "https"}
+
+
+@dataclass(frozen=True)
+class RemoteUrl:
+    """A remote URL read once: the protocol a credential is supplied for, the host, the repository path."""
+
+    text: str
+    protocol: RemoteProtocol
+    host: str
+    path: str
+
+
+def read_remote_url(url: str) -> RemoteUrl | None:
+    """*url* read as a remote reached over ssh or https, in URL form or scp form (`user@host:path`,
+    `host-alias:path`); None for a local path (a drive letter is a one-letter "host"), `file://`, `git://`
+    and the rest, which need no credential this module supplies."""
+    if "://" in url:
+        parts = urlsplit(url)
+        protocol = _SCHEMES.get(parts.scheme)
+        return RemoteUrl(url, protocol, parts.hostname.lower(), parts.path) if protocol and parts.hostname else None
+    head, colon, path = url.partition(":")
+    host = head.rpartition("@")[2]
+    if not colon or "/" in head or len(head) < 2 or not host:
+        return None
+    return RemoteUrl(url, "ssh", host.lower(), path)
 
 
 def protocol_of_url(url: str) -> RemoteProtocol | None:
     """The protocol a remote URL needs a credential for, or None for a local or anonymous one."""
-    if url.startswith(("git@", "ssh://", "git+ssh://")):
-        return "ssh"
-    if url.startswith(("https://", "http://")):
-        return "https"
-    if "://" in url:
-        return None  # file://, git:// and the rest need no credential this module supplies
-    # scp-like syntax (`user@host:path`, `host-alias:path`) is ssh; a local path has no colon
-    # before its first slash.
-    head, colon, _ = url.partition(":")
-    if colon and "/" not in head and len(head) > 1:
-        return "ssh"
-    return None
+    read = read_remote_url(url)
+    return read.protocol if read is not None else None
+
+
+def redacted_url(url: str) -> str:
+    """*url* without the userinfo of a URL-form remote, where a token can be embedded. The scp form
+    (`user@host:path`) carries a login name, never a secret, and is left as it is."""
+    if "://" not in url:
+        return url
+    parts = urlsplit(url)
+    host = parts.hostname or ""
+    netloc = f"{host}:{parts.port}" if parts.port else host
+    return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
 
 
 def _target_urls(target: Path | str) -> tuple[str, ...]:
-    return (target,) if isinstance(target, str) else remote_urls(target)
+    return (target,) if isinstance(target, str) else remote_urls(target).all
 
 
 def _urls_over(targets: list[Path | str], protocol: str) -> list[tuple[Path | str, str]]:
@@ -311,7 +359,7 @@ def verify_credentials(
     were healthy."""
     failures: list[tuple[Path, str]] = []
     for target in targets:
-        for url in remote_urls(target):
+        for url in remote_urls(target).all:
             if protocol_of_url(url) not in protocols:
                 continue  # local / no remote, or a protocol this check is not about
             reason = _auth_rejection(target, url, env)

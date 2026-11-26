@@ -13,10 +13,9 @@ from pathlib import Path
 
 from src.config.git_identity import optional_git_author
 from src.infrastructure.git._git_command import (
-    PUSH_TIMEOUT,
     STAGE_ALL_BUT_RUNTIME_STATE,
     commit_with_identity,
-    refuse_for_missing_credentials,
+    push_to_origin,
     run_repo_git,
 )
 from src.infrastructure.git.git_repository_state import (
@@ -119,9 +118,8 @@ def commit_format_upgrade(repo_root: Path, message: str) -> str:
 
 def push_engagement(engagement_root: Path) -> None:
     """Push the engagement repo's current branch to origin."""
-    rc, _, stderr = run_repo_git(engagement_root, "push", timeout=PUSH_TIMEOUT)
+    rc, _, stderr = push_to_origin(engagement_root)
     if rc != 0:
-        refuse_for_missing_credentials(engagement_root, ("push",), stderr)
         raise RuntimeError(f"Failed to push engagement changes: {stderr}")
     logger.info("Engagement changes pushed to remote")
 

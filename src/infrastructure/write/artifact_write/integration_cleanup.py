@@ -160,6 +160,7 @@ def _retire_a_finished_review_branch(repo: ArtifactRepository) -> str | None:
     unclosed to a caller reading an exception rather than the report.
     """
     from src.infrastructure.git import enterprise_branch_lifecycle, enterprise_sync_state  # noqa: PLC0415
+    from src.infrastructure.git.credential_refusal import GitCredentialsRequired  # noqa: PLC0415
     from src.infrastructure.git.git_repository_state import content_is_upstream  # noqa: PLC0415
 
     enterprise = repo.enterprise_root
@@ -177,7 +178,7 @@ def _retire_a_finished_review_branch(repo: ArtifactRepository) -> str | None:
         return None
     try:
         retired = enterprise_branch_lifecycle.abandon_enterprise_branch(enterprise)
-    except (ValueError, RuntimeError, OSError):
+    except (ValueError, RuntimeError, OSError, GitCredentialsRequired):
         logger.exception("Could not retire the review branch after its changes were integrated")
         return None
     logger.info("Review branch retired, every change it carried is upstream: %s", retired)

@@ -6,9 +6,14 @@ under the service identity. Both are the same concern — assembling the environ
 for it first.
 
 Every git call in the package goes through here, so the shared SSH environment is applied once
-rather than remembered at each call site. `git_env` is populated by `GitSyncManager` on startup,
-which is why a push from the write-queue executor thread has the same askpass credentials as the
-background sync.
+rather than remembered at each call site. `held_credentials` is populated by `GitSyncManager` on
+startup, which is why a push from the write-queue executor thread has the same askpass credentials as
+the background sync.
+
+A command that reaches `origin` runs through `push_to_origin` or `ask_origin`, which raise
+`GitCredentialsRequired` where the remote refused for want of a credential. That is the one place a
+refusal is recognised, so no operation has to remember to ask, and the direction (push URL or fetch URL)
+follows from which runner was called.
 
 These run in the write-queue executor thread rather than the asyncio event loop, which is why they
 are synchronous. `tests/architecture/test_dependency_policy.py` names this module as the only one
@@ -19,6 +24,7 @@ place the environment could be forgotten.
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from pathlib import Path
 
 from src.config.git_identity import GitIdentity, load_service_git_identity
@@ -72,38 +78,63 @@ def run_repo_git(
     env_overrides: dict[str, str] | None = None,
 ) -> tuple[int, str, str]:
     """Run `git *args` in `repo`, returning `(returncode, stdout, stderr)` with both trimmed."""
-    from src.infrastructure.git.git_env import get_ssh_env  # noqa: PLC0415
+    from src.infrastructure.git.held_credentials import git_environment  # noqa: PLC0415
 
-    env = dict(get_ssh_env() or os.environ)
+    env = dict(git_environment() or os.environ)
     if env_overrides:
         env.update(env_overrides)
     result = run_git(repo, args, timeout=timeout, env=env)
     return result.returncode, result.stdout.strip(), result.stderr.strip()
 
 
-def refuse_for_missing_credentials(repo: Path, args: tuple[str, ...], stderr: str) -> None:
-    """Raise `GitCredentialsRequired` when a failed command that reached `origin` was refused for
-    want of a credential; return otherwise.
+def push_to_origin(
+    repo: Path, *args: str, timeout: float = PUSH_TIMEOUT, environment: Mapping[str, str] | None = None,
+) -> tuple[int, str, str]:
+    """`git push *args` in `repo`, as `run_repo_git` answers it; a refusal of the push URL for want of a
+    credential is raised as `GitCredentialsRequired` instead. *environment* replaces the held one where a
+    caller wires its own credentials (`arch-repair`)."""
+    return _reaching_origin(repo, ("push", *args), pushing=True, timeout=timeout, environment=environment)
 
-    Called by every operation that pushes, fetches or lists the remote, before it reports its own
-    failure, so a refused credential is reported one way wherever it happens and a caller can ask
-    for the credential rather than report a failed push.
-    """
+
+def ask_origin(
+    repo: Path, *args: str, timeout: float = PUSH_TIMEOUT, environment: Mapping[str, str] | None = None,
+) -> tuple[int, str, str]:
+    """A git command that reads `origin` (`fetch`, `pull`, `ls-remote`), as `run_repo_git` answers it; a
+    refusal of the fetch URL for want of a credential is raised as `GitCredentialsRequired` instead."""
+    return _reaching_origin(repo, args, pushing=False, timeout=timeout, environment=environment)
+
+
+def raise_a_refusal(repo: Path, *, pushing: bool, returncode: int, stderr: str) -> None:
+    """Raise `GitCredentialsRequired` where a command that reached `origin` failed for want of a
+    credential; return otherwise. The remote runners' one decision, shared with the background sync's
+    own (asynchronous) runner."""
+    if returncode == 0:
+        return
     from src.infrastructure.git import held_credentials  # noqa: PLC0415
     from src.infrastructure.git.credential_refusal import credentials_required_for  # noqa: PLC0415
 
-    refusal = credentials_required_for(
-        repo, pushing=args[:1] == ("push",), git_output=stderr, held=held_credentials.held()
-    )
+    refusal = credentials_required_for(repo, pushing=pushing, git_output=stderr, held=held_credentials.held())
     if refusal is not None:
         raise refusal
 
 
+def _reaching_origin(
+    repo: Path, args: tuple[str, ...], *, pushing: bool, timeout: float, environment: Mapping[str, str] | None,
+) -> tuple[int, str, str]:
+    if environment is None:
+        rc, out, err = run_repo_git(repo, *args, timeout=timeout)
+    else:
+        result = run_git(repo, args, timeout=timeout, env=dict(environment))
+        rc, out, err = result.returncode, result.stdout.strip(), result.stderr.strip()
+    raise_a_refusal(repo, pushing=pushing, returncode=rc, stderr=err)
+    return rc, out, err
+
+
 def run_repo_git_untrimmed(repo: Path, *args: str, timeout: float = GIT_TIMEOUT) -> tuple[int, str, str]:
     """`run_repo_git` with stdout as git wrote it — for file contents, whose final newline is content."""
-    from src.infrastructure.git.git_env import get_ssh_env  # noqa: PLC0415
+    from src.infrastructure.git.held_credentials import git_environment  # noqa: PLC0415
 
-    result = run_git(repo, args, timeout=timeout, env=dict(get_ssh_env() or os.environ))
+    result = run_git(repo, args, timeout=timeout, env=dict(git_environment() or os.environ))
     return result.returncode, result.stdout, result.stderr.strip()
 
 

@@ -7,6 +7,7 @@ from src.domain.artifact_id import (
     EntityId,
     HeldRecordId,
     MalformedArtifactIdError,
+    connection_id,
     connection_id_as_written,
     held_record_id,
     is_entity_id,
@@ -316,3 +317,18 @@ class TestHeldRecordId:
     ])
     def test_anything_else_is_not_one(self, text: str) -> None:
         assert read_held_record_id(text) is None
+
+
+class TestConnectionIdRoundTrip:
+    """The one writer of a connection id and its readers, as a pair, over what an id permits: either
+    spelling at each end, and a random key ending in a hyphen (about one id in sixty-four)."""
+
+    @pytest.mark.parametrize("source", [
+        "APP@1785971770.O_xvx-", "APP@1785971770.O_xvx-.ledger-service", "REQ@1776423712.KG27vK",
+    ])
+    @pytest.mark.parametrize("target", ["DOB@1795000000.Queue01.promotion-queue", "SSW@1700000002.Toolkt-"])
+    @pytest.mark.parametrize("conn_type", ["archimate-serving", "c4-contains"])
+    def test_what_is_written_reads_back(self, source: str, target: str, conn_type: str) -> None:
+        written = connection_id(source, target, conn_type)
+        assert connection_id_as_written(written) == (source, target, conn_type)
+        assert parse_connection_id(written) == ConnectionKey(stable_id(source), conn_type, stable_id(target))

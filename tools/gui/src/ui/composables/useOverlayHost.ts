@@ -1,4 +1,5 @@
-import { onUnmounted, shallowRef, type Ref } from 'vue'
+import { computed, type Ref } from 'vue'
+import { useFullscreenElement } from './useFullscreen'
 
 /**
  * Where an overlay a canvas opens — its menu, its gesture cues, its details dialog — is teleported: into the
@@ -9,11 +10,6 @@ import { onUnmounted, shallowRef, type Ref } from 'vue'
  * own fixed positioning, which a fullscreen element does not change.
  */
 export function useOverlayHost(): Readonly<Ref<HTMLElement | 'body'>> {
-  const current = (): HTMLElement | 'body' =>
-    document.fullscreenElement instanceof HTMLElement ? document.fullscreenElement : 'body'
-  const host = shallowRef(current())
-  const sync = () => { host.value = current() }
-  document.addEventListener('fullscreenchange', sync)
-  onUnmounted(() => { document.removeEventListener('fullscreenchange', sync) })
-  return host
+  const holder = useFullscreenElement()
+  return computed(() => holder.value ?? 'body')
 }

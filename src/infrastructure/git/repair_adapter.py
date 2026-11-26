@@ -8,10 +8,11 @@ from typing import Sequence
 
 from src.config.git_identity import load_service_git_identity
 from src.domain.repository.git_repair import RepairState
-from src.infrastructure.git._git_command import STAGE_ALL_BUT_RUNTIME_STATE
+from src.infrastructure.git._git_command import STAGE_ALL_BUT_RUNTIME_STATE, ask_origin, push_to_origin
 from src.infrastructure.mutation_adapters import run_git
 
 _STATE_FILE = Path(".git") / "arch-repair-state.json"
+_TIMEOUT = 120
 
 
 class GitRepairAdapter:
@@ -49,7 +50,7 @@ class GitRepairAdapter:
             )
 
     def fetch_original(self, state: RepairState) -> None:
-        self._checked(["fetch", "origin", state.original_branch])
+        self._from_origin(["fetch", "origin", state.original_branch])
 
     def prepare_repair_branch(self, state: RepairState) -> None:
         exists = self._quiet(
@@ -92,13 +93,13 @@ class GitRepairAdapter:
         )
 
     def push_repair(self, state: RepairState) -> None:
-        self._checked(["push", "-u", "origin", state.repair_branch])
+        self._to_origin(["-u", "origin", state.repair_branch])
 
     def promote_to_original(self, state: RepairState) -> None:
-        self._checked(["fetch", "origin", state.original_branch])
+        self._from_origin(["fetch", "origin", state.original_branch])
         self._checked(["switch", state.original_branch])
         self._checked(["merge", "--ff-only", state.repair_branch])
-        self._checked(["push", "origin", state.original_branch])
+        self._to_origin(["origin", state.original_branch])
 
     def require_clean(self) -> None:
         if self._output(["status", "--porcelain"]):
@@ -111,13 +112,25 @@ class GitRepairAdapter:
         os.replace(temp, path)
 
     def _checked(self, args: Sequence[str]) -> str:
-        result = run_git(self._repo, args, timeout=120, env=self._env)
+        result = run_git(self._repo, args, timeout=_TIMEOUT, env=self._env)
         if result.returncode != 0:
             raise RuntimeError(result.stderr.strip() or f"git {' '.join(args)} failed")
         return result.stdout.strip()
+
+    def _from_origin(self, args: Sequence[str]) -> None:
+        """A command that reads origin; a refusal for want of a credential raises `GitCredentialsRequired`."""
+        rc, _, err = ask_origin(self._repo, *args, timeout=_TIMEOUT, environment=self._env)
+        if rc != 0:
+            raise RuntimeError(err or f"git {' '.join(args)} failed")
+
+    def _to_origin(self, args: Sequence[str]) -> None:
+        """`git push *args`; a refusal for want of a credential raises `GitCredentialsRequired`."""
+        rc, _, err = push_to_origin(self._repo, *args, timeout=_TIMEOUT, environment=self._env)
+        if rc != 0:
+            raise RuntimeError(err or f"git push {' '.join(args)} failed")
 
     def _output(self, args: Sequence[str]) -> str:
         return self._checked(args)
 
     def _quiet(self, args: Sequence[str]) -> bool:
-        return run_git(self._repo, args, timeout=120, env=self._env).returncode == 0
+        return run_git(self._repo, args, timeout=_TIMEOUT, env=self._env).returncode == 0

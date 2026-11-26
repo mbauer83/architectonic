@@ -104,12 +104,9 @@ class TestFailureBeforeThePush:
         prepared = submission_saga.prepare_submission(enterprise, CHANGES)
 
         def failing_push(repo, *args, **kwargs):
-            if args[:1] == ("push",):
-                return (1, "", "injected push failure")
-            return real(repo, *args, **kwargs)
+            return (1, "", "injected push failure")
 
-        real = submission_saga.run_repo_git
-        monkeypatch.setattr(submission_saga, "run_repo_git", failing_push)
+        monkeypatch.setattr(submission_saga, "push_to_origin", failing_push)
         with pytest.raises(RuntimeError, match="Failed to push"):
             submission_saga.publish_submission(enterprise, prepared)
 
@@ -221,7 +218,7 @@ class TestARefAtAnUnexpectedCommitFailsClosed:
         prepared = submission_saga.prepare_submission(enterprise, CHANGES)
         answers = iter([None, "0000000000000000000000000000000000000000"])
         monkeypatch.setattr(submission_saga, "remote_ref_commit", lambda *_a, **_k: next(answers))
-        monkeypatch.setattr(submission_saga, "run_repo_git", lambda *_a, **_k: (0, "", ""))
+        monkeypatch.setattr(submission_saga, "push_to_origin", lambda *_a, **_k: (0, "", ""))
 
         with pytest.raises(SubmissionConflict, match="not the"):
             submission_saga.publish_submission(enterprise, prepared)
@@ -234,7 +231,7 @@ def test_a_submission_is_never_marked_pushed_without_the_remote_agreeing(pair, m
     enterprise, _origin = pair
     _accumulate(enterprise)
     prepared = submission_saga.prepare_submission(enterprise, CHANGES)
-    monkeypatch.setattr(submission_saga, "run_repo_git", lambda *_a, **_k: (0, "", ""))
+    monkeypatch.setattr(submission_saga, "push_to_origin", lambda *_a, **_k: (0, "", ""))
     monkeypatch.setattr(submission_saga, "remote_ref_commit", lambda *_a, **_k: None)
 
     with pytest.raises(SubmissionConflict):

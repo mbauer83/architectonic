@@ -147,6 +147,11 @@ class DiagramTypeBase:
         return False
 
     @property
+    def arranges_on_canvas(self) -> bool:
+        """No, unless the type says so: the canvas arranges only a type whose picture it can read and keep."""
+        return False
+
+    @property
     def draws_occurrences(self) -> bool:
         """No, unless the type says so: a further drawing is a statement only a type that renders it may hold."""
         return False

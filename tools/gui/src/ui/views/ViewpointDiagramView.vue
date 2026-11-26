@@ -116,16 +116,13 @@ const { svgContainer } = selection
 const { display: witnessChainDisplay } = useSelectedConnectionWitnessChain(svc, selection.selectedConnection)
 
 const containerRef = ref<HTMLElement | null>(null)
-const panZoom = useFittedPanZoom(containerRef, svgContainer)
 const fullscreen = useFullscreen(containerRef)
+const panZoom = useFittedPanZoom(containerRef, svgContainer, fullscreen.isFullscreen)
 useArrowPanning(containerRef, panZoom.panBy)
 /** Every element drawn, named, for the overview to mark the selection and the names to be written (04·1). */
 const drawn = computed(() => drawnMarksOf(selection.nodeElements.value,
   (id) => diagramEntities.value.find((entity) => entity.artifact_id === id)?.name,
   new Set(selection.selectedIds.value)))
-// Entering or leaving fullscreen is a framing request: re-fit even when the view has been
-// transformed, since the whole point of the gesture is to see the diagram against the new space.
-watch(fullscreen.isFullscreen, () => { void panZoom.fitDiagramToViewport() })
 
 watch(svgHtml, (svg) => { if (svg) void panZoom.fitDiagramToViewport() })
 

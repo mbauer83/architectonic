@@ -14,10 +14,21 @@ from __future__ import annotations
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
+from src.infrastructure.git.credential_refusal import GitCredentialsRequired
+from src.infrastructure.mcp.execution_failure import git_credentials_refusal
 from src.infrastructure.mcp.tool_annotations import (
     DESTRUCTIVE_OPEN_WORLD_WRITE,
     OPEN_WORLD_WRITE,
 )
+
+
+def _failed(exc: ValueError | RuntimeError | GitCredentialsRequired) -> dict[str, object]:
+    """A save, submit or withdrawal that did not happen, and why."""
+    match exc:
+        case GitCredentialsRequired():
+            return {"ok": False, "error": git_credentials_refusal(exc)}
+        case _:
+            return {"ok": False, "error": str(exc)}
 
 
 def artifact_save_changes(
@@ -80,10 +91,8 @@ def artifact_save_changes(
                 "message": message,
                 "next_step": ("Use artifact_submit_for_review to push this branch for team review."),
             }
-    except ValueError as exc:
-        return {"ok": False, "error": str(exc)}
-    except RuntimeError as exc:
-        return {"ok": False, "error": str(exc)}
+    except (ValueError, RuntimeError, GitCredentialsRequired) as exc:
+        return _failed(exc)
 
 
 def artifact_submit_for_review(*, dry_run: bool = True) -> dict[str, object]:
@@ -138,10 +147,9 @@ def artifact_submit_for_review(*, dry_run: bool = True) -> dict[str, object]:
                 ),
             }
         branch = enterprise_branch_lifecycle.push_enterprise_branch(ent_root)
-        from src.infrastructure.git.git_repository_state import UPSTREAM_BRANCH  # noqa: PLC0415
         from src.infrastructure.git.review_link import review_url_for  # noqa: PLC0415
 
-        review_url = review_url_for(ent_root, branch=branch, base=UPSTREAM_BRANCH)
+        review_url = review_url_for(ent_root, branch=branch)
         where = f" at {review_url}" if review_url else " in your version-control platform"
         return {
             "ok": True,
@@ -155,10 +163,8 @@ def artifact_submit_for_review(*, dry_run: bool = True) -> dict[str, object]:
                 "to request a team review. The system will automatically detect when it is merged."
             ),
         }
-    except ValueError as exc:
-        return {"ok": False, "error": str(exc)}
-    except RuntimeError as exc:
-        return {"ok": False, "error": str(exc)}
+    except (ValueError, RuntimeError, GitCredentialsRequired) as exc:
+        return _failed(exc)
 
 
 def artifact_withdraw_changes(*, confirm: bool = False) -> dict[str, object]:
@@ -188,10 +194,8 @@ def artifact_withdraw_changes(*, confirm: bool = False) -> dict[str, object]:
             "discarded_branch": branch,
             "message": "All pending enterprise changes have been discarded.",
         }
-    except ValueError as exc:
-        return {"ok": False, "error": str(exc)}
-    except RuntimeError as exc:
-        return {"ok": False, "error": str(exc)}
+    except (ValueError, RuntimeError, GitCredentialsRequired) as exc:
+        return _failed(exc)
 
 
 def register(mcp: MCPServer) -> None:

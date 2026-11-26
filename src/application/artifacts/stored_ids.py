@@ -30,3 +30,17 @@ def stored_ids(repo_root: Path, kind: ArtifactKindName) -> dict[str, str]:
 def stored_id(repo_root: Path, kind: ArtifactKindName, spelled: str) -> str | None:
     """The id the artifact of *kind* that *spelled* names is stored under, in either spelling; None where none is."""
     return stored_ids(repo_root, kind).get(canonical_entity_key(spelled))
+
+
+def stored_id_reader(repo_root: Path) -> StoredIdOf:
+    """`stored_id` over *repo_root* for one verification or one edit: each kind's files are listed once, on
+    its first ask, rather than once per cell — a typed table names many ids of the same kind."""
+    listed: dict[ArtifactKindName, dict[str, str]] = {}
+
+    def stored_id_of(kind: ArtifactKindName, spelled: str) -> str | None:
+        ids = listed.get(kind)
+        if ids is None:
+            ids = listed[kind] = stored_ids(repo_root, kind)
+        return ids.get(canonical_entity_key(spelled))
+
+    return stored_id_of

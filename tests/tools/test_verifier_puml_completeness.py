@@ -25,13 +25,11 @@ from pathlib import Path
 import pytest
 
 from src.application.modeling.binding_normalize import normalize_bindings, strip_diagram_shorthand
-from src.application.verification._verifier_rules_puml_completeness import (
-    check_diagram_relation_completeness,
-    diagram_body_is_reconcile_owned,
-)
+from src.application.verification._verifier_rules_puml_completeness import check_diagram_relation_completeness
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import VerificationResult
+from src.application.verification.drawn_relations import diagram_body_is_reconcile_owned
 from src.domain.artifact_id import stable_conn_id as _stable
 from src.domain.diagrams.bindings import bindings_to_raw
 from src.infrastructure.artifact_index import shared_artifact_index

@@ -121,11 +121,15 @@ REST_MUTATION_MANIFEST: dict[str, MutationIntent] = {
     "sync_withdraw_enterprise": "enterprise_discard",
 }
 
-#: Write-shaped operations that mutate no repository state: previews, plans, query
-#: execution/exports, and non-persistent identifier minting. `sync_supply_credentials` changes what
-#: the process holds in memory, never a repository, and is gated as a local operator request.
-NON_MUTATING_REST_OPERATIONS: frozenset[str] = frozenset({
+#: Write-shaped operations that change what the running process may do, never a repository: their
+#: route rows say `mutation_domain="process"` and are gated as local operator requests.
+PROCESS_STATE_REST_OPERATIONS: frozenset[str] = frozenset({
     "sync_supply_credentials",
+})
+
+#: Write-shaped operations that mutate nothing: previews, plans, query execution/exports, and
+#: non-persistent identifier minting.
+NON_MUTATING_REST_OPERATIONS: frozenset[str] = frozenset({
     "changes_check_candidates",
     "changes_preview_candidate_picture",
     "changes_preview_candidate_picture_shapes",

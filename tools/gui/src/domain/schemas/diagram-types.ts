@@ -31,6 +31,8 @@ export const DiagramTypeSummarySchema = Schema.Struct({
   hosts_candidates: Schema.Boolean,
   /** Whether a diagram of this type may draw an element again, and label each drawing on its own. */
   draws_occurrences: Schema.Boolean,
+  /** Whether a diagram of this type is arranged on the canvas; the layout writes refuse one that is not. */
+  arranges_on_canvas: Schema.Boolean,
 })
 export type DiagramTypeSummary = typeof DiagramTypeSummarySchema.Type
 

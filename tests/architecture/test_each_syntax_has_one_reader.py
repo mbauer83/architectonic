@@ -207,6 +207,10 @@ _LAYOUT_BLOCK_WORD = re.compile(r"\A(via|boxes)\Z")
 #: A Traffic Light Protocol level, spelled whole.
 _TLP_LEVEL = re.compile(r"\ATLP:[A-Z]+\Z")
 
+#: How an ssh remote URL opens: a table of these is a reading of which protocol a remote URL needs. (Not the
+#: http heads, which every web link shares.)
+_REMOTE_URL_HEAD = re.compile(r"\A(?:git@|(?:git\+)?ssh://)\Z")
+
 SYNTAX_READERS: tuple[SyntaxReader, ...] = (
     SyntaxReader(
         syntax="the stored candidate architecture document",
@@ -718,6 +722,22 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
         ),
         literal_probe=_DIAGRAM_TYPE_FIELD,
         also_located_by=_ATTRIBUTE_LOOKUPS,
+    ),
+    SyntaxReader(
+        syntax="a git remote URL — the protocol a credential is supplied for, its host and repository path",
+        owners=(Path("src/infrastructure/git/git_auth.py"),),
+        instead=(
+            "`src.infrastructure.git.git_auth`: `read_remote_url` for the protocol, host and path, "
+            "`protocol_of_url` for the protocol alone, `redacted_url` to name one without its userinfo, "
+            "`remote_urls` for where `origin` is fetched and pushed (`RemoteUrls.pushed_to`, `.all`)"
+        ),
+        incident=(
+            "the credential prompt, the refusal's redaction and the pull-request link each parsed the URL "
+            "forms themselves and disagreed about a one-letter host — a Windows drive letter was a local "
+            "path to one and an ssh host to another — and two read the push URL out of `remote_urls` by "
+            "position (`urls[1:]`, `urls[-1]`); the workspace bootstrap's hint knew only two ssh forms"
+        ),
+        enumeration_probe=_REMOTE_URL_HEAD,
     ),
 )
 

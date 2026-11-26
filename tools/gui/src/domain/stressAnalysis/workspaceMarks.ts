@@ -13,19 +13,16 @@ export const stressorsTicking = (
   : ticks.filter((tick) => stableEntityId(tick.component) === stableId).map((tick) => tick.stressor))
 
 /**
- * Each component the focus hits, tagged with how many of the focused stressors hit it. One the naive creates
- * is named by its reference; it is marked by the id chosen for it (*chosen*, `chosenIds`), which the picture
- * draws it with.
+ * Each component the focus hits, tagged with how many of the focused stressors hit it, by its stable id as the
+ * picture draws it (one the naive creates, too, is named by the id its create chose).
  */
-export const hitMarks = (
-  hitsByStressor: ReadonlyMap<string, readonly string[]>, chosen: ReadonlyMap<string, string> = new Map(),
-): Marks => {
+export const hitMarks = (hitsByStressor: ReadonlyMap<string, readonly string[]>): Marks => {
   const counts = new Map<string, number>()
   for (const hits of hitsByStressor.values()) {
     for (const hit of new Set(hits)) counts.set(hit, (counts.get(hit) ?? 0) + 1)
   }
   const of = hitsByStressor.size
-  return new Map([...counts].map(([id, count]) => [stableEntityId(chosen.get(id) ?? id), {
+  return new Map([...counts].map(([id, count]) => [stableEntityId(id), {
     kind: 'hit' as const,
     tag: of > 1 ? `hit by ${count} of ${of}` : 'hit',
     title: of > 1 ? `Hit by ${count} of the ${of} stressors in focus` : 'Hit by the stressor in focus',

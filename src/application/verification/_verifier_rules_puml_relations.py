@@ -18,6 +18,7 @@ from src.application.modeling.binding_normalize import restore_diagram_shorthand
 from src.application.puml_relation_parsing import declared_relations
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
+from src.domain.artifact_id import connection_id
 from src.domain.artifact_id import stable_conn_id as _stable_conn_id
 from src.domain.ontology_representation.artifact_types import EntityRecord
 
@@ -188,11 +189,11 @@ def check_diagram_relation_references(
             )
             continue
 
-        stable_cid = _stable_conn_id(f"{src_id}---{tgt_id}@@{conn_type}")
+        stable_cid = _stable_conn_id(connection_id(src_id, tgt_id, conn_type))
         if stable_cid in allowed_stable:
             continue
 
-        stable_rev = _stable_conn_id(f"{tgt_id}---{src_id}@@{conn_type}")
+        stable_rev = _stable_conn_id(connection_id(tgt_id, src_id, conn_type))
         if conn_type == "archimate-realization" and stable_rev in allowed_stable:
             continue
 

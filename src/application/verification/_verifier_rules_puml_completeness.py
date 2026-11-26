@@ -54,22 +54,21 @@ from typing import TYPE_CHECKING, Literal
 
 from src.application.artifacts.parsing import extract_declared_puml_aliases
 from src.application.puml_relation_parsing import (
-    DeclaredRelation,
     declared_relations,
     indirect_nesting_relations,
 )
-from src.application.verification._verifier_rules_puml_relations import (
-    _build_alias_lookup,
-    _normalize_puml_alias,
-    check_diagram_relation_references,
-)
+from src.application.verification._verifier_rules_puml_relations import check_diagram_relation_references
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
+from src.application.verification.drawn_relations import (
+    alias_resolver,
+    connections_between,
+    diagram_body_is_reconcile_owned,
+    drawn_relations,
+)
 from src.domain.artifact_id import stable_conn_id, stable_id
-from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.recorded_references import body_contradicts_reference
 from src.domain.modules.catalogs import DiagramTypeCatalog
-from src.domain.ontology_representation.ontology_protocol import StoreGraphProjectingDiagramType
 
 if TYPE_CHECKING:
     from src.application.runtime_catalogs import RuntimeCatalogs
@@ -94,63 +93,6 @@ def check_puml_relation_rules(
         content, fm, registry, result, loc,
         stereotype_map=stereotype_map, diagram_type_catalog=runtime_catalogs.diagram_types,
     )
-
-
-def diagram_body_is_reconcile_owned(fm: dict, diagram_type_catalog: DiagramTypeCatalog) -> bool:
-    """True when the ArchiMate reconcile is what refreshes this diagram's body.
-
-    The single decision the refresh dispatch matrix makes, asked from frontmatter alone: a type whose
-    body is rendered from ``diagram-entities`` (``body_is_rendered_from_diagram_entities``, the rule's
-    owner — the write path asks it too), a type drawn from the assurance store
-    (``StoreGraphProjectingDiagramType``) or a projector-owned diagram (``scoped-by`` binding) is
-    re-rendered from stored state. Everything else is reconciled from its bindings — and only there are
-    body-expressed-but-unbound relations at risk of deletion.
-
-    An ArchiMate diagram's ``diagram-entities`` holds statements about its instances (labels,
-    occurrences, icons), not its body's source; reading "non-empty" as "standalone" switched these
-    checks off for every ArchiMate diagram carrying one statement (B112, the verifier's half of B96).
-
-    The write path's refresh asks this same question to decide whether to reconcile, so the two cannot
-    disagree about which diagrams the model reconcile owns.
-    """
-    module = diagram_type_catalog.find_diagram_type(diagram_type_of(fm))
-    if module is None:
-        # A type no module in this deployment describes — the assurance family without the confidential
-        # store, say — is neither reconciled nor checked as ArchiMate: its stored state is all there is.
-        return False
-    if module.body_is_rendered_from_diagram_entities or isinstance(module, StoreGraphProjectingDiagramType):
-        return False
-    return not any(
-        isinstance(b, dict)
-        and b.get("correspondence_kind") == "scoped-by"
-        and isinstance(b.get("subject"), dict)
-        and b["subject"].get("kind") == "diagram"
-        and isinstance(b.get("target"), dict)
-        and b["target"].get("entity_id")
-        for b in (fm.get("bindings") or [])
-        if isinstance(b, dict)
-    )
-
-
-def _listed_connection_stable_ids(fm: dict) -> set[str]:
-    """The stable form of every id in connection-ids-used — the same normalisation the
-    E302 rule compares with, so listed-vs-model can never disagree on id syntax."""
-    raw = fm.get("connection-ids-used")
-    return {stable_conn_id(str(cid)) for cid in raw} if isinstance(raw, list) else set()
-
-
-def _model_connections_between(registry: ArtifactRegistry, src_id: str, tgt_id: str) -> list:
-    """Model connections joining the pair, in either direction."""
-    src_short, tgt_short = stable_id(src_id), stable_id(tgt_id)
-    return [
-        record
-        for record in registry.find_connections_for(src_id, direction="any")
-        if {stable_id(record.source), stable_id(record.target)} == {src_short, tgt_short}
-    ]
-
-
-def _is_nesting(relation: DeclaredRelation) -> bool:
-    return relation.connection_type is None and relation.arrow == ""
 
 
 def _drawn_connection_ids(
@@ -178,7 +120,7 @@ def _drawn_connection_ids(
         src_id, tgt_id = resolve(relation.source_alias), resolve(relation.target_alias)
         if src_id is None or tgt_id is None:
             continue
-        candidates = _model_connections_between(registry, src_id, tgt_id)
+        candidates = connections_between(registry, src_id, tgt_id)
         if relation.connection_type is not None:
             candidates = [c for c in candidates if c.conn_type == relation.connection_type]
         drawn |= {stable_conn_id(c.artifact_id) for c in candidates}
@@ -256,34 +198,21 @@ def check_diagram_relation_completeness(
     if not diagram_body_is_reconcile_owned(fm, diagram_type_catalog):
         return
 
-    alias_to_entity_id = _build_alias_lookup(content, fm, registry, stereotype_map)
+    resolve = alias_resolver(content, fm, registry, stereotype_map)
     raw_used = fm.get("entity-ids-used")
     # entity-ids-used is the whole binding surface here: a type whose body renders from
     # ``diagram-entities`` is outside this rule's scope (``diagram_body_is_reconcile_owned``).
     bound_short = {stable_id(str(eid)) for eid in raw_used if eid is not None} if isinstance(raw_used, list) else set()
-    listed_stable = _listed_connection_stable_ids(fm)
-
-    def resolve(alias: str) -> str | None:
-        return alias_to_entity_id.get(alias) or alias_to_entity_id.get(_normalize_puml_alias(alias))
-
-    seen_relations: set[tuple[str, str, str | None, bool]] = set()
     reported_unbound_aliases: set[str] = set()
 
-    for relation in declared_relations(content, stereotype_map):
-        key = (relation.source_alias, relation.target_alias, relation.connection_type, _is_nesting(relation))
-        if key in seen_relations:
-            continue
-        seen_relations.add(key)
-        nesting = _is_nesting(relation)
-
-        src_id = resolve(relation.source_alias)
-        tgt_id = resolve(relation.target_alias)
-        if src_id is None or tgt_id is None:
+    for drawn in drawn_relations(content, fm, registry, stereotype_map, resolve=resolve):
+        relation = drawn.relation
+        if drawn.source_id is None or drawn.target_id is None:
             # A nesting endpoint that resolves to nothing is an aliased grouping rectangle —
             # a box, not an element. A *typed* arrow's unknown alias is already E311. Only the
             # bare arrow's unknown alias was nobody's finding until now.
-            if not nesting and relation.connection_type is None:
-                unknown = relation.source_alias if src_id is None else relation.target_alias
+            if not drawn.nesting and relation.connection_type is None:
+                unknown = relation.source_alias if drawn.source_id is None else relation.target_alias
                 result.issues.append(Issue(
                     Severity.ERROR, "E314",
                     f"diagram body draws a relation '{relation.source_alias} {relation.arrow} "
@@ -292,7 +221,7 @@ def check_diagram_relation_completeness(
                 ))
             continue
 
-        for alias, entity_id in ((relation.source_alias, src_id), (relation.target_alias, tgt_id)):
+        for alias, entity_id in ((relation.source_alias, drawn.source_id), (relation.target_alias, drawn.target_id)):
             if stable_id(entity_id) not in bound_short and alias not in reported_unbound_aliases:
                 reported_unbound_aliases.add(alias)
                 result.issues.append(Issue(
@@ -302,24 +231,20 @@ def check_diagram_relation_completeness(
                     loc,
                 ))
 
-        candidates = _model_connections_between(registry, src_id, tgt_id)
-        if relation.connection_type is not None:
-            candidates = [c for c in candidates if c.conn_type == relation.connection_type]
-        if any(stable_conn_id(c.artifact_id) in listed_stable for c in candidates):
+        if drawn.listed:
             continue
 
-        drawn_as = "nesting" if nesting else relation.arrow or relation.connection_type or "arrow"
-        if candidates:
-            candidate_ids = sorted(c.artifact_id for c in candidates)
+        drawn_as = "nesting" if drawn.nesting else relation.arrow or relation.connection_type or "arrow"
+        if drawn.fitting:
             result.issues.append(Issue(
                 Severity.ERROR, "E316",
                 f"diagram body expresses a relation '{relation.source_alias} -> "
                 f"{relation.target_alias}' ({drawn_as}) that is not listed in "
-                f"connection-ids-used (model candidates: {candidate_ids}) — the reconcile "
+                f"connection-ids-used (model candidates: {list(drawn.fitting)}) — the reconcile "
                 "treats bindings as authoritative and would not preserve it",
                 loc,
             ))
-        elif not nesting:
+        elif not drawn.nesting:
             # Unbacked *nesting* is legitimate generated output (flow-through events and
             # junctions are nested visually); an unbacked *arrow* can only be dropped by
             # the next regeneration.

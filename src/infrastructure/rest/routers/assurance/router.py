@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -28,16 +28,12 @@ from src.infrastructure.app_bootstrap import (
 )
 from src.infrastructure.rest.contracts.assurance_nodes import AssuranceEdgeCatalogResponse
 from src.infrastructure.rest.contracts.assurance_store import AssuranceStoreStatusResponse
-from src.infrastructure.rest.contracts.errors import ApiError, DenialDetails, NotConfiguredDetails
-from src.infrastructure.rest.contracts.operator_request import (
-    OPERATOR_REQUEST_HEADER,
-    is_local_operator_request,
-)
+from src.infrastructure.rest.contracts.errors import ApiError, NotConfiguredDetails
 from src.infrastructure.rest.routers._openapi import (
     TAG_ASSURANCE_NODES,
     TAG_ASSURANCE_STORE,
-    error_response,
 )
+from src.infrastructure.rest.routers._operator_gate import LOCAL_OPERATOR_RESPONSES, require_local_operator
 from src.infrastructure.rest.routers.assurance._aibom import aibom_router
 from src.infrastructure.rest.routers.assurance._analysis_routes import analysis_router
 from src.infrastructure.rest.routers.assurance._archive_routes import archive_router
@@ -104,11 +100,8 @@ class AssuranceReloadBody(BaseModel):
 
 @router.post("/api/assurance/reload", tags=[TAG_ASSURANCE_STORE], status_code=200,
     response_model=AssuranceStoreStatusResponse,
-    responses={403: error_response(
-        "`authorize` was given by a request that is not a local operator request: one from the "
-        f"loopback carrying `{OPERATOR_REQUEST_HEADER}`, as `arch-assurance unlock` and `lock` send"
-    )})
-def assurance_reload(request: Request, body: AssuranceReloadBody | None = None) -> dict[str, object]:
+    dependencies=[Depends(require_local_operator)], responses=LOCAL_OPERATOR_RESPONSES)
+def assurance_reload(body: AssuranceReloadBody | None = None) -> dict[str, object]:
     """Evict the assurance bundle cache and rebuild it, applying the activation policy.
 
     Called by `arch-assurance unlock` and `lock` so the running backend reflects the change at
@@ -116,22 +109,15 @@ def assurance_reload(request: Request, body: AssuranceReloadBody | None = None) 
     rebuild alone would re-apply the policy and start locked again, so the command would appear
     to succeed and change nothing.
 
-    Changing the process's authorization is an operator's act and is accepted only as a local
-    operator request (`operator_request`): anything that could reach the port could otherwise
-    authorize the process to open the confidential store. A reload that leaves authorization as it
-    is stays open to any caller.
+    Changing the process's authorization is an operator's act, so the operation is accepted only as a
+    local operator request (`require_local_operator`, which its route-policy row declares): anything that
+    could reach the port could otherwise authorize the process to open the confidential store. The
+    command line is its only caller and sends every reload that way.
     """
     from src.infrastructure.assurance import store_factory  # noqa: PLC0415
     from src.infrastructure.mcp.assurance_mcp.context import clear_context_cache  # noqa: PLC0415
 
     intent = body.authorize if body is not None else None
-    if intent is not None and not is_local_operator_request(request):
-        raise ApiError(
-            403, "forbidden",
-            "Authorizing or revoking access to the assurance store is accepted only from "
-            "`arch-assurance unlock` or `lock` on the machine the backend runs on.",
-            DenialDetails(reason_code="operator_request_required"),
-        )
     if intent is True:
         store_factory.authorize_process()
     elif intent is False:

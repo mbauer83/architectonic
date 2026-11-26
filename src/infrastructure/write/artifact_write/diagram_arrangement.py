@@ -29,7 +29,7 @@ from src.infrastructure.rendering.layout.diagram_geometry import read_and_measur
 from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, placed_on_its_picture
 
 from .diagram_edit import edit_diagram
-from .diagram_layout_patch import FirstLayout, LayoutPatchResult, arranged_by, matched_to, stored_diagram
+from .diagram_layout_patch import LayoutPatchResult, arranged_by, matched_to, stored_diagram
 from .diagram_membership import RenderedMembership, rendered_membership
 from .parse_existing import ParsedDiagram
 
@@ -44,7 +44,6 @@ def arrange_diagram(
     artifact_id: str,
     stated: object,
     ontology: DeclaresElementKinds,
-    first_layout: FirstLayout,
     dry_run: bool,
 ) -> LayoutPatchResult:
     """Apply the intents *stated* to *artifact_id* and write the result, for REST and MCP alike.
@@ -55,7 +54,7 @@ def arrange_diagram(
     parsed = stored_diagram(repo_root, verifier, artifact_id)
     intents, drawn = _read_against_its_picture(stated, parsed, artifact_id, repo_root, ontology)
     frontmatter = parsed.frontmatter
-    stored, base = arranged_by(parsed, first_layout, taking_over=arranges(intents))
+    stored, base = arranged_by(parsed, repo_root, ontology, taking_over=arranges(intents))
     groupings = frontmatter.get("authored-groupings")
     result = arranged(
         intents, groupings=groupings if isinstance(groupings, list) else [],

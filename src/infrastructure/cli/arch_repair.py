@@ -7,6 +7,7 @@ from pathlib import Path
 
 from src.application.git_repair import execute_git_repair
 from src.domain.repository.git_repair import RepairState
+from src.infrastructure.git.credential_refusal import GitCredentialsRequired
 from src.infrastructure.git.git_auth import (
     GitCredentials,
     build_git_env,
@@ -61,6 +62,8 @@ def _main_git_repair(argv: list[str]) -> int:
             token_file=args.git_token_file,
             confirm=args.confirm,
         )
+    except GitCredentialsRequired as refused:
+        parser.error(f"{refused} Run again at a terminal to be asked for it, or set {refused.environment_hint}.")
     except (OSError, RuntimeError, ValueError) as exc:
         parser.error(str(exc))
     return 0

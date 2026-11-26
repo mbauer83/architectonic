@@ -18,18 +18,20 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from src.application.modeling.diagram_layout_statement import DeclaresElementKinds
 from src.application.repo_path_helpers import resolve_diagram_source_path
 from src.application.verification.artifact_verifier import ArtifactVerifier
+from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, Layout, layout_as_written, read_layout
 from src.domain.diagrams.layout.layout_checks import DiagramIdentities, pruned_to
 from src.domain.diagrams.layout.layout_patch import patched, read_layout_patch
+from src.infrastructure.rendering.layout.diagram_picture import first_layout_of
 
 from .diagram_edit import edit_diagram
 from .parse_existing import ParsedDiagram, parse_diagram_file
 from .types import WriteResult
 
 #: The layout a diagram starts from when it has none: from its body and frontmatter.
-type FirstLayout = Callable[[str, Mapping[str, object]], Layout]
 
 
 
@@ -82,24 +84,39 @@ def matched_to(
 
 
 def stored_diagram(repo_root: Path, verifier: ArtifactVerifier, artifact_id: str) -> ParsedDiagram:
-    """The diagram *artifact_id* as its file holds it. Raises ValueError where there is none."""
+    """The diagram *artifact_id* as its file holds it, to be arranged. Raises ValueError where there is none,
+    and where its type is not arranged on the canvas (`arranges_on_canvas`), naming the types that are."""
     find = verifier.registry.find_file_by_id if verifier.registry is not None else None
     diagram_path = resolve_diagram_source_path(repo_root, artifact_id, find)
     if diagram_path is None:
         raise ValueError(f"Diagram '{artifact_id}' not found")
-    return parse_diagram_file(diagram_path)
+    parsed = parse_diagram_file(diagram_path)
+    catalog = verifier.runtime_catalogs.diagram_types
+    stated = diagram_type_of(parsed.frontmatter)
+    kind = catalog.find_diagram_type(stated)
+    if kind is None or not kind.arranges_on_canvas:
+        arranging = sorted(key for key, module in catalog.all_diagram_types().items() if module.arranges_on_canvas)
+        raise ValueError(
+            f"Diagram '{artifact_id}' is a {stated} diagram, which is not arranged on the canvas; "
+            f"the types that are: {', '.join(arranging)}."
+        )
+    return parsed
 
 
-def arranged_by(parsed: ParsedDiagram, first_layout: FirstLayout, *, taking_over: bool = True) -> tuple[Layout, Layout]:
+def arranged_by(
+    parsed: ParsedDiagram, repo_root: Path, ontology: DeclaresElementKinds, *, taking_over: bool = True,
+) -> tuple[Layout, Layout]:
     """The layout *parsed* stores (empty where none), and the one a change to it applies to: the stored
-    one, or — where it stores none and the change states geometry (*taking_over*) — its first layout.
+    one, or — where it stores none and the change states geometry (*taking_over*) — its first layout
+    (`first_layout_of`: PlantUML's picture, as drawn). Asked here, for every writer of a layout, rather than
+    handed in by each transport.
 
     Refuses, as `MalformedLayout`, a stored block that cannot be read: a write must not build on it.
     """
     raw = parsed.frontmatter.get(LAYOUT_KEY)
     stored = read_layout(raw) if isinstance(raw, Mapping) and raw else Layout()
     if stored.states_nothing() and taking_over:
-        return stored, first_layout(parsed.puml_body, parsed.frontmatter)
+        return stored, first_layout_of(parsed.puml_body, parsed.frontmatter, repo_root, ontology)
     return stored, stored
 
 
@@ -111,7 +128,7 @@ def patch_diagram_layout(
     assert_write_root: Callable[[Path], None],
     artifact_id: str,
     patch: Mapping[str, object],
-    first_layout: FirstLayout,
+    ontology: DeclaresElementKinds,
     dry_run: bool,
 ) -> LayoutPatchResult:
     """Apply *patch* to *artifact_id*'s layout and write it.
@@ -119,7 +136,7 @@ def patch_diagram_layout(
     Raises ValueError for a refused patch.
     """
     parsed = stored_diagram(repo_root, verifier, artifact_id)
-    stored, base = arranged_by(parsed, first_layout)
+    stored, base = arranged_by(parsed, repo_root, ontology)
     block = layout_as_written(patched(base, read_layout_patch(patch), stored=stored))
     write = edit_diagram(
         assert_write_root=assert_write_root, repo_root=repo_root, verifier=verifier,

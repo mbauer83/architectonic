@@ -94,14 +94,14 @@ class TestPendingDiscard:
         """Ref still present after a failed deletion: report, no claimed withdrawal."""
         _, enterprise, origin = pair
         branch = _submit(enterprise)
-        real_run = enterprise_branch_lifecycle.run_repo_git
+        real_push = enterprise_branch_lifecycle.push_to_origin
 
         def failing_delete(repo: Path, *args: str, **kwargs: object):
-            if args[:3] == ("push", "origin", "--delete"):
+            if args[:2] == ("origin", "--delete"):
                 return (1, "", "injected remote failure")
-            return real_run(repo, *args, **kwargs)
+            return real_push(repo, *args, **kwargs)
 
-        monkeypatch.setattr(enterprise_branch_lifecycle, "run_repo_git", failing_delete)
+        monkeypatch.setattr(enterprise_branch_lifecycle, "push_to_origin", failing_delete)
         with pytest.raises(RuntimeError, match="delete remote branch"):
             abandon_enterprise_branch(enterprise)
         assert branch in _remote_heads(origin)

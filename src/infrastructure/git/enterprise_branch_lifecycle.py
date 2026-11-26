@@ -14,7 +14,7 @@ from pathlib import Path
 
 from src.domain.clock import utc_now_iso
 from src.infrastructure.git import enterprise_sync_state
-from src.infrastructure.git._git_command import PUSH_TIMEOUT, refuse_for_missing_credentials, run_repo_git
+from src.infrastructure.git._git_command import push_to_origin, run_repo_git
 from src.infrastructure.git.git_repository_state import (
     current_branch,
     current_commit,
@@ -108,9 +108,7 @@ def _drop_remote_ref(enterprise_root: Path, branch: str) -> None:
     """
     if not remote_ref_exists(enterprise_root, branch):
         return
-    rc, _, stderr = run_repo_git(enterprise_root, "push", "origin", "--delete", branch, timeout=PUSH_TIMEOUT)
-    if rc != 0:
-        refuse_for_missing_credentials(enterprise_root, ("push",), stderr)
+    rc, _, stderr = push_to_origin(enterprise_root, "origin", "--delete", branch)
     if rc != 0 and remote_ref_exists(enterprise_root, branch):
         raise RuntimeError(f"Failed to delete remote branch '{branch}': {stderr}")
 
@@ -231,9 +229,8 @@ def push_enterprise_branch(enterprise_root: Path) -> str:
     """
     state = enterprise_sync_state.load(enterprise_root)
     branch = submission_preflight(enterprise_root)
-    rc, _, stderr = run_repo_git(enterprise_root, "push", "-u", "origin", branch, timeout=PUSH_TIMEOUT)
+    rc, _, stderr = push_to_origin(enterprise_root, "-u", "origin", branch)
     if rc != 0:
-        refuse_for_missing_credentials(enterprise_root, ("push",), stderr)
         raise RuntimeError(f"Failed to push enterprise branch '{branch}': {stderr}")
     commit = current_commit(enterprise_root) or ""
     enterprise_sync_state.replace_lifecycle(

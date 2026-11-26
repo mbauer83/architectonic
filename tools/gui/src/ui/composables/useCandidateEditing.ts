@@ -17,7 +17,7 @@ import { ref, watch, type Ref } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import { stableEntityId } from '../../domain/artifactId'
-import { chosenIds, commandsOf, editsOf, operationsOf } from '../../domain/candidates/candidateCanvas'
+import { commandsOf, editsOf, operationsOf } from '../../domain/candidates/candidateCanvas'
 import type { Point } from '../../domain/layout/geometry'
 import type { ScopedEntity } from '../../domain/schemas/candidates'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
@@ -114,7 +114,7 @@ export function useCandidateEditing(
       const starts = membership(null)?.entity_ids ?? []
       const referenced = undrawn(held.scope, starts, composed.view.entities)
       const drawn = [...starts, ...referenced.keys()]
-      const commands = commandsOf(operationsOf(read.record), chosenIds(composed.view), drawn)
+      const commands = commandsOf(operationsOf(read.record), drawn)
       const opened = await editing.open(commands, referenced)
       remember()
       return opened

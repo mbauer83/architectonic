@@ -29,9 +29,8 @@ from dataclasses import dataclass, field
 
 from src.application.modeling.diagram_identities import alias_by_instance, drawn_relation_ends, strings_of
 from src.application.repository_upgrade.ports import RepoUpgradeView, RepoUpgradeWriter
-from src.application.repository_upgrade.steps._diagram_files import diagram_frontmatter
+from src.application.repository_upgrade.steps._diagram_files import diagram_files, diagram_frontmatter
 from src.application.repository_upgrade.steps._frontmatter_blocks import with_block
-from src.application.repository_upgrade.steps._frontmatter_scan import list_frontmatter_candidate_files
 from src.domain.artifact_id import stable_id
 from src.domain.diagrams.authored_groupings import GROUPING_ID_KEY, walk_groupings, with_grouping_ids
 from src.domain.diagrams.relation_key import alias_pair_of
@@ -93,10 +92,8 @@ class DiagramIdentityKeysStep:
 
     def detect(self, view: RepoUpgradeView) -> list[UpgradeFinding]:
         findings: list[UpgradeFinding] = []
-        for rel in list_frontmatter_candidate_files(view):
-            frontmatter = diagram_frontmatter(view.read_text(rel))
-            if frontmatter is None:
-                continue
+        for diagram in diagram_files(view):
+            rel, frontmatter = diagram.location, diagram.frontmatter
             if count := _unidentified(frontmatter):
                 findings.append(UpgradeFinding(
                     step_id=self.id, finding_id=f"grouping-without-id:{rel}", location=rel,

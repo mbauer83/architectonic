@@ -170,26 +170,29 @@ interface EditedDiagram {
   readonly extra?: Readonly<Record<string, unknown>>
 }
 
-/** An ArchiMate diagram of this engagement: one the canvas can arrange, once its body is the generator's. */
-const isOwnArchimate = (detail: EditedDiagram | null): detail is EditedDiagram =>
-  detail !== null && detail.diagram_type.startsWith('archimate') && !detail.is_global
+/**
+ * A diagram of this engagement whose type is arranged on the canvas (*arranges*, the catalogue's
+ * `arranges_on_canvas` for its type): one the canvas can arrange, once its body is the generator's.
+ */
+const isOwnArranged = (detail: EditedDiagram | null, arranges: boolean): detail is EditedDiagram =>
+  detail !== null && arranges && !detail.is_global
 
 const isWrittenByHand = (detail: EditedDiagram): boolean => detail.extra?.['manual-layout'] === true
 
 /**
- * Whether a diagram is edited on its canvas, on its own page: an ArchiMate diagram drawn from the
- * model (not one whose hand-written body is kept verbatim), in this engagement. Every other diagram
- * keeps its editor's own page until its sprint.
+ * Whether a diagram is edited on its canvas, on its own page: one of a type the canvas arranges (*arranges*),
+ * drawn from the model (not one whose hand-written body is kept verbatim), in this engagement. Every other
+ * diagram keeps its editor's own page.
  */
-export const editsOnCanvas = (detail: EditedDiagram | null): boolean =>
-  isOwnArchimate(detail) && !isWrittenByHand(detail)
+export const editsOnCanvas = (detail: EditedDiagram | null, arranges: boolean): boolean =>
+  isOwnArranged(detail, arranges) && !isWrittenByHand(detail)
 
 /**
  * Whether the page offers to give a diagram's hand-written body up for a generated one, so it can be
  * arranged on its canvas (A-02.42): the same diagram, but written by hand.
  */
-export const offersAutomaticLayout = (detail: EditedDiagram | null): boolean =>
-  isOwnArchimate(detail) && isWrittenByHand(detail)
+export const offersAutomaticLayout = (detail: EditedDiagram | null, arranges: boolean): boolean =>
+  isOwnArranged(detail, arranges) && isWrittenByHand(detail)
 
 /** What a diagram draws, as its read states it: what removing from it writes back, less the removed. */
 export const editRouteFor = <T>(

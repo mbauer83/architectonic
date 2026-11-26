@@ -5,7 +5,7 @@ from pathlib import Path
 from src.application.global_reference_endpoints import GLOBAL_REFERENCE_SOURCE_ERROR, effective_endpoint
 from src.application.modeling.artifact_write import format_outgoing_markdown
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
-from src.domain.artifact_id import stable_id
+from src.domain.artifact_id import connection_id, stable_id
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName
 from src.domain.repository.connection_declaration import (
     ConnectionDeclaration,
@@ -228,7 +228,7 @@ def _write_and_verify(
     write_atomic(outgoing_path, content)
 
     res = verifier.verify_outgoing_file(outgoing_path)
-    conn_id = f"{stable_id(source_entity)}---{stable_id(target_entity)}@@{connection_type}"
+    conn_id = connection_id(stable_id(source_entity), stable_id(target_entity), connection_type)
 
     if not res.valid:
         _rollback(outgoing_path, prev)
@@ -320,7 +320,7 @@ def add_connection(
 
     last = last_updated or modification_stamp()
     outgoing_path = _resolve_outgoing_path(registry, source_entity, dry_run=dry_run, extra_known_ids=extra_known_ids)
-    conn_id = f"{stable_id(source_entity)}---{stable_id(target_entity)}@@{connection_type}"
+    conn_id = connection_id(stable_id(source_entity), stable_id(target_entity), connection_type)
 
     content = _build_content(
         outgoing_path,

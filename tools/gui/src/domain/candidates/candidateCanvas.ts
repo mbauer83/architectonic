@@ -5,7 +5,6 @@
  * (`POST /api/change-sets/{id}/operations`). Nothing here reads or spells a base or an alias.
  */
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
-import type { ScopedEntity } from '../schemas/candidates'
 import { connectionId, connectionParts, isEntityId, stableEntityId } from '../artifactId'
 
 /** An edit as the candidate records it: what is wanted, never what it replaces. */
@@ -72,13 +71,6 @@ export const operationsOf = (record: Readonly<Record<string, unknown>>): readonl
   return Array.isArray(operations) ? operations.filter(isFields) : []
 }
 
-/**
- * The ids chosen for what a candidate's stack creates, by the reference its composed view names each
- * with. The server spells the reference; this only looks it up.
- */
-export const chosenIds = (view: { readonly entities: readonly ScopedEntity[] }): ReadonlyMap<string, string> =>
-  new Map(view.entities.flatMap((one) => (one.artifact_id ? [[one.id, one.artifact_id] as const] : [])))
-
 /** A relation as a candidate states it: its ends as an operation or its composed view names them. */
 export interface StatedRelation {
   readonly source_entity: string
@@ -91,17 +83,14 @@ export interface StatedRelation {
 export type DrawnEnd = (reference: string) => string | undefined
 
 /**
- * How a picture drawing *drawn* names the ends of a candidate's relations. A candidate names what its stack
- * creates by a reference (*chosen*, `chosenIds`, resolves it to the id chosen for it) and a model element by
- * whatever id its operation was given, often the short one; the composer attaches a relation only to an end
- * spelled as the picture draws it, which is the full id. An end the picture does not draw has no name.
+ * How a picture drawing *drawn* names the ends of a candidate's relations. A candidate's answers name every
+ * element by its id (what its stack creates, by the id its create chose), often in the short form; the
+ * composer attaches a relation only to an end spelled as the picture draws it, which is the full id. An end
+ * the picture does not draw has no name.
  */
-export const drawnEnds = (drawn: readonly string[], chosen: ReadonlyMap<string, string>): DrawnEnd => {
+export const drawnEnds = (drawn: readonly string[]): DrawnEnd => {
   const ends = new Map(drawn.map((id) => [stableEntityId(id), id] as const))
-  return (reference) => {
-    const id = chosen.get(reference) ?? reference
-    return isEntityId(id) ? ends.get(stableEntityId(id)) : undefined
-  }
+  return (reference) => (isEntityId(reference) ? ends.get(stableEntityId(reference)) : undefined)
 }
 
 /**
@@ -133,18 +122,16 @@ const statedRelation = (operation: Operation): StatedRelation | null => (operati
 /**
  * The commands that draw a candidate's own operations on its canvas when it is opened over a picture drawing
  * *drawn*: what it creates (by the id chosen for it), what it renames, and the relations it adds, each end
- * named as the canvas draws it (`drawnEnds`, with *chosen* the composed view's `chosenIds`).
+ * named as the canvas draws it (`drawnEnds`).
  */
-export const commandsOf = (
-  operations: readonly Operation[], chosen: ReadonlyMap<string, string>, drawn: readonly string[],
-): readonly CanvasCommand[] => {
+export const commandsOf = (operations: readonly Operation[], drawn: readonly string[]): readonly CanvasCommand[] => {
   const creates = operations.flatMap((operation) => (
     operation.op === 'create_entity' && typeof operation.artifact_id === 'string'
       ? [creationCommand(operation.artifact_id, fieldsOf(operation))] : []))
   const renames = operations.flatMap((operation): CanvasCommand[] => (
     operation.op === 'edit_entity' && operation.field === 'name' && typeof operation.artifact_id === 'string'
       ? [{ op: 'model.element.rename', artifact_id: operation.artifact_id, name: text(operation.value) }] : []))
-  const drawnAs = drawnEnds([...drawn, ...creates.map((one) => one.artifact_id)], chosen)
+  const drawnAs = drawnEnds([...drawn, ...creates.map((one) => one.artifact_id)])
   const relations = operations.flatMap((operation) => {
     const relation = statedRelation(operation)
     const command = relation && relationCommand(relation, drawnAs)

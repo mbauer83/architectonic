@@ -45,7 +45,8 @@ from src.domain.submission_phase import (
     SubmissionPhase,
 )
 from src.infrastructure.git import enterprise_sync_state
-from src.infrastructure.git._git_command import PUSH_TIMEOUT, refuse_for_missing_credentials, run_repo_git
+from src.infrastructure.git._git_command import push_to_origin
+from src.infrastructure.git.credential_refusal import GitCredentialsRequired
 from src.infrastructure.git.enterprise_branch_lifecycle import submission_preflight
 from src.infrastructure.git.git_repository_state import (
     current_commit,
@@ -108,11 +109,8 @@ def publish_submission(enterprise_root: Path, prepared: PreparedSubmission) -> S
 
     if pushed_now:
         _refuse_a_moved_branch(enterprise_root, published, intent)
-        rc, _, stderr = run_repo_git(
-            enterprise_root, "push", "-u", "origin", intent.branch, timeout=PUSH_TIMEOUT
-        )
+        rc, _, stderr = push_to_origin(enterprise_root, "-u", "origin", intent.branch)
         if rc != 0:
-            refuse_for_missing_credentials(enterprise_root, ("push",), stderr)
             raise RuntimeError(f"Failed to push enterprise branch '{intent.branch}': {stderr}")
 
     confirmed = remote_ref_commit(enterprise_root, intent.branch)
@@ -229,7 +227,7 @@ def _resolve_prepared(enterprise_root: Path, prepared: PreparedSubmission) -> Re
     intent = prepared.intent
     try:
         published = remote_ref_commit(enterprise_root, intent.branch)
-    except RuntimeError as unreachable:
+    except (RuntimeError, GitCredentialsRequired) as unreachable:
         return Reconciliation(
             prepared,
             f"cannot reach the remote to resolve the submission on '{intent.branch}': {unreachable}",
