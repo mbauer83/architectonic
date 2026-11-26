@@ -11,6 +11,7 @@ from collections.abc import Callable
 from fnmatch import fnmatch
 from pathlib import Path
 
+from src.application.plantuml_pictures import DRAWN, picture_key
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.infrastructure.diagram_type_registry import get_diagram_type
@@ -147,6 +148,32 @@ def render_puml_bytes(
         return None, _MEDIA_TYPES["png"], [f"PNG render failed: {exc}"]
 
 
+def _render_settings(fmt: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """The PlantUML arguments and JVM settings a render in *fmt* is drawn with."""
+    from src.config.settings import plantuml_limit_size, render_dpi  # noqa: PLC0415
+
+    return (
+        (f"-t{fmt}", *([f"-Sdpi={render_dpi()}"] if fmt == "png" else [])),
+        (f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
+    )
+
+
+def plantuml_picture_key(render_body: str, fmt: str) -> str | None:
+    """What decides the picture PlantUML draws of a prepared body in *fmt* (`plantuml_pictures`): every
+    render of a prepared body keeps and finds its picture by this, so one drawing serves them all."""
+    from src.application.verification.artifact_verifier_syntax import (  # noqa: PLC0415
+        find_graphviz_dot,
+        find_plantuml_jar,
+        resolve_java_executable,
+    )
+
+    settings, system_properties = _render_settings(fmt)
+    return picture_key(
+        render_body, *settings, *system_properties, jar=find_plantuml_jar(), dot=find_graphviz_dot(),
+        java=resolve_java_executable(),
+    )
+
+
 def _drawn_by_plantuml(render_body: str, fmt: str) -> tuple[bytes | None, str, list[str]]:
     """What PlantUML draws for a prepared body, in *fmt*, with its media type and any warnings."""
     from src.application.verification.artifact_verifier_syntax import (  # noqa: PLC0415
@@ -154,18 +181,20 @@ def _drawn_by_plantuml(render_body: str, fmt: str) -> tuple[bytes | None, str, l
         find_plantuml_jar,
         plantuml_command,
     )
-    from src.config.settings import plantuml_limit_size, render_dpi  # noqa: PLC0415
 
     jar = find_plantuml_jar()
     if jar is None:
         return None, _MEDIA_TYPES[fmt], ["plantuml.jar not found; render skipped"]
+    dot = find_graphviz_dot()
+    settings, system_properties = _render_settings(fmt)
+    key = plantuml_picture_key(render_body, fmt)
+    if (drawn := DRAWN.recall(key)) is not None:
+        return drawn, _MEDIA_TYPES[fmt], []
     try:
         with plantuml_input(render_body) as scratch, tempfile.TemporaryDirectory() as out_dir:
-            env = {**os.environ, "GRAPHVIZ_DOT": str(dot)} if (dot := find_graphviz_dot()) else None
-            arguments = [f"-t{fmt}", *([f"-Sdpi={render_dpi()}"] if fmt == "png" else []), "-o", out_dir]
+            env = {**os.environ, "GRAPHVIZ_DOT": str(dot)} if dot else None
             cmd = plantuml_command(
-                jar.resolve(), *arguments, scratch.name,
-                system_properties=(f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
+                jar.resolve(), *settings, "-o", out_dir, scratch.name, system_properties=system_properties,
             )
             proc = subprocess.run(
                 cmd, cwd=str(scratch.parent), capture_output=True, text=True, timeout=60, env=env
@@ -175,7 +204,9 @@ def _drawn_by_plantuml(render_body: str, fmt: str) -> tuple[bytes | None, str, l
             outputs = list(Path(out_dir).glob(f"*.{fmt}"))
             if not outputs:
                 return None, _MEDIA_TYPES[fmt], [f"PlantUML produced no {fmt.upper()} output"]
-            return outputs[0].read_bytes(), _MEDIA_TYPES[fmt], []
+            drawn = outputs[0].read_bytes()
+            DRAWN.keep(key, drawn)
+            return drawn, _MEDIA_TYPES[fmt], []
     except (OSError, subprocess.TimeoutExpired) as exc:
         return None, _MEDIA_TYPES[fmt], [f"Render error: {exc}"]
 

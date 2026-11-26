@@ -6,6 +6,7 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 
+from src.application.plantuml_pictures import DRAWN, picture_key
 from src.application.puml_directive_policy import find_unsafe_puml_directives
 from src.application.verification._verifier_rules_rendered_picture import (
     PICTURE_BESIDE_ITS_SOURCE,
@@ -192,6 +193,29 @@ def body_reaches_outside(path: Path, loc: str) -> Issue | None:
     )
 
 
+def _drawn_key(path: Path, jar: Path, dot: Path | None) -> str | None:
+    """What decides the picture the syntax check draws of *path* (`plantuml_pictures`): the diagram as
+    PlantUML reads it, from its first `@start` line on — the frontmatter above it is read by nobody. Not
+    where it is: a body that names a file is never kept, and one that reaches outside is refused before
+    it is drawn (`body_reaches_outside`), so nothing in a kept body is read relative to the file. None
+    where it cannot be read or has no diagram in it."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    start = re.search(r"^[ \t]*@start", text, re.MULTILINE)
+    if start is None:
+        return None
+    return picture_key(text[start.start():], "verify", "-tsvg", jar=jar, dot=dot, java=resolve_java_executable())
+
+
+def _keep_the_one_picture(directory: Path, key: str | None) -> None:
+    """Keep the picture a run drew into *directory* where it drew exactly one, as the checks read it."""
+    pictures = sorted(directory.glob("*.svg"))
+    if len(pictures) == 1:
+        DRAWN.keep(key, pictures[0].read_bytes())
+
+
 def check_puml_syntax(
     path: Path, loc: str, *, picture_checks: RenderedPictureChecks | None = None
 ) -> list[Issue]:
@@ -217,6 +241,9 @@ def check_puml_syntax(
     if dot is not None:
         env["GRAPHVIZ_DOT"] = str(dot)
 
+    key = _drawn_key(path, jar, dot)
+    if (drawn := DRAWN.recall(key)) is not None:
+        return [] if picture_checks is None else picture_checks.check(drawn.decode("utf-8"), loc)
     try:
         with tempfile.TemporaryDirectory() as tmp_out:
             proc = subprocess.run(
@@ -226,6 +253,8 @@ def check_puml_syntax(
                 timeout=30,
                 env=env,
             )
+            if proc.returncode == 0:
+                _keep_the_one_picture(Path(tmp_out), key)
             if proc.returncode == 0 and picture_checks is not None:
                 return issues_for_picture_in(Path(tmp_out), picture_checks, loc)
     except FileNotFoundError:

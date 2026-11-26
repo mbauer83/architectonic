@@ -4,6 +4,7 @@ import os
 import subprocess
 from pathlib import Path
 
+from src.application.plantuml_pictures import DRAWN
 from src.application.puml_directive_policy import find_unsafe_puml_directives
 from src.application.repo_path_helpers import rendered_dir_for_diagram, repo_root_for_diagram_path
 from src.application.verification.artifact_verifier_syntax import (
@@ -24,6 +25,7 @@ from src.infrastructure.rendering.laid_out_rendering import (
 )
 from src.infrastructure.rendering.native_svg import render_native_svg
 from src.infrastructure.rendering.plantuml_scratch import plantuml_input
+from src.infrastructure.rendering.puml_runtime import plantuml_picture_key
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter, strip_startuml_name
 from src.infrastructure.rendering.svg_to_png import RasteriseFailedError
 
@@ -175,7 +177,12 @@ def _svg_is_error_image(svg_path: Path) -> bool:
         head = svg_path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return False
-    return any(marker in head for marker in _ERROR_IMAGE_MARKERS)
+    return _is_error_picture(head)
+
+
+def _is_error_picture(svg: str) -> bool:
+    """True when the text of a rendered SVG is PlantUML's error picture (`_svg_is_error_image`)."""
+    return any(marker in svg for marker in _ERROR_IMAGE_MARKERS)
 
 
 def _render_diagram_png(
@@ -322,6 +329,16 @@ def _render_diagram_svg(
         warnings.append("plantuml.jar not found; SVG render skipped")
         return None
 
+    # The picture of this very body drawn before — when the editor read it, or by the render before this
+    # one — is the picture PlantUML would draw now (`plantuml_pictures`).
+    key = plantuml_picture_key(puml_body_for_render, "svg")
+    if (drawn := DRAWN.recall(key)) is not None and not _is_error_picture(text := drawn.decode("utf-8")):
+        final = rendered_dir / f"{puml_path.stem}.svg"
+        svg, composing = drawn_from_layout(text, _laid_out(puml_path))
+        warnings.extend(composing)
+        final.write_text(svg, encoding="utf-8")
+        return final
+
     with plantuml_input(puml_body_for_render) as tmp_path:
         try:
             env = None
@@ -355,6 +372,7 @@ def _render_diagram_svg(
                 return None
             if rendered.exists():
                 final = rendered_dir / f"{puml_path.stem}.svg"
+                DRAWN.keep(key, rendered.read_bytes())
                 svg, composing = drawn_from_layout(rendered.read_text(encoding="utf-8"), _laid_out(puml_path))
                 warnings.extend(composing)
                 final.write_text(svg, encoding="utf-8")
