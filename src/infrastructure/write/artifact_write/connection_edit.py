@@ -12,7 +12,14 @@ from src.domain.ontology_representation.specialization_values import (
 
 from .boundary import assert_engagement_write_root, modification_stamp
 from .coerce import as_optional_str_list
-from .connection import _assert_pair_writable, _resolve_outgoing_path, _rollback, verification_to_conn_dict
+from .connection import (
+    _assert_pair_writable,
+    _canonical_entity_id,
+    _resolve_outgoing_path,
+    _rollback,
+    verification_to_conn_dict,
+)
+from .parse_existing import ParsedOutgoing
 from .types import WriteResult
 
 _UNSET = object()
@@ -115,13 +122,7 @@ def edit_connection(
     # onto a quarantined pair must be refused just like an add.
     _assert_pair_writable(repo_root, connection_type, effective)
 
-    content = format_outgoing_markdown(
-        source_entity=source_entity,
-        version=str(parsed.frontmatter.get("version", "0.1.0")),
-        status=str(parsed.frontmatter.get("status", "draft")),
-        last_updated=modification_stamp(),
-        connections=parsed.connections,
-    )
+    content = _rewritten_outgoing(registry, source_entity, parsed, parsed.connections)
     conn_id = f"{connection_type} -> {target_entity}"
 
     if dry_run:
@@ -141,6 +142,25 @@ def edit_connection(
         conn_id,
         clear_repo_caches,
         repo_root,
+    )
+
+
+def _rewritten_outgoing(
+    registry: ArtifactRegistry, source_entity: str, parsed: ParsedOutgoing, connections: list[dict[str, object]]
+) -> str:
+    """The connection file re-formatted to hold *connections*, its source spelled as the model spells it.
+
+    Every edit rewrites the whole file, `source-entity` included, so the spelling a caller addressed the
+    source by must not reach it: the REST surface addresses a connection by the short form it reads off
+    the connection id, and the file's schema requires the long one. Spelling it here, where the file is
+    composed, covers each edit that rewrites one — whichever surface asked for it.
+    """
+    return format_outgoing_markdown(
+        source_entity=_canonical_entity_id(registry, source_entity),
+        version=str(parsed.frontmatter.get("version", "0.1.0")),
+        status=str(parsed.frontmatter.get("status", "draft")),
+        last_updated=modification_stamp(),
+        connections=connections,
     )
 
 
@@ -246,13 +266,7 @@ def remove_connection(
                 warnings=[],
                 verification=None,
             )
-        content = format_outgoing_markdown(
-            source_entity=source_entity,
-            version=str(parsed.frontmatter.get("version", "0.1.0")),
-            status=str(parsed.frontmatter.get("status", "draft")),
-            last_updated=modification_stamp(),
-            connections=remaining,
-        )
+        content = _rewritten_outgoing(registry, source_entity, parsed, remaining)
         return WriteResult(
             wrote=False,
             path=outgoing_path,
@@ -281,13 +295,7 @@ def remove_connection(
             },
         )
 
-    content = format_outgoing_markdown(
-        source_entity=source_entity,
-        version=str(parsed.frontmatter.get("version", "0.1.0")),
-        status=str(parsed.frontmatter.get("status", "draft")),
-        last_updated=modification_stamp(),
-        connections=remaining,
-    )
+    content = _rewritten_outgoing(registry, source_entity, parsed, remaining)
 
     return _write_verify_clear(
         outgoing_path,
@@ -347,13 +355,7 @@ def edit_connection_associations(
     if not found:
         raise ValueError(f"Connection '{connection_type} -> {target_entity}' not found in {outgoing_path.name}")
 
-    content = format_outgoing_markdown(
-        source_entity=source_entity,
-        version=str(parsed.frontmatter.get("version", "0.1.0")),
-        status=str(parsed.frontmatter.get("status", "draft")),
-        last_updated=modification_stamp(),
-        connections=parsed.connections,
-    )
+    content = _rewritten_outgoing(registry, source_entity, parsed, parsed.connections)
     conn_id = f"{connection_type} -> {target_entity}"
 
     if dry_run:
