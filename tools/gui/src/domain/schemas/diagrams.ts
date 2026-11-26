@@ -65,6 +65,10 @@ export const DiagramDetailSchema = Schema.Struct({
    * contributes. Absent for a kind that adds nothing. */
   type_extras: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
   viewpoint: Schema.optional(ViewpointApplicationSchema),
+  /** Why the diagram keeps a body written by hand, which a save generating its body would discard: the
+   * server's answer, `manual-layout` or what the body draws that its composition does not. Absent where the
+   * body is generated. */
+  written_by_hand: Schema.optional(Schema.String),
 })
 export type DiagramDetail = typeof DiagramDetailSchema.Type
 

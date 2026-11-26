@@ -8,7 +8,7 @@ import type { ModelService } from '../../application/ModelService'
 import type { Extent } from '../../domain/layout/geometry'
 import { moved } from '../../domain/layout/canvasArrangement'
 import { LINE_DRAWING, SHAPE_DRAWING } from '../../domain/layout/__tests__/canvasDrawingFixtures'
-import type { DiagramContext } from '../../domain'
+import { type DiagramContext, NetworkError } from '../../domain'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import type { DiagramReplaceBody } from '../../ports/diagramWriteBodies'
@@ -258,5 +258,21 @@ describe('the names a session lists', () => {
     expect(named.undoStep.value).toBe('Arranged: Ledger')
     named.remove(['A'])
     expect(named.undoStep.value).toBe('Removed from the diagram: Portal — it stays in the model')
+  })
+})
+
+describe('a save the server refuses', () => {
+  it('says why, from the error envelope, rather than showing the response body', async () => {
+    const why = "Diagram 'ARC@1.a.test' keeps a body written by hand: it draws what its composition does not generate"
+    const envelope = JSON.stringify({ detail: { code: 'validation_error', message: why, details: null } })
+    const refusing = {
+      ...service,
+      editDiagram: () => Effect.fail(new NetworkError({ status: 400, message: envelope })),
+    } as unknown as ModelService
+    const editing = overDiagram(refusing, () => MEMBERSHIP)
+    await editing.open()
+    editing.remove(['C'])
+    expect(await editing.save()).toBe(false)
+    expect(editing.error.value).toBe(why)
   })
 })

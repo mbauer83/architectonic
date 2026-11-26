@@ -310,8 +310,8 @@ def replace_diagram(
 ) -> WriteResult:
     """Replace *artifact_id* with *body*, and its model commands with it, in one write (or one dry run).
 
-    Called inside the transport's authorized write. Raises `LayoutConflict` for a stale layout entry and
-    `ValueError` for anything else the write refuses.
+    Called inside the transport's authorized write. Raises `LayoutConflict` for a stale layout entry, and
+    `ValueError` for anything else it refuses — `refuse_an_unsafe_replacement` says which are checked first.
     """
     from src.application.candidate_repository import committed_repository  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.canvas_commands import canvas_save  # noqa: PLC0415
@@ -334,6 +334,9 @@ def replace_diagram(
             committed_repo=committed_repository(repo), manual_layout=body.manual_layout,
         )
 
+    from src.infrastructure.diagram_replacement_guard import refuse_an_unsafe_replacement  # noqa: PLC0415
+
+    refuse_an_unsafe_replacement(artifact_id, body, repo=live_repo, repo_root=root, catalogs=catalogs)
     if body.commands:
         return canvas_save(body.commands, root, catalogs, body.dry_run, live_repo, save, clear_caches)
     return save(root, live_repo, live_verifier, clear_caches, body.dry_run)

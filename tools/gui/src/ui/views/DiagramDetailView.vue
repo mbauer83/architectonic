@@ -217,6 +217,15 @@ const executeDelete = () => {
         ref="editBar"
         :edit="edit"
       />
+      <p
+        v-if="editing && detail.written_by_hand"
+        class="kept-by-hand"
+        role="note"
+        data-testid="edit-body-by-hand"
+      >
+        This diagram's body is written by hand: {{ detail.written_by_hand }}. Arranging it is saved; a change to
+        what it draws is not, because saving one would replace that body.
+      </p>
 
       <DiagramC4Navigation
         v-if="c4Nav"

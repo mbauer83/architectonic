@@ -15,7 +15,7 @@ import type { DiagramDetail } from '../../../domain'
 const DETAIL = {
   artifact_id: 'ARC@1.a.goals', name: 'Goals', diagram_type: 'archimate-motivation', is_global: false,
   entity_ids_used: ['GOL@1.g'], connection_ids_used: ['GOL@1.g---OUT@2.o@@archimate-realization'],
-  extra: { 'manual-layout': true },
+  extra: { 'manual-layout': true }, written_by_hand: 'it is manual-layout',
 } as unknown as DiagramDetail
 const WRITE = { artifact_id: 'ARC@1.a.goals', path: 'x', content: null, verification: null, warnings: [] }
 const PREVIEW = { puml: '', image: 'data:image/png;base64,AA==', warnings: [], derived_entities: null }
@@ -80,6 +80,12 @@ describe('laying a hand-written diagram out automatically', () => {
     expect(host.querySelector('[role="alert"]')?.textContent).toContain('changed since this page read it')
     expect(editDiagram).not.toHaveBeenCalled()
     expect(laidOut).not.toHaveBeenCalled()
+  })
+
+  it('says why the body is written by hand', async () => {
+    mounted({})
+    await settle()
+    expect(host.querySelector('[data-testid="auto-layout-why"]')?.textContent).toContain('it is manual-layout')
   })
 
   it('says why when the write refuses, and reports nothing laid out', async () => {

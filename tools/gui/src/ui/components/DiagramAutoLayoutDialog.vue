@@ -111,6 +111,13 @@ const confirm = async () => {
         automatically, the picture is generated from what the diagram draws, and you arrange it by hand
         from there.
       </p>
+      <p
+        v-if="detail.written_by_hand"
+        class="auto__lead"
+        data-testid="auto-layout-why"
+      >
+        Written by hand because {{ detail.written_by_hand }}. Laying it out automatically does not keep that.
+      </p>
       <div class="auto__pair">
         <figure>
           <figcaption>Now, written by hand</figcaption>

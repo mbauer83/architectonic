@@ -10,7 +10,7 @@
  * kept, the same rule the server's first layout applies.
  */
 import { ref, shallowRef } from 'vue'
-import { Effect } from 'effect'
+import { Cause, Effect, Runtime } from 'effect'
 import type { ModelService } from '../../application/ModelService'
 import type { PictureContext } from '../../domain'
 import type { AuthoredGrouping } from '../../domain/authoredGrouping'
@@ -24,6 +24,7 @@ import type { Point } from '../../domain/layout/geometry'
 import { occurrenceItems } from '../../domain/diagramOccurrences'
 import type { PendingChange } from '../../domain/layout/sessionChanges'
 import { addOccurrenceFor } from '../lib/diagramOccurrences'
+import { formatEffectError } from '../lib/errors'
 import { referenceOf, useSessionChanges } from './useSessionChanges'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { membershipOf } from '../../domain/layout/diagramMembership'
@@ -192,8 +193,11 @@ export function useDiagramEditing(
       stored.value = layout
       saved.value = session.state.value
       return true
-    } catch (failure) {
-      error.value = failure instanceof Error ? failure.message : String(failure)
+    } catch (rejected) {
+      // What the save failed with, not the fiber's wrapper round it, read through the error envelope: a refusal
+      // says why (a body written by hand, a diagram changed since read) instead of showing the response body.
+      const failure = Runtime.isFiberFailure(rejected) ? Cause.squash(rejected[Runtime.FiberFailureCauseId]) : rejected
+      error.value = formatEffectError(failure)
       return false
     } finally {
       saving.value = false

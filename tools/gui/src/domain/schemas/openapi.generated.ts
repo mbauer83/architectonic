@@ -8544,6 +8544,8 @@ export interface components {
             /** Version */
             version: string;
             viewpoint?: components["schemas"]["ViewpointApplicationResponse"];
+            /** Written By Hand */
+            written_by_hand?: string;
         };
         /**
          * DiagramEntityDiscoveryResponse

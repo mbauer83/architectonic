@@ -3,7 +3,7 @@
 composition generates and drops the flag, so the diagram can be arranged on its canvas from then on.
 
 The field reached `artifact_edit_diagram` and not the replacement, so the GUI had no way to say it: the
-replacement kept the flag whatever it wrote.
+replacement kept the flag whatever it wrote. A replacement that does not give the body up is refused.
 """
 
 from __future__ import annotations
@@ -69,9 +69,18 @@ def test_manual_layout_false_replaces_the_hand_written_body_and_drops_the_flag(
     assert HAND_WRITTEN not in written
 
 
-def test_a_replacement_that_does_not_say_keeps_the_flag(model: RenderedModel, client: TestClient) -> None:
+def test_a_replacement_that_does_not_say_is_refused_and_keeps_body_and_flag(
+    model: RenderedModel, client: TestClient,
+) -> None:
+    """Without `manual_layout: false` a replacement would regenerate the hand-written body under a flag that
+    says it is kept verbatim; it is refused, naming the field that gives the body up."""
     path = Path(model.scenes["top-to-bottom"].path)
     assert _replace(client, path, manual_layout=True).status_code == 200
+    path.write_text(path.read_text(encoding="utf-8").replace("@enduml", f"{HAND_WRITTEN}\n@enduml"), encoding="utf-8")
+    before = path.read_bytes()
+
     kept = _replace(client, path)
-    assert kept.status_code == 200, kept.text
-    assert parse_frontmatter(path.read_text(encoding="utf-8")).get("manual-layout") is True
+
+    assert kept.status_code == 400, kept.text
+    assert kept.json()["detail"]["details"]["field_errors"][0]["field"] == "manual_layout"
+    assert path.read_bytes() == before

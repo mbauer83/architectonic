@@ -323,6 +323,11 @@ class DiagramDetailResponse(NullsOmitted):
     #: Frontmatter this surface does not model, returned as written.
     extra: dict[str, Any] | None = None
     viewpoint: ViewpointApplicationResponse | None = None
+    #: Why this diagram keeps a body written by hand, which a save generating its body from the composition
+    #: would discard — `manual-layout`, or what the body draws that its composition does not generate. A
+    #: replacement is refused unless it gives the body up (`manual_layout: false`). Absent where the body is
+    #: the generator's.
+    written_by_hand: str | None = None
     #: This diagram kind's own additions — a matrix's rendered body, and whatever a future kind
     #: contributes. Absent for a kind that adds nothing.
     type_extras: dict[str, Any] | None = None

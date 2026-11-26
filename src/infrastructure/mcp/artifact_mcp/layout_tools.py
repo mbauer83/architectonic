@@ -66,7 +66,8 @@ REPLACE_DIAGRAM_DESCRIPTION = (
     "naming what the diagram no longer holds are dropped and new members placed), and model `commands` "
     "(model.element.create / rename / edit / delete, model.relation.create / edit; an edit changes only the "
     "fields it states), all in one write or none. replacement.dry_run defaults to true. A layout_patch entry "
-    "whose based_on no longer holds refuses the whole save."
+    "whose based_on no longer holds refuses the whole save. A body written by hand is not replaced unless "
+    "manual_layout is false."
 )
 
 

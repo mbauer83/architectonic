@@ -182,7 +182,9 @@ const isWrittenByHand = (detail: EditedDiagram): boolean => detail.extra?.['manu
 /**
  * Whether a diagram is edited on its canvas, on its own page: one of a type the canvas arranges (*arranges*),
  * drawn from the model (not one whose hand-written body is kept verbatim), in this engagement. Every other
- * diagram keeps its editor's own page.
+ * diagram keeps its editor's own page. A body the server reads as written by hand without the flag
+ * (`written_by_hand`) is still arranged here: arranging keeps the body, and the save refuses a change to
+ * what it draws, which the page says while editing.
  */
 export const editsOnCanvas = (detail: EditedDiagram | null, arranges: boolean): boolean =>
   isOwnArranged(detail, arranges) && !isWrittenByHand(detail)
