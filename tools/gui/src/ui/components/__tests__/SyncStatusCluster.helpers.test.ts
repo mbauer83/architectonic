@@ -69,7 +69,8 @@ describe('§-free lifecycle rows', () => {
   it('synced clean offers Promote with the workflow hint', () => {
     const model = reduceCluster(input({}))
     expect(model.actions).toEqual(['promote'])
-    expect(model.presentation).toContain('up to date')
+    expect(model.presentation).toBe('Enterprise up to date')
+    expect(model.detail).toContain('Promote engagement work')
   })
 
   it('synced dirty offers Save', () => {
@@ -90,7 +91,7 @@ describe('§-free lifecycle rows', () => {
     const model = reduceCluster(
       input({ enterprise: enterprise({ status: 'accumulating', has_uncommitted_changes: true, commits_ahead: 1 }) }),
     )
-    expect(model.presentation).toBe('Changes in progress — unsaved')
+    expect(model.presentation).toBe('Unsaved enterprise changes')
     expect(model.actions).toEqual(['enterprise_save'])
   })
 
@@ -124,7 +125,7 @@ describe('precedence and overlays', () => {
         enterprise: enterprise({ status: 'accumulating', has_uncommitted_changes: true, commits_behind: 3, commits_ahead: 1 }),
       }),
     )
-    expect(model.presentation).toBe('Changes in progress — unsaved')
+    expect(model.presentation).toBe('Unsaved enterprise changes')
     expect(model.behindWarning).toContain('3 commit(s) behind')
   })
 
@@ -150,7 +151,8 @@ describe('precedence and overlays', () => {
         }),
       }),
     )
-    expect(model.presentation).toContain('origin unreachable')
+    expect(model.presentation).toBe('Sync problem')
+    expect(model.detail).toContain('origin unreachable')
     expect(model.actions).toEqual(['enterprise_save'])
   })
 
@@ -181,5 +183,31 @@ describe('precedence and overlays', () => {
       reduceCluster(input({ engagementDirty: true, authority: openAuthority(['engagement_authoring']) }))
         .engagementSaveAvailable,
     ).toBe(false)
+  })
+})
+
+describe('the pill stays whole', () => {
+  // The pill is capped at 320px and ellipsises; a status sentence cut off mid-word read as broken. The
+  // pill carries a few words and the sentence goes to `detail`, shown as its tooltip and atop the menu.
+  const statuses: EnterpriseSyncStatus['status'][] = ['synced', 'accumulating', 'pending']
+  it('every presentation is a short status, whatever the state', () => {
+    const models = [
+      reduceCluster(input({ authorityKnown: false })),
+      reduceCluster(input({ enterprise: null })),
+      ...(['read_only', 'sync_in_progress'] as const).map((kind) =>
+        reduceCluster(input({ authority: { ...openAuthority(), block_kind: kind } }))),
+      ...statuses.flatMap((status) => [true, false].flatMap((dirty) => [0, 2].map((ahead) =>
+        reduceCluster(input({ enterprise: enterprise({ status, has_uncommitted_changes: dirty, commits_ahead: ahead }) }))))),
+      reduceCluster(input({
+        authority: { ...openAuthority(), block_kind: 'sync_health' },
+        enterprise: enterprise({
+          health: { reason: 'fetch_failed', message: 'origin unreachable and a very long reason follows', observed_at: 'x' },
+        }),
+      })),
+    ]
+    for (const model of models) {
+      expect(model.presentation.length, model.presentation).toBeLessThanOrEqual(28)
+      expect(model.presentation, model.presentation).not.toMatch(/ — /)
+    }
   })
 })
