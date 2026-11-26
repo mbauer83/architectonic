@@ -2,11 +2,11 @@
  * View mode and edit mode on a diagram's own page (D15): entering, the keys, and the ways out.
  *
  * - **Escape steps outward** (owner, F1), wherever focus is on the page: an open list of changes, then
- *   the leave choice, then the selection, then edit mode itself — which leaves at once when nothing
+ *   an open question, then the selection, then edit mode itself — which leaves at once when nothing
  *   is unsaved, and otherwise asks, in the edit bar, *Save and exit*, *Discard and exit* or *Keep
  *   editing* (Q2). A text field keeps its own Escape.
- * - **Done** is the same last step.
- * - **Save** is one press and stays in edit mode (Q4); **Discard** returns to the last save.
+ * - **Done** is the same last step; opening another page asks the same question (`useEditSessionExits`).
+ * - **Save** is one press and stays in edit mode (Q4); **Discard** asks, then returns to the last save.
  * - **A deliberate pan** — the middle button, Alt+drag, or a drag with Space held — moves the window
  *   (`isDeliberatePan`); every other press is the canvas's. The wheel zooms as in view mode.
  * - The first move of an automatically laid-out picture takes it over (D16): said once, in a toast.
@@ -34,6 +34,7 @@ import { type CanvasCommandName, DIAGRAM_OPERATIONS } from '../../domain/canvasC
 import { useCommandPermission } from './usePermissions'
 import { diagramPicture } from './pictureSource'
 import { isDeliberatePan } from './usePanGesture'
+import { useEditSessionExits } from './useEditSessionExits'
 
 /** How far the arrows nudge a picked label: two pixels, or one with Shift (02·5). */
 const LABEL_STEP = 2
@@ -89,7 +90,6 @@ export function useDiagramEditMode(
     onMembershipSaved: onLeft, lens: () => parts.lens?.(), context: parts.context,
   })
   const active = ref(false)
-  const leaving = ref(false)
   const spaceHeld = ref(false)
   /** Whether the layout's rule breaches are marked on the canvas: off until asked for, never opened for one. */
   const checking = ref(false)
@@ -127,8 +127,15 @@ export function useDiagramEditMode(
     if (extent) parts.view.reveal(extent)
   }
 
+  const exits = useEditSessionExits({
+    unsaved: () => active.value && editing.changes.value.length > 0,
+    save: () => editing.save(),
+    discard: () => editing.discard(),
+    close: () => { active.value = false; onLeft() },
+  })
+
   const enter = async () => {
-    leaving.value = false
+    exits.forget()
     if (await editing.open()) { active.value = true; panel.opened() }
     else {
       const why = editing.error.value ?? 'its picture could not be read'
@@ -136,27 +143,11 @@ export function useDiagramEditMode(
     }
   }
 
-  const exit = () => {
-    active.value = false
-    leaving.value = false
-    onLeft()
-  }
-
-  /** Done, or Escape with nothing else to close: leave, or ask how when something is unsaved. */
-  const done = () => {
-    if (editing.changes.value.length === 0) exit()
-    else leaving.value = true
-  }
-
-  const saveAndExit = async () => { if (await editing.save()) exit() }
-  const discardAndExit = () => { editing.discard(); exit() }
-  const keepEditing = () => { leaving.value = false }
-
   const escape = () => {
-    if (parts.bar.value?.closeList()) return
-    if (leaving.value) return keepEditing()
+    if (parts.bar.value?.closeList()) return exits.keepEditing()
+    if (exits.answerEscape()) return
     if (parts.canvas.value?.hasSelection) return parts.canvas.value.clearSelection()
-    done()
+    exits.done()
   }
 
   /**
@@ -287,8 +278,8 @@ export function useDiagramEditMode(
     )
   })
 
-  // Leaving the page with the session open leaves nothing behind.
-  watch(diagramId, () => { active.value = false; leaving.value = false })
+  // Another diagram opened — asked about first, where something was unsaved — leaves nothing behind.
+  watch(diagramId, () => { active.value = false; exits.forget() })
 
   onMounted(() => {
     window.addEventListener('keydown', onKey)
@@ -300,11 +291,11 @@ export function useDiagramEditMode(
   })
 
   return {
-    editing, session, active, leaving, spaceHeld, panel, marks, checking, toggleCheck, surround,
+    editing, session, active, spaceHeld, panel, marks, checking, toggleCheck, surround,
     outlined, outline, select, escape,
     canUndo: computed(() => session.history.value.length > 0),
     canRedo: computed(() => session.future.value.length > 0),
-    enter, done, saveAndExit, discardAndExit, keepEditing, pansFrom, holdForPan, panPress,
+    ...exits, enter, pansFrom, holdForPan, panPress,
   }
 }
 

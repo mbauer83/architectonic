@@ -1,17 +1,18 @@
 <script setup lang="ts">
 /**
  * The bar over a diagram in edit mode: how it is arranged, Undo and Redo, what Save would write, and
- * Discard and Save — or, while leaving with unsaved changes, the choice of how to leave.
+ * Discard and Save — or, in their place, a question: how to leave with unsaved changes, or whether to
+ * discard them (`EditBarQuestion`).
  *
  * Display and clicks only: the edit mode (`useDiagramEditMode`) decides and wires the keys.
  */
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import type { DiagramEditMode } from '../composables/useDiagramEditMode'
 import { breachSentence, distinctBreaches } from '../../domain/layout/canvasBreaches'
 import { useEditingPreferences } from '../composables/useEditingPreferences'
-import { arrowsAcross } from '../lib/arrowsAcross'
 import { usePulse } from '../composables/usePulse'
 import DiagramChangeList from './DiagramChangeList.vue'
+import EditBarQuestion from './EditBarQuestion.vue'
 import { useCanvasBoxes } from '../composables/useCanvasBoxes'
 import { useCommandPermission } from '../composables/usePermissions'
 import { DIAGRAM_OPERATIONS } from '../../domain/canvasCommands'
@@ -24,6 +25,7 @@ const byHand = computed(() => session.value.state.value?.byHand ?? false)
 const changes = computed(() => editing.value.changes.value)
 const saving = computed(() => editing.value.saving.value)
 const leaving = computed(() => props.edit.leaving.value)
+const discarding = computed(() => props.edit.discarding.value)
 const error = computed(() => editing.value.error.value)
 const boxes = useCanvasBoxes(props.edit.editing)
 const permit = useCommandPermission(DIAGRAM_OPERATIONS)
@@ -47,7 +49,7 @@ const requestSave = (exit = false) => {
   if (confirmFirst.value) {
     confirmExit.value = exit
     listOpen.value = true
-    props.edit.keepEditing()
+    props.edit.reviewChanges()
   } else if (exit) void props.edit.saveAndExit()
   else void editing.value.save()
 }
@@ -57,9 +59,6 @@ const confirm = async () => {
   listOpen.value = Boolean(editing.value.error.value)
   confirmExit.value = false
 }
-const saveAndExit = ref<HTMLButtonElement | null>(null)
-/** The choice takes the focus on its first, safest answer, so Enter saves and Escape keeps editing. */
-watch(leaving, async (asked) => { if (asked) { await nextTick(); saveAndExit.value?.focus() } })
 
 defineExpose({
   /** Whether the list of changes is open; closing it is the first thing Escape does. */
@@ -181,37 +180,65 @@ const count = usePulse(
       class="err"
       role="alert"
     >{{ error }}</span>
-    <template v-if="leaving">
-      <span
-        class="leave"
-        role="group"
-        aria-label="Leaving edit mode"
-        data-testid="leave-choice"
-        @keydown="arrowsAcross"
+    <EditBarQuestion
+      v-if="leaving"
+      label="Leaving edit mode"
+      data-testid="leave-choice"
+    >
+      <!-- The first, safest answer takes the focus, so Enter saves and Escape keeps editing. -->
+      <strong>Discard and exit edit mode?</strong> {{ changes.length }} unsaved.
+      <button
+        type="button"
+        class="btn btn-primary btn-sm"
+        :disabled="saving"
+        data-autofocus
+        data-testid="save-and-exit"
+        @click="requestSave(true)"
       >
-        <strong>Discard and exit edit mode?</strong> {{ changes.length }} unsaved.
-        <button
-          ref="saveAndExit"
-          type="button"
-          class="btn btn-primary btn-sm"
-          :disabled="saving"
-          data-testid="save-and-exit"
-          @click="requestSave(true)"
-        >Save and exit</button>
-        <button
-          type="button"
-          class="btn btn-danger btn-sm"
-          data-testid="discard-and-exit"
-          @click="edit.discardAndExit()"
-        >Discard and exit</button>
-        <button
-          type="button"
-          class="btn btn-plain btn-sm"
-          data-testid="keep-editing"
-          @click="edit.keepEditing()"
-        >Keep editing <kbd>Esc</kbd></button>
-      </span>
-    </template>
+        Save and exit
+      </button>
+      <button
+        type="button"
+        class="btn btn-danger btn-sm"
+        data-testid="discard-and-exit"
+        @click="edit.discardAndExit()"
+      >
+        Discard and exit
+      </button>
+      <button
+        type="button"
+        class="btn btn-plain btn-sm"
+        data-testid="keep-editing"
+        @click="edit.keepEditing()"
+      >
+        Keep editing <kbd>Esc</kbd>
+      </button>
+    </EditBarQuestion>
+    <EditBarQuestion
+      v-else-if="discarding"
+      label="Discarding changes"
+      data-testid="discard-choice"
+    >
+      <!-- Cancel takes the focus, so Enter on arrival throws nothing away; Escape cancels too. -->
+      <strong>Discard {{ plural(changes.length) }}?</strong> The diagram goes back to its last save.
+      <button
+        type="button"
+        class="btn btn-plain btn-sm"
+        data-autofocus
+        data-testid="discard-cancel"
+        @click="edit.cancelDiscard()"
+      >
+        Cancel <kbd>Esc</kbd>
+      </button>
+      <button
+        type="button"
+        class="btn btn-danger btn-sm"
+        data-testid="discard-confirm"
+        @click="edit.confirmDiscard()"
+      >
+        Discard
+      </button>
+    </EditBarQuestion>
     <template v-else>
       <span
         v-if="changes.length === 0"
@@ -245,7 +272,7 @@ const count = usePulse(
         class="btn btn-plain btn-sm"
         :disabled="changes.length === 0 || saving"
         data-testid="edit-discard"
-        @click="editing.discard()"
+        @click="edit.askDiscard()"
       >
         Discard
       </button>

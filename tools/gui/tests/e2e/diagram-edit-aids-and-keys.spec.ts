@@ -63,6 +63,55 @@ test('E edits; a dragged element shows its guides, which go after the drop', asy
   await page.getByTestId('discard-and-exit').click()
 })
 
+test('in edit mode Alt+drag and the middle button pan, and move no element', async ({ page }) => {
+  await open(page)
+  await page.getByTestId('diagram-edit').click()
+  await editing(page)
+  const framing = () => page.locator('.pan-canvas').getAttribute('style')
+  const grip = page.locator('g.lab-element[data-alias="ACT_Nn7Oo7"] .lab-grip')
+  const drag = async (button: 'left' | 'middle', by: number) => {
+    const at = await grip.boundingBox()
+    await page.mouse.move(at!.x + at!.width / 2, at!.y + at!.height / 2)
+    await page.mouse.down({ button })
+    await page.mouse.move(at!.x + at!.width / 2 + by, at!.y + at!.height / 2 + by, { steps: 8 })
+    await page.mouse.up({ button })
+  }
+
+  const before = await framing()
+  await page.keyboard.down('Alt')
+  await drag('left', 60)
+  await page.keyboard.up('Alt')
+  const panned = await framing()
+  expect(panned).not.toBe(before)
+
+  await drag('middle', -40)
+  expect(await framing()).not.toBe(panned)
+  await expect(page.getByTestId('change-count')).toHaveText('No changes')
+  await page.getByRole('button', { name: /Done/ }).click()
+})
+
+test('unsaved edits are asked about before Discard and before opening another page', async ({ page }) => {
+  await open(page)
+  await page.getByTestId('diagram-edit').click()
+  await editing(page)
+  await page.locator('g.lab-element[data-alias="ACT_Nn7Oo7"] .lab-grip').click()
+  await page.keyboard.press('ArrowRight')
+  await expect(page.getByTestId('change-count')).not.toHaveText('No changes')
+
+  await page.getByTestId('edit-discard').click()
+  await expect(page.getByTestId('discard-cancel')).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(page.getByTestId('discard-choice')).toHaveCount(0)
+  await expect(page.getByTestId('change-count')).not.toHaveText('No changes')
+
+  const here = page.url()
+  await page.locator('nav[aria-label="Primary"]').getByRole('link').first().click()
+  await expect(page.getByTestId('leave-choice')).toBeVisible()
+  expect(page.url()).toBe(here)
+  await page.getByTestId('discard-and-exit').click()
+  await expect(page).not.toHaveURL(here)
+})
+
 test('Enter goes in, Tab walks the shapes with a ring, and the leave choice follows the arrows', async ({ page }) => {
   await open(page)
   await page.getByTestId('diagram-edit').click()
