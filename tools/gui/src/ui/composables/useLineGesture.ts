@@ -269,3 +269,5 @@ export function useLineGesture(
     pressLine, pressEnd, pressSegment, pressBend, pressLabel, pressNearAnEnd, doublePress, removePickedBend,
   }
 }
+
+export type LineGesture = ReturnType<typeof useLineGesture>

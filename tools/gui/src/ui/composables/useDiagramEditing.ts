@@ -374,10 +374,8 @@ export function useDiagramEditing(
     /** The boxes the diagram states, as last read or saved. */
     statedGroupings: (): readonly AuthoredGrouping[] => savedMembers.value?.authored_groupings ?? [],
     /** What the session's arranging is counted against (`referenceOf`); null before a picture is read. */
-    reference: (): Arrangement | null => {
-      const [before, now] = [saved.value, session.state.value]
-      return before && now ? referenceOf(before, now) : null
-    },
+    reference: (): Arrangement | null =>
+      (saved.value && session.state.value ? referenceOf(saved.value, session.state.value) : null),
   }
 }
 

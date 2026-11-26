@@ -28,7 +28,8 @@ export function useCanvasBoxes(editing: DiagramEditing) {
 
   /** The boxes the session moved or sized, against what its arranging is counted against. */
   const arranged = (): readonly string[] => {
-    const [geometry, reference, now] = [editing.session.geometry.value, editing.reference(), editing.session.state.value]
+    const [geometry, reference] = [editing.session.geometry.value, editing.reference()]
+    const now = editing.session.state.value
     return geometry && reference && now?.byHand ? boxesArranged(geometry, reference, now.arrangement) : []
   }
 
