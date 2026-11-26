@@ -22,8 +22,9 @@ const fakeService = () => {
   const written: string[] = []
   let inFlight = 0
   let overlapped = false
+  let reads = 0
   const svc = {
-    getDocument: () => Effect.succeed({ extra: {} }),
+    getDocument: () => Effect.sync(() => { reads += 1; return { extra: {} } }),
     readDocumentTables: () => Effect.succeed({ tables: {} }),
     readAnalysisIncidence: () => Effect.succeed(null),
     readAnalysisProgress: () => Effect.succeed(null),
@@ -49,7 +50,7 @@ const fakeService = () => {
         })
       }),
   }
-  return { svc: svc as unknown as ModelService, pending, written, overlapped: () => overlapped }
+  return { svc: svc as unknown as ModelService, pending, written, overlapped: () => overlapped, reads: () => reads }
 }
 
 /** Let every promise the composable is waiting on settle. */
@@ -86,6 +87,16 @@ describe('writes asked for while one is running', () => {
     expect(overlapped()).toBe(false)
     expect(await Promise.all(answers)).toEqual(LINES.map((_line, at) => [`S${at + 1}`]))
     expect(analysis.saving.value).toBe(false)
+  })
+
+  it('are read back once, after the last of the run', async () => {
+    const { svc, pending, reads } = fakeService()
+    const analysis = useStressAnalysis(svc, () => 'DOC@1.a')
+
+    LINES.forEach((line) => { void add(analysis, line) })
+    await drain(pending)
+
+    expect(reads()).toBe(1)
   })
 
   it('say a refusal, and keep saying it while the writes after it succeed', async () => {

@@ -101,14 +101,19 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
     }
   }
 
+  /** The writes asked for and not yet answered, run one at a time in the order they were asked. */
+  let queue: Promise<unknown> = Promise.resolve()
+  let waiting = 0
+
   /**
-   * Write *rows* to *table*, then read the analysis again. Answers the ids of added rows, or null when
-   * the write was refused — a stale row says so and the analysis is read again.
+   * Write *rows* to *table*, then — when no other write is waiting — read the analysis again: a run of
+   * writes is read back once, after its last. Answers the ids of added rows, or null when the write
+   * was refused — a stale row says so and the analysis is read again at once.
    */
   const write = async (table: TableName, rows: readonly TableRowEdit[]): Promise<readonly string[] | null> => {
     try {
       const written = await Effect.runPromise(svc.editDocumentTable(documentId(), table, rows))
-      await refresh()
+      if (waiting === 1) await refresh()
       return written.added_row_ids
     } catch (failure) {
       if (isConflict(failure)) await refresh()
@@ -119,15 +124,10 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
     }
   }
 
-  /** The writes asked for and not yet answered, run one at a time in the order they were asked. */
-  let queue: Promise<unknown> = Promise.resolve()
-  let waiting = 0
-
   /**
-   * Queue a write of *rows* to *table*: it runs once every write asked for before it has been answered
-   * and read back, so a line kept while another is being written is written after it, never dropped and
-   * never stated against a read the write before it has made stale. A refusal stays said until a new
-   * run of writes begins.
+   * Queue a write of *rows* to *table*: it runs once every write asked for before it has been answered,
+   * so a line kept while another is being written is written after it, never dropped and never sent
+   * alongside it. A refusal stays said until a new run of writes begins.
    */
   const edit = (table: TableName, rows: readonly TableRowEdit[]): Promise<readonly string[] | null> => {
     if (waiting === 0) error.value = null

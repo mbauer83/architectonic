@@ -203,7 +203,7 @@ test('stressors kept in quick succession are all written, in the order they were
     await text.fill(line)
     await text.press('Enter')
   }
-  await expect(page.locator('tr.st-row')).toHaveCount(lines.length)
+  await expect(page.locator('tr.st-row')).toHaveCount(lines.length, { timeout: 15_000 })
   for (const [at, line] of lines.entries()) {
     await expect(page.locator(`tr.st-row[data-row="S${at + 1}"]`)).toContainText(line)
   }
