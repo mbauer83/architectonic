@@ -3,6 +3,8 @@ import { type Page } from '@playwright/test'
 import { test, expect } from './coverage-fixture'
 
 /**
+ * @verifies REQ@1795725227.ZQgMnvj  read a diagram by focus and reach
+ *
  * The diagram reader (B97) on a real render: select, and the rest steps back; reach along the drawn
  * relations; the reading in the address, with Back returning to the previous one.
  *

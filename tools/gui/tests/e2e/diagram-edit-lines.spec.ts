@@ -1,4 +1,6 @@
 /**
+ * @verifies REQ@1795725227.WvUvbkX  arrange a diagram by hand
+ *
  * Shaping lines on the diagram editor's canvas (sketch 02·3–02·5, Q33, Q35): a moved element's lines
  * keep the course the drag showed when the mouse is released; a line's end goes onto another side from
  * its menu, reached by the keyboard; a double press adds a bend, Straighten drops it, and undo brings it
