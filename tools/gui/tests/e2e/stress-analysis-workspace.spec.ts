@@ -14,6 +14,7 @@ import type { APIRequestContext, Page } from '@playwright/test'
  */
 
 const DIAGRAM = 'ARC@1783185029.4Ayzz3.one-enterprise-repository-many-engagements'
+const SERVICE = 'SRV@1712870400.Uv9Wx9'
 const SERVICE_ALIAS = 'SRV_Uv9Wx9'
 const ARTIFACTS_ALIAS = 'PRC_0Rz5Ex'
 
@@ -29,9 +30,9 @@ const declaresStressAnalysis = async (request: APIRequestContext): Promise<boole
 interface Started { document: string; naive_candidate: { record: { id: string; changes: Record<string, unknown> }; version: string } }
 
 /** An analysis of the diagram, started through the one write the start page makes. */
-const startAnalysis = async (request: APIRequestContext, title: string): Promise<Started> => {
+const startAnalysis = async (request: APIRequestContext, title: string, naive = 'Naive architecture'): Promise<Started> => {
   const started = await request.post('/api/stress-analyses', {
-    data: { title, naive: { name: 'Naive architecture', diagram: DIAGRAM } },
+    data: { title, naive: { name: naive, diagram: DIAGRAM } },
   })
   expect(started.ok(), await started.text()).toBe(true)
   const body = await started.json() as Started
@@ -293,4 +294,98 @@ test('a third of the design stressors is held out and judged on the naive', asyn
   await walk.getByRole('button', { name: 'Fails' }).click()
   await expect(walk.locator('tr.jr').first()).toContainText('fails')
   await expect(section.getByTestId('residuality').first()).toContainText('survives 0 of 1')
+})
+
+/** Record *operations* in candidate *id*, over the version it is at. */
+const record = async (request: APIRequestContext, id: string, operations: unknown[]): Promise<Started['naive_candidate']> => {
+  const read = await (await request.get(`/api/change-sets/${encodeURIComponent(id)}`)).json() as { version: string }
+  const recorded = await request.post(`/api/change-sets/${encodeURIComponent(id)}/operations`,
+    { data: { based_on: read.version, operations } })
+  expect(recorded.ok(), await recorded.text()).toBe(true)
+  return await recorded.json() as Started['naive_candidate']
+}
+
+const tables = (request: APIRequestContext, id: string) => async (table: string, rows: unknown[]) => {
+  const written = await request.patch(`/api/documents/${encodeURIComponent(id)}/tables/${table}`,
+    { data: { rows, dry_run: false } })
+  expect(written.ok(), await written.text()).toBe(true)
+}
+
+/** An analysis whose naive architecture creates a Promotion Queue, with S1 ticking it and the service. */
+const queuedAnalysis = async (request: APIRequestContext, title: string) => {
+  const { document, naive_candidate: naive } = await startAnalysis(request, title)
+  const written = await record(request, naive.record.id, [{
+    op: 'create_entity', fields: { artifact_type: 'application-component', name: 'Promotion Queue', group: 'platform-core' },
+  }])
+  const queue = (written.record.changes.operations as { op: string; artifact_id?: string }[])
+    .find((one) => one.op === 'create_entity')?.artifact_id ?? ''
+  const edit = tables(request, document)
+  await edit('stressors', [{ op: 'add', cells: { stressor: 'Forty promote at once', set: 'design' } }])
+  await edit('incidence', [SERVICE, queue]
+    .map((component) => ({ op: 'add', cells: { stressor: 'S1', component } })))
+  return { document, naive: naive.record.id, queue }
+}
+
+test('a tick on an element the naive creates is a hit on the naive, drawn and marked on its picture', async ({ page, request }) => {
+  const { document } = await queuedAnalysis(request, 'Stress analysis — a tick on a created element')
+  await workspace(page, document, 'stressors')
+  const row = page.locator('tr.st-row[data-row="S1"]')
+  await expect(row).toContainText('Forty promote at once')
+  await expect(page.getByText('no longer has', { exact: false })).toHaveCount(0)
+  await expect(page.locator('details.coupling summary')).toHaveText(/^Coupling 1 pair hit together by stressors\s*$/)
+
+  await row.locator('td').first().click()
+  const canvas = page.getByTestId('workspace-canvas')
+  await expect(canvas.locator('g.lab-element[data-alias]', { hasText: 'Promotion Queue' })).toBeAttached()
+  await expect(canvas.locator('.ws-mark-tag', { hasText: 'hit' })).toHaveCount(2)
+  await expect(page.getByTestId('incidence-grid')).toContainText('Promotion Queue')
+})
+
+test('a candidate read on the workspace canvas draws what it creates, marked +', async ({ page, request }) => {
+  const { document } = await queuedAnalysis(request, 'Stress analysis — the naive drawn as it composes')
+  await workspace(page, document, 'naive')
+  const canvas = page.getByTestId('workspace-canvas')
+  await expect(canvas.locator('g.lab-element[data-alias]', { hasText: 'Promotion Queue' })).toBeAttached()
+  await expect(canvas.locator('.ws-mark-tag', { hasText: '+' })).toHaveCount(1)
+})
+
+test('the caption names an adaptation while it is judged against the test set', async ({ page, request }) => {
+  const { document, naive } = await queuedAnalysis(request, 'Stress analysis — judging an adaptation')
+  const created = await request.post('/api/change-sets', { data: { record: { name: 'Queued promotions', parent: naive } } })
+  expect(created.ok(), await created.text()).toBe(true)
+  const adaptation = (await created.json() as Started['naive_candidate']).record.id
+  candidates.unshift(adaptation)
+  const edit = tables(request, document)
+  await edit('end-states', [{ op: 'add', cells: { end_state: 'Promotions stall' } }])
+  await edit('adaptations', [
+    { op: 'add', cells: { end_states: ['E1'], candidate_architecture: adaptation, integration: 'candidate' } },
+  ])
+  await edit('stressors', [{ op: 'add', cells: { stressor: 'Promotion volume halves', set: 'test' } }])
+  await edit('survival', ['naive', adaptation].map((architecture) => ({
+    op: 'add', cells: { stressor: 'S2', architecture, verdict: 'survives', reasoning: 'Less load changes nothing.' },
+  })))
+
+  await workspace(page, document, 'stressors')
+  const section = page.getByTestId('test-set')
+  await section.locator('button.head').click()
+  await section.locator(`[data-judge="${adaptation}"]`).click()
+  await expect(page.getByTestId('judge-walk')).toBeVisible()
+  const hint = page.getByTestId('workspace-canvas').getByTestId('viewport-hint')
+  await expect(hint).toContainText('Queued promotions, being judged')
+  await expect(hint).not.toContainText('naive')
+})
+
+test('the sketching canvas fits the window below the page header', async ({ page, request }) => {
+  // A name long enough to wrap in the banner over a pane this narrow, as the guide's naive architecture does.
+  const { document } = await startAnalysis(request, 'Stress analysis — sketch fits', 'Promotion pipeline as it stands')
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await workspace(page, document, 'naive')
+  await page.getByTestId('sketch').click()
+  const sketch = page.getByTestId('candidate-canvas')
+  await expect(sketch.locator('g.lab-element').first()).toBeVisible()
+  const pane = (await sketch.locator('.img-container').boundingBox())!
+  expect(pane.y + pane.height).toBeLessThanOrEqual(900)
+  const banner = (await sketch.locator('.cs-banner').boundingBox())!
+  const whole = (await sketch.boundingBox())!
+  expect(banner.x + banner.width).toBeLessThanOrEqual(whole.x + whole.width + 1)
 })

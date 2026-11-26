@@ -84,13 +84,14 @@ export async function promotionPipelineAnalysis(fixture: AnalysisFixture, { queu
     'Engagements multiply over the next two years; the analysis informs whether promotion needs a queue.',
     { name: NAIVE_NAME, scope: [PROMOTION_SERVICE, INDEX_STORE, GIT_SYNC] },
   )
+  let promotionQueue = ''
   if (queue) {
     await fixture.record(naive, [
       { op: 'create_entity', fields: { artifact_type: 'application-component', name: 'Promotion Queue', group: 'platform-core' } },
     ])
-    const created = await createdId(fixture, naive, 'Promotion Queue')
+    promotionQueue = await createdId(fixture, naive, 'Promotion Queue')
     await fixture.record(naive, [
-      { op: 'add_connection', source_entity: created, connection_type: 'archimate-serving', target_entity: PROMOTION_SERVICE },
+      { op: 'add_connection', source_entity: promotionQueue, connection_type: 'archimate-serving', target_entity: PROMOTION_SERVICE },
     ])
   }
 
@@ -111,9 +112,8 @@ export async function promotionPipelineAnalysis(fixture: AnalysisFixture, { queu
     cells: { stressor, kind, set: 'design', ...(endState ? { end_state: endState } : {}), ...(consequence ? { consequence } : {}) },
   })))
   await fixture.table(document, 'incidence', [
-    // Model elements only: a tick on an element the naive architecture creates is currently read as one
-    // it no longer has, and the row would carry that warning.
-    ['S1', PROMOTION_SERVICE], ['S1', INDEX_STORE],
+    // The Promotion Queue the naive architecture creates is ticked like any element it has.
+    ['S1', PROMOTION_SERVICE], ['S1', INDEX_STORE], ...(promotionQueue ? [['S1', promotionQueue]] : []),
     ['S2', GIT_SYNC], ['S2', PROMOTION_SERVICE],
     ['S4', PROMOTION_SERVICE], ['S5', PROMOTION_SERVICE],
   ].map(([stressor, component]) => ({ op: 'add', cells: { stressor, component } })))
