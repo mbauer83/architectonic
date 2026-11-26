@@ -162,7 +162,7 @@ const raise = (conflict: IntegrationConflict) => props.integration.raiseDecision
         @input="integration.rename(($event.target as HTMLInputElement).value)"
       ></label>
       <PermittedButton
-        operation="changes_integrate_candidates"
+        operation="candidates_integrate_candidates"
         class="btn btn-sm btn-primary"
         data-testid="integrate"
         :disabled="!integration.ready.value"

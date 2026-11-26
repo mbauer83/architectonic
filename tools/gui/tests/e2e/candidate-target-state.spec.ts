@@ -20,7 +20,7 @@ const STANDING = {
 let candidate = ''
 
 test.beforeEach(async ({ request }) => {
-  const created = await request.post('/api/change-sets', {
+  const created = await request.post('/api/candidates', {
     data: {
       record: { name: 'Target state spec candidate', diagram: DIAGRAM },
       operations: [{ op: 'edit_entity', artifact_id: SERVICE, field: 'name', value: 'Promotion Review Service' }],
@@ -31,14 +31,14 @@ test.beforeEach(async ({ request }) => {
 })
 
 test.afterEach(async ({ request }) => {
-  if (candidate) await request.delete(`/api/change-sets/${encodeURIComponent(candidate)}?dry_run=false`)
+  if (candidate) await request.delete(`/api/candidates/${encodeURIComponent(candidate)}?dry_run=false`)
   candidate = ''
 })
 
 test('a target state is applied after its dry run, and then offers the move into the baseline', async ({ page }) => {
   const asked: string[] = []
   let standing = false
-  await page.route('**/api/change-sets/*/apply-as-target-state', async (route) => {
+  await page.route('**/api/candidates/*/apply-as-target-state', async (route) => {
     const body = route.request().postDataJSON() as { dry_run: boolean }
     asked.push(`apply ${body.dry_run}`)
     if (body.dry_run) return route.continue()
@@ -48,7 +48,7 @@ test('a target state is applied after its dry run, and then offers the move into
       body: JSON.stringify({ candidate, dry_run: false, applied: true, standing: [], target_state: STANDING }),
     })
   })
-  await page.route('**/api/change-sets/*/move-into-baseline', async (route) => {
+  await page.route('**/api/candidates/*/move-into-baseline', async (route) => {
     const body = route.request().postDataJSON() as { dry_run: boolean }
     asked.push(`move ${body.dry_run}`)
     // The candidate's edit, stored against a revision, and what the model holds where it writes.
@@ -63,7 +63,7 @@ test('a target state is applied after its dry run, and then offers the move into
     })
   })
   // The candidate's record as the server holds it once the target state is written.
-  await page.route(/\/api\/change-sets\/[^/?]+$/, async (route) => {
+  await page.route(/\/api\/candidates\/[^/?]+$/, async (route) => {
     if (route.request().method() !== 'GET' || !standing) return route.continue()
     const response = await route.fetch()
     const read = await response.json() as { record: Record<string, unknown>; version: string }
@@ -91,7 +91,7 @@ test('a target state is applied after its dry run, and then offers the move into
 test('a target state is withdrawn after its dry run, and the candidate can then be abandoned', async ({ page }) => {
   const asked: string[] = []
   let standing = true
-  await page.route('**/api/change-sets/*/withdraw-target-state', async (route) => {
+  await page.route('**/api/candidates/*/withdraw-target-state', async (route) => {
     const body = route.request().postDataJSON() as { dry_run: boolean }
     asked.push(`withdraw ${body.dry_run}`)
     if (!body.dry_run) standing = false
@@ -100,7 +100,7 @@ test('a target state is withdrawn after its dry run, and the candidate can then 
       body: JSON.stringify({ candidate, dry_run: body.dry_run, released: !body.dry_run, operations: [] }),
     })
   })
-  await page.route(/\/api\/change-sets\/[^/?]+$/, async (route) => {
+  await page.route(/\/api\/candidates\/[^/?]+$/, async (route) => {
     if (route.request().method() !== 'GET' || !standing) return route.continue()
     const response = await route.fetch()
     const read = await response.json() as { record: Record<string, unknown>; version: string }

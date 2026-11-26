@@ -2,7 +2,7 @@
  * The canvas's commands as a candidate's edits, and a candidate's operations as the commands that draw
  * them. The canvas speaks the diagram editor's commands (`model.element.*`, `model.relation.*`); a
  * candidate records each as an edit the server turns into an operation with its base
- * (`POST /api/change-sets/{id}/operations`). Nothing here reads or spells a base or an alias.
+ * (`POST /api/candidates/{id}/operations`). Nothing here reads or spells a base or an alias.
  */
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import { connectionId, connectionParts, isEntityId, stableEntityId } from '../artifactId'

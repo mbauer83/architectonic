@@ -237,7 +237,7 @@ def test_a_diagram_command_writes_the_same_over_mcp_as_over_rest(
 
 def _candidate(model: RenderedModel) -> str:
     header = CandidateHeader.model_validate({"name": "Parity", "id": CANDIDATE, "scope": list(model.ids.values())})
-    return str(candidate_tools.change_set_create(header, repo_root=str(model.repo))["version"])
+    return str(candidate_tools.candidate_create(header, repo_root=str(model.repo))["version"])
 
 
 @pytest.mark.parametrize("command", _writing("candidate"))
@@ -248,14 +248,14 @@ def test_a_candidate_command_records_the_same_over_mcp_as_over_rest(
     edits = _Names(over_rest.ids, [])(command["candidate"]["request"]["edits"])
     operation = command["candidate"]["operation"]
 
-    answer = client.post(f"/api/change-sets/{CANDIDATE}/operations",
+    answer = client.post(f"/api/candidates/{CANDIDATE}/operations",
                          json={"based_on": _candidate(over_rest), "operations": edits})
-    candidate_tools.change_set_record(CANDIDATE, _candidate(over_mcp), EDITS.validate_python(edits),
+    candidate_tools.candidate_record(CANDIDATE, _candidate(over_mcp), EDITS.validate_python(edits),
                                       repo_root=str(over_mcp.repo))
 
     assert answer.status_code == 200, answer.text
     assert operation in recorded_operations(EDITS.validate_python(edits))
-    assert {"changes_record_operation", "change_set_record"} <= OPERATION_CATALOG[operation].carriers
+    assert {"candidates_record_operation", "candidate_record"} <= OPERATION_CATALOG[operation].carriers
     _assert_same(over_rest.repo, over_mcp.repo)
 
 

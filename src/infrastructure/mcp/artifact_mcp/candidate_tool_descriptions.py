@@ -12,26 +12,26 @@ VERSIONED = (
     "is refused, and the refusal names the current version."
 )
 
-CHANGE_SET_LIST = (
+CANDIDATE_LIST = (
     "List candidate architectures: id, name, description (its core idea in a sentence or two), state, parent, "
     "scope, diagram and how many operations each records."
 )
 
-CHANGE_SET_READ = (
+CANDIDATE_READ = (
     "Read one candidate architecture: its record (header — name, description, rationale and the rest — and the "
     "operations it records, each with the base "
     "it was written against) and its `version`, which every edit of it states as `based_on`. artifact_id "
     "takes either spelling of the id."
 )
 
-CHANGE_SET_STANDING = (
+CANDIDATE_STANDING = (
     "How each of a candidate's own operations stands against the model as it is now: `applies`, "
     "`already-there` (skipped by an apply), `drifted` (what it replaces changed since it was written; "
-    "change_set_rebase writes it again) or `conflicting` (nothing to apply to; the reason says what), each "
+    "candidate_rebase writes it again) or `conflicting` (nothing to apply to; the reason says what), each "
     "with a sentence saying what to do."
 )
 
-CHANGE_SET_COMPARE = (
+CANDIDATE_COMPARE = (
     "Compare a candidate, composed with every candidate it stacks on, against a base: the composed view of "
     "the scoped entities and connections, the differences field by field, and each operation's standing. "
     "base: `model` (the default), `naive` (with `naive` naming the analysis's naive candidate), or another "
@@ -40,27 +40,27 @@ CHANGE_SET_COMPARE = (
     "generated from the scoped entities and the relations among them; absent for a candidate with none."
 )
 
-CHANGE_SET_RESIDUALITY = (
+ANALYSIS_RESIDUALITY = (
     "A candidate's residuality in every stress analysis that judged it or integrated it: per analysis, its "
     "verdict counts beside the naive's, and R = (Y − X) / n once both are judged on every usable test "
     "stressor."
 )
 
-CHANGE_SET_CHECK = (
+CANDIDATE_CHECK = (
     "Check drafts or offered candidates for integration conflicts: every claim two of them (or the "
     "candidates they stack on) make on the same thing, with the operations of each party. Reads only."
 )
 
-CHANGE_SET_CREATE = (
+CANDIDATE_CREATE = (
     "Create a candidate architecture. record: its header — name (required), id (minted if omitted), "
     f"description (its core idea in a sentence or two, at most {DESCRIPTION_LIMIT} characters), rationale (the "
     "longer argument for it), state (draft or candidate), parent (a candidate to stack on), scope (entity ids "
     "it is read over), diagram (the stored diagram it is drawn on; with no scope, its entities become the scope), "
-    "answers, satisfies. operations: edits recorded in it in the same write, as change_set_record takes "
+    "answers, satisfies. operations: edits recorded in it in the same write, as candidate_record takes "
     "them. Answers the record and its version."
 )
 
-CHANGE_SET_RECORD = (
+CANDIDATE_RECORD = (
     "Record edits among a draft candidate's operations, in order, as one write; the server reads each edit's "
     "base from what the candidate stacks on, so no base is stated. An edit: create_entity (fields with "
     "artifact_type, name, group; artifact_id minted when omitted), edit_entity (artifact_id, field, value, "
@@ -70,46 +70,46 @@ CHANGE_SET_RECORD = (
     "back to the value beneath drops it. Ids in either spelling. " + VERSIONED
 )
 
-CHANGE_SET_EDIT = (
+CANDIDATE_EDIT = (
     "Change header fields of a candidate: name, description, rationale, parent, scope, answers, satisfies, and state — "
-    "draft <-> candidate, either -> rejected or superseded; integrated only by change_set_apply; terminal "
+    "draft <-> candidate, either -> rejected or superseded; integrated only by candidate_apply; terminal "
     "states never change. `changes` restores an operation list exactly as a read answered it (an undo); to "
-    "change operations, use change_set_record. " + VERSIONED
+    "change operations, use candidate_record. " + VERSIONED
 )
 
-CHANGE_SET_REBASE = (
+CANDIDATE_REBASE = (
     "Write a draft candidate's drifted operations again against the model as it is now, keeping the value "
     "each asks for: applying it then overwrites deliberately what the model came to say. Nothing drifted, "
     "nothing changes. A conflicting operation is left for its author to drop. " + VERSIONED
 )
 
-CHANGE_SET_APPLY = (
+CANDIDATE_APPLY = (
     "Write a draft or offered candidate's operations onto the model in one transaction, all or none, and "
     "mark it integrated. Refused while an operation conflicts or has drifted, or a candidate it stacks on is "
     "not integrated; operations already in the model are skipped. dry_run (default true) answers what would "
     "be written and the refusal, if any, instead of raising it. operation_id is for artifact_get_operation."
 )
 
-CHANGE_SET_APPLY_AS_TARGET_STATE = (
+CANDIDATE_APPLY_AS_TARGET_STATE = (
     "Write a draft or offered candidate into the model as a target state beside the baseline, in one "
     "transaction: each element it adds as a draft, each element it changes as a \"‹name› (target)\" copy of the "
     "same type with the candidate's values, its relations and an association tracing it to the original, and a "
     "Baseline and a Target plateau aggregating originals and replacements with a «gap» assessment associated "
     "with both. The originals are not changed; the candidate keeps its operations and is offered (state "
-    "candidate) with its target_state recorded. Refused as change_set_apply is. dry_run (default true) answers "
+    "candidate) with its target_state recorded. Refused as candidate_apply is. dry_run (default true) answers "
     "the generated operations and the target_state ids. Move it into the baseline with "
-    "change_set_move_into_baseline."
+    "candidate_move_into_baseline."
 )
 
-CHANGE_SET_MOVE_INTO_BASELINE = (
+CANDIDATE_MOVE_INTO_BASELINE = (
     "Move a candidate's target state into the baseline as one generated operation list: its own operations "
     "applied to the originals, relations drawn to a copy moved to its original, the copies, plateaus and gap "
     "removed with their relations, and the added elements set active. Refused while an operation conflicts or "
-    "has drifted (re-base with change_set_rebase). On success the candidate is integrated. dry_run (default "
+    "has drifted (re-base with candidate_rebase). On success the candidate is integrated. dry_run (default "
     "true) answers the generated operations and their standing."
 )
 
-CHANGE_SET_WITHDRAW_TARGET_STATE = (
+CANDIDATE_WITHDRAW_TARGET_STATE = (
     "Withdraw a candidate's target state instead of moving it into the baseline: the \"(target)\" copies with "
     "their relations and traces, the elements it added, the plateaus and the gap are removed as one generated "
     "operation list, and the candidate is a draft again (apply it, re-apply it as a target state, reject or "
@@ -118,9 +118,9 @@ CHANGE_SET_WITHDRAW_TARGET_STATE = (
     "removals and the refusal."
 )
 
-CHANGE_SET_INTEGRATE = (
+CANDIDATE_INTEGRATE = (
     "Integrate two or more drafts or offered candidates that stack on the same one into a new draft holding "
-    "every operation of each, converging ones once. Each conflict between them (as change_set_check reports "
+    "every operation of each, converging ones once. Each conflict between them (as candidate_check reports "
     "it: kind and subject) is settled by a resolution, applied in order: {kind, subject, action, party?, "
     "value?} with action `take` (keep party's operation, drop the others'), `drop` (drop party's) or `merge` "
     "(write value in place of the parties' values, where each sets the same field). dry_run (default true) "
@@ -129,7 +129,7 @@ CHANGE_SET_INTEGRATE = (
     "changed, and nothing is written to the model."
 )
 
-CHANGE_SET_SAVE_DIAGRAM = (
+CANDIDATE_SAVE_DIAGRAM = (
     "Save as diagram: for a candidate drawn on no stored diagram (its stack names none, so it is drawn as a "
     "view generated from its scope), write that view as a new diagram — the model's entities in the scope "
     "and the relations among them, through the diagram create — and draw the candidate on it. Nothing the "
@@ -138,7 +138,7 @@ CHANGE_SET_SAVE_DIAGRAM = (
     "stored diagram already or is final. dry_run (default true) answers what would be written. " + VERSIONED
 )
 
-CHANGE_SET_DELETE = (
+CANDIDATE_DELETE = (
     "Delete a candidate nothing refers to. Refused while a candidate stacks on it, an analysis starts from "
     "it, an analysis's verdicts or adaptations name it, or it is integrated (kept as the record of what was "
     "written). dry_run (default true) answers the plan; based_on, when given, refuses a candidate changed "
@@ -147,7 +147,7 @@ CHANGE_SET_DELETE = (
 
 ANALYSIS_START = (
     "Start a stress analysis: its naive candidate and the stress-analysis document naming it, both or "
-    "neither. naive: the naive's header as change_set_create takes it — a name alone starts it empty, to be "
+    "neither. naive: the naive's header as candidate_create takes it — a name alone starts it empty, to be "
     "defined by recording its operations and the model elements it reads over (scope); a diagram or a parent "
     "seeds it. context: optional free text, the environment and the decision the evaluation informs. "
     "Stressors, end states, incidence, adaptations and verdicts are then rows of the document's tables, "

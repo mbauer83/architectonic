@@ -21,13 +21,13 @@ def test_agents_and_canvas_share_versions_and_composed_diffs(tmp_path: Path, mon
     root = repository_in(tmp_path)
     monkeypatch.setattr(state, "maybe_engagement_root", lambda: root)
     with TestClient(build_api_app(candidates.router)) as client:
-        created = client.post("/api/change-sets", json={"record": {"name": "Hold promotions during outage"}})
+        created = client.post("/api/candidates", json={"record": {"name": "Hold promotions during outage"}})
         assert created.status_code == 200, created.text
         document = created.json()
         ref = document["record"]["id"]
-        path = f"/api/change-sets/{ref}"
-        assert mcp.change_set_read(ref, repo_root=str(root)) == document == client.get(path).json()
-        assert client.get("/api/change-sets").json() == mcp.change_set_list(str(root))
+        path = f"/api/candidates/{ref}"
+        assert mcp.candidate_read(ref, repo_root=str(root)) == document == client.get(path).json()
+        assert client.get("/api/candidates").json() == mcp.candidate_list(str(root))
         patch = {
             "changes": {
                 **document["record"]["changes"],
@@ -41,16 +41,16 @@ def test_agents_and_canvas_share_versions_and_composed_diffs(tmp_path: Path, mon
             },
             "state": "candidate",
         }
-        update = mcp.change_set_edit(ref, document["version"], CandidatePatch(**patch), str(root))
+        update = mcp.candidate_edit(ref, document["version"], CandidatePatch(**patch), str(root))
         assert update["version"] != document["version"]
         assert client.patch(path, json={"based_on": document["version"], "patch": {"name": "Stale"}}).status_code == 409
-        assert client.get(path + "/standing").json() == mcp.change_set_standing(ref, repo_root=str(root))
-        diff = mcp.change_set_compare(ref, repo_root=str(root))
+        assert client.get(path + "/standing").json() == mcp.candidate_standing(ref, repo_root=str(root))
+        diff = mcp.candidate_compare(ref, repo_root=str(root))
         assert client.get(path + "/diff").json() == diff
         assert diff["diff"][0]["fields"]["name"] == {"before": None, "after": "Queue"}
-        (listed,) = client.get("/api/change-sets").json()["candidates"]
+        (listed,) = client.get("/api/candidates").json()["candidates"]
         assert (listed["scope"], listed["operations"]) == ([], 1)
-        assert client.post("/api/change-set-checks", json={"candidates": [ref]}).json() == mcp.change_set_check(
+        assert client.post("/api/candidate-checks", json={"candidates": [ref]}).json() == mcp.candidate_check(
             [ref], str(root)
         )
 
@@ -99,7 +99,7 @@ def test_analysis_reads_the_scoped_naive_candidate_on_both_surfaces(tmp_path: Pa
     monkeypatch.setattr(state, "maybe_engagement_root", lambda: root)
     with TestClient(build_api_app(candidates.router)) as client:
         header = CandidateHeader(name="Queued promotion", id=naive_id, diagram=diagram)
-        naive = mcp.change_set_create(header, repo_root=str(root))
+        naive = mcp.candidate_create(header, repo_root=str(root))
         stable_service = stable_id(service)  # scope and view hold an entity by its stable id
         assert stable_service in naive["record"]["scope"]
         ops = [
@@ -111,9 +111,9 @@ def test_analysis_reads_the_scoped_naive_candidate_on_both_surfaces(tmp_path: Pa
         ]
         patch = {"changes": {**naive["record"]["changes"], "operations": ops}}
         client.patch(
-            f"/api/change-sets/{naive_id}", json={"based_on": naive["version"], "patch": patch}
+            f"/api/candidates/{naive_id}", json={"based_on": naive["version"], "patch": patch}
         ).raise_for_status()
-        comparison = client.get(f"/api/change-sets/{naive_id}/diff")
+        comparison = client.get(f"/api/candidates/{naive_id}/diff")
         comparison.raise_for_status()
         assert {row["id"] for row in comparison.json()["view"]["entities"]} >= {stable_service, "$ref:queue"}
         path = f"/api/documents/{document.stem}"
@@ -124,7 +124,7 @@ def test_analysis_reads_the_scoped_naive_candidate_on_both_surfaces(tmp_path: Pa
         progress = client.get(path + "/progress").json()
         assert progress == mcp.analysis_progress(document.stem, str(root))
         assert progress["coverage"]["by_kind"] == {"outage": 1}
-        current = mcp.change_set_read(naive_id, repo_root=str(root))
+        current = mcp.candidate_read(naive_id, repo_root=str(root))
         original_changes = naive["record"]["changes"]
-        mcp.change_set_edit(naive_id, current["version"], CandidatePatch(changes=original_changes), str(root))
+        mcp.candidate_edit(naive_id, current["version"], CandidatePatch(changes=original_changes), str(root))
         assert client.get(path + "/incidence").json()["stressors"][0]["missing_elements"] == ["$ref:queue"]

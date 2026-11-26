@@ -72,7 +72,7 @@ const save = async () => {
     >No description of its core idea yet.</span>
     <PermittedButton
       v-if="editable"
-      operation="changes_edit_candidate"
+      operation="candidates_edit_candidate"
       class="link"
       data-testid="describe-candidate"
       @click="begin"

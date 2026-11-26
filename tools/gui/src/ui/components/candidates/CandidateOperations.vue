@@ -121,7 +121,7 @@ const cardRows = (row: ChangeDifference) => {
       </div>
       <PermittedButton
         v-if="summary.state === 'draft' && !fixed"
-        operation="changes_record_operation"
+        operation="candidates_record_operation"
         class="btn btn-sm"
         data-testid="sketch"
         @click="emit('sketch', summary.id)"

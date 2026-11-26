@@ -18,8 +18,8 @@ def test_an_edit_is_recorded_merged_and_refused_when_stale(tmp_path: Path, monke
     root = repository_in(tmp_path)
     monkeypatch.setattr(state, "maybe_engagement_root", lambda: root)
     with TestClient(build_api_app(candidates.router)) as client:
-        created = client.post("/api/change-sets", json={"record": {"name": "Naive architecture"}}).json()
-        path = f"/api/change-sets/{created['record']['id']}/operations"
+        created = client.post("/api/candidates", json={"record": {"name": "Naive architecture"}}).json()
+        path = f"/api/candidates/{created['record']['id']}/operations"
 
         first = client.post(path, json={"based_on": created["version"], "operations": [CREATE]})
         assert first.status_code == 200, first.text

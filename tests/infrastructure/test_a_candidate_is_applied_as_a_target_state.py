@@ -77,9 +77,9 @@ def _connect(root: Path, source: str, kind: str, target: str) -> None:
 
 
 def _candidate(client: TestClient, *intents: dict[str, Any]) -> str:
-    created = client.post("/api/change-sets", json={"record": {"name": "Ledger realizes the rule"}}).json()
+    created = client.post("/api/candidates", json={"record": {"name": "Ledger realizes the rule"}}).json()
     ref, version = created["record"]["id"], created["version"]
-    recorded = client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operations": intents})
+    recorded = client.post(f"/api/candidates/{ref}/operations", json={"based_on": version, "operations": intents})
     assert recorded.status_code == 200, recorded.text
     return str(ref)
 
@@ -96,7 +96,7 @@ def _connections(root: Path) -> set[tuple[str, str, str]]:
 
 
 def _record(client: TestClient, ref: str) -> dict[str, Any]:
-    return dict(client.get(f"/api/change-sets/{ref}").json())
+    return dict(client.get(f"/api/candidates/{ref}").json())
 
 
 @pytest.fixture
@@ -122,7 +122,7 @@ def test_a_target_state_stands_beside_the_baseline(
     root: Path, client: TestClient, commits: list[Path], scene: dict[str, str],
 ) -> None:
     ref, ledger = scene["candidate"], scene["ledger"]
-    preview = client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={})
+    preview = client.post(f"/api/candidates/{ref}/apply-as-target-state", json={})
     assert preview.status_code == 200, preview.text
     assert preview.json()["applied"] is False and commits == []
     planned = preview.json()["target_state"]
@@ -131,7 +131,7 @@ def test_a_target_state_stands_beside_the_baseline(
     assert "$ref:" not in str(preview.json()["operations"])
     assert planned["target"] in str(preview.json()["operations"])
 
-    applied = client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False})
+    applied = client.post(f"/api/candidates/{ref}/apply-as-target-state", json={"dry_run": False})
 
     assert applied.status_code == 200, applied.text
     assert applied.json()["applied"] is True and commits == [root]
@@ -163,23 +163,23 @@ def test_while_its_target_state_stands_a_candidate_is_held(
     root: Path, client: TestClient, scene: dict[str, str],
 ) -> None:
     ref = scene["candidate"]
-    assert client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False}).status_code == 200
+    assert client.post(f"/api/candidates/{ref}/apply-as-target-state", json={"dry_run": False}).status_code == 200
     read = _record(client, ref)
 
-    again = client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False})
-    direct = client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": False})
-    rejected = client.patch(f"/api/change-sets/{ref}", json={"based_on": read["version"], "patch": {"state": "draft"}})
+    again = client.post(f"/api/candidates/{ref}/apply-as-target-state", json={"dry_run": False})
+    direct = client.post(f"/api/candidates/{ref}/apply", json={"dry_run": False})
+    rejected = client.patch(f"/api/candidates/{ref}", json={"based_on": read["version"], "patch": {"state": "draft"}})
     emptied = client.patch(
-        f"/api/change-sets/{ref}",
+        f"/api/candidates/{ref}",
         json={"based_on": read["version"], "patch": {"changes": {**read["record"]["changes"], "operations": []}}},
     )
-    deleted = client.delete(f"/api/change-sets/{ref}", params={"dry_run": "false"})
+    deleted = client.delete(f"/api/candidates/{ref}", params={"dry_run": "false"})
 
     for refused in (again, direct, deleted):
         assert refused.status_code == 409 and "target state" in refused.text, refused.text
     for refused in (rejected, emptied):
         assert refused.status_code == 409 and "target state" in refused.text, refused.text
-    renamed = client.patch(f"/api/change-sets/{ref}", json={"based_on": read["version"], "patch": {"name": "Renamed"}})
+    renamed = client.patch(f"/api/candidates/{ref}", json={"based_on": read["version"], "patch": {"name": "Renamed"}})
     assert renamed.status_code == 200, renamed.text
 
 
@@ -187,18 +187,18 @@ def test_moving_into_the_baseline_leaves_one_state(
     root: Path, client: TestClient, commits: list[Path], scene: dict[str, str],
 ) -> None:
     ref, ledger = scene["candidate"], scene["ledger"]
-    ids = client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False}).json()["target_state"]
+    ids = client.post(f"/api/candidates/{ref}/apply-as-target-state", json={"dry_run": False}).json()["target_state"]
     copy = stable_id(ids["copies"][ledger])
     # Drawn to the copy while the target state stood: the move carries it to the original.
     reporting = _entity(root, "application-component", "Reporting")
     _connect(root, reporting, _SERVES, copy)
     commits.clear()
 
-    preview = client.post(f"/api/change-sets/{ref}/move-into-baseline", json={})
+    preview = client.post(f"/api/candidates/{ref}/move-into-baseline", json={})
     assert preview.status_code == 200, preview.text
     assert preview.json()["integrated"] is False and "refusal" not in preview.json() and commits == []
 
-    moved = client.post(f"/api/change-sets/{ref}/move-into-baseline", json={"dry_run": False})
+    moved = client.post(f"/api/candidates/{ref}/move-into-baseline", json={"dry_run": False})
 
     assert moved.status_code == 200, moved.text
     assert moved.json()["integrated"] is True and commits == [root]
@@ -214,7 +214,7 @@ def test_moving_into_the_baseline_leaves_one_state(
     assert not any(copy in (source, target) for source, _kind, target in joined)
     record = _record(client, ref)["record"]
     assert record["state"] == "integrated" and "target-state" not in record
-    again = client.post(f"/api/change-sets/{ref}/move-into-baseline", json={"dry_run": False})
+    again = client.post(f"/api/candidates/{ref}/move-into-baseline", json={"dry_run": False})
     assert again.status_code == 409 and "not in the model as a target state" in again.text
 
 
@@ -222,17 +222,17 @@ def test_a_move_over_an_original_changed_meanwhile_is_refused_until_re_based(
     root: Path, client: TestClient, scene: dict[str, str],
 ) -> None:
     ref, ledger = scene["candidate"], scene["ledger"]
-    assert client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False}).status_code == 200
+    assert client.post(f"/api/candidates/{ref}/apply-as-target-state", json={"dry_run": False}).status_code == 200
     edited = model.artifact_edit_entity(artifact_id=ledger, name="Ledger core", dry_run=False, repo_root=str(root))
     assert edited["wrote"], edited
 
-    refused = client.post(f"/api/change-sets/{ref}/move-into-baseline", json={"dry_run": False})
+    refused = client.post(f"/api/candidates/{ref}/move-into-baseline", json={"dry_run": False})
     assert refused.status_code == 409 and "re-based" in refused.text
     read = _record(client, ref)
-    rebased = client.post(f"/api/change-sets/{ref}/rebase", json={"based_on": read["version"]})
+    rebased = client.post(f"/api/candidates/{ref}/rebase", json={"based_on": read["version"]})
     assert rebased.status_code == 200, rebased.text
 
-    moved = client.post(f"/api/change-sets/{ref}/move-into-baseline", json={"dry_run": False})
+    moved = client.post(f"/api/candidates/{ref}/move-into-baseline", json={"dry_run": False})
     assert moved.status_code == 200, moved.text
     assert _entities(root)[ledger].name == "Ledger service"
 
@@ -245,17 +245,17 @@ def test_both_transports_answer_alike(root: Path, client: TestClient, scene: dic
         return {key: value for key, value in answer.items()
                 if key not in {"operation_id", "target_state", "operations"} and value is not None}
 
-    over_rest = client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": True}).json()
-    over_mcp = mcp.change_set_apply_as_target_state(ref, dry_run=True, repo_root=str(root))
+    over_rest = client.post(f"/api/candidates/{ref}/apply-as-target-state", json={"dry_run": True}).json()
+    over_mcp = mcp.candidate_apply_as_target_state(ref, dry_run=True, repo_root=str(root))
     assert answered(over_rest) == answered(over_mcp)
     assert len(over_rest["operations"]) == len(over_mcp["operations"])
 
-    applied = mcp.change_set_apply_as_target_state(ref, dry_run=False, repo_root=str(root))
+    applied = mcp.candidate_apply_as_target_state(ref, dry_run=False, repo_root=str(root))
     assert applied["applied"] is True
-    moved = mcp.change_set_move_into_baseline(ref, dry_run=False, repo_root=str(root))
+    moved = mcp.candidate_move_into_baseline(ref, dry_run=False, repo_root=str(root))
     assert moved["integrated"] is True
     with pytest.raises(ValueError, match="not in the model as a target state"):
-        mcp.change_set_move_into_baseline(ref, dry_run=False, repo_root=str(root))
+        mcp.candidate_move_into_baseline(ref, dry_run=False, repo_root=str(root))
 
 
 def test_an_element_the_candidate_created_is_compared_once_when_the_model_holds_it(
@@ -265,9 +265,9 @@ def test_an_element_the_candidate_created_is_compared_once_when_the_model_holds_
     it. The comparison read it from the model by that id and from the candidate by its alias, and listed it twice:
     once removed, once added."""
     ref, new_rule = scene["candidate"], scene["new_rule"]
-    assert client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False}).status_code == 200
+    assert client.post(f"/api/candidates/{ref}/apply-as-target-state", json={"dry_run": False}).status_code == 200
 
-    compared = client.get(f"/api/change-sets/{ref}/diff", params={"base": "model"}).json()
+    compared = client.get(f"/api/candidates/{ref}/diff", params={"base": "model"}).json()
 
     about_it = [row for row in compared["diff"] if row["kind"] == "entity"
                 and stable_id(str(row["target"]).removeprefix("$ref:")) in {new_rule, "new-rule"}
@@ -283,15 +283,15 @@ def test_withdrawing_a_target_state_leaves_the_baseline_as_it_was(
 ) -> None:
     ref = scene["candidate"]
     before_entities, before_connections = set(_entities(root)), _connections(root)
-    assert client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False}).status_code == 200
+    assert client.post(f"/api/candidates/{ref}/apply-as-target-state", json={"dry_run": False}).status_code == 200
     commits.clear()
 
-    preview = client.post(f"/api/change-sets/{ref}/withdraw-target-state", json={})
+    preview = client.post(f"/api/candidates/{ref}/withdraw-target-state", json={})
     assert preview.status_code == 200, preview.text
     assert preview.json()["released"] is False and "refusal" not in preview.json() and commits == []
     assert {op["op"] for op in preview.json()["operations"]} == {"remove_connection", "remove_entity"}
 
-    withdrawn = client.post(f"/api/change-sets/{ref}/withdraw-target-state", json={"dry_run": False})
+    withdrawn = client.post(f"/api/candidates/{ref}/withdraw-target-state", json={"dry_run": False})
 
     assert withdrawn.status_code == 200, withdrawn.text
     assert withdrawn.json()["released"] is True and commits == [root]
@@ -300,9 +300,9 @@ def test_withdrawing_a_target_state_leaves_the_baseline_as_it_was(
     record = _record(client, ref)["record"]
     assert record["state"] == "draft" and "target-state" not in record
     # Released: it may be applied as a target state again, or set aside, or deleted.
-    again = client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": True})
+    again = client.post(f"/api/candidates/{ref}/apply-as-target-state", json={"dry_run": True})
     assert again.status_code == 200 and "refusal" not in again.json(), again.text
-    gone = client.post(f"/api/change-sets/{ref}/withdraw-target-state", json={"dry_run": False})
+    gone = client.post(f"/api/candidates/{ref}/withdraw-target-state", json={"dry_run": False})
     assert gone.status_code == 409 and "not in the model as a target state" in gone.text
 
 
@@ -310,7 +310,7 @@ def test_a_withdrawal_names_what_was_written_since_and_refuses_until_it_is_resol
     root: Path, client: TestClient, commits: list[Path], scene: dict[str, str],
 ) -> None:
     ref, ledger = scene["candidate"], scene["ledger"]
-    ids = client.post(f"/api/change-sets/{ref}/apply-as-target-state", json={"dry_run": False}).json()["target_state"]
+    ids = client.post(f"/api/candidates/{ref}/apply-as-target-state", json={"dry_run": False}).json()["target_state"]
     copy = stable_id(ids["copies"][ledger])
     # Drawn to the copy while the target state stood, and a diagram drawing it: neither is the target state's.
     reporting = _entity(root, "application-component", "Reporting")
@@ -322,10 +322,10 @@ def test_a_withdrawal_names_what_was_written_since_and_refuses_until_it_is_resol
     assert drawn["wrote"], drawn
     commits.clear()
 
-    preview = client.post(f"/api/change-sets/{ref}/withdraw-target-state", json={})
+    preview = client.post(f"/api/candidates/{ref}/withdraw-target-state", json={})
     refusal = preview.json()["refusal"]
     assert stable_id(reporting) in refusal and stable_id(str(drawn["artifact_id"])) in refusal
-    refused = client.post(f"/api/change-sets/{ref}/withdraw-target-state", json={"dry_run": False})
+    refused = client.post(f"/api/candidates/{ref}/withdraw-target-state", json={"dry_run": False})
     assert refused.status_code == 409 and commits == []
     assert copy in _entities(root)  # nothing was removed
     assert _record(client, ref)["record"]["target-state"]["gap"] == ids["gap"]
@@ -336,5 +336,5 @@ def test_a_withdrawal_names_what_was_written_since_and_refuses_until_it_is_resol
         dry_run=False, repo_root=str(root),
     )
     assert cut["wrote"], cut
-    withdrawn = mcp.change_set_withdraw_target_state(ref, dry_run=False, repo_root=str(root))
+    withdrawn = mcp.candidate_withdraw_target_state(ref, dry_run=False, repo_root=str(root))
     assert withdrawn["released"] is True and copy not in _entities(root)

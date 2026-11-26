@@ -2,7 +2,7 @@
  * Integrating candidates as the Integration tab reads it (06·7, plan §3): each conflict the server answers,
  * what a party proposes in words, the resolution each action makes, and what each party answers in the
  * analysis — the adaptation that holds it, the end states it answers and the stressors behind them. The
- * conflicts, and what settles them, are the server's (`changes_integrate_candidates`); nothing here judges.
+ * conflicts, and what settles them, are the server's (`candidates_integrate_candidates`); nothing here judges.
  */
 import type { DocumentTableRow, IntegrationConflict, Resolution, ResolutionAction } from '../schemas/candidates'
 import { stableEntityId } from '../artifactId'

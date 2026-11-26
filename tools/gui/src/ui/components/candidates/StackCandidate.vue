@@ -28,7 +28,7 @@ const stackOn = async () => {
 <template>
   <PermittedButton
     v-if="!open"
-    operation="changes_create_candidate"
+    operation="candidates_create_candidate"
     class="btn btn-sm"
     data-testid="stack-candidate"
     @click="open = true"

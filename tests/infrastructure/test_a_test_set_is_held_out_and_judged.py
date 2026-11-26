@@ -127,7 +127,7 @@ def test_a_different_draw_over_a_held_test_set_is_refused(client: TestClient) ->
 @pytest.mark.verifies("REQ@1795548363.8FZbiLJ")
 def test_verdicts_written_as_rows_read_back_as_residuality_on_every_surface(client: TestClient) -> None:
     document, naive = _start(client, 0)
-    candidate = client.post("/api/change-sets", json={"record": {"name": "Adapted", "parent": naive}}).json()
+    candidate = client.post("/api/candidates", json={"record": {"name": "Adapted", "parent": naive}}).json()
     adapted = candidate["record"]["id"]
     tests = _rows(client, document, "stressors",
                   [{"op": "add", "cells": {"stressor": f"Held {n}", "set": "test"}} for n in range(3)])
@@ -147,10 +147,10 @@ def test_verdicts_written_as_rows_read_back_as_residuality_on_every_surface(clie
                              "integration_judged": False}
     assert [(one["architecture"], one["verdict"]) for one in read["verdicts"]] == verdicts
 
-    by_candidate = client.get(f"/api/change-sets/{adapted}/residuality").json()
+    by_candidate = client.get(f"/api/candidates/{adapted}/residuality").json()
     assert [one["document"] for one in by_candidate["analyses"]] == [document]
     assert by_candidate["analyses"][0]["residuality"] == standing["residuality"]
-    assert by_candidate == mcp.change_set_residuality(adapted, repo_root=str(client.root))  # type: ignore[attr-defined]
+    assert by_candidate == mcp.analysis_residuality(adapted, repo_root=str(client.root))  # type: ignore[attr-defined]
 
 
 def test_the_perspectives_are_served_as_declared(client: TestClient) -> None:

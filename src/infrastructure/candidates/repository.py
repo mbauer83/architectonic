@@ -81,7 +81,7 @@ class CandidateArchitectureStore:
         found = self.find(ref)
         if found is None:
             raise NotStored(
-                f"No candidate architecture {ref} is stored; change_set_list (GET /api/change-sets) lists them."
+                f"No candidate architecture {ref} is stored; candidate_list (GET /api/candidates) lists them."
             )
         return found
 

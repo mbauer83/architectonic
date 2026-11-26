@@ -210,10 +210,10 @@ current version.
 
 A candidate's header carries a `name`, an optional `description` and an optional `rationale`. The
 `description` states the core idea in a sentence or two and is refused above 300 characters. The
-`rationale` holds the argument for it and has no limit. `change_set_create` (`POST
-/api/change-sets`, in `record`) and `change_set_edit` (`PATCH`, in `patch`) write both; an empty
-`description` removes it. `change_set_read` answers the description in the record where one is
-given, and `change_set_list` answers it for every candidate, empty where none is given. A candidate
+`rationale` holds the argument for it and has no limit. `candidate_create` (`POST
+/api/candidates`, in `record`) and `candidate_edit` (`PATCH`, in `patch`) write both; an empty
+`description` removes it. `candidate_read` answers the description in the record where one is
+given, and `candidate_list` answers it for every candidate, empty where none is given. A candidate
 stored without a description reads as having none.
 
 ```json
@@ -234,26 +234,26 @@ stored without a description reads as having none.
 
 | Task | MCP tool | REST |
 |---|---|---|
-| List | `change_set_list` | `GET /api/change-sets` |
-| Read the record and version | `change_set_read` | `GET /api/change-sets/{id}` |
-| Create, optionally drawn on and scoped by a diagram, and with edits | `change_set_create` | `POST /api/change-sets` |
-| Record edits | `change_set_record` | `POST /api/change-sets/{id}/operations` |
-| Change the header or the state | `change_set_edit` | `PATCH /api/change-sets/{id}` |
-| How each operation stands against the model | `change_set_standing` | `GET /api/change-sets/{id}/standing` |
-| Compare against the model, the naive or another candidate | `change_set_compare` | `GET /api/change-sets/{id}/diff` |
-| The picture a candidate is sketched on | — | `GET /api/change-sets/{id}/picture` |
-| That picture's elements, relations and neighbourhood, for its editor | — | `GET /api/change-sets/{id}/picture/context` |
-| Draw an edit session's composition, or resized shapes, over that picture | — | `POST /api/change-sets/{id}/picture/preview`, `POST /api/change-sets/{id}/picture/shapes/preview` |
-| Save the generated view a candidate is drawn on as a diagram | `change_set_save_diagram` | `POST /api/change-sets/{id}/save-as-diagram` |
-| Check candidates for conflicting claims | `change_set_check` | `POST /api/change-set-checks` |
-| Integrate candidates into a new one, resolving conflicts | `change_set_integrate` | `POST /api/change-set-integrations` |
-| Re-base drifted operations | `change_set_rebase` | `POST /api/change-sets/{id}/rebase` |
-| Apply to the model | `change_set_apply` | `POST /api/change-sets/{id}/apply` |
-| Apply as a target state beside the baseline | `change_set_apply_as_target_state` | `POST /api/change-sets/{id}/apply-as-target-state` |
-| Move the target state into the baseline | `change_set_move_into_baseline` | `POST /api/change-sets/{id}/move-into-baseline` |
-| Withdraw the target state instead | `change_set_withdraw_target_state` | `POST /api/change-sets/{id}/withdraw-target-state` |
-| Delete | `change_set_delete` | `DELETE /api/change-sets/{id}` |
-| Residuality in each analysis that judged it | `change_set_residuality` | `GET /api/change-sets/{id}/residuality` |
+| List | `candidate_list` | `GET /api/candidates` |
+| Read the record and version | `candidate_read` | `GET /api/candidates/{id}` |
+| Create, optionally drawn on and scoped by a diagram, and with edits | `candidate_create` | `POST /api/candidates` |
+| Record edits | `candidate_record` | `POST /api/candidates/{id}/operations` |
+| Change the header or the state | `candidate_edit` | `PATCH /api/candidates/{id}` |
+| How each operation stands against the model | `candidate_standing` | `GET /api/candidates/{id}/standing` |
+| Compare against the model, the naive or another candidate | `candidate_compare` | `GET /api/candidates/{id}/diff` |
+| The picture a candidate is sketched on | — | `GET /api/candidates/{id}/picture` |
+| That picture's elements, relations and neighbourhood, for its editor | — | `GET /api/candidates/{id}/picture/context` |
+| Draw an edit session's composition, or resized shapes, over that picture | — | `POST /api/candidates/{id}/picture/preview`, `POST /api/candidates/{id}/picture/shapes/preview` |
+| Save the generated view a candidate is drawn on as a diagram | `candidate_save_diagram` | `POST /api/candidates/{id}/save-as-diagram` |
+| Check candidates for conflicting claims | `candidate_check` | `POST /api/candidate-checks` |
+| Integrate candidates into a new one, resolving conflicts | `candidate_integrate` | `POST /api/candidate-integrations` |
+| Re-base drifted operations | `candidate_rebase` | `POST /api/candidates/{id}/rebase` |
+| Apply to the model | `candidate_apply` | `POST /api/candidates/{id}/apply` |
+| Apply as a target state beside the baseline | `candidate_apply_as_target_state` | `POST /api/candidates/{id}/apply-as-target-state` |
+| Move the target state into the baseline | `candidate_move_into_baseline` | `POST /api/candidates/{id}/move-into-baseline` |
+| Withdraw the target state instead | `candidate_withdraw_target_state` | `POST /api/candidates/{id}/withdraw-target-state` |
+| Delete | `candidate_delete` | `DELETE /api/candidates/{id}` |
+| Residuality in each analysis that judged it | `analysis_residuality` | `GET /api/candidates/{id}/residuality` |
 
 ### Recording edits
 
@@ -282,17 +282,17 @@ a base. Several edits are recorded in one call, in order, and either all of them
 
 `standing` reports each operation as `applies`, `already-there`, `drifted` or `conflicting`, with a
 sentence saying what to do. An operation has drifted when the value it replaces changed in the model
-after it was recorded. `change_set_rebase` records each drifted operation again against the model as
+after it was recorded. `candidate_rebase` records each drifted operation again against the model as
 it is now, keeping the value it asks for.
 
-`change_set_apply` writes every operation in one transaction and marks the candidate `integrated`.
+`candidate_apply` writes every operation in one transaction and marks the candidate `integrated`.
 It is refused while an operation conflicts or has drifted, or while a candidate beneath it is not
 integrated. Operations already in the model are skipped. A dry run, the default, answers what would be
 written and the refusal, if any.
 
 ### Applying as a target state
 
-`change_set_apply_as_target_state` writes the candidate into the model beside the baseline and leaves
+`candidate_apply_as_target_state` writes the candidate into the model beside the baseline and leaves
 the elements it changes as they are:
 
 | The candidate | In the model |
@@ -311,12 +311,12 @@ The candidate becomes `candidate` (offered) and records where its target state s
 `target-state`. While it stands, the candidate cannot be applied directly, deleted, returned to draft
 or given other operations; a re-base still works.
 
-`change_set_move_into_baseline` applies the candidate's own operations to the originals, moves any
+`candidate_move_into_baseline` applies the candidate's own operations to the originals, moves any
 relation drawn to a "(target)" copy since onto its original, removes the copies, the plateaus and the
 gap with their relations, and sets each added element `active`. It is one generated operation list,
 refused while an operation conflicts or has drifted, and on success the candidate is `integrated`.
 
-`change_set_withdraw_target_state` takes the target state out of the model instead and leaves the
+`candidate_withdraw_target_state` takes the target state out of the model instead and leaves the
 baseline as it was before the apply: it removes the "(target)" copies with their relations and traces,
 the elements the candidate added, the plateaus and the gap, as one generated operation list. The
 candidate becomes a `draft` again, so it can be applied, applied as a target state again, rejected or
@@ -326,7 +326,7 @@ run, the default, answers the removals and the refusal.
 
 ### Integrating
 
-`change_set_integrate` makes a new draft candidate that holds the operations of two or more drafts or
+`candidate_integrate` makes a new draft candidate that holds the operations of two or more drafts or
 offered candidates. The candidates stack on the same candidate, or all on the model, and the new one
 stacks there too. Operations that ask for the same thing are kept once.
 
@@ -354,7 +354,7 @@ integration is applied.
 ### Abandoning: rejecting or deleting
 
 A candidate that is not going to be applied is either rejected or deleted. Rejecting it
-(`change_set_edit` with `state` `rejected`) keeps it, with its operations, as a considered alternative
+(`candidate_edit` with `state` `rejected`) keeps it, with its operations, as a considered alternative
 that lost. Deleting it removes it.
 
 A candidate is kept while anything refers to it: a candidate stacked on it, an analysis that starts
@@ -405,7 +405,7 @@ diagram editor's reads for that picture, so the same editor sketches a diagram a
 the candidate creates or changes is drawn over the picture and reaches the model only when the
 candidate is applied.
 
-`change_set_save_diagram` (**Save as diagram…** on a candidate's page) stores the generated view as a
+`candidate_save_diagram` (**Save as diagram…** on a candidate's page) stores the generated view as a
 new diagram, through the same create as any diagram, and records it as the candidate's `diagram`. The
 diagram draws only what the model holds. A candidate that reads over nothing of the model has no view
 to save. Stressors, end states, incidence, adaptations and verdicts are rows of the

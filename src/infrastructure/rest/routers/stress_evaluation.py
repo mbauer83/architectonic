@@ -18,7 +18,7 @@ from src.infrastructure.rest.contracts.stress_evaluation import (
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._candidate_access import refusals, service
-from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_CHANGES, TAG_DOCUMENTS, WRITE_RESPONSES
+from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_CANDIDATES, TAG_DOCUMENTS, WRITE_RESPONSES
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.document import edit_document
 from src.infrastructure.write.artifact_write.types import WriteResult
@@ -77,15 +77,15 @@ def documents_hold_out_test_set(
 
 
 @router.get(
-    "/api/change-sets/{artifact_id}/residuality",
-    operation_id="changes_read_residuality",
-    tags=[TAG_CHANGES],
+    "/api/candidates/{artifact_id}/residuality",
+    operation_id="candidates_read_residuality",
+    tags=[TAG_CANDIDATES],
     summary="Read a candidate's residuality in each analysis that judged it",
     response_model=CandidateResiduality,
     response_model_exclude_none=True,
     responses=READ_RESPONSES,
 )
-def changes_read_residuality(artifact_id: str) -> dict[str, Any]:
+def candidates_read_residuality(artifact_id: str) -> dict[str, Any]:
     with refusals():
         return evaluation.residuality_by_analysis(service(), artifact_id)
 

@@ -53,7 +53,7 @@ const withdraw = () => {
       </p>
       <footer>
         <PermittedButton
-          operation="changes_withdraw_candidate_target_state"
+          operation="candidates_withdraw_candidate_target_state"
           class="btn btn-sm btn-primary"
           data-testid="abandon-withdraw"
           :disabled="target.busy.value"
@@ -87,7 +87,7 @@ const withdraw = () => {
       <footer>
         <PermittedButton
           v-if="rejectable"
-          operation="changes_edit_candidate"
+          operation="candidates_edit_candidate"
           class="btn btn-sm btn-primary"
           data-testid="abandon-reject"
           :disabled="busy"
@@ -96,7 +96,7 @@ const withdraw = () => {
           Reject
         </PermittedButton>
         <PermittedButton
-          operation="changes_delete_candidate"
+          operation="candidates_delete_candidate"
           class="btn btn-sm"
           data-testid="abandon-delete"
           :disabled="busy"

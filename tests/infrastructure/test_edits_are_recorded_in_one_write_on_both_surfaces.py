@@ -51,10 +51,10 @@ def _edits(client: TestClient) -> list[dict[str, Any]]:
 
 
 def test_several_edits_are_one_write_and_a_create_is_given_its_id(client: TestClient) -> None:
-    created = client.post("/api/change-sets", json={"record": {"name": "Cache"}}).json()
+    created = client.post("/api/candidates", json={"record": {"name": "Cache"}}).json()
     ref = created["record"]["id"]
 
-    recorded = client.post(f"/api/change-sets/{ref}/operations", json={
+    recorded = client.post(f"/api/candidates/{ref}/operations", json={
         "based_on": created["version"], "operations": _edits(client)})
 
     assert recorded.status_code == 200, recorded.text
@@ -62,20 +62,20 @@ def test_several_edits_are_one_write_and_a_create_is_given_its_id(client: TestCl
     assert [one["op"] for one in operations] == ["create_entity", "edit_entity"]
     minted = next(one["artifact_id"] for one in operations if one["op"] == "create_entity")
     assert minted.startswith("APP@") and minted.endswith(".catalog-cache")
-    standing = client.get(f"/api/change-sets/{ref}/standing").json()["standing"]
+    standing = client.get(f"/api/candidates/{ref}/standing").json()["standing"]
     assert {item["standing"] for item in standing} == {"applies"}
 
 
 def test_a_refused_edit_in_a_list_records_none_of_it(client: TestClient) -> None:
-    created = client.post("/api/change-sets", json={"record": {"name": "Cache"}}).json()
+    created = client.post("/api/candidates", json={"record": {"name": "Cache"}}).json()
     ref = created["record"]["id"]
     edits = [*_edits(client), {"op": "edit_entity", "artifact_id": "APP@1.nothere", "field": "name", "value": "x"}]
 
     body = {"based_on": created["version"], "operations": edits}
-    refused = client.post(f"/api/change-sets/{ref}/operations", json=body)
+    refused = client.post(f"/api/candidates/{ref}/operations", json=body)
 
     assert refused.status_code == 422, refused.text
-    assert client.get(f"/api/change-sets/{ref}").json()["version"] == created["version"]
+    assert client.get(f"/api/candidates/{ref}").json()["version"] == created["version"]
 
 
 def test_drop_takes_back_a_create_and_what_names_it(client: TestClient) -> None:
@@ -84,7 +84,7 @@ def test_drop_takes_back_a_create_and_what_names_it(client: TestClient) -> None:
         repo_root=str(client.root),  # type: ignore[attr-defined]
     )["artifact_id"]
     chosen = "APP@1795600000.abcdEF.catalog-cache"
-    created = client.post("/api/change-sets", json={"record": {"name": "Cache"}, "operations": [
+    created = client.post("/api/candidates", json={"record": {"name": "Cache"}, "operations": [
         {"op": "create_entity", "artifact_id": chosen, "fields": {
             "artifact_type": "application-component", "name": "Catalog Cache", "group": "uncategorized"}},
         {"op": "add_connection", "source_entity": source, "connection_type": "archimate-serving",
@@ -94,9 +94,9 @@ def test_drop_takes_back_a_create_and_what_names_it(client: TestClient) -> None:
     ref = created["record"]["id"]
     assert len(created["record"]["changes"]["operations"]) == 3
 
-    dropped = client.post(f"/api/change-sets/{ref}/operations", json={
+    dropped = client.post(f"/api/candidates/{ref}/operations", json={
         "based_on": created["version"], "operations": [{"op": "drop", "artifact_id": "APP@1795600000.abcdEF"}]})
-    nothing = client.post(f"/api/change-sets/{ref}/operations", json={
+    nothing = client.post(f"/api/candidates/{ref}/operations", json={
         "based_on": dropped.json()["version"], "operations": [{"op": "drop", "artifact_id": chosen}]})
 
     assert dropped.status_code == 200, dropped.text
@@ -106,16 +106,16 @@ def test_drop_takes_back_a_create_and_what_names_it(client: TestClient) -> None:
 
 def test_mcp_records_edits_as_rest_does_and_reads_by_one_tool_each(client: TestClient) -> None:
     root = str(client.root)  # type: ignore[attr-defined]
-    created = mcp.change_set_create(CandidateHeader(name="Over MCP"), repo_root=root)
+    created = mcp.candidate_create(CandidateHeader(name="Over MCP"), repo_root=root)
     ref = created["record"]["id"]
 
-    recorded = mcp.change_set_record(ref, created["version"], EDITS.validate_python(_edits(client)), repo_root=root)
+    recorded = mcp.candidate_record(ref, created["version"], EDITS.validate_python(_edits(client)), repo_root=root)
 
     assert [one["op"] for one in recorded["record"]["changes"]["operations"]] == ["create_entity", "edit_entity"]
-    assert mcp.change_set_read(ref, repo_root=root) == client.get(f"/api/change-sets/{ref}").json()
-    assert mcp.change_set_standing(ref, repo_root=root) == client.get(f"/api/change-sets/{ref}/standing").json()
-    assert mcp.change_set_compare(ref, repo_root=root) == client.get(f"/api/change-sets/{ref}/diff").json()
-    assert mcp.change_set_residuality(ref, repo_root=root) == {"candidate": ref, "analyses": []}
+    assert mcp.candidate_read(ref, repo_root=root) == client.get(f"/api/candidates/{ref}").json()
+    assert mcp.candidate_standing(ref, repo_root=root) == client.get(f"/api/candidates/{ref}/standing").json()
+    assert mcp.candidate_compare(ref, repo_root=root) == client.get(f"/api/candidates/{ref}/diff").json()
+    assert mcp.analysis_residuality(ref, repo_root=root) == {"candidate": ref, "analyses": []}
 
 
 def _with_keywords(client: TestClient) -> str:
@@ -131,26 +131,26 @@ def test_an_edit_of_a_list_field_is_answered_as_it_is_read_back_on_rest(client: 
     was a 500 (`base.value` not JSON), on the create and on the record alike."""
     edit = {"op": "edit_entity", "artifact_id": _with_keywords(client), "field": "keywords", "value": ["probe"]}
 
-    created = client.post("/api/change-sets", json={"record": {"name": "Keywords"}, "operations": [edit]})
+    created = client.post("/api/candidates", json={"record": {"name": "Keywords"}, "operations": [edit]})
     assert created.status_code == 200, created.text
     ref = created.json()["record"]["id"]
-    assert created.json() == client.get(f"/api/change-sets/{ref}").json()
+    assert created.json() == client.get(f"/api/candidates/{ref}").json()
     assert created.json()["record"]["changes"]["operations"][0]["base"] == {"value": ["search", "metadata"]}
 
-    other = client.post("/api/change-sets", json={"record": {"name": "Keywords later"}}).json()
+    other = client.post("/api/candidates", json={"record": {"name": "Keywords later"}}).json()
     later = other["record"]["id"]
-    recorded = client.post(f"/api/change-sets/{later}/operations", json={
+    recorded = client.post(f"/api/candidates/{later}/operations", json={
         "based_on": other["version"], "operations": [edit]})
     assert recorded.status_code == 200, recorded.text
-    assert recorded.json() == client.get(f"/api/change-sets/{later}").json()
+    assert recorded.json() == client.get(f"/api/candidates/{later}").json()
 
 
 def test_an_edit_of_a_list_field_is_answered_as_it_is_read_back_on_mcp(client: TestClient) -> None:
     root = str(client.root)  # type: ignore[attr-defined]
     edit = {"op": "edit_entity", "artifact_id": _with_keywords(client), "field": "keywords", "value": ["probe"]}
-    created = mcp.change_set_create(CandidateHeader(name="Over MCP"), repo_root=root)
+    created = mcp.candidate_create(CandidateHeader(name="Over MCP"), repo_root=root)
 
-    recorded = mcp.change_set_record(
+    recorded = mcp.candidate_record(
         created["record"]["id"], created["version"], EDITS.validate_python([edit]), repo_root=root)
 
-    assert recorded == mcp.change_set_read(created["record"]["id"], repo_root=root)
+    assert recorded == mcp.candidate_read(created["record"]["id"], repo_root=root)

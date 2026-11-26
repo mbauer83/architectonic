@@ -252,25 +252,25 @@ def test_architecture_write_mount_annotations_match_expected_intent() -> None:
         "artifact_admin_reindex": (False, True, False, False),
         # One lifecycle tool spans create through edit/delete.
         "artifact_viewpoint": (False, True, False, False),
-        "change_set_create": (False, False, False, False),
+        "candidate_create": (False, False, False, False),
         # An edit replaces what an earlier one of the same field said, and `drop` takes operations back.
-        "change_set_record": (False, True, False, False),
-        "change_set_edit": (False, True, False, False),
+        "candidate_record": (False, True, False, False),
+        "candidate_edit": (False, True, False, False),
         # Rewrites the base of each drifted operation, so what the candidate held before is replaced.
-        "change_set_rebase": (False, True, False, False),
+        "candidate_rebase": (False, True, False, False),
         # Writes the candidate's operations, removals among them, onto the model.
-        "change_set_apply": (False, True, False, False),
+        "candidate_apply": (False, True, False, False),
         # Creates the target state beside the baseline; the originals and the candidate's operations stay.
-        "change_set_apply_as_target_state": (False, False, False, False),
+        "candidate_apply_as_target_state": (False, False, False, False),
         # Applies the kept operations to the originals and removes the copies, the plateaus and the gap.
-        "change_set_move_into_baseline": (False, True, False, False),
+        "candidate_move_into_baseline": (False, True, False, False),
         # Removes the copies, the added elements, the plateaus and the gap again.
-        "change_set_withdraw_target_state": (False, True, False, False),
-        "change_set_delete": (False, True, False, False),
+        "candidate_withdraw_target_state": (False, True, False, False),
+        "candidate_delete": (False, True, False, False),
         # Creates a diagram and names it on the candidate, which named none.
-        "change_set_save_diagram": (False, False, False, False),
+        "candidate_save_diagram": (False, False, False, False),
         # Creates the integration as a new candidate; the chosen candidates are left as they are.
-        "change_set_integrate": (False, False, False, False),
+        "candidate_integrate": (False, False, False, False),
         # Creates a candidate and a document, and nothing else.
         "analysis_start": (False, False, False, False),
         # Moves existing rows from the design set to the test set: it changes what they held.

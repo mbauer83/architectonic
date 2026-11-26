@@ -17,13 +17,13 @@ let candidate = ''
 
 test.afterEach(async ({ request }) => {
   if (!candidate) return
-  const deleted = await request.delete(`/api/change-sets/${encodeURIComponent(candidate)}?dry_run=false`)
+  const deleted = await request.delete(`/api/candidates/${encodeURIComponent(candidate)}?dry_run=false`)
   expect(deleted.status(), await deleted.text()).toBe(204)
   candidate = ''
 })
 
 test('a candidate drawn on the view generated from its scope draws what it creates, marked +', async ({ page, request }) => {
-  const written = await request.post('/api/change-sets', { data: {
+  const written = await request.post('/api/candidates', { data: {
     record: { name: 'Cached index store', scope: [INDEX_STORE] },
     operations: [
       { op: 'create_entity', artifact_id: CACHE,
@@ -49,7 +49,7 @@ test('the picture served before a candidate composes is said to be loading, not 
   // The composed picture is a render, so it arrives a second or more after the served one, which draws the
   // renamed store under its old name and nothing the candidate creates. A reader — and the documentation's
   // capture, which shot exactly that picture — must see it as loading until the candidate is drawn.
-  const written = await request.post('/api/change-sets', { data: {
+  const written = await request.post('/api/candidates', { data: {
     record: { name: 'Cached index store', scope: [INDEX_STORE] },
     operations: [
       { op: 'create_entity', artifact_id: CACHE,
@@ -85,7 +85,7 @@ test('the picture served before a candidate composes is said to be loading, not 
 })
 
 test('a candidate that relates two elements of its generated view keeps the box the view draws them in', async ({ page, request }) => {
-  const written = await request.post('/api/change-sets', { data: {
+  const written = await request.post('/api/candidates', { data: {
     record: { name: 'Git sync serves the index', scope: [PROMOTION_SERVICE, INDEX_STORE, GIT_SYNC] },
     operations: [
       { op: 'add_connection', source_entity: GIT_SYNC, connection_type: 'archimate-serving', target_entity: INDEX_STORE },

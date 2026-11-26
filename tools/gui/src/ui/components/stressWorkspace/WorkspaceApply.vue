@@ -116,7 +116,7 @@ const applied = () => {
           </select>
         </label>
         <PermittedButton
-          operation="changes_apply_candidate"
+          operation="candidates_apply_candidate"
           class="btn btn-sm btn-primary"
           data-testid="workspace-apply-check"
           :disabled="!candidate || apply.busy.value"

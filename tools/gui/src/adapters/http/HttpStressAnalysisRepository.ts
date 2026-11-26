@@ -15,14 +15,14 @@ import type { StressAnalysisRepository } from '../../ports/StressAnalysisReposit
 import { buildUrl, deleteNoContent, fetchJson, patchJson, postJson } from './httpTransport'
 
 const candidateUrl = (id: string, part = '', query?: Record<string, string | undefined>): string =>
-  buildUrl(`/change-sets/${encodeIdentitySegment(id)}${part}`, query)
+  buildUrl(`/candidates/${encodeIdentitySegment(id)}${part}`, query)
 const documentUrl = (id: string, part: string): string => buildUrl(`/documents/${encodeIdentitySegment(id)}${part}`)
 
 /** The stress-analysis workspace's half of the HTTP adapter. */
 export const stressAnalysisMethods = (): StressAnalysisRepository => ({
-  listCandidates: () => fetchJson(buildUrl('/change-sets'), CandidateListSchema)
+  listCandidates: () => fetchJson(buildUrl('/candidates'), CandidateListSchema)
     .pipe(Effect.map((envelope) => envelope.candidates)),
-  createCandidate: (record) => postJson(buildUrl('/change-sets'), { record }, CandidateResponseSchema),
+  createCandidate: (record) => postJson(buildUrl('/candidates'), { record }, CandidateResponseSchema),
   startAnalysis: (start) => postJson(buildUrl('/stress-analyses'), start, AnalysisStartedSchema),
   deleteCandidate: (id) => deleteNoContent(candidateUrl(id, '', { dry_run: 'false' })),
   rebaseCandidate: (id, basedOn) =>
@@ -47,9 +47,9 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
     postJson(candidateUrl(id, '/operations'), { based_on: basedOn, operations: [operation] }, CandidateResponseSchema),
   compareCandidate: (id, base, diagram) =>
     fetchJson(candidateUrl(id, '/diff', { base, diagram }), CandidateComparisonSchema),
-  checkCandidates: (ids) => postJson(buildUrl('/change-set-checks'), { candidates: ids }, IntegrationCheckSchema),
+  checkCandidates: (ids) => postJson(buildUrl('/candidate-checks'), { candidates: ids }, IntegrationCheckSchema),
   integrateCandidates: (integrate) =>
-    postJson(buildUrl('/change-set-integrations'), integrate, CandidateIntegrationSchema),
+    postJson(buildUrl('/candidate-integrations'), integrate, CandidateIntegrationSchema),
   readDocumentTables: (documentId) => fetchJson(documentUrl(documentId, '/tables'), DocumentTablesSchema),
   editDocumentTable: (documentId, table, rows) => patchJson(
     documentUrl(documentId, `/tables/${encodeIdentitySegment(table)}`), { rows, dry_run: false },

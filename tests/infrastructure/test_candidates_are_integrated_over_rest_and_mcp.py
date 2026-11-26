@@ -40,7 +40,7 @@ def client(tmp_path: Path) -> Iterator[TestClient]:
 
 
 def _renaming(client: TestClient, parent: str, name: str) -> str:
-    made = client.post("/api/change-sets", json={
+    made = client.post("/api/candidates", json={
         "record": {"name": f"Adaptation: {name}", "parent": parent},
         "operations": [{"op": "edit_entity", "artifact_id": _SERVICE, "field": "name", "value": name}],
     })
@@ -50,7 +50,7 @@ def _renaming(client: TestClient, parent: str, name: str) -> str:
 
 @pytest.fixture
 def adaptations(client: TestClient) -> tuple[str, str, str]:
-    naive = client.post("/api/change-sets", json={"record": {"name": "Naive", "scope": [_SERVICE]}})
+    naive = client.post("/api/candidates", json={"record": {"name": "Naive", "scope": [_SERVICE]}})
     assert naive.status_code == 200, naive.text
     parent = str(naive.json()["record"]["id"])
     return parent, _renaming(client, parent, "Promotion Queue Service"), _renaming(client, parent, "Promotion Gate")
@@ -60,22 +60,22 @@ def test_a_dry_run_lists_each_conflict_with_the_actions_it_permits_and_writes_no
     client: TestClient, adaptations: tuple[str, str, str],
 ) -> None:
     _parent, ours, theirs = adaptations
-    before = client.get("/api/change-sets").json()["candidates"]
+    before = client.get("/api/candidates").json()["candidates"]
 
-    planned = client.post("/api/change-set-integrations", json={"candidates": [ours, theirs], "name": "Integration"})
+    planned = client.post("/api/candidate-integrations", json={"candidates": [ours, theirs], "name": "Integration"})
 
     assert planned.status_code == 200, planned.text
     (conflict,) = planned.json()["conflicts"]
     assert (conflict["kind"], conflict["actions"]) == ("same-key", ["take", "drop", "merge"])
     assert {party["set_id"] for party in conflict["parties"]} == {ours, theirs}
     assert "integration" not in planned.json()
-    assert client.get("/api/change-sets").json()["candidates"] == before
+    assert client.get("/api/candidates").json()["candidates"] == before
 
 
 def test_integrating_while_a_conflict_stands_is_refused(client: TestClient, adaptations: tuple[str, str, str]) -> None:
     _parent, ours, theirs = adaptations
 
-    refused = client.post("/api/change-set-integrations", json={
+    refused = client.post("/api/candidate-integrations", json={
         "candidates": [ours, theirs], "name": "Integration", "dry_run": False,
     })
 
@@ -87,11 +87,11 @@ def test_a_resolved_integration_is_a_new_draft_on_the_shared_parent(
     client: TestClient, adaptations: tuple[str, str, str],
 ) -> None:
     parent, ours, theirs = adaptations
-    subject = client.post("/api/change-set-integrations", json={
+    subject = client.post("/api/candidate-integrations", json={
         "candidates": [ours, theirs], "name": "Integration",
     }).json()["conflicts"][0]["subject"]
 
-    made = client.post("/api/change-set-integrations", json={
+    made = client.post("/api/candidate-integrations", json={
         "candidates": [ours, theirs], "name": "Integration", "dry_run": False,
         "resolutions": [{"kind": "same-key", "subject": subject, "action": "merge", "value": "Promotion Gate Queue"}],
     })
@@ -102,7 +102,7 @@ def test_a_resolved_integration_is_a_new_draft_on_the_shared_parent(
     (operation,) = record["changes"]["operations"]
     assert (stable_id(operation["artifact_id"]), operation["value"]) == (stable_id(_SERVICE), "Promotion Gate Queue")
     for chosen in (ours, theirs):
-        assert client.get(f"/api/change-sets/{chosen}").json()["record"]["state"] == "draft"
+        assert client.get(f"/api/candidates/{chosen}").json()["record"]["state"] == "draft"
     root: Path = client.root  # type: ignore[attr-defined]
     assert "Promotion Gate Queue" not in next(root.rglob(f"{_SERVICE}.md")).read_text(encoding="utf-8")
 
@@ -112,11 +112,11 @@ def test_an_agent_integrates_through_mcp_as_the_page_does(
 ) -> None:
     root = str(client.root)  # type: ignore[attr-defined]
     _parent, ours, theirs = adaptations
-    over_rest = client.post("/api/change-set-integrations", json={"candidates": [ours, theirs], "name": "By hand"})
+    over_rest = client.post("/api/candidate-integrations", json={"candidates": [ours, theirs], "name": "By hand"})
     subject = over_rest.json()["conflicts"][0]["subject"]
 
-    assert mcp.change_set_integrate([ours, theirs], "By hand", repo_root=root) == over_rest.json()
-    made = mcp.change_set_integrate(
+    assert mcp.candidate_integrate([ours, theirs], "By hand", repo_root=root) == over_rest.json()
+    made = mcp.candidate_integrate(
         [ours, theirs], "By an agent", dry_run=False, repo_root=root,
         resolutions=[IntegrationResolution(kind="same-key", subject=subject, action="take", party=theirs)],
     )

@@ -6,7 +6,7 @@ import { encodeIdentitySegment } from '../../domain/identitySegments'
 import { buildUrl, fetchJson, postJson } from './httpTransport'
 
 const pictureUrl = (id: string, part = ''): string =>
-  buildUrl(`/change-sets/${encodeIdentitySegment(id)}/picture${part}`)
+  buildUrl(`/candidates/${encodeIdentitySegment(id)}/picture${part}`)
 
 /** The candidate picture's half of the HTTP adapter. */
 export const candidatePictureMethods = (): CandidatePictureRepository => ({

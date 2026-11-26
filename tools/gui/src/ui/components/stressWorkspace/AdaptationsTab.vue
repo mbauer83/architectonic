@@ -113,7 +113,7 @@ const create = async () => {
     <div class="new">
       <PermittedButton
         v-if="!stacking"
-        operation="changes_create_candidate"
+        operation="candidates_create_candidate"
         class="btn btn-sm"
         data-testid="new-candidate"
         @click="stacking = true"

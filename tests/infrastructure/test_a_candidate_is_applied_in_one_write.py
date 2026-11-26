@@ -73,10 +73,10 @@ def _connect(root: Path, source: str, target: str) -> None:
 
 
 def _candidate(client: TestClient, *intents: dict[str, Any]) -> str:
-    created = client.post("/api/change-sets", json={"record": {"name": "Replace the rule"}}).json()
+    created = client.post("/api/candidates", json={"record": {"name": "Replace the rule"}}).json()
     ref, version = created["record"]["id"], created["version"]
     for intent in intents:
-        recorded = client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operations": [intent]})
+        recorded = client.post(f"/api/candidates/{ref}/operations", json={"based_on": version, "operations": [intent]})
         assert recorded.status_code == 200, recorded.text
         version = recorded.json()["version"]
     return ref
@@ -93,7 +93,7 @@ def _connections(root: Path) -> set[tuple[str, str]]:
 
 
 def _state(client: TestClient, ref: str) -> str:
-    return client.get(f"/api/change-sets/{ref}").json()["record"]["state"]
+    return client.get(f"/api/candidates/{ref}").json()["record"]["state"]
 
 
 @pytest.mark.verifies("REQ@1795548363.kNlXgAA")
@@ -115,13 +115,13 @@ def test_a_create_an_edit_a_connection_and_a_removal_land_in_one_write(
         {"op": "remove_entity", "artifact_id": old_rule},
     )
 
-    preview = client.post(f"/api/change-sets/{ref}/apply", json={})
+    preview = client.post(f"/api/candidates/{ref}/apply", json={})
     assert preview.status_code == 200, preview.text
     assert "refusal" not in preview.json() and preview.json()["integrated"] is False
     assert {item["standing"] for item in preview.json()["standing"]} == {"applies"}
     assert commits == [] and stable_id(old_rule) in _names(root)
 
-    applied = client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": False})
+    applied = client.post(f"/api/candidates/{ref}/apply", json={"dry_run": False})
 
     assert applied.status_code == 200, applied.text
     assert applied.json()["integrated"] is True
@@ -131,7 +131,7 @@ def test_a_create_an_edit_a_connection_and_a_removal_land_in_one_write(
     assert stable_id(old_rule) not in names
     assert _connections(root) == {(stable_id(ledger), stable_id(new_rule))}
     assert _state(client, ref) == "integrated"
-    again = client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": False})
+    again = client.post(f"/api/candidates/{ref}/apply", json={"dry_run": False})
     assert again.status_code == 409 and "integrated" in again.text
 
 
@@ -154,8 +154,8 @@ def test_a_refusal_by_the_last_operation_staged_leaves_the_model_unchanged(
     )
     before, joined = _names(root), _connections(root)
 
-    preview = mcp.change_set_apply(ref, repo_root=str(root))
-    refused = client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": False})
+    preview = mcp.candidate_apply(ref, repo_root=str(root))
+    refused = client.post(f"/api/candidates/{ref}/apply", json={"dry_run": False})
 
     assert "still referenced" in preview["refusal"]
     assert refused.status_code == 409 and "still referenced" in refused.text
@@ -176,13 +176,13 @@ def test_the_dry_run_says_what_each_edit_replaces_and_nothing_for_a_create(root:
          "fields": {"artifact_type": "requirement", "name": "New rule", "group": "uncategorized"}},
     )
 
-    standing = client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": True}).json()["standing"]
+    standing = client.post(f"/api/candidates/{ref}/apply", json={"dry_run": True}).json()["standing"]
 
     edits = [item for item in standing if item["operation"]["op"] == "edit_entity"]
     assert [item["operation"]["value"] for item in edits] == ["Keeps every posting twice."]
     assert all("holds" in item for item in edits)
     assert all("holds" not in item for item in standing if item["operation"]["op"] == "create_entity")
-    over_mcp = mcp.change_set_apply(ref, dry_run=True, repo_root=str(root))["standing"]
+    over_mcp = mcp.candidate_apply(ref, dry_run=True, repo_root=str(root))["standing"]
     assert [item.get("holds") for item in over_mcp] == [item.get("holds") for item in standing]
 
 
@@ -200,12 +200,12 @@ def test_where_the_model_holds_nothing_both_transports_say_so(root: Path, client
          "value": "gold"},
     )
 
-    over_rest = client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": True}).json()["standing"]
-    over_mcp = mcp.change_set_apply(ref, dry_run=True, repo_root=str(root))["standing"]
+    over_rest = client.post(f"/api/candidates/{ref}/apply", json={"dry_run": True}).json()["standing"]
+    over_mcp = mcp.candidate_apply(ref, dry_run=True, repo_root=str(root))["standing"]
 
     for standing in (over_rest, over_mcp):
         assert [("holds" in item, item.get("holds")) for item in standing] == [(True, None)]
-    read = client.get(f"/api/change-sets/{ref}/standing").json()["standing"]
+    read = client.get(f"/api/candidates/{ref}/standing").json()["standing"]
     assert [("holds" in item, item.get("holds")) for item in read] == [(True, None)]
 
 
@@ -217,14 +217,14 @@ def test_both_transports_answer_an_apply_alike(root: Path, client: TestClient) -
         """The answer without the write's operation id, which is new on every call, and without nulls."""
         return {key: value for key, value in answer.items() if key != "operation_id" and value is not None}
 
-    over_rest = client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": True}).json()
-    assert answered(over_rest) == answered(mcp.change_set_apply(ref, dry_run=True, repo_root=str(root)))
+    over_rest = client.post(f"/api/candidates/{ref}/apply", json={"dry_run": True}).json()
+    assert answered(over_rest) == answered(mcp.candidate_apply(ref, dry_run=True, repo_root=str(root)))
 
-    applied = mcp.change_set_apply(ref, dry_run=False, repo_root=str(root))
+    applied = mcp.candidate_apply(ref, dry_run=False, repo_root=str(root))
     assert applied["integrated"] is True and _names(root)[stable_id(ledger)] == "Ledger service"
     with pytest.raises(ValueError, match="integrated"):
-        mcp.change_set_apply(ref, dry_run=False, repo_root=str(root))
-    assert client.post(f"/api/change-sets/{ref}/apply", json={}).json()["refusal"].startswith(ref)
+        mcp.candidate_apply(ref, dry_run=False, repo_root=str(root))
+    assert client.post(f"/api/candidates/{ref}/apply", json={}).json()["refusal"].startswith(ref)
 
 
 def test_an_applied_edit_of_a_list_field_differs_from_the_model_in_nothing(root: Path, client: TestClient) -> None:
@@ -236,11 +236,11 @@ def test_an_applied_edit_of_a_list_field_differs_from_the_model_in_nothing(root:
     )
     ref = _candidate(client, {"op": "edit_entity", "artifact_id": made["artifact_id"], "field": "keywords",
                               "value": ["applied"]})
-    assert client.get(f"/api/change-sets/{ref}/diff").json()["diff"][0]["fields"]["keywords"] == {
+    assert client.get(f"/api/candidates/{ref}/diff").json()["diff"][0]["fields"]["keywords"] == {
         "before": ["search"], "after": ["applied"]}
 
-    assert client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": False}).status_code == 200
+    assert client.post(f"/api/candidates/{ref}/apply", json={"dry_run": False}).status_code == 200
 
-    after = client.get(f"/api/change-sets/{ref}/diff").json()
+    after = client.get(f"/api/candidates/{ref}/diff").json()
     assert after["diff"] == []
     assert [item["standing"] for item in after["standing"]] == ["already-there"]

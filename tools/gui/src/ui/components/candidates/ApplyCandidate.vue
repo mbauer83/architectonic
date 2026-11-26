@@ -73,7 +73,7 @@ const writes = computed(() => (preview.value?.writes ?? []).map((one) => ({ ...o
     </p>
     <footer>
       <PermittedButton
-        operation="changes_apply_candidate"
+        operation="candidates_apply_candidate"
         class="btn btn-sm btn-primary"
         data-testid="apply-confirm"
         :disabled="!canApply(preview) || apply.busy.value"

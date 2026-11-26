@@ -44,7 +44,7 @@ def write_operations(application: Application, root: Path, *, dry_run: bool) -> 
     except Untranslatable as refusal:
         return Written(committed=False, refusal=str(refusal), operation_id=None)
     answer = write_batch(
-        items=[*items.write, *items.delete], accepted_ops=CHANGE_SET_OPS, tool_name="change_set_apply",
+        items=[*items.write, *items.delete], accepted_ops=CHANGE_SET_OPS, tool_name="candidate_apply",
         dry_run=dry_run, repo_root=str(root),
     )
     return Written(

@@ -3,7 +3,7 @@ import { DiagramLayoutGeometrySchema } from './diagramLayoutGeometry'
 import { WriteVerificationSchema } from './write-results'
 
 /**
- * Candidate architectures and the stress-analysis reads over them (`/api/change-sets…`,
+ * Candidate architectures and the stress-analysis reads over them (`/api/candidates…`,
  * `/api/documents/{id}/progress|incidence|tables`).
  *
  * A candidate's record and an operation are served as open field maps: the server reads the recorded
