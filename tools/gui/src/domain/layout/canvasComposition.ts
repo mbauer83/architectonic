@@ -13,7 +13,7 @@ import { connectionParts, stableConnectionId, stableEntityId } from '../artifact
 import type { PictureContext, EntityDetail } from '..'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 import { isRecord } from '../records'
-import { type ArchimateOccurrence, occurrenceItems } from '../archimateOccurrences'
+import { type DiagramOccurrence, occurrenceItems } from '../diagramOccurrences'
 
 
 interface Content {
@@ -21,7 +21,7 @@ interface Content {
   /** The diagram's boxes as the session states them; absent keeps the diagram's own. */
   readonly groupings?: readonly AuthoredGrouping[]
   /** Further drawings of elements the diagram already draws, added in this session. */
-  readonly occurrences?: readonly ArchimateOccurrence[]
+  readonly occurrences?: readonly DiagramOccurrence[]
   readonly addedTypes?: ReadonlyMap<string, string>
   readonly additions?: ReadonlyMap<string, string>
   /** Relations the model holds, drawn on the diagram in this session: diagram content only. */

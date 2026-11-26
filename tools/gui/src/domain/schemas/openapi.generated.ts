@@ -8976,6 +8976,16 @@ export interface components {
         DiagramTypeSummary: {
             /** Description */
             description: string;
+            /**
+             * Draws Occurrences
+             * @description Whether a diagram of this type may draw an element more than once and label each drawing on its own.
+             */
+            draws_occurrences: boolean;
+            /**
+             * Hosts Candidates
+             * @description Whether a candidate architecture may be drawn on a diagram of this type; the server refuses one drawn on a diagram whose type says false.
+             */
+            hosts_candidates: boolean;
             /** Key */
             key: string;
             /** Label */

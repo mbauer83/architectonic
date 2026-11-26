@@ -27,6 +27,10 @@ export const DiagramTypeSummarySchema = Schema.Struct({
   key: Schema.String,
   label: Schema.String,
   description: Schema.String,
+  /** Whether a candidate architecture may be drawn on a diagram of this type; the server refuses one that is not. */
+  hosts_candidates: Schema.Boolean,
+  /** Whether a diagram of this type may draw an element again, and label each drawing on its own. */
+  draws_occurrences: Schema.Boolean,
 })
 export type DiagramTypeSummary = typeof DiagramTypeSummarySchema.Type
 

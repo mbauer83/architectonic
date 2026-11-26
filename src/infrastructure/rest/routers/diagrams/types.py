@@ -28,13 +28,15 @@ router = APIRouter()
 
 @router.get("/api/diagram-types", tags=[TAG_DIAGRAMS], summary="List diagram types",
     response_model=DiagramTypeListResponse)
-def list_diagram_types(catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)) -> list[dict[str, str]]:
+def list_diagram_types(catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency)) -> list[dict[str, object]]:
     store_projected = assurance_surface_diagram_types(complete_diagram_type_catalog())
     return [
         {
             "key": key,
             "label": kind.ui_config.label,
             "description": kind.ui_config.description,
+            "hosts_candidates": kind.hosts_candidates,
+            "draws_occurrences": kind.draws_occurrences,
         }
         for key, kind in sorted(catalogs.diagram_types.all_diagram_types().items())
         if key not in store_projected

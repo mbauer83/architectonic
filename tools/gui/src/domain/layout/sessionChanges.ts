@@ -4,7 +4,7 @@
  * The arranging is counted separately, against the arrangement (`arrangedUnits`).
  */
 import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
-import type { ArchimateOccurrence } from '../archimateOccurrences'
+import type { DiagramOccurrence } from '../diagramOccurrences'
 import { connectionParts, stableConnectionId } from '../artifactId'
 import { connectionTypeLabel } from '../connectionTypeLabel'
 
@@ -21,7 +21,7 @@ interface Content {
   readonly overlays?: readonly Record<string, unknown>[]
   readonly additions?: ReadonlyMap<string, string>
   readonly drawnRelations?: readonly string[]
-  readonly occurrences?: readonly ArchimateOccurrence[]
+  readonly occurrences?: readonly DiagramOccurrence[]
   readonly regroupings?: readonly GroupingIntent[]
   readonly removed?: ReadonlySet<string>
 }

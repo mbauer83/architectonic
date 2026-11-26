@@ -5,7 +5,7 @@ import {
   occurrenceOrdinal,
   occurrencesOf,
   removeOccurrence,
-} from './archimateOccurrences'
+} from './diagramOccurrences'
 
 const ENTITY = { artifact_id: 'BOB@1.aa.repo', display_alias: 'BOB_REPO', name: 'Repository' }
 

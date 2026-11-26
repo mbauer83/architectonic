@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { diagramsHostingCandidates } from '../composables/useDiagramTypeCapabilities'
 /**
  * Candidate architectures: every proposed architecture, independent of any analysis. Each stack is
  * listed under the scope its root was started over, each candidate below what it stacks on, with its
@@ -8,7 +9,6 @@
  */
 import { computed, inject, onMounted, ref, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
-import { Effect } from 'effect'
 import type { DiagramSummary } from '../../domain'
 import { scopeLabel } from '../../domain/candidates/candidateCatalog'
 import { modelServiceKey, toastKey } from '../keys'
@@ -59,11 +59,8 @@ const remove = async (id: string, label: string) => {
 }
 
 onMounted(async () => {
-  const [listed] = await Promise.all([
-    Effect.runPromise(svc.listDiagrams()).catch(() => null),
-    catalog.refresh(),
-  ])
-  diagrams.value = (listed?.items ?? []).filter((one) => one.diagram_type.startsWith('archimate'))
+  const [hosting] = await Promise.all([diagramsHostingCandidates(svc), catalog.refresh()])
+  diagrams.value = hosting
 })
 </script>
 

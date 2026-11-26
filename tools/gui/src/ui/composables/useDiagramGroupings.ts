@@ -3,7 +3,7 @@ import type { AuthoredGrouping } from '../../domain/authoredGrouping'
 import {
   groupLabelByMember, membersOfGroup, withMemberBeside, withoutEmptyGroups,
 } from '../../domain/authoredGrouping'
-import { occurrenceOrdinal, occurrencesOf } from '../lib/archimateOccurrences'
+import { occurrenceOrdinal, occurrencesOf } from '../lib/diagramOccurrences'
 
 /**
  * The grouping state a diagram authoring surface needs, in one place.

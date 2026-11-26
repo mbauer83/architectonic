@@ -31,6 +31,14 @@ class DiagramTypeSummary(Closed):
     key: str
     label: str
     description: str
+    hosts_candidates: bool = Field(
+        description="Whether a candidate architecture may be drawn on a diagram of this type; the server "
+        "refuses one drawn on a diagram whose type says false.",
+    )
+    draws_occurrences: bool = Field(
+        description="Whether a diagram of this type may draw an element more than once and label each "
+        "drawing on its own.",
+    )
 
 
 class MappingSourceSpecResponse(Closed):

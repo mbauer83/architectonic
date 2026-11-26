@@ -182,7 +182,7 @@ const sentence = (kind: string, container: Shape) =>
         {{ sentence(kind, asking) }}
       </button>
       <p class="cp-note">
-        ArchiMate reads nesting in an element as this relationship, so nesting without it is not offered.
+        The ontology reads nesting in an element as this relationship, so nesting without it is not offered.
         It is a model change, written when you Save.
       </p>
       <button

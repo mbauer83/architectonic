@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import type { DiagramContext } from '../../domain'
 import { seededDisplayLabels, withDisplayLabel } from '../lib/archimateDisplayLabels'
-import { occurrenceItems } from '../lib/archimateOccurrences'
+import { occurrenceItems } from '../lib/diagramOccurrences'
 
 const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}

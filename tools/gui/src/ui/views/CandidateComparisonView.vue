@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { diagramsHostingCandidates } from '../composables/useDiagramTypeCapabilities'
 /**
  * Candidate architectures compared: two or more read against one common base — the model, or a
  * candidate all of them stack on — each with its operations and its picture, side by side on a wide
@@ -10,7 +11,6 @@
  */
 import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Effect } from 'effect'
 import type { DiagramSummary } from '../../domain'
 import { comparedIds } from '../../domain/candidates/candidateComparison'
 import { stableEntityId } from '../../domain/artifactId'
@@ -80,11 +80,8 @@ watch(() => [comparison.known.value.join('\n'), comparison.base.value, diagramId
   if (loaded.value) void comparison.read()
 })
 onMounted(async () => {
-  const [listed] = await Promise.all([
-    Effect.runPromise(svc.listDiagrams()).catch(() => null),
-    comparison.load(),
-  ])
-  diagrams.value = (listed?.items ?? []).filter((one) => one.diagram_type.startsWith('archimate'))
+  const [hosting] = await Promise.all([diagramsHostingCandidates(svc), comparison.load()])
+  diagrams.value = hosting
   loaded.value = true
   await comparison.read()
 })

@@ -349,6 +349,25 @@ class DiagramTypeModule(Protocol):
         ...
 
     @property
+    def hosts_candidates(self) -> bool:
+        """Whether a candidate architecture may be drawn on a diagram of this type.
+
+        True where the diagram's picture is the model's elements and relations as such — what a candidate's
+        operations change — so the candidate's editor can sketch on it. The server refuses a candidate drawn
+        on a diagram of a type that says False, and the GUI offers only the diagrams whose type says True.
+        """
+        ...
+
+    @property
+    def draws_occurrences(self) -> bool:
+        """Whether a diagram of this type may draw one element more than once and label each drawing on its own.
+
+        The further drawings and their labels are statements in `diagram-entities` (`occurrence`,
+        `display_labels`) that only a type which says True renders.
+        """
+        ...
+
+    @property
     def held_record_keys(self) -> frozenset[str]:
         """The `diagram-entities` keys whose items are records this diagram holds, each a record of that type.
 

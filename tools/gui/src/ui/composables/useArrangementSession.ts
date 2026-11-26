@@ -27,7 +27,7 @@ import type { DrawingNode, LayoutGeometry } from '../../domain/schemas/diagramLa
 import { pointsOf } from '../../domain/schemas/diagramLayoutGeometry'
 import { shapedLines, withoutElements } from '../../domain/layout/arrangementLayout'
 import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
-import type { ArchimateOccurrence } from '../../domain/archimateOccurrences'
+import type { DiagramOccurrence } from '../../domain/diagramOccurrences'
 import type { AuthoredGrouping } from '../../domain/authoredGrouping'
 import type { ShapeToDraw } from '../../ports/DiagramLayoutRepository'
 
@@ -39,7 +39,7 @@ export interface ArrangementState {
   /** The diagram's boxes as the session states them, once one was renamed, deleted or added (D9). */
   readonly groupings?: readonly AuthoredGrouping[]
   /** Further drawings of elements the diagram already draws, added in this session. */
-  readonly occurrences?: readonly ArchimateOccurrence[]
+  readonly occurrences?: readonly DiagramOccurrence[]
   readonly overlays?: readonly Record<string, unknown>[]
   readonly picture?: LayoutGeometry
   readonly addedTypes?: ReadonlyMap<string, string>

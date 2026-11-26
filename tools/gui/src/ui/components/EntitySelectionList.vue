@@ -10,7 +10,7 @@ import RelatedEntityPanel from './RelatedEntityPanel.vue'
 import RowConnectionsPanel from './RowConnectionsPanel.vue'
 import { toGlyphKey } from '../lib/glyphKey'
 import { displayLabelOf, drawnLabelFor } from '../lib/archimateDisplayLabels'
-import { drawingKey } from '../lib/archimateOccurrences'
+import { drawingKey } from '../lib/diagramOccurrences'
 import { connectionsByType, type ConnTypeGroup } from '../lib/rowConnections'
 
 const rowKey = (row: Pick<EntityRow, 'entity' | 'occurrenceId'>): string =>

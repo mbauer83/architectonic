@@ -20,7 +20,7 @@ import DiagramPreviewPane from '../components/DiagramPreviewPane.vue'
 import DiagramGroupingsEditor from '../components/DiagramGroupingsEditor.vue'
 import ViewpointSelect from '../components/ViewpointSelect.vue'
 import { findViewpointBySlug } from '../components/ViewpointSelect.helpers'
-import { isArchimateDiagramType } from '../lib/archimateOccurrences'
+import { useDiagramTypeCapabilities } from '../composables/useDiagramTypeCapabilities'
 import { useDiagramDrawings } from '../composables/useDiagramDrawings'
 import { useDiagramGroupings } from '../composables/useDiagramGroupings'
 import { loadViewpointSummaries } from '../lib/viewpointSummary'
@@ -33,6 +33,7 @@ const home = ref('')
 const name = ref('')
 const diagramType = ref((route.query.type as string | undefined) ?? 'archimate-business')
 const uiConfig = useDiagramTypeUiConfig(svc, diagramType)
+const typeCan = useDiagramTypeCapabilities(svc)
 const diagramEntities = ref<Record<string, unknown>>({})
 const viewpoints = ref<ViewpointSummary[]>([])
 const viewpointSlug = ref<string | null>(null)
@@ -77,9 +78,7 @@ const drawings = useDiagramDrawings({
   diagramEntities, write: setDiagramEntities, connections: allModelConns,
   drawnEntityIds: includedEntityIds,
 })
-const {
-  addEntityOccurrence, removeEntityOccurrence, toggleConnectionAt,
-} = drawings
+const { addEntityOccurrence, removeEntityOccurrence, toggleConnectionAt } = drawings
 
 const {
   groupings: authoredGroupings, candidates: groupingCandidates, forWrite: groupingsForWrite,
@@ -435,8 +434,8 @@ watch(diagramType, () => {
             :expanded-connection-entity-ids="[...expandedConnectionEntityIds]"
             :expanded-related-entity-ids="[...expandedRelatedEntityIds]"
             :diagram-entities="diagramEntities"
-            :occurrences-supported="isArchimateDiagramType(diagramType)"
-            :labels-supported="isArchimateDiagramType(diagramType)"
+            :occurrences-supported="typeCan(diagramType, 'draws_occurrences')"
+            :labels-supported="typeCan(diagramType, 'draws_occurrences')"
             :group-label-of="labelOfDrawing"
             @add-occurrence="addEntityOccurrence"
             @remove-occurrence="removeEntityOccurrence"

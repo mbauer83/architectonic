@@ -1,6 +1,6 @@
 import type { EntityContextConnection } from '../../domain'
 import { drawingCarries, endpointOf, freeDrawingOn, type Drawing } from './archimateConnectionRouting'
-import { occurrencesOf } from './archimateOccurrences'
+import { occurrencesOf } from './diagramOccurrences'
 
 export interface ConnEntry {
   conn: EntityContextConnection

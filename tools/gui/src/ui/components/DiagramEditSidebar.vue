@@ -4,7 +4,8 @@
  * config panel, the included-entities selection list (one row per drawing, each able to carry
  * its own label on this diagram), the pending-removal list, and the preview/save action pair
  * (mirrored from the header — same emitted events drive both). Almost entirely a layout/plumbing wrapper over
- * already-existing child components; owns no state of its own beyond what's passed in.
+ * already-existing child components; owns no state of its own beyond what's passed in and what the
+ * diagram-type catalogue says the type may draw.
  */
 import type {
   DerivedEntity, DiagramConnection, DiagramTypeUiConfig, EntityContextConnection, EntityDisplayInfo, ViewpointSummary,
@@ -15,7 +16,12 @@ import DiagramTypeConfigPanel from './DiagramTypeConfigPanel.vue'
 import EntitySelectionList, { type EntityRow } from './EntitySelectionList.vue'
 import ViewpointSelect from './ViewpointSelect.vue'
 import { toGlyphKey } from '../lib/glyphKey'
-import { isArchimateDiagramType } from '../lib/archimateOccurrences'
+import { inject } from 'vue'
+import { modelServiceKey } from '../keys'
+import { useDiagramTypeCapabilities } from '../composables/useDiagramTypeCapabilities'
+
+/** Whether the type may draw an element again and label each drawing, as the type catalogue says. */
+const typeCan = useDiagramTypeCapabilities(inject(modelServiceKey)!)
 
 defineProps<{
   viewpoints: readonly ViewpointSummary[]
@@ -119,8 +125,8 @@ const emit = defineEmits<{
             :expanded-connection-entity-ids="expandedConnectionEntityIds"
             :expanded-related-entity-ids="expandedRelatedEntityIds"
             :diagram-entities="typeEntityData"
-            :occurrences-supported="isArchimateDiagramType(diagramType)"
-            :labels-supported="isArchimateDiagramType(diagramType)"
+            :occurrences-supported="typeCan(diagramType, 'draws_occurrences')"
+            :labels-supported="typeCan(diagramType, 'draws_occurrences')"
             :drawn-labels="drawnLabels"
             :group-label-of="groupLabelOf"
             @toggle-connections="emit('toggle-connections', $event)"

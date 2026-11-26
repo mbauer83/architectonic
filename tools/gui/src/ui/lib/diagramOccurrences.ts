@@ -1,13 +1,10 @@
 import type { EntityDisplayInfo, DiagramContextEntity } from '../../domain'
 import { withoutInstanceStatements } from './diagramStatements'
-import { type ArchimateOccurrence, occurrenceItems } from '../../domain/archimateOccurrences'
+import { type DiagramOccurrence, occurrenceItems } from '../../domain/diagramOccurrences'
 
-export { type ArchimateOccurrence, occurrenceItems }
+export { type DiagramOccurrence, occurrenceItems }
 
 type OccurrenceEntity = Pick<EntityDisplayInfo | DiagramContextEntity, 'artifact_id' | 'display_alias' | 'name'>
-
-export const isArchimateDiagramType = (diagramType: string | null | undefined): boolean =>
-  !!diagramType && (diagramType === 'archimate' || diagramType.startsWith('archimate-'))
 
 /**
  * Identifies one *drawing* of an entity.
@@ -22,7 +19,7 @@ export const drawingKey = (entityId: string, occurrenceId: string | null): strin
 export const occurrencesOf = (
   diagramEntities: Record<string, unknown>,
   entityId: string,
-): ArchimateOccurrence[] =>
+): DiagramOccurrence[] =>
   occurrenceItems(diagramEntities).filter((item) => item.backing_entity_id === entityId)
 
 /** "2nd", "3rd", … — how an instance is named to the reader. The base instance is unnamed. */
