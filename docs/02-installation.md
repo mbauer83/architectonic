@@ -484,8 +484,35 @@ team server ── arch-backend ── GUI clients (browsers)
                             └─ MCP agents (many concurrent)
 ```
 
+The backend has no authentication, so it listens on the loopback address unless told otherwise.
+To serve a team, put it behind something that guards the address (a VPN, a firewall or an
+authenticating reverse proxy) and opt in:
+
+```bash
+ARCH_ALLOWED_HOSTS=arch.internal:*,10.0.0.5:* \
+  uv run arch-backend --host 0.0.0.0 --allow-remote-without-auth --daemon
+```
+
+`--allow-remote-without-auth`, or `backend.allow_remote_without_auth: true` in
+`config/settings.yaml`, permits an address other than the loopback. `ARCH_ALLOWED_HOSTS` lists the
+names clients use to reach it; a request addressed to any other name is refused with `421`, on the
+GUI, REST and MCP alike. See [CLI & backend](reference/cli-and-backend.md#backend)
+for the entry syntax, and [Docker Compose](reference/docker-compose.md#vpn-access--the-reverse-proxy)
+for a container.
+
 Point clients at the shared backend by setting `ARCH_MCP_BACKEND_URL` in the MCP server
 config and opening `http://<host>:8000` in a browser. No per-client backend is needed.
+
+What a remote client can reach is bounded:
+
+- Every response carries a content security policy that allows scripts only from the application
+  itself, never inline, and forbids framing, together with `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY` and `Referrer-Policy: same-origin`.
+- No location a client names is read, evaluated or written outside the repositories the backend
+  serves. An MCP `repo_root` must be the engagement or enterprise repository, and an
+  `enterprise_root` the enterprise one; symbolic links and `..` are resolved before the check.
+- Authorizing the backend to open the assurance store is accepted only from the backend's own
+  machine.
 
 For assurance, one operator holds the encryption key and runs `arch-assurance unlock` on the
 server. Set `storage.assurance.activation_policy: persistent` there so an unattended reboot
