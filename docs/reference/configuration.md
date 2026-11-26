@@ -93,8 +93,10 @@ backend:
                               # second workspace on the machine may take a derived port
                               # instead — state it in arch-workspace.yaml to pin it. See
                               # "Several workspaces on one machine" above
-  log_path: .arch/backend.log # where a DETACHED backend writes; workspace-relative if
-                              # not absolute. A foreground run (the container's, and any
+  log_path: .arch/backend.log # where a DETACHED backend writes. A path under `.arch/` is in
+                              # the backend's state directory, beside its pid file (and moves
+                              # with ARCH_BACKEND_STATE_DIR); another relative path is
+                              # workspace-relative. A foreground run (the container's, and any
                               # plain `arch-backend`) logs to stdout/stderr instead
   min_log_level: INFO         # DEBUG | INFO | WARNING | ERROR | CRITICAL
   log_max_bytes: 16777216     # rotate the log once it passes this size (16 MiB). Only a

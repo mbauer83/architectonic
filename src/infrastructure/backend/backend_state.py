@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TypedDict
 
 from src.config.settings import backend_log_path as configured_backend_log_path
+from src.config.workspace_paths import STATE_DIR
 from src.infrastructure.backend.backend_process import _read_process_state
 from src.infrastructure.workspace.workspace_init import load_init_state
 
@@ -36,12 +37,12 @@ def _state_dir(start: Path | None = None) -> Path:
 
     root = workspace_root(start)
     if root is not None:
-        return root / ".arch"
+        return root / STATE_DIR
 
     base = (start or Path.cwd()).resolve()
     if base.is_file():
         base = base.parent
-    return base / ".arch"
+    return base / STATE_DIR
 
 
 def backend_state_path(start: Path | None = None) -> Path:
@@ -54,9 +55,19 @@ def backend_start_lock_path(start: Path | None = None) -> Path:
 
 
 def backend_log_path(start: Path | None = None) -> Path:
+    """Where a detached backend writes its log.
+
+    A configured path under `.arch/` names a file in the backend's state directory, and resolves
+    wherever that directory is — `ARCH_BACKEND_STATE_DIR` included — so the log lands beside the pid
+    file it belongs to. Resolving it against the workspace root instead sent a scratch repository's
+    log into the main checkout's `.arch/backend.log` while its pid file went to the scratch `.arch`.
+    Any other relative path is workspace-relative; an absolute one is used as given.
+    """
     configured = Path(configured_backend_log_path()).expanduser()
     if configured.is_absolute():
         return configured
+    if configured.parts[:1] == (STATE_DIR,) and len(configured.parts) > 1:
+        return _state_dir(start).joinpath(*configured.parts[1:])
 
     root = workspace_root(start)
     if root is not None:
