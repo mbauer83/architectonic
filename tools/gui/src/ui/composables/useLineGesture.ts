@@ -249,13 +249,17 @@ export function useLineGesture(
     return true
   }
 
-  /** The arrows on a picked label: moved by (dx, dy) and anchored again, as one step; answers whether one was. */
+  /**
+   * The arrows on a picked label: moved by (dx, dy) screen pixels — the picture's units at the zoom shown —
+   * and anchored again, as one step; answers whether one was.
+   */
   const nudgeLabel = (dx: number, dy: number): boolean => {
     const course = line.value === null ? undefined : session.courses.value.get(line.value)
     if (!labelPicked.value || !course) return false
+    const [across, down] = [dx * pixel.value, dy * pixel.value]
     restate((route) => {
       const centre = labelCentre(course, route.label ?? MIDDLE)
-      return { ...route, label: labelAnchoredAt(course, { x: centre.x + dx, y: centre.y + dy }) }
+      return { ...route, label: labelAnchoredAt(course, { x: centre.x + across, y: centre.y + down }) }
     })
     return true
   }

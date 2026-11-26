@@ -138,6 +138,12 @@ const lines = computed((): ReadonlyMap<number, DrawnRelation> => {
   return drawn ? drawnRelations(drawn, props.session.courses.value, props.session.routes.value === null, anchors)
     : new Map()
 })
+/** The selected line's label, drawn by the canvas rather than inside PlantUML's relation; null where none is. */
+const selectedLabel = computed(() => {
+  const picked = selectedLine.value
+  const drawn = picked && lines.value.get(picked.line)
+  return drawn && drawn.asDrawn === null ? drawn.along.label : null
+})
 
 /** The picture back to front (`canvasPaintOrder`): shapes by nesting, then lines, then labels. */
 const pieces = computed((): Piece[] => {
@@ -342,6 +348,21 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
       @remove-bend="lineGesture.doublePress"
       @add-bend="lineGesture.doublePress"
     />
+    <!-- The selected line's label stays pressable over its handles: a segment's handle sits at the middle of
+         its line, which is where a label no anchor states is drawn, and took the press — a label dragged
+         moved the segment instead, with no leader, and the arrows then had no label to nudge (A-02.14/15). -->
+    <g
+      v-if="routing && selectedLine && selectedLabel"
+      class="lab-line-label lab-line-label--movable lab-line-label--over-handles"
+      :data-relation="selectedLine.line"
+      data-painted="label-over-handles"
+      @pointerdown="lineGesture.pressLabel($event, selectedLine.line)"
+    >
+      <CanvasDrawn
+        :nodes="selectedLabel.texts"
+        :transform="selectedLabel.transform"
+      />
+    </g>
   </svg>
 </template>
 
@@ -358,6 +379,8 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
 .lab-line-hit { fill: none; stroke: transparent; stroke-width: 10px; pointer-events: stroke; cursor: pointer; }
 .lab-line-hit { vector-effect: non-scaling-stroke; }
 .lab-line-label--movable { pointer-events: bounding-box; cursor: move; }
+/* Only a press target: the label itself is drawn in its place in the picture. */
+.lab-line-label--over-handles { opacity: 0; }
 .lab-grip { fill: transparent; stroke: none; pointer-events: all; cursor: move; }
 /* A box moves by its title band, which shows its whole width under the pointer; its body selects. */
 .lab-box > .lab-grip:hover { fill: var(--paper-accent-hover); }

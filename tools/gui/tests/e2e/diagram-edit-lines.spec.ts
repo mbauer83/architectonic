@@ -130,3 +130,30 @@ test('a double press adds a bend, Straighten drops it, and undo brings it back',
   await page.getByTestId('edit-undo').click()
   await expect(handles).toHaveCount(corners + 1)
 })
+
+test('a picked label drags with a leader to its anchor, and an arrow nudges it two screen pixels', async ({ page }) => {
+  // A-02.14/15: the selected line's segment handle sits where its label is drawn and took the press, so the
+  // segment moved instead of the label, no leader showed, and the arrows panned the window by a fifth.
+  const canvas = await open(page)
+  await byHand(page, canvas)
+  const label = canvas.locator('g.lab-line-label[data-painted="label"]').first()
+  const line = await label.getAttribute('data-relation')
+  await label.click({ force: true })
+  await expect(canvas.locator(`[data-selected-line="${line}"]`)).toBeVisible()
+
+  const at = await label.boundingBox()
+  if (!at) throw new Error('the label is not drawn')
+  const [x, y] = [at.x + at.width / 2, at.y + at.height / 2]
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + 30, y + 20, { steps: 6 })
+  await expect(canvas.locator('.lab-line-handles__leader')).toHaveCount(1)
+  await expect(canvas.locator('.lab-line-handles__anchor')).toHaveCount(1)
+  await page.mouse.up()
+  await expect(canvas.locator('.lab-line-handles__leader')).toHaveCount(0)
+
+  const before = (await label.boundingBox())?.x ?? 0
+  await page.keyboard.press('ArrowRight')
+  await expect.poll(async () => ((await label.boundingBox())?.x ?? 0) - before).toBeGreaterThan(1)
+  expect(((await label.boundingBox())?.x ?? 0) - before).toBeLessThan(3)
+})
