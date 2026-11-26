@@ -1,0 +1,41 @@
+{
+  "abbreviation": "RTP",
+  "name": "Risk Treatment Plan",
+  "frontmatter_schema": {
+    "type": "object",
+    "required": [
+      "title",
+      "status"
+    ],
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "approved",
+          "in-progress",
+          "complete"
+        ]
+      },
+      "review_date": {
+        "type": "string"
+      },
+      "owner": {
+        "type": "string"
+      }
+    }
+  },
+  "required_sections": [
+    "Summary",
+    "Selected Treatments",
+    "Implementation Plan",
+    "Residual Risk",
+    "Sign-off"
+  ],
+  "suggested_connections": [
+    "@all"
+  ]
+}

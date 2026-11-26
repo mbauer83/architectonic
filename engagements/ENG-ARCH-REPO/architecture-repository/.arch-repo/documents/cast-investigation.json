@@ -1,0 +1,44 @@
+{
+  "abbreviation": "CAST",
+  "name": "CAST Investigation",
+  "frontmatter_schema": {
+    "type": "object",
+    "required": [
+      "title",
+      "status",
+      "incident_date"
+    ],
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "in-progress",
+          "complete",
+          "archived"
+        ]
+      },
+      "incident_date": {
+        "type": "string"
+      },
+      "analysis_baseline_id": {
+        "type": "string"
+      }
+    }
+  },
+  "required_sections": [
+    "Incident Description",
+    "Control Structure As-Existed",
+    "Observed Control Flaws",
+    "Causal Scenarios",
+    "Corrective Actions",
+    "Derived Constraints",
+    "References"
+  ],
+  "suggested_connections": [
+    "@all"
+  ]
+}

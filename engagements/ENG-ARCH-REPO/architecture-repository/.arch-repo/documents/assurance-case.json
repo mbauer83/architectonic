@@ -1,0 +1,64 @@
+{
+  "abbreviation": "AC",
+  "name": "Assurance Case",
+  "frontmatter_schema": {
+    "type": "object",
+    "required": [
+      "title",
+      "status",
+      "claim_type"
+    ],
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "in-progress",
+          "complete",
+          "submitted",
+          "archived"
+        ]
+      },
+      "claim_type": {
+        "type": "string",
+        "enum": [
+          "safety",
+          "security",
+          "combined"
+        ]
+      }
+    }
+  },
+  "sections": [
+    {
+      "name": "Purpose and Scope"
+    },
+    {
+      "name": "Safety/Security Claims"
+    },
+    {
+      "name": "GSN Argument Structure"
+    },
+    {
+      "name": "Evidence Summary",
+      "suggested_connections": [
+        "@all"
+      ]
+    },
+    {
+      "name": "Argument Completeness"
+    },
+    {
+      "name": "Sign-off",
+      "suggested_connections": [
+        "stakeholder"
+      ]
+    },
+    {
+      "name": "References"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "abbreviation": "CMPL",
+  "name": "Compliance Statement",
+  "frontmatter_schema": {
+    "type": "object",
+    "required": [
+      "title",
+      "status",
+      "framework"
+    ],
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "in-progress",
+          "complete",
+          "submitted",
+          "archived"
+        ]
+      },
+      "framework": {
+        "type": "string"
+      },
+      "version": {
+        "type": "string"
+      },
+      "assessment_date": {
+        "type": "string"
+      }
+    }
+  },
+  "required_sections": [
+    "Scope",
+    "Applicable Obligations",
+    "Control Coverage",
+    "Evidence Summary",
+    "Gaps and Exceptions",
+    "Sign-off",
+    "References"
+  ],
+  "suggested_connections": [
+    "@all"
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "abbreviation": "RSKA",
+  "name": "Risk Assessment",
+  "frontmatter_schema": {
+    "type": "object",
+    "required": [
+      "title",
+      "status",
+      "scope"
+    ],
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "in-progress",
+          "complete",
+          "archived"
+        ]
+      },
+      "scope": {
+        "type": "string"
+      },
+      "framework": {
+        "type": "string",
+        "enum": [
+          "ISO31000",
+          "ISO27001",
+          "NIST-CSF",
+          "other"
+        ]
+      }
+    }
+  },
+  "required_sections": [
+    "Scope and Context",
+    "Risk Identification",
+    "Risk Analysis",
+    "Risk Evaluation",
+    "Risk Treatment",
+    "Monitoring and Review",
+    "References"
+  ],
+  "suggested_connections": [
+    "@all"
+  ]
+}
