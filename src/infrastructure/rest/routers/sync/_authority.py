@@ -26,7 +26,7 @@ from src.application.mutation_authorization import (
     RepositoryWrite,
 )
 from src.application.mutation_policy import authorize
-from src.infrastructure.operation_catalog import OPERATION_CATALOG
+from src.application.operation_catalog import OPERATION_CATALOG
 from src.infrastructure.rest.routers.rest_mutation_manifest import REST_MUTATION_MANIFEST
 
 BlockKind = Literal["none", "read_only", "sync_in_progress", "sync_health"]

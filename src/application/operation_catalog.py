@@ -6,24 +6,26 @@ policy means the same on both surfaces: `changes_apply_candidate` is applied by 
 
 The editing surfaces are finer than their writes. One canvas Save carries a rename, a move and a
 restack in a single `PUT`, and one candidate write records several edits. Each of those is an
-operation of its own, named here, and `stated_operations` reads which of them a request states — so a
-decision can be taken on each one, by the server, from the request alone. The canvas offers or refuses
-its menu entries, keys and gestures by these names; the server projects a decision for every name in
-this catalog (`denied_operations`), and that projection is the only permission answer the GUI reads.
+operation of its own, named here. The canvas offers or refuses its menu entries, keys and gestures by
+these names, and the server projects a decision for every name in this catalog (`denied_operations`),
+which is the only permission answer the GUI reads.
 
-What an operation's intent is stays the mutation manifests' to say (`rest_mutation_manifest`,
-`mutation_registration`): every operation names at least one REST carrier, whose intent it takes, and
-a fitness function holds every carrier of one operation to the same intent.
+**What is decided today is the carrier's intent.** The server authorizes a write by its REST operation
+id or MCP tool, through the intent the mutation manifests give it (`rest_mutation_manifest`,
+`mutation_registration`); the projection answers each fine operation with the decision for the intent
+its carriers share, so every fine operation of one Save is answered alike. Reading which fine
+operations a request states is the infrastructure's (`stated_operations`, over the wire models), and
+nothing on the write path consults it yet: it is the hook a per-operation policy will decide on, and a
+fitness function holds every carrier of one operation to the same intent until then.
+
+This module is application vocabulary: names, summaries and carriers, and which layout section and
+arrangement intent each finer operation is. It knows no transport and no wire model.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass
-
-from src.infrastructure.candidate_wire import RecordedEdit
-from src.infrastructure.diagram_composition import DiagramReplacement
-from src.infrastructure.diagram_layout_wire import ArrangeIntent, LayoutPatch
 
 
 @dataclass(frozen=True)
@@ -68,6 +70,11 @@ _MODEL_COMMANDS: Mapping[str, str] = {
     "model.relation.create": "Create a relation in the model",
     "model.relation.edit": "Change a relation's type, cardinalities, description or label in the model",
 }
+
+def candidate_edit_operation(op: str) -> str:
+    """The operation recording one kind of candidate edit is: `change_set.` and the edit's kind."""
+    return f"change_set.{op}"
+
 
 _CANDIDATE_EDITS: Mapping[str, str] = {
     "create_entity": "Record creating an entity in a candidate",
@@ -207,39 +214,5 @@ OPERATION_CATALOG: Mapping[str, CatalogOperation] = {
     ),
     GENERATE: CatalogOperation("Give up a hand-written diagram body for a generated one", _REPLACE),
     **{name: CatalogOperation(summary, _REPLACE) for name, summary in _MODEL_COMMANDS.items()},
-    **{f"change_set.{op}": CatalogOperation(summary, _RECORD) for op, summary in _CANDIDATE_EDITS.items()},
+    **{candidate_edit_operation(op): CatalogOperation(summary, _RECORD) for op, summary in _CANDIDATE_EDITS.items()},
 }
-
-
-def _sections(sections: Iterable[str]) -> set[str]:
-    return {SECTION_OPERATIONS[section] for section in sections if section in SECTION_OPERATIONS}
-
-
-def _patched_sections(patch: LayoutPatch) -> set[str]:
-    return _sections(section for section in patch.model_fields_set if getattr(patch, section) is not None)
-
-
-def replacement_operations(replacement: DiagramReplacement) -> frozenset[str]:
-    """What a diagram replacement does: it always composes, and each further part is an operation of its own."""
-    layout = replacement.layout
-    stated: set[str] = {COMPOSE, *(command.op for command in replacement.commands)}
-    if replacement.layout_patch is not None:
-        stated |= _patched_sections(replacement.layout_patch)
-    if layout is not None:
-        stated |= _sections(layout) or {PLACE}
-    if replacement.manual_layout is False:
-        stated.add(GENERATE)
-    return frozenset(stated)
-
-
-def arrangement_operations(patch: LayoutPatch | None, intents: Sequence[ArrangeIntent] | None) -> frozenset[str]:
-    """What an arrangement does: a patch by the sections it changes, intents by what each one means."""
-    stated = _patched_sections(patch) if patch is not None else set()
-    for intent in intents or ():
-        stated.update(INTENT_OPERATIONS[intent.intent])
-    return frozenset(stated)
-
-
-def recorded_operations(edits: Sequence[RecordedEdit]) -> frozenset[str]:
-    """What recording *edits* in a candidate does: one operation for each kind of edit."""
-    return frozenset(f"change_set.{edit.op}" for edit in edits)

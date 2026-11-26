@@ -12,9 +12,9 @@ from pathlib import Path
 import pytest
 
 from src.application.artifacts.query import ArtifactRepository
+from src.application.operation_catalog import OPERATION_CATALOG
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.git import enterprise_branch_lifecycle, enterprise_sync_state, git_work_commits
-from src.infrastructure.operation_catalog import OPERATION_CATALOG
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.sync import status_cache as sync_status_cache
 from src.infrastructure.rest.routers.sync._authority import operation_intent

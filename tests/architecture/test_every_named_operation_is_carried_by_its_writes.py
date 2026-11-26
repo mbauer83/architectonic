@@ -12,16 +12,16 @@ from __future__ import annotations
 
 from typing import get_args
 
-from src.infrastructure.candidate_wire import RecordedEdit
-from src.infrastructure.diagram_layout_wire import ArrangeIntent
-from src.infrastructure.mcp.artifact_mcp.mutation_registration import MUTATION_TOOL_MANIFEST
-from src.infrastructure.operation_catalog import (
+from src.application.operation_catalog import (
     COMPOSE,
     GENERATE,
     INTENT_OPERATIONS,
     OPERATION_CATALOG,
     SECTION_OPERATIONS,
 )
+from src.infrastructure.candidate_wire import RecordedEdit
+from src.infrastructure.diagram_layout_wire import ArrangeIntent
+from src.infrastructure.mcp.artifact_mcp.mutation_registration import MUTATION_TOOL_MANIFEST
 from src.infrastructure.rest.route_policy._candidates import CANDIDATE_ROWS
 from src.infrastructure.rest.routers.rest_mutation_manifest import REST_MUTATION_MANIFEST
 from src.infrastructure.rest.routers.sync._authority import WORKFLOW_ACTIONS

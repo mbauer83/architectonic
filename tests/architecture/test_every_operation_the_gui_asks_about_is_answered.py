@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from src.infrastructure.operation_catalog import OPERATION_CATALOG
+from src.application.operation_catalog import OPERATION_CATALOG
 from tests.support.source_paths import TOOLS
 
 _GUI = TOOLS / "gui" / "src"

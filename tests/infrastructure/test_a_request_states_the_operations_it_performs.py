@@ -1,4 +1,4 @@
-"""What a write states, read as the named operations a policy decides on (`operation_catalog`).
+"""What a write states, read as the named operations a policy decides on (`stated_operations`).
 
 A canvas save is one request carrying several operations; each is read from the request alone, so the
 server can decide on every one of them without asking the client what it meant.
@@ -10,19 +10,11 @@ from typing import Any
 
 from pydantic import TypeAdapter
 
+from src.application.operation_catalog import COMPOSE, GENERATE, PLACE, RESTACK, ROUTE
 from src.infrastructure.candidate_wire import RecordedEdit
 from src.infrastructure.diagram_composition import DiagramReplacement
 from src.infrastructure.diagram_layout_wire import ArrangeIntent, LayoutPatch
-from src.infrastructure.operation_catalog import (
-    COMPOSE,
-    GENERATE,
-    PLACE,
-    RESTACK,
-    ROUTE,
-    arrangement_operations,
-    recorded_operations,
-    replacement_operations,
-)
+from src.infrastructure.stated_operations import arrangement_operations, recorded_operations, replacement_operations
 
 _BASE = {"diagram_type": "archimate-layered", "name": "Order handling", "entity_ids": [], "connection_ids": []}
 _ENTRY = {"value": {"x": 1, "y": 2}}
