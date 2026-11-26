@@ -4,7 +4,7 @@
  * one of them changes. Whether their operations conflict is the server's integration check; this
  * only pairs the comparisons each candidate already has.
  */
-import type { ChangeDifference, CandidateSummary } from '../schemas/candidates'
+import type { CandidateComparison, ChangeDifference, CandidateSummary } from '../schemas/candidates'
 import { stableEntityId } from '../artifactId'
 import type { Marks } from './elementMarks'
 import { type BaseChoice, chainOf } from './candidateStack'
@@ -69,3 +69,24 @@ export const withOthers = (
       ? { ...mark, title: `${mark.title} · also changed in ${also.map(nameOf).join(', ')}` }
       : mark]
   }))
+
+/** What an element is called while the comparisons that name it are still being read. */
+export const UNNAMED_YET = '…'
+
+/**
+ * An element by its name in the common base, as the compared candidates' comparisons read it: the name a
+ * change had before, else the name a composed view gives it. While a comparison is still being read the name
+ * may yet arrive, so the element is called `UNNAMED_YET` rather than by its id; only once every comparison is
+ * read does an element none of them names stand as its id.
+ */
+export const elementNameIn = (readings: readonly (CandidateComparison | null)[], id: string): string => {
+  const key = stableEntityId(id)
+  const read = readings.filter((one): one is CandidateComparison => one !== null)
+  const before = read.flatMap((one) => one.diff)
+    .filter((row) => row.kind === 'entity' && typeof row.target === 'string' && stableEntityId(row.target) === key)
+    .map((row) => row.fields.name?.before).find((name) => typeof name === 'string')
+  const named = read.flatMap((one) => one.view.entities)
+    .find((one) => stableEntityId(one.artifact_id ?? one.id) === key)?.fields.name
+  const name = typeof before === 'string' ? before : typeof named === 'string' ? named : null
+  return name ?? (read.length < readings.length ? UNNAMED_YET : id)
+}

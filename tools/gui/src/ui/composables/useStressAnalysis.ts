@@ -20,6 +20,8 @@ import type { AnalysisEvaluation } from '../../domain/schemas/stressEvaluation'
 import type { TableName, TableRowEdit } from '../../domain/stressAnalysis/analysisRows'
 import { rowsOf, ticksOf } from '../../domain/stressAnalysis/analysisRows'
 import { heldApartIds } from '../../domain/stressAnalysis/testSet'
+import { stableEntityId } from '../../domain/artifactId'
+import { UNNAMED_YET } from '../../domain/candidates/candidateComparison'
 import { formatEffectError } from '../lib/errors'
 
 const isConflict = (failure: unknown): boolean => failure instanceof NetworkError && failure.status === 409
@@ -49,10 +51,15 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
   /** The stored diagram the naive architecture is drawn on; empty where it is drawn as a generated view. */
   const drawnOn = computed(() => naive.value?.drawing?.artifact_id ?? '')
 
-  /** An element of the naive architecture by name; a provisional `$ref:` id or an unknown one as it is. */
-  const names = computed(() => new Map((naive.value?.view.entities ?? [])
-    .map((entity) => [entity.id, typeof entity.fields.name === 'string' ? entity.fields.name : entity.id])))
-  const nameOf = (id: string): string => names.value.get(id) ?? id
+  /**
+   * An element of the naive architecture by name, written by its reference or, for one the naive creates, by the
+   * id chosen for it; an unknown one as it is. Until the naive is read, an element is not called by its id.
+   */
+  const names = computed(() => new Map((naive.value?.view.entities ?? []).flatMap((entity) => {
+    const name = typeof entity.fields.name === 'string' ? entity.fields.name : entity.id
+    return [entity.id, ...(entity.artifact_id ? [entity.artifact_id] : [])].map((id) => [stableEntityId(id), name] as const)
+  })))
+  const nameOf = (id: string): string => names.value.get(stableEntityId(id)) ?? (naive.value ? id : UNNAMED_YET)
 
   /** What the incidence read derived for a stressor: the components it hits, and those the naive lacks. */
   const derived = computed(() => new Map((incidence.value?.stressors ?? []).map((row) => [String(row.id), row])))
