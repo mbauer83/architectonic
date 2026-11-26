@@ -28,9 +28,18 @@ from src.domain.content_revision import content_revision
 
 @dataclass(frozen=True, slots=True)
 class BaseValue:
-    """The value that was there. `None` says nothing was: the key was absent, the field empty."""
+    """The value that was there. `None` says nothing was: the key was absent, the field empty.
+
+    Held in its recorded form — lists and mappings, never a tuple — because a base is read off a record
+    (whose list fields are tuples) and answered and stored as plain data. Held as read, the answer to the
+    write that recorded it was not JSON, while the same set read back from its file was: a recorded edit of
+    `keywords` was written and then answered 500.
+    """
 
     value: Any
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "value", _recordable(self.value))
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,6 +47,19 @@ class BaseRevision:
     """The revision of what was there, for content too large or too shapeless to carry."""
 
     revision: str
+
+
+def _recordable(value: Any) -> Any:
+    """*value* as plain data: every sequence a list, every mapping a dict, recursively."""
+    match value:
+        case str() | bytes():
+            return value
+        case Mapping():
+            return {key: _recordable(item) for key, item in value.items()}
+        case list() | tuple():
+            return [_recordable(item) for item in value]
+        case _:
+            return value
 
 
 #: What an operation recorded about the content it replaces or removes.
