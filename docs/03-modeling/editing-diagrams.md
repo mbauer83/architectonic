@@ -19,9 +19,10 @@ The header then shows only **Done**, and the line under the title reads *Editing
 until you press Save*.
 
 In edit mode a drag on an element moves it, and a drag on empty paper draws a selection rectangle.
-Panning moves to `Space` + drag, and the wheel still zooms. **Done** or `Esc` returns to view mode;
-with unsaved changes, the bar asks whether to **Save and exit**, **Discard and exit** or
-**Keep editing**.
+Panning moves to `Space` + drag, `Alt` + drag or a drag with the middle button, and the wheel still
+zooms. **Done** or `Esc` returns to view mode; with unsaved changes, the bar asks whether to
+**Save and exit**, **Discard and exit** or **Keep editing**. Opening another diagram or page with
+unsaved changes asks the same question, and **Discard** asks before it throws changes away.
 
 Nothing reaches the repository before **Save**. Until then every change is a step in the session's
 undo history.

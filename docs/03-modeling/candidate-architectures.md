@@ -16,12 +16,13 @@ promotion, and integrates them.
 
 ### Create a candidate and sketch it
 
-1. Select **New candidate architecture…**, give it a name (*Cached index store*), and choose what it
-   starts from:
-   - **what a diagram draws** — it reads over the diagram's elements and is drawn on its picture;
+1. Select **New candidate architecture…**, give it a name (*Cached index store*), and select
+   **Create**. A candidate is defined on its canvas, so it starts empty and reads over nothing until
+   elements are placed on it. Under **Start** you can choose a seed instead:
+   - **seeded with what a diagram draws** — it reads over the diagram's elements and is drawn on its
+     picture;
    - **on top of a candidate** — it stacks on that candidate, and its changes are read over the
-     other's;
-   - **empty** — it reads over nothing until elements are placed on it.
+     other's.
 2. On the candidate's page, select **Sketch on the canvas**. The canvas is the diagram editor's: find
    *Artifact Index Store* under **Add from model** and drag it on, right-click the paper to create
    *Index Read Cache* as an application component, and draw a relation between the two. A rename,
