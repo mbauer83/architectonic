@@ -18,7 +18,7 @@ import type { Marks } from '../../../domain/candidates/elementMarks'
 import { stableEntityId } from '../../../domain/artifactId'
 import { modelServiceKey } from '../../keys'
 import { formatEffectError } from '../../lib/errors'
-import { membershipOf } from '../../../domain/layout/diagramMembership'
+import { composedOver } from '../../../domain/candidates/candidateDrawing'
 import { drawnByEntity, relationsDrawn } from '../../../domain/layout/canvasComposition'
 import { useCandidateDetails } from '../../composables/useCandidateDetails'
 import { useCandidateEditing } from '../../composables/useCandidateEditing'
@@ -62,7 +62,7 @@ const recorded = () => {
 }
 /** Where the session started from: read when it opens, so the context read later does not move it. */
 const started = shallowRef<PictureContext['diagram'] | null>(null)
-const editing = useCandidateEditing(svc, () => membershipOf(started.value), () => props.candidateId, recorded)
+const editing = useCandidateEditing(svc, (start) => composedOver(started.value, start), () => props.candidateId, recorded)
 /** The panel is open to begin with on a picture that starts empty, where finding elements is the first step. */
 const panelOpen = ref(false)
 const canvas = ref<InstanceType<typeof DiagramCanvas> | null>(null)

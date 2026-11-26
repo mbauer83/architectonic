@@ -47,8 +47,11 @@ export interface EditingOptions {
   readonly context?: () => PictureContext | null
 }
 
+/** What the picture a session opens on draws, given that picture as read (*start*). */
+export type StartMembership = (start: LayoutGeometry | null) => DrawnMembership | null
+
 export function useDiagramEditing(
-  svc: ModelService, source: PictureSource, membership: () => DrawnMembership | null,
+  svc: ModelService, source: PictureSource, membership: StartMembership,
   options: EditingOptions = {},
 ) {
   const onMembershipSaved = options.onMembershipSaved ?? (() => {})
@@ -86,8 +89,8 @@ export function useDiagramEditing(
     loading.value = true
     error.value = null
     try {
-      savedMembers.value = membership()
       await reopen()
+      savedMembers.value = membership(saved.value?.picture ?? null)
       const now = session.state.value
       loading.value = false
       return (commands.length === 0 && added.size === 0) || !now

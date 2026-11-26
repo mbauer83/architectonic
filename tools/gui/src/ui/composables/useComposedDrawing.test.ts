@@ -89,6 +89,48 @@ describe('useComposedDrawing', () => {
     expect(drawing.value?.elements.map((one) => one.key)).toContain(CACHE)
   })
 
+  it('keeps the boxes of the generated view when the candidate relates two elements one of them holds', async () => {
+    const box = (alias: string, label: string, rule: Record<string, string>, inside?: string) => ({
+      alias, kind: inside ? 'type' as const : 'domain' as const, section: 'boxes' as const, label, rule,
+      extent: at(0, 0, 300, 300), words: [], drawing: SHAPE_DRAWING, ...(inside ? { inside } : {}),
+    })
+    // The view draws the two components in an Application Components box inside the Application layer; a
+    // relation between them is what the renderer, boxing by itself, would draw them bare for.
+    const boxed: LayoutGeometry = {
+      ...picture(element('S', STORE), element('C', CACHE)),
+      boxes: [
+        box('D', 'Application', { domain: 'application' }),
+        box('T', 'Application Components', { type: 'application-component' }, 'D'),
+      ],
+    }
+    const server = fakeServer()
+    const read: CandidateComparison = {
+      ...comparison(boxed), diff: [],
+      view: {
+        entities: [{ id: STORE, fields: { name: 'Artifact Index Store' } }, { id: CACHE, fields: { name: 'Cache' } }],
+        connections: [{ source_entity: CACHE, connection_type: 'archimate-serving', target_entity: STORE, fields: {} }],
+      },
+    }
+    const svc = {
+      ...server.svc,
+      readCandidatePictureContext: () => Effect.succeed({
+        ...START, diagram: { ...START.diagram, entity_ids_used: [STORE, CACHE] },
+        entities: [{ artifact_id: STORE, name: 'Artifact Index Store' }, { artifact_id: CACHE, name: 'Cache' }],
+      }),
+    } as unknown as ComposedDrawingAccess
+    useComposedDrawing(svc, () => read)
+    await settled()
+
+    const composition = server.previews[0]?.composition as {
+      authored_groupings?: unknown; proposed_relations: { artifact_id: string }[]
+    }
+    expect(composition.proposed_relations.map((one) => one.artifact_id)).toEqual([`${CACHE}---${STORE}@@archimate-serving`])
+    expect(composition.authored_groupings).toEqual([{
+      label: 'Application', 'entity-ids': [], rule: { domain: 'application' },
+      groups: [{ label: 'Application Components', 'entity-ids': [], rule: { type: 'application-component' } }],
+    }])
+  })
+
   it('leaves the served picture standing where the preview is refused', async () => {
     const server = fakeServer()
     const refusing = {

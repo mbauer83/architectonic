@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { drawnCommands, type ComposedView, type DrawnContent } from './candidateDrawing'
+import { SHAPE_DRAWING } from '../layout/__tests__/canvasDrawingFixtures'
+import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
+import { composedOver, drawnCommands, type ComposedView, type DrawnContent } from './candidateDrawing'
 
 const SERVICE = 'SRV@1712870400.Uv9Wx9.repository-promotion-service'
 const ARTIFACTS = 'PRC@1712870400.0Rz5Ex.promote-artifacts'
@@ -72,5 +74,33 @@ describe('a candidate drawn over its picture', () => {
   it('keeps what it removes on the picture, for the reader to mark as a ghost', () => {
     const view: ComposedView = { entities: [entity(SERVICE, 'Repository Promotion Service')], connections: [] }
     expect(drawnCommands(view, drawn)).toEqual([])
+  })
+})
+
+describe('what a candidate is composed over', () => {
+  const typeBox = {
+    alias: 'T', kind: 'type' as const, section: 'boxes' as const, label: 'Application Components',
+    rule: { type: 'application-component' }, extent: { left: 0, top: 0, right: 10, bottom: 10 }, words: [],
+    drawing: SHAPE_DRAWING,
+  }
+  const view: LayoutGeometry = {
+    artifact_id: '', name: 'Scope', canvas: { left: 0, top: 0, right: 10, bottom: 10 }, backdrop: [],
+    surround: { drawn: { left: 0, top: 0, right: 0, bottom: 0 }, parts: [] }, elements: [], boxes: [typeBox],
+    relations: [],
+  }
+  const start = (artifactId: string) => ({
+    artifact_id: artifactId, name: 'Scope', diagram_type: 'archimate-layered', entity_ids_used: [SERVICE],
+  })
+
+  it('states the boxes a generated view is drawn with as its own, so a relation added does not unbox them', () => {
+    expect(composedOver(start(''), view)?.authored_groupings).toEqual([
+      { label: 'Application Components', 'entity-ids': [], rule: { type: 'application-component' } },
+    ])
+  })
+
+  it('composes over a stored diagram as it states itself, and over a view not yet drawn as it is', () => {
+    expect(composedOver(start('ARC@1.a.diagram'), view)?.authored_groupings).toBeUndefined()
+    expect(composedOver(start(''), null)?.authored_groupings).toBeUndefined()
+    expect(composedOver(null, view)).toBeNull()
   })
 })

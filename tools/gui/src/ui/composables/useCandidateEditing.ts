@@ -16,7 +16,6 @@
 import { ref, watch, type Ref } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
-import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { stableEntityId } from '../../domain/artifactId'
 import { chosenIds, commandsOf, editsOf, operationsOf } from '../../domain/candidates/candidateCanvas'
 import type { Point } from '../../domain/layout/geometry'
@@ -24,7 +23,7 @@ import type { ScopedEntity } from '../../domain/schemas/candidates'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import { formatEffectError } from '../lib/errors'
 import { candidatePicture } from './pictureSource'
-import type { DiagramEditing } from './useDiagramEditing'
+import type { DiagramEditing, StartMembership } from './useDiagramEditing'
 import { useDiagramEditing } from './useDiagramEditing'
 
 /** The key of a session state that holds no content commands, or no additions, yet. */
@@ -56,7 +55,7 @@ const scopeOf = (record: Readonly<Record<string, unknown>>): readonly string[] =
   Array.isArray(record.scope) ? record.scope.filter((one): one is string => typeof one === 'string') : []
 
 export function useCandidateEditing(
-  svc: ModelService, membership: () => DrawnMembership | null, candidateId: () => string, onRecorded: () => void,
+  svc: ModelService, membership: StartMembership, candidateId: () => string, onRecorded: () => void,
 ): DiagramEditing & { readonly savedAt: Ref<string | null> } {
   const editing = useDiagramEditing(svc, candidatePicture(svc, candidateId), membership)
   const savedAt = ref<string | null>(null)
@@ -112,7 +111,7 @@ export function useCandidateEditing(
       ])
       answered(read)
       recordedAt.clear()
-      const starts = membership()?.entity_ids ?? []
+      const starts = membership(null)?.entity_ids ?? []
       const referenced = undrawn(held.scope, starts, composed.view.entities)
       const commands = commandsOf(operationsOf(read.record), chosenIds(composed.view), [...starts, ...referenced.keys()])
       const opened = await editing.open(commands, referenced)

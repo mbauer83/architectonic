@@ -11,7 +11,11 @@
  */
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import type { CandidateComparison } from '../schemas/candidates'
+import type { PictureContext } from '../schemas/diagrams'
+import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 import { stableConnectionId, stableEntityId } from '../artifactId'
+import { ownedBoxes } from '../layout/canvasBoxes'
+import { type DrawnMembership, membershipOf } from '../layout/diagramMembership'
 import { chosenIds, creationCommand, drawnEnds, relationCommand } from './candidateCanvas'
 
 /** What the picture draws already, and the relations the model holds among what it draws. */
@@ -45,4 +49,20 @@ export const drawnCommands = (view: ComposedView, drawn: DrawnContent): readonly
     return command && !held.has(stableConnectionId(command.artifact_id)) ? [command] : []
   })
   return [...creates, ...renames, ...relations]
+}
+
+/**
+ * What a candidate is composed over, on the canvas it is sketched on and on every picture it is read on: the
+ * membership *start* states, where *drawn* is the picture it draws. A view generated from what a candidate
+ * reads over (no stored diagram: `artifact_id` empty) states no boxes; its boxes are the renderer's, which
+ * boxes elements of a type only while no relation joins them. They are stated as the view's own
+ * (`ownedBoxes`), so a relation the candidate adds is drawn into the boxes the view was read with and does not
+ * take them away. A stored diagram is composed over as it states itself, as its own editor composes it.
+ */
+export const composedOver = (
+  start: PictureContext['diagram'] | null, drawn: LayoutGeometry | null,
+): DrawnMembership | null => {
+  const membership = membershipOf(start)
+  return membership && drawn && start?.artifact_id === ''
+    ? { ...membership, authored_groupings: ownedBoxes(membership.authored_groupings ?? [], drawn) } : membership
 }
