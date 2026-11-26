@@ -163,8 +163,63 @@ whether the new version has taken over. `arch-update --resume` continues an upda
 was interrupted after the handover; `arch-update --rollback` reverses it. Finished updates are kept
 under `.arch/update/history/` with their outcome.
 
-MCP stdio bridges that agent clients started keep running the previous version until the client
-restarts them.
+&nbsp;
+
+## Connected agent clients
+
+Restart every MCP client that was connected before the update, or reconnect its servers (`/mcp` in
+Claude Code). A client reads the tool list once, when it connects, and keeps it. After an update it
+does not see tools the new version adds, and the stdio bridge it started still holds a session with
+the backend that was stopped, so its calls fail with `Session terminated`.
+
+The bridge cannot tell the client to re-read the list. MCP has a notification for that
+(`notifications/tools/list_changed`), but the tool list only changes when the backend restarts, and
+a restart ends the session the bridge holds. Announcing the new list would mean opening a new
+session on the client's behalf and replaying its handshake, which the bridge does not do: it
+forwards one session and reports when that session is lost.
+
+&nbsp;
+
+## An installation without `.git`
+
+`arch-update` needs a git checkout. An installation kept as a plain copy of the source tree (an
+"overlay") is updated from a clone that holds both the release it is on and the release to move to.
+Removing what the new release no longer has comes first: a release that moved or renamed a file
+leaves the old path behind otherwise, and a stale module there can still be imported or
+type-checked against code that has moved on.
+
+List removals with `--no-renames`. Without it, git reports a renamed file as a rename (`R`), which
+`--diff-filter=D` leaves out, so the old path would never be deleted.
+
+<!-- tested: overlay-update (tests/tools/test_overlay_update_procedure.py runs this block) -->
+```bash
+SRC=/path/to/clone            # a clone holding both releases
+OLD=v0.11.5                   # the release the installation is on
+NEW=v0.12.0                   # the release to move to
+TREE=/path/to/installation    # the copy without .git
+
+# 1. Remove every path the new release deleted or renamed away.
+git -C "$SRC" diff --no-renames --diff-filter=D --name-only -z "$OLD" "$NEW" \
+  | (cd "$TREE" && xargs -0 rm -f --)
+
+# 2. Write the new release over the tree.
+git -C "$SRC" archive "$NEW" | tar -x -C "$TREE"
+
+# 3. List files the new release does not track and its .gitignore files do not ignore.
+SCRATCH=$(mktemp -d)
+git init -q --bare "$SCRATCH"
+git --git-dir="$SCRATCH" --work-tree="$TREE" ls-files --others --exclude-standard \
+  | sort > "$SCRATCH/present"
+git -C "$SRC" ls-tree -r --name-only "$NEW" | sort > "$SCRATCH/tracked"
+comm -23 "$SCRATCH/present" "$SCRATCH/tracked"
+rm -rf "$SCRATCH"
+```
+
+Step 3 changes nothing. What it prints is in the installation and in no release: files a previous
+overlay left behind, and anything of your own that is not covered by a `.gitignore`. Delete the
+stale ones. Then, with the backend stopped, run `uv sync`, rebuild the GUI and run
+`arch-repair upgrade --commit`, the steps listed at the top of this page for an installation updated
+by hand.
 
 ---
 

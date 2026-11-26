@@ -34,6 +34,13 @@ describe('SyncStatusCluster structure', () => {
     expect(template).toContain('v-if="menuOpen"')
   })
 
+  it('links to the pull request while a submission awaits review, in a new tab without an opener', () => {
+    expect(template).toContain('v-if="enterprise?.review_url"')
+    expect(template).toContain(':href="enterprise.review_url"')
+    expect(template).toContain('rel="noopener noreferrer"')
+    expect(template).toContain('Open the pull request')
+  })
+
   it('keeps the verbs behind the reducer', () => {
     expect(template).toContain('v-for="action in menuActions"')
     expect(template).toContain('ACTION_LABELS[action]')

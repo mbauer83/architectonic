@@ -1,4 +1,5 @@
 import type { ModelRepository, ListParams, Direction } from '../ports/ModelRepository'
+import type { GitCredentialSupply } from '../ports/GitCredentialRepository'
 import type { ReadingLens } from '../domain/readingLens'
 import type { SurroundPlacement } from '../ports/DiagramLayoutRepository'
 
@@ -141,6 +142,7 @@ export const makeModelService = (repo: ModelRepository) =>
     saveEnterpriseChanges: (body: Parameters<ModelRepository['saveEnterpriseChanges']>[0]) => repo.saveEnterpriseChanges(body),
     submitEnterpriseChanges: () => repo.submitEnterpriseChanges(),
     withdrawEnterpriseChanges: () => repo.withdrawEnterpriseChanges(),
+    supplyGitCredential: (body: GitCredentialSupply) => repo.supplyGitCredential(body),
     getChanges: (scope: Parameters<ModelRepository['getChanges']>[0]) => repo.getChanges(scope),
     getMatrixConfig: (id: string) => repo.getMatrixConfig(id),
     previewMatrix: (body: Parameters<ModelRepository['previewMatrix']>[0]) => repo.previewMatrix(body),

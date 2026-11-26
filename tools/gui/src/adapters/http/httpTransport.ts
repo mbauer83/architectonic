@@ -228,6 +228,32 @@ export const deleteNoContent = (url: string): Effect.Effect<void, NetworkError> 
       e instanceof NetworkError ? e : new NetworkError({ status: 0, message: String(e) }),
   })
 
+/**
+ * A PUT answered with 204. `headers` are added to the JSON content type — the operator header a
+ * process-level operation requires is the case it exists for. The body is sent and never echoed:
+ * a failure carries the server's envelope, which never repeats what was sent.
+ */
+export const putNoContent = (
+  url: string,
+  body: unknown,
+  headers: Readonly<Record<string, string>> = {},
+): Effect.Effect<void, NetworkError> =>
+  Effect.tryPromise({
+    try: async () => {
+      const resp = await fetchWithTimeout(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify(body),
+      })
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => resp.statusText)
+        throw new NetworkError({ status: resp.status, message: text })
+      }
+    },
+    catch: (e) =>
+      e instanceof NetworkError ? e : new NetworkError({ status: 0, message: String(e) }),
+  })
+
 export const deleteReq = <A, I>(
   url: string,
   schema: Schema.Schema<A, I>,

@@ -78,6 +78,9 @@ class EnterpriseSyncStateResponse(Closed):
     has_uncommitted_changes: bool
     health: SyncHealthResponse | None
     commits_ahead: int | None = None
+    #: While ``pending``: the platform's page for opening a pull request from ``branch``. Absent in
+    #: other states, and where the remote is not a platform this backend knows how to link to.
+    review_url: str | None = None
 
 
 class DeniedIntentResponse(Closed):

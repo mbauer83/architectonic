@@ -7,6 +7,7 @@ import type { SyncStatus, SyncChangesResult } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import { useQuery } from '../composables/useQuery'
 import { useMutation } from '../composables/useMutation'
+import { useGitCredentialRetry } from '../composables/useGitCredentialPrompt'
 
 type DialogMode =
   | 'engagement-save'
@@ -25,12 +26,18 @@ const emit = defineEmits<{
 }>()
 
 const svc = inject(modelServiceKey)!
+// Save-with-push, submit and discard reach the remote; a refused credential is asked for and the
+// operation repeated (`useGitCredentialPrompt`).
+const reachingTheRemote = useGitCredentialRetry()
 
 const commitMessage = ref('')
 const pushToRemote = ref(true)
 
 const changesQuery = useQuery<SyncChangesResult, RepoError>()
 const saveMutation = useMutation<string, RepoError>()
+// Where the submitted branch's pull request is opened, when the remote is a platform the backend
+// can link to.
+const reviewUrl = ref<string | null>(null)
 
 const artifacts = computed(() => changesQuery.data.value?.artifacts ?? [])
 const displayError = computed(() => changesQuery.errorMessage.value ?? saveMutation.errorMessage.value)
@@ -91,7 +98,8 @@ const buildSaveEffect = (): Effect.Effect<string, RepoError, never> => {
   switch (props.mode) {
     case 'engagement-save':
       return Effect.map(
-        svc.saveEngagementChanges({ message: commitMessage.value.trim(), push: pushToRemote.value }),
+        reachingTheRemote(() =>
+          svc.saveEngagementChanges({ message: commitMessage.value.trim(), push: pushToRemote.value })),
         (res) => res.commit
           ? `Committed ${res.commit.slice(0, 8)}${res.pushed ? ' and pushed' : ''}`
           : 'Saved (nothing to commit)',
@@ -105,16 +113,19 @@ const buildSaveEffect = (): Effect.Effect<string, RepoError, never> => {
       )
     case 'enterprise-submit':
       return Effect.map(
-        svc.submitEnterpriseChanges(),
-        (res) => res.already_submitted
+        reachingTheRemote(() => svc.submitEnterpriseChanges()),
+        (res) => {
+          reviewUrl.value = res.review_url ?? null
+          return res.already_submitted
           ? `Already submitted on branch ${res.branch ?? branchName.value ?? 'unknown'}`
-          : `Branch ${res.branch ?? 'unknown'} ready — open a pull request to merge into the enterprise repository`,
+          : `Branch ${res.branch ?? 'unknown'} ready — open a pull request to merge into the enterprise repository`
+        },
       )
     case 'enterprise-withdraw':
       // A no-op withdraw is a 400 from the backend now (never a silent success),
       // so a success here always names the discarded branch.
       return Effect.map(
-        svc.withdrawEnterpriseChanges(),
+        reachingTheRemote(() => svc.withdrawEnterpriseChanges()),
         (res) => res.discarded_branch ? `Branch ${res.discarded_branch} discarded` : 'Submission withdrawn',
       )
   }
@@ -205,11 +216,18 @@ const execute = async () => {
           <div class="result-text">
             {{ saveMutation.result.value }}
           </div>
+          <a
+            v-if="mode === 'enterprise-submit' && reviewUrl"
+            class="result-link"
+            :href="reviewUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >Open the pull request ↗</a>
           <div
-            v-if="mode === 'enterprise-submit'"
+            v-else-if="mode === 'enterprise-submit'"
             class="result-hint"
           >
-            Push the branch and open a pull request in your enterprise repository to complete the review.
+            Open a pull request from this branch in your enterprise repository's platform to complete the review.
           </div>
         </div>
 
@@ -358,6 +376,7 @@ const execute = async () => {
 .result-msg { display: flex; flex-direction: column; gap: 6px; }
 .result-text { font-size: 13px; font-weight: 600; color: var(--ok-text); }
 .result-hint { font-size: 12px; color: var(--text-2); }
+.result-link { font-size: 13px; font-weight: 600; }
 .error-msg { font-size: 12px; color: var(--danger-strong); background: var(--danger-soft); border: 1px solid var(--danger-border); border-radius: 5px; padding: 8px 10px; }
 .dialog__footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--hair); }
 .btn { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; }
@@ -368,19 +387,6 @@ const execute = async () => {
 .btn--primary:hover:not(:disabled) { background: var(--accent-strong); }
 .btn--danger { background: var(--danger); color: var(--on-accent); }
 .btn--danger:hover:not(:disabled) { background: var(--danger-strong); }
-
-.changes-panel { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; max-height: 220px; display: flex; flex-direction: column; }
-.changes-loading, .changes-empty { padding: 10px 12px; font-size: 12px; color: var(--muted); }
-.changes-header { padding: 6px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: var(--hover); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.changes-list { list-style: none; overflow-y: auto; flex: 1; }
-.change-row { display: flex; align-items: baseline; gap: 6px; padding: 6px 12px 15px 12px; font-size: 12px; border-bottom: 1px solid var(--hair); }
-.change-row:last-child { border-bottom: none; }
-.change-status { font-size: 10px; font-weight: 800; width: 14px; flex-shrink: 0; }
-.change-status--added { color: var(--ok); }
-.change-status--modified { color: var(--accent); }
-.change-status--deleted { color: var(--danger); }
-.change-name { font-weight: 500; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.change-id { color: var(--muted); font-size: 11px; flex-shrink: 0; }
-.change-tags { display: flex; gap: 3px; flex-shrink: 0; }
-.change-tag { background: var(--accent-soft); color: var(--accent-strong); border-radius: 3px; padding: 1px 5px; font-size: 10px; font-weight: 600; }
 </style>
+
+<style scoped src="./SaveChangesDialog.css"></style>

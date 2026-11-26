@@ -77,6 +77,9 @@ class EnterpriseSubmitResponse(_SyncOutcome):
     branch: str
     already_submitted: bool | None = None
     pushed_at: str | None = None
+    #: The platform's page for opening a pull request from ``branch``; absent where the remote is not
+    #: a platform this backend knows how to link to (see ``review_link``).
+    review_url: str | None = None
 
 
 class EnterpriseWithdrawResponse(_SyncOutcome):

@@ -73,6 +73,31 @@ class TestBackendLogPath:
                 result = backend_log_path()
         assert result == (tmp_path / "backend.log").resolve()
 
+    def test_the_default_log_follows_the_state_dir_beside_the_pid_file(self, tmp_path: Path, monkeypatch) -> None:
+        """Regression: a backend started for a scratch repository with its own state directory wrote
+        its pid file there and appended to the main checkout's `.arch/backend.log`."""
+        main_checkout = tmp_path / "main"
+        scratch_state = tmp_path / "scratch" / ".arch"
+        monkeypatch.setenv("ARCH_BACKEND_STATE_DIR", str(scratch_state))
+        with patch(
+            "src.infrastructure.backend.backend_state.configured_backend_log_path", return_value=".arch/backend.log"
+        ):
+            with patch("src.infrastructure.backend.backend_state.workspace_root", return_value=main_checkout):
+                log = backend_log_path()
+                pid = backend_state_path()
+        assert log.parent == pid.parent == scratch_state.resolve()
+        assert log.name == "backend.log"
+
+    def test_the_default_log_without_a_state_dir_override_is_the_workspace_state_dir(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        monkeypatch.delenv("ARCH_BACKEND_STATE_DIR", raising=False)
+        with patch(
+            "src.infrastructure.backend.backend_state.configured_backend_log_path", return_value=".arch/backend.log"
+        ):
+            with patch("src.infrastructure.backend.backend_state.workspace_root", return_value=tmp_path):
+                assert backend_log_path() == tmp_path / ".arch" / "backend.log"
+
     def test_relative_path_without_workspace_root(self, tmp_path: Path) -> None:
         with patch("src.infrastructure.backend.backend_state.configured_backend_log_path", return_value="backend.log"):
             with patch("src.infrastructure.backend.backend_state.workspace_root", return_value=None):

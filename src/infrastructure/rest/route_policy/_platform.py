@@ -8,7 +8,7 @@ and every one of them touches git, which is why none is cacheable and all are
 
 from __future__ import annotations
 
-from src.infrastructure.rest.route_policy._types import TYPED, RouteRow
+from src.infrastructure.rest.route_policy._types import BODYLESS, TYPED, RouteRow
 
 _ARTIFACT = ("artifact_id",)
 
@@ -35,6 +35,15 @@ SYNC_ROWS: tuple[RouteRow, ...] = (
     RouteRow(
         "POST", "/api/sync/enterprise/withdraw", "operation", "sync_withdraw_enterprise",
         TYPED, mutation_domain="repository", timeout_class="derived-graph",
+    ),
+    # The git credential a remote asked for, held by this process. Changes what the process may do,
+    # not what a repository holds, so it is outside the repository mutation domain; gated as a
+    # local operator request instead. REST only by decision: an MCP tool would put the secret in an
+    # agent's context, so MCP callers are told to have it entered in the GUI. `derived-graph`
+    # because accepting it asks each remote that uses the protocol.
+    RouteRow(
+        "PUT", "/api/sync/credentials", "singleton", "sync_supply_credentials", BODYLESS,
+        timeout_class="derived-graph", max_body_bytes=8 * 1024,
     ),
 )
 

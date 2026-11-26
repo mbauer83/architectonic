@@ -3,7 +3,8 @@ import type { ModelRepository } from '../../ports/ModelRepository'
 import { GroupListSchema, SyncSaveResultSchema, SyncStatusSchema } from '../../domain/schemas'
 import { SyncChangesResultSchema } from '../../domain/schemas-changes'
 import { encodeIdentitySegment } from '../../domain/identitySegments'
-import { buildUrl, deleteReq, fetchJson, patchJson, postJson } from './httpTransport'
+import { operatorRequestHeaders } from '../../domain/operatorRequest'
+import { buildUrl, deleteReq, fetchJson, patchJson, postJson, putNoContent } from './httpTransport'
 
 /**
  * The workspace half of the HTTP adapter: git synchronisation, and the groups artifacts are filed in.
@@ -31,7 +32,7 @@ const groupUrl = (kind: string, slug: string, action = ''): string =>
 type WorkspaceMethods = Pick<
   ModelRepository,
   | 'getSyncStatus' | 'saveEngagementChanges' | 'saveEnterpriseChanges' | 'submitEnterpriseChanges'
-  | 'withdrawEnterpriseChanges' | 'getChanges'
+  | 'withdrawEnterpriseChanges' | 'supplyGitCredential' | 'getChanges'
   | 'listGroups' | 'createGroup' | 'renameGroup' | 'archiveGroup' | 'unarchiveGroup'
   | 'deleteGroup' | 'updateGroup'
 >
@@ -48,6 +49,9 @@ export const workspaceMethods = (): WorkspaceMethods => ({
   // property of *this address*, not a decision the application layer makes twice.
   withdrawEnterpriseChanges: () =>
     postJson(buildUrl('/sync/enterprise/withdraw'), { confirm: true }, SyncSaveResultSchema),
+  // A local operator request: the backend takes a credential only from the loopback with this header.
+  supplyGitCredential: (body) =>
+    putNoContent(buildUrl('/sync/credentials'), body, operatorRequestHeaders()),
   getChanges: (repo) => fetchJson(buildUrl('/sync/changes', { repo }), SyncChangesResultSchema),
 
   listGroups: (kind) =>

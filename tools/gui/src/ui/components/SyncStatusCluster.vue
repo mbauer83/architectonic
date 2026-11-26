@@ -133,6 +133,18 @@ const closeMenu = () => {
         >
           Proposed changes
         </RouterLink>
+        <a
+          v-if="enterprise?.review_url"
+          class="cluster__menu-item"
+          role="menuitem"
+          :href="enterprise.review_url"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="The platform's page for opening a pull request from the submitted branch"
+          @click="menuOpen = false"
+        >
+          Open the pull request ↗
+        </a>
         <hr
           v-if="hasActions"
           class="cluster__menu-rule"

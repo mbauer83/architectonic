@@ -10,11 +10,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.infrastructure.git.git_auth import collect_credentials, detect_remote_protocol
+from src.infrastructure.git.git_auth import collect_credentials, detect_remote_protocols
 
 
-def test_detect_remote_protocol_returns_none_for_missing_path(tmp_path: Path) -> None:
-    assert detect_remote_protocol(tmp_path / "not-cloned-yet") is None
+def test_detect_remote_protocols_is_empty_for_missing_path(tmp_path: Path) -> None:
+    assert detect_remote_protocols(tmp_path / "not-cloned-yet") == frozenset()
 
 
 def test_collect_credentials_skips_missing_repo_paths(tmp_path: Path) -> None:

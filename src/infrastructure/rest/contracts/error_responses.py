@@ -9,6 +9,9 @@ its own surface is worse than none.
 * ``HTTPException`` — every raise site, mapped to the envelope with its status preserved.
 * anything else — a generic 500 whose body never contains the exception's text.
 
+One more is specific rather than generic: an operation the remote refused for want of a credential
+(`GitCredentialsRequired`) answers `git_credentials_required` wherever it arises.
+
 Every error response carries ``Cache-Control: no-store``. That is required on the assurance
 surface, where a cached or revalidatable error would let a reader distinguish an above-ceiling
 id from an absent one, and it is correct everywhere else too: an error body is a statement about
@@ -28,6 +31,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
 
+from src.infrastructure.git.credential_refusal import GitCredentialsRequired
 from src.infrastructure.rest.contracts.errors import (
     ApiError,
     DenialDetails,
@@ -35,6 +39,7 @@ from src.infrastructure.rest.contracts.errors import (
     ErrorCode,
     ErrorEnvelope,
     FieldError,
+    GitCredentialsRequiredDetails,
     ValidationErrorDetails,
     status_error_code,
 )
@@ -102,6 +107,33 @@ async def api_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """A raise that had something specific to say. Its details are already validated."""
     assert isinstance(exc, ApiError)
     return api_error_response(exc, request_id=request_id_of(request))
+
+
+#: The status a refusal for want of a git credential answers with. A conflict with the process's
+#: state rather than an authentication failure of this request: the request was understood and the
+#: caller is allowed to make it; the backend lacks what the remote asks for.
+GIT_CREDENTIALS_REQUIRED_STATUS = 409
+
+
+def git_credentials_error(exc: GitCredentialsRequired) -> ApiError:
+    """`exc` as the typed refusal: protocol, remote and whether a held credential was refused."""
+    return ApiError(
+        GIT_CREDENTIALS_REQUIRED_STATUS,
+        "git_credentials_required",
+        str(exc),
+        GitCredentialsRequiredDetails(protocol=exc.protocol, remote=exc.remote_url, rejected=exc.rejected),
+    )
+
+
+async def git_credentials_required_handler(request: Request, exc: Exception) -> JSONResponse:
+    """A git operation the remote refused for want of a credential, wherever in a handler it arose.
+
+    Installed for the exception type rather than caught per route, so every operation that pushes,
+    fetches or lists the remote answers the same refusal. A route that reports other failures of
+    the same operation re-raises this one rather than folding it into its own 500.
+    """
+    assert isinstance(exc, GitCredentialsRequired)
+    return api_error_response(git_credentials_error(exc), request_id=request_id_of(request))
 
 
 async def validation_error_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -191,6 +223,7 @@ def install_error_contracts(app: FastAPI) -> None:
     """Register the request-id middleware and all three handlers on the application."""
     app.middleware("http")(request_id_middleware)
     app.add_exception_handler(ApiError, api_error_handler)
+    app.add_exception_handler(GitCredentialsRequired, git_credentials_required_handler)
     app.add_exception_handler(RequestValidationError, validation_error_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(Exception, unhandled_exception_handler)

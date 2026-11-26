@@ -11,17 +11,29 @@ POST /api/sync/engagement/save      — commit + optionally push engagement chan
 POST /api/sync/enterprise/save      — commit enterprise changes to working branch
 POST /api/sync/enterprise/submit    — push enterprise working branch for team review
 POST /api/sync/enterprise/withdraw  — discard all pending enterprise changes
+PUT  /api/sync/credentials          — supply a git credential a remote asked for (local operator only)
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Literal
+from pathlib import Path
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Header, HTTPException, Request, Response
+from pydantic import BaseModel, Field, SecretStr
 
+from src.infrastructure.git.credential_refusal import GitCredentialsRequired
+from src.infrastructure.rest.contracts.error_responses import (
+    GIT_CREDENTIALS_REQUIRED_STATUS,
+    git_credentials_error,
+)
+from src.infrastructure.rest.contracts.errors import ApiError, DenialDetails
+from src.infrastructure.rest.contracts.operator_request import (
+    OPERATOR_REQUEST_HEADER,
+    is_local_operator_request,
+)
 from src.infrastructure.rest.contracts.platform import SyncStatusResponse
 from src.infrastructure.rest.contracts.sync import (
     EngagementSaveResponse,
@@ -30,12 +42,20 @@ from src.infrastructure.rest.contracts.sync import (
     EnterpriseWithdrawResponse,
     SyncChangesResponse,
 )
-from src.infrastructure.rest.routers._openapi import TAG_SYNC
+from src.infrastructure.rest.routers._openapi import TAG_SYNC, error_response
 from src.infrastructure.rest.routers.sync import status_cache as sync_status_cache
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=[TAG_SYNC])
+
+#: Every operation here that reaches the remote can be refused for want of a git credential.
+_CREDENTIALS_RESPONSES: dict[int | str, dict[str, object]] = {
+    GIT_CREDENTIALS_REQUIRED_STATUS: error_response(
+        "`git_credentials_required`: the remote refused for want of a credential. Supply it with "
+        "`PUT /api/sync/credentials` and repeat the request"
+    ),
+}
 
 
 class SaveBody(BaseModel):
@@ -99,7 +119,7 @@ def _status_label(status: str) -> str:
 
 
 @router.post("/api/sync/engagement/save", response_model=EngagementSaveResponse,
-    response_model_exclude_none=True)
+    response_model_exclude_none=True, responses=_CREDENTIALS_RESPONSES)
 async def save_engagement(body: SaveBody) -> dict:
     """Commit (and optionally push) all engagement repository changes."""
     from src.infrastructure.git import git_work_commits
@@ -111,15 +131,13 @@ async def save_engagement(body: SaveBody) -> dict:
         raise HTTPException(400, "Engagement repository is not configured")
 
     def _save_and_push() -> str:
-        commit = git_work_commits.commit_engagement_work(
+        return git_work_commits.save_engagement_work(
             eng_root,
             body.message,
+            push=body.push,
             author_name=body.author_name,
             author_email=body.author_email,
         )
-        if body.push:
-            git_work_commits.push_engagement(eng_root)
-        return commit
 
     try:
         commit = await s.authorized_write_async(
@@ -136,6 +154,8 @@ async def save_engagement(body: SaveBody) -> dict:
         return {"ok": True, "commit": commit, "pushed": body.push, "message": body.message}
     except ValueError as exc:
         raise HTTPException(400, str(exc))
+    except GitCredentialsRequired:
+        raise  # answered as `git_credentials_required` by its own handler
     except RuntimeError as exc:
         raise HTTPException(500, str(exc))
 
@@ -183,12 +203,14 @@ async def save_enterprise(body: SaveBody) -> dict:
         return {"ok": True, "commit": commit, "message": body.message}
     except ValueError as exc:
         raise HTTPException(400, str(exc))
+    except GitCredentialsRequired:
+        raise  # answered as `git_credentials_required` by its own handler
     except RuntimeError as exc:
         raise HTTPException(500, str(exc))
 
 
 @router.post("/api/sync/enterprise/submit", response_model=EnterpriseSubmitResponse,
-    response_model_exclude_none=True)
+    response_model_exclude_none=True, responses=_CREDENTIALS_RESPONSES)
 async def submit_enterprise() -> dict:
     """Push the enterprise working branch for team review."""
     from src.infrastructure.git import enterprise_branch_lifecycle
@@ -226,15 +248,17 @@ async def submit_enterprise() -> dict:
                 ),
             }
         )
-        return {"ok": True, "branch": branch}
+        return {"ok": True, "branch": branch, "review_url": _review_url(ent_root, branch)}
     except ValueError as exc:
         raise HTTPException(400, str(exc))
+    except GitCredentialsRequired:
+        raise  # answered as `git_credentials_required` by its own handler
     except RuntimeError as exc:
         raise HTTPException(500, str(exc))
 
 
 @router.post("/api/sync/enterprise/withdraw", response_model=EnterpriseWithdrawResponse,
-    response_model_exclude_none=True)
+    response_model_exclude_none=True, responses=_CREDENTIALS_RESPONSES)
 async def withdraw_enterprise(body: WithdrawBody) -> dict:
     """Discard all pending enterprise changes and return the repo to main."""
     from src.infrastructure.git import enterprise_branch_lifecycle
@@ -273,8 +297,22 @@ async def withdraw_enterprise(body: WithdrawBody) -> dict:
         return {"ok": True, "discarded_branch": branch}
     except ValueError as exc:
         raise HTTPException(400, str(exc))
+    except GitCredentialsRequired:
+        raise  # answered as `git_credentials_required` by its own handler
     except RuntimeError as exc:
         raise HTTPException(500, str(exc))
+
+
+def _review_url(enterprise_root: Path, branch: str) -> str | None:
+    """The platform's new-pull-request page for `branch` against the enterprise base branch.
+
+    Returned by a fresh submit only; an already-pending one is answered without it, and the sync
+    status carries it for as long as the review is pending.
+    """
+    from src.infrastructure.git.git_repository_state import UPSTREAM_BRANCH
+    from src.infrastructure.git.review_link import review_url_for
+
+    return review_url_for(enterprise_root, branch=branch, base=UPSTREAM_BRANCH)
 
 
 def _settle_the_withdrawn_changes() -> None:
@@ -283,3 +321,88 @@ def _settle_the_withdrawn_changes() -> None:
     from src.infrastructure.write.artifact_write.integration_cleanup import settle_after_a_withdrawal
 
     settle_after_a_withdrawal(s.maybe_get_repo())
+
+
+# ---------------------------------------------------------------------------
+# Credentials a remote asked for
+# ---------------------------------------------------------------------------
+
+
+class SyncCredentialsBody(BaseModel):
+    """A credential for one protocol. `secret` is the SSH key passphrase or the HTTPS token.
+
+    `SecretStr`, so the value is masked wherever the model is printed; the validation-error
+    envelope reports field paths and messages only, never the input.
+    """
+
+    protocol: Literal["ssh", "https"]
+    secret: SecretStr = Field(min_length=1, max_length=4096)
+    #: HTTPS only. Hosts that ignore it for token authentication accept the default.
+    username: str | None = Field(default=None, max_length=256)
+
+
+@router.put(
+    "/api/sync/credentials",
+    status_code=204,
+    response_class=Response,
+    responses={
+        403: error_response(
+            "The request is not a local operator request: one from the loopback carrying "
+            f"`{OPERATOR_REQUEST_HEADER}`, as the GUI served by this backend sends"
+        ),
+        GIT_CREDENTIALS_REQUIRED_STATUS: error_response(
+            "`git_credentials_required` with `rejected: true`: a remote that uses this protocol "
+            "refused the credential, which is not kept"
+        ),
+    },
+)
+def supply_sync_credentials(
+    request: Request,
+    body: SyncCredentialsBody,
+    operator_request: Annotated[
+        str | None,
+        Header(
+            alias=OPERATOR_REQUEST_HEADER,
+            description="`1` from the GUI or command line on this machine; any other request is refused",
+        ),
+    ] = None,
+) -> Response:
+    """Hold a git credential for this process, after the remotes that use it have accepted it.
+
+    The GUI sends this when a save, submit or discard was refused with `git_credentials_required`,
+    then repeats the operation. The credential is kept in memory until the backend stops: it is
+    never written to disk, logged, or returned, and nothing answers with it.
+
+    Accepted only as a local operator request (`operator_request`), the gate `arch-assurance unlock`
+    uses: from the loopback, carrying the operator header, which a page from another origin cannot
+    send. A deployment reached through a proxy therefore cannot be handed a credential this way.
+
+    There is deliberately no MCP tool for this. An agent session would have to hold the secret in
+    its context and transcript to pass it on; MCP callers are told to have the person enter it in
+    the GUI or to set the environment variable before the backend starts.
+    """
+    from src.infrastructure.git import held_credentials  # noqa: PLC0415
+    from src.infrastructure.rest.routers import state as s  # noqa: PLC0415
+
+    # Declared so the published document names the header a client must send; the gate below reads
+    # the request itself, so the loopback condition is checked with it.
+    del operator_request
+    if not is_local_operator_request(request):
+        raise ApiError(
+            403, "forbidden",
+            "A git credential is accepted only from the GUI or command line on the machine the "
+            "backend runs on.",
+            DenialDetails(reason_code="operator_request_required"),
+        )
+    roots = [root for root in (s.maybe_engagement_root(), s.maybe_enterprise_root()) if root is not None]
+    try:
+        held_credentials.supply(
+            body.protocol,
+            secret=body.secret.get_secret_value(),
+            username=body.username,
+            verify_against=roots,
+        )
+    except GitCredentialsRequired as refused:
+        raise git_credentials_error(refused) from None
+    sync_status_cache.invalidate_sync_status_cache()
+    return Response(status_code=204)

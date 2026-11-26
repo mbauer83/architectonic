@@ -118,3 +118,6 @@ class ChangeSubmittedResponse(Closed):
     submitted: list[str]
     pushed_now: bool
     summary: str
+    #: The platform's page for opening a pull request from ``branch``; null where the remote is not a
+    #: platform this backend knows how to link to (see ``review_link``).
+    review_url: str | None = None

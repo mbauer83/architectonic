@@ -1,5 +1,6 @@
 import type { ClassificationLevelsResponse } from '../domain/schemas/ontology'
 import type { ChangeRepository } from './ChangeRepository'
+import type { GitCredentialRepository } from './GitCredentialRepository'
 import type { DocumentRepository } from './DocumentRepository'
 import type { DiagramReadingRepository } from './DiagramReadingRepository'
 import type { Effect } from 'effect'
@@ -94,7 +95,7 @@ export type { DiagramComposition, DiagramWriteBody }
 
 export interface ModelRepository
   extends EnterpriseAdminRepository, ScratchpadRepository, IconRepository, DiagramReadingRepository,
-    DiagramLayoutRepository,
+    DiagramLayoutRepository, GitCredentialRepository,
     ChangeRepository, DocumentRepository, StressAnalysisRepository, CandidatePictureRepository {
   readonly getServerInfo: () => Effect.Effect<ServerInfo, RepoError>
   readonly listModules: () => Effect.Effect<readonly ModuleSummary[], RepoError>

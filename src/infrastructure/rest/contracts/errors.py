@@ -83,6 +83,9 @@ ErrorCode: TypeAlias = Literal[
     # A request body larger than its operation accepts, refused before it is read. It carries the
     # limit, because the caller's remedy is to send less and it has to know how much less.
     "request_too_large",
+    # A git operation that reaches the remote was refused for want of a credential. It names the
+    # protocol and the remote, so a client can ask for the right secret, and never carries one.
+    "git_credentials_required",
 ]
 
 
@@ -284,6 +287,18 @@ class NotConfiguredDetails(_Details):
     remedy: str
 
 
+class GitCredentialsRequiredDetails(_Details):
+    """``git_credentials_required``: which credential a remote asked for, and whether one was refused.
+
+    ``remote`` is the URL with any userinfo removed. ``rejected`` separates "none was held" from
+    "the one held was refused", which is what a prompt has to say when it asks again.
+    """
+
+    protocol: Literal["ssh", "https"]
+    remote: str
+    rejected: bool
+
+
 class ViewpointReferencedDetails(_Details):
     """``viewpoint_referenced``: the views that still pin the definition a caller asked to delete.
 
@@ -337,6 +352,7 @@ ERROR_DETAIL_TYPES: dict[str, type[_Details] | None] = {
     "not_configured": NotConfiguredDetails,
     "viewpoint_referenced": ViewpointReferencedDetails,
     "request_too_large": RequestTooLargeDetails,
+    "git_credentials_required": GitCredentialsRequiredDetails,
 }
 
 #: The union a code's ``details`` can be. Named and exported, because ``ApiError`` and the
@@ -361,6 +377,7 @@ ErrorDetails: TypeAlias = (
     | LegacyInvalidDetails
     | ViewpointReferencedDetails
     | RequestTooLargeDetails
+    | GitCredentialsRequiredDetails
 )
 
 

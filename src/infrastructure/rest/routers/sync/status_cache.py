@@ -29,7 +29,9 @@ async def _measure() -> dict[str, Any]:
     from src.infrastructure.git import git_repository_state
     from src.infrastructure.rest.routers import state as s
 
-    measurements: dict[str, Any] = {"engagement_dirty": None, "enterprise_dirty": None, "commits_ahead": None}
+    measurements: dict[str, Any] = {
+        "engagement_dirty": None, "enterprise_dirty": None, "commits_ahead": None, "review_url": None,
+    }
 
     eng_root = s.maybe_engagement_root()
     if eng_root is not None:
@@ -44,8 +46,21 @@ async def _measure() -> dict[str, Any]:
         )
         # Live ahead-count in every mode (including read-only): behind-state must be truthful.
         measurements["commits_ahead"] = await asyncio.to_thread(git_repository_state.commits_ahead_of_main, ent_root)
+        measurements["review_url"] = await asyncio.to_thread(_review_url_while_pending, ent_root)
 
     return measurements
+
+
+def _review_url_while_pending(enterprise_root: Path) -> str | None:
+    """Where the pending branch's pull request is opened, measured with the other repository probes."""
+    from src.infrastructure.git import enterprise_sync_state
+    from src.infrastructure.git.git_repository_state import UPSTREAM_BRANCH
+    from src.infrastructure.git.review_link import review_url_for
+
+    state = enterprise_sync_state.load_cached(enterprise_root)
+    if not state.is_pending() or not state.branch:
+        return None
+    return review_url_for(enterprise_root, branch=state.branch, base=UPSTREAM_BRANCH)
 
 
 async def get_sync_status() -> dict[str, Any]:
@@ -84,6 +99,8 @@ def _compose(measurements: dict[str, Any]) -> dict[str, Any]:
         }
         if sync_state.is_accumulating():
             info["commits_ahead"] = measurements["commits_ahead"]
+        if sync_state.is_pending() and measurements.get("review_url"):
+            info["review_url"] = measurements["review_url"]
         out["enterprise"] = info
 
     out["authority"] = authority_projection(authorization_snapshot())

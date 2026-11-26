@@ -3557,6 +3557,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sync/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Supply Sync Credentials
+         * @description Hold a git credential for this process, after the remotes that use it have accepted it.
+         *
+         *     The GUI sends this when a save, submit or discard was refused with `git_credentials_required`,
+         *     then repeats the operation. The credential is kept in memory until the backend stops: it is
+         *     never written to disk, logged, or returned, and nothing answers with it.
+         *
+         *     Accepted only as a local operator request (`operator_request`), the gate `arch-assurance unlock`
+         *     uses: from the loopback, carrying the operator header, which a page from another origin cannot
+         *     send. A deployment reached through a proxy therefore cannot be handed a credential this way.
+         *
+         *     There is deliberately no MCP tool for this. An agent session would have to hold the secret in
+         *     its context and transcript to pass it on; MCP callers are told to have the person enter it in
+         *     the GUI or to set the environment variable before the backend starts.
+         */
+        put: operations["sync_supply_credentials"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sync/engagement/save": {
         parameters: {
             query?: never;
@@ -7000,6 +7032,8 @@ export interface components {
             commit: string;
             /** Pushed Now */
             pushed_now: boolean;
+            /** Review Url */
+            review_url?: string | null;
             /** Submitted */
             submitted: string[];
             /** Summary */
@@ -10035,6 +10069,8 @@ export interface components {
             ok: boolean;
             /** Pushed At */
             pushed_at?: string;
+            /** Review Url */
+            review_url?: string;
         };
         /**
          * EnterpriseSyncStateResponse
@@ -10059,6 +10095,8 @@ export interface components {
             label: string;
             /** Pushed At */
             pushed_at: string | null;
+            /** Review Url */
+            review_url?: string | null;
             /**
              * Status
              * @enum {string}
@@ -10527,9 +10565,9 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "bad_request" | "forbidden" | "not_found" | "conflict" | "validation_error" | "write_rejected" | "internal_error" | "assurance_store_locked" | "signal_mutation_denied" | "invalid_vex_assessment" | "analysis_method_mismatch" | "analysis_not_empty" | "entity_in_use" | "provenance_immutable" | "provenance_required" | "invalid_participation" | "node_legacy_invalid" | "classification_ceiling_exceeded" | "duplicate_edge" | "illegal_connection_type" | "not_a_failure_mode" | "traversal_time_budget_exceeded" | "diagram_render_limit" | "binding_cardinality_violation" | "unknown_diagram_type" | "unknown_guidance_topic" | "classification_not_publishable" | "not_configured" | "viewpoint_referenced" | "request_too_large";
+            code: "bad_request" | "forbidden" | "not_found" | "conflict" | "validation_error" | "write_rejected" | "internal_error" | "assurance_store_locked" | "signal_mutation_denied" | "invalid_vex_assessment" | "analysis_method_mismatch" | "analysis_not_empty" | "entity_in_use" | "provenance_immutable" | "provenance_required" | "invalid_participation" | "node_legacy_invalid" | "classification_ceiling_exceeded" | "duplicate_edge" | "illegal_connection_type" | "not_a_failure_mode" | "traversal_time_budget_exceeded" | "diagram_render_limit" | "binding_cardinality_violation" | "unknown_diagram_type" | "unknown_guidance_topic" | "classification_not_publishable" | "not_configured" | "viewpoint_referenced" | "request_too_large" | "git_credentials_required";
             /** Details */
-            details?: components["schemas"]["ValidationErrorDetails"] | components["schemas"]["DiagramRenderLimitDetails"] | components["schemas"]["BindingCardinalityDetails"] | components["schemas"]["DenialDetails"] | components["schemas"]["MethodMismatchDetails"] | components["schemas"]["AnalysisNotEmptyDetails"] | components["schemas"]["EntityInUseDetails"] | components["schemas"]["DuplicateEdgeDetails"] | components["schemas"]["IllegalConnectionTypeDetails"] | components["schemas"]["NotAFailureModeDetails"] | components["schemas"]["UnknownDiagramTypeDetails"] | components["schemas"]["UnknownGuidanceTopicDetails"] | components["schemas"]["ClassificationNotPublishableDetails"] | components["schemas"]["NotConfiguredDetails"] | components["schemas"]["ProvenanceImmutableDetails"] | components["schemas"]["InvalidParticipationDetails"] | components["schemas"]["LegacyInvalidDetails"] | components["schemas"]["ViewpointReferencedDetails"] | components["schemas"]["RequestTooLargeDetails"] | null;
+            details?: components["schemas"]["ValidationErrorDetails"] | components["schemas"]["DiagramRenderLimitDetails"] | components["schemas"]["BindingCardinalityDetails"] | components["schemas"]["DenialDetails"] | components["schemas"]["MethodMismatchDetails"] | components["schemas"]["AnalysisNotEmptyDetails"] | components["schemas"]["EntityInUseDetails"] | components["schemas"]["DuplicateEdgeDetails"] | components["schemas"]["IllegalConnectionTypeDetails"] | components["schemas"]["NotAFailureModeDetails"] | components["schemas"]["UnknownDiagramTypeDetails"] | components["schemas"]["UnknownGuidanceTopicDetails"] | components["schemas"]["ClassificationNotPublishableDetails"] | components["schemas"]["NotConfiguredDetails"] | components["schemas"]["ProvenanceImmutableDetails"] | components["schemas"]["InvalidParticipationDetails"] | components["schemas"]["LegacyInvalidDetails"] | components["schemas"]["ViewpointReferencedDetails"] | components["schemas"]["RequestTooLargeDetails"] | components["schemas"]["GitCredentialsRequiredDetails"] | null;
             /** Message */
             message: string;
             /** Request Id */
@@ -10960,6 +10998,24 @@ export interface components {
             source: string;
             /** Target */
             target: string;
+        };
+        /**
+         * GitCredentialsRequiredDetails
+         * @description ``git_credentials_required``: which credential a remote asked for, and whether one was refused.
+         *
+         *     ``remote`` is the URL with any userinfo removed. ``rejected`` separates "none was held" from
+         *     "the one held was refused", which is what a prompt has to say when it asks again.
+         */
+        GitCredentialsRequiredDetails: {
+            /**
+             * Protocol
+             * @enum {string}
+             */
+            protocol: "ssh" | "https";
+            /** Rejected */
+            rejected: boolean;
+            /** Remote */
+            remote: string;
         };
         /**
          * GroupEntryResponse
@@ -15013,6 +15069,27 @@ export interface components {
              * @enum {string}
              */
             repo: "engagement" | "enterprise";
+        };
+        /**
+         * SyncCredentialsBody
+         * @description A credential for one protocol. `secret` is the SSH key passphrase or the HTTPS token.
+         *
+         *     `SecretStr`, so the value is masked wherever the model is printed; the validation-error
+         *     envelope reports field paths and messages only, never the input.
+         */
+        SyncCredentialsBody: {
+            /**
+             * Protocol
+             * @enum {string}
+             */
+            protocol: "ssh" | "https";
+            /**
+             * Secret
+             * Format: password
+             */
+            secret: string;
+            /** Username */
+            username?: string | null;
         };
         /** SyncDiagramToModelBody */
         SyncDiagramToModelBody: {
@@ -28750,6 +28827,67 @@ export interface operations {
             };
         };
     };
+    sync_supply_credentials: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description `1` from the GUI or command line on this machine; any other request is refused */
+                "X-Arch-Operator-Request"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SyncCredentialsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The request is not a local operator request: one from the loopback carrying `X-Arch-Operator-Request`, as the GUI served by this backend sends */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description `git_credentials_required` with `rejected: true`: a remote that uses this protocol refused the credential, which is not kept */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     sync_save_engagement: {
         parameters: {
             query?: never;
@@ -28770,6 +28908,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EngagementSaveResponse"];
+                };
+            };
+            /** @description `git_credentials_required`: the remote refused for want of a credential. Supply it with `PUT /api/sync/credentials` and repeat the request */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Request validation failed */
@@ -28852,6 +28999,15 @@ export interface operations {
                     "application/json": components["schemas"]["EnterpriseSubmitResponse"];
                 };
             };
+            /** @description `git_credentials_required`: the remote refused for want of a credential. Supply it with `PUT /api/sync/credentials` and repeat the request */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             /** @description Request validation failed */
             422: {
                 headers: {
@@ -28892,6 +29048,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnterpriseWithdrawResponse"];
+                };
+            };
+            /** @description `git_credentials_required`: the remote refused for want of a credential. Supply it with `PUT /api/sync/credentials` and repeat the request */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
             /** @description Request validation failed */
