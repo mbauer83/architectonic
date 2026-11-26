@@ -27,7 +27,7 @@ unsaved changes asks the same question, and **Discard** asks before it throws ch
 Nothing reaches the repository before **Save**. Until then every change is a step in the session's
 undo history.
 
-![Edit mode on the diagram One Enterprise Repository, Many Engagements: the edit bar with Automatic layout, Undo, Redo, Check layout, No changes, Discard and Save above the canvas, and the sidebar open on Search the model](../media/diagram-edit-mode.png)
+![Edit mode on the diagram Editing and Evaluating Architectures on the Canvas: the edit bar with Automatic layout, Undo, Redo, Check layout, No changes, Discard and Save above the canvas, and the sidebar open on Search the model](../media/diagram-edit-mode.png)
 
 &nbsp;
 
@@ -220,6 +220,13 @@ replaces stays in the diagram's history and can be restored from there. Confirm 
 
 The dialog refuses when the diagram changed after the page read it. Reload the page and look at the
 current body before laying it out.
+
+A diagram without `manual-layout` can still have a picture drawn by hand: boxes, further drawings of
+an element or relations that its generated picture would not have. Such a diagram is edited on the
+canvas, and edit mode says *This diagram's picture is drawn by hand*. Arranging it is saved. Adding
+or removing what it draws is not, because the save would replace the hand-drawn picture with a
+generated one. Its page also offers **Lay out automatically…** for that. Under the notice,
+**What only the hand-drawn picture has** lists those boxes, elements and relations by name.
 
 &nbsp;
 
