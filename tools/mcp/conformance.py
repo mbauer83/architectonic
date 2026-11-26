@@ -63,6 +63,9 @@ class Seed:
     #: A failure-mode matrix is a projection of one FMEA analysis, so the tool cannot be called
     #: without one.
     fmea_analysis_id: str | None = None
+    diagram_id: str | None = None
+    document_id: str | None = None
+    scratchpad_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +107,14 @@ READ_CALLS: tuple[ToolCall, ...] = (
     ToolCall("artifact_aibom_export"),
     ToolCall("artifact_aibom_coverage"),
     ToolCall("artifact_verify"),
+    ToolCall("artifact_list_changes"),
+    ToolCall("artifact_query_icons"),
+    ToolCall("artifact_query_diagram_layout", lambda s: {"artifact_id": s.diagram_id}, ("diagram_id",)),
+    ToolCall("artifact_query_document_tables", lambda s: {"artifact_id": s.document_id}, ("document_id",)),
+    ToolCall("scratchpad_list"),
+    ToolCall("scratchpad_read", lambda s: {"artifact_id": s.scratchpad_id}, ("scratchpad_id",)),
+    ToolCall("change_set_list"),
+    ToolCall("analysis_perspectives"),
     # ── assurance read ────────────────────────────────────────────────────────
     ToolCall("assurance_store_status"),
     ToolCall("assurance_stats"),
@@ -139,8 +150,25 @@ READ_CALLS: tuple[ToolCall, ...] = (
     ),
 )
 
+_NEEDS_A_CANDIDATE = (
+    "needs a candidate architecture, which the read walk cannot write and the self-model does not hold; "
+    "the REST/MCP parity suites call it through both transports over candidates they create."
+)
+_NEEDS_AN_ANALYSIS = (
+    "needs a stress analysis, which the read walk cannot write and the self-model does not hold; "
+    "the REST/MCP parity suites call it through both transports over analyses they create."
+)
+
 #: Read-mount tools this walk does not call, each with why. Shrink-only.
 UNEXERCISED: Mapping[str, str] = {
+    "change_set_read": _NEEDS_A_CANDIDATE,
+    "change_set_standing": _NEEDS_A_CANDIDATE,
+    "change_set_compare": _NEEDS_A_CANDIDATE,
+    "change_set_residuality": _NEEDS_A_CANDIDATE,
+    "change_set_check": _NEEDS_A_CANDIDATE,
+    "analysis_incidence": _NEEDS_AN_ANALYSIS,
+    "analysis_progress": _NEEDS_AN_ANALYSIS,
+    "analysis_test_set": _NEEDS_AN_ANALYSIS,
     "assurance_vulnerability_impact": (
         "needs a canonical vulnerability id that exists in the store, which only an ingested signal "
         "snapshot supplies — and ingesting one is a write. Comes with the fixture store."
@@ -165,7 +193,21 @@ async def _discover_seed(session: Any) -> Seed:
     entities = [row for row in rows if row.get("record_type") == "entity"]
     first = (entities or rows or [{}])[0]
     artifact_id = first.get("artifact_id")
-    return Seed(entity_id=artifact_id, artifact_id=artifact_id)
+    # The catalogue lists entities unless asked for more; the layout and table reads need one of each.
+    others = await session.call_tool(
+        "artifact_query_list_artifacts", {"include_record_types": ["diagrams", "documents"]},
+    )
+    other_rows = _rows_of(_decoded(_text_of(others)))
+    diagram = next((row for row in other_rows if row.get("record_type") == "diagram"), {})
+    document = next((row for row in other_rows if row.get("record_type") == "document"), {})
+    pads = _rows_of(_decoded(_text_of(await session.call_tool("scratchpad_list", {}))))
+    return Seed(
+        entity_id=artifact_id,
+        artifact_id=artifact_id,
+        diagram_id=diagram.get("artifact_id"),
+        document_id=document.get("artifact_id"),
+        scratchpad_id=pads[0].get("artifact-id") if pads else None,  # the scratchpad row spells it hyphenated
+    )
 
 
 async def _discover_assurance_seed(session: Any, base: Seed) -> Seed:
@@ -182,6 +224,9 @@ async def _discover_assurance_seed(session: Any, base: Seed) -> Seed:
         assurance_node_id=node_id,
         anchor_entity_id=base.entity_id,
         fmea_analysis_id=fmea[0].get("analysis_id") if fmea else None,
+        diagram_id=base.diagram_id,
+        document_id=base.document_id,
+        scratchpad_id=base.scratchpad_id,
     )
 
 

@@ -47,7 +47,7 @@ def rows_of(payload: object) -> list[Mapping[str, Any]]:
     rather than assumed, so a seed does not silently come back empty because the envelope moved.
     """
     if isinstance(payload, Mapping):
-        for key in ("result", "artifacts", "items", "nodes", "results"):
+        for key in ("result", "artifacts", "items", "nodes", "results", "scratchpads"):
             inner = payload.get(key)
             if isinstance(inner, list):
                 return [row for row in inner if isinstance(row, Mapping)]
