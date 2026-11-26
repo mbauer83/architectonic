@@ -172,7 +172,8 @@ def test_the_dry_run_says_what_each_edit_replaces_and_nothing_for_a_create(root:
     ref = _candidate(
         client,
         {"op": "edit_entity", "artifact_id": ledger, "field": "summary", "value": "Keeps every posting twice."},
-        {"op": "create_entity", "fields": {"artifact_type": "requirement", "name": "New rule", "group": "uncategorized"}},
+        {"op": "create_entity",
+         "fields": {"artifact_type": "requirement", "name": "New rule", "group": "uncategorized"}},
     )
 
     standing = client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": True}).json()["standing"]
