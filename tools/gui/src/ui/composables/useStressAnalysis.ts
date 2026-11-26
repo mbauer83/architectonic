@@ -57,7 +57,8 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
    */
   const names = computed(() => new Map((naive.value?.view.entities ?? []).flatMap((entity) => {
     const name = typeof entity.fields.name === 'string' ? entity.fields.name : entity.id
-    return [entity.id, ...(entity.artifact_id ? [entity.artifact_id] : [])].map((id) => [stableEntityId(id), name] as const)
+    const spellings = [entity.id, ...(entity.artifact_id ? [entity.artifact_id] : [])]
+    return spellings.map((id) => [stableEntityId(id), name] as const)
   })))
   const nameOf = (id: string): string => names.value.get(stableEntityId(id)) ?? (naive.value ? id : UNNAMED_YET)
 
