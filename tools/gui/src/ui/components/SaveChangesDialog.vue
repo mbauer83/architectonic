@@ -387,19 +387,6 @@ const execute = async () => {
 .btn--primary:hover:not(:disabled) { background: var(--accent-strong); }
 .btn--danger { background: var(--danger); color: var(--on-accent); }
 .btn--danger:hover:not(:disabled) { background: var(--danger-strong); }
-
-.changes-panel { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; max-height: 220px; display: flex; flex-direction: column; }
-.changes-loading, .changes-empty { padding: 10px 12px; font-size: 12px; color: var(--muted); }
-.changes-header { padding: 6px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: var(--hover); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.changes-list { list-style: none; overflow-y: auto; flex: 1; }
-.change-row { display: flex; align-items: baseline; gap: 6px; padding: 6px 12px 15px 12px; font-size: 12px; border-bottom: 1px solid var(--hair); }
-.change-row:last-child { border-bottom: none; }
-.change-status { font-size: 10px; font-weight: 800; width: 14px; flex-shrink: 0; }
-.change-status--added { color: var(--ok); }
-.change-status--modified { color: var(--accent); }
-.change-status--deleted { color: var(--danger); }
-.change-name { font-weight: 500; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.change-id { color: var(--muted); font-size: 11px; flex-shrink: 0; }
-.change-tags { display: flex; gap: 3px; flex-shrink: 0; }
-.change-tag { background: var(--accent-soft); color: var(--accent-strong); border-radius: 3px; padding: 1px 5px; font-size: 10px; font-weight: 600; }
 </style>
+
+<style scoped src="./SaveChangesDialog.css"></style>

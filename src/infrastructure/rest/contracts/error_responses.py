@@ -31,7 +31,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
 
-from src.infrastructure.git.git_auth import GitCredentialsRequired
+from src.infrastructure.git.credential_refusal import GitCredentialsRequired
 from src.infrastructure.rest.contracts.errors import (
     ApiError,
     DenialDetails,

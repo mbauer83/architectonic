@@ -17,9 +17,9 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from src.infrastructure.git import git_env
+from src.infrastructure.git.credential_refusal import GitCredentialsRequired
 from src.infrastructure.git.git_auth import (
     GitCredentials,
-    GitCredentialsRequired,
     RemoteProtocol,
     build_git_env,
     create_askpass_script,

@@ -24,7 +24,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field, SecretStr
 
-from src.infrastructure.git.git_auth import GitCredentialsRequired
+from src.infrastructure.git.credential_refusal import GitCredentialsRequired
 from src.infrastructure.rest.contracts.error_responses import (
     GIT_CREDENTIALS_REQUIRED_STATUS,
     git_credentials_error,
@@ -229,7 +229,6 @@ async def submit_enterprise() -> dict:
             "already_submitted": True,
             "branch": sync_state.branch,
             "pushed_at": sync_state.pushed_at,
-            "review_url": _review_url(ent_root, sync_state.branch),
         }
     if sync_state.is_synced():
         raise HTTPException(400, "No enterprise changes to submit for review")
@@ -304,12 +303,16 @@ async def withdraw_enterprise(body: WithdrawBody) -> dict:
         raise HTTPException(500, str(exc))
 
 
-def _review_url(enterprise_root: Path, branch: str | None) -> str | None:
-    """The platform's new-pull-request page for `branch` against the enterprise base branch."""
+def _review_url(enterprise_root: Path, branch: str) -> str | None:
+    """The platform's new-pull-request page for `branch` against the enterprise base branch.
+
+    Returned by a fresh submit only; an already-pending one is answered without it, and the sync
+    status carries it for as long as the review is pending.
+    """
     from src.infrastructure.git.git_repository_state import UPSTREAM_BRANCH
     from src.infrastructure.git.review_link import review_url_for
 
-    return review_url_for(enterprise_root, branch=branch, base=UPSTREAM_BRANCH) if branch else None
+    return review_url_for(enterprise_root, branch=branch, base=UPSTREAM_BRANCH)
 
 
 def _settle_the_withdrawn_changes() -> None:

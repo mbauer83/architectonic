@@ -90,7 +90,7 @@ def refuse_for_missing_credentials(repo: Path, args: tuple[str, ...], stderr: st
     for the credential rather than report a failed push.
     """
     from src.infrastructure.git import held_credentials  # noqa: PLC0415
-    from src.infrastructure.git.git_auth import credentials_required_for  # noqa: PLC0415
+    from src.infrastructure.git.credential_refusal import credentials_required_for  # noqa: PLC0415
 
     refusal = credentials_required_for(
         repo, pushing=args[:1] == ("push",), git_output=stderr, held=held_credentials.held()
