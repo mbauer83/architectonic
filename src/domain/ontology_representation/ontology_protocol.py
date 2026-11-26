@@ -34,6 +34,7 @@ from src.domain.ontology_representation.ontology_types import (
 )
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
 from src.domain.ontology_representation.specializations import SpecializationCatalog
+from src.domain.ontology_representation.target_state_relations import TargetStateRelations
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet
 from src.domain.relationships.relationship_derivation_restrictions import DerivationRestriction
 from src.domain.relationships.relationship_derivation_rules import CompositionRule
@@ -114,6 +115,12 @@ class OntologyModule(Protocol):
         valid answer and means the ontology has not said.
         """
         return ElementAppearance()
+
+    @property
+    def target_state_relations(self) -> TargetStateRelations | None:
+        """How a candidate applied as a target state is related in this ontology: what traces a copy to its
+        original, and what a plateau holds its elements by. None where the ontology cannot express one."""
+        ...
 
     @property
     def display_section_id(self) -> str: ...
@@ -338,6 +345,25 @@ class DiagramTypeModule(Protocol):
         entity types, or nodes a type keeps in `diagram-entities` without declaring types. False where
         `diagram-entities` is metadata beside a body the diagram owns, and for a type drawn from a
         store (`StoreGraphProjectingDiagramType`), whose nodes exist in the store and are drawn from it.
+        """
+        ...
+
+    @property
+    def hosts_candidates(self) -> bool:
+        """Whether a candidate architecture may be drawn on a diagram of this type.
+
+        True where the diagram's picture is the model's elements and relations as such — what a candidate's
+        operations change — so the candidate's editor can sketch on it. The server refuses a candidate drawn
+        on a diagram of a type that says False, and the GUI offers only the diagrams whose type says True.
+        """
+        ...
+
+    @property
+    def draws_occurrences(self) -> bool:
+        """Whether a diagram of this type may draw one element more than once and label each drawing on its own.
+
+        The further drawings and their labels are statements in `diagram-entities` (`occurrence`,
+        `display_labels`) that only a type which says True renders.
         """
         ...
 

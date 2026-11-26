@@ -13,15 +13,15 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { ModelService } from '../../application/ModelService'
-import { SMALLEST_ELEMENT, movedTogether, resized, resizedExtent } from '../../domain/layout/lab/labArrangement'
-import { GRID } from '../../domain/layout/lab/labSnapping'
-import { type BendRef, withBendsMoved } from '../../domain/layout/lab/labSelection'
+import { SMALLEST_ELEMENT, movedTogether, resized, resizedExtent } from '../../domain/layout/canvasArrangement'
+import { GRID } from '../../domain/layout/canvasSnapping'
+import { type BendRef, withBendsMoved } from '../../domain/layout/canvasSelection'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import type { Extent } from '../../domain/layout/geometry'
 import type { ReadingLens } from '../../domain/readingLens'
 import type { PictureContext } from '../../domain'
 import { extentOfMarks, type OverviewMark } from '../lib/diagramOverview'
-import type { CanvasFocus } from '../components/layoutLab/useCanvasFocus'
+import type { CanvasFocus } from './useCanvasFocus'
 import { useEditPanel } from './useEditPanel'
 import { useDiagramEditing } from './useDiagramEditing'
 import { type EditKey, editKeyOf } from './editModeKeys'
@@ -190,7 +190,7 @@ export function useDiagramEditMode(
     const [x, y] = key.direction
     const label = key.fine ? 1 : LABEL_STEP
     if (!canvas) return false
-    // A label is picked only where a line may be shaped (`LayoutLabCanvas`), so this refuses nothing it offered.
+    // A label is picked only where a line may be shaped (`DiagramCanvas`), so this refuses nothing it offered.
     if (!key.resize && permit.value('key.nudge-label').allowed && canvas.nudgeLabel(x * label, y * label)) return true
     if (canvas.selection.length || canvas.selectedBends.length) {
       if (allowed(key.resize ? 'key.resize' : 'key.nudge')) {

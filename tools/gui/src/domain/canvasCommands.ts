@@ -2,8 +2,9 @@
  * Every command of the shared canvas editor — each menu entry, key and gesture — and the named operation
  * it is on each page that edits with it (sketch 02·7, A-02.24).
  *
- * The operation is the backend's name for what saving the command writes (`operation_catalog.py`): the
- * name a policy allows or denies, which the permission answer is keyed by (`domain/permissions`). On the
+ * The operation is the backend's name for what saving the command writes
+ * (`src/application/operation_catalog.py`): the name a policy allows or denies, which the permission
+ * answer is keyed by (`domain/permissions`). On the
  * diagram page a command is a part of the diagram's save; on a candidate's it is an edit the candidate
  * records. A command that writes nothing on a page — opening a page, taking an element off a candidate's
  * view, arranging a picture a candidate does not keep — is `null` there, and is never refused.

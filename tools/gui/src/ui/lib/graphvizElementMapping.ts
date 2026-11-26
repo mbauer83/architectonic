@@ -4,7 +4,7 @@ import {
   buildConnectionAliasMap,
   resolveConnection,
 } from '../views/DiagramDetailView.helpers'
-import { occurrenceItems } from './archimateOccurrences'
+import { occurrenceItems } from './diagramOccurrences'
 import type { DiagramElementMap, DiagramMapContext } from './diagramViewerExtensions'
 
 const pushInto = (map: Map<string, Element[]>, key: string, el: Element): void => {

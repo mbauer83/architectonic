@@ -14,8 +14,9 @@ from fastapi import HTTPException
 from src.application.entity_type_predicates import is_internal_entity_type
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.ontology_representation.artifact_types import EntityRecord
+from src.infrastructure.picture_reading.picture_context import entity_display_item
 from src.infrastructure.rest.routers import state as s
-from src.infrastructure.rest.routers.diagrams._context import entity_display_item, fuzzy_entity_hits
+from src.infrastructure.rest.routers.diagrams._context import fuzzy_entity_hits
 from src.infrastructure.rest.routers.entities._filter import EntityFilter
 from src.infrastructure.rest.routers.viewpoints._scope import resolve_viewpoint_scope
 

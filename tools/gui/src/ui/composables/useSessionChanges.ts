@@ -11,7 +11,7 @@
 import { computed, type ShallowRef } from 'vue'
 import { arrangedUnits, linesArranged } from '../../domain/layout/arrangementLayout'
 import { stableEntityId } from '../../domain/artifactId'
-import type { Arrangement } from '../../domain/layout/lab/labArrangement'
+import type { Arrangement } from '../../domain/layout/canvasArrangement'
 import { type PendingChange, contentChanges } from '../../domain/layout/sessionChanges'
 import { stepName } from '../../domain/layout/sessionSteps'
 import { boxChanges } from '../../domain/layout/canvasBoxes'

@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.domain.repository.repo_default_schemata import BASE_DOCUMENT_SCHEMAS, DEFAULT_SCHEMATA
+from src.domain.repository.repo_default_schemata import DEFAULT_SCHEMATA, SHIPPED_DOCUMENT_SCHEMAS
 
 _ARCH_REPO = (
     Path(__file__).resolve().parents[2] / "engagements" / "ENG-ARCH-REPO" / "architecture-repository" / ".arch-repo"
@@ -56,9 +56,10 @@ def test_the_shipped_default_set_is_not_empty() -> None:
 
 def test_every_shipped_document_type_is_in_the_self_model() -> None:
     """Regression: the self-model predated the stress-analysis type, and nothing added it, so a stress
-    analysis could not be started on it."""
+    analysis could not be started on it. The assurance document types ship too, and the upgrade
+    ensures them as creation writes them."""
     present = {p.stem for p in (_ARCH_REPO / "documents").iterdir() if p.suffix == ".json"}
-    missing = sorted(set(BASE_DOCUMENT_SCHEMAS) - present)
+    missing = sorted(set(SHIPPED_DOCUMENT_SCHEMAS) - present)
 
     assert missing == [], (
         "the dogfood repository is missing shipped document types. Add them with "

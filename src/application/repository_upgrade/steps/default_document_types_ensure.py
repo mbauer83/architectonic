@@ -1,10 +1,11 @@
-"""Detector/migrator for the shipped base document types.
+"""Detector/migrator for the shipped document types.
 
 A repository created before a document type shipped never receives it: the workspace template
 writes `.arch-repo/documents/` once, at creation, and `default-schemata-ensure` covers only
 `.arch-repo/schemata/`. So a repository from before 0.12.0 had no `stress-analysis` type and
-could not start a stress analysis. This step adds every shipped base document type that is
-missing, through the same owner the template writes them with (`shipped_defaults`).
+could not start a stress analysis. This step adds every shipped document type that is missing —
+the base and the assurance set, the scope the template writes at creation — through the same owner
+the template writes them with (`shipped_defaults`).
 
 An existing file is never read for differences, let alone overwritten: document types are
 meant to be adapted per repository (sections, suggested connections, frontmatter), so a
@@ -18,7 +19,6 @@ from src.application.repository_upgrade.steps._shipped_files import (
     apply_missing_shipped,
     missing_shipped_findings,
 )
-from src.domain.repository.repo_default_schemata import BASE_DOCUMENT_SCHEMAS
 from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurface, UpgradeFinding
 from src.domain.repository.shipped_defaults import shipped_document_types
 
@@ -31,7 +31,7 @@ class DefaultDocumentTypesEnsureStep:
 
     def detect(self, view: RepoUpgradeView) -> list[UpgradeFinding]:
         return missing_shipped_findings(
-            self.id, shipped_document_types(BASE_DOCUMENT_SCHEMAS), view,
+            self.id, shipped_document_types(), view,
             finding_prefix="missing-document-type", what="the shipped document type",
         )
 
@@ -41,4 +41,4 @@ class DefaultDocumentTypesEnsureStep:
         writer: RepoUpgradeWriter,
         findings: list[UpgradeFinding],
     ) -> list[AppliedFinding]:
-        return apply_missing_shipped(shipped_document_types(BASE_DOCUMENT_SCHEMAS), view, writer, findings)
+        return apply_missing_shipped(shipped_document_types(), view, writer, findings)

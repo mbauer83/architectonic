@@ -3,7 +3,7 @@
  * a control by and says the reason of.
  *
  * The decision is the backend's. It projects one for every operation of its operation catalog
- * (`denied_operations` in the sync status, `src/infrastructure/operation_catalog.py`), composed by the
+ * (`denied_operations` in the sync status, `src/application/operation_catalog.py`), composed by the
  * same function its writes are authorized with; this only reads it, and words the denial. Nothing here
  * decides from what a control is or where it sits. It fails closed: with no answer yet, or for a name
  * the backend did not answer for, an operation is refused.

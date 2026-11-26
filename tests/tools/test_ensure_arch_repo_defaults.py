@@ -12,11 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from src.infrastructure.workspace.engagement_repo_template import (
-    BASE_DOCUMENT_SCHEMAS,
-    DEFAULT_SCHEMATA,
-    ensure_arch_repo_defaults,
-)
+from src.domain.repository.repo_default_schemata import DEFAULT_SCHEMATA, SHIPPED_DOCUMENT_SCHEMAS
+from src.infrastructure.workspace.engagement_repo_template import ensure_arch_repo_defaults
 
 
 def _make_repo(tmp_path: Path) -> Path:
@@ -34,7 +31,7 @@ def test_populates_missing_documents_schemata_and_config(tmp_path: Path) -> None
     docs = repo / ".arch-repo" / "documents"
     schem = repo / ".arch-repo" / "schemata"
     assert (docs / "standard.json").is_file()
-    assert set(p.name for p in docs.glob("*.json")) == {f"{k}.json" for k in BASE_DOCUMENT_SCHEMAS}
+    assert set(p.name for p in docs.glob("*.json")) == {f"{k}.json" for k in SHIPPED_DOCUMENT_SCHEMAS}
     assert set(p.name for p in schem.glob("*.json")) == set(DEFAULT_SCHEMATA)
     assert (repo / ".arch-repo" / "config.yaml").is_file()
     assert "standard.json" in summary["documents"]

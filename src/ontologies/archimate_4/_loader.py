@@ -24,6 +24,7 @@ from src.domain.ontology_representation.specializations import (
     merge_specialization_catalogs,
     overlay_specialization_guidance,
 )
+from src.domain.ontology_representation.target_state_relations import TargetStateRelations
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet
 from src.domain.relationships.relationship_derivation_restrictions import DerivationRestriction
 from src.domain.relationships.relationship_derivation_rules import (
@@ -82,7 +83,9 @@ class _ArchiMate4Module:
         svg_converter: Callable[[str], str] | None = None,
         domain_order: tuple[str, ...] = (),
         classification_levels: tuple[ClassificationLevel, ...] = DERIVED_DEFAULT_LEVELS,
+        target_state_relations: TargetStateRelations | None = None,
     ) -> None:
+        self._target_state_relations = target_state_relations
         self._classification_levels = classification_levels
         self._declared_domain_order = domain_order
         self._entity_types = entity_types
@@ -151,6 +154,10 @@ class _ArchiMate4Module:
     @property
     def element_appearance(self) -> ElementAppearance:
         return self._element_appearance
+
+    @property
+    def target_state_relations(self) -> TargetStateRelations | None:
+        return self._target_state_relations
 
     @property
     def classification_levels(self) -> tuple[ClassificationLevel, ...]:
@@ -297,4 +304,5 @@ def load_archimate_4_module(
         svg_converter=svg_converter,
         domain_order=tuple(str(d) for d in entity_data.get("domain_order", ())),
         classification_levels=classification_levels_from_config(entity_data, module="archimate-4-0"),
+        target_state_relations=TargetStateRelations.from_mapping(conn_data, named=lambda short: f"archimate-{short}"),
     )

@@ -34,6 +34,9 @@ const NO_ADDITIONS: ReadonlyMap<string, string> = new Map()
 /** What the candidate holds that the canvas changes: its operations, and the model elements it reads over. */
 interface Held { readonly changes: unknown; readonly scope: readonly string[] }
 
+/** What *one* is called in the candidate's view; empty where its record states no name. */
+const scopedName = (one: ScopedEntity): string => (typeof one.fields.name === 'string' ? one.fields.name : '')
+
 /**
  * What the candidate reads over that the model holds (*view*) and the picture does not start with (*drawn*), by
  * name: put on the picture as the session opens.
@@ -42,7 +45,7 @@ const undrawn = (
   scope: readonly string[], drawn: readonly string[], view: readonly ScopedEntity[],
 ): Map<string, string> => {
   const starts = new Set(drawn.map(stableEntityId))
-  const names = new Map(view.map((one) => [stableEntityId(one.id), String(one.fields.name ?? '')]))
+  const names = new Map(view.map((one) => [stableEntityId(one.id), scopedName(one)]))
   return new Map(scope.flatMap((id) => {
     const name = names.get(stableEntityId(id))
     return starts.has(stableEntityId(id)) || name === undefined ? [] : [[id, name] as const]

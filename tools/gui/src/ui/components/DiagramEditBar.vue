@@ -7,7 +7,7 @@
  */
 import { computed, nextTick, ref, watch } from 'vue'
 import type { DiagramEditMode } from '../composables/useDiagramEditMode'
-import { breachSentence, distinctBreaches } from '../../domain/layout/lab/labBreaches'
+import { breachSentence, distinctBreaches } from '../../domain/layout/canvasBreaches'
 import { useEditingPreferences } from '../composables/useEditingPreferences'
 import { arrowsAcross } from '../lib/arrowsAcross'
 import { usePulse } from '../composables/usePulse'

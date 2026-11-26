@@ -142,6 +142,16 @@ class DiagramTypeBase:
         return bool(self.ui_config.diagram_only_types)
 
     @property
+    def hosts_candidates(self) -> bool:
+        """No, unless the type says so: a candidate is drawn only on a picture of the model as such."""
+        return False
+
+    @property
+    def draws_occurrences(self) -> bool:
+        """No, unless the type says so: a further drawing is a statement only a type that renders it may hold."""
+        return False
+
+    @property
     def held_record_keys(self) -> frozenset[str]:
         """The declared diagram-only types; a type that keeps undeclared nodes says so by overriding this."""
         return frozenset(owned.entity_type for owned in self.ui_config.diagram_only_types)

@@ -384,3 +384,12 @@ permitted_relationships:
   - [grouping, "@all", [composition, aggregation, assignment, realization, serving, access, influence, association, specialization, flow, triggering]]
   - ["@all", grouping, [composition, aggregation, assignment, realization, serving, access, influence, association, specialization, flow, triggering]]
   - [location, "@all", [composition, aggregation, association]]
+
+# ── Target state ──────────────────────────────────────────────────────────────
+# How a candidate applied as a target state relates what it writes. `trace` ties a "(target)" copy
+# to its original and the gap to its plateaus: ArchiMate has no trace relationship, and an
+# association is the one every pair of elements may have. `holds` is how a plateau holds the
+# elements of its state.
+target_state_relations:
+  trace: association
+  holds: aggregation

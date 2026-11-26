@@ -12,7 +12,7 @@ import { stableEntityId } from '../../domain/artifactId'
 import type { Point } from '../../domain/layout/geometry'
 import { type ReceivingBox, receivingBoxAt } from '../../domain/layout/receivingBox'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
-import { pointOnPicture } from '../components/layoutLab/pointerOnPicture'
+import { pointOnPicture } from '../components/canvas/pointerOnPicture'
 import type { CanvasPopoverLevel } from './useCanvasPopover'
 import type { DiagramEditing } from './useDiagramEditing'
 

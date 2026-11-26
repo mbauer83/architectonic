@@ -23,6 +23,7 @@ from fastapi.testclient import TestClient
 from pydantic import TypeAdapter
 
 from src.application.artifacts.repository import ArtifactRepository
+from src.application.operation_catalog import OPERATION_CATALOG
 from src.domain.artifact_id import stable_id
 from src.domain.repository.frontmatter import parse_frontmatter
 from src.infrastructure.artifact_index import shared_artifact_index
@@ -31,15 +32,10 @@ from src.infrastructure.diagram_composition import DiagramReplacement
 from src.infrastructure.diagram_layout_wire import LayoutPatch
 from src.infrastructure.mcp.artifact_mcp import candidate_tools
 from src.infrastructure.mcp.artifact_mcp.layout_tools import artifact_arrange_diagram, artifact_replace_diagram
-from src.infrastructure.operation_catalog import (
-    OPERATION_CATALOG,
-    arrangement_operations,
-    recorded_operations,
-    replacement_operations,
-)
 from src.infrastructure.rest.routers import candidates
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
+from src.infrastructure.stated_operations import arrangement_operations, recorded_operations, replacement_operations
 from tests.support.api_app import build_api_app
 from tests.support.rendered_pictures import RenderedModel, build_rendered_model, plantuml_available
 from tests.support.rest_state import reset_state_for_test

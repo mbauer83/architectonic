@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 
 from src.application.repository_upgrade.steps.default_document_types_ensure import DefaultDocumentTypesEnsureStep
-from src.domain.repository.repo_default_schemata import BASE_DOCUMENT_SCHEMAS
+from src.domain.repository.repo_default_schemata import SHIPPED_DOCUMENT_SCHEMAS
 from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS
 from src.infrastructure.repository_upgrade.fs_adapter import FilesystemRepoUpgradeView, FilesystemRepoUpgradeWriter
 
@@ -35,7 +35,8 @@ def test_a_missing_type_is_found_and_a_present_one_is_not_whatever_it_holds(tmp_
     missing = {f.finding_id.removeprefix("missing-document-type:") for f in findings}
     assert STRESS_ANALYSIS in missing
     assert "adr" not in missing
-    assert missing == set(BASE_DOCUMENT_SCHEMAS) - {"adr"}
+    assert "stpa-analysis" in missing
+    assert missing == set(SHIPPED_DOCUMENT_SCHEMAS) - {"adr"}
     assert all(f.auto_migratable for f in findings)
 
 
@@ -48,6 +49,6 @@ def test_applying_writes_the_template_format_and_leaves_an_adapted_type_byte_for
 
     assert {r.outcome for r in results} == {"applied"}
     written = (root / ".arch-repo" / "documents" / f"{STRESS_ANALYSIS}.json").read_text(encoding="utf-8")
-    assert written == json.dumps(BASE_DOCUMENT_SCHEMAS[STRESS_ANALYSIS], indent=2) + "\n"
+    assert written == json.dumps(SHIPPED_DOCUMENT_SCHEMAS[STRESS_ANALYSIS], indent=2) + "\n"
     assert (root / ".arch-repo" / "documents" / "adr.json").read_text(encoding="utf-8") == _CUSTOM_ADR
     assert step.detect(view) == []

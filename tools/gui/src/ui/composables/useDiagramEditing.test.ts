@@ -6,8 +6,8 @@ import { Effect } from 'effect'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ModelService } from '../../application/ModelService'
 import type { Extent } from '../../domain/layout/geometry'
-import { moved } from '../../domain/layout/lab/labArrangement'
-import { LINE_DRAWING, SHAPE_DRAWING } from '../../domain/layout/lab/__tests__/labDrawingFixtures'
+import { moved } from '../../domain/layout/canvasArrangement'
+import { LINE_DRAWING, SHAPE_DRAWING } from '../../domain/layout/__tests__/canvasDrawingFixtures'
 import type { DiagramContext } from '../../domain'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
@@ -215,7 +215,7 @@ describe('an element added at a point', () => {
     ...geometry, elements: [...geometry.elements, element('N', 'APP@9.n', at(250, 200, 350, 240))],
   }
   const adding = () => overDiagram(
-    { ...service, previewLayoutGeometry: () => Effect.succeed(added) } as unknown as ModelService,
+    { ...service, previewLayoutGeometry: () => Effect.succeed(added) },
     () => MEMBERSHIP,
   )
 
@@ -249,7 +249,7 @@ describe('the names a session lists', () => {
       suggested_entities: [], diagram: { diagram_entities: {} },
     } as unknown as DiagramContext
     const named = overDiagram(
-      { ...service, readLayoutGeometry: () => Effect.succeed(pictured) } as unknown as ModelService,
+      { ...service, readLayoutGeometry: () => Effect.succeed(pictured) },
       () => MEMBERSHIP, { context: () => context },
     )
     await named.open()

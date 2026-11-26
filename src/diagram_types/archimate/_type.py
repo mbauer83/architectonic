@@ -14,6 +14,16 @@ from src.domain.ontology_representation.ontology_protocol import (
 
 class _ConfiguredArchimateDiagramType(_ConfiguredOntologyDiagramType):
     @property
+    def hosts_candidates(self) -> bool:
+        """An ArchiMate view draws the model's elements and relations, which a candidate's operations change."""
+        return True
+
+    @property
+    def draws_occurrences(self) -> bool:
+        """An ArchiMate view may draw an element again, and label any drawing on its own."""
+        return True
+
+    @property
     def renderer(self) -> DiagramRenderer:
         from src.infrastructure.rendering.archimate_puml_renderer import ArchimatePumlRenderer  # noqa: PLC0415
 

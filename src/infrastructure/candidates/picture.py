@@ -24,7 +24,12 @@ from src.application.modeling.diagram_identities import alias_by_instance
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds
 from src.domain.ontology_representation.artifact_types import DiagramRecord
 from src.infrastructure.candidates.repository import NotStored
-from src.infrastructure.candidates.scope_drawing import generated_composition, generated_drawing, stored_drawing
+from src.infrastructure.candidates.scope_drawing import (
+    GENERATED_VIEW_TYPE,
+    generated_composition,
+    generated_drawing,
+    stored_drawing,
+)
 from src.infrastructure.candidates.service import CandidateService
 from src.infrastructure.diagram_composition import DiagramComposition, render_composition
 from src.infrastructure.rendering.layout.diagram_geometry import empty_geometry
@@ -61,7 +66,7 @@ def start_of(service: CandidateService, ref: str) -> PictureStart:
     if named and diagram is None:
         raise NotStored(f"{candidate.id} is drawn on {named}, which is not stored.")
     generated = (
-        DiagramComposition(diagram_type="archimate-layered", name=candidate.name, entity_ids=[], connection_ids=[])
+        DiagramComposition(diagram_type=GENERATED_VIEW_TYPE, name=candidate.name, entity_ids=[], connection_ids=[])
         if diagram else generated_composition(repo, scope, candidate.name)
     )
     return PictureStart(candidate.id, candidate.name, scope, diagram, generated)

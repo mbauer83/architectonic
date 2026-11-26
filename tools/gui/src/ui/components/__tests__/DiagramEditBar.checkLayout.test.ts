@@ -6,7 +6,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { computed, createApp, h, nextTick, ref, type App } from 'vue'
-import type { Breach } from '../../../domain/layout/lab/labBreaches'
+import type { Breach } from '../../../domain/layout/canvasBreaches'
 import type { DiagramEditMode } from '../../composables/useDiagramEditMode'
 import DiagramEditBar from '../DiagramEditBar.vue'
 import type { AuthoredGrouping } from '../../../domain/authoredGrouping'

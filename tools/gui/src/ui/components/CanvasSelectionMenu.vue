@@ -8,7 +8,7 @@
 import { computed, ref } from 'vue'
 import type { AlignEdge, DistributeAxis } from '../../domain/layout/layoutIntents'
 import { LEAST_TO_ALIGN, LEAST_TO_DISTRIBUTE } from '../../domain/layout/layoutIntents'
-import { alignedSelection, distributedSelection, elementsOf } from '../../domain/layout/lab/labSelection'
+import { alignedSelection, distributedSelection, elementsOf } from '../../domain/layout/canvasSelection'
 import type { DiagramEditing } from '../composables/useDiagramEditing'
 import type { CanvasWords } from './canvasWords'
 import CanvasMenu from './CanvasMenu.vue'

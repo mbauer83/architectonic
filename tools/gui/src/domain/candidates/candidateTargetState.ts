@@ -18,7 +18,7 @@ export const targetStateOf = (record: Readonly<Record<string, unknown>>): Target
   const recorded = record[RECORDED_KEY]
   if (recorded === undefined || recorded === null) return null
   // `copies` and `added` are left out of the record when empty.
-  const decoded = decode({ copies: {}, added: {}, ...(recorded as object) })
+  const decoded = decode({ copies: {}, added: {}, ...recorded })
   return Either.isRight(decoded) ? decoded.right : null
 }
 

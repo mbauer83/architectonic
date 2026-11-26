@@ -24,6 +24,7 @@ from src.domain.modules.module_catalog import ModuleCatalog
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName, EntityTypeName
 from src.domain.ontology_representation.ontology_protocol import DiagramTypeModule, OntologyModule
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, ElementClassInfo, EntityTypeInfo
+from src.domain.ontology_representation.target_state_relations import TargetStateRelations
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet
 
 
@@ -131,6 +132,9 @@ class ModuleRegistry:
 
     def aggregated_permitted_relationships(self) -> PermittedRelationshipSet:
         return self.catalog.aggregated_permitted_relationships()
+
+    def target_state_relations(self) -> TargetStateRelations | None:
+        return self.catalog.target_state_relations()
 
     def all_diagram_entity_types(self) -> frozenset[EntityTypeName]:
         return self.catalog.all_diagram_entity_types()

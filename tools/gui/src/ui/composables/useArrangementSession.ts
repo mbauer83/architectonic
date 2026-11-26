@@ -15,19 +15,19 @@
 import { computed, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
 import type { Point } from '../../domain/layout/geometry'
-import type { Arrangement } from '../../domain/layout/lab/labArrangement'
-import { drawnArrangement } from '../../domain/layout/lab/labArrangement'
-import { breachesOf } from '../../domain/layout/lab/labBreaches'
-import { changedShapes, fullPass, placementOf, quickPass, textRegions } from '../../domain/layout/lab/labRouting'
-import type { Placement } from '../../domain/layout/lab/labRouting'
-import type { Reshaped } from '../../domain/layout/lab/labShapeDrawing'
-import { stillToReshape } from '../../domain/layout/lab/labShapeDrawing'
+import type { Arrangement } from '../../domain/layout/canvasArrangement'
+import { drawnArrangement } from '../../domain/layout/canvasArrangement'
+import { breachesOf } from '../../domain/layout/canvasBreaches'
+import { changedShapes, fullPass, placementOf, quickPass, textRegions } from '../../domain/layout/canvasRouting'
+import type { Placement } from '../../domain/layout/canvasRouting'
+import type { Reshaped } from '../../domain/layout/canvasShapeDrawing'
+import { stillToReshape } from '../../domain/layout/canvasShapeDrawing'
 import type { RoutingResult } from '../../domain/layout/routing/scene'
 import type { DrawingNode, LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import { pointsOf } from '../../domain/schemas/diagramLayoutGeometry'
 import { shapedLines, withoutElements } from '../../domain/layout/arrangementLayout'
 import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
-import type { ArchimateOccurrence } from '../../domain/archimateOccurrences'
+import type { DiagramOccurrence } from '../../domain/diagramOccurrences'
 import type { AuthoredGrouping } from '../../domain/authoredGrouping'
 import type { ShapeToDraw } from '../../ports/DiagramLayoutRepository'
 
@@ -39,7 +39,7 @@ export interface ArrangementState {
   /** The diagram's boxes as the session states them, once one was renamed, deleted or added (D9). */
   readonly groupings?: readonly AuthoredGrouping[]
   /** Further drawings of elements the diagram already draws, added in this session. */
-  readonly occurrences?: readonly ArchimateOccurrence[]
+  readonly occurrences?: readonly DiagramOccurrence[]
   readonly overlays?: readonly Record<string, unknown>[]
   readonly picture?: LayoutGeometry
   readonly addedTypes?: ReadonlyMap<string, string>

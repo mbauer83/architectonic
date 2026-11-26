@@ -8,8 +8,8 @@
  * remembered in this browser (`rememberedChoice`); none changes the model or any diagram.
  */
 import { computed, ref, shallowRef } from 'vue'
-import type { RectangleRule } from '../../domain/layout/lab/labSelection'
-import type { Snapping } from '../../domain/layout/lab/labSnapping'
+import type { RectangleRule } from '../../domain/layout/canvasSelection'
+import type { Snapping } from '../../domain/layout/canvasSnapping'
 import {
   KEY_SCHEME_CHOICES, type DetectedScheme, type KeySchemeChoice, detectKeyScheme,
 } from '../lib/keyboardScheme'

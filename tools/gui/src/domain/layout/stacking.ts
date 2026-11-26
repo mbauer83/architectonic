@@ -12,9 +12,9 @@
  */
 import type { Extent } from './geometry'
 import { overlaps } from './geometry'
-import type { Arrangement } from './lab/labArrangement'
-import { childrenOf } from './lab/labArrangement'
-import type { Placement } from './lab/labRouting'
+import type { Arrangement } from './canvasArrangement'
+import { childrenOf } from './canvasArrangement'
+import type { Placement } from './canvasRouting'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 
 export type Restack = 'front' | 'forward' | 'backward' | 'back'

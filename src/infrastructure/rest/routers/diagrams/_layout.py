@@ -10,8 +10,7 @@ layout is.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
 
@@ -26,18 +25,16 @@ from src.domain.diagrams.layout.layout_block import MalformedLayout
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
 from src.domain.ontology_representation.artifact_types import DiagramRecord
 from src.infrastructure.diagram_layout_wire import ArrangeIntent, LayoutPatch, stated_intents
+from src.infrastructure.picture_reading.composition_preview import previewed_geometry
+from src.infrastructure.picture_reading.lensed_reading import kind_muting, lensed_body, reading_body
+from src.infrastructure.picture_reading.proposals import GeometryPreviewBody
+from src.infrastructure.picture_reading.shape_drawing import DrawShapesBody, ExtentBody
 from src.infrastructure.rendering.laid_out_rendering import stored_layout
-from src.infrastructure.rendering.layout._svg_drawing import Unreadable
 from src.infrastructure.rendering.layout.diagram_geometry import (
     geometry_response,
     stored_geometry,
 )
-from src.infrastructure.rendering.layout.diagram_picture import (
-    NotDrawn,
-    RendererUnavailable,
-    first_layout_of,
-)
-from src.infrastructure.rendering.layout.drawing_wire import reshaped
+from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, first_layout_of
 from src.infrastructure.rendering.layout.surround_placement import carried_by, occupied
 from src.infrastructure.rest.contracts.diagram_layout_editing import (
     DiagramLayoutGeometryResponse,
@@ -53,11 +50,15 @@ from src.infrastructure.rest.routers._openapi import (
     TAG_DIAGRAMS,
     WRITE_RESPONSES,
 )
-from src.infrastructure.rest.routers.diagrams._geometry_proposals import GeometryPreviewBody
-from src.infrastructure.rest.routers.diagrams._lensed_reading import kind_muting, lensed_body, reading_body
-from src.infrastructure.rest.routers.diagrams._picture_preview import previewed_geometry
 from src.infrastructure.rest.routers.diagrams._reading_lens_request import reading_lens
-from src.infrastructure.rest.routers.diagrams._serving import _rendered_path
+from src.infrastructure.rest.routers.picture_reads import (
+    drawn_shapes,
+    geometry_read,
+    picture_sources,
+    rendered_image,
+    renderer_available,
+    repo_root,
+)
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
 from src.infrastructure.write.artifact_write.parse_existing import ParsedDiagram, parse_diagram_file
 
@@ -68,43 +69,6 @@ router = APIRouter()
 
 Catalogs = Annotated[RuntimeCatalogs, Depends(runtime_catalogs_dependency)]
 Lens = Annotated[ReadingLens, Depends(reading_lens)]
-
-
-class DrawingNodeBody(BaseModel):
-    """A piece of PlantUML's drawing as the geometry read handed it over, sent back to be drawn anew."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    tag: str
-    attributes: dict[str, str]
-    text: str | None = None
-    children: list[DrawingNodeBody] = []
-
-
-class ExtentBody(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    left: float
-    top: float
-    right: float
-    bottom: float
-
-
-class ShapeToDraw(BaseModel):
-    """A shape an editor resized: PlantUML's drawing of it, where that was drawn, and where it is to go."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    drawing: DrawingNodeBody
-    box: bool
-    drawn: ExtentBody
-    to: ExtentBody
-
-
-class DrawShapesBody(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    shapes: list[ShapeToDraw]
 
 
 class SurroundPlacementBody(BaseModel):
@@ -141,13 +105,6 @@ def _stored_diagram(artifact_id: str) -> ParsedDiagram:
     return parse_diagram_file(Path(_stored_record(artifact_id).path))
 
 
-def _repo_root() -> Path:
-    root = s.maybe_engagement_root()
-    if root is None:
-        raise HTTPException(404, "No engagement repository is open")
-    return root
-
-
 @router.get(
     "/api/diagrams/{artifact_id}/layout/geometry", tags=[TAG_DIAGRAMS],
     summary="Read the picture a diagram is arranged on", response_model=DiagramLayoutGeometryResponse,
@@ -157,37 +114,19 @@ def _repo_root() -> Path:
 def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs, lens: Lens) -> dict[str, object]:
     parsed = _stored_diagram(artifact_id)
     if lens.is_empty:
-        return _geometry(lambda: stored_geometry(parsed, artifact_id, _repo_root(), catalogs.ontology))
+        return geometry_read(lambda: stored_geometry(parsed, artifact_id, repo_root(), catalogs.ontology))
     record = _stored_record(artifact_id)
-    root = _repo_root()
+    root = repo_root()
     path = Path(record.path)
     # As the reader's picture is drawn (`_serving.get_diagram_svg`): printed lines held to the stored widths.
     body = reading_body(
-        artifact_id, path, lens, catalogs, root, diagram_type=record.diagram_type,
-        laid_out=stored_layout(path, catalogs.ontology), stored_svg=_rendered_path(record, ".svg"),
+        artifact_id, path, lens, picture_sources(catalogs), root, diagram_type=record.diagram_type,
+        laid_out=stored_layout(path, catalogs.ontology), stored_svg=rendered_image(record, ".svg"),
     )
-    return _geometry(lambda: geometry_response(
+    return geometry_read(lambda: geometry_response(
         body, artifact_id, dict(parsed.frontmatter), root, catalogs.ontology,
         restyle_prepared=kind_muting(lens, root),
     ))
-
-
-@contextmanager
-def _renderer_available() -> Iterator[None]:
-    """A server that cannot run PlantUML answers 503: the request was not at fault, and may be retried."""
-    try:
-        yield
-    except RendererUnavailable as unavailable:
-        raise HTTPException(503, str(unavailable)) from unavailable
-
-
-def _geometry(read: Callable[[], dict[str, object]]) -> dict[str, object]:
-    """A geometry read, refused as 422 where the picture cannot be drawn or the layout cannot be read."""
-    try:
-        with _renderer_available():
-            return read()
-    except ValueError as refusal:  # MalformedLayout is a ValueError
-        raise HTTPException(422, str(refusal)) from refusal
 
 
 @router.post(
@@ -199,12 +138,15 @@ def preview_diagram_layout_geometry(
     artifact_id: str, body: GeometryPreviewBody, catalogs: Catalogs, lens: Lens,
 ) -> dict[str, object]:
     parsed = _stored_diagram(artifact_id)
-    root = _repo_root()
+    root = repo_root()
+    sources = picture_sources(catalogs)
 
     def lensed(authored: str) -> str:
-        return lensed_body(artifact_id, Path(_stored_record(artifact_id).path), lens, catalogs, root, authored=authored)
+        return lensed_body(
+            artifact_id, Path(_stored_record(artifact_id).path), lens, sources, root, authored=authored,
+        )
 
-    return _geometry(lambda: previewed_geometry(
+    return geometry_read(lambda: previewed_geometry(
         body, parsed.frontmatter, artifact_id=artifact_id, repo=s.get_repo(), root=root, catalogs=catalogs,
         previous=frozenset(alias_by_instance(parsed.frontmatter)),
         lensed=None if lens.is_empty else lensed, restyle=kind_muting(lens, root),
@@ -223,10 +165,7 @@ def preview_diagram_layout_shapes(artifact_id: str, body: DrawShapesBody) -> dic
     """Each shape drawn by the composer at its new size. The drawing, where it was drawn and where it goes
     all arrive in the request; the address names the diagram they were read from, which must be stored (404)."""
     _stored_record(artifact_id)
-    try:
-        return {"drawings": [reshaped(shape.model_dump()) for shape in body.shapes]}
-    except Unreadable as unreadable:
-        raise HTTPException(422, f"This shape cannot be drawn: {unreadable.met}") from unreadable
+    return drawn_shapes(body)
 
 
 @router.post(
@@ -306,7 +245,7 @@ def _written_layout(
     """
     repo_root, _, verifier = s.get_write_deps(catalogs)
     try:
-        with _renderer_available():
+        with renderer_available():
             result = s.authorized_write(
                 operation, write,
                 repo_root=repo_root, verifier=verifier, clear_repo_caches=s.clear_caches,

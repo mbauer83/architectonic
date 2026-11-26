@@ -9,8 +9,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, nextTick, ref } from 'vue'
 import { Effect } from 'effect'
 import type { Extent } from '../../../domain/layout/geometry'
-import { moved } from '../../../domain/layout/lab/labArrangement'
-import { SHAPE_DRAWING } from '../../../domain/layout/lab/__tests__/labDrawingFixtures'
+import { moved } from '../../../domain/layout/canvasArrangement'
+import { SHAPE_DRAWING } from '../../../domain/layout/__tests__/canvasDrawingFixtures'
 import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
 import { useArrangementSession } from '../useArrangementSession'
 import type { CanvasPopoverLevel } from '../useCanvasPopover'
@@ -44,8 +44,8 @@ const nesting = (verdict: DropVerdict | null = { kind: 'nest', words: 'Nest in B
   const scope = effectScope()
   const used = scope.run(() => useCanvasNesting(
     editing, ref(null), source, members, { mode, error: ref(''), position: () => {}, close },
-    async (command) => { applied.push(command); return true },
-    { settled: async () => verdict, say: (line) => said.push(line), nested: (part, whole) => `${part} in ${whole}` },
+    (command) => { applied.push(command); return Promise.resolve(true) },
+    { settled: () => Promise.resolve(verdict), say: (line) => said.push(line), nested: (part, whole) => `${part} in ${whole}` },
   ))!
   return { session, mode, close, used, said, applied, source }
 }

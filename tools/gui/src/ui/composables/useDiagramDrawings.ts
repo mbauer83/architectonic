@@ -2,7 +2,7 @@ import { computed, type Ref } from 'vue'
 import type { EntityContextConnection, EntityDisplayInfo } from '../../domain'
 import {
   addOccurrence, addOccurrenceFor, occurrenceOrdinal, occurrencesOf, removeOccurrence,
-} from '../lib/archimateOccurrences'
+} from '../lib/diagramOccurrences'
 import {
   claimInstance, drawingCarries, endpointOf, forgetEntity, freeDrawingOn, instancesOf,
   releaseConnection, releaseInstance, withBaseInstance, type Drawing,

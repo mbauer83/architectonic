@@ -7,8 +7,8 @@
  */
 import { computed, ref } from 'vue'
 import type { Route, Side } from '../../domain/layout/orthogonal'
-import type { End } from '../../domain/layout/lab/labRouteEdits'
-import { lineAt, straightened, withEndAt, withRouteStated } from '../../domain/layout/lab/labRouteEdits'
+import type { End } from '../../domain/layout/canvasRouteEdits'
+import { lineAt, straightened, withEndAt, withRouteStated } from '../../domain/layout/canvasRouteEdits'
 import type { DiagramEditing } from '../composables/useDiagramEditing'
 import CanvasMenu from './CanvasMenu.vue'
 import type { CanvasMenuItem } from './canvasMenu'

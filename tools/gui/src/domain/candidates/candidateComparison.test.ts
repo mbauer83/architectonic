@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ChangeDifference, CandidateSummary } from '../schemas/candidates'
-import { diffMarks } from './canvasMarks'
+import { diffMarks } from './elementMarks'
 import { changedByOthers, commonBase, comparedIds, sharedBases, withOthers } from './candidateComparison'
 
 const candidate = (id: string, parent: string | null = null): CandidateSummary =>

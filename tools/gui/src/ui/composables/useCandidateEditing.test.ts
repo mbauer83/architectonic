@@ -7,7 +7,7 @@ import { Effect } from 'effect'
 import { describe, expect, it } from 'vitest'
 import type { ModelService } from '../../application/ModelService'
 import type { Extent } from '../../domain/layout/geometry'
-import { SHAPE_DRAWING } from '../../domain/layout/lab/__tests__/labDrawingFixtures'
+import { SHAPE_DRAWING } from '../../domain/layout/__tests__/canvasDrawingFixtures'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import { useCandidateEditing } from './useCandidateEditing'
 

@@ -17,7 +17,7 @@ import { useEntityEditForm } from '../useEntityEditForm'
 const schema: EntitySchemaInfo = {
   artifact_type: 'application-component', specialization: '', properties: ['Telemetry'], required: [],
   descriptors: { Telemetry: { type: 'string', enum: ['None', 'Logs'] } }, conflicts: [], quarantined: false,
-} as unknown as EntitySchemaInfo
+}
 
 const entityWith = (properties: Record<string, unknown>) => ({
   artifact_id: 'APP@1.a.renderer',
@@ -60,7 +60,7 @@ describe('an empty schema attribute in the entity edit form', () => {
 
   it('records no property edit in a candidate when Edit details is kept unchanged', async () => {
     let kept: Record<string, unknown> | null = null
-    const { edit } = formOver(entityWith({}), async (body) => { kept = body; return null })
+    const { edit } = formOver(entityWith({}), (body) => { kept = body; return Promise.resolve(null) })
     edit.startEdit()
     await flush()
 
@@ -68,7 +68,7 @@ describe('an empty schema attribute in the entity edit form', () => {
     await flush()
 
     const command = { op: 'model.element.edit' as const, artifact_id: 'APP@1.a.renderer', ...kept! }
-    const edits = editsOf(command as Parameters<typeof editsOf>[0])
+    const edits = editsOf(command)
     expect(edits.filter((one) => one.field === 'properties')).toEqual([])
   })
 

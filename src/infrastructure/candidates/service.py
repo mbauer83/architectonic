@@ -35,10 +35,12 @@ from src.application.verification.artifact_verifier_registry import ArtifactRegi
 from src.application.viewpoints.placed_occurrences import resolve_placed_entities
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.modules.module_types import EntityTypeName
+from src.domain.ontology_representation.artifact_types import DiagramRecord
 from src.domain.repository.repo_default_stress_analysis import NAIVE_CANDIDATE, STRESS_ANALYSIS
 from src.infrastructure.app_bootstrap import get_module_registry
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
 from src.infrastructure.candidates.apply import write_operations
+from src.infrastructure.candidates.hosting import refuse_unless_it_hosts
 from src.infrastructure.candidates.repository import (
     KIND,
     CandidateArchitectureStore,
@@ -85,15 +87,14 @@ class CandidateService:
     def create(self, record: Mapping[str, Any], edits: Sequence[Mapping[str, Any]] = ()) -> dict[str, Any]:
         """A new candidate from its header, with *edits* recorded, in one write.
 
-        A header that names the diagram it is drawn on and states no scope is scoped by what the diagram draws.
+        A header that names the diagram it is drawn on and states no scope is scoped by what the diagram draws;
+        a diagram whose type does not host candidates is refused (`hosting`).
         """
         body = {key: value for key, value in record.items() if value is not None}
         body.setdefault("state", "draft")
         body.setdefault("changes", set_to_mapping(ChangeSet((), self.index.read_model_version().etag)))
         if diagram := body.get("diagram"):
-            drawing = self.index.get_diagram(str(diagram))
-            if drawing is None:
-                raise NotStored(f"No diagram {diagram} is stored.")
+            drawing = self._hosting(str(diagram))
             body["diagram"] = drawing.artifact_id
             if "scope" not in body:
                 # A diagram may draw one entity more than once; the scope is the entities, each once.
@@ -223,6 +224,9 @@ class CandidateService:
         return False
 
     def edit(self, ref: str, based_on: str, patch: Mapping[str, Any]) -> dict[str, Any]:
+        """*patch* over *ref*'s header, written over *based_on*; a diagram it names must host candidates."""
+        if diagram := patch.get("diagram"):
+            self._hosting(str(diagram))
         current = self.read(ref)
         return self.save(current["record"] | dict(patch), based_on, ref=str(current["record"]["id"]))
 
@@ -253,11 +257,20 @@ class CandidateService:
     ) -> dict[str, Any]:
         """*ref* against *base*, with the drawing it is read on: *diagram*, else what its stack is drawn on."""
         candidate = self.store.require(ref)
+        if diagram:
+            self._hosting(diagram)
         result = comparison(candidate, self.store, self.registry, base=base, naive=naive)
         stack = stack_of(candidate, self.store.find)
         drawing = self.drawing(diagram or drawn_on(stack), [ref for layer in stack for ref in layer.scope],
                                candidate.name, ontology)
         return result | ({"drawing": drawing} if drawing else {})
+
+    def _hosting(self, diagram: str) -> DiagramRecord:
+        """The stored diagram *diagram* names, refused where none is stored or its type hosts no candidate."""
+        drawing = self.index.get_diagram(diagram)
+        if drawing is None:
+            raise NotStored(f"No diagram {diagram} is stored.")
+        return refuse_unless_it_hosts(drawing)
 
     def drawing(
         self, diagram: str | None, scope: Sequence[str], name: str, ontology: DeclaresElementKinds,

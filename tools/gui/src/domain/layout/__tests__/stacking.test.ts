@@ -7,9 +7,9 @@ import { describe, expect, it } from 'vitest'
 import type { Extent } from '../geometry'
 import type { LayoutGeometry } from '../../schemas/diagramLayoutGeometry'
 import { arrangedBy, arrangedUnits, layoutOf, layoutPatchBetween, patchIsEmpty } from '../arrangementLayout'
-import { drawnArrangement, moved } from '../lab/labArrangement'
-import { placementOf } from '../lab/labRouting'
-import { LINE_DRAWING, SHAPE_DRAWING } from '../lab/__tests__/labDrawingFixtures'
+import { drawnArrangement, moved } from '../canvasArrangement'
+import { placementOf } from '../canvasRouting'
+import { LINE_DRAWING, SHAPE_DRAWING } from './canvasDrawingFixtures'
 import { restacked, stackedSiblings } from '../stacking'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })

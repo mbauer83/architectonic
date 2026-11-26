@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { diagramsHostingCandidates } from '../../composables/useDiagramTypeCapabilities'
 /**
  * A convenience for a candidate that holds nothing yet: start its picture from a stored diagram, whose elements
  * it then reads over, or stack it on an existing candidate. Neither is needed — elements are found and placed
@@ -32,14 +33,14 @@ const nothingIn = (record: Readonly<Record<string, unknown>>): boolean =>
   && operationsOf(record).length === 0
 
 const read = async () => {
-  const [record, listed, open] = await Promise.all([
+  const [record, hosting, open] = await Promise.all([
     Effect.runPromise(svc.readCandidate(props.candidateId)),
-    Effect.runPromise(svc.listDiagrams()).catch(() => null),
+    diagramsHostingCandidates(svc),
     Effect.runPromise(svc.listCandidates()).catch(() => []),
   ])
   version.value = record.version
   empty.value = nothingIn(record.record)
-  diagrams.value = (listed?.items ?? []).filter((one) => one.diagram_type.startsWith('archimate'))
+  diagrams.value = hosting
   candidates.value = open
 }
 
@@ -62,7 +63,7 @@ const fromDiagram = (id: string) => seed(async () => {
   const scope = [...new Map((context.diagram.entity_ids_used ?? []).map((one) => [stableEntityId(one), one])).values()]
   return { diagram: id, scope }
 })
-const onTop = (id: string) => seed(async () => ({ parent: id }))
+const onTop = (id: string) => seed(() => Promise.resolve({ parent: id }))
 
 onMounted(read)
 </script>

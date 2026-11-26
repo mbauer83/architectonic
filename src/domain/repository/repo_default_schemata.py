@@ -2,13 +2,14 @@
 
 Pure declarative method data (domain layer): consumed by the workspace template's
 ensure-missing pass AND the repository upgrade detector, so both surfaces ship the
-same defaults. Assurance doc-types are merged onto BASE_DOCUMENT_SCHEMAS by the
-template; here we keep only the base set and the attribute/frontmatter schemata.
+same defaults. `SHIPPED_DOCUMENT_SCHEMAS` is every document type a repository is given —
+the base set and the assurance set — at creation, on repair and on upgrade alike.
 """
 
 from __future__ import annotations
 
 from src.domain.repository.repo_default_arc42 import ARC42_DOCUMENT_SCHEMA
+from src.domain.repository.repo_default_assurance_document_types import ASSURANCE_DOCUMENT_SCHEMAS
 from src.domain.repository.repo_default_assurance_schemata import ASSURANCE_ATTRIBUTE_SCHEMATA
 from src.domain.repository.repo_default_attribute_schemata import ARCHIMATE_ATTRIBUTE_SCHEMATA
 from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS, STRESS_ANALYSIS_SCHEMA
@@ -91,6 +92,9 @@ BASE_DOCUMENT_SCHEMAS: dict[str, dict] = {
         ],
     },
 }
+
+#: Every document type a repository is given, at creation, on repair and on upgrade alike.
+SHIPPED_DOCUMENT_SCHEMAS: dict[str, dict] = {**BASE_DOCUMENT_SCHEMAS, **ASSURANCE_DOCUMENT_SCHEMAS}
 
 DEFAULT_SCHEMATA: dict[str, dict] = {
     **ASSURANCE_ATTRIBUTE_SCHEMATA,

@@ -10,9 +10,9 @@ import {
   arrangedBy, arrangedUnits, layoutOf, layoutPatchBetween, patchIsEmpty, shapedLines, shownRoutesOfMoved,
 } from '../arrangementLayout'
 import type { RoutedConnector } from '../routing/scene'
-import { drawnArrangement, moved, resized } from '../lab/labArrangement'
-import { placementOf } from '../lab/labRouting'
-import { LINE_DRAWING, SHAPE_DRAWING } from '../lab/__tests__/labDrawingFixtures'
+import { drawnArrangement, moved, resized } from '../canvasArrangement'
+import { placementOf } from '../canvasRouting'
+import { LINE_DRAWING, SHAPE_DRAWING } from './canvasDrawingFixtures'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
 

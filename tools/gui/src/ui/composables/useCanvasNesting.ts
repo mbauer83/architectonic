@@ -6,7 +6,7 @@
 import { computed, ref, shallowRef, watch, type ComputedRef, type Ref } from 'vue'
 import { connectionId } from '../../domain/artifactId'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
-import { pointOnPicture } from '../components/layoutLab/pointerOnPicture'
+import { pointOnPicture } from '../components/canvas/pointerOnPicture'
 import type { CanvasPopoverLevel } from './useCanvasPopover'
 import type { DiagramEditing } from './useDiagramEditing'
 import type { ArrangementState } from './useArrangementSession'

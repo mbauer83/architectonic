@@ -26,7 +26,7 @@ import CanvasDetailsDialog from './CanvasDetailsDialog.vue'
 import { elementMenuItems, restackOf } from './canvasElementMenu'
 import { entityDetailRoute } from '../router/artifactRoutes'
 import CanvasNestTarget from './CanvasNestTarget.vue'
-import { isArchimateDiagramType } from '../lib/archimateOccurrences'
+import { useDiagramTypeCapabilities } from '../composables/useDiagramTypeCapabilities'
 import { isOnALine } from './lineMenuPlace'
 import { useCanvasEditorKeys } from '../composables/useCanvasEditorKeys'
 import { isGroupingBox } from '../../domain/layout/canvasBoxes'
@@ -94,7 +94,8 @@ const adding = useCanvasCreate(
   props.editing, host, () => props.context, members, { mode, error, close, source, asked },
   (alias) => emit('select', alias),
 )
-const drawsAgain = computed(() => isArchimateDiagramType(props.context.diagram.diagram_type))
+const typeCan = useDiagramTypeCapabilities(svc)
+const drawsAgain = computed(() => typeCan(props.context.diagram.diagram_type, 'draws_occurrences'))
 
 function rename(alias: string) {
   source.value = alias

@@ -18,11 +18,11 @@ import type { ArrangedLayout, StoredLayout } from '../../domain/layout/arrangeme
 import {
   arrangedBy, layoutOf, layoutPatchBetween, patchIsEmpty, shownRoutesOfMoved,
 } from '../../domain/layout/arrangementLayout'
-import { drawnArrangement, placedAt } from '../../domain/layout/lab/labArrangement'
+import { drawnArrangement, placedAt } from '../../domain/layout/canvasArrangement'
 import type { Point } from '../../domain/layout/geometry'
-import { occurrenceItems } from '../../domain/archimateOccurrences'
+import { occurrenceItems } from '../../domain/diagramOccurrences'
 import type { PendingChange } from '../../domain/layout/sessionChanges'
-import { addOccurrenceFor } from '../lib/archimateOccurrences'
+import { addOccurrenceFor } from '../lib/diagramOccurrences'
 import { referenceOf, useSessionChanges } from './useSessionChanges'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { membershipOf } from '../../domain/layout/diagramMembership'

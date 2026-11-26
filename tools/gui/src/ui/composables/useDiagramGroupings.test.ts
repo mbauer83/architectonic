@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { ref } from 'vue'
 import { useDiagramGroupings } from './useDiagramGroupings'
-import { addOccurrenceFor } from '../lib/archimateOccurrences'
+import { addOccurrenceFor } from '../lib/diagramOccurrences'
 import type { EntityDisplayInfo } from '../../domain'
 
 const entity = (id: string, name: string): EntityDisplayInfo => ({

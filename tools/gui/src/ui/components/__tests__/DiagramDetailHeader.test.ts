@@ -12,6 +12,12 @@ import { answered } from '../../composables/__tests__/permissionFixtures'
 
 const WRITES = ['diagrams_sync_diagram_to_model', 'diagrams_delete_diagram', 'promotion_execute_promotion']
 
+const LANDSCAPE: DiagramDetail = {
+  artifact_id: 'ARC@1.a.landscape', artifact_type: 'diagram', name: 'Landscape', diagram_type: 'archimate-layered',
+  version: '1.0.0', status: 'active', record_type: 'diagram', path: 'diagram-catalog/diagrams/landscape.puml',
+  is_global: false, baseline_standing: { kind: 'enterprise-baseline' }, content_snippet: '', puml_source: '',
+}
+
 let app: App | null = null
 afterEach(() => { app?.unmount(); app = null; document.body.innerHTML = '' })
 
@@ -21,7 +27,7 @@ const mounted = async (refused: readonly string[]) => {
   const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/:any(.*)*', component: { render: () => null } }] })
   app = answered(createApp({
     render: () => h(DiagramDetailHeader, {
-      detail: { name: 'Landscape' } as DiagramDetail, diagramId: 'ARC@1.a.landscape', editPath: '/diagram-edit',
+      detail: LANDSCAPE, diagramId: 'ARC@1.a.landscape', editPath: '/diagram-edit',
       isGlobalDiagram: false, adminMode: false,
     }),
   }), refused, 'The backend is read-only')

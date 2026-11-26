@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { diagramsHostingCandidates } from '../composables/useDiagramTypeCapabilities'
 /**
  * One candidate architecture, read on its own: its operations against the base chosen in *against*
  * (by default what it stacks on), the "model moved" band when the model moved under them, and the
@@ -11,11 +12,10 @@
  */
 import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Effect } from 'effect'
 import type { DiagramSummary } from '../../domain'
 import { stableEntityId } from '../../domain/artifactId'
-import type { Marks } from '../../domain/candidates/canvasMarks'
-import { diffMarks, framedMarks } from '../../domain/candidates/canvasMarks'
+import type { Marks } from '../../domain/candidates/elementMarks'
+import { diffMarks, framedMarks } from '../../domain/candidates/elementMarks'
 import { modelServiceKey, toastKey } from '../keys'
 import { candidateCompareRoute, candidateDetailRoute, candidateListRoute } from '../router/artifactRoutes'
 import { useCandidates } from '../composables/useCandidates'
@@ -48,10 +48,9 @@ const drawing = useComposedDrawing(svc, () => candidates.comparison.value)
 const diagramId = computed(() => chosenDiagram.value || candidates.comparison.value?.drawing?.artifact_id || '')
 
 const diagrams = shallowRef<readonly DiagramSummary[]>([])
-/** The ArchiMate diagrams a candidate may be drawn on. */
+/** The diagrams a candidate may be drawn on. */
 const listDiagrams = async () => {
-  const listed = await Effect.runPromise(svc.listDiagrams()).catch(() => null)
-  diagrams.value = (listed?.items ?? []).filter((one) => one.diagram_type.startsWith('archimate'))
+  diagrams.value = await diagramsHostingCandidates(svc)
 }
 const summary = computed(() => candidates.all.value.find((one) => one.id === candidateId.value) ?? null)
 const loaded = ref(false)
