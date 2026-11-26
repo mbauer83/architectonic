@@ -104,11 +104,28 @@ export function useCandidates(svc: CandidateAccess, reading: CandidateReading) {
     }
   }
 
-  /** A new candidate stacked on *parent* (*New candidate on top…*), then read; answers its id. */
-  const stackOn = async (parent: string, name: string): Promise<string | null> => {
-    const id = await create({ name, parent })
+  /**
+   * A new candidate stacked on *parent* (*New candidate on top…*), with its core idea in *description* where one
+   * is given, then read; answers its id.
+   */
+  const stackOn = async (parent: string, name: string, description = ''): Promise<string | null> => {
+    const id = await create({ name, parent, ...(description ? { description } : {}) })
     if (id) await select(id)
     return id
+  }
+
+  /** Write *description* as *id*'s core idea, over the version read now; an empty one takes it away. */
+  const describe = async (id: string, description: string): Promise<boolean> => {
+    try {
+      const { version } = await Effect.runPromise(svc.readCandidate(id))
+      await Effect.runPromise(svc.editCandidate(id, version, { description }))
+      await load()
+      error.value = null
+      return true
+    } catch (failure) {
+      failed(failure)
+      return false
+    }
   }
 
   /** Delete *id*; the server refuses, saying why, while one stacks on it or an analysis starts from it. */
@@ -148,7 +165,7 @@ export function useCandidates(svc: CandidateAccess, reading: CandidateReading) {
 
   return {
     all, selected, against, comparison, error, root, inStack, choices,
-    load, select, compareWith, create, stackOn, rebase, remove, reject,
+    load, select, compareWith, create, stackOn, describe, rebase, remove, reject,
   }
 }
 

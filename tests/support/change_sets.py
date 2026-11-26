@@ -187,6 +187,7 @@ def candidates(draw: st.DrawFn) -> CandidateArchitecture:
         id=draw(_names.map(lambda name: f"CA-{name}")),
         name=draw(st.text(min_size=1, max_size=12)),
         rationale=draw(st.text(max_size=12)),
+        description=draw(st.text(max_size=12)),
         state=draw(st.sampled_from(CANDIDATE_STATES)),
         changes=draw(change_sets()),
         answers=tuple(draw(st.lists(_names, max_size=2, unique=True))),

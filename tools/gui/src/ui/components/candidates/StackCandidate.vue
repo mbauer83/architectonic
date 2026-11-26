@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
- * *New candidate on top…* on a candidate's page: the button, and in its place while open, the form that
- * names the new candidate. The candidate is created stacked on this one through *candidates*; the page is
- * told its id, to open it.
+ * *New candidate on top…* on a candidate's page: the button, and in its place while open, the form that names the
+ * new candidate and states its core idea. The candidate is created stacked on this one through *candidates*; the
+ * page is told its id, to open it.
  */
 import { ref } from 'vue'
+import { DESCRIPTION_LIMIT } from '../../../domain/schemas/candidates'
 import PermittedButton from '../PermittedButton.vue'
 import type { useCandidates } from '../../composables/useCandidates'
 
@@ -13,11 +14,13 @@ const emit = defineEmits<{ stacked: [id: string] }>()
 
 const open = ref(false)
 const stackName = ref('')
+const description = ref('')
 const stackOn = async () => {
-  const id = await props.candidates.stackOn(props.candidateId, stackName.value.trim())
+  const id = await props.candidates.stackOn(props.candidateId, stackName.value.trim(), description.value.trim())
   if (!id) return
   open.value = false
   stackName.value = ''
+  description.value = ''
   emit('stacked', id)
 }
 </script>
@@ -42,6 +45,12 @@ const stackOn = async () => {
       required
       autofocus
     ></label>
+    <label>Core idea <input
+      v-model="description"
+      :maxlength="DESCRIPTION_LIMIT"
+      placeholder="In a sentence or two"
+      data-testid="stack-description"
+    ></label>
     <button
       type="submit"
       class="btn btn-sm btn-primary"
@@ -60,6 +69,6 @@ const stackOn = async () => {
 </template>
 
 <style scoped>
-.stack-form { display: flex; gap: 8px; align-items: center; font-size: 12.5px; }
+.stack-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12.5px; }
 .stack-form input { font: inherit; margin-left: 4px; }
 </style>

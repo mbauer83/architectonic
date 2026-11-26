@@ -10,6 +10,9 @@
  * opens on the element as the candidate holds it, marking what differs from what it stacks on
  * (`useCandidateDetails`). What the session created or renamed carries a small + or ~. *Undo* (and Ctrl+Z on
  * the canvas) takes back the last step, and with it what that step recorded in the candidate.
+ *
+ * The sketch can take the whole screen (`useFullscreen`): the whole of it — band, canvas and *Add from model* —
+ * since each is used while sketching, as the graph explorer takes its controls with it.
  */
 import { computed, inject, onMounted, provide, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
@@ -24,6 +27,7 @@ import { useCandidateDetails } from '../../composables/useCandidateDetails'
 import { useCandidateEditing } from '../../composables/useCandidateEditing'
 import { useDrawnEntities } from '../../composables/useDrawnEntities'
 import { useFittedPanZoom } from '../../composables/useFittedPanZoom'
+import { useFullscreen } from '../../composables/useFullscreen'
 import CanvasContentEditor from '../CanvasContentEditor.vue'
 import { detailsSourceKey } from '../canvasDetails'
 import { CANDIDATE_WORDS } from '../canvasWords'
@@ -82,6 +86,9 @@ const containerRef = ref<HTMLElement | null>(null)
 const svgContainer = ref<HTMLElement | null>(null)
 const panZoom = useFittedPanZoom(containerRef, svgContainer)
 watch(() => editing.session.geometry.value, () => { void panZoom.fitDiagramToViewport() })
+const sketchRef = ref<HTMLElement | null>(null)
+const fullscreen = useFullscreen(sketchRef)
+watch(fullscreen.isFullscreen, () => { void panZoom.fitDiagramToViewport() })
 const tagSize = computed(() => 14 / Math.max(panZoom.scale.value, 0.05))
 
 const canUndo = computed(() => editing.session.history.value.length > 0)
@@ -117,6 +124,7 @@ onMounted(openCanvas)
 
 <template>
   <div
+    ref="sketchRef"
     class="sketching"
     data-testid="candidate-canvas"
   >
@@ -230,6 +238,9 @@ onMounted(openCanvas)
           :window="panZoom"
           :picture="svgContainer"
           hint="Scroll to zoom · Drag an element to move it · 0 fits"
+          :is-fullscreen="fullscreen.isFullscreen.value"
+          :can-fullscreen="fullscreen.isSupported"
+          @toggle-fullscreen="fullscreen.toggle"
         />
       </div>
       <aside
@@ -265,6 +276,8 @@ onMounted(openCanvas)
  * below the window however either wraps in a narrow pane.
  */
 .sketching { display: flex; flex-direction: column; height: clamp(480px, calc(100vh - 220px), 1240px); }
+/* The whole sketch fills the screen, on the page's own surface: the browser paints black behind it otherwise. */
+.sketching:fullscreen { height: 100vh; padding: 10px; background: var(--bg); }
 .intro { flex: none; }
 .cs-banner {
   display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; justify-content: space-between;

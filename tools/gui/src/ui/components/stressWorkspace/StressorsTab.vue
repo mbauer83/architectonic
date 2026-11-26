@@ -3,7 +3,8 @@
  * The Stressors tab (06·2, 06·3): counts by kind, coverage hints, a stressor written in one line,
  * the design stressors as an editable table with an End state column, the coupling per pair of
  * components (Q30), and the incidence grid for the stressor in focus. An element selected on the canvas
- * marks the rows that tick it. The test set is not here.
+ * marks the rows that tick it. While the canvas fills the screen, the stressor in focus — its row and its
+ * incidence — is docked over it, so a tick is still made on the picture. The test set is not here.
  */
 import { computed, inject, ref } from 'vue'
 import { endStateName } from '../../../domain/stressAnalysis/analysisRows'
@@ -16,11 +17,15 @@ import CoverageHintsPanel from './CoverageHintsPanel.vue'
 import IncidenceGrid from './IncidenceGrid.vue'
 import StressorRow from './StressorRow.vue'
 import StressorInput from './StressorInput.vue'
+import FullscreenDock from '../FullscreenDock.vue'
 
 const props = defineProps<{
   analysis: StressAnalysis; edits: AnalysisEdits; selected: string | null
   /** The rows that tick the element selected on the canvas. */
   ticking: ReadonlySet<string>
+  /** The canvas's element while it may have the screen, and whether it has: the stressor in focus docks there. */
+  fullscreenHost?: HTMLElement | null
+  isFullscreen?: boolean
 }>()
 const emit = defineEmits<{
   select: [rowId: string | null]
@@ -137,16 +142,52 @@ const aboutElement = async (id: string) => {
         </li>
       </ul>
     </details>
-    <IncidenceGrid
-      v-if="focused"
-      :title="`Incidence — ${focused.row_id} in focus`"
-      :stressors="[focused]"
-      :ticks="analysis.ticks.value"
-      :name-of="analysis.nameOf"
-      @untick="edits.untick"
-      @tick="edits.tick"
-      @note="edits.note"
-    />
+    <!-- While the canvas has the screen, the stressor in focus and its incidence go with it: the canvas is where
+         its ticks are made. The grid is the same instance in both places (`FullscreenDock`). -->
+    <FullscreenDock
+      :fullscreen-host="fullscreenHost ?? null"
+      :is-fullscreen="isFullscreen"
+      :revealed="focused !== null"
+    >
+      <aside
+        v-if="focused"
+        class="sidebar focus-dock"
+        :class="{ docked: isFullscreen }"
+        aria-label="Stressor in focus"
+        data-testid="stressor-focus-dock"
+        @mousedown.stop
+      >
+        <table
+          v-if="isFullscreen"
+          class="tbl"
+        >
+          <tbody>
+            <StressorRow
+              :row="focused"
+              selected
+              :kinds="kinds"
+              :hits="analysis.hitsOf(focused.row_id).length"
+              :missing="analysis.missingOf(focused.row_id).map(analysis.nameOf)"
+              :end-states="analysis.endStates.value"
+              @select="emit('select', null)"
+              @change="edits.changeStressor(focused, $event)"
+              @remove="edits.removeStressor(focused)"
+              @end-state="edits.setEndState(focused, $event)"
+              @create-end-state="edits.createEndStateFor(focused, $event)"
+            />
+          </tbody>
+        </table>
+        <IncidenceGrid
+          :title="`Incidence — ${focused.row_id} in focus`"
+          :stressors="[focused]"
+          :ticks="analysis.ticks.value"
+          :name-of="analysis.nameOf"
+          @untick="edits.untick"
+          @tick="edits.tick"
+          @note="edits.note"
+        />
+      </aside>
+    </FullscreenDock>
   </div>
 </template>
 
@@ -186,4 +227,6 @@ const aboutElement = async (id: string) => {
 .coupling summary { cursor: pointer; padding: 4px 0; }
 .coupling .cnt { color: var(--muted); }
 .coupling ul { margin: 4px 0 4px 18px; }
+/* Clear of the viewport's controls, which stay at the top right over the docked panel. */
+.focus-dock.docked { background: var(--surface); cursor: auto; user-select: text; padding: 44px 0 6px; }
 </style>

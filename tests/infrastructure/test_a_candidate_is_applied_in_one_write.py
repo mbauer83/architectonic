@@ -165,6 +165,27 @@ def test_a_refusal_by_the_last_operation_staged_leaves_the_model_unchanged(
     assert _state(client, ref) == "draft"
 
 
+def test_the_dry_run_says_what_each_edit_replaces_and_nothing_for_a_create(root: Path, client: TestClient) -> None:
+    """An edit of a content field is based on a revision, so the operation alone cannot say what it replaces;
+    the dry run reads it from the model, as the apply would overwrite it."""
+    ledger = _entity(root, "application-component", "Ledger")
+    ref = _candidate(
+        client,
+        {"op": "edit_entity", "artifact_id": ledger, "field": "summary", "value": "Keeps every posting twice."},
+        {"op": "create_entity",
+         "fields": {"artifact_type": "requirement", "name": "New rule", "group": "uncategorized"}},
+    )
+
+    standing = client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": True}).json()["standing"]
+
+    edits = [item for item in standing if item["operation"]["op"] == "edit_entity"]
+    assert [item["operation"]["value"] for item in edits] == ["Keeps every posting twice."]
+    assert all("holds" in item for item in edits)
+    assert all("holds" not in item for item in standing if item["operation"]["op"] == "create_entity")
+    over_mcp = mcp.change_set_apply(ref, dry_run=True, repo_root=str(root))["standing"]
+    assert [item.get("holds") for item in over_mcp] == [item.get("holds") for item in standing]
+
+
 def test_both_transports_answer_an_apply_alike(root: Path, client: TestClient) -> None:
     ledger = _entity(root, "application-component", "Ledger")
     ref = _candidate(client, {"op": "edit_entity", "artifact_id": ledger, "field": "name", "value": "Ledger service"})

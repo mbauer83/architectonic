@@ -45,6 +45,7 @@ def split(
     id: str,  # noqa: A002 — the new candidate's id, named as the value names it
     name: str,
     rationale: str = "",
+    description: str = "",
 ) -> tuple[CandidateArchitecture, CandidateArchitecture]:
     """*candidate* without the operations *moved* names, and a new sibling holding them.
 
@@ -55,7 +56,7 @@ def split(
     staying, leaving = partition.split(candidate.changes, moved)
     return (
         replace(candidate, changes=staying),
-        replace(candidate, id=id, name=name, rationale=rationale, changes=leaving),
+        replace(candidate, id=id, name=name, rationale=rationale, description=description, changes=leaving),
     )
 
 
@@ -66,6 +67,7 @@ def merge(
     id: str,  # noqa: A002 — the merged candidate's id, named as the value names it
     name: str,
     rationale: str = "",
+    description: str = "",
 ) -> CandidateArchitecture:
     """One draft candidate proposing what both did, answering and satisfying what either did."""
     for candidate in (first, second):
@@ -83,6 +85,7 @@ def merge(
         id=id,
         name=name,
         rationale=rationale,
+        description=description,
         changes=partition.merge(first.changes, second.changes),
         answers=_union(first.answers, second.answers),
         satisfies=_union(first.satisfies, second.satisfies),

@@ -4,7 +4,8 @@
  * architecture while the analysis is worked, open to write or hold out stressors and to judge. The
  * procedure is stated once and its order shown as progress, never as a gate. An analysis without a
  * test set shows only a link to add one. *Hold out a random third* asks first, in the section itself:
- * Cancel holds the focus and Esc cancels, so a stray Enter moves nothing.
+ * Cancel holds the focus and Esc cancels, so a stray Enter moves nothing. While the canvas fills the screen,
+ * the judge walk is docked over it, so a verdict and its reasoning are written beside the picture they judge.
  */
 import { computed, nextTick, ref } from 'vue'
 import type { Verdict } from '../../../domain/schemas/stressEvaluation'
@@ -15,6 +16,7 @@ import type { StressAnalysis } from '../../composables/useStressAnalysis'
 import type { TestSet } from '../../composables/useTestSet'
 import ResidualityLine from '../candidates/ResidualityLine.vue'
 import JudgeWalk from './JudgeWalk.vue'
+import FullscreenDock from '../FullscreenDock.vue'
 import StressorInput from './StressorInput.vue'
 import PermittedButton from '../PermittedButton.vue'
 
@@ -24,6 +26,9 @@ const props = defineProps<{
   testSet: TestSet
   /** The test stressor in focus in the judge walk. */
   selected: string | null
+  /** The canvas's element while it may have the screen, and whether it has: the judge walk docks there. */
+  fullscreenHost?: HTMLElement | null
+  isFullscreen?: boolean
 }>()
 const emit = defineEmits<{ select: [rowId: string | null] }>()
 
@@ -133,19 +138,34 @@ const holdOut = async () => {
           Kept apart from the design work: write it or hold it out before adapting, do not adapt against it,
           and judge it at the end — the naive architecture first, the integration last.
         </p>
-        <JudgeWalk
+        <!-- While the canvas has the screen, the walk goes with it: the picture is what is judged. The same
+             instance in both places (`FullscreenDock`), so a reasoning being typed is kept. -->
+        <FullscreenDock
           v-if="testSet.judging.value"
-          :architecture="testSet.judging.value"
-          :name="nameOf(testSet.judging.value)"
-          :stressors="held"
-          :verdicts="analysis.verdicts.value"
-          :selected="selected"
-          :saving="analysis.saving.value"
-          @select="emit('select', $event)"
-          @judge="judgeOne"
-          @restore="testSet.restore"
-          @done="testSet.judgeOn(null)"
-        />
+          :fullscreen-host="fullscreenHost ?? null"
+          :is-fullscreen="isFullscreen"
+          :revealed="true"
+        >
+          <div
+            class="sidebar judge-dock"
+            :class="{ docked: isFullscreen }"
+            data-testid="judge-walk-dock"
+            @mousedown.stop
+          >
+            <JudgeWalk
+              :architecture="testSet.judging.value"
+              :name="nameOf(testSet.judging.value)"
+              :stressors="held"
+              :verdicts="analysis.verdicts.value"
+              :selected="selected"
+              :saving="analysis.saving.value"
+              @select="emit('select', $event)"
+              @judge="judgeOne"
+              @restore="testSet.restore"
+              @done="testSet.judgeOn(null)"
+            />
+          </div>
+        </FullscreenDock>
         <template v-else>
           <StressorInput
             :unwritten="evaluation?.unwritten_perspectives ?? []"
@@ -260,4 +280,6 @@ const holdOut = async () => {
 .held { margin: 4px 0 8px; padding: 0 10px 0 28px; color: var(--text-2); }
 .held li { margin: 2px 0; }
 .rid { font-family: ui-monospace, monospace; color: var(--muted); margin-right: 4px; }
+/* Clear of the viewport's controls, which stay at the top right over the docked panel. */
+.judge-dock.docked { background: var(--surface); cursor: auto; user-select: text; padding: 44px 10px 8px; }
 </style>

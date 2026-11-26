@@ -161,12 +161,14 @@ def _standing(
 
 
 def wire_standing(standing: Iterable[OperationStanding], chosen: ChosenIds) -> list[dict[str, Any]]:
-    """Each operation's standing as the transports answer it: the operation, its position, the reason, each
-    naming what the stack creates by the id *chosen* says its create chose (`created_names`)."""
+    """Each operation's standing as the transports answer it: the operation, its position, the reason, and for
+    an edit what the model holds where it writes; each naming what the stack creates by the id *chosen* says its
+    create chose (`created_names`)."""
     return to_jsonable_python([
         {
             "operation": operation_to_mapping(named_by_id(item.operation, chosen)),
             "standing": item.standing, "reason": named_in_sentence(item.reason, chosen),
+            **({"holds": item.holds.value} if item.holds is not None else {}),
         }
         for item in standing
     ])

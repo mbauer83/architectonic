@@ -8,7 +8,7 @@
  * it, the canvas shows that architecture. Opened from the start page, it sketches the naive
  * architecture straight away on its own canvas — no stored diagram needed — with a note saying once what it
  * is; done sketching it, the stressors come next. *Apply…* answers with what is left, then with the
- * candidate's dry run.
+ * candidate's dry run. The canvas can fill the screen, taking with it what is worked beside it.
  */
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -90,6 +90,12 @@ const framed = ref<string | null>(null)
 const canvas = useWorkspaceCanvas(svc, analysis, candidates, edits, {
   tab, selected, endStateFocus, framed, judging: testSet.judging, judgedCandidate,
 })
+// The canvas as it may take the screen: what is worked beside it docks over it — the judge walk while an
+// architecture is judged, else the stressor in focus with its incidence. One at a time, so the two never cover
+// each other; the other stays in its tab, which the browser does not paint while the canvas has the screen.
+const markedCanvas = ref<InstanceType<typeof MarkedCanvas> | null>(null)
+const canvasHost = computed(() => markedCanvas.value?.frameEl ?? null)
+const canvasFullscreen = computed(() => markedCanvas.value?.isFullscreen ?? false)
 /** The candidate being sketched on the canvas, if any. */
 const sketching = ref<string | null>(null)
 const sketched = computed(() => candidates.all.value.find((one) => one.id === sketching.value) ?? null)
@@ -247,6 +253,8 @@ onMounted(async () => {
               :edits="edits"
               :selected="selected"
               :ticking="canvas.ticking.value"
+              :fullscreen-host="canvasHost"
+              :is-fullscreen="canvasFullscreen && !testSet.judging.value"
               @select="selected = $event"
               @show="framed = stableEntityId($event)"
               @open-row="openRow"
@@ -288,6 +296,8 @@ onMounted(async () => {
             :candidates="candidates"
             :test-set="testSet"
             :selected="judged"
+            :fullscreen-host="canvasHost"
+            :is-fullscreen="canvasFullscreen"
             @select="judged = $event"
           />
         </div>
@@ -315,6 +325,7 @@ onMounted(async () => {
           </CandidateCanvas>
           <MarkedCanvas
             v-else
+            ref="markedCanvas"
             :diagram-id="analysis.drawnOn.value"
             :drawing="canvas.drawing.value"
             :marks="canvas.marks.value"

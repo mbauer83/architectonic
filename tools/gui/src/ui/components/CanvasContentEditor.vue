@@ -11,6 +11,7 @@ import type { DiagramEditing } from '../composables/useDiagramEditing'
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import { elementAt, useContentGestures } from '../composables/useContentGestures'
 import { useCanvasPopover } from '../composables/useCanvasPopover'
+import { useOverlayHost } from '../composables/useOverlayHost'
 import { useCanvasRelation } from '../composables/useCanvasRelation'
 import { useCanvasNesting } from '../composables/useCanvasNesting'
 import { useCanvasCreate } from '../composables/useCanvasCreate'
@@ -57,11 +58,9 @@ const router = useRouter()
 const host = ref<HTMLElement | null>(null)
 const pop = ref<HTMLElement | null>(null)
 const { mode, at, error, width, position, close } = useCanvasPopover(host, pop)
-const source = ref('')
-const target = ref('')
-const members = computed(() => canvasMembers(
-  props.context, props.editing.session.state.value, props.editing.session.geometry.value,
-))
+const [source, target] = [ref(''), ref('')]
+const members = computed(() =>
+  canvasMembers(props.context, props.editing.session.state.value, props.editing.session.geometry.value))
 const selected = computed(() => members.value.find((e) => e.alias === source.value))
 const nameOf = (alias: string) => members.value.find((e) => e.alias === alias)?.name ?? alias
 const drafted = computed(() => props.editing.session.state.value?.commands?.some(
@@ -181,6 +180,8 @@ const { key, double, openMenu, boxAt } = useCanvasEditorKeys({
   boxNamed: (alias) => (words.value.newBoxEntry === undefined ? undefined
     : props.editing.session.geometry.value?.boxes.find((one) => one.alias === alias && isGroupingBox(one))),
 })
+// Where the menus and cues open: inside the canvas while it has the screen (`useOverlayHost`).
+const overlayHost = useOverlayHost()
 </script>
 <template>
   <div
@@ -201,7 +202,7 @@ const { key, double, openMenu, boxAt } = useCanvasEditorKeys({
     @pointerleave="leave"
   >
     <slot />
-    <Teleport to="body">
+    <Teleport :to="overlayHost">
       <CanvasGestureCues
         :side="side"
         :lit="drop.lit.value"
@@ -222,7 +223,7 @@ const { key, double, openMenu, boxAt } = useCanvasEditorKeys({
       :keep="keepDetails"
       @close="details = null; host?.focus({ preventScroll: true })"
     />
-    <Teleport to="body">
+    <Teleport :to="overlayHost">
       <div
         v-if="mode"
         ref="pop"

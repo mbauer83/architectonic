@@ -4,7 +4,7 @@ import { catalogOf, scopeLabel } from './candidateCatalog'
 
 const SCOPES: Record<string, readonly string[]> = { naive: ['e1', 'e2'], other: ['e2', 'e1'] }
 const candidate = (id: string, parent: string | null = null): CandidateSummary =>
-  ({ id, name: `${id} name`, state: 'draft', parent, scope: SCOPES[id] ?? [], diagram: null, operations: 0 })
+  ({ id, name: `${id} name`, description: '', state: 'draft', parent, scope: SCOPES[id] ?? [], diagram: null, operations: 0 })
 
 describe('the candidate catalogue', () => {
   // naive ← queue ← bounded; naive ← drift; other stands alone over the same scope; empty has none.

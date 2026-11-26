@@ -6,7 +6,7 @@ import type { CandidateComparison, CandidateSummary } from '../../domain/schemas
 import { type CandidateAccess, useCandidates } from './useCandidates'
 
 const candidate = (id: string, parent: string | null = null): CandidateSummary =>
-  ({ id, name: `${id} name`, state: 'draft', parent, scope: [], diagram: null, operations: 0 })
+  ({ id, name: `${id} name`, description: '', state: 'draft', parent, scope: [], diagram: null, operations: 0 })
 
 const comparisonOf = (id: string, base: string): CandidateComparison =>
   ({ candidate: id, base, standing: [], stack: [], view: { entities: [], connections: [] }, diff: [] })
@@ -42,6 +42,7 @@ const fakeAccess = (initial: CandidateSummary[], refuseDelete = false) => {
       calls.push(`edit ${id} ${basedOn} ${JSON.stringify(patch)}`)
       const at = store.findIndex((one) => one.id === id)
       if (at >= 0 && typeof patch.state === 'string') store[at] = { ...store[at], state: patch.state }
+      if (at >= 0 && typeof patch.description === 'string') store[at] = { ...store[at], description: patch.description }
       return Effect.succeed({ record: { id, ...patch }, version: 'v3' })
     },
   }
@@ -110,6 +111,23 @@ describe('useCandidates', () => {
     expect(calls.slice(0, 2)).toEqual([
       'create {"name":"From a diagram","diagram":"DIA-2"}', 'create {"name":"On top","parent":"bounded"}',
     ])
+  })
+
+  it('stacks a candidate with its core idea, and leaves the description out where none is given', async () => {
+    const { access, calls } = fakeAccess(ALL)
+    const candidates = useCandidates(access, { scopeDiagram: () => '' })
+    await candidates.load()
+    await candidates.stackOn('queue', 'Rule set', 'Rules move out of the code.')
+    expect(calls[0]).toBe('create {"name":"Rule set","parent":"queue","description":"Rules move out of the code."}')
+  })
+
+  it('describes a candidate through its versioned edit, and lists the new description', async () => {
+    const { access, calls } = fakeAccess(ALL)
+    const candidates = useCandidates(access, { scopeDiagram: () => '' })
+    await candidates.load()
+    expect(await candidates.describe('queue', 'A queue absorbs the burst.')).toBe(true)
+    expect(calls).toContain('edit queue v-queue {"description":"A queue absorbs the burst."}')
+    expect(candidates.all.value.find((one) => one.id === 'queue')?.description).toBe('A queue absorbs the burst.')
   })
 
   it('re-bases a candidate on the version it reads, then reads it again', async () => {

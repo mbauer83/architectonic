@@ -55,3 +55,33 @@ export const operationLabel = (operation: Readonly<Record<string, unknown>>): st
     default: return text(operation.op)
   }
 }
+
+/** What an edit changes its field (or key) from and to: the value its base was written over, and its own. */
+export interface EditedValues {
+  readonly before: unknown
+  readonly after: unknown
+}
+
+const edits = (operation: Readonly<Record<string, unknown>>): boolean =>
+  operation.op === 'edit_entity' || operation.op === 'edit_connection'
+
+/**
+ * The values an edit operation changes between, for `FieldChangeView`: from the value its base was written over
+ * to the value it writes. Null for any other operation, and for an edit based on a revision, which does not say
+ * the value.
+ */
+export const editedValues = (operation: Readonly<Record<string, unknown>>): EditedValues | null => {
+  const base = operation.base
+  return edits(operation) && typeof base === 'object' && base !== null && 'value' in base
+    ? { before: base.value, after: operation.value }
+    : null
+}
+
+/**
+ * What applying an edit changes, as a dry run answers it: from what the model holds where it writes (`holds`) to
+ * the value it writes; where the model's value was not read, what the edit itself says it was written over.
+ */
+export const appliedValues = (standing: OperationStanding): EditedValues | null =>
+  edits(standing.operation) && 'holds' in standing
+    ? { before: standing.holds, after: standing.operation.value }
+    : editedValues(standing.operation)

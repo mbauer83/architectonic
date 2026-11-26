@@ -14,6 +14,8 @@ const FieldsSchema = Schema.Record({ key: Schema.String, value: Schema.Unknown }
 export const CandidateSummarySchema = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
+  /** Its core idea in a sentence or two; empty where none is given. */
+  description: Schema.String,
   state: Schema.String,
   parent: Schema.NullOr(Schema.String),
   scope: Schema.Array(Schema.String),
@@ -22,6 +24,12 @@ export const CandidateSummarySchema = Schema.Struct({
   operations: Schema.Number,
 })
 export type CandidateSummary = typeof CandidateSummarySchema.Type
+
+/**
+ * The longest a candidate's description may be: a sentence or two. The server refuses a longer one
+ * (`candidate_architecture.DESCRIPTION_LIMIT`); a form uses this to stop typing at the same place.
+ */
+export const DESCRIPTION_LIMIT = 300
 
 export const CandidateListSchema = Schema.Struct({ candidates: Schema.Array(CandidateSummarySchema) })
 
@@ -64,6 +72,8 @@ export const OperationStandingSchema = Schema.Struct({
   operation: FieldsSchema,
   standing: Schema.String,
   reason: Schema.String,
+  /** For an edit, what the model holds where it writes: what applying it replaces. */
+  holds: Schema.optional(Schema.Unknown),
 })
 export type OperationStanding = typeof OperationStandingSchema.Type
 

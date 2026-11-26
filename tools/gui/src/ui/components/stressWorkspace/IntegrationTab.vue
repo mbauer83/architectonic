@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * Integrating adaptations (06·7, plan §3): the analysis's adaptations that stack on the naive architecture
- * chosen (those offered for integration first), integrated into a new candidate through the server's one
- * operation for it. The conflict cards are the candidates' own (`IntegrationCards`); here each party also says
- * what it answers in the analysis — its adaptation row, end states and stressors, each a link to its row.
+ * Integrating adaptations (06·7, plan §3): the analysis's adaptations that stack on the naive architecture chosen
+ * (those offered for integration first), each ticked by its name and its core idea, integrated into a new candidate
+ * through the server's one operation for it. The conflict cards are the candidates' own (`IntegrationCards`); here
+ * each party also says what it answers in the analysis — its adaptation row, end states and stressors, each a link
+ * to its row.
  */
 import { computed, inject, watch } from 'vue'
 import type { WorkspaceTab } from '../../../domain/stressAnalysis/analysisProgress'
@@ -63,7 +64,10 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
         :checked="integration.chosen.value.includes(one.id)"
         :data-testid="`integrate-${one.id}`"
         @change="toggle(one.id, ($event.target as HTMLInputElement).checked)"
-      > {{ one.name }} <small>{{ one.state === 'candidate' ? 'offered' : 'draft' }}</small></label>
+      > {{ one.name }} <small>{{ one.state === 'candidate' ? 'offered' : 'draft' }}</small><span
+        v-if="one.description"
+        class="desc"
+      >{{ one.description }}</span></label>
       <p
         v-if="!integrable.length"
         class="none"
@@ -109,6 +113,8 @@ watch(() => integrable.value.map((one) => one.id).join(' '), () => {
 <style scoped>
 .integration { padding: 8px 10px; font-size: 12.5px; }
 .chosen { border: none; margin: 0 0 8px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.chosen label { max-width: 100%; }
+.chosen .desc { display: block; margin-left: 20px; font-size: 12px; color: var(--text-2); font-style: italic; }
 .chosen legend { font-weight: 600; margin-bottom: 4px; }
 .chosen small, .none { color: var(--muted); }
 .links { color: var(--muted); }

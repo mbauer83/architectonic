@@ -38,6 +38,23 @@ The page lists the operations beside the picture, each with its **standing** aga
 *applies*, *already there*, *drifted* or *conflicting*. On the picture, `+` marks an added element,
 `~` a changed one, and an element the candidate removes stays drawn as a faded dashed ghost.
 
+A changed text field is compared word by word. Unchanged words are shown plain, removed words are
+struck through and inserted words are marked, and a screen reader announces each removal and
+insertion. A long unchanged stretch is folded to *… 12 words unchanged …*; select it to read it. A
+short value such as a status, an id or a number is shown replaced whole. For a keyed field such as
+`properties`, each changed key is named and only its value is compared. The same reading is used on
+the candidate page, in a comparison, on a stress analysis's tabs, in the integration cards and in the
+dry runs of **Apply to the model…** and **Apply as a target state…**.
+
+Under the candidate's name, the operations panel shows its **description**: the core idea in a
+sentence or two, at most 300 characters, such as *Every promotion passes a review step before it is
+published.* Select **Describe…** or **Edit** to write it. The description is distinct from the
+rationale, which holds the longer argument for the candidate and has no length limit.
+
+**⤢** (*View fullscreen*) in the canvas's corner shows the picture full screen, and **Esc** returns.
+While sketching, the bar with **Undo** and **Done sketching**, the canvas and **Add from model** go
+full screen together, and the right-click menu opens over the canvas.
+
 When the model has moved under an operation since it was recorded, the page says **Model moved** and
 offers **Re-base**, which records each drifted operation again against the model as it now stands,
 keeping what it asks for.
@@ -46,8 +63,8 @@ keeping what it asks for.
 
 ### Stack one candidate on another
 
-**New candidate on top…** on a candidate's page makes a child candidate: name it and select
-**Stack on ‹name›**. The child holds only its own operations and is read over its parent's. On the
+**New candidate on top…** on a candidate's page makes a child candidate: name it, optionally state
+its **Core idea**, and select **Stack on ‹name›**. The child holds only its own operations and is read over its parent's. On the
 list page, stacked candidates are indented under the candidate they stack on. A stacked candidate is
 applied after its parent has been applied.
 
@@ -94,7 +111,8 @@ Integrating compares what the candidates change. It says nothing about how the r
 
 **Apply to the model…** shows what the apply would write before it writes anything: one line per
 operation with its standing, the operations that will be skipped because the model already holds
-them, and the refusal, if there is one. An apply is refused while an operation conflicts or has
+them, and the refusal, if there is one. Each edit is shown against what the model holds where it
+writes, word by word for text. An apply is refused while an operation conflicts or has
 drifted, or while the candidate it stacks on is not applied:
 
 ```
@@ -187,6 +205,21 @@ Operations and scopes store the short form.
 Every read and every write answers the candidate's `version`. A write states the version it was made
 over as `based_on`; a write over an older version is refused with 409, and the refusal names the
 current version.
+
+### Name, description and rationale
+
+A candidate's header carries a `name`, an optional `description` and an optional `rationale`. The
+`description` states the core idea in a sentence or two and is refused above 300 characters. The
+`rationale` holds the argument for it and has no limit. `change_set_create` (`POST
+/api/change-sets`, in `record`) and `change_set_edit` (`PATCH`, in `patch`) write both; an empty
+`description` removes it. `change_set_read` answers the description in the record where one is
+given, and `change_set_list` answers it for every candidate, empty where none is given. A candidate
+stored without a description reads as having none.
+
+```json
+{"record": {"name": "Reviewed promotions", "parent": "CAND@1795698645.QsHyec5",
+            "description": "Every promotion passes a review step before it is published."}}
+```
 
 ### States
 

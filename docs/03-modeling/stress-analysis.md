@@ -100,6 +100,11 @@ Select a stressor's row, then press an element on the canvas: the element is tic
 stressor, and the **Hits** column counts it. The incidence panel below lists the ticked elements
 with a note each. **Coupling** lists pairs of elements that stressors hit together.
 
+A naive architecture with several layers rarely fits the pane. **⤢** (*View fullscreen*) in the
+canvas's corner shows it full screen, with the selected stressor's row and its incidence panel at the
+right. Pressing an element there ticks it as before. **Esc** returns to the workspace, where the
+stressor stays selected and the marks stay drawn.
+
 ### 5. Group stressors under end states
 
 Open a stressor's **End state** cell and type a name, *Promotions stall*, then press `Enter` to
@@ -113,9 +118,15 @@ state's stressors and marks on the canvas what they hit.
 ### 6. Adapt
 
 On the **Adaptations** tab, select **New candidate on top of Promotion pipeline as it stands…**, name
-the adaptation *Queued promotions*, choose the end state it answers, and select **Stack on…**. The
-adaptation is a candidate stacked on the naive architecture; sketch its changes on its canvas as for
-any candidate. Its page lists its operations against the naive architecture.
+the adaptation *Queued promotions*, state its **Core idea** in a sentence or two, choose the end state
+it answers, and select **Stack on…**. The adaptation is a candidate stacked on the naive
+architecture; sketch its changes on its canvas as for any candidate. Its page lists its operations
+against the naive architecture, with a changed text field compared word by word.
+
+Each adaptation's row shows its core idea under its name, *Promotions wait in a queue that
+absorbs bursts*, so adaptations can be compared before they are opened. **Describe…** or **Edit**
+under the operations' heading writes it later. See
+[Candidate architectures](candidate-architectures.md#create-a-candidate-and-sketch-it).
 
 **What is left** in the header lists what the analysis has not done yet: stressors not walked or not
 grouped, end states not answered. **Apply…** shows that list, then the dry run of the candidate you
@@ -123,8 +134,8 @@ choose, before anything is written. Applying does not wait for the list to be em
 
 ### 7. Integrate
 
-The **Integration** tab lists the adaptations stacked on the naive architecture. Tick the ones to
-combine, name the integration and select **Integrate**; conflicts are settled as described in
+The **Integration** tab lists the adaptations stacked on the naive architecture, each with its core
+idea. Tick the ones to combine, name the integration and select **Integrate**; conflicts are settled as described in
 [Integrate candidates](candidate-architectures.md#integrate-candidates).
 
 ### 8. Judge against the test set
@@ -141,7 +152,8 @@ integration**.
    Stressors tab, the incidence grid, the end states and the coverage hints show the design set.
 3. Select **Judge** beside *Naive architecture*. For each test stressor choose **Survives**,
    **Degrades** or **Fails** and write the reasoning. **Strike as unusable…** removes a stressor
-   that cannot be walked from the count for every architecture.
+   that cannot be walked from the count for every architecture. With the canvas full screen, the
+   judging walk is shown beside it, so verdicts are written while the picture is in view.
 4. After adapting and integrating, judge the integration the same way, and any candidate chosen
    under **Evaluate against the test set**.
 

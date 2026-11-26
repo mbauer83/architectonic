@@ -3,7 +3,7 @@ import type { CandidateSummary } from '../schemas/candidates'
 import { baseChoices, chainOf, defaultBase, descendantsOf, rootOf, stackFrom, stackLine } from './candidateStack'
 
 const candidate = (id: string, parent: string | null = null): CandidateSummary =>
-  ({ id, name: `${id} name`, state: 'draft', parent, scope: [], diagram: null, operations: 0 })
+  ({ id, name: `${id} name`, description: '', state: 'draft', parent, scope: [], diagram: null, operations: 0 })
 
 // naive ← queue ← bounded; naive ← drift; elsewhere stands alone.
 const ALL = [

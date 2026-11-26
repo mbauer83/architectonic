@@ -1,20 +1,22 @@
 <script setup lang="ts">
 /**
- * Integrating chosen candidates into a new one (06·7, S4), wherever candidates are chosen: the stress
- * workspace's Integration tab and the comparison page. Each conflict between them is a card naming its parties
- * and what each proposes, with the actions it permits — take this side, drop this change, merge a value, or
- * raise a decision as a draft ADR — over the server's one operation for it (`useIntegration`). What a party
- * answers in an analysis is the caller's to show, in the `party` slot, and to name for a decision (*answersOf*).
- * No merge proves behaviour, and the cards say so.
+ * Integrating chosen candidates into a new one (06·7, S4), wherever candidates are chosen: the stress workspace's
+ * Integration tab and the comparison page. Each conflict between them is a card naming its parties and what each
+ * proposes, an edit read against the value beneath it (`FieldChangeView`), with the actions it permits — take this
+ * side, drop this change, merge a value, or raise a decision as a draft ADR — over the server's one operation for
+ * it (`useIntegration`). What a party answers in an analysis is the caller's to show, in the `party` slot, and to
+ * name for a decision (*answersOf*). No merge proves behaviour, and the cards say so.
  */
 import { computed, reactive } from 'vue'
 import type { IntegrationConflict } from '../../../domain/schemas/candidates'
 import {
-  conflictSubject, conflictTitle, mergedResolution, partyResolution, permits, proposal, resolutionWords,
+  conflictSubject, conflictTitle, mergedResolution, partyResolution, permits, proposal, proposalLabel, resolutionWords,
 } from '../../../domain/candidates/integration'
+import { editedValues } from '../../../domain/candidates/candidateApply'
 import { documentDetailRoute } from '../../router/artifactRoutes'
 import type { Integration } from '../../composables/useIntegration'
 import PermittedButton from '../PermittedButton.vue'
+import FieldChangeView from './FieldChangeView.vue'
 
 const props = withDefaults(defineProps<{
   integration: Integration
@@ -28,6 +30,9 @@ const props = withDefaults(defineProps<{
 
 const conflicts = computed(() => props.integration.answer.value?.conflicts ?? [])
 const merged = reactive<Record<string, string>>({})
+/** The conflict's parties, each edit with the values it changes between. */
+const sides = (conflict: IntegrationConflict) =>
+  conflict.parties.map((party) => ({ ...party, edited: editedValues(party.operation) }))
 const about = (conflict: IntegrationConflict): string => conflictSubject(conflict, props.nameOf)
 const mergeIn = (conflict: IntegrationConflict) =>
   props.integration.resolve(mergedResolution(conflict, merged[conflict.subject] ?? ''), about(conflict))
@@ -78,12 +83,16 @@ const raise = (conflict: IntegrationConflict) => props.integration.raiseDecision
       <h4>{{ conflictTitle(conflict, nameOf) }}</h4>
       <div class="sides">
         <div
-          v-for="party in conflict.parties"
+          v-for="party in sides(conflict)"
           :key="party.set_id"
           class="side"
         >
           <b>{{ nameOfSet(party.set_id) }}</b>
-          <span>{{ proposal(party.operation, nameOf) }}</span>
+          <span v-if="party.edited">{{ proposalLabel(party.operation, nameOf) }}: <FieldChangeView
+            :before="party.edited.before"
+            :after="party.edited.after"
+          /></span>
+          <span v-else>{{ proposal(party.operation, nameOf) }}</span>
           <slot
             name="party"
             :candidate="party.set_id"

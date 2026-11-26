@@ -58,6 +58,36 @@ class TestAnEdit:
         assert standing == "conflicting"
         assert "not in the model any more" in reason
 
+
+class TestWhatAnEditReplaces:
+    """A dry run says what applying an edit replaces: the value the model holds now, not only the one the
+    edit was written against, which a drifted edit no longer matches."""
+
+    @staticmethod
+    def _holds(operation: Operation, model: RecordedReading = _MODEL) -> Any:
+        (found,) = standing_of(change_set(operation), model)
+        return found.holds
+
+    def test_an_edit_says_what_the_model_holds_where_it_writes(self) -> None:
+        held = self._holds(edit(_A, "summary", "Takes and refunds payments.", was="Takes payments."))
+        assert held is not None and held.value == "Takes payments."
+
+    def test_a_drifted_edit_says_what_the_model_holds_now_not_what_it_was_written_against(self) -> None:
+        held = self._holds(edit(_A, "name", "Invoicing", was="Payments"))
+        assert held is not None and held.value == "Billing"
+
+    def test_a_keyed_edit_says_what_its_key_holds(self) -> None:
+        held = self._holds(edit(_A, "properties", "gold", was="silver", key="tier"))
+        assert held is not None and held.value == "silver"
+
+    def test_a_connection_edit_says_what_the_connection_holds(self) -> None:
+        held = self._holds(edit_connection(_LINK, "description", "calls twice", was="calls"))
+        assert held is not None and held.value == "calls"
+
+    def test_nothing_is_said_where_nothing_is_read(self) -> None:
+        assert self._holds(edit("ENT@1.gone", "name", "x", was="y")) is None
+        assert self._holds(create("queue")) is None
+
     def test_a_field_with_no_reading_is_not_evidence_of_drift(self) -> None:
         """`attribute_types` is not in this reading at all: unreadable is not "changed"."""
         assert _one(edit(_A, "attribute_types", "string", was="number", key="tier"))[0] == "applies"

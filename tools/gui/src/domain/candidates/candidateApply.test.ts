@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { OperationStanding } from '../schemas/candidates'
-import { applyPreview, canApply, operationLabel, previewSentence } from './candidateApply'
+import { applyPreview, appliedValues, canApply, editedValues, operationLabel, previewSentence } from './candidateApply'
 
 const standing = (position: string, operation: Record<string, unknown> = { op: 'edit_entity' }): OperationStanding =>
   ({ operation, standing: position, reason: position })
@@ -47,5 +47,39 @@ describe('operationLabel', () => {
     [{ op: 'unknown' }, 'unknown'],
   ])('names %j as %s', (operation, label) => {
     expect(operationLabel(operation)).toBe(label)
+  })
+})
+
+describe('editedValues', () => {
+  it('reads an edit as the value its base was written over and the value it writes', () => {
+    expect(editedValues({ op: 'edit_entity', field: 'summary', value: 'new text', base: { value: 'old text' } }))
+      .toEqual({ before: 'old text', after: 'new text' })
+    expect(editedValues({ op: 'edit_connection', field: 'name', value: 'b', base: { value: null } }))
+      .toEqual({ before: null, after: 'b' })
+  })
+
+  it('reads nothing from another operation, or from an edit based on a revision', () => {
+    expect(editedValues({ op: 'create_entity', fields: { name: 'x' } })).toBeNull()
+    expect(editedValues({ op: 'remove_entity', base: { revision: 'r1' } })).toBeNull()
+    expect(editedValues({ op: 'edit_entity', value: 'x', base: { revision: 'r1' } })).toBeNull()
+  })
+})
+
+describe('appliedValues', () => {
+  const edit = { op: 'edit_entity', field: 'summary', value: 'new text', base: { revision: 'r1' } }
+
+  it('reads what applying an edit replaces from what the model holds where it writes', () => {
+    expect(appliedValues({ operation: edit, standing: 'applies', reason: '', holds: 'text now' }))
+      .toEqual({ before: 'text now', after: 'new text' })
+  })
+
+  it('falls back to the value the edit was written over where the model was not read', () => {
+    const named = { ...edit, base: { value: 'old text' } }
+    expect(appliedValues({ operation: named, standing: 'drifted', reason: '' })).toEqual({ before: 'old text', after: 'new text' })
+    expect(appliedValues({ operation: edit, standing: 'applies', reason: '' })).toBeNull()
+  })
+
+  it('reads nothing for an operation that is not an edit', () => {
+    expect(appliedValues({ operation: { op: 'create_entity' }, standing: 'applies', reason: '', holds: 'x' })).toBeNull()
   })
 })

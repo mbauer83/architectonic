@@ -81,6 +81,7 @@ class AnalysisStarted(Closed):
 class CandidateSummary(Closed):
     id: str
     name: str
+    description: str = Field(description="Its core idea in a sentence or two; empty where none is given.")
     state: str
     parent: str | None
     scope: list[str] = Field(description="The model's entities it is read over, by id; empty when started empty.")
@@ -134,6 +135,9 @@ class OperationStanding(NullsOmitted):
     operation: Fields
     standing: str
     reason: str
+    holds: JsonValue = Field(
+        None, description="For an edit, what the model holds where it writes: what applying it replaces.",
+    )
 
 
 class CandidateStanding(NullsOmitted):

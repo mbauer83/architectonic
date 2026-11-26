@@ -45,11 +45,15 @@ export const conflictTitle = (conflict: IntegrationConflict, nameOf: NameOf): st
 export const permits = (conflict: IntegrationConflict, action: ResolutionAction): boolean =>
   conflict.actions.includes(action)
 
-/** What one party proposes, as a line naming the elements it is about. */
+/** What one party does, as a line naming the elements it is about; the value it writes is read beside it. */
+export const proposalLabel = (operation: Readonly<Record<string, unknown>>, nameOf: NameOf): string =>
+  operationLabel(named(operation, nameOf))
+
+/** What one party proposes, as a line naming the elements it is about and the value it writes. */
 export const proposal = (operation: Readonly<Record<string, unknown>>, nameOf: NameOf): string => {
   const value = operation.value
   const said = value === undefined ? '' : ` to ${typeof value === 'string' ? `“${value}”` : JSON.stringify(value)}`
-  return `${operationLabel(named(operation, nameOf))}${said}`
+  return `${proposalLabel(operation, nameOf)}${said}`
 }
 
 /** Taking *party*'s side, or dropping its operation, in *conflict*. */
