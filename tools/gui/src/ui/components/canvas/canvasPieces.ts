@@ -71,9 +71,32 @@ export const drawnRelations = (
     const course = courses.get(relation.index)
     if (!course || course.length < 2) return []
     const anchor = relation.key === undefined ? undefined : anchors.get(relation.key)
-    const along = drawnLine(relation.drawing, course, anchor)
-    return [[relation.index, { asDrawn: asDrawn ? relation.drawing.group : null, along }]]
+    return [[relation.index, drawnAlong(relation.drawing, course, anchor, asDrawn ? relation.drawing.group : null)]]
   }))
+
+type LineDrawing = Parameters<typeof drawnLine>[0]
+type Anchor = Parameters<typeof drawnLine>[2]
+
+/** The last drawing made along each course, and what it was made of. */
+const madeAlong = new WeakMap<object, {
+  readonly drawing: LineDrawing; readonly anchor: Anchor; readonly asDrawn: DrawingNode | null
+  readonly drawn: DrawnRelation
+}>()
+
+/**
+ * One line drawn along *course*: the very drawing made last time for the same course, drawing, anchor
+ * and look, so a frame that leaves a line where it was hands the canvas the same piece to draw and the
+ * canvas does not draw it again.
+ */
+const drawnAlong = (
+  drawing: LineDrawing, course: Parameters<typeof drawnLine>[1], anchor: Anchor, asDrawn: DrawingNode | null,
+): DrawnRelation => {
+  const made = madeAlong.get(course)
+  if (made && made.drawing === drawing && made.anchor === anchor && made.asDrawn === asDrawn) return made.drawn
+  const drawn = { asDrawn, along: drawnLine(drawing, course, anchor) }
+  madeAlong.set(course, { drawing, anchor, asDrawn, drawn })
+  return drawn
+}
 
 /** What *painted* draws, if anything: a label drawn inside PlantUML's own relation has no piece of its own. */
 export const pieceOf = (

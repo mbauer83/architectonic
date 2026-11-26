@@ -23,7 +23,7 @@
  */
 import type { Extent } from '../../../domain/layout/geometry'
 import { overlaps } from '../../../domain/layout/geometry'
-import { childrenOf, descendantsOf } from '../../../domain/layout/canvasArrangement'
+import { childrenOf, descendantsIn } from '../../../domain/layout/canvasArrangement'
 import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
 import type { Placement } from '../../../domain/layout/canvasRouting'
 import { stackedSiblings } from '../../../domain/layout/stacking'
@@ -93,21 +93,30 @@ const sunkLines = (
   geometry: LayoutGeometry, placement: Placement, shapes: readonly PaintedShape[],
 ): Map<number, number> => {
   const place = new Map(shapes.map((shape, index) => [shape.alias, index]))
+  const children = childrenOf(geometry)
   const held = new Map<string, ReadonlySet<string>>()
   const heldBy = (alias: string): ReadonlySet<string> => {
-    const known = held.get(alias) ?? new Set(descendantsOf(geometry, alias))
+    const known = held.get(alias) ?? new Set(descendantsIn(children, alias))
     held.set(alias, known)
     return known
   }
+  // Asked once per shape however many lines end at it: a picture of hundreds of lines asks it each frame.
+  const hidden = new Map<string, number | null>()
   const hiderOf = (end: string): number | null => {
+    const known = hidden.get(end)
+    if (known !== undefined) return known
     const from = place.get(end)
     const extent = extentIn(placement, end)
-    if (from === undefined || extent === undefined) return null
-    const hider = shapes.findIndex((shape, index) => {
-      const over = extentIn(placement, shape.alias)
-      return index > from && !heldBy(end).has(shape.alias) && over !== undefined && overlaps(over, extent)
-    })
-    return hider < 0 ? null : hider
+    let hider: number | null = null
+    if (from !== undefined && extent !== undefined) {
+      const found = shapes.findIndex((shape, index) => {
+        const over = extentIn(placement, shape.alias)
+        return index > from && !heldBy(end).has(shape.alias) && over !== undefined && overlaps(over, extent)
+      })
+      hider = found < 0 ? null : found
+    }
+    hidden.set(end, hider)
+    return hider
   }
   return new Map(geometry.relations.flatMap((relation): [number, number][] => {
     const hiders = [relation.source, relation.target].map(hiderOf).filter((at): at is number => at !== null)
@@ -123,9 +132,12 @@ export const paintOrder = (
   const sunk = sunkLines(geometry, placement, shapes)
   const lineAndLabel = (relation: number): Painted[] =>
     [{ kind: 'line', relation }, { kind: 'label', relation }]
-  const sunkAt = (index: number): Painted[] =>
-    geometry.relations.filter((relation) => sunk.get(relation.index) === index)
-      .flatMap((relation) => lineAndLabel(relation.index))
+  const sunkUnder = new Map<number, number[]>()
+  for (const relation of geometry.relations) {
+    const at = sunk.get(relation.index)
+    if (at !== undefined) sunkUnder.set(at, [...sunkUnder.get(at) ?? [], relation.index])
+  }
+  const sunkAt = (index: number): Painted[] => (sunkUnder.get(index) ?? []).flatMap(lineAndLabel)
   const onTop = geometry.relations.filter((relation) => !sunk.has(relation.index))
   return [
     ...shapes.flatMap((shape, index): Painted[] => [...sunkAt(index), shape]),
