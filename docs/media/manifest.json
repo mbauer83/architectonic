@@ -14,7 +14,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/assurance-bowtie.png",
-    "sha256": "82a8d38d569ac90bb2a2457261e0a404430cfe74eccdfb965c1a6e30e46a1b60"
+    "sha256": "36af29ac58a32bbbb62f8dd1b85ead8e6d50a36ca61d8eeff10ca3a108d97ef2"
   },
   {
     "test_name": "re-shoot assurance control structure",
@@ -31,7 +31,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/assurance-control-structure.png",
-    "sha256": "92dfab16afa3d56bcb1daa2ce267a8f3148a605e7aa565331621fd040bae7f2e"
+    "sha256": "35f0c852f9951c4412998e31d442484e01630eaefefe58a81dcbfc071e6d6315"
   },
   {
     "test_name": "assurance FMEA matrix",
@@ -51,7 +51,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/assurance-fmea-matrix.png",
-    "sha256": "ba413ba111be8a272508c7daf5cf4f93d0bef9ce0449436c8f0d81e496a4bcb9"
+    "sha256": "5e4474825257dcc030e5a7d298ff13aaff41fb05dfbbeb76945cc2ae5aa1e99b"
   },
   {
     "test_name": "assurance graph explore",
@@ -69,7 +69,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/assurance-graph-explore.png",
-    "sha256": "49863d8ff59722961f79b3e81b13cee4a65feb150822e98ae195b5a8c0ab01e4"
+    "sha256": "02250bf991eebacc8907efacf5c7406030164f3acb36e4e2115928f5501907b4"
   },
   {
     "test_name": "re-shoot assurance GSN",
@@ -86,7 +86,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/assurance-gsn.png",
-    "sha256": "81a3af3746fdbe489268e04afe27b02be8298248972151f8cd665b318ba27693"
+    "sha256": "ae859fb9f829a646e67620461f2edcfa0aa532787c0e5a204b5e5e81c946c3b1"
   },
   {
     "test_name": "assurance method workflow",
@@ -103,7 +103,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/assurance-method-workflow.png",
-    "sha256": "3f1831cba28366a3aa26ee040854dc1f29c45810be0521072befb4ea4e0ce290"
+    "sha256": "ba7fc415878fae17fd1cf8f1968e261e38bcbd233e47720bc7655f0ad40ae52b"
   },
   {
     "test_name": "re-shoot assurance overview",
@@ -118,7 +118,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/assurance-overview.png",
-    "sha256": "052eddc27a89c3db87004d7b8a8167eea6a55abb963e41c4b7c05fb50919d8e3"
+    "sha256": "2d84db399ab1a61ebc7f76fd3aed90507314bb02a2208df36a2ee5b8d14c8d49"
   },
   {
     "test_name": "C4 backend components",
@@ -187,7 +187,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/candidate-integrate.png",
-    "sha256": "9d78d8ef5ae1243c707291e8974b31b490ec536d63e9a596cc6fc4684311b0d2"
+    "sha256": "a621da9f7b276eca1edaf0fe5cebaf0ea21770d7bdb82c393a634ecf05a96bd0"
   },
   {
     "test_name": "a candidate architecture and its operations",
@@ -204,7 +204,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/candidate-page.png",
-    "sha256": "db6bbaf7d2d4537601ecff6a6f3ef604160a1116f8d3231ddef5ab9c0d4da647"
+    "sha256": "04d8ee47c71f80939583f61febfc6aa3d8f78f35361cdc93932c1a1d964e5159"
   },
   {
     "test_name": "re-shoot activity diagram",
@@ -221,7 +221,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/diagram-activity.png",
-    "sha256": "afbcb5928691f6078d8396a0904ae65a4eee1ca1a1408a0de1b67cb0ca9b6cd0"
+    "sha256": "7468807d496973a4680b25508644e2a3b38a8f4370d9dedd28da1908c26e552f"
   },
   {
     "test_name": "re-shoot ArchiMate diagram",
@@ -255,7 +255,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/diagram-c4.png",
-    "sha256": "9b2d9552f52316933e76e3a0bd12990435d6a64743ffd4e54e9e7d73bcb1412d"
+    "sha256": "84bd963447196d03b780ce2c1f9a195ad89f24bfd25a1cd560b570ed4d265b06"
   },
   {
     "test_name": "datatype diagram with an attribute selected",
@@ -272,7 +272,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/diagram-datatype-attribute.png",
-    "sha256": "2df3c85e0313f06b101813839948f1928772544df07fe92e496ca32844757ec1"
+    "sha256": "e698985fb9d7163013f2f14f109144ee23f54de8d727b61cb3294d15af0ac3ad"
   },
   {
     "test_name": "a diagram mid-drag, with its guides and the change list",
@@ -289,7 +289,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/diagram-edit-guides.png",
-    "sha256": "507aa5065891ea2e55d6ba4ad58354492bcd1aa48d74936f6843965abbfc1cd9"
+    "sha256": "90e923bfa1699466e164016f8e667c11247460622b15318487400ba55faac964"
   },
   {
     "test_name": "a diagram in edit mode",
@@ -306,7 +306,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/diagram-edit-mode.png",
-    "sha256": "55f5e603820de8e1bd922686d46e0bf2543501a2b83386dbf9b3768d296fc106"
+    "sha256": "bacffc28a471674080558800f736419012220d3309c6a64a57a1cbc5fc2ffcfd"
   },
   {
     "test_name": "re-shoot matrix diagram",
@@ -323,7 +323,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/diagram-matrix.png",
-    "sha256": "b04837c2c77e16710fdc94e3667d96e705840f2d0159491f5203153c0e6f3024"
+    "sha256": "f168c177e0efa3dedeb900ca03d04f0be40b6a4af282aad0841bd7ba15ee718c"
   },
   {
     "test_name": "a diagram read from one element",
@@ -340,7 +340,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/diagram-reading.png",
-    "sha256": "beffdadcb0a5b616b565194c83129ab0fade4b8b4eab47dee1fa36388a721e8d"
+    "sha256": "93f831d81221852b7ea67821d8eebf61922982ea3ce9bc32638763496eefbc9e"
   },
   {
     "test_name": "re-shoot sequence diagram",
@@ -357,7 +357,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/diagram-sequence.png",
-    "sha256": "a683842c4d283695449dec0bf4453b8323238f4337419261f5a579cfd001edb7"
+    "sha256": "e0e25a38165d017f4e3268003208babfd56c3b230f8bac1c420265cac501db60"
   },
   {
     "test_name": "application entities catalog",
@@ -372,7 +372,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/entities-list.png",
-    "sha256": "e7e476241078c592abf7ca06aea9d6e9dd474691d0ef76a5448f8b6da570e067"
+    "sha256": "91a9c3bfa5eefd9c9891efe61c975cc3e2c7b7a4de15f2187bc5c229db034b9b"
   },
   {
     "test_name": "re-shoot entity detail",
@@ -389,7 +389,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/entity-detail.png",
-    "sha256": "ed49560a74f867a3f0b4ddce5e6aff6f847ffa034500265163f9edc8bbbd3de7"
+    "sha256": "87bbd07005cfce004970b90f8e0e418e4eaeba6f45103d24252fbcefc7ce4f26"
   },
   {
     "test_name": "re-shoot graph exploration walk",
@@ -406,7 +406,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/graph-explore.gif",
-    "sha256": "cb5c72cfe7234f25ee3d830faa449beb0ef966724d18c214494a3b57a8d17587"
+    "sha256": "70b94e7d74d1308fd87422383698154f5ceb00e8f9e5190442883f60084f065d"
   },
   {
     "test_name": "re-shoot group management",
@@ -421,7 +421,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/group-management.png",
-    "sha256": "0cd820a3f08b5646880b0957ee324717e7e7807b742dba7e2240b34c87b0452b"
+    "sha256": "add5a100103ebca504df3bff92fea38d0e845bac656005cac382afc45a883e65"
   },
   {
     "test_name": "guidance wizard context",
@@ -436,7 +436,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/guidance-wizard-context.png",
-    "sha256": "1be3b8876a322001156eb139a10adb36c7f8498359a75147cdc8c27de5c0a6fa"
+    "sha256": "cbe132261f620a26af5f18bf3cde07471c22b355cd043547e1630090eb0051b5"
   },
   {
     "test_name": "hero intent-to-implementation exploration",
@@ -453,7 +453,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/hero-overview.png",
-    "sha256": "3a98cf2830293bc2da6268975aef4f4d755e12d77d11c61b6787682cd841faa7"
+    "sha256": "381cb3d3a2e09f98e437d7c26bc313526084d047c5aa8c2ba15bec004457aee1"
   },
   {
     "test_name": "motivation coverage live fallback",
@@ -478,7 +478,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/motivation-coverage-gaps.png",
-    "sha256": "341b7282d18b8d458397b17fa8a6d993de793e42e76e2b85e49eafd2b9f24031"
+    "sha256": "88c1587722c378e377adf32bf5da64b75c7e782c4afc0a28b46b058915d5f184"
   },
   {
     "test_name": "re-shoot overview",
@@ -493,7 +493,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/overview.png",
-    "sha256": "c274b5205e1f503bba935d5fac3bb0069449b76bdd180dca63c954109f357aa4"
+    "sha256": "161e78fc26ef8fd6ae5fa4d64836a15f0ce64a24b0c1b8eff07c663835a2b9f1"
   },
   {
     "test_name": "local changes against promoted content",
@@ -508,7 +508,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/proposed-changes.png",
-    "sha256": "c042075253a6c0f576ef0b1671819a217110ba228a8f2a3dacc2f0aecb544542"
+    "sha256": "fcf7741dbb71e729a09c2c8ac6ba658140b2b86c246a88b6ac086b3cd1629b0a"
   },
   {
     "test_name": "resource investment map",
@@ -540,7 +540,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/search.png",
-    "sha256": "97ee678bfb34bc580d31244e4f19a93737af06e772da209e640bbca2ec41bdd6"
+    "sha256": "7a887af27bcb34427b5c82279b56771243bc0efd234986eb22efdcfbd4772bca"
   },
   {
     "test_name": "security entity metrics panel",
@@ -557,7 +557,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/security-entity-panel.png",
-    "sha256": "e4b8ef01006241a3a56b54465ea2483c5fda64e91d7b9e56b5a679868b0901df"
+    "sha256": "cf7cc32bc0c6309956c5f4bf879f58cba1b6165b36ae1fda70bdccbc5bc41543"
   },
   {
     "test_name": "stamped security export",
@@ -593,7 +593,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/security-findings.png",
-    "sha256": "6d0650048d6e14f55ef4e40c304c68609678a57a3130e4089d057eedfecbc0f0"
+    "sha256": "52b0e57b670783245495d147998029e0ddf33d2a37dfc276f6fb9eeaff4d8579"
   },
   {
     "test_name": "locked security metrics state",
@@ -610,7 +610,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/security-metrics-locked.png",
-    "sha256": "db5c35aa26d92ec0f2ca8fb339fd6b12a4c73407e48790902dff0e24e39d6316"
+    "sha256": "d0050b79f85a996a30189f88612dfef9672e06a6f91063c3ddbf9d377f9cf81b"
   },
   {
     "test_name": "security posture viewpoint",
@@ -629,7 +629,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/security-posture-viewpoint.png",
-    "sha256": "a7b17002198c7156a84ac7231710c4966e04887620ee79b6e9b6d36f64bb2466"
+    "sha256": "0fabfbe82f8bb782e1138e88efab4043237e9c343ed17c6998b9f39d26301186"
   },
   {
     "test_name": "re-shoot vulnerability impact",
@@ -646,7 +646,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/security-vulnerability-impact.png",
-    "sha256": "9e4ec4d9e7d30f3f5706f6474f132e46c87b33e7b1218a6ab467c7964e68dd68"
+    "sha256": "f64d91f0b551adbf846a885de7dd00fce399c0002bb254c22d0b5a3467b5444a"
   },
   {
     "test_name": "strategy overview diagram",
@@ -668,7 +668,7 @@
   {
     "test_name": "the naive architecture sketched on its canvas",
     "artifact_ids": [
-      "STRESS@1795685267.Px771UQ.stress-analysis-promotion-pipeline"
+      "STRESS@1795713744.WUH_ctr.stress-analysis-promotion-pipeline"
     ],
     "synthetic_augmentation": true,
     "viewpoint_slug": null,
@@ -680,7 +680,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/stress-naive-canvas.png",
-    "sha256": "15980eaaaf929675f77a3c4571a80e3dde553c76d9974b768a515406b939be4e"
+    "sha256": "7595b17957c38af0f498f2696d7658948a4b1ace78f579de5172aeb35399d03f"
   },
   {
     "test_name": "the start page of a stress analysis",
@@ -695,12 +695,12 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/stress-start.png",
-    "sha256": "bbab7c3cb43c7c9853890a2e887895dae4d359535268b30139dabd0c6d38ef95"
+    "sha256": "9889d8f9d1d99e5059ecceada0be4dfa78aa395efd0967e0d269788ebf238e9f"
   },
   {
     "test_name": "the test set judged on the naive and on an adaptation",
     "artifact_ids": [
-      "STRESS@1795685276.GPmvCbp.stress-analysis-promotion-pipeline"
+      "STRESS@1795713754.gr77za5.stress-analysis-promotion-pipeline"
     ],
     "synthetic_augmentation": true,
     "viewpoint_slug": null,
@@ -712,12 +712,12 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/stress-test-set.png",
-    "sha256": "f186dc8e93d1812145d7da68c7bc6c2fba9813cbdf3595277507885137b7c47a"
+    "sha256": "05fecb03ecae661865dfd39fadc972c8d3eee9c595984573057e13ef4348bce8"
   },
   {
     "test_name": "stressors and the incidence of one of them",
     "artifact_ids": [
-      "STRESS@1795685274.OsVBBgU.stress-analysis-promotion-pipeline"
+      "STRESS@1795713751.Q1BJ3KH.stress-analysis-promotion-pipeline"
     ],
     "synthetic_augmentation": true,
     "viewpoint_slug": null,
@@ -729,7 +729,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/stress-workspace.png",
-    "sha256": "3f03baddafd2af13fee81dd2188305db3bca3bf6c381d85a5c6fd2e41624df82"
+    "sha256": "762da5b92b90829b6de5dd6a8b66ce21bfbe038a8d067d9568928f034da5f2ce"
   },
   {
     "test_name": "re-shoot treemap",
@@ -744,7 +744,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/treemap.png",
-    "sha256": "1112ccbce67329fb4876d5c9013a70d4be59c057ba835a685ac747e32105f4f1"
+    "sha256": "88d482450d5033e089bbe3d17d295b49afbce5da2abd9ea1af5d05591bc6d93d"
   },
   {
     "test_name": "architecture-aligned change value stream",
@@ -778,6 +778,6 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/viewpoint-query-tab.png",
-    "sha256": "47ab0c63e02bc0e51be91de8337b414c0b1110eaf8d486425a385aa1c19ee5b4"
+    "sha256": "cd0a7d53a71d2042844a27b46de950667ed69810fdaf9add394256a4242c6580"
   }
 ]
