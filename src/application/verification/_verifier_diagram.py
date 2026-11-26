@@ -20,6 +20,7 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification._verifier_contribution_runner import run_diagram_contributions
 from src.application.verification._verifier_rules_diagram_references import check_diagram_references_scoped
 from src.application.verification._verifier_rules_edge_labels import check_edge_label_overrides
+from src.application.verification._verifier_rules_generated_header import check_generated_header
 from src.application.verification._verifier_rules_icons import check_icon_assignments
 from src.application.verification._verifier_rules_layout import check_groupings_are_identified, check_layout
 from src.application.verification._verifier_rules_puml_completeness import check_puml_relation_rules
@@ -124,7 +125,7 @@ RULE_CODES: frozenset[str] = frozenset({
     "E370", "E371", "E372", "E373", "E401", "E402", "E403", "E404", "E405", "E406", "E407", "E408", "E409",
     "E410", "E411", "E412", "E413", "E414", "W002", "W031", "W041", "W042", "W043", "W044", "W046", "W155",
     "W156", "W160", "W180", "W181", "W182", "W303", "W304", "W305", "W306", "W307", "W321", "W322", "W361",
-    "W362", "W375", "W376", "W377", "W378", "W379",
+    "W362", "W375", "W376", "W377", "W378", "W379", "W387",
 })
 
 
@@ -147,6 +148,7 @@ def verify_diagram(
 
     _check_common_header(fm, result, loc)
     scope = ctx.scope_for_path(path)
+    repo_root = ctx.repo_root_for_path(path)
     if ctx.registry is not None:
         _check_scoped_references(ctx, fm, scope, result, loc)
         check_puml_relation_rules(
@@ -163,6 +165,8 @@ def verify_diagram(
         )
         check_icon_assignments(fm, ctx.registry, ctx.icon_library or ctx.registry, ctx.catalogs, result, loc)
         _check_layout(ctx, ctx.registry, fm, result, loc)
+        if repo_root is not None:
+            check_generated_header(module, content, repo_root, result, loc)
         if ctx.candidate_repo is not None and module is not None:
             run_diagram_contributions(
                 module=module,
@@ -183,7 +187,6 @@ def verify_diagram(
     check_edge_label_overrides(content, fm, result, loc)
     check_groupings_are_identified(fm, result, loc)
 
-    repo_root = ctx.repo_root_for_path(path)
     if repo_root is not None:
         check_frontmatter_schema(fm, repo_root, "diagram", result, loc)
 

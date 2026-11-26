@@ -289,8 +289,8 @@ def stale_generated_headers(repo_root: Path) -> list[str]:
     edit, so the repair is an edit of the named diagram and nothing else.
     """
     from src.application.repo_path_helpers import diagram_source_root  # noqa: PLC0415
-    from src.domain.ontology_representation.ontology_protocol import (  # noqa: PLC0415
-        GeneratedHeaderRefreshingRenderer,
+    from src.application.verification._verifier_rules_generated_header import (  # noqa: PLC0415
+        generated_header_is_current,
     )
     from src.domain.repository.frontmatter import body_after_frontmatter, parse_frontmatter  # noqa: PLC0415
     from src.infrastructure.diagram_type_registry import get_diagram_type  # noqa: PLC0415
@@ -309,10 +309,7 @@ def stale_generated_headers(repo_root: Path) -> list[str]:
             renderer = get_diagram_type(diagram_type).renderer
         except Exception:  # noqa: BLE001 - a type this build does not carry is not this gate's business
             continue
-        if not isinstance(renderer, GeneratedHeaderRefreshingRenderer):
-            continue
-        body = body_after_frontmatter(text)
-        if renderer.refresh_generated_header(body, repo_root) != body:
+        if not generated_header_is_current(renderer, body_after_frontmatter(text), repo_root):
             stale.append(str(path.relative_to(root)))
     return stale
 

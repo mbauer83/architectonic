@@ -138,8 +138,8 @@ title a loop whose body holds a decision
 start
 
 :[[arch://receive receive the request]];
-repeat
 |[[arch://lane_service Service]]|
+repeat
 :[[arch://attempt attempt the write]];
 if ([[arch://recoverable can it be repaired?]]) then (yes)
 :[[arch://repair repair the input]];
