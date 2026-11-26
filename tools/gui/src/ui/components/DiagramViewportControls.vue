@@ -49,6 +49,7 @@ const prefs = useEditingPreferences()
 const controls = ref<HTMLElement | null>(null)
 const host = computed(() => controls.value?.parentElement ?? null)
 useCanvasHostKeys(host, () => props.zoom, () => props.edit ?? null)
+const hintText = computed(() => (props.isFullscreen ? `${props.hint} · Esc to exit` : props.hint))
 const percent = computed(() => (props.zoom ? `${Math.round(props.zoom.scale.value * 100)}%` : ''))
 </script>
 
@@ -116,8 +117,13 @@ const percent = computed(() => (props.zoom ? `${Math.round(props.zoom.scale.valu
       ⊙
     </button>
   </div>
-  <div class="zoom-hint">
-    {{ isFullscreen ? `${hint} · Esc to exit` : hint }}
+  <!-- Ends in … where the window is narrower than the hint; the whole of it is on hover. -->
+  <div
+    class="zoom-hint"
+    data-testid="viewport-hint"
+    :title="hintText"
+  >
+    {{ hintText }}
   </div>
 </template>
 
@@ -143,9 +149,11 @@ const percent = computed(() => (props.zoom ? `${Math.round(props.zoom.scale.valu
 }
 .zoom-cluster button:hover { background: var(--surface); }
 .zoom-cluster__percent { min-width: 40px; text-align: center; font-size: 11px; color: var(--muted); }
+/* Centred and never wider than the window, so a long hint keeps its start in view and ends in … */
 .zoom-hint {
   position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+  box-sizing: border-box; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis;
   font-size: 11px; color: var(--muted); background: var(--overlay);
-  padding: 2px 8px; border-radius: 4px; pointer-events: none; white-space: nowrap;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
 }
 </style>
