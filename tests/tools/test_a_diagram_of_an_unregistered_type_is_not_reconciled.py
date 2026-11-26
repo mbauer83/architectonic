@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from src.application.verification._verifier_rules_puml_completeness import diagram_body_is_reconcile_owned
+from src.application.verification.drawn_relations import diagram_body_is_reconcile_owned
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp import mcp_artifact_server as mcp
 

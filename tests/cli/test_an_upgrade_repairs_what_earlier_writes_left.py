@@ -197,3 +197,44 @@ def test_a_second_upgrade_changes_nothing(repo: dict) -> None:
     again = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, check=True, capture_output=True, text=True).stdout
     assert again == head
     assert subprocess.run(["git", "status", "--porcelain"], cwd=root, capture_output=True, text=True).stdout == ""
+
+
+DISPLAYED_VIEW = "ARC@1787723999.Dsp1Al9.engine-by-its-display-alias"
+
+
+def test_a_relation_drawn_between_display_aliases_is_listed_as_the_verifier_reads_it(repo: dict) -> None:
+    """The step binds a drawing exactly as E316 reads it. It used to resolve aliases from the diagram's own
+    statements only, so an element drawn under the display alias its entity file states — which the
+    verifier resolves — was skipped, and the upgraded repository still failed E316."""
+    root = repo["root"]
+    (engine_file,) = (path for path in root.glob("model/**/*.md") if "cad-model-engine-service" in path.name)
+    engine = engine_file.name.removesuffix(".md")
+    engine_file.write_text(
+        engine_file.read_text(encoding="utf-8").replace(f"alias: {_alias(engine)}", "alias: CadEngine"),
+        encoding="utf-8",
+    )
+    body = (
+        'rectangle "Engine" <<application_component>> as CadEngine {\n'
+        f'  rectangle "Toolkit" <<system_software>> as {_alias(repo["toolkit"])}\n'
+        "}"
+    )
+    frontmatter = {
+        "artifact-id": DISPLAYED_VIEW, "artifact-type": "diagram", "name": "engine-by-its-display-alias",
+        "version": "0.1.0", "status": "active", "diagram-type": "archimate-layered", "manual-layout": True,
+        "entity-ids-used": [engine, repo["toolkit"]], "connection-ids-used": [],
+        "last-updated": "2026-09-30T12:10:54Z",
+    }
+    (root / "diagram-catalog" / "diagrams" / f"{DISPLAYED_VIEW}.puml").write_text(
+        f"---\n{yaml.safe_dump(frontmatter, sort_keys=False)}---\n@startuml\ntitle Engine\n{body}\n@enduml\n",
+        encoding="utf-8",
+    )
+    for command in (["add", "-A"], ["commit", "-q", "-m", "drawn under a display alias"]):
+        subprocess.run(["git", *command], cwd=root, check=True)
+    assert "E316" in _codes(_findings(root), f"{DISPLAYED_VIEW}.puml")
+
+    _upgraded(root)
+
+    assert not [f for f in _findings(root).get(f"{DISPLAYED_VIEW}.puml", []) if f.startswith("E")]
+    assert _stated(root / "diagram-catalog" / "diagrams" / f"{DISPLAYED_VIEW}.puml")["connection-ids-used"] == [
+        repo["serving"],
+    ]

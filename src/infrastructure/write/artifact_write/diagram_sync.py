@@ -31,8 +31,8 @@ from collections.abc import Callable
 from pathlib import Path
 
 from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path
-from src.application.verification._verifier_rules_puml_completeness import diagram_body_is_reconcile_owned
 from src.application.verification.artifact_verifier import ArtifactVerifier
+from src.application.verification.drawn_relations import diagram_body_is_reconcile_owned
 from src.domain.artifact_id import stable_conn_id
 from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.relation_key import labels_by_relation
