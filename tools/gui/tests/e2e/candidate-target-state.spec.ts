@@ -51,9 +51,15 @@ test('a target state is applied after its dry run, and then offers the move into
   await page.route('**/api/change-sets/*/move-into-baseline', async (route) => {
     const body = route.request().postDataJSON() as { dry_run: boolean }
     asked.push(`move ${body.dry_run}`)
+    // The candidate's edit, stored against a revision, and what the model holds where it writes.
+    const edit = { op: 'edit_entity', artifact_id: SERVICE, field: 'name', value: 'Promotion Review Service',
+      base: { revision: 'r1' } }
     return route.fulfill({
       status: 200, contentType: 'application/json',
-      body: JSON.stringify({ candidate, dry_run: body.dry_run, integrated: false, standing: [], operations: [] }),
+      body: JSON.stringify({
+        candidate, dry_run: body.dry_run, integrated: false, operations: [edit],
+        standing: [{ operation: edit, standing: 'applies', reason: 'applies', holds: 'Review Service' }],
+      }),
     })
   })
   // The candidate's record as the server holds it once the target state is written.
@@ -76,6 +82,9 @@ test('a target state is applied after its dry run, and then offers the move into
   await expect(page.getByRole('button', { name: 'Apply to the model…' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Move into the baseline…' }).click()
   await expect(confirmation).toContainText('Move Target state spec candidate into the baseline')
+  // An edit stored against a revision is read against what the model holds, as the apply card reads it.
+  await confirmation.locator('summary').click()
+  await expect(confirmation.getByTestId('field-change').locator('ins')).toHaveText(/Promotion/)
   expect(asked).toEqual(['apply true', 'apply false', 'move true'])
 })
 

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { OperationStanding } from '../schemas/candidates'
-import { applyPreview, appliedValues, canApply, editedValues, operationLabel, previewSentence } from './candidateApply'
+import {
+  applyPreview, appliedValues, canApply, editedValues, operationLabel, operationsAppliedValues, previewSentence,
+} from './candidateApply'
 
 const standing = (position: string, operation: Record<string, unknown> = { op: 'edit_entity' }): OperationStanding =>
   ({ operation, standing: position, reason: position })
@@ -81,5 +83,33 @@ describe('appliedValues', () => {
 
   it('reads nothing for an operation that is not an edit', () => {
     expect(appliedValues({ operation: { op: 'create_entity' }, standing: 'applies', reason: '', holds: 'x' })).toBeNull()
+  })
+})
+
+describe('operationsAppliedValues', () => {
+  const edit = { op: 'edit_entity', artifact_id: 'SRV@1.a', field: 'summary', value: 'new text', base: { revision: 'r1' } }
+  const keyed = { op: 'edit_entity', artifact_id: 'SRV@1.a', field: 'properties', key: 'tier', value: 'gold', base: { revision: 'r1' } }
+  const relation = {
+    op: 'edit_connection', source_entity: 'SRV@1.a', connection_type: 'archimate-serving', target_entity: 'APP@1.b',
+    field: 'description', value: 'serves it', base: { revision: 'r2' },
+  }
+
+  it('reads each edit of a dry run against the standing answered for what it writes, in any order', () => {
+    const standing: OperationStanding[] = [
+      { operation: relation, standing: 'applies', reason: '', holds: 'served' },
+      { operation: keyed, standing: 'applies', reason: '', holds: 'silver' },
+      { operation: edit, standing: 'applies', reason: '', holds: 'text now' },
+    ]
+    expect(operationsAppliedValues([edit, { op: 'remove_entity', artifact_id: 'X@1.c' }, keyed, relation], standing))
+      .toEqual([
+        { before: 'text now', after: 'new text' }, null, { before: 'silver', after: 'gold' },
+        { before: 'served', after: 'serves it' },
+      ])
+  })
+
+  it('reads an edit with no standing as the edit alone reads it', () => {
+    expect(operationsAppliedValues([edit, { ...edit, base: { value: 'old text' } }], [])).toEqual([
+      null, { before: 'old text', after: 'new text' },
+    ])
   })
 })
