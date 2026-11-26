@@ -5,6 +5,9 @@ kinds are never compared here; and a candidate two retrievers found outranks one
 retriever placed highly. The last is the whole reason for fusing rather than concatenating, and it
 is the property a weighted merge could not express, because there was no scale on which to say how
 much agreement is worth.
+
+One exception, held where the measurement for it lives (`_fusion.py`): keyword search's first hit in
+a kind keeps first place, because agreement lower down may not cost a query keyword search answered.
 """
 
 from __future__ import annotations
@@ -51,12 +54,25 @@ def _ids(hits: list[SearchHit]) -> list[str]:
     return [hit.record.artifact_id for hit in sorted(hits, key=lambda h: -h.score)]
 
 
-def test_a_candidate_both_retrievers_found_outranks_one_only_a_single_retriever_led_with() -> None:
+def test_a_candidate_both_retrievers_found_outranks_one_only_the_vector_branch_led_with() -> None:
     """The property a weighted merge had no scale to express."""
-    keyword = [_hit("alone", 99.0), _hit("agreed", 1.0)]
-    semantic = {"entity": [_candidate("agreed"), _candidate("other")]}
+    keyword = [_hit("lead", 99.0), _hit("agreed", 1.0)]
+    semantic = {"entity": [_candidate("other"), _candidate("agreed")]}
     fused = fuse(keyword, semantic, resolve=_resolver({"other": _entity("other")}))
-    assert _ids(fused)[0] == "agreed"
+    assert _ids(fused) == ["lead", "agreed", "other"]
+
+
+def test_agreement_does_not_take_the_keyword_branchs_lead() -> None:
+    """The one exception, and the floor it keeps: keyword search's first answer stays first.
+
+    `agreed`, found by both lists lower down, outscores `lead` under plain RRF; `alone`, a
+    keyword hit the vector branch did not find, still falls below agreement.
+    """
+    keyword = [_hit("lead", 99.0), _hit("alone", 50.0), _hit("agreed", 1.0)]
+    semantic = {"entity": [_candidate("other"), _candidate("agreed")]}
+    fused = fuse(keyword, semantic, resolve=_resolver({"other": _entity("other")}))
+    assert _ids(fused)[:2] == ["lead", "agreed"]
+    assert _ids(fused).index("agreed") < _ids(fused).index("alone")
 
 
 def test_a_keyword_only_result_still_reaches_the_reader() -> None:
