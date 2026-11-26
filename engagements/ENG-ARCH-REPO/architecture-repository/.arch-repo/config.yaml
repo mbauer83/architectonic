@@ -8,5 +8,5 @@ applied_upgrade_steps:
 - modification-stamp-datetime
 - stress-analysis-naive-owns-scope
 - viewpoint-selection-mode-stamp
-format_contract_version: '6'
+format_contract_version: '7'
 required_defaults_policy: strict
