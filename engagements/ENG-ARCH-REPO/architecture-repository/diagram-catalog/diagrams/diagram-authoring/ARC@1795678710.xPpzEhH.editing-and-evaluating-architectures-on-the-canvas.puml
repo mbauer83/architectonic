@@ -1,0 +1,156 @@
+---
+artifact-id: ARC@1795678710.xPpzEhH.editing-and-evaluating-architectures-on-the-canvas
+artifact-type: diagram
+name: Editing and Evaluating Architectures on the Canvas
+version: 0.1.0
+status: active
+diagram-type: archimate-application
+entity-ids-used:
+- APP@1776149382.lmO0mp.gui-authoring-tool
+- APP@1795678684.aXwWH6O.diagram-canvas
+- APP@1795678684.UYR1Fca.diagram-layout-composer
+- APP@1777293136.yaxrWl.plantuml-renderer
+- APP@1795196233.qk3Is42.rendered-geometry-reader
+- APP@1795678684.16bibUI.candidate-architecture-service
+- APP@1777399925.HOOYAQ.staged-write-transaction-manager
+- DOB@1795205132.Yy_f6ES.diagram-layout
+- DOB@1795548363.1MP0Ygs.candidate-architecture
+- DOB@1795678685.NUVUwrt.stress-analysis
+connection-ids-used:
+- APP@1776149382.lmO0mp---APP@1795678684.aXwWH6O@@archimate-composition
+- APP@1777293136.yaxrWl---APP@1795678684.UYR1Fca@@archimate-serving
+- APP@1777399925.HOOYAQ---APP@1795678684.16bibUI@@archimate-serving
+- APP@1795196233.qk3Is42---APP@1795678684.UYR1Fca@@archimate-serving
+- APP@1795678684.16bibUI---APP@1795678684.aXwWH6O@@archimate-serving
+- APP@1795678684.16bibUI---DOB@1795548363.1MP0Ygs@@archimate-access
+- APP@1795678684.UYR1Fca---APP@1795678684.aXwWH6O@@archimate-serving
+- APP@1795678684.UYR1Fca---DOB@1795205132.Yy_f6ES@@archimate-access
+- APP@1795678684.aXwWH6O---DOB@1795205132.Yy_f6ES@@archimate-access
+- DOB@1795678685.NUVUwrt---DOB@1795548363.1MP0Ygs@@archimate-association
+last-updated: '2026-11-26T07:38:30Z'
+---
+@startuml editing-and-evaluating-architectures-on-the-canvas
+hide stereotype
+
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam roundcorner 4
+skinparam backgroundColor #FAFAFA
+skinparam defaultTextAlignment center
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+!define Rel_Access(from, to, label) from -[dotted]-> to
+!define Rel_Access_Up(from, to, label) from -[dotted]up-> to
+!define Rel_Access_Down(from, to, label) from -[dotted]down-> to
+!define Rel_Access_Left(from, to, label) from -[dotted]left-> to
+!define Rel_Access_Right(from, to, label) from -[dotted]right-> to
+!define Rel_Aggregation(from, to, label) from o-- to
+!define Rel_Aggregation_Up(from, to, label) from o-up- to
+!define Rel_Aggregation_Down(from, to, label) from o-down- to
+!define Rel_Aggregation_Left(from, to, label) from o-left- to
+!define Rel_Aggregation_Right(from, to, label) from o-right- to
+!define Rel_Assignment(from, to, label) from --> to
+!define Rel_Assignment_Up(from, to, label) from -up-> to
+!define Rel_Assignment_Down(from, to, label) from -down-> to
+!define Rel_Assignment_Left(from, to, label) from -left-> to
+!define Rel_Assignment_Right(from, to, label) from -right-> to
+!define Rel_Association(from, to, label) from -- to
+!define Rel_Association_Up(from, to, label) from -up- to
+!define Rel_Association_Down(from, to, label) from -down- to
+!define Rel_Association_Left(from, to, label) from -left- to
+!define Rel_Association_Right(from, to, label) from -right- to
+!define Rel_Composition(from, to, label) from *-- to
+!define Rel_Composition_Up(from, to, label) from *-up- to
+!define Rel_Composition_Down(from, to, label) from *-down- to
+!define Rel_Composition_Left(from, to, label) from *-left- to
+!define Rel_Composition_Right(from, to, label) from *-right- to
+!define Rel_Flow(from, to, label) from ..> to
+!define Rel_Flow_Up(from, to, label) from .up.> to
+!define Rel_Flow_Down(from, to, label) from .down.> to
+!define Rel_Flow_Left(from, to, label) from .left.> to
+!define Rel_Flow_Right(from, to, label) from .right.> to
+!define Rel_Influence(from, to, label) from ..> to
+!define Rel_Influence_Up(from, to, label) from .up.> to
+!define Rel_Influence_Down(from, to, label) from .down.> to
+!define Rel_Influence_Left(from, to, label) from .left.> to
+!define Rel_Influence_Right(from, to, label) from .right.> to
+!define Rel_Realization(from, to, label) from ..|> to
+!define Rel_Realization_Up(from, to, label) from .up.|> to
+!define Rel_Realization_Down(from, to, label) from .down.|> to
+!define Rel_Realization_Left(from, to, label) from .left.|> to
+!define Rel_Realization_Right(from, to, label) from .right.|> to
+!define Rel_Serving(from, to, label) from --> to
+!define Rel_Serving_Up(from, to, label) from -up-> to
+!define Rel_Serving_Down(from, to, label) from -down-> to
+!define Rel_Serving_Left(from, to, label) from -left-> to
+!define Rel_Serving_Right(from, to, label) from -right-> to
+!define Rel_Specialization(from, to, label) from --|> to
+!define Rel_Specialization_Up(from, to, label) from -up-|> to
+!define Rel_Specialization_Down(from, to, label) from -down-|> to
+!define Rel_Specialization_Left(from, to, label) from -left-|> to
+!define Rel_Specialization_Right(from, to, label) from -right-|> to
+!define Rel_Triggering(from, to, label) from --> to
+!define Rel_Triggering_Up(from, to, label) from -up-> to
+!define Rel_Triggering_Down(from, to, label) from -down-> to
+!define Rel_Triggering_Left(from, to, label) from -left-> to
+!define Rel_Triggering_Right(from, to, label) from -right-> to
+skinparam rectangle<<ApplicationGrouping>> {
+  BackgroundColor #DBEAEE
+  BorderColor #353E41
+}
+skinparam rectangle<<application_component>> {
+  BackgroundColor #B0D0D9
+  BorderColor #353E41
+}
+skinparam rectangle<<data_object>> {
+  BackgroundColor #B0D0D9
+  BorderColor #353E41
+}
+sprite $archimate_application_component <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4 4.2h7.4v7.6H4z"  fill="#252327" stroke="none"/><path d="M2.30 4.95h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 7.35h1.70v1.30H2.30z" fill="#252327"/><path d="M2.30 9.75h1.70v1.30H2.30z" fill="#252327"/><path d="M11.40 4.95h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 7.35h1.40v1.30H11.40z" fill="#252327"/><path d="M11.40 9.75h1.40v1.30H11.40z" fill="#252327"/></svg>
+sprite $archimate_data_object <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.00 3.80h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 10.90h10.00v1.30H3.00z" fill="#252327"/><path d="M3.00 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M11.70 5.10v5.80h1.30V5.10z" fill="#252327"/><path d="M3.00 4.95h10.00v1.30H3.00z" fill="#252327"/></svg>
+skinparam wrapWidth 240
+top to bottom direction
+
+skinparam maxMessageSize 240
+
+title Editing and Evaluating Architectures on the Canvas
+
+rectangle "Application Components" <<ApplicationGrouping>> as GRPT_1 {
+  rectangle "<$archimate_application_component{scale=1.2}> GUI Authoring Tool\n«Service»" <<application_component>> as APP_lmO0mp {
+    rectangle "<$archimate_application_component{scale=1.2}> Diagram Canvas" <<application_component>> as APP_aXwWH6O
+  }
+  rectangle "<$archimate_application_component{scale=1.2}> Diagram Layout Composer" <<application_component>> as APP_UYR1Fca
+  rectangle "<$archimate_application_component{scale=1.2}> PlantUML Renderer\n«Module»" <<application_component>> as APP_yaxrWl
+  rectangle "<$archimate_application_component{scale=1.2}> Rendered Geometry Reader\n«Module»" <<application_component>> as APP_qk3Is42
+  rectangle "<$archimate_application_component{scale=1.2}> Candidate Architecture Service" <<application_component>> as APP_16bibUI
+  rectangle "<$archimate_application_component{scale=1.2}> Staged Write Transaction Manager\n«Module»" <<application_component>> as APP_HOOYAQ
+}
+APP_lmO0mp -[hidden]right- APP_UYR1Fca
+APP_UYR1Fca -[hidden]right- APP_yaxrWl
+APP_yaxrWl -[hidden]right- APP_qk3Is42
+APP_16bibUI -[hidden]right- APP_HOOYAQ
+APP_lmO0mp -[hidden]down- APP_16bibUI
+
+rectangle "Data Objects" <<ApplicationGrouping>> as GRPT_2 {
+  rectangle "<$archimate_data_object{scale=1.2}> Diagram Layout" <<data_object>> as DOB_Yy_f6ES
+  rectangle "<$archimate_data_object{scale=1.2}> Candidate Architecture" <<data_object>> as DOB_1MP0Ygs
+  rectangle "<$archimate_data_object{scale=1.2}> Stress Analysis" <<data_object>> as DOB_NUVUwrt
+}
+DOB_Yy_f6ES -[hidden]right- DOB_1MP0Ygs
+DOB_1MP0Ygs -[hidden]right- DOB_NUVUwrt
+
+' Connections
+APP_yaxrWl --> APP_UYR1Fca
+APP_HOOYAQ --> APP_16bibUI
+APP_qk3Is42 --> APP_UYR1Fca
+APP_16bibUI --> APP_aXwWH6O
+APP_16bibUI -[dotted]down-> DOB_1MP0Ygs
+APP_UYR1Fca --> APP_aXwWH6O
+APP_UYR1Fca -[dotted]down-> DOB_Yy_f6ES
+APP_aXwWH6O -[dotted]-> DOB_Yy_f6ES
+DOB_NUVUwrt -- DOB_1MP0Ygs
+
+@enduml
