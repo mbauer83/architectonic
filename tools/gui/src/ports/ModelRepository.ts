@@ -89,6 +89,13 @@ export interface ListParams {
 
 export type { RepoError }
 
+/** A git credential for one protocol: the SSH key passphrase, or an HTTPS token and username. */
+export interface GitCredentialSupply {
+  readonly protocol: 'ssh' | 'https'
+  readonly secret: string
+  readonly username?: string
+}
+
 /** Outbound port: the application's view of the model backend. */
 export type { DiagramComposition, DiagramWriteBody }
 
@@ -332,6 +339,8 @@ export interface ModelRepository
   readonly saveEnterpriseChanges: (body: { message: string }) => Effect.Effect<SyncSaveResult, RepoError>
   readonly submitEnterpriseChanges: () => Effect.Effect<SyncSaveResult, RepoError>
   readonly withdrawEnterpriseChanges: () => Effect.Effect<SyncSaveResult, RepoError>
+  /** Hand the backend a git credential a remote asked for. Kept in the backend's memory only. */
+  readonly supplyGitCredential: (body: GitCredentialSupply) => Effect.Effect<void, RepoError>
   readonly getChanges: (repo: 'engagement' | 'enterprise') => Effect.Effect<SyncChangesResult, RepoError>
   readonly artifactSearch: (q: string, params?: {
     limit?: number; include_documents?: boolean; include_diagrams?: boolean;

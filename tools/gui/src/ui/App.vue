@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import { inject, provide, ref } from 'vue'
-import { adminModeKey, modelServiceKey, permissionsKey, toastKey } from './keys'
+import { adminModeKey, gitCredentialPromptKey, modelServiceKey, permissionsKey, toastKey } from './keys'
 import type { ShowToast, ToastAction } from './keys'
 import NavBar from './components/NavBar.vue'
 import ToastStack from './components/ToastStack.vue'
 import SaveChangesDialog from './components/SaveChangesDialog.vue'
+import GitCredentialDialog from './components/GitCredentialDialog.vue'
+import { useGitCredentialPrompt } from './composables/useGitCredentialPrompt'
 import { useSyncCoordination } from './composables/useSyncCoordination'
 
 type SaveMode = 'engagement-save' | 'enterprise-save' | 'enterprise-submit' | 'enterprise-withdraw'
@@ -31,6 +33,9 @@ const {
 provide(permissionsKey, can)
 provide(adminModeKey, adminMode)
 provide(toastKey, addToast)
+
+const credentialPrompt = useGitCredentialPrompt()
+provide(gitCredentialPromptKey, credentialPrompt.ask)
 </script>
 
 <template>
@@ -72,6 +77,13 @@ provide(toastKey, addToast)
     :sync-status="syncStatus"
     @close="saveDialogMode = null"
     @done="(msg) => { addToast(msg); loadSyncStatus() }"
+  />
+
+  <GitCredentialDialog
+    v-if="credentialPrompt.pending.value"
+    :request="credentialPrompt.pending.value"
+    @submit="credentialPrompt.submit"
+    @cancel="credentialPrompt.cancel"
   />
 </template>
 

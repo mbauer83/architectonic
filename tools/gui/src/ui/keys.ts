@@ -1,6 +1,12 @@
 import type { ComputedRef, InjectionKey, Ref } from 'vue'
 import type { ModelService } from '../application/ModelService'
 import type { Permission } from '../domain/permissions'
+import type { GitCredentialAnswer, GitCredentialRequest } from './lib/gitCredentials'
+
+/** Ask the person for a git credential a remote refused an operation for; null when they cancel.
+ *  Provided once by the app shell, which owns the one dialog that asks (`useGitCredentialPrompt`). */
+export type AskForGitCredential = (request: GitCredentialRequest) => Promise<GitCredentialAnswer | null>
+export const gitCredentialPromptKey: InjectionKey<AskForGitCredential> = Symbol('gitCredentialPrompt')
 
 export const modelServiceKey: InjectionKey<ModelService> = Symbol('modelService')
 /** What a toast offers to do, such as *Undo*: pressing it runs it and closes the toast. */

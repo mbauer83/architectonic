@@ -7,6 +7,7 @@ import type { SyncStatus, SyncChangesResult } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
 import { useQuery } from '../composables/useQuery'
 import { useMutation } from '../composables/useMutation'
+import { useGitCredentialRetry } from '../composables/useGitCredentialPrompt'
 
 type DialogMode =
   | 'engagement-save'
@@ -25,6 +26,9 @@ const emit = defineEmits<{
 }>()
 
 const svc = inject(modelServiceKey)!
+// Save-with-push, submit and discard reach the remote; a refused credential is asked for and the
+// operation repeated (`useGitCredentialPrompt`).
+const reachingTheRemote = useGitCredentialRetry()
 
 const commitMessage = ref('')
 const pushToRemote = ref(true)
@@ -91,7 +95,8 @@ const buildSaveEffect = (): Effect.Effect<string, RepoError, never> => {
   switch (props.mode) {
     case 'engagement-save':
       return Effect.map(
-        svc.saveEngagementChanges({ message: commitMessage.value.trim(), push: pushToRemote.value }),
+        reachingTheRemote(() =>
+          svc.saveEngagementChanges({ message: commitMessage.value.trim(), push: pushToRemote.value })),
         (res) => res.commit
           ? `Committed ${res.commit.slice(0, 8)}${res.pushed ? ' and pushed' : ''}`
           : 'Saved (nothing to commit)',
@@ -105,7 +110,7 @@ const buildSaveEffect = (): Effect.Effect<string, RepoError, never> => {
       )
     case 'enterprise-submit':
       return Effect.map(
-        svc.submitEnterpriseChanges(),
+        reachingTheRemote(() => svc.submitEnterpriseChanges()),
         (res) => res.already_submitted
           ? `Already submitted on branch ${res.branch ?? branchName.value ?? 'unknown'}`
           : `Branch ${res.branch ?? 'unknown'} ready — open a pull request to merge into the enterprise repository`,
@@ -114,7 +119,7 @@ const buildSaveEffect = (): Effect.Effect<string, RepoError, never> => {
       // A no-op withdraw is a 400 from the backend now (never a silent success),
       // so a success here always names the discarded branch.
       return Effect.map(
-        svc.withdrawEnterpriseChanges(),
+        reachingTheRemote(() => svc.withdrawEnterpriseChanges()),
         (res) => res.discarded_branch ? `Branch ${res.discarded_branch} discarded` : 'Submission withdrawn',
       )
   }

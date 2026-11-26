@@ -16,6 +16,7 @@
 import { computed, inject, onMounted, ref } from 'vue'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
+import { useGitCredentialRetry } from '../composables/useGitCredentialPrompt'
 import type { ChangeSummary } from '../../domain/schemas/changes'
 import {
   canBeRebased,
@@ -31,6 +32,7 @@ import {
 } from './ChangesView.helpers'
 
 const svc = inject(modelServiceKey)!
+const reachingTheRemote = useGitCredentialRetry()
 
 const changes = ref<readonly ChangeSummary[]>([])
 const loading = ref(true)
@@ -58,7 +60,7 @@ const submit = () => {
   submitting.value = true
   submitted.value = null
   submitRefusal.value = null
-  Effect.runPromise(svc.submitChanges(submittable.value))
+  Effect.runPromise(reachingTheRemote(() => svc.submitChanges(submittable.value)))
     .then((report) => { submitted.value = report.summary; load() })
     .catch((event: unknown) => { submitRefusal.value = String(event) })
     .finally(() => { submitting.value = false })
