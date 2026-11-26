@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { chosenIds, commandsOf, editsOf, operationsOf } from './candidateCanvas'
+import { drawnCommands } from './candidateDrawing'
 
 const SERVICE = 'SRV@1712870400.Uv9Wx9.repository-promotion-service'
 const ARTIFACTS = 'PRC@1712870400.0Rz5Ex.promote-artifacts'
@@ -49,9 +50,43 @@ describe('a candidate drawn when its canvas opens', () => {
       { op: 'add_connection', source_entity: ARTIFACTS, connection_type: 'archimate-access', target_entity: '$ref:q', fields: {} },
       { op: 'remove_entity', artifact_id: ARTIFACTS, base: { revision: 'r' } },
     ] } })
-    expect(commandsOf(operations).map((command) => [command.op, command.artifact_id])).toEqual([
+    const commands = commandsOf(operations, new Map(), [SERVICE, ARTIFACTS])
+    expect(commands.map((command) => [command.op, command.artifact_id])).toEqual([
       ['model.element.create', QUEUE], ['model.element.rename', SERVICE], ['model.relation.create', ACCESS],
     ])
+  })
+
+  it('names a relation\'s end as the canvas draws it, where its operation named the element by its short id', () => {
+    const operations = operationsOf({ changes: { operations: [
+      { op: 'create_entity', ref: 'q', artifact_id: QUEUE, fields: { artifact_type: 'data-object', name: 'Queue', group: 'g' } },
+      { op: 'add_connection', source_entity: '$ref:q', connection_type: 'archimate-serving',
+        target_entity: 'SRV@1712870400.Uv9Wx9', fields: {} },
+    ] } })
+    const chosen = new Map([['$ref:q', QUEUE]])
+
+    expect(commandsOf(operations, chosen, [SERVICE]).map((command) => command.artifact_id)).toEqual([
+      QUEUE, `${QUEUE}---${SERVICE}@@archimate-serving`,
+    ])
+    // An end the canvas does not draw is not one the composer could attach: no relation is drawn to it.
+    expect(commandsOf(operations, chosen, []).map((command) => command.op)).toEqual(['model.element.create'])
+  })
+
+  it('draws a relation exactly as every picture a candidate is read on draws it', () => {
+    const operation = { op: 'add_connection', source_entity: '$ref:q', connection_type: 'archimate-serving',
+      target_entity: 'SRV@1712870400.Uv9Wx9', fields: { description: 'feeds', src_multiplicity: '1' } }
+    const view = {
+      entities: [{ id: '$ref:q', artifact_id: QUEUE, fields: { name: 'Queue', artifact_type: 'data-object', group: 'g' } }],
+      connections: [{ ...operation, fields: { ...operation.fields } }],
+    }
+    const sketched = commandsOf([
+      { op: 'create_entity', ref: 'q', artifact_id: QUEUE, fields: { artifact_type: 'data-object', name: 'Queue', group: 'g' } },
+      operation,
+    ], chosenIds(view), [SERVICE])
+    const read = drawnCommands(view, { entities: [{ artifact_id: SERVICE, name: 'Service' }], connections: [], undrawn: [] })
+
+    expect(sketched).toEqual(read)
+    expect(sketched.find((command) => command.op === 'model.relation.create')?.artifact_id)
+      .toBe(`${QUEUE}---${SERVICE}@@archimate-serving`)
   })
 
   it('redraws a relation to what the candidate created, its end resolved through the composed view', () => {
@@ -64,7 +99,7 @@ describe('a candidate drawn when its canvas opens', () => {
     ] })
 
     expect(chosen).toEqual(new Map([['$ref:q', QUEUE]]))
-    expect(commandsOf(operations, chosen).map((command) => command.artifact_id)).toEqual([
+    expect(commandsOf(operations, chosen, [ARTIFACTS]).map((command) => command.artifact_id)).toEqual([
       QUEUE, `${ARTIFACTS}---${QUEUE}@@archimate-access`,
     ])
   })

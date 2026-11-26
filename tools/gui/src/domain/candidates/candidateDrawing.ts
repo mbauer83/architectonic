@@ -11,8 +11,8 @@
  */
 import type { CanvasCommand } from '../../ports/diagramWriteBodies'
 import type { CandidateComparison } from '../schemas/candidates'
-import { connectionId, isEntityId, stableConnectionId, stableEntityId } from '../artifactId'
-import { chosenIds } from './candidateCanvas'
+import { stableConnectionId, stableEntityId } from '../artifactId'
+import { chosenIds, creationCommand, drawnEnds, relationCommand } from './candidateCanvas'
 
 /** What the picture draws already, and the relations the model holds among what it draws. */
 export interface DrawnContent {
@@ -31,34 +31,18 @@ const text = (value: unknown): string => (typeof value === 'string' ? value : ''
 export const drawnCommands = (view: ComposedView, drawn: DrawnContent): readonly CanvasCommand[] => {
   const chosen = chosenIds(view)
   const names = new Map(drawn.entities.map((one) => [stableEntityId(one.artifact_id), one.name]))
-  const creates = view.entities.flatMap((one): CanvasCommand[] => (one.artifact_id ? [{
-    op: 'model.element.create', artifact_id: one.artifact_id, artifact_type: text(one.fields.artifact_type),
-    name: text(one.fields.name), group: text(one.fields.group),
-  }] : []))
+  const creates = view.entities.flatMap((one) => (one.artifact_id ? [creationCommand(one.artifact_id, one.fields)] : []))
   const renames = view.entities.flatMap((one): CanvasCommand[] => {
     const was = names.get(stableEntityId(one.id))
     const now = text(one.fields.name)
     return !one.artifact_id && was !== undefined && now !== '' && now !== was
       ? [{ op: 'model.element.rename', artifact_id: one.id, name: now }] : []
   })
-  // Each end as the picture draws it: an operation may name an element by its short id and the picture by its
-  // full one, which is the spelling the composer matches a relation's end to.
-  const ends = new Map([...drawn.entities, ...creates]
-    .map((one) => [stableEntityId(one.artifact_id), one.artifact_id] as const))
-  const drawnAs = (ref: string): string | undefined => {
-    const id = chosen.get(ref) ?? ref
-    return isEntityId(id) ? ends.get(stableEntityId(id)) : undefined
-  }
+  const drawnAs = drawnEnds([...drawn.entities, ...creates].map((one) => one.artifact_id), chosen)
   const held = new Set([...drawn.connections, ...drawn.undrawn].map((one) => stableConnectionId(one.artifact_id)))
-  const relations = view.connections.flatMap((one): CanvasCommand[] => {
-    const source = drawnAs(one.source_entity)
-    const target = drawnAs(one.target_entity)
-    if (!source || !target) return []
-    const id = connectionId(source, one.connection_type, target)
-    return !held.has(stableConnectionId(id)) ? [{
-      op: 'model.relation.create', artifact_id: id, description: text(one.fields.description),
-      src_multiplicity: text(one.fields.src_multiplicity), tgt_multiplicity: text(one.fields.tgt_multiplicity),
-    }] : []
+  const relations = view.connections.flatMap((one) => {
+    const command = relationCommand(one, drawnAs)
+    return command && !held.has(stableConnectionId(command.artifact_id)) ? [command] : []
   })
   return [...creates, ...renames, ...relations]
 }
