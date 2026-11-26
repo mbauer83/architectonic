@@ -33,16 +33,17 @@ undo history.
 
 ## Worked example: arrange a diagram and add an element
 
-The example uses the self-model's diagram *One Enterprise Repository, Many Engagements*. It adds a
-**Promotion Queue** application component in front of the *Repository Promotion Service* and saves
-both the new element and the arrangement.
+The example uses the self-model's diagram *Editing and Evaluating Architectures on the Canvas*. It
+adds a **Picture Cache** application component that serves the *Diagram Layout Composer* and saves
+both the new element and the arrangement. The diagram's picture is generated from the model; a picture
+drawn by hand can be arranged but not changed, as [below](#a-diagram-with-a-hand-written-body) explains.
 
 ### 1. Take the picture over
 
 Open the diagram and select **Edit**. The chip at the left of the edit bar reads
 **Automatic layout**: the picture is PlantUML's own arrangement.
 
-Drag *Repository Promotion Service* a little to the right. The first move takes the picture over:
+Drag *Diagram Layout Composer* a little to the right. The first move takes the picture over:
 the chip changes to **Arranged by hand**, and a notice offers **Undo**. From here on the diagram
 keeps the positions you give it. Taking over keeps every line PlantUML drew; only the lines that
 touch what you moved are routed again, so the first drag is quick on a large diagram too.
@@ -53,11 +54,11 @@ guides only as hints* in [Preferences](../reference/diagram-canvas.md#preference
 
 ### 2. Create an element where it belongs
 
-Right-click on empty paper inside the *Application* box. The picker opens with the heading
-**Add to Application** and a search field.
+Right-click on empty paper inside the *Application Components* box. The picker opens with the
+heading **Add to Application Components** and a search field.
 
-1. Type `Promotion Queue`. No model element is called that, so the picker offers
-   **Create “Promotion Queue” as…**.
+1. Type `Picture Cache`. No model element is called that, so the picker offers
+   **Create “Picture Cache” as…**.
 2. Choose **application component** from the types below it.
 3. The **New element** form opens with the name filled in and the **Project** preselected with the
    project used most on this diagram. Select **Create draft**.
@@ -68,7 +69,7 @@ A draft created in this session can be taken back with **Discard this draft** fr
 
 ### 3. Draw a relation
 
-Press the edge of *Promotion Queue* and drag to *Repository Promotion Service*. The side you start
+Press the edge of *Picture Cache* and drag to *Diagram Layout Composer*. The side you start
 from lights blue while you hover it. On release the relation form lists two choices:
 
 - **In the model: draw it** — relations the model already holds between the two elements. Choosing
@@ -89,8 +90,8 @@ headed **Save will write**:
 
 ```
 Model   2 changes to the model — every diagram that draws these sees them
-        Create element: Promotion Queue
-        Create relationship: Promotion Queue — serving → Repository Promotion Service
+        Create element: Picture Cache
+        Create relationship: Picture Cache — serving → Diagram Layout Composer
 Diagram 1 change to this diagram only
         Layout changed
 ```
@@ -134,13 +135,13 @@ one undoable step.
 ## Nesting and boxes
 
 Drag an element over a box or an element that may hold it. While you drag, the target that would
-accept the drop lights up with what it would do: *Into Application* for a box, *Nest in Promotion
-Engine…* for an element. A target that would refuse the drop is not lit.
+accept the drop lights up with what it would do: *Into Application Components* for a box, *Nest in
+Diagram Layout Composer…* for an element. A target that would refuse the drop is not lit.
 
 - **Into a box** changes the diagram only. A box that selects its members by a rule, such as a
   layer box, takes only what its rule admits.
 - **Into an element** is a model change. ArchiMate reads an element drawn inside another as
-  composition or aggregation, so the canvas asks *Make Promotion Queue part of Promotion Engine?*
+  composition or aggregation, so the canvas asks *Make Picture Cache part of Diagram Layout Composer?*
   and offers the containment types the ontology permits, or **Don't nest**. Where the ontology
   permits none, the drop is refused with the reason.
 
