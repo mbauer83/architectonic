@@ -163,7 +163,8 @@ export const layoutPatchBetween = (stored: StoredLayout, wanted: ArrangedLayout 
 export const patchIsEmpty = (patch: ArrangementPatch): boolean =>
   [patch.elements, patch.boxes, patch.relations, patch.z].every((section) => Object.keys(section).length === 0)
 
-const sameExtent = (one: Extent | undefined, other: Extent | undefined): boolean =>
+/** Whether two extents are the same place and size, to within rounding; never where either is missing. */
+export const sameExtent = (one: Extent | undefined, other: Extent | undefined): boolean =>
   one !== undefined && other !== undefined && Math.abs(one.left - other.left) <= SAME
   && Math.abs(one.top - other.top) <= SAME && !resized(one, other)
 
