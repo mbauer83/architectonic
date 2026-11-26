@@ -15,7 +15,6 @@ import type { WriteResult } from '../../domain'
 const props = defineProps<{
   diagramId: string
   isGlobalDiagram: boolean
-  adminMode: boolean
 }>()
 const emit = defineEmits<{ deleted: [] }>()
 
@@ -27,14 +26,9 @@ const deleteMutation = useMutation<void, RepoError>()
 const confirmDelete = ref(false)
 const deletePreview = ref<{ content: string | null; warnings: string[] } | null>(null)
 
-const previewFn = computed(() =>
-  (props.isGlobalDiagram && props.adminMode)
-    ? svc.previewAdminDeleteDiagram
-    : svc.previewDeleteDiagram,
-)
-const deleteFn = computed(() =>
-  (props.isGlobalDiagram && props.adminMode) ? svc.adminDeleteDiagram : svc.deleteDiagram,
-)
+// An enterprise diagram is deleted in place, by the admin write; its Delete is offered only where that is allowed.
+const previewFn = computed(() => (props.isGlobalDiagram ? svc.previewAdminDeleteDiagram : svc.previewDeleteDiagram))
+const deleteFn = computed(() => (props.isGlobalDiagram ? svc.adminDeleteDiagram : svc.deleteDiagram))
 // A committed deletion answers 204, so there is no `wrote` flag to inspect: a failure is an error,
 // and success is silence. The *plan* still has a body, which the preview mutation reads.
 const deleteError = computed(() => previewMutation.errorMessage.value || deleteMutation.errorMessage.value)

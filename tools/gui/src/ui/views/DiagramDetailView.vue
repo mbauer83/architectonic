@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Effect, Exit } from 'effect'
 import { modelServiceKey, toastKey } from '../keys'
 import type { DiagramContext, EditableMetadataSpec } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
@@ -46,7 +45,6 @@ const svc = inject(modelServiceKey)!
 const toast = inject(toastKey, () => undefined)
 const route = useRoute()
 const router = useRouter()
-const adminMode = ref(false)
 
 const diagramId = computed(() => route.params.artifactId as string)
 
@@ -104,12 +102,7 @@ watch(fullscreen.isFullscreen, () => { void panZoom.fitDiagramToViewport() })
 const syncPanel = ref<InstanceType<typeof DiagramSyncPanel> | null>(null)
 const deletePanel = ref<InstanceType<typeof DiagramDeletePanel> | null>(null)
 
-onMounted(() => {
-  void Effect.runPromiseExit(svc.getServerInfo()).then((exit) =>
-    Exit.match(exit, { onSuccess: (info) => { adminMode.value = info.admin_mode }, onFailure: () => {} }),
-  )
-  load()
-})
+onMounted(load)
 
 watch(svgHtml, (svg) => { if (svg) void panZoom.fitDiagramToViewport() })
 watch(detail, (next) => {
@@ -180,7 +173,6 @@ const executeDelete = () => {
       :diagram-id="diagramId"
       :edit-path="editPath"
       :is-global-diagram="isGlobalDiagram"
-      :admin-mode="adminMode"
       :lens="lens"
       :edits-on-canvas="editsOnCanvas(detail)"
       :lays-out-automatically="offersAutomaticLayout(detail)"
@@ -351,11 +343,9 @@ const executeDelete = () => {
       />
 
       <DiagramDeletePanel
-        v-if="!isGlobalDiagram || adminMode"
         ref="deletePanel"
         :diagram-id="diagramId"
         :is-global-diagram="isGlobalDiagram"
-        :admin-mode="adminMode"
         @deleted="executeDelete"
       />
 

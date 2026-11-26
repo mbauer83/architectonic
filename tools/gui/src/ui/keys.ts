@@ -1,4 +1,4 @@
-import type { ComputedRef, InjectionKey } from 'vue'
+import type { ComputedRef, InjectionKey, Ref } from 'vue'
 import type { ModelService } from '../application/ModelService'
 import type { Permission } from '../domain/permissions'
 
@@ -17,3 +17,6 @@ export const toastKey: InjectionKey<ShowToast> = Symbol('toast')
 export type Can = (operation: string) => Permission
 /** The app shell's permission answer, provided once (`useSyncCoordination`) and read by `usePermissions`. */
 export const permissionsKey: InjectionKey<ComputedRef<Can>> = Symbol('permissions')
+/** Whether the backend runs in admin mode, read once by the app shell (`useSyncCoordination`). It names
+ * which write a control performs (`useArtifactWrites`); whether that write may be done is `useCan`'s. */
+export const adminModeKey: InjectionKey<Readonly<Ref<boolean>>> = Symbol('adminMode')

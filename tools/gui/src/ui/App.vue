@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import { inject, provide, ref } from 'vue'
-import { modelServiceKey, permissionsKey, toastKey } from './keys'
+import { adminModeKey, modelServiceKey, permissionsKey, toastKey } from './keys'
 import type { ShowToast, ToastAction } from './keys'
 import NavBar from './components/NavBar.vue'
 import ToastStack from './components/ToastStack.vue'
@@ -29,6 +29,7 @@ const {
 } = useSyncCoordination(svc, addToast)
 
 provide(permissionsKey, can)
+provide(adminModeKey, adminMode)
 provide(toastKey, addToast)
 </script>
 

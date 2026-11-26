@@ -2,8 +2,8 @@
 import { entityDetailRoute } from '../router/artifactRoutes'
 import { inject, onMounted, provide, ref, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Effect } from 'effect'
 import { modelServiceKey, toastKey } from '../keys'
+import { useArtifactWrites } from '../composables/useArtifactWrites'
 import { useQuery } from '../composables/useQuery'
 import { entityEditFormKey, useEntityEditForm } from '../composables/useEntityEditForm'
 import ConnectionsPanel from '../components/ConnectionsPanel.vue'
@@ -24,12 +24,10 @@ import type { RenderedEntityContext } from '../../domain'
 import type { NotFoundError } from '../../domain'
 import type { MarkdownError } from '../../application/MarkdownService'
 import type { RepoError } from '../../ports/ModelRepository'
-import { readErrorMessage } from '../lib/errors'
 
 const svc = inject(modelServiceKey)!
 const addToast = inject(toastKey)!
 const router = useRouter()
-const adminMode = ref(false)
 const route = useRoute()
 
 const entityId = computed(() => route.params.artifactId as string)
@@ -66,17 +64,13 @@ const load = () => {
   context.run(svc.getEntityContext(entityId.value))
 }
 
-onMounted(() => {
-  void Effect.runPromise(svc.getServerInfo())
-    .then((info) => { adminMode.value = info.admin_mode })
-    .catch((reason: unknown) => { edit.editError = readErrorMessage(reason) })
-  load()
-})
+onMounted(load)
 watch(entityId, load)
 
 const isGlobalEntity = computed(() => detail.value?.is_global ?? false)
-// Use admin endpoint when editing a global entity in admin mode
-const editFn = computed(() => (isGlobalEntity.value && adminMode.value) ? svc.adminEditEntity : svc.editEntity)
+const writes = useArtifactWrites(() => isGlobalEntity.value)
+// An enterprise entity is edited in place only in admin mode; otherwise the edit is recorded as a change.
+const editFn = computed(() => (writes.value.upstream ? svc.adminEditEntity : svc.editEntity))
 
 const edit = useEntityEditForm({
   svc,
@@ -84,7 +78,7 @@ const edit = useEntityEditForm({
   detail,
   editFn,
   onSaved: (newArtifactId) => {
-    const outcome = editOutcome(isGlobalEntity.value, adminMode.value)
+    const outcome = editOutcome(isGlobalEntity.value, writes.value.upstream)
     addToast(savedMessage(outcome))
     const followsTheId = savedIdIsTheArtifact(outcome) && newArtifactId && newArtifactId !== entityId.value
     if (followsTheId) {
@@ -107,7 +101,6 @@ const executeDelete = () => { void router.push(backTo.value) }
       :detail="detail"
       :entity-id="entityId"
       :back-to="backTo"
-      :admin-mode="adminMode"
       :is-global-entity="isGlobalEntity"
       @delete="deletePanel?.requestDelete()"
     />
@@ -133,7 +126,6 @@ const executeDelete = () => { void router.push(backTo.value) }
 
       <EntityEditFormCard
         v-if="edit.editing"
-        :admin-mode="adminMode"
         :is-global-entity="isGlobalEntity"
         @open-reference-picker="edit.openReferencePicker($event)"
       />
@@ -149,11 +141,9 @@ const executeDelete = () => { void router.push(backTo.value) }
       </div>
 
       <EntityDeletePanel
-        v-if="!isGlobalEntity || adminMode"
         ref="deletePanel"
         :entity-id="entityId"
         :is-global-entity="isGlobalEntity"
-        :admin-mode="adminMode"
         @deleted="executeDelete"
       />
 
@@ -184,8 +174,7 @@ const executeDelete = () => { void router.push(backTo.value) }
           direction="incoming"
           :loading="context.loading.value"
           :error="context.errorMessage.value"
-          :readonly="isGlobalEntity && !adminMode"
-          :admin-mode="isGlobalEntity && adminMode"
+          :enterprise="isGlobalEntity"
           @refresh="load"
         />
         <ConnectionsPanel
@@ -195,8 +184,7 @@ const executeDelete = () => { void router.push(backTo.value) }
           direction="symmetric"
           :loading="context.loading.value"
           :error="context.errorMessage.value"
-          :readonly="isGlobalEntity && !adminMode"
-          :admin-mode="isGlobalEntity && adminMode"
+          :enterprise="isGlobalEntity"
           @refresh="load"
         />
         <ConnectionsPanel
@@ -206,8 +194,7 @@ const executeDelete = () => { void router.push(backTo.value) }
           direction="outgoing"
           :loading="context.loading.value"
           :error="context.errorMessage.value"
-          :readonly="isGlobalEntity && !adminMode"
-          :admin-mode="isGlobalEntity && adminMode"
+          :enterprise="isGlobalEntity"
           @refresh="load"
         />
       </div>
