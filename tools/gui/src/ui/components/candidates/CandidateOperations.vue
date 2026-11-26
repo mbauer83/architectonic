@@ -13,6 +13,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { stableEntityId } from '../../../domain/artifactId'
 import type { ChangeDifference } from '../../../domain/schemas/candidates'
 import { valueText } from '../../../domain/candidates/fieldChange'
+import { proposal } from '../../../domain/candidates/integration'
 import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
 import PermittedButton from '../PermittedButton.vue'
@@ -63,6 +64,17 @@ const standingOf = (row: ChangeDifference): string => {
     target !== null && typeof operation.artifact_id === 'string' && stableEntityId(operation.artifact_id) === target)
   return found?.standing ?? ''
 }
+
+/**
+ * The operations the base already holds that no row shows — an applied candidate's, say: nothing differs, so
+ * each is read as already there rather than as its value replaced by itself.
+ */
+const alreadyThere = computed(() => {
+  const shownTargets = new Set((comparison.value?.diff ?? []).flatMap((row) =>
+    (typeof row.target === 'string' ? [stableEntityId(row.target)] : [])))
+  return (comparison.value?.standing ?? []).filter(({ operation, standing }) => standing === 'already-there'
+    && !(typeof operation.artifact_id === 'string' && shownTargets.has(stableEntityId(operation.artifact_id))))
+})
 
 const selectedRow = ref<number | null>(null)
 const table = ref<HTMLTableElement | null>(null)
@@ -134,7 +146,7 @@ const cardRows = (row: ChangeDifference) => {
       </label>
     </div>
     <p
-      v-if="comparison && !comparison.diff.length"
+      v-if="comparison && !comparison.diff.length && !alreadyThere.length"
       class="empty"
     >
       No operations against this base yet. Every change made to this candidate becomes one here.
@@ -217,6 +229,17 @@ const cardRows = (row: ChangeDifference) => {
               :class="`standing standing--${standingOf(row).replace(' ', '-')}`"
             >{{ standingOf(row) }}</span>
           </td>
+        </tr>
+        <tr
+          v-for="(one, index) in alreadyThere"
+          :key="`there-${index}`"
+          class="oprow there"
+          data-testid="already-there-row"
+        >
+          <td colspan="3">
+            {{ proposal(one.operation, nameIn) }} <span class="sub">already in the model</span>
+          </td>
+          <td><span class="standing standing--already-there">already-there</span></td>
         </tr>
       </tbody>
     </table>
