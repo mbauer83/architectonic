@@ -6,7 +6,7 @@ import type { CandidateComparison, CandidateSummary, ChangeDifference } from '..
 import { type ComparisonAccess, useCandidateComparison } from './useCandidateComparison'
 
 const candidate = (id: string, parent: string | null = null): CandidateSummary =>
-  ({ id, name: `${id} name`, state: 'candidate', parent, scope: [], diagram: null, operations: 1 })
+  ({ id, name: `${id} name`, description: '', state: 'candidate', parent, scope: [], diagram: null, operations: 1 })
 
 const edited = (target: string): ChangeDifference =>
   ({ kind: 'entity', target, change: 'edited', fields: { name: { before: 'a', after: 'b' } } })

@@ -1,7 +1,8 @@
 """The candidate architecture: an authored, named candidate change to the architecture.
 
 Content, where a change set is mechanism. A person or an agent writes one deliberately, as part of
-the work: it has a name a reader can tell from its siblings, a rationale, the end states it answers
+the work: it has a name a reader can tell from its siblings, a short description of its core idea, a
+rationale, the end states it answers
 and the requirements it satisfies, and a place in the work — drafted, offered, integrated, rejected
 or superseded. An adaptation in a stress analysis is one.
 
@@ -29,6 +30,10 @@ generated from its scope.
 
 **What `answers` and `satisfies` hold is opaque here.** They are references whose form is decided by
 whoever stores a candidate. The value only keeps them.
+
+**Its description is not its rationale.** `description` states the idea in a sentence or two — what a reader
+compares when choosing which adaptations to integrate — and is held to `DESCRIPTION_LIMIT` characters;
+`rationale` is the longer argument for it, and is not limited.
 
 **It may stand in the model as a target state** (`target_state`): applied beside the baseline rather than
 onto it, until it is moved into the baseline (`target_state.py`, `target_move.py`).
@@ -164,6 +169,10 @@ class TargetState:
         return (self.baseline, self.target, self.gap, *self.copies.values())
 
 
+#: The longest a candidate's description may be: a sentence or two.
+DESCRIPTION_LIMIT = 300
+
+
 @dataclass(frozen=True, slots=True)
 class CandidateArchitecture:
     """A header, and the change set it proposes. Refuses to exist malformed."""
@@ -183,6 +192,8 @@ class CandidateArchitecture:
     diagram: str | None = None
     #: Where its target state stands in the model, while it is there; None when it was not applied as one.
     target_state: TargetState | None = None
+    #: Its core idea in a sentence or two, at most `DESCRIPTION_LIMIT` characters; empty where none is given.
+    description: str = ""
 
     def __post_init__(self) -> None:
         # The model's entities by their stable id, as operations name them (`operations`).
@@ -204,6 +215,12 @@ def _refusal(candidate: CandidateArchitecture) -> str | None:
         return (
             f"{candidate.state!r} is not a state a candidate architecture can be in. "
             f"The states are {', '.join(CANDIDATE_STATES)}."
+        )
+    if len(candidate.description) > DESCRIPTION_LIMIT:
+        return (
+            f"candidate architecture '{candidate.id}' has a description of {len(candidate.description)} "
+            f"characters. It states the core idea in a sentence or two, at most {DESCRIPTION_LIMIT}; the "
+            "argument for it belongs in the rationale."
         )
     if candidate.diagram == "":
         return f"candidate architecture '{candidate.id}' names an empty diagram; omit it to be drawn on none"

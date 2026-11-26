@@ -5,7 +5,7 @@ import type { CandidateAccess } from './useCandidates'
 import { useCandidateCatalog } from './useCandidateCatalog'
 
 const candidate = (id: string, parent: string | null = null, scope: readonly string[] = []): CandidateSummary =>
-  ({ id, name: `${id} name`, state: 'draft', parent, scope, diagram: null, operations: 0 })
+  ({ id, name: `${id} name`, description: '', state: 'draft', parent, scope, diagram: null, operations: 0 })
 
 const fakeAccess = (store: CandidateSummary[], reads: string[] = []): CandidateAccess => ({
   listCandidates: () => Effect.succeed([...store]),

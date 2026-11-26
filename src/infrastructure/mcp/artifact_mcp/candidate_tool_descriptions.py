@@ -5,15 +5,21 @@ tool correctly the first time — argument shapes, refusals, versions, dry runs 
 line. Each REST route says the same in its own words; the operation is one.
 """
 
+from src.application.change_sets.candidate_architecture import DESCRIPTION_LIMIT
+
 VERSIONED = (
     "`based_on` is the `version` the last read or write of the candidate answered; a candidate changed since "
     "is refused, and the refusal names the current version."
 )
 
-CHANGE_SET_LIST = "List candidate architectures: id, name, state, parent, scope and how many operations each records."
+CHANGE_SET_LIST = (
+    "List candidate architectures: id, name, description (its core idea in a sentence or two), state, parent, "
+    "scope, diagram and how many operations each records."
+)
 
 CHANGE_SET_READ = (
-    "Read one candidate architecture: its record (header and the operations it records, each with the base "
+    "Read one candidate architecture: its record (header — name, description, rationale and the rest — and the "
+    "operations it records, each with the base "
     "it was written against) and its `version`, which every edit of it states as `based_on`. artifact_id "
     "takes either spelling of the id."
 )
@@ -47,8 +53,9 @@ CHANGE_SET_CHECK = (
 
 CHANGE_SET_CREATE = (
     "Create a candidate architecture. record: its header — name (required), id (minted if omitted), "
-    "rationale, state (draft or candidate), parent (a candidate to stack on), scope (entity ids it is read "
-    "over), diagram (the stored diagram it is drawn on; with no scope, its entities become the scope), "
+    f"description (its core idea in a sentence or two, at most {DESCRIPTION_LIMIT} characters), rationale (the "
+    "longer argument for it), state (draft or candidate), parent (a candidate to stack on), scope (entity ids "
+    "it is read over), diagram (the stored diagram it is drawn on; with no scope, its entities become the scope), "
     "answers, satisfies. operations: edits recorded in it in the same write, as change_set_record takes "
     "them. Answers the record and its version."
 )
@@ -64,7 +71,7 @@ CHANGE_SET_RECORD = (
 )
 
 CHANGE_SET_EDIT = (
-    "Change header fields of a candidate: name, rationale, parent, scope, answers, satisfies, and state — "
+    "Change header fields of a candidate: name, description, rationale, parent, scope, answers, satisfies, and state — "
     "draft <-> candidate, either -> rejected or superseded; integrated only by change_set_apply; terminal "
     "states never change. `changes` restores an operation list exactly as a read answered it (an undo); to "
     "change operations, use change_set_record. " + VERSIONED

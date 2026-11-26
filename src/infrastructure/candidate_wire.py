@@ -13,6 +13,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
+from src.application.change_sets.candidate_architecture import DESCRIPTION_LIMIT
 from src.application.modeling.edit_field_catalogue import CONTENT, KEYED, creatable
 
 
@@ -113,6 +114,12 @@ RecordedEdit = Annotated[
 
 CandidateState = Literal["draft", "candidate", "integrated", "rejected", "superseded"]
 
+#: A candidate's description, as both the header and the patch take it.
+_DESCRIPTION = (
+    f"Its core idea in a sentence or two, at most {DESCRIPTION_LIMIT} characters: what a reader compares when "
+    "choosing between candidates. The longer argument for it is the rationale."
+)
+
 
 class CandidateHeader(_Closed):
     """A candidate as it is created: everything but its operations, which are recorded one edit at a time."""
@@ -121,6 +128,7 @@ class CandidateHeader(_Closed):
     id: str | None = Field(
         None, description="Its id, when the caller chooses one (`CAND@epoch.random.slug`); minted if omitted.",
     )
+    description: str | None = Field(None, max_length=DESCRIPTION_LIMIT, description=_DESCRIPTION)
     rationale: str | None = None
     state: Literal["draft", "candidate"] = Field(
         "draft", description="draft (operations may change) or candidate (offered for integration).",
@@ -144,6 +152,7 @@ class CandidatePatch(_Closed):
     """Header fields to change; the rest are kept. Operations change by recording edits, not here."""
 
     name: str | None = Field(None, min_length=1)
+    description: str | None = Field(None, max_length=DESCRIPTION_LIMIT, description=_DESCRIPTION)
     rationale: str | None = None
     state: CandidateState | None = Field(
         None,

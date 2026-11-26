@@ -26,6 +26,7 @@ from src.domain.yaml_documents import parse_yaml_with_unique_keys
 _ID = "id"
 _NAME = "name"
 _RATIONALE = "rationale"
+_DESCRIPTION = "description"
 _STATE = "state"
 _PARENT = "parent"
 _ANSWERS = "answers"
@@ -39,7 +40,7 @@ _TARGET_IDS = ("baseline", "target", "gap")
 _TARGET_MAPS = ("copies", "added")
 
 _REQUIRED = (_ID, _NAME, _STATE, _CHANGES)
-_OPTIONAL = (_RATIONALE, _PARENT, _ANSWERS, _SATISFIES, _SCOPE, _DIAGRAM, _TARGET_STATE)
+_OPTIONAL = (_DESCRIPTION, _RATIONALE, _PARENT, _ANSWERS, _SATISFIES, _SCOPE, _DIAGRAM, _TARGET_STATE)
 
 
 def to_mapping(
@@ -50,6 +51,7 @@ def to_mapping(
     recorded: dict[str, Any] = {
         _ID: candidate.id,
         _NAME: candidate.name,
+        _DESCRIPTION: candidate.description,
         _RATIONALE: candidate.rationale,
         _STATE: candidate.state,
         _PARENT: candidate.parent_id,
@@ -71,7 +73,7 @@ def from_mapping(recorded: Mapping[str, Any]) -> CandidateArchitecture:
         )
     except MalformedChangeSet as refusal:
         raise MalformedCandidateArchitecture(str(refusal)) from refusal
-    for key in (_ID, _NAME, _STATE, _RATIONALE, _PARENT, _DIAGRAM):
+    for key in (_ID, _NAME, _STATE, _DESCRIPTION, _RATIONALE, _PARENT, _DIAGRAM):
         if key in recorded and not isinstance(recorded[key], str) and not (
             key in (_PARENT, _DIAGRAM) and recorded[key] is None
         ):
@@ -85,6 +87,7 @@ def from_mapping(recorded: Mapping[str, Any]) -> CandidateArchitecture:
         id=str(recorded[_ID]),
         name=str(recorded[_NAME]),
         rationale=str(recorded.get(_RATIONALE, "")),
+        description=str(recorded.get(_DESCRIPTION, "")),
         state=recorded[_STATE],
         changes=recorded_form.from_mapping(recorded[_CHANGES]),
         parent_id=recorded.get(_PARENT),

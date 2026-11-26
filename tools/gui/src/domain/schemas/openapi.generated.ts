@@ -6539,6 +6539,11 @@ export interface components {
              */
             answers?: string[] | null;
             /**
+             * Description
+             * @description Its core idea in a sentence or two, at most 300 characters: what a reader compares when choosing between candidates. The longer argument for it is the rationale.
+             */
+            description?: string | null;
+            /**
              * Diagram
              * @description The stored diagram it is drawn on, by id. Where `scope` is omitted, the diagram's entities become the scope.
              */
@@ -6705,6 +6710,11 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /**
+             * Description
+             * @description Its core idea in a sentence or two, at most 300 characters: what a reader compares when choosing between candidates. The longer argument for it is the rationale.
+             */
+            description?: string | null;
+            /**
              * Diagram
              * @description The stored diagram it is drawn on; null draws it on what it stacks on.
              */
@@ -6799,6 +6809,11 @@ export interface components {
         };
         /** CandidateSummary */
         CandidateSummary: {
+            /**
+             * Description
+             * @description Its core idea in a sentence or two; empty where none is given.
+             */
+            description: string;
             /**
              * Diagram
              * @description The stored diagram it names to be drawn on; null where it names none.

@@ -3,7 +3,7 @@ import type { CandidateSummary } from '../schemas/candidates'
 import { touchingScope } from './touchingScope'
 
 const summary = (id: string, over: Partial<CandidateSummary> = {}): CandidateSummary => ({
-  id, name: id, state: 'draft', parent: null, scope: [], diagram: null, operations: 0, ...over,
+  id, name: id, description: '', state: 'draft', parent: null, scope: [], diagram: null, operations: 0, ...over,
 })
 
 describe('the open candidates a scope touches', () => {

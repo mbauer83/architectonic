@@ -81,6 +81,7 @@ class AnalysisStarted(Closed):
 class CandidateSummary(Closed):
     id: str
     name: str
+    description: str = Field(description="Its core idea in a sentence or two; empty where none is given.")
     state: str
     parent: str | None
     scope: list[str] = Field(description="The model's entities it is read over, by id; empty when started empty.")

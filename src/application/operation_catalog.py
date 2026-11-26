@@ -112,7 +112,7 @@ _WRITES: Mapping[str, tuple[str, frozenset[str]]] = {
         "Create a candidate architecture", frozenset({"changes_create_candidate", "change_set_create"}),
     ),
     "changes_edit_candidate": (
-        "Change a candidate's name, rationale, state or scope",
+        "Change a candidate's name, description, rationale, state or scope",
         frozenset({"changes_edit_candidate", "change_set_edit"}),
     ),
     "changes_record_operation": ("Record edits among a candidate's operations", _RECORD),

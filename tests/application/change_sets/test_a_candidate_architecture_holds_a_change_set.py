@@ -18,6 +18,7 @@ from src.application.change_sets import candidate_recorded_form, candidate_work,
 from src.application.change_sets.base import BaseRevision
 from src.application.change_sets.candidate_architecture import (
     CANDIDATE_STATES,
+    DESCRIPTION_LIMIT,
     CandidateArchitecture,
     MalformedCandidateArchitecture,
 )
@@ -42,6 +43,7 @@ class TestTheHeader:
             pytest.param({"parent_id": "CA-1"}, "itself as its parent", id="own-parent"),
             pytest.param({"answers": ("row-1", "")}, "empty reference", id="empty-reference"),
             pytest.param({"satisfies": ("REQ@1.a", "REQ@1.a")}, "twice", id="repeated-reference"),
+            pytest.param({"description": "x" * (DESCRIPTION_LIMIT + 1)}, "sentence or two", id="long-description"),
         ],
     )
     def test_each_fault_is_refused_by_name(self, header: dict[str, Any], fault: str) -> None:
@@ -111,6 +113,16 @@ class TestSplittingAndMergingCandidates:
         assert (staying.id, staying.changes.operations) == (original.id, (rename,))
         assert (leaving.id, leaving.name, leaving.changes.operations) == ("CA-2", "the status change", (retag,))
         assert (leaving.parent_id, leaving.answers, leaving.satisfies) == ("CA-0", ("row-1",), ("REQ@1.a",))
+
+    def test_a_split_sibling_states_its_own_idea_rather_than_the_originals(self) -> None:
+        rename, retag = edit(_A, "name", "x"), edit(_B, "status", "active")
+        original = candidate(rename, retag, description="Rename and retag together.")
+
+        staying, leaving = candidate_work.split(
+            original, {retag.claim}, id="CA-2", name="the status change", description="Retag alone.",
+        )
+
+        assert (staying.description, leaving.description) == ("Rename and retag together.", "Retag alone.")
 
     def test_a_split_refuses_what_the_change_set_refuses(self) -> None:
         queue, link = create("queue"), AddConnection(joins(_A, "$ref:queue"), {})
@@ -186,6 +198,24 @@ class TestTheRecordedForm:
         recorded = candidate_recorded_form.to_mapping(candidate())
         del recorded[key]
         with pytest.raises(MalformedCandidateArchitecture, match=f"missing.*{key}"):
+            candidate_recorded_form.from_mapping(recorded)
+
+    def test_a_description_is_recorded_apart_from_the_rationale_and_read_back(self) -> None:
+        described = candidate(description="Rules move out of the code.", rationale="Because they change weekly.")
+        recorded = candidate_recorded_form.to_mapping(described)
+        assert (recorded["description"], recorded["rationale"]) == (
+            "Rules move out of the code.", "Because they change weekly.",
+        )
+        assert candidate_recorded_form.from_mapping(recorded).description == "Rules move out of the code."
+
+    def test_a_candidate_recorded_before_descriptions_reads_as_having_none(self) -> None:
+        recorded = candidate_recorded_form.to_mapping(candidate())
+        assert "description" not in recorded
+        assert candidate_recorded_form.from_mapping(recorded).description == ""
+
+    def test_a_description_that_is_not_text_is_refused(self) -> None:
+        recorded = {**candidate_recorded_form.to_mapping(candidate()), "description": ["a", "list"]}
+        with pytest.raises(MalformedCandidateArchitecture, match="'description' must be text"):
             candidate_recorded_form.from_mapping(recorded)
 
     def test_a_key_the_form_does_not_define_is_refused_not_ignored(self) -> None:
