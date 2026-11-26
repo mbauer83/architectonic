@@ -298,9 +298,7 @@ nearest element in that direction, `Enter` selects and `Shift`+`Enter` adds to t
 diagram larger than the window, an overview in the corner shows where the window is; press or drag
 on it to move there. The full key list is in the [Diagram canvas reference](../reference/diagram-canvas.md#view-mode).
 
-<!-- TODO screenshot: view mode with the Reading panel open — one element selected, Incoming and
-     Outgoing at "1 step", the reach lit and the rest faded, the overview visible in the corner.
-     Suggested name: docs/media/diagram-reading.png -->
+![The Reading panel open on Enterprise Repository with Incoming and Outgoing at 1 step: the elements it reaches are lit, the rest of the diagram is faded, and the overview shows the window in the corner](../media/diagram-reading.png)
 
 Assurance diagrams (bowtie, control structure, UCA matrix) have the same selection UX inside
 their own assurance viewer — see [Assurance diagrams](../04-assurance/diagrams.md).

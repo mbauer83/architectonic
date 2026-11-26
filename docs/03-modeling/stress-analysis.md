@@ -49,8 +49,7 @@ too). The start page asks for three things:
 **Start and sketch the naive architecture** writes the analysis document and the naive candidate in
 one write and opens the workspace on the naive architecture's canvas.
 
-<!-- TODO screenshot: the start page with Name, Context and "The architecture under evaluation"
-     filled in. Suggested name: docs/media/stress-start.png -->
+![The start page of a stress analysis with Name, Context and The architecture under evaluation filled in](../media/stress-start.png)
 
 ### 2. Define the naive architecture on its canvas
 
@@ -68,9 +67,7 @@ The naive architecture starts empty. Its canvas needs no stored diagram:
 Changes are saved to the candidate as you sketch, and nothing reaches the model before the naive
 architecture is applied. Select **Done sketching · on to Stressors** when it is complete.
 
-<!-- TODO screenshot: the workspace sketching the naive architecture — the tabs and operations list
-     on the left, the canvas with the three placed elements and the created Promotion Queue on the
-     right. Suggested name: docs/media/stress-naive-canvas.png -->
+![The workspace sketching the naive architecture: the tabs and its operations on the left, and on the right the canvas with Repository Promotion Service, Artifact Index Store, Git Sync Service and the newly created Promotion Queue](../media/stress-naive-canvas.png)
 
 ### 3. Write stressors
 
@@ -151,9 +148,7 @@ integration**.
 Each architecture's line then shows its residuality, for example
 `Queued promotions  Residuality +0.33 · survives 3 of 6 (naive 2)`.
 
-<!-- TODO screenshot: the test-set section after judging — the progress line, the naive line and an
-     adaptation's residuality line, with the judging walk open on one stressor.
-     Suggested name: docs/media/stress-test-set.png -->
+![The test set after judging: the procedure line, the naive architecture surviving 1 of 3, Queued promotions at residuality +0.33, and the judging walk open on one test stressor](../media/stress-test-set.png)
 
 &nbsp;
 

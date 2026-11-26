@@ -27,9 +27,7 @@ unsaved changes asks the same question, and **Discard** asks before it throws ch
 Nothing reaches the repository before **Save**. Until then every change is a step in the session's
 undo history.
 
-<!-- TODO screenshot: edit mode on "One Enterprise Repository, Many Engagements" — the edit bar
-     ("Automatic layout", Undo, Redo, Check layout, change count, Discard, Save) above the canvas,
-     the sidebar open on "Search the model". Suggested name: docs/media/diagram-edit-mode.png -->
+![Edit mode on the diagram One Enterprise Repository, Many Engagements: the edit bar with Automatic layout, Undo, Redo, Check layout, No changes, Discard and Save above the canvas, and the sidebar open on Search the model](../media/diagram-edit-mode.png)
 
 &nbsp;
 

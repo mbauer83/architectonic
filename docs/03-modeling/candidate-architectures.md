@@ -42,9 +42,7 @@ When the model has moved under an operation since it was recorded, the page says
 offers **Re-base**, which records each drifted operation again against the model as it now stands,
 keeping what it asks for.
 
-<!-- TODO screenshot: a candidate's page — operations table with standing on the left, the candidate
-     drawn on its own picture with "+" and "~" marks on the right, header buttons visible.
-     Suggested name: docs/media/candidate-page.png -->
+![The page of the candidate Cached index store: its three operations with their standing on the left, and its picture on the right with the renamed Artifact Index Store marked as changed](../media/candidate-page.png)
 
 ### Stack one candidate on another
 
@@ -90,9 +88,7 @@ Promotion Service*, with **Take back**. Once *No conflict stands*, name the inte
 Integrating compares what the candidates change. It says nothing about how the result behaves; a
 [stress analysis's test set](stress-test-set.md) judges that.
 
-<!-- TODO screenshot: the comparison page with the Integrate card open on one conflict ("Both change
-     the name of Repository Promotion Service"), the two parties and their actions.
-     Suggested name: docs/media/candidate-integrate.png -->
+![The Integrate card on the comparison of Queued promotion and Batched promotion: one conflict, both change the name of Repository Promotion Service, with Take this side and Drop this change for each party, a merged value and Raise a decision](../media/candidate-integrate.png)
 
 ### Apply a candidate
 

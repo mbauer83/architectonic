@@ -153,8 +153,8 @@ automatic layout, and elements snap to a grid and to their neighbours. A right-c
 element in place and a drag from an element's edge draws a relation. Save writes them with the
 arrangement in one write, or writes nothing.
 
-<!-- TODO screenshot: edit mode on an ArchiMate diagram with alignment guides showing during a drag
-     and the change list open. Suggested name: docs/media/diagram-edit-mode.png -->
+<!-- media: docs/media/diagram-edit-guides.png -->
+![An element dragged on the edit canvas with a dashed alignment guide showing, and the list of what Save will write open above it](docs/media/diagram-edit-guides.png)
 
 A **candidate architecture** proposes a change without making it. Sketch *Cached index store* on
 its canvas, adding an *Index Read Cache* and renaming the *Artifact Index Store*, and its page lists
@@ -166,8 +166,8 @@ naive architecture, answers the end states they lead to with adapted candidates,
 adapted architecture on stressors held out from the design work:
 `Residuality +0.33 · survives 3 of 6 (naive 2)`.
 
-<!-- TODO screenshot: the stress-analysis workspace — Stressors tab with the Perspectives line and
-     the incidence grid beside the canvas. Suggested name: docs/media/stress-workspace.png -->
+<!-- media: docs/media/stress-workspace.png -->
+![The Stressors tab of a stress analysis with the Perspectives line under the input, the incidence grid of the stressor in focus, and the elements it hits marked on the canvas beside it](docs/media/stress-workspace.png)
 
 More walkthroughs — graph exploration, diagram authoring, promotion, and assurance — are in
 the [documentation](docs/index.md).
