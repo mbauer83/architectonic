@@ -93,6 +93,7 @@ def without_straight_points(points: Sequence[Point]) -> tuple[Point, ...]:
 
 def _search_within(
     starts: Sequence[Terminal], goals: Sequence[Terminal], passage: Passage, graph: Joined, window: Extent | None,
+    steps: dict[int, tuple[int, float] | None],
 ) -> Found | None:
     goals_at: dict[int, list[int]] = {}
     for index, goal in enumerate(goals):
@@ -105,23 +106,24 @@ def _search_within(
             least = min(least, abs(goal_x - x) + abs(goal_y - y))
         return least
 
-    steps: dict[int, tuple[int, float] | None] = {}
-
     def step(node: int, turn: int) -> tuple[int, float] | None:
         """Where the step from *node* in direction *turn* leads and what it costs, or None where it is
-        blocked or leaves the window: asked once per step, however many states reach its node."""
+        blocked or leaves the window: asked once per step for the whole search, whatever its window
+        (*steps*), however many states reach its node."""
         key = 4 * node + turn
         if key not in steps:
             steps[key] = None
             reached = graph.next(node, turn)
             if reached >= 0:
-                x, y = graph.x(reached), graph.y(reached)
-                inside = window is None or (window.left <= x <= window.right and window.top <= y <= window.bottom)
-                here, there = Point(graph.x(node), graph.y(node)), Point(x, y)
-                if inside and not passage.step_blocked(here, there):
-                    length = abs(x - here.x) + abs(y - here.y)
+                here, there = Point(graph.x(node), graph.y(node)), Point(graph.x(reached), graph.y(reached))
+                if not passage.step_blocked(here, there):
+                    length = abs(there.x - here.x) + abs(there.y - here.y)
                     steps[key] = (reached, step_cost(length, passage.crowding(here, there)))
-        return steps[key]
+        known = steps[key]
+        if known is None or window is None:
+            return known
+        x, y = graph.x(known[0]), graph.y(known[0])
+        return known if window.left <= x <= window.right and window.top <= y <= window.bottom else None
 
     best: dict[int, float] = {}
     came: dict[int, int] = {}
@@ -177,11 +179,13 @@ def search(starts: Sequence[Terminal], goals: Sequence[Terminal], passage: Passa
     """The cheapest route from any start to any goal over *graph*, or None."""
     terminals = [*starts, *goals]
     joined = graph.joined(terminal.point for terminal in terminals)
+    # What each step costs does not depend on the window: a wider window asks again only the steps it adds.
+    steps: dict[int, tuple[int, float] | None] = {}
     best: Found | None = None
     for window in _windows(terminals):
         if window is None and best is not None:
             break  # the whole diagram is searched only where no window held any way at all
-        found = _search_within(starts, goals, passage, joined, window)
+        found = _search_within(starts, goals, passage, joined, window, steps)
         if found is not None and (best is None or found.cost < best.cost):
             best = found
         # A way through a full channel is the window's last resort, not the diagram's: look further.
