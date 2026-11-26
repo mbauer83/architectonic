@@ -269,8 +269,8 @@ const holdOut = async () => {
 .body { border-top: 1px solid var(--border); }
 .procedure { margin: 0; padding: 8px 10px 0; color: var(--muted); font-size: 12px; }
 .acts { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 4px 10px; }
-.evaluate { font-size: 12px; color: var(--muted); }
-.evaluate select { font: inherit; margin-left: 4px; max-width: 220px; }
+.evaluate { min-width: 0; max-width: 100%; font-size: 12px; color: var(--muted); }
+.evaluate select { font: inherit; margin-left: 4px; max-width: 100%; }
 .ask {
   margin: 4px 10px 6px; padding: 8px 10px; border: 1px solid var(--accent-border); border-radius: 6px;
   background: var(--accent-soft); color: var(--text);

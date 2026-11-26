@@ -7,6 +7,7 @@
  * which marks the stressor rows that tick it and, on a candidate tab, its row in the operations.
  */
 import { computed, type Ref } from 'vue'
+import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import { stableEntityId } from '../../domain/artifactId'
 import type { Marks } from '../../domain/candidates/elementMarks'
 import { diffMarks, framedMarks } from '../../domain/candidates/elementMarks'
@@ -17,7 +18,7 @@ import { type CanvasReading, canvasCaption, emptyCaption } from '../../domain/st
 import { hitMarks, stressorsTicking } from '../../domain/stressAnalysis/workspaceMarks'
 import type { AnalysisEdits } from './useAnalysisEdits'
 import type { Candidates } from './useCandidates'
-import { type ComposedDrawingAccess, useComposedDrawing } from './useComposedDrawing'
+import { type ComposedDrawing, type ComposedDrawingAccess, useComposedDrawing } from './useComposedDrawing'
 import type { StressAnalysis } from './useStressAnalysis'
 
 export interface WorkspaceFocus {
@@ -34,6 +35,12 @@ export interface WorkspaceFocus {
   readonly judgedCandidate: Ref<string | null>
 }
 
+/** The picture the canvas shows, and whether it is still being drawn as its candidate composes. */
+interface Shown {
+  readonly drawing: LayoutGeometry | null
+  readonly composing: boolean
+}
+
 export function useWorkspaceCanvas(
   svc: ComposedDrawingAccess, analysis: StressAnalysis, candidates: Candidates,
   edits: AnalysisEdits, focus: WorkspaceFocus,
@@ -48,11 +55,18 @@ export function useWorkspaceCanvas(
   const candidateDrawn = useComposedDrawing(svc, () => candidates.comparison.value)
   // The integration is in the model: it is drawn as the model draws it, without the naive's own changes.
   // A candidate being judged is drawn once its comparison is read, never the naive in its place meanwhile.
-  const drawing = computed(() => {
-    if (judging.value === INTEGRATION) return analysis.naive.value?.drawing ?? naiveDrawn.value
-    if (judging.value && readsCandidate.value) return judgedCandidate.value ? candidateDrawn.value : null
-    return (readsCandidate.value ? candidateDrawn.value : null) ?? naiveDrawn.value
+  const of = (one: ComposedDrawing): Shown => ({ drawing: one.drawing.value, composing: one.composing.value })
+  const shown = computed((): Shown => {
+    const served = analysis.naive.value?.drawing
+    if (judging.value === INTEGRATION) return served ? { drawing: served, composing: false } : of(naiveDrawn)
+    if (judging.value && readsCandidate.value) {
+      return judgedCandidate.value ? of(candidateDrawn) : { drawing: null, composing: false }
+    }
+    return readsCandidate.value && candidateDrawn.drawing.value ? of(candidateDrawn) : of(naiveDrawn)
   })
+  const drawing = computed(() => shown.value.drawing)
+  /** Whether the picture shown is still being drawn as its candidate composes. */
+  const composing = computed(() => shown.value.composing)
 
   const hitsOf = (stressors: readonly string[]): ReadonlyMap<string, readonly string[]> =>
     new Map(stressors.map((id) => [id, analysis.hitsOf(id)]))
@@ -99,5 +113,5 @@ export function useWorkspaceCanvas(
     void (tick ? edits.untick(tick) : edits.tick(stressor, fullIdOf(stableId)))
   }
 
-  return { readsCandidate, drawing, marks, hint, emptyText, ticking, pick }
+  return { readsCandidate, drawing, composing, marks, hint, emptyText, ticking, pick }
 }

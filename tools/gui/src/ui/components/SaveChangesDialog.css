@@ -9,7 +9,7 @@
 .change-status--added { color: var(--ok); }
 .change-status--modified { color: var(--accent); }
 .change-status--deleted { color: var(--danger); }
-.change-name { font-weight: 500; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.change-name { font-weight: 500; color: var(--text); flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .change-id { color: var(--muted); font-size: 11px; flex-shrink: 0; }
 .change-tags { display: flex; gap: 3px; flex-shrink: 0; }
 .change-tag { background: var(--accent-soft); color: var(--accent-strong); border-radius: 3px; padding: 1px 5px; font-size: 10px; font-weight: 600; }

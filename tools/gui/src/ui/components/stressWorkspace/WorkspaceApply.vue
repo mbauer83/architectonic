@@ -163,6 +163,6 @@ const applied = () => {
 .choose {
   display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 8px;
 }
-.choose select { margin-left: 4px; max-width: 220px; }
+.choose select { margin-left: 4px; max-width: 100%; }
 .err { color: var(--danger-strong); }
 </style>

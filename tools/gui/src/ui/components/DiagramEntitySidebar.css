@@ -18,7 +18,8 @@
 .ent--active { background: var(--accent-soft); color: var(--accent-strong); }
 .ent-glyph { display: flex; align-items: center; flex-shrink: 0; color: var(--muted); }
 .ent-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.ent-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A name wraps rather than ending in …: a reader needs every word of it to tell two elements apart. */
+.ent-name { flex: 1; min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
 
 .ent-det { padding: 10px 12px 12px; border-top: 1px solid var(--border); }
 .conn-flow { font-size: 12px; color: var(--text-2); margin-bottom: 6px; }

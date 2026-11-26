@@ -328,6 +328,7 @@ onMounted(async () => {
             ref="markedCanvas"
             :diagram-id="analysis.drawnOn.value"
             :drawing="canvas.drawing.value"
+            :composing="canvas.composing.value"
             :marks="canvas.marks.value"
             :hint="canvas.hint.value"
             :empty-text="canvas.emptyText.value"
@@ -348,8 +349,9 @@ onMounted(async () => {
 
 <style scoped>
 .page { padding: 16px 24px; }
-.page-hdr { display: flex; gap: 14px; align-items: center; }
-.page-hdr h1 { flex: 1; font-size: 20px; margin: 0; }
+/* The title keeps its own width and the actions wrap beneath it, rather than squeezing the title onto two lines. */
+.page-hdr { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.page-hdr h1 { flex: 1 0 auto; max-width: 100%; font-size: 20px; margin: 0; overflow-wrap: anywhere; }
 .back { color: var(--muted); text-decoration: none; font-size: 13px; }
 .err { color: var(--danger-strong); font-size: 12.5px; }
 .left, .pane { min-width: 0; }

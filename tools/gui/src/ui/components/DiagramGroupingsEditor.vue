@@ -187,5 +187,5 @@ const removeMember = (index: number, id: string): void => {
   padding: 4px 6px; background: var(--surface); border: 1px solid var(--border);
   border-radius: 4px; margin-bottom: 4px;
 }
-.grp__name { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grp__name { min-width: 0; font-size: 12px; color: var(--text-2); overflow-wrap: anywhere; }
 </style>

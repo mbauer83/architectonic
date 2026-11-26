@@ -9,8 +9,12 @@
  * no picture at all yet — the candidate's own picture (`candidates.picture`), which starts from exactly that.
  * Where the candidate changes nothing the picture draws, the picture is the one its comparison was served
  * with. A preview the server refuses leaves that picture standing too: the read never fails on it.
+ *
+ * The served picture is shown at once, but it is not the candidate: until the composed one arrives (a
+ * render, so a second or more) it draws a renamed element under its old name and nothing the candidate
+ * creates. `composing` says so, for the canvas to show it as still loading rather than as the candidate.
  */
-import { shallowRef, watch } from 'vue'
+import { type ShallowRef, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
 import type { PictureContext } from '../../domain'
 import type { CandidateComparison } from '../../domain/schemas/candidates'
@@ -23,8 +27,18 @@ import { candidatePicture, diagramPicture, type PictureSource } from './pictureS
 /** What the two picture sources read through (`pictureSource`). */
 export type ComposedDrawingAccess = Parameters<typeof diagramPicture>[0] & Parameters<typeof candidatePicture>[0]
 
-export function useComposedDrawing(svc: ComposedDrawingAccess, comparison: () => CandidateComparison | null) {
+/** The picture a candidate is read on, and whether it is still being drawn as the candidate composes. */
+export interface ComposedDrawing {
+  readonly drawing: ShallowRef<LayoutGeometry | null>
+  /** True while the picture shown is the served one and the candidate's composition is still being drawn. */
+  readonly composing: ShallowRef<boolean>
+}
+
+export function useComposedDrawing(
+  svc: ComposedDrawingAccess, comparison: () => CandidateComparison | null,
+): ComposedDrawing {
   const drawing = shallowRef<LayoutGeometry | null>(null)
+  const composing = shallowRef(false)
   // A stored diagram's context is the same for every candidate drawn on it; a candidate's own moves with it.
   const contexts = new Map<string, Promise<PictureContext>>()
   const contextOf = (source: PictureSource, diagram: string | undefined): Promise<PictureContext> => {
@@ -52,10 +66,13 @@ export function useComposedDrawing(svc: ComposedDrawingAccess, comparison: () =>
   watch(comparison, async (read) => {
     const base = read?.drawing ?? null
     drawing.value = base
+    composing.value = !!read
     if (!read) return
     const drawn = await composed(read, base).catch(() => base)
-    if (comparison() === read) drawing.value = drawn
+    if (comparison() !== read) return
+    drawing.value = drawn
+    composing.value = false
   }, { immediate: true })
 
-  return drawing
+  return { drawing, composing }
 }

@@ -1,11 +1,16 @@
 // @vitest-environment jsdom
 //
-// The gesture hint under a viewport is bounded by the window it sits in: a hint longer than the window ends
-// in … rather than running off both edges, and the whole of it is there on hover.
+// The gesture hint under a viewport is bounded by the window it sits in: a hint longer than the window wraps,
+// so every word is on screen and nothing is left to a tooltip. (That it wraps inside the window is layout,
+// asserted in the browser: `text-stays-whole.spec.ts`.)
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createApp, h, type App } from 'vue'
 import DiagramViewportControls from '../DiagramViewportControls.vue'
+
+beforeAll(() => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} })
+})
 
 let app: App | null = null
 afterEach(() => { app?.unmount(); app = null })
@@ -24,13 +29,13 @@ const hintOf = (isFullscreen: boolean): HTMLElement => {
 }
 
 describe('the viewport hint', () => {
-  it('carries its whole text on hover, for when the window cuts it short', () => {
+  it('shows its whole text, with nothing left to a tooltip', () => {
     const hint = hintOf(false)
     expect(hint.textContent?.trim()).toBe(HINT)
-    expect(hint.title).toBe(HINT)
+    expect(hint.title).toBe('')
   })
 
-  it('says how to leave fullscreen, on hover too', () => {
-    expect(hintOf(true).title).toBe(`${HINT} · Esc to exit`)
+  it('says how to leave fullscreen', () => {
+    expect(hintOf(true).textContent?.trim()).toBe(`${HINT} · Esc to exit`)
   })
 })

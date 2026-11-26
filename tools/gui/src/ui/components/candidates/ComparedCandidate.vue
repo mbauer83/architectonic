@@ -32,7 +32,7 @@ const emit = defineEmits<{ remove: [id: string] }>()
 
 const framed = ref<string | null>(null)
 /** The picture with this candidate drawn as it composes. */
-const drawing = useComposedDrawing(inject(modelServiceKey)!, () => props.reading.comparison.value)
+const { drawing, composing } = useComposedDrawing(inject(modelServiceKey)!, () => props.reading.comparison.value)
 const marks = computed((): Marks => new Map([
   ...withOthers(diffMarks(props.reading.comparison.value), props.others, props.nameOfSet),
   ...(framed.value ? framedMarks([framed.value], 'The row selected above') : new Map()),
@@ -74,6 +74,7 @@ const nameOf = (id: string): string => id
     <MarkedCanvas
       :diagram-id="diagramId"
       :drawing="drawing"
+      :composing="composing"
       :marks="marks"
       hint="Select a row to frame its element, or an element to find its rows · Scroll to zoom · Drag to pan"
       empty-text="No diagram to draw: choose one above."

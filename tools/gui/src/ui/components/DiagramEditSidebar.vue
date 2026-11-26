@@ -217,7 +217,7 @@ const emit = defineEmits<{
 
 .rm-row { display: flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 12px; }
 .rm-glyph { color: var(--danger); opacity: 0.7; }
-.rm-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+.rm-name { flex: 1; min-width: 0; overflow-wrap: anywhere; color: var(--text-2); }
 .undo-btn { background: none; border: none; cursor: pointer; color: var(--faint); font-size: 13px; padding: 0 2px; flex-shrink: 0; }
 .undo-btn:hover { color: var(--text-2); }
 
