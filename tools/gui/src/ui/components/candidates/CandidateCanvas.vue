@@ -249,23 +249,29 @@ onMounted(openCanvas)
 </template>
 
 <style scoped>
+/*
+ * Fitted to its pane: the sketch is as tall as the window leaves below the page's header, and the canvas takes
+ * what the banner leaves of that, so the bottom of the picture is never below the window however the banner
+ * wraps in a narrow pane.
+ */
+.sketching { display: flex; flex-direction: column; height: clamp(480px, calc(100vh - 220px), 1240px); }
 .cs-banner {
-  display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; padding: 7px 10px;
-  margin-bottom: 8px; border: 1px solid var(--accent-border); background: var(--accent-soft);
-  color: var(--accent-strong); border-radius: 6px; font-size: 12.5px;
+  display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; justify-content: space-between;
+  padding: 7px 10px; margin-bottom: 8px; border: 1px solid var(--accent-border); background: var(--accent-soft);
+  color: var(--accent-strong); border-radius: 6px; font-size: 12.5px; flex: none;
 }
 .what { font-size: 13.5px; font-weight: 700; }
 .stack { font-size: 12px; font-weight: 400; color: var(--text-2); }
-.kind { grid-column: 1 / -1; font-size: 12px; color: var(--text-2); }
-.acts { grid-row: 1; grid-column: 2; display: flex; gap: 6px; align-items: center; }
+.kind { flex-basis: 100%; font-size: 12px; color: var(--text-2); }
+.acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .saved { font-size: 11.5px; color: var(--muted); }
-.err { color: var(--danger-strong); font-size: 12.5px; }
+.err { color: var(--danger-strong); font-size: 12.5px; flex: none; }
 .img-container {
   position: relative; overflow: hidden; background: var(--paper); border: 1px solid var(--accent);
-  box-shadow: inset 0 2px 0 var(--accent); border-radius: 8px; height: clamp(380px, calc(100vh - 340px), 900px);
+  box-shadow: inset 0 2px 0 var(--accent); border-radius: 8px; height: 100%;
 }
 /* The panel floats over the canvas's right edge, so the picture keeps the pane's whole width. */
-.sketch-body { position: relative; }
+.sketch-body { position: relative; flex: 1; min-height: 240px; }
 .sketch-panel {
   position: absolute; top: 8px; right: 8px; bottom: 8px; width: min(280px, 45%); overflow: auto; z-index: 2;
   box-shadow: 0 4px 14px rgb(0 0 0 / 14%);
