@@ -12,7 +12,8 @@ import { modelServiceKey } from '../../keys'
 import { useCandidateTargetState } from '../../composables/useCandidateTargetState'
 import AbandonCandidate from '../candidates/AbandonCandidate.vue'
 import CandidateTargetState from '../candidates/CandidateTargetState.vue'
-import { cell, cellIds, endStateName } from '../../../domain/stressAnalysis/analysisRows'
+import { cell, endStateName } from '../../../domain/stressAnalysis/analysisRows'
+import { answerLinks } from '../../../domain/candidates/integration'
 import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
 import type { StressAnalysis } from '../../composables/useStressAnalysis'
@@ -28,11 +29,11 @@ const emit = defineEmits<{ frame: [target: string | null]; sketch: [id: string] 
 
 const adaptations = computed(() =>
   props.candidates.inStack.value.filter((one) => one.id !== props.analysis.naiveId.value))
-const answers = (id: string): string => props.analysis.adaptations.value
-  .filter((row) => cell(row, 'candidate_architecture') === id)
-  .flatMap((row) => cellIds(row, 'end_states'))
-  .map((rowId) => endStateName(props.analysis.endStates.value, rowId))
-  .join(', ')
+/** The end states *id*'s adaptation rows answer, by name: one join, through the id's stable form (`answerLinks`). */
+const answers = (id: string): string =>
+  answerLinks(id, props.analysis.adaptations.value, props.analysis.stressors.value).endStates
+    .map((rowId) => endStateName(props.analysis.endStates.value, rowId))
+    .join(', ')
 const depth = (id: string): number => chainOf(id, props.candidates.all.value).length - 2
 
 const svc = inject(modelServiceKey)!

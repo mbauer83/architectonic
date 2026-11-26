@@ -59,6 +59,13 @@ describe('a judgement', () => {
     })
   })
 
+  it('finds a verdict written with the short id of the candidate it judges', () => {
+    // Regression: a row written over MCP with `CAND@….random` was never the one a judgement changed.
+    const short = [row('T1', { stressor: 'S2', architecture: 'CAND@1795689702.C6UOgl5', verdict: 'fails' })]
+    expect(verdictRow(short, 'S2', 'CAND@1795689702.C6UOgl5.adaptation-local-text-reader')?.row_id).toBe('T1')
+    expect(verdictRow(short, 'S2', 'naive')).toBeUndefined()
+  })
+
   it('adds a usable row where the architecture has none', () => {
     expect(judgement(verdictRow(verdicts, 'S3', 'naive'), 'S3', 'naive', { verdict: 'survives' })).toEqual({
       op: 'add', cells: { stressor: 'S3', architecture: 'naive', usable: true, verdict: 'survives' },
