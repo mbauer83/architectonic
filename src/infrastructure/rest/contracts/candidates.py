@@ -135,6 +135,9 @@ class OperationStanding(NullsOmitted):
     operation: Fields
     standing: str
     reason: str
+    holds: JsonValue = Field(
+        None, description="For an edit, what the model holds where it writes: what applying it replaces.",
+    )
 
 
 class CandidateStanding(NullsOmitted):

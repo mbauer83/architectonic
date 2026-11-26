@@ -11,6 +11,9 @@ is what separates "this set is wrong" from "the model moved":
   asks for. Someone put a value there after the author last looked, and applying would overwrite it.
 * **conflicting** — the operation has nothing to apply to, or what it would produce is refused.
 
+An edit's standing also says what the model holds where it writes (`holds`), so a reader of a dry run sees
+what applying it replaces, not only what it was written against.
+
 **Drift is the rebase's rule, not a second one.** `has_moved` asks `moved_since`, which is what a
 proposed change is rebased by. An operation and a proposal holding the same three values get the
 same answer.
@@ -60,12 +63,21 @@ WouldRefuse: TypeAlias = Callable[[Operation], str | None]
 
 
 @dataclass(frozen=True, slots=True)
+class HeldValue:
+    """What the model holds at the one place an edit writes: what applying it would replace."""
+
+    value: Any
+
+
+@dataclass(frozen=True, slots=True)
 class OperationStanding:
     """One operation's position, and the sentence an author reads about it."""
 
     operation: Operation
     standing: Standing
     reason: str
+    #: For an edit whose field the model can be read at, what it holds there now; None otherwise.
+    holds: HeldValue | None = None
 
 
 def standing_of(
@@ -91,9 +103,26 @@ def _judged(
     operation: Operation, reading: ModelReading, created: frozenset[str], would_refuse: WouldRefuse
 ) -> OperationStanding:
     standing, reason = _against(operation, reading, created)
+    holds = _held(operation, reading)
     if standing == "applies" and (refusal := would_refuse(operation)) is not None:
-        return OperationStanding(operation, "conflicting", refusal)
-    return OperationStanding(operation, standing, reason)
+        return OperationStanding(operation, "conflicting", refusal, holds)
+    return OperationStanding(operation, standing, reason, holds)
+
+
+def _held(operation: Operation, reading: ModelReading) -> HeldValue | None:
+    """What the model holds where *operation* writes, if it is an edit of a field the model can be read at."""
+    match operation:
+        case EditEntity(target=target):
+            kind: ArtifactKind = "entity"
+            current = reading.entity(target)
+        case EditConnection(address=address):
+            kind = "connection"
+            current = reading.connection(address)
+        case _:
+            return None
+    if current is None or operation.field not in current:
+        return None
+    return HeldValue(_addressed(kind, current, operation))
 
 
 def _against(

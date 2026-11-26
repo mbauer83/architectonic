@@ -12820,6 +12820,8 @@ export interface components {
         };
         /** OperationStanding */
         OperationStanding: {
+            /** @description For an edit, what the model holds where it writes: what applying it replaces. */
+            holds?: components["schemas"]["JsonValue"];
             operation: components["schemas"]["Fields"];
             /** Reason */
             reason: string;

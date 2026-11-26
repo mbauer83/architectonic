@@ -72,6 +72,8 @@ export const OperationStandingSchema = Schema.Struct({
   operation: FieldsSchema,
   standing: Schema.String,
   reason: Schema.String,
+  /** For an edit, what the model holds where it writes: what applying it replaces. */
+  holds: Schema.optional(Schema.Unknown),
 })
 export type OperationStanding = typeof OperationStandingSchema.Type
 
