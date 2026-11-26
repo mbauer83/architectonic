@@ -2,8 +2,8 @@
 
 This guide shows how to keep a test set of stressors apart from a stress analysis, judge the naive
 architecture and an adapted one against it, and read the residuality coefficient that results. It
-assumes an analysis has been started from the **Plan** menu and that some design stressors are
-already written.
+assumes an analysis has been started and that some design stressors are already written; see
+[Run a stress analysis](stress-analysis.md) for the whole analysis.
 
 &nbsp;
 

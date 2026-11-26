@@ -118,6 +118,9 @@ storage:
     max_classification: TLP:AMBER   # TLP:WHITE | TLP:GREEN | TLP:AMBER | TLP:RED
 ```
 
+Content whose TLP level is not one of the four is treated as `TLP:RED` when deciding what a reader
+may see, so a ceiling below `TLP:RED` withholds it.
+
 `TLP:RED` (the default) exposes everything the store contains — appropriate for a single
 operator who holds the encryption key. Lower values let a team see analysis results without
 accessing the most sensitive records, for example when RED entries contain unpublished
@@ -156,6 +159,9 @@ uv run arch-assurance unlock
 recording that this store was ceremonially activated — the key was verified and someone
 consciously enabled the capability. And it authorizes the backend that is running now, so
 `arch-assurance status` reports `unlocked: true` without waiting for a restart.
+
+The backend accepts that authorization, and its revocation by `arch-assurance lock`, only from its
+own machine. A remote client or a web page cannot unlock the store.
 
 Whether a *newly started* process opens the store by itself is a separate question, and a
 deployment answers it with `storage.assurance.activation_policy`:

@@ -179,7 +179,9 @@ assurance:
 ```
 
 These apply globally and are read at startup; they are not configurable via
-`arch-workspace.yaml`. `validation.viewpoint_enforcement` and the `viewpoints:` execution
+`arch-workspace.yaml`. Which host names the backend answers to is set in the environment, by
+`ARCH_ALLOWED_HOSTS`, alongside `backend.allow_remote_without_auth` — see
+[Listening beyond this machine](cli-and-backend.md#backend). `validation.viewpoint_enforcement` and the `viewpoints:` execution
 bounds are covered in full in [Viewpoints — schema
 reference](viewpoints-schema.md#execution-result--bounds); `guidance.default_source` in
 [Authoring guidance](../05-extensibility/guidance.md#importing).

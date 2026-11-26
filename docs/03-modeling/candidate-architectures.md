@@ -1,11 +1,179 @@
-# Candidate architectures and arranging diagrams through the API
+# Candidate architectures
 
-This page describes how an agent or a script works with candidate architectures, and how it arranges
-and saves a diagram, through the MCP tools and the REST API. The GUI uses the same operations.
+A candidate architecture is a named alternative to the model: a list of changes that is read on top
+of the model as it is now, compared with other candidates, and written into the model only when it is
+applied. This page shows how to work with candidates in the GUI, explains how they relate to the
+model, and then describes the same operations for agents and scripts, together with arranging and
+saving a diagram through the API.
 
 &nbsp;
 
-## Candidate architectures
+## Work with a candidate in the GUI
+
+Candidates are listed under **Plan › Candidate architectures**. The worked example below proposes a
+read cache in front of the self-model's *Artifact Index Store*, compares two ways of changing
+promotion, and integrates them.
+
+### Create a candidate and sketch it
+
+1. Select **New candidate architecture…**, give it a name (*Cached index store*), and choose what it
+   starts from:
+   - **what a diagram draws** — it reads over the diagram's elements and is drawn on its picture;
+   - **on top of a candidate** — it stacks on that candidate, and its changes are read over the
+     other's;
+   - **empty** — it reads over nothing until elements are placed on it.
+2. On the candidate's page, select **Sketch on the canvas**. The canvas is the diagram editor's: find
+   *Artifact Index Store* under **Add from model** and drag it on, right-click the paper to create
+   *Index Read Cache* as an application component, and draw a relation between the two. A rename,
+   a new element and a new relation each become an operation of the candidate.
+3. Each change is saved to the candidate as you make it; the bar shows when. **Undo** takes the last
+   one back out of the candidate. **Done sketching** returns to the page.
+
+A candidate needs no stored diagram. Without one, its picture is generated from the model elements
+it reads over and the relations among them. **Drawn on** chooses a stored diagram to draw it on
+instead.
+
+The page lists the operations beside the picture, each with its **standing** against the model:
+*applies*, *already there*, *drifted* or *conflicting*. On the picture, `+` marks an added element,
+`~` a changed one, and an element the candidate removes stays drawn as a faded dashed ghost.
+
+When the model has moved under an operation since it was recorded, the page says **Model moved** and
+offers **Re-base**, which records each drifted operation again against the model as it now stands,
+keeping what it asks for.
+
+<!-- TODO screenshot: a candidate's page — operations table with standing on the left, the candidate
+     drawn on its own picture with "+" and "~" marks on the right, header buttons visible.
+     Suggested name: docs/media/candidate-page.png -->
+
+### Stack one candidate on another
+
+**New candidate on top…** on a candidate's page makes a child candidate: name it and select
+**Stack on ‹name›**. The child holds only its own operations and is read over its parent's. On the
+list page, stacked candidates are indented under the candidate they stack on. A stacked candidate is
+applied after its parent has been applied.
+
+### Compare candidates
+
+Tick two or more candidates on the list page and select **Compare 2…**, or use **Compare with…** on a
+candidate's page. The comparison draws each candidate side by side against a common base, which
+**Against** chooses (the model, or a candidate they all stack on), on the diagram **Drawn on** names.
+**Add a candidate…** adds another.
+
+**Check for overlaps** lists where their operations meet: the same element, field or relation
+touched by more than one, or one removing what another uses. In the example, *Queued promotion* and
+*Batched promotion* both rename *Repository Promotion Service*:
+
+```
+same-key: name of SRV@1712870400.Uv9Wx9
+  Queued promotion   edit_entity · name · Queued Promotion Service
+  Batched promotion  edit_entity · name · Batched Promotion Service
+```
+
+### Integrate candidates
+
+**Integrate…** on the comparison page (or the **Integration** tab of a stress analysis) combines the
+compared candidates into a new draft candidate. Each conflict is shown with the parties' changes and
+these actions:
+
+| Action | Effect |
+|---|---|
+| **Take this side** | Keep this party's change and drop the others' on the same subject |
+| **Drop this change** | Drop this party's change |
+| **Use this value** | Write a merged value; offered where every party sets the same field |
+| **Raise a decision…** | Draft an ADR with each side as an option; the conflict stays until it is settled here |
+
+A settled conflict reads, for example, *Took the side of Queued promotion on the name of Repository
+Promotion Service*, with **Take back**. Once *No conflict stands*, name the integration and select
+**Integrate**; its page opens. The candidates it was made from stay as they were.
+
+Integrating compares what the candidates change. It says nothing about how the result behaves; a
+[stress analysis's test set](stress-test-set.md) judges that.
+
+<!-- TODO screenshot: the comparison page with the Integrate card open on one conflict ("Both change
+     the name of Repository Promotion Service"), the two parties and their actions.
+     Suggested name: docs/media/candidate-integrate.png -->
+
+### Apply a candidate
+
+**Apply to the model…** shows what the apply would write before it writes anything: one line per
+operation with its standing, the operations that will be skipped because the model already holds
+them, and the refusal, if there is one. An apply is refused while an operation conflicts or has
+drifted, or while the candidate it stacks on is not applied:
+
+```
+Apply Integration to the model
+Writes 2 operations to the model in one write.
+CAND@1795677406.ILUhxcR.integration is read on top of CAND@1795677394.SF5EEZV.promotion-base,
+which is not integrated. Apply it first.
+```
+
+**Apply** writes every operation in one transaction and marks the candidate *integrated*.
+
+### Apply as a target state
+
+**Apply as a target state…** writes the candidate into the model beside the baseline and leaves the
+elements it changes as they are. For *Cached index store* the dry run reads:
+
+```
+Writes 17 operations beside the baseline in one write: 1 added element as a draft,
+1 "(target)" copy of what it changes, a Baseline and a Target plateau with a gap
+between them. The elements it changes stay as they are until it is moved into the baseline.
+```
+
+The model then holds *Index Read Cache* as a draft, a "(target)" copy of *Artifact Index Store* with
+the candidate's values and a trace to the original, a Baseline and a Target plateau, and a gap between them, so the target can
+be drawn and reviewed with ordinary diagrams. The candidate's page shows a band
+*In the model as a target state* with two actions:
+
+- **Move into the baseline…** applies the candidate's changes to the originals, then removes the
+  "(target)" copies, the plateaus and the gap. The candidate becomes *integrated*.
+- **Withdraw…** takes the target state out of the model and leaves the baseline as it was before.
+  The candidate becomes a draft again. It is refused while something written since refers to what
+  the target state added, and names what that is.
+
+Both show their operations before they write.
+
+### Save the generated view as a diagram
+
+A candidate drawn on a generated view offers **Save as diagram…**. The new diagram draws the model's
+elements as they are now and becomes the picture the candidate is drawn on. Nothing the candidate
+changes is written before it is applied.
+
+### Abandon a candidate
+
+**Abandon…** offers two ways out:
+
+- **Reject** keeps the candidate, with its operations, as a considered alternative that lost.
+- **Delete** removes it and its operations.
+
+A candidate with a target state in the model is withdrawn first, from the same dialog. A candidate
+that another candidate stacks on, or that a stress analysis starts from or names in a verdict or an
+adaptation, cannot be deleted until that reference is removed; the refusal names it.
+
+&nbsp;
+
+## Why a candidate holds operations over the live model
+
+An alternative could be kept as a branch of the repository, as copies of the elements it changes, or
+as model content from the start. Each has a cost the product avoids. A branch copies the whole model
+and merges it as text. A copy goes stale as the model moves, and nothing tells a stale value from an
+intended one. Alternatives written into the model from the start show every reader of the model
+alternatives nobody has chosen.
+
+A candidate instead holds operations: create, edit or remove an element, and add, edit or remove a
+relation, each with the value it replaces. It copies nothing. The elements it reads over are read
+live, so a change to the model shows through, and each operation's standing is computed on every
+read. An operation whose base the model has changed since is *drifted*, and applying it cannot
+overwrite that change unseen. A candidate written long ago therefore reports which of its edits the
+model has overtaken.
+
+A candidate reaches the model through the same verified write path as every other change, in one
+transaction or not at all. Rejected and integrated candidates stay in the record, so the
+alternatives that were considered can be read later beside the one that was chosen.
+
+&nbsp;
+
+## Candidate architectures through MCP and REST
 
 A candidate architecture is a named, proposed change to the model. It holds a list of operations:
 create, edit and remove an entity; add, edit and remove a connection. It is read on top of the model,
@@ -170,7 +338,8 @@ first where one stands.
 
 ## Stress analyses
 
-A stress analysis evaluates an architecture: its naive candidate. `analysis_start`
+Running an analysis in the GUI is described in [Run a stress analysis](stress-analysis.md). A stress
+analysis evaluates an architecture: its naive candidate. `analysis_start`
 (`POST /api/stress-analyses`) creates the naive candidate and the stress-analysis document in one
 write. The document names the naive candidate and, optionally, a `context`: the environment the
 architecture is evaluated in and the decision the evaluation informs. A document's title is unique

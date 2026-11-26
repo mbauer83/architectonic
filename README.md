@@ -111,7 +111,11 @@ More on the audience in [Who it serves](docs/01-motivation.md#who-it-serves).
 | 🗺️ | **A typed architecture graph** | Entities and connections across motivation → strategy → business → application → technology, geared toward the ArchiMate 4.0 standard | 
 | 🔍 | **Browse and explore** | List, treemap, full-text search, and interactive graph navigation — *what connects to this, and how far to that?* Searching by meaning as well as by term is available where a deployment enables it |
 | 📐 | **Diagram families** | ArchiMate views, C4 (model-backed), UML activity, sequence & class (datatype), and relationship matrices |
+| 🖱️ | **Edit a diagram on its canvas** | Arrange an ArchiMate diagram by hand with grid snapping and alignment guides, create elements and relations where they belong, and save model changes and arrangement in one write, with undo throughout — [how-to](docs/03-modeling/editing-diagrams.md) |
+| 🔦 | **Read a diagram by focus and reach** | Select an element and see what it reaches in and out, one step or all the way, with the direction of flow animated and the reading kept in a link — [reading a diagram](docs/03-modeling/diagramming.md#reading-a-diagram) |
 | 🎨 | **Read a diagram your own way** | Colour and annotate any diagram by any attribute its elements declare, with colours you pick and a legend drawn into the image — for the length of a visit, changing nothing, and exported exactly as shown |
+| 🔀 | **Candidate architectures** | Named alternatives held as changes over the live model, sketched on a canvas, compared and integrated, and applied directly or as a target state beside the baseline — [candidate architectures](docs/03-modeling/candidate-architectures.md) |
+| 🌪️ | **Stress analysis** | Test an architecture against what its environment may do: stressors, the elements they hit, end states answered by adapted candidates, and a held-out test set that yields a residuality figure — [run one](docs/03-modeling/stress-analysis.md) |
 | 🎯 | **Viewpoints** | Criteria-based ways of looking at the model — table/matrix/diagram/exploration, applied to existing diagrams or executed ad hoc, persisted or run on-the-fly |
 | 🧭 | **Impact analysis** | *What is affected if this changes?* — indirect relationships derived across real ones per the ArchiMate rules, as parameterized default viewpoints and ad-hoc graph exploration |
 | ✅ | **Always-on verification** | Schema, referential integrity, cross-repo rules, and PlantUML syntax checked on every write |
@@ -143,6 +147,27 @@ the specialization hierarchy shown inline:
 
 <!-- media: docs/media/entities-list.png -->
 ![The entities catalog filtered to the application domain](docs/media/entities-list.png)
+
+An ArchiMate diagram is **edited on its canvas**. The first drag takes the picture over from the
+automatic layout, and elements snap to a grid and to their neighbours. A right-click creates an
+element in place and a drag from an element's edge draws a relation. Save writes them with the
+arrangement in one write, or writes nothing.
+
+<!-- TODO screenshot: edit mode on an ArchiMate diagram with alignment guides showing during a drag
+     and the change list open. Suggested name: docs/media/diagram-edit-mode.png -->
+
+A **candidate architecture** proposes a change without making it. Sketch *Cached index store* on
+its canvas, adding an *Index Read Cache* and renaming the *Artifact Index Store*, and its page lists
+each change with its standing against the model as it is now. Compare it with other candidates,
+integrate them, and apply the result, or apply it as a target state beside the baseline.
+
+A **stress analysis** writes stressors such as *Forty engagements promote in the same week* against a
+naive architecture, answers the end states they lead to with adapted candidates, and judges the
+adapted architecture on stressors held out from the design work:
+`Residuality +0.33 · survives 3 of 6 (naive 2)`.
+
+<!-- TODO screenshot: the stress-analysis workspace — Stressors tab with the Perspectives line and
+     the incidence grid beside the canvas. Suggested name: docs/media/stress-workspace.png -->
 
 More walkthroughs — graph exploration, diagram authoring, promotion, and assurance — are in
 the [documentation](docs/index.md).
@@ -277,7 +302,7 @@ The agent can then `artifact_query_search_artifacts`, walk the graph with
 |---|---|---|
 | 1 | [Motivation, Ideas, Goals & Scope](docs/01-motivation.md) | Why the project exists; goals, principles, and explicit non-goals |
 | 2 | [Installation & Setup](docs/02-installation.md) | Per-OS prerequisites, dependency groups, backend, MCP, quality checks |
-| 3 | [Architecture Modeling](docs/03-modeling/index.md) | Projects, views, graph exploration, diagramming, viewpoints, [proposing changes](docs/03-modeling/proposing-changes.md), the MCP/REST surface |
+| 3 | [Architecture Modeling](docs/03-modeling/index.md) | Projects, views, graph exploration, diagramming, [editing on the canvas](docs/03-modeling/editing-diagrams.md), viewpoints, [candidate architectures](docs/03-modeling/candidate-architectures.md), [stress analysis](docs/03-modeling/stress-analysis.md), [proposing changes](docs/03-modeling/proposing-changes.md), the MCP/REST surface |
 | 4 | [Assurance — Safety, Security, GRC](docs/04-assurance/index.md) | STPA/CAST/GRC/FMEA methods, assurance diagrams, confidential storage |
 | 5 | [Extensibility](docs/05-extensibility/index.md) | Profiles, guidance, document types, ontology & diagram-type modules, hexagonal core |
 | 6 | [Showcase](docs/06-showcase.md) | The platform's own model, walked from strategy to assurance |

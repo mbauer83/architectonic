@@ -44,7 +44,11 @@ New here? Start with the [Quickstart in the README](../README.md#quickstart), th
 - [Projects & grouping](03-modeling/projects-and-grouping.md)
 - [Views & exploration](03-modeling/views-and-exploration.md)
 - [Diagramming](03-modeling/diagramming.md)
+- [Edit a diagram on its canvas](03-modeling/editing-diagrams.md)
 - [Viewpoints](03-modeling/viewpoints.md)
+- [Candidate architectures](03-modeling/candidate-architectures.md)
+- [Run a stress analysis](03-modeling/stress-analysis.md)
+- [Stress test set](03-modeling/stress-test-set.md)
 - [Motivation coverage](03-modeling/coverage-semantics.md)
 - [Interfaces & MCP](03-modeling/interfaces-and-mcp.md)
 
@@ -77,6 +81,7 @@ New here? Start with the [Quickstart in the README](../README.md#quickstart), th
 ## Reference
 
 - [Configuration](reference/configuration.md)
+- [Diagram canvas](reference/diagram-canvas.md)
 - [CLI & backend](reference/cli-and-backend.md)
 - [Upgrading a deployment](reference/upgrade-guide.md)
 - [Updating an installation](reference/software-update.md)
