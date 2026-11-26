@@ -493,6 +493,31 @@ test('a stressor is ticked on the canvas filling the screen, its row and inciden
   await expect(canvas.locator('[data-marked]')).toHaveCount(1)
 })
 
+test('an adaptation stacked with its core idea shows it on its card and in the integration tick list', async ({ page, request }) => {
+  const { document, naive_candidate: naive } = await startAnalysis(request, 'Stress analysis — core idea')
+  await workspace(page, document, 'adaptations')
+  await page.getByTestId('new-candidate').click()
+  await page.getByLabel('Name').fill('Rule set')
+  await page.getByTestId('new-candidate-description').fill('Rules move out of the code into a versioned rule set.')
+  await page.getByRole('button', { name: /^Stack on/ }).click()
+  await expect.poll(async () => (await listedCandidates(request)).length).toBeGreaterThan(1)
+  const stacked = ((await (await request.get('/api/change-sets')).json()) as
+    { candidates: { id: string; parent: string | null; description: string }[] }).candidates
+    .find((one) => one.parent === naive.record.id)
+  expect(stacked?.description).toBe('Rules move out of the code into a versioned rule set.')
+  candidates.unshift(stacked?.id ?? '')
+
+  await page.getByRole('button', { name: 'Done sketching' }).click()
+  await expect(page.getByTestId('adaptation-description')).toHaveText('Rules move out of the code into a versioned rule set.')
+  // Edited in place under the operations' header, and read again on the card.
+  await page.getByTestId('describe-candidate').click()
+  await page.getByTestId('candidate-description-input').fill('Rules become versioned data.')
+  await page.getByTestId('candidate-description-form').getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByTestId('adaptation-description')).toHaveText('Rules become versioned data.')
+  await workspace(page, document, 'integration')
+  await expect(page.getByTestId('integration-tab').locator('.chosen')).toContainText('Rules become versioned data.')
+})
+
 test('the sketch fills the screen with its band, and its menu opens where it can be seen', async ({ page, request }) => {
   const { document } = await startAnalysis(request, 'Stress analysis — sketched full size')
   await workspace(page, document, 'naive')
