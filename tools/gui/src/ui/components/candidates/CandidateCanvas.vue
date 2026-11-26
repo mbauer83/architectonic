@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Sketching a candidate (06·5, F12, F14): the candidate's own picture in edit mode with the diagram page's own
- * editor (`CanvasContentEditor` over `LayoutLabCanvas`), in a candidate's words. The picture needs no stored
+ * editor (`CanvasContentEditor` over `DiagramCanvas`), in a candidate's words. The picture needs no stored
  * diagram: it starts from the one the candidate is drawn on, from a view of what it reads over, or empty
  * (`candidatePicture`). Beside it the edit panel's search and neighbourhood (`DiagramMemberPicker`) put model
  * elements on it, which the candidate then reads over; an empty candidate may start from a diagram or stack on a
@@ -14,7 +14,7 @@
 import { computed, inject, onMounted, provide, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
 import type { PictureContext } from '../../../domain'
-import type { Marks } from '../../../domain/candidates/canvasMarks'
+import type { Marks } from '../../../domain/candidates/elementMarks'
 import { stableEntityId } from '../../../domain/artifactId'
 import { modelServiceKey } from '../../keys'
 import { formatEffectError } from '../../lib/errors'
@@ -27,8 +27,8 @@ import { useFittedPanZoom } from '../../composables/useFittedPanZoom'
 import CanvasContentEditor from '../CanvasContentEditor.vue'
 import { detailsSourceKey } from '../canvasDetails'
 import { CANDIDATE_WORDS } from '../canvasWords'
-import LayoutLabCanvas from '../layoutLab/LayoutLabCanvas.vue'
-import CanvasMarksLayer from './CanvasMarksLayer.vue'
+import DiagramCanvas from '../canvas/DiagramCanvas.vue'
+import ElementMarksLayer from './ElementMarksLayer.vue'
 import CandidateSeed from './CandidateSeed.vue'
 import DiagramMemberPicker from '../DiagramMemberPicker.vue'
 import DiagramViewportOverlays from '../DiagramViewportOverlays.vue'
@@ -65,7 +65,7 @@ const started = shallowRef<PictureContext['diagram'] | null>(null)
 const editing = useCandidateEditing(svc, () => membershipOf(started.value), () => props.candidateId, recorded)
 /** The panel is open to begin with on a picture that starts empty, where finding elements is the first step. */
 const panelOpen = ref(false)
-const canvas = ref<InstanceType<typeof LayoutLabCanvas> | null>(null)
+const canvas = ref<InstanceType<typeof DiagramCanvas> | null>(null)
 const entityOf = useDrawnEntities(() => context.value, () => editing.session.geometry.value)
 
 /** F14: what the candidate changed, and what it creates (+), drawn by the id the canvas gave it. */
@@ -202,17 +202,17 @@ onMounted(openCanvas)
               :words="CANDIDATE_WORDS"
               @select="canvas?.select($event)"
             >
-              <LayoutLabCanvas
+              <DiagramCanvas
                 ref="canvas"
                 :session="editing.session"
               >
-                <CanvasMarksLayer
+                <ElementMarksLayer
                   :session="editing.session"
                   :entity-of="entityOf"
                   :marks="marks"
                   :tag-size="tagSize"
                 />
-              </LayoutLabCanvas>
+              </DiagramCanvas>
             </CanvasContentEditor>
           </div>
         </div>

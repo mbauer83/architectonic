@@ -8,8 +8,8 @@
  */
 import { computed, type Ref } from 'vue'
 import { stableEntityId } from '../../domain/artifactId'
-import type { Marks } from '../../domain/candidates/canvasMarks'
-import { diffMarks, framedMarks } from '../../domain/candidates/canvasMarks'
+import type { Marks } from '../../domain/candidates/elementMarks'
+import { diffMarks, framedMarks } from '../../domain/candidates/elementMarks'
 import type { WorkspaceTab } from '../../domain/stressAnalysis/analysisProgress'
 import { cell } from '../../domain/stressAnalysis/analysisRows'
 import { INTEGRATION } from '../../domain/stressAnalysis/testSet'

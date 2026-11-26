@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * A diagram drawn by the diagram canvas (`LayoutLabCanvas`), read only, with its reader's marks over
+ * A diagram drawn by the diagram canvas (`DiagramCanvas`), read only, with its reader's marks over
  * it: a candidate against its base, and whatever else the reader marks (a stress analysis marks what
  * its focus hits). A press on an element answers `pick` with its entity id, which is how a stress
  * analysis makes a tick on the picture.
@@ -9,14 +9,14 @@ import { computed, inject, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
 import type { DiagramContext } from '../../../domain'
 import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
-import type { Marks } from '../../../domain/candidates/canvasMarks'
+import type { Marks } from '../../../domain/candidates/elementMarks'
 import { modelServiceKey } from '../../keys'
 import { useArrangementSession } from '../../composables/useArrangementSession'
 import { useDrawnEntities } from '../../composables/useDrawnEntities'
 import { useFittedPanZoom } from '../../composables/useFittedPanZoom'
-import LayoutLabCanvas from '../layoutLab/LayoutLabCanvas.vue'
+import DiagramCanvas from '../canvas/DiagramCanvas.vue'
 import DiagramViewportOverlays from '../DiagramViewportOverlays.vue'
-import CanvasMarksLayer from './CanvasMarksLayer.vue'
+import ElementMarksLayer from './ElementMarksLayer.vue'
 
 const props = defineProps<{
   diagramId: string
@@ -72,19 +72,19 @@ const tagSize = computed(() => 12 / Math.max(panZoom.scale.value, 0.05))
         ref="svgContainer"
         class="svg-wrap"
       >
-        <LayoutLabCanvas
+        <DiagramCanvas
           :session="session"
           readonly
           @pick="pick"
         >
-          <CanvasMarksLayer
+          <ElementMarksLayer
             :session="session"
             :entity-of="entityOf"
             :marks="marks"
             :dimmed="dimmed"
             :tag-size="tagSize"
           />
-        </LayoutLabCanvas>
+        </DiagramCanvas>
       </div>
       <p
         v-else

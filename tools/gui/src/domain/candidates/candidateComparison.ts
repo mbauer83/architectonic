@@ -6,7 +6,7 @@
  */
 import type { ChangeDifference, CandidateSummary } from '../schemas/candidates'
 import { stableEntityId } from '../artifactId'
-import type { Marks } from './canvasMarks'
+import type { Marks } from './elementMarks'
 import { type BaseChoice, chainOf } from './candidateStack'
 
 /** The compared candidates as an address carries them: each once, in the order first named. */

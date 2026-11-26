@@ -12,8 +12,8 @@
 import { onBeforeUnmount, ref, type Ref } from 'vue'
 import { type Side, sideInBand } from '../../domain/layout/edgeBand'
 import type { Extent } from '../../domain/layout/geometry'
-import { lineEndNear } from '../../domain/layout/lab/labRouteEdits'
-import { pointOnPicture } from '../components/layoutLab/pointerOnPicture'
+import { lineEndNear } from '../../domain/layout/canvasRouteEdits'
+import { pointOnPicture } from '../components/canvas/pointerOnPicture'
 import type { DiagramEditing } from './useDiagramEditing'
 
 /** How near a line's end, on screen, a press picks the line rather than the element's edge (Q33). */

@@ -8,7 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Effect } from 'effect'
 import type { Extent } from '../../../domain/layout/geometry'
-import { LINE_DRAWING, SHAPE_DRAWING } from '../../../domain/layout/lab/__tests__/labDrawingFixtures'
+import { LINE_DRAWING, SHAPE_DRAWING } from '../../../domain/layout/__tests__/canvasDrawingFixtures'
 import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
 import type { SurroundPlacement } from '../../../ports/DiagramLayoutRepository'
 import { useArrangementSession } from '../useArrangementSession'

@@ -18,7 +18,7 @@ import type { ArrangedLayout, StoredLayout } from '../../domain/layout/arrangeme
 import {
   arrangedBy, layoutOf, layoutPatchBetween, patchIsEmpty, shownRoutesOfMoved,
 } from '../../domain/layout/arrangementLayout'
-import { drawnArrangement, placedAt } from '../../domain/layout/lab/labArrangement'
+import { drawnArrangement, placedAt } from '../../domain/layout/canvasArrangement'
 import type { Point } from '../../domain/layout/geometry'
 import { occurrenceItems } from '../../domain/diagramOccurrences'
 import type { PendingChange } from '../../domain/layout/sessionChanges'

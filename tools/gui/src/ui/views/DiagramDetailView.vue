@@ -33,7 +33,7 @@ import DiagramOwnIcons from '../components/DiagramOwnIcons.vue'
 import DiagramMatrixView from '../components/DiagramMatrixView.vue'
 import { diagramEditRoute, matrixEditRoute } from '../router/artifactRoutes'
 import DiagramEditBar from '../components/DiagramEditBar.vue'
-import LayoutLabCanvas from '../components/layoutLab/LayoutLabCanvas.vue'
+import DiagramCanvas from '../components/canvas/DiagramCanvas.vue'
 import type { CanvasHandle, EditBarHandle } from '../composables/useDiagramEditMode'
 import { useDiagramEditMode } from '../composables/useDiagramEditMode'
 import { useDiagramPageReader } from '../composables/useDiagramPageReader'
@@ -262,7 +262,7 @@ const executeDelete = () => {
                   :focused="editCanvas?.announced"
                   @select="editCanvas?.select($event)"
                 >
-                  <LayoutLabCanvas
+                  <DiagramCanvas
                     ref="editCanvas"
                     :session="edit.session"
                     :show-breaches="edit.checking.value"

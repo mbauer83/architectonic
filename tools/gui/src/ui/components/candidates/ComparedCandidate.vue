@@ -8,8 +8,8 @@
  */
 import { computed, inject, ref } from 'vue'
 import { stableEntityId } from '../../../domain/artifactId'
-import type { Marks } from '../../../domain/candidates/canvasMarks'
-import { diffMarks, framedMarks } from '../../../domain/candidates/canvasMarks'
+import type { Marks } from '../../../domain/candidates/elementMarks'
+import { diffMarks, framedMarks } from '../../../domain/candidates/elementMarks'
 import { withOthers } from '../../../domain/candidates/candidateComparison'
 import type { Candidates } from '../../composables/useCandidates'
 import { useComposedDrawing } from '../../composables/useComposedDrawing'

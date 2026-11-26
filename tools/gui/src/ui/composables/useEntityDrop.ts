@@ -6,7 +6,7 @@
  */
 import { ref, type Ref } from 'vue'
 import { carriedEntity, carriesEntity } from '../lib/entityDrag'
-import { pointOnPicture } from '../components/layoutLab/pointerOnPicture'
+import { pointOnPicture } from '../components/canvas/pointerOnPicture'
 import type { DiagramEditing } from './useDiagramEditing'
 
 export function useEntityDrop(host: Ref<HTMLElement | null>, editing: DiagramEditing) {
