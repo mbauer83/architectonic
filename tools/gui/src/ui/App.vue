@@ -24,11 +24,10 @@ const addToast: ShowToast = (message, type = 'info', durationMs = 4000, action) 
 }
 
 const {
-  adminMode, readOnly, anyWriteBlocked, authorityKnown, authority, can,
+  adminMode, readOnly, authorityKnown, authority, can,
   syncStatus, engDirty, entStatus, loadSyncStatus,
 } = useSyncCoordination(svc, addToast)
 
-provide('writeBlocked', anyWriteBlocked)
 provide(permissionsKey, can)
 provide(toastKey, addToast)
 </script>

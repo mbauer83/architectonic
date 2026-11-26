@@ -13,7 +13,7 @@ import { computed, inject, onMounted, provide, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
-import { useWriteBlock } from '../composables/useWriteBlock'
+import { useCan } from '../composables/usePermissions'
 import { readErrorMessage } from '../lib/errors'
 import type {
   CriteriaCatalog, ViewpointDefinitionEnvelope, ViewpointPersistResult, ViewpointReferencer, ViewpointValidationIssue,
@@ -40,7 +40,6 @@ import ViewpointQueryTab from '../components/ViewpointQueryTab.vue'
 import ViewpointPresentationTab from '../components/ViewpointPresentationTab.vue'
 
 const svc = inject(modelServiceKey)!
-const writeBlocked = useWriteBlock()
 const route = useRoute()
 const router = useRouter()
 
@@ -56,6 +55,9 @@ const saveError = ref<string | null>(null)
 const draft = ref<ViewpointDefinitionDraft | null>(null)
 const originalDraft = ref<ViewpointDefinitionDraft | null>(null)
 const isCreating = ref(false)
+/** Saving creates a definition while one is being created, and replaces the one open otherwise. */
+const mayCreate = useCan('viewpoints_create_viewpoint')
+const maySave = useCan(() => (isCreating.value ? 'viewpoints_create_viewpoint' : 'viewpoints_replace_viewpoint'))
 const viewingTier = ref<ViewpointDefinitionEnvelope['tier'] | null>(null)
 const isReadOnly = computed(() => viewingTier.value !== null && viewingTier.value !== 'engagement')
 const activeTab = ref<'general' | 'scope' | 'query' | 'presentation'>('general')
@@ -321,7 +323,8 @@ const focusIssue = (issue: ViewpointValidationIssue) => {
           v-if="!isReadOnly"
           type="button"
           class="primary-btn"
-          :disabled="saving || writeBlocked"
+          :disabled="saving || !maySave.allowed"
+          :title="maySave.allowed ? undefined : maySave.reason"
           @click="save"
         >
           {{ saving ? 'Saving…' : 'Save' }}
@@ -330,8 +333,10 @@ const focusIssue = (issue: ViewpointValidationIssue) => {
           v-if="!isCreating"
           type="button"
           class="save-as-btn"
-          :disabled="saving || writeBlocked"
-          title="Keep the current definition (including your unsaved changes) as a new engagement viewpoint — records fork lineage"
+          :disabled="saving || !mayCreate.allowed"
+          :title="mayCreate.allowed
+            ? 'Keep the current definition (including your unsaved changes) as a new engagement viewpoint — records fork lineage'
+            : mayCreate.reason"
           @click="startSaveAs"
         >
           Save as…

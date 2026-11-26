@@ -50,9 +50,6 @@ export function useSyncCoordination(svc: ModelService, addToast: Toast) {
   let eventSource: EventSource | null = null
 
   const authorityKnown = computed(() => authorityFresh.value && serverInfoKnown.value)
-  const anyWriteBlocked = computed(
-    () => !authorityKnown.value || readOnly.value || writeBlocked.value,
-  )
   const authority = computed(() => (authorityFresh.value ? (syncStatus.value?.authority ?? null) : null))
   /** The permission answer every control is offered or refused by (`domain/permissions`). */
   const can = computed((): Can => {
@@ -261,7 +258,6 @@ export function useSyncCoordination(svc: ModelService, addToast: Toast) {
   return {
     adminMode,
     readOnly,
-    anyWriteBlocked,
     authorityKnown,
     authority,
     can,

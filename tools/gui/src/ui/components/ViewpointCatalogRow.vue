@@ -4,6 +4,7 @@
  * per-tier action set. Pure display + emits; catalog state (search/sort/pins) stays in
  * the list. */
 import type { ViewpointDefinitionEnvelope } from '../../domain'
+import PermittedButton from './PermittedButton.vue'
 import { tierDisplayLowercase } from './TierBadge.helpers'
 import { formatScopeSummary } from '../views/ViewpointsManagementView.helpers'
 import {
@@ -15,7 +16,6 @@ defineProps<{
   def: ViewpointDefinitionEnvelope
   pinned: boolean
   scopeExpanded: boolean
-  writeBlocked: boolean
 }>()
 const emit = defineEmits<{
   execute: []
@@ -106,24 +106,22 @@ const emit = defineEmits<{
         >
           Execute
         </button>
-        <button
+        <PermittedButton
           v-if="def.tier === 'engagement'"
-          type="button"
+          operation="viewpoints_replace_viewpoint"
           class="btn"
-          :disabled="writeBlocked"
           @click="emit('edit')"
         >
           Edit
-        </button>
-        <button
+        </PermittedButton>
+        <PermittedButton
           v-if="def.tier === 'engagement'"
-          type="button"
+          operation="viewpoints_delete_viewpoint"
           class="btn btn--danger"
-          :disabled="writeBlocked"
           @click="emit('delete')"
         >
           Delete
-        </button>
+        </PermittedButton>
         <button
           v-else
           type="button"

@@ -13,7 +13,7 @@ import DocumentHomeSelect from '../components/DocumentHomeSelect.vue'
 import { homeForCreate } from '../components/ArtifactHomeSelect.helpers'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
-import { useWriteBlock } from '../composables/useWriteBlock'
+import { useCan } from '../composables/usePermissions'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
 import ArtifactReferenceInput from '../components/ArtifactReferenceInput.vue'
 import { draftDocumentPath } from '../lib/referenceLinks.js'
@@ -24,7 +24,7 @@ import ReferenceTermChips from '../components/ReferenceTermChips.vue'
 const svc = inject(modelServiceKey)!
 const router = useRouter()
 const home = ref('')
-const writeBlocked = useWriteBlock()
+const mayCreate = useCan('documents_create_document')
 
 const documentTypes = ref<DocumentType[]>([])
 const docType = ref('')
@@ -458,8 +458,8 @@ const insertReference = (markdownLink: string) => {
         <button
           class="submit-btn"
           type="button"
-          :disabled="saving || !docType || writeBlocked"
-          :title="writeBlocked ? 'Write operations are temporarily blocked' : ''"
+          :disabled="saving || !docType || !mayCreate.allowed"
+          :title="mayCreate.allowed ? '' : mayCreate.reason"
           @click="submit"
         >
           Create Document

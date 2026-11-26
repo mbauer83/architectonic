@@ -10,7 +10,7 @@ import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Effect } from 'effect'
 import { modelServiceKey } from '../keys'
-import { useWriteBlock } from '../composables/useWriteBlock'
+import { useCan } from '../composables/usePermissions'
 import type { CriteriaCatalog, ViewpointDefinitionEnvelope, ViewpointValidationIssue } from '../../domain'
 import { isEmptyQuery, mkDefinitionDraft } from '../../domain/viewpointDefinitionDraft'
 import type { ViewpointDefinitionDraft } from '../../domain/viewpointDefinitionDraft'
@@ -37,7 +37,7 @@ import ViewpointTablePage from '../components/ViewpointTablePage.vue'
 const svc = inject(modelServiceKey)!
 const route = useRoute()
 const router = useRouter()
-const writeBlocked = useWriteBlock()
+const mayCreate = useCan('viewpoints_create_viewpoint')
 
 // §5.1a "View as… (unsaved)": /viewpoints/query?slug=X re-presents a SAVED viewpoint with a
 // different presentation. Run issues { slug, presentation } (not a query), so the stored
@@ -161,7 +161,7 @@ const clear = () => {
 }
 
 const saveAs = () => {
-  if (writeBlocked.value) return
+  if (!mayCreate.value.allowed) return
   // Route-scoped, in-memory hand-off (no persistence): /viewpoints/new adopts the drafts.
   stageEphemeralViewpointDraft({ query: draft.value.query, presentation: draft.value.presentation })
   void router.push('/viewpoints/new')
@@ -257,7 +257,7 @@ const saveAs = () => {
           Clear
         </button>
         <button
-          v-if="!writeBlocked"
+          v-if="mayCreate.allowed"
           type="button"
           class="save-as-btn"
           :title="saveAsHint"
@@ -268,7 +268,7 @@ const saveAs = () => {
         <span
           v-else
           class="write-block-note"
-        >Saving is unavailable in this read-only workspace — you can still run the query.</span>
+        >Saving is unavailable: {{ mayCreate.reason }}. You can still run the query.</span>
       </div>
     </div>
     <p
