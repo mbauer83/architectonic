@@ -38,7 +38,7 @@ def _asked(text: str) -> set[str]:
 def test_the_gui_names_its_writes_where_this_rule_reads_them() -> None:
     assert _WRITES_TABLE.is_file()
     asked = {name for path in _sources() for name in _asked(path.read_text(encoding="utf-8"))}
-    assert {"viewpoints_create_viewpoint", "documents_create_document", "changes_apply_candidate"} <= asked
+    assert {"viewpoints_create_viewpoint", "documents_create_document", "candidates_apply_candidate"} <= asked
 
 
 def test_every_operation_the_gui_asks_about_is_in_the_catalog() -> None:

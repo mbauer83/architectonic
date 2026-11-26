@@ -57,19 +57,19 @@ def _dumped(edits: list[RecordedEdit]) -> list[dict[str, Any]]:
     return [edit.model_dump(exclude_unset=True) for edit in edits]
 
 
-def change_set_list(repo_root: RepoRoot = None) -> dict[str, Any]:
+def candidate_list(repo_root: RepoRoot = None) -> dict[str, Any]:
     return {"candidates": _service(repo_root).list()}
 
 
-def change_set_read(artifact_id: CandidateId, repo_root: RepoRoot = None) -> dict[str, Any]:
+def candidate_read(artifact_id: CandidateId, repo_root: RepoRoot = None) -> dict[str, Any]:
     return _service(repo_root).read(artifact_id)
 
 
-def change_set_standing(artifact_id: CandidateId, repo_root: RepoRoot = None) -> dict[str, Any]:
+def candidate_standing(artifact_id: CandidateId, repo_root: RepoRoot = None) -> dict[str, Any]:
     return _service(repo_root).standing(artifact_id)
 
 
-def change_set_compare(
+def candidate_compare(
     artifact_id: CandidateId,
     base: Annotated[str, Field(description="`model`, `naive`, or another candidate's id.")] = "model",
     naive: Annotated[str | None, Field(description="The naive candidate's id, with base `naive`.")] = None,
@@ -81,18 +81,18 @@ def change_set_compare(
     return _service(repo_root).compare(artifact_id, base, naive, diagram, process_runtime_catalogs().ontology)
 
 
-def change_set_residuality(artifact_id: CandidateId, repo_root: RepoRoot = None) -> dict[str, Any]:
+def analysis_residuality(artifact_id: CandidateId, repo_root: RepoRoot = None) -> dict[str, Any]:
     return evaluation.residuality_by_analysis(_service(repo_root), artifact_id)
 
 
-def change_set_check(
+def candidate_check(
     candidates: Annotated[list[str], Field(min_length=1, description="Distinct candidate ids, drafts or offered.")],
     repo_root: RepoRoot = None,
 ) -> dict[str, Any]:
     return _service(repo_root).check(candidates)
 
 
-def change_set_create(
+def candidate_create(
     record: CandidateHeader,
     operations: Annotated[list[RecordedEdit] | None, Field(description="Edits recorded in the same write.")] = None,
     repo_root: RepoRoot = None,
@@ -100,7 +100,7 @@ def change_set_create(
     return _service(repo_root).create(record.model_dump(exclude_unset=True), _dumped(operations or []))
 
 
-def change_set_record(
+def candidate_record(
     artifact_id: CandidateId,
     based_on: BasedOn,
     operations: Annotated[list[RecordedEdit], Field(min_length=1, description="Edits, recorded in order.")],
@@ -109,13 +109,13 @@ def change_set_record(
     return _service(repo_root).record(artifact_id, based_on, _dumped(operations))
 
 
-def change_set_edit(
+def candidate_edit(
     artifact_id: CandidateId, based_on: BasedOn, patch: CandidatePatch, repo_root: RepoRoot = None,
 ) -> dict[str, Any]:
     return _service(repo_root).edit(artifact_id, based_on, patch.stated())
 
 
-def change_set_delete(
+def candidate_delete(
     artifact_id: CandidateId,
     based_on: Annotated[str | None, Field(description="The version last read; refuses a changed candidate.")] = None,
     dry_run: bool = True,
@@ -124,33 +124,33 @@ def change_set_delete(
     return _service(repo_root).delete(artifact_id, based_on=based_on, dry_run=dry_run)
 
 
-def change_set_rebase(artifact_id: CandidateId, based_on: BasedOn, repo_root: RepoRoot = None) -> dict[str, Any]:
+def candidate_rebase(artifact_id: CandidateId, based_on: BasedOn, repo_root: RepoRoot = None) -> dict[str, Any]:
     return _service(repo_root).rebase(artifact_id, based_on)
 
 
-def change_set_apply(artifact_id: CandidateId, dry_run: bool = True, repo_root: RepoRoot = None) -> dict[str, Any]:
+def candidate_apply(artifact_id: CandidateId, dry_run: bool = True, repo_root: RepoRoot = None) -> dict[str, Any]:
     return _service(repo_root).apply(artifact_id, dry_run=dry_run)
 
 
-def change_set_apply_as_target_state(
+def candidate_apply_as_target_state(
     artifact_id: CandidateId, dry_run: bool = True, repo_root: RepoRoot = None,
 ) -> dict[str, Any]:
     return apply_as_target_state(_service(repo_root), artifact_id, dry_run=dry_run)
 
 
-def change_set_move_into_baseline(
+def candidate_move_into_baseline(
     artifact_id: CandidateId, dry_run: bool = True, repo_root: RepoRoot = None,
 ) -> dict[str, Any]:
     return move_target_into_baseline(_service(repo_root), artifact_id, dry_run=dry_run)
 
 
-def change_set_withdraw_target_state(
+def candidate_withdraw_target_state(
     artifact_id: CandidateId, dry_run: bool = True, repo_root: RepoRoot = None,
 ) -> dict[str, Any]:
     return withdraw_target_state(_service(repo_root), artifact_id, dry_run=dry_run)
 
 
-def change_set_integrate(
+def candidate_integrate(
     candidates: Annotated[list[str], Field(min_length=2, description="Distinct candidate ids on one parent.")],
     name: Annotated[str, Field(min_length=1, description="The integration's name.")],
     rationale: str = "",
@@ -166,7 +166,7 @@ def change_set_integrate(
     )
 
 
-def change_set_save_diagram(
+def candidate_save_diagram(
     artifact_id: CandidateId,
     based_on: BasedOn,
     name: Annotated[str | None, Field(description="The new diagram's name; the candidate's own when omitted.")] = None,
@@ -247,31 +247,31 @@ def analysis_hold_out_test_set(
 
 
 _READ_TOOLS = (
-    (change_set_list, said.CHANGE_SET_LIST),
-    (change_set_read, said.CHANGE_SET_READ),
-    (change_set_standing, said.CHANGE_SET_STANDING),
-    (change_set_compare, said.CHANGE_SET_COMPARE),
-    (change_set_residuality, said.CHANGE_SET_RESIDUALITY),
-    (change_set_check, said.CHANGE_SET_CHECK),
+    (candidate_list, said.CANDIDATE_LIST),
+    (candidate_read, said.CANDIDATE_READ),
+    (candidate_standing, said.CANDIDATE_STANDING),
+    (candidate_compare, said.CANDIDATE_COMPARE),
+    (candidate_check, said.CANDIDATE_CHECK),
     (analysis_progress, said.ANALYSIS_PROGRESS),
     (analysis_incidence, said.ANALYSIS_INCIDENCE),
     (analysis_test_set, said.ANALYSIS_TEST_SET),
+    (analysis_residuality, said.ANALYSIS_RESIDUALITY),
     (analysis_perspectives, said.ANALYSIS_PERSPECTIVES),
 )
 
 #: Each write tool, what it says, and whether it only adds (a create) or may replace or remove.
 _WRITE_TOOLS = (
-    (change_set_create, said.CHANGE_SET_CREATE, LOCAL_WRITE),
-    (change_set_record, said.CHANGE_SET_RECORD, DESTRUCTIVE_LOCAL_WRITE),
-    (change_set_edit, said.CHANGE_SET_EDIT, DESTRUCTIVE_LOCAL_WRITE),
-    (change_set_rebase, said.CHANGE_SET_REBASE, DESTRUCTIVE_LOCAL_WRITE),
-    (change_set_apply, said.CHANGE_SET_APPLY, DESTRUCTIVE_LOCAL_WRITE),
-    (change_set_apply_as_target_state, said.CHANGE_SET_APPLY_AS_TARGET_STATE, LOCAL_WRITE),
-    (change_set_move_into_baseline, said.CHANGE_SET_MOVE_INTO_BASELINE, DESTRUCTIVE_LOCAL_WRITE),
-    (change_set_withdraw_target_state, said.CHANGE_SET_WITHDRAW_TARGET_STATE, DESTRUCTIVE_LOCAL_WRITE),
-    (change_set_save_diagram, said.CHANGE_SET_SAVE_DIAGRAM, LOCAL_WRITE),
-    (change_set_integrate, said.CHANGE_SET_INTEGRATE, LOCAL_WRITE),
-    (change_set_delete, said.CHANGE_SET_DELETE, DESTRUCTIVE_LOCAL_WRITE),
+    (candidate_create, said.CANDIDATE_CREATE, LOCAL_WRITE),
+    (candidate_record, said.CANDIDATE_RECORD, DESTRUCTIVE_LOCAL_WRITE),
+    (candidate_edit, said.CANDIDATE_EDIT, DESTRUCTIVE_LOCAL_WRITE),
+    (candidate_rebase, said.CANDIDATE_REBASE, DESTRUCTIVE_LOCAL_WRITE),
+    (candidate_apply, said.CANDIDATE_APPLY, DESTRUCTIVE_LOCAL_WRITE),
+    (candidate_apply_as_target_state, said.CANDIDATE_APPLY_AS_TARGET_STATE, LOCAL_WRITE),
+    (candidate_move_into_baseline, said.CANDIDATE_MOVE_INTO_BASELINE, DESTRUCTIVE_LOCAL_WRITE),
+    (candidate_withdraw_target_state, said.CANDIDATE_WITHDRAW_TARGET_STATE, DESTRUCTIVE_LOCAL_WRITE),
+    (candidate_save_diagram, said.CANDIDATE_SAVE_DIAGRAM, LOCAL_WRITE),
+    (candidate_integrate, said.CANDIDATE_INTEGRATE, LOCAL_WRITE),
+    (candidate_delete, said.CANDIDATE_DELETE, DESTRUCTIVE_LOCAL_WRITE),
     (analysis_start, said.ANALYSIS_START, LOCAL_WRITE),
     (analysis_hold_out_test_set, said.ANALYSIS_HOLD_OUT, DESTRUCTIVE_LOCAL_WRITE),
 )

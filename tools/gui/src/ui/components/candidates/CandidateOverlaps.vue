@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * What the server's integration check found between candidates (`changes_check_candidates`): each
+ * What the server's integration check found between candidates (`candidates_check_candidates`): each
  * overlap — the same element, field or relation touched by more than one, or one removing what
  * another uses — with its parties and their operations. Shared by a stress analysis's Integration tab
  * and the candidate comparison, so an overlap reads the same on both.

@@ -1260,7 +1260,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/change-set-checks": {
+    "/api/candidate-checks": {
         parameters: {
             query?: never;
             header?: never;
@@ -1270,14 +1270,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Check candidate architectures for integration conflicts */
-        post: operations["changes_check_candidates"];
+        post: operations["candidates_check_candidates"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/change-set-integrations": {
+    "/api/candidate-integrations": {
         parameters: {
             query?: never;
             header?: never;
@@ -1294,14 +1294,14 @@ export interface paths {
          *     standing with the actions each permits; integrating while one stands is refused (409). Nothing is written to
          *     the model.
          */
-        post: operations["changes_integrate_candidates"];
+        post: operations["candidates_integrate_candidates"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets": {
+    "/api/candidates": {
         parameters: {
             query?: never;
             header?: never;
@@ -1309,17 +1309,17 @@ export interface paths {
             cookie?: never;
         };
         /** List candidate architectures */
-        get: operations["changes_list_candidates"];
+        get: operations["candidates_list_candidates"];
         put?: never;
         /** Create a candidate architecture */
-        post: operations["changes_create_candidate"];
+        post: operations["candidates_create_candidate"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}": {
+    "/api/candidates/{artifact_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1327,7 +1327,7 @@ export interface paths {
             cookie?: never;
         };
         /** Read a candidate and its version */
-        get: operations["changes_read_candidate"];
+        get: operations["candidates_read_candidate"];
         put?: never;
         post?: never;
         /**
@@ -1336,14 +1336,14 @@ export interface paths {
          *     from it, an analysis's verdicts or adaptations name it, or it is integrated (kept as the record of what was
          *     written). A committed deletion answers 204; a dry run answers 200 with the plan.
          */
-        delete: operations["changes_delete_candidate"];
+        delete: operations["candidates_delete_candidate"];
         options?: never;
         head?: never;
         /** Edit fields of a versioned candidate */
-        patch: operations["changes_edit_candidate"];
+        patch: operations["candidates_edit_candidate"];
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/apply": {
+    "/api/candidates/{artifact_id}/apply": {
         parameters: {
             query?: never;
             header?: never;
@@ -1359,14 +1359,14 @@ export interface paths {
          *     All operations land or none do. On success the candidate is integrated. A dry run answers the
          *     refusal instead of raising it.
          */
-        post: operations["changes_apply_candidate"];
+        post: operations["candidates_apply_candidate"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/apply-as-target-state": {
+    "/api/candidates/{artifact_id}/apply-as-target-state": {
         parameters: {
             query?: never;
             header?: never;
@@ -1382,14 +1382,14 @@ export interface paths {
          *     operations are kept unapplied to the originals. Refused with 409 as a direct apply is, and while its
          *     target state is already in the model. A dry run answers what would be written.
          */
-        post: operations["changes_apply_candidate_as_target_state"];
+        post: operations["candidates_apply_candidate_as_target_state"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/diff": {
+    "/api/candidates/{artifact_id}/diff": {
         parameters: {
             query?: never;
             header?: never;
@@ -1397,7 +1397,7 @@ export interface paths {
             cookie?: never;
         };
         /** Compare a composed candidate against a selected base */
-        get: operations["changes_compare_candidate"];
+        get: operations["candidates_compare_candidate"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1406,7 +1406,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/move-into-baseline": {
+    "/api/candidates/{artifact_id}/move-into-baseline": {
         parameters: {
             query?: never;
             header?: never;
@@ -1421,14 +1421,14 @@ export interface paths {
          *     and gap removed, and the added elements made active — one generated list, refused with 409 while an
          *     operation conflicts or has drifted. On success the candidate is integrated.
          */
-        post: operations["changes_move_candidate_into_baseline"];
+        post: operations["candidates_move_candidate_into_baseline"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/operations": {
+    "/api/candidates/{artifact_id}/operations": {
         parameters: {
             query?: never;
             header?: never;
@@ -1442,14 +1442,14 @@ export interface paths {
          * @description Merged per claim: an edit replaces the one before it, and an edit back to its base drops it. All the
          *     edits are written or none; the answer is the record and its new version.
          */
-        post: operations["changes_record_operation"];
+        post: operations["candidates_record_operation"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/picture": {
+    "/api/candidates/{artifact_id}/picture": {
         parameters: {
             query?: never;
             header?: never;
@@ -1461,7 +1461,7 @@ export interface paths {
          * @description The stored diagram's picture, the view generated from what the candidate reads over, or the empty
          *     picture of a candidate that reads over nothing yet.
          */
-        get: operations["changes_read_candidate_picture"];
+        get: operations["candidates_read_candidate_picture"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1470,7 +1470,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/picture/context": {
+    "/api/candidates/{artifact_id}/picture/context": {
         parameters: {
             query?: never;
             header?: never;
@@ -1483,7 +1483,7 @@ export interface paths {
          *     relations the model holds among, and the elements one and two steps from, what it draws and every element
          *     the candidate reads over.
          */
-        get: operations["changes_read_candidate_picture_context"];
+        get: operations["candidates_read_candidate_picture_context"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1492,7 +1492,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/picture/preview": {
+    "/api/candidates/{artifact_id}/picture/preview": {
         parameters: {
             query?: never;
             header?: never;
@@ -1506,14 +1506,14 @@ export interface paths {
          * @description The session's composition, with the elements and relations it proposes, drawn over where the picture
          *     starts; a composition that draws nothing is the empty picture. Writes nothing.
          */
-        post: operations["changes_preview_candidate_picture"];
+        post: operations["candidates_preview_candidate_picture"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/picture/shapes/preview": {
+    "/api/candidates/{artifact_id}/picture/shapes/preview": {
         parameters: {
             query?: never;
             header?: never;
@@ -1526,14 +1526,14 @@ export interface paths {
          * Draw resized shapes of the picture a candidate is sketched on, writing nothing
          * @description Each shape drawn by the composer at its new size; the candidate must be stored (404).
          */
-        post: operations["changes_preview_candidate_picture_shapes"];
+        post: operations["candidates_preview_candidate_picture_shapes"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/rebase": {
+    "/api/candidates/{artifact_id}/rebase": {
         parameters: {
             query?: never;
             header?: never;
@@ -1546,14 +1546,14 @@ export interface paths {
          * Re-base a candidate's drifted operations on the current model
          * @description Each drifted operation keeps what it asks for and is written against the model as it stands now.
          */
-        post: operations["changes_rebase_candidate"];
+        post: operations["candidates_rebase_candidate"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/residuality": {
+    "/api/candidates/{artifact_id}/residuality": {
         parameters: {
             query?: never;
             header?: never;
@@ -1561,7 +1561,7 @@ export interface paths {
             cookie?: never;
         };
         /** Read a candidate's residuality in each analysis that judged it */
-        get: operations["changes_read_residuality"];
+        get: operations["candidates_read_residuality"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1570,7 +1570,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/save-as-diagram": {
+    "/api/candidates/{artifact_id}/save-as-diagram": {
         parameters: {
             query?: never;
             header?: never;
@@ -1586,14 +1586,14 @@ export interface paths {
          *     the candidate is then drawn on it. Nothing the candidate changes is written. Refused (409) where the
          *     candidate is drawn on a stored diagram already, is final, or changed since `based_on`.
          */
-        post: operations["changes_save_candidate_diagram"];
+        post: operations["candidates_save_candidate_diagram"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/standing": {
+    "/api/candidates/{artifact_id}/standing": {
         parameters: {
             query?: never;
             header?: never;
@@ -1601,7 +1601,7 @@ export interface paths {
             cookie?: never;
         };
         /** Read how each operation stands against the current model */
-        get: operations["changes_read_standing"];
+        get: operations["candidates_read_standing"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1610,7 +1610,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/change-sets/{artifact_id}/withdraw-target-state": {
+    "/api/candidates/{artifact_id}/withdraw-target-state": {
         parameters: {
             query?: never;
             header?: never;
@@ -1626,7 +1626,7 @@ export interface paths {
          *     with 409 while something written since refers to one of them: a relation the target state did not write, or a
          *     diagram drawing one, each named. A dry run answers the removals and the refusal.
          */
-        post: operations["changes_withdraw_candidate_target_state"];
+        post: operations["candidates_withdraw_candidate_target_state"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2545,44 +2545,6 @@ export interface paths {
         patch: operations["documents_update_document"];
         trace?: never;
     };
-    "/api/documents/{artifact_id}/incidence": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read stressor hits and coupling counts */
-        get: operations["documents_analysis_incidence"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/documents/{artifact_id}/progress": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Read unfinished stress analysis and coverage hints
-         * @description Coverage reads the perspectives this repository offers (`/api/stress-perspectives`), the one vocabulary of
-         *     kinds.
-         */
-        get: operations["documents_analysis_progress"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/documents/{artifact_id}/tables": {
         parameters: {
             query?: never;
@@ -2627,46 +2589,6 @@ export interface paths {
          *     other rows are unaffected by it. An added row takes the next id, answered in `added_row_ids`.
          */
         patch: operations["documents_update_document_table"];
-        trace?: never;
-    };
-    "/api/documents/{artifact_id}/test-set": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Read a stress analysis's test set, its verdicts and the residuality they give
-         * @description Residuality (Y − X) / n is given once an architecture and the naive are judged on every usable stressor.
-         */
-        get: operations["documents_analysis_test_set"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/documents/{artifact_id}/test-set/hold-out": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Hold a random third of the design stressors out into the test set
-         * @description The seed drawn with is answered, so the same draw can be made again. Fewer than three design stressors: 422.
-         */
-        post: operations["documents_hold_out_test_set"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/entities": {
@@ -3504,6 +3426,84 @@ export interface paths {
          * @description One write: the naive architecture and the document naming it are both written, or neither is.
          */
         post: operations["documents_start_stress_analysis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stress-analyses/{artifact_id}/incidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read stressor hits and coupling counts */
+        get: operations["documents_analysis_incidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stress-analyses/{artifact_id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read unfinished stress analysis and coverage hints
+         * @description Coverage reads the perspectives this repository offers (`/api/stress-perspectives`), the one vocabulary of
+         *     kinds.
+         */
+        get: operations["documents_analysis_progress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stress-analyses/{artifact_id}/test-set": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a stress analysis's test set, its verdicts and the residuality they give
+         * @description Residuality (Y − X) / n is given once an architecture and the naive are judged on every usable stressor.
+         */
+        get: operations["documents_analysis_test_set"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stress-analyses/{artifact_id}/test-set/hold-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Hold a random third of the design stressors out into the test set
+         * @description The seed drawn with is answered, so the same draw can be made again. Fewer than three design stressors: 422.
+         */
+        post: operations["documents_hold_out_test_set"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19683,7 +19683,7 @@ export interface operations {
             };
         };
     };
-    changes_check_candidates: {
+    candidates_check_candidates: {
         parameters: {
             query?: never;
             header?: never;
@@ -19734,7 +19734,7 @@ export interface operations {
             };
         };
     };
-    changes_integrate_candidates: {
+    candidates_integrate_candidates: {
         parameters: {
             query?: never;
             header?: never;
@@ -19821,7 +19821,7 @@ export interface operations {
             };
         };
     };
-    changes_list_candidates: {
+    candidates_list_candidates: {
         parameters: {
             query?: never;
             header?: never;
@@ -19868,7 +19868,7 @@ export interface operations {
             };
         };
     };
-    changes_create_candidate: {
+    candidates_create_candidate: {
         parameters: {
             query?: never;
             header?: never;
@@ -19955,7 +19955,7 @@ export interface operations {
             };
         };
     };
-    changes_read_candidate: {
+    candidates_read_candidate: {
         parameters: {
             query?: never;
             header?: never;
@@ -20004,7 +20004,7 @@ export interface operations {
             };
         };
     };
-    changes_delete_candidate: {
+    candidates_delete_candidate: {
         parameters: {
             query?: {
                 /** @description The version last read; a candidate changed since is refused with 409 instead of deleted. */
@@ -20110,7 +20110,7 @@ export interface operations {
             };
         };
     };
-    changes_edit_candidate: {
+    candidates_edit_candidate: {
         parameters: {
             query?: never;
             header?: never;
@@ -20199,7 +20199,7 @@ export interface operations {
             };
         };
     };
-    changes_apply_candidate: {
+    candidates_apply_candidate: {
         parameters: {
             query?: never;
             header?: never;
@@ -20288,7 +20288,7 @@ export interface operations {
             };
         };
     };
-    changes_apply_candidate_as_target_state: {
+    candidates_apply_candidate_as_target_state: {
         parameters: {
             query?: never;
             header?: never;
@@ -20377,7 +20377,7 @@ export interface operations {
             };
         };
     };
-    changes_compare_candidate: {
+    candidates_compare_candidate: {
         parameters: {
             query?: {
                 /** @description Model, naive or a candidate id. */
@@ -20433,7 +20433,7 @@ export interface operations {
             };
         };
     };
-    changes_move_candidate_into_baseline: {
+    candidates_move_candidate_into_baseline: {
         parameters: {
             query?: never;
             header?: never;
@@ -20522,7 +20522,7 @@ export interface operations {
             };
         };
     };
-    changes_record_operation: {
+    candidates_record_operation: {
         parameters: {
             query?: never;
             header?: never;
@@ -20611,7 +20611,7 @@ export interface operations {
             };
         };
     };
-    changes_read_candidate_picture: {
+    candidates_read_candidate_picture: {
         parameters: {
             query?: never;
             header?: never;
@@ -20660,7 +20660,7 @@ export interface operations {
             };
         };
     };
-    changes_read_candidate_picture_context: {
+    candidates_read_candidate_picture_context: {
         parameters: {
             query?: never;
             header?: never;
@@ -20709,7 +20709,7 @@ export interface operations {
             };
         };
     };
-    changes_preview_candidate_picture: {
+    candidates_preview_candidate_picture: {
         parameters: {
             query?: never;
             header?: never;
@@ -20807,7 +20807,7 @@ export interface operations {
             };
         };
     };
-    changes_preview_candidate_picture_shapes: {
+    candidates_preview_candidate_picture_shapes: {
         parameters: {
             query?: never;
             header?: never;
@@ -20905,7 +20905,7 @@ export interface operations {
             };
         };
     };
-    changes_rebase_candidate: {
+    candidates_rebase_candidate: {
         parameters: {
             query?: never;
             header?: never;
@@ -20994,7 +20994,7 @@ export interface operations {
             };
         };
     };
-    changes_read_residuality: {
+    candidates_read_residuality: {
         parameters: {
             query?: never;
             header?: never;
@@ -21043,7 +21043,7 @@ export interface operations {
             };
         };
     };
-    changes_save_candidate_diagram: {
+    candidates_save_candidate_diagram: {
         parameters: {
             query?: never;
             header?: never;
@@ -21132,7 +21132,7 @@ export interface operations {
             };
         };
     };
-    changes_read_standing: {
+    candidates_read_standing: {
         parameters: {
             query?: never;
             header?: never;
@@ -21181,7 +21181,7 @@ export interface operations {
             };
         };
     };
-    changes_withdraw_candidate_target_state: {
+    candidates_withdraw_candidate_target_state: {
         parameters: {
             query?: never;
             header?: never;
@@ -25006,104 +25006,6 @@ export interface operations {
             };
         };
     };
-    documents_analysis_incidence: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                artifact_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AnalysisIncidence"];
-                };
-            };
-            /** @description Artifact not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Request validation failed */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Unhandled server error (non-disclosing) */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-        };
-    };
-    documents_analysis_progress: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                artifact_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AnalysisProgress"];
-                };
-            };
-            /** @description Artifact not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Request validation failed */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Unhandled server error (non-disclosing) */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-        };
-    };
     documents_list_document_tables: {
         parameters: {
             query?: never;
@@ -25176,144 +25078,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DocumentTableWriteResponse"];
-                };
-            };
-            /** @description Validation error (bad or ambiguous write) */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Write conflict */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Request body larger than the operation accepts; the details carry the limit */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Request validation failed */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Write temporarily rejected by the workspace gate (retryable) */
-            423: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Unhandled server error (non-disclosing) */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-        };
-    };
-    documents_analysis_test_set: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                artifact_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AnalysisEvaluation"];
-                };
-            };
-            /** @description Artifact not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Request validation failed */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-            /** @description Unhandled server error (non-disclosing) */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
-        };
-    };
-    documents_hold_out_test_set: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                artifact_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["HoldOut"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HeldOut"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */
@@ -28701,6 +28465,242 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnalysisStarted"];
+                };
+            };
+            /** @description Validation error (bad or ambiguous write) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write forbidden (e.g. admin mode not enabled, or mutation denied) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request body larger than the operation accepts; the details carry the limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Write temporarily rejected by the workspace gate (retryable) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_analysis_incidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisIncidence"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_analysis_progress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisProgress"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_analysis_test_set: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisEvaluation"];
+                };
+            };
+            /** @description Artifact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Unhandled server error (non-disclosing) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    documents_hold_out_test_set: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HoldOut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeldOut"];
                 };
             };
             /** @description Validation error (bad or ambiguous write) */

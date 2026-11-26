@@ -318,7 +318,7 @@ def _a_draft(candidate: CandidateArchitecture, done: str) -> CandidateArchitectu
     if candidate.state == "candidate":
         raise CandidateConflict(
             f"{candidate.id} is offered (state candidate); only a draft is {done}. Return it to draft first "
-            "(change_set_edit, or PATCH, with state draft)."
+            "(candidate_edit, or PATCH, with state draft)."
         )
     raise CandidateConflict(f"{candidate.id} is {candidate.state}, which is final; only a draft is {done}.")
 

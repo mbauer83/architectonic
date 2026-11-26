@@ -113,7 +113,7 @@ READ_CALLS: tuple[ToolCall, ...] = (
     ToolCall("artifact_query_document_tables", lambda s: {"artifact_id": s.document_id}, ("document_id",)),
     ToolCall("scratchpad_list"),
     ToolCall("scratchpad_read", lambda s: {"artifact_id": s.scratchpad_id}, ("scratchpad_id",)),
-    ToolCall("change_set_list"),
+    ToolCall("candidate_list"),
     ToolCall("analysis_perspectives"),
     # ── assurance read ────────────────────────────────────────────────────────
     ToolCall("assurance_store_status"),
@@ -161,11 +161,11 @@ _NEEDS_AN_ANALYSIS = (
 
 #: Read-mount tools this walk does not call, each with why. Shrink-only.
 UNEXERCISED: Mapping[str, str] = {
-    "change_set_read": _NEEDS_A_CANDIDATE,
-    "change_set_standing": _NEEDS_A_CANDIDATE,
-    "change_set_compare": _NEEDS_A_CANDIDATE,
-    "change_set_residuality": _NEEDS_A_CANDIDATE,
-    "change_set_check": _NEEDS_A_CANDIDATE,
+    "candidate_read": _NEEDS_A_CANDIDATE,
+    "candidate_standing": _NEEDS_A_CANDIDATE,
+    "candidate_compare": _NEEDS_A_CANDIDATE,
+    "analysis_residuality": _NEEDS_A_CANDIDATE,
+    "candidate_check": _NEEDS_A_CANDIDATE,
     "analysis_incidence": _NEEDS_AN_ANALYSIS,
     "analysis_progress": _NEEDS_AN_ANALYSIS,
     "analysis_test_set": _NEEDS_AN_ANALYSIS,

@@ -35,7 +35,7 @@ from src.infrastructure.rest.contracts.diagram_layout_editing import (
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._candidate_access import refusals, service
-from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_CHANGES, WRITE_RESPONSES
+from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_CANDIDATES, WRITE_RESPONSES
 from src.infrastructure.rest.routers.picture_reads import (
     diagram_read,
     drawn_shapes,
@@ -61,15 +61,15 @@ def _start(artifact_id: str) -> PictureStart:
 
 
 @router.get(
-    "/api/change-sets/{artifact_id}/picture/context",
-    operation_id="changes_read_candidate_picture_context",
-    tags=[TAG_CHANGES],
+    "/api/candidates/{artifact_id}/picture/context",
+    operation_id="candidates_read_candidate_picture_context",
+    tags=[TAG_CANDIDATES],
     summary="Read a candidate's picture with everything its editor needs",
     response_model=CandidatePictureContext,
     response_model_exclude_none=True,
     responses=READ_RESPONSES,
 )
-def changes_read_candidate_picture_context(artifact_id: str, catalogs: Catalogs) -> dict[str, Any]:
+def candidates_read_candidate_picture_context(artifact_id: str, catalogs: Catalogs) -> dict[str, Any]:
     """What the picture starts from — a stored diagram's membership, or the generated view's — with the
     relations the model holds among, and the elements one and two steps from, what it draws and every element
     the candidate reads over."""
@@ -93,15 +93,15 @@ def changes_read_candidate_picture_context(artifact_id: str, catalogs: Catalogs)
 
 
 @router.get(
-    "/api/change-sets/{artifact_id}/picture",
-    operation_id="changes_read_candidate_picture",
-    tags=[TAG_CHANGES],
+    "/api/candidates/{artifact_id}/picture",
+    operation_id="candidates_read_candidate_picture",
+    tags=[TAG_CANDIDATES],
     summary="Read the picture a candidate is sketched on",
     response_model=DiagramLayoutGeometryResponse,
     response_model_exclude_none=True,
     responses=READ_RESPONSES,
 )
-def changes_read_candidate_picture(artifact_id: str, catalogs: Catalogs) -> dict[str, object]:
+def candidates_read_candidate_picture(artifact_id: str, catalogs: Catalogs) -> dict[str, object]:
     """The stored diagram's picture, the view generated from what the candidate reads over, or the empty
     picture of a candidate that reads over nothing yet."""
     start = _start(artifact_id)
@@ -109,16 +109,16 @@ def changes_read_candidate_picture(artifact_id: str, catalogs: Catalogs) -> dict
 
 
 @router.post(
-    "/api/change-sets/{artifact_id}/picture/preview",
-    operation_id="changes_preview_candidate_picture",
-    tags=[TAG_CHANGES],
+    "/api/candidates/{artifact_id}/picture/preview",
+    operation_id="candidates_preview_candidate_picture",
+    tags=[TAG_CANDIDATES],
     summary="Draw an edit session's composition over the picture a candidate is sketched on",
     response_model=DiagramLayoutGeometryResponse,
     response_model_exclude_none=True,
     # A write-shaped operation that mutates nothing, as the diagram preview is.
     responses={**READ_RESPONSES, **WRITE_RESPONSES},
 )
-def changes_preview_candidate_picture(
+def candidates_preview_candidate_picture(
     artifact_id: str, body: GeometryPreviewBody, catalogs: Catalogs,
 ) -> dict[str, object]:
     """The session's composition, with the elements and relations it proposes, drawn over where the picture
@@ -133,15 +133,15 @@ def changes_preview_candidate_picture(
 
 
 @router.post(
-    "/api/change-sets/{artifact_id}/picture/shapes/preview",
-    operation_id="changes_preview_candidate_picture_shapes",
-    tags=[TAG_CHANGES],
+    "/api/candidates/{artifact_id}/picture/shapes/preview",
+    operation_id="candidates_preview_candidate_picture_shapes",
+    tags=[TAG_CANDIDATES],
     summary="Draw resized shapes of the picture a candidate is sketched on, writing nothing",
     response_model=ShapeDrawingsResponse,
     response_model_exclude_none=True,
     responses={**READ_RESPONSES, **WRITE_RESPONSES},
 )
-def changes_preview_candidate_picture_shapes(artifact_id: str, body: DrawShapesBody) -> dict[str, object]:
+def candidates_preview_candidate_picture_shapes(artifact_id: str, body: DrawShapesBody) -> dict[str, object]:
     """Each shape drawn by the composer at its new size; the candidate must be stored (404)."""
     _start(artifact_id)
     return drawn_shapes(body)

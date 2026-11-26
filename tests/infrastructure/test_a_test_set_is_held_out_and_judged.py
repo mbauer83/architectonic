@@ -54,7 +54,7 @@ def _rows(client: TestClient, document: str, table: str, rows: list[dict[str, ob
 
 def test_a_hold_out_moves_a_seeded_third_and_the_design_reads_lose_it(client: TestClient) -> None:
     document, _naive = _start(client, 6)
-    path = f"/api/documents/{document}/test-set"
+    path = f"/api/stress-analyses/{document}/test-set"
 
     planned = client.post(path + "/hold-out", json={"seed": 11})
     assert planned.status_code == 200, planned.text
@@ -69,24 +69,24 @@ def test_a_hold_out_moves_a_seeded_third_and_the_design_reads_lose_it(client: Te
     assert [row["id"] for row in read["stressors"]] == held["held_out"]
     assert read["design_stressors"] == 4
     assert read == mcp.analysis_test_set(document, str(client.root))  # type: ignore[attr-defined]
-    design = {row["id"] for row in client.get(f"/api/documents/{document}/incidence").json()["stressors"]}
+    design = {row["id"] for row in client.get(f"/api/stress-analyses/{document}/incidence").json()["stressors"]}
     assert design.isdisjoint(held["held_out"]) and len(design) == 4
 
 
 def test_too_few_design_stressors_are_refused_and_nothing_moves(client: TestClient) -> None:
     document, _naive = _start(client, 2)
 
-    refused = client.post(f"/api/documents/{document}/test-set/hold-out", json={"dry_run": False})
+    refused = client.post(f"/api/stress-analyses/{document}/test-set/hold-out", json={"dry_run": False})
 
     assert refused.status_code == 422
     assert "at least three design stressors" in refused.json()["detail"]["message"]
-    assert client.get(f"/api/documents/{document}/test-set").json()["design_stressors"] == 2
+    assert client.get(f"/api/stress-analyses/{document}/test-set").json()["design_stressors"] == 2
 
 
 def test_an_unseeded_dry_run_previews_the_draw_the_write_then_makes(client: TestClient) -> None:
     """Regression: an unseeded dry run drew one third and the unseeded write another."""
     document, _naive = _start(client, 6)
-    path = f"/api/documents/{document}/test-set/hold-out"
+    path = f"/api/stress-analyses/{document}/test-set/hold-out"
 
     previews = [client.post(path, json={}).json() for _ in range(2)]
     written = client.post(path, json={"dry_run": False}).json()
@@ -99,7 +99,7 @@ def test_an_unseeded_dry_run_previews_the_draw_the_write_then_makes(client: Test
 def test_a_retried_hold_out_answers_the_same_draw_and_holds_out_nothing_more(client: TestClient) -> None:
     """Regression: a retried write held out a third of what the first one left."""
     document, _naive = _start(client, 6)
-    path = f"/api/documents/{document}/test-set"
+    path = f"/api/stress-analyses/{document}/test-set"
     first = client.post(path + "/hold-out", json={"dry_run": False}).json()
 
     again = client.post(path + "/hold-out", json={"dry_run": False})
@@ -113,7 +113,7 @@ def test_a_retried_hold_out_answers_the_same_draw_and_holds_out_nothing_more(cli
 
 def test_a_different_draw_over_a_held_test_set_is_refused(client: TestClient) -> None:
     document, _naive = _start(client, 6)
-    path = f"/api/documents/{document}/test-set/hold-out"
+    path = f"/api/stress-analyses/{document}/test-set/hold-out"
     first = client.post(path, json={"seed": 11, "dry_run": False}).json()
     stressors = [f"S{n}" for n in range(1, 7)]
     other = next(seed for seed in range(100) if list(held_out(stressors, seed)) != first["held_out"])
@@ -127,7 +127,7 @@ def test_a_different_draw_over_a_held_test_set_is_refused(client: TestClient) ->
 @pytest.mark.verifies("REQ@1795548363.8FZbiLJ")
 def test_verdicts_written_as_rows_read_back_as_residuality_on_every_surface(client: TestClient) -> None:
     document, naive = _start(client, 0)
-    candidate = client.post("/api/change-sets", json={"record": {"name": "Adapted", "parent": naive}}).json()
+    candidate = client.post("/api/candidates", json={"record": {"name": "Adapted", "parent": naive}}).json()
     adapted = candidate["record"]["id"]
     tests = _rows(client, document, "stressors",
                   [{"op": "add", "cells": {"stressor": f"Held {n}", "set": "test"}} for n in range(3)])
@@ -139,7 +139,7 @@ def test_verdicts_written_as_rows_read_back_as_residuality_on_every_surface(clie
         for n, (who, verdict) in enumerate(verdicts)
     ])
 
-    read = client.get(f"/api/documents/{document}/test-set").json()
+    read = client.get(f"/api/stress-analyses/{document}/test-set").json()
     standing = next(one for one in read["architectures"] if one["architecture"] == adapted)
     assert standing["residuality"] == pytest.approx((2.5 - 1) / 3)
     assert standing["strict"] == pytest.approx(1 / 3)
@@ -147,10 +147,10 @@ def test_verdicts_written_as_rows_read_back_as_residuality_on_every_surface(clie
                              "integration_judged": False}
     assert [(one["architecture"], one["verdict"]) for one in read["verdicts"]] == verdicts
 
-    by_candidate = client.get(f"/api/change-sets/{adapted}/residuality").json()
+    by_candidate = client.get(f"/api/candidates/{adapted}/residuality").json()
     assert [one["document"] for one in by_candidate["analyses"]] == [document]
     assert by_candidate["analyses"][0]["residuality"] == standing["residuality"]
-    assert by_candidate == mcp.change_set_residuality(adapted, repo_root=str(client.root))  # type: ignore[attr-defined]
+    assert by_candidate == mcp.analysis_residuality(adapted, repo_root=str(client.root))  # type: ignore[attr-defined]
 
 
 def test_the_perspectives_are_served_as_declared(client: TestClient) -> None:

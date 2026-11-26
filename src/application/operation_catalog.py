@@ -1,8 +1,8 @@
 """The one catalog of named operations a policy may allow or deny, and the writes that carry each.
 
 A REST operation and the MCP tool that does the same thing are two *carriers* of one operation, so a
-policy means the same on both surfaces: `changes_apply_candidate` is applied by `POST …/apply` and by
-`change_set_apply`. An operation that is a whole write is named by its REST operation id.
+policy means the same on both surfaces: `candidates_apply_candidate` is applied by `POST …/apply` and by
+`candidate_apply`. An operation that is a whole write is named by its REST operation id.
 
 The editing surfaces are finer than their writes. One canvas Save carries a rename, a move and a
 restack in a single `PUT`, and one candidate write records several edits. Each of those is an
@@ -40,7 +40,7 @@ _REPLACE = frozenset({"diagrams_replace_diagram", "artifact_replace_diagram"})
 _ARRANGE = frozenset({"diagrams_arrange_diagram_layout", "artifact_arrange_diagram"})
 _PATCH = frozenset({"diagrams_patch_diagram_layout", "artifact_arrange_diagram"})
 _LAYOUT = _REPLACE | _ARRANGE | _PATCH
-_RECORD = frozenset({"changes_record_operation", "change_set_record"})
+_RECORD = frozenset({"candidates_record_operation", "candidate_record"})
 
 COMPOSE = "diagram.compose"
 PLACE = "diagram.layout.place"
@@ -108,41 +108,42 @@ _WRITES: Mapping[str, tuple[str, frozenset[str]]] = {
         "Promote artifacts to the enterprise repository",
         frozenset({"promotion_execute_promotion", "artifact_promote_to_enterprise"}),
     ),
-    "changes_create_candidate": (
-        "Create a candidate architecture", frozenset({"changes_create_candidate", "change_set_create"}),
+    "candidates_create_candidate": (
+        "Create a candidate architecture", frozenset({"candidates_create_candidate", "candidate_create"}),
     ),
-    "changes_edit_candidate": (
+    "candidates_edit_candidate": (
         "Change a candidate's name, description, rationale, state or scope",
-        frozenset({"changes_edit_candidate", "change_set_edit"}),
+        frozenset({"candidates_edit_candidate", "candidate_edit"}),
     ),
-    "changes_record_operation": ("Record edits among a candidate's operations", _RECORD),
-    "changes_rebase_candidate": (
-        "Rebase a candidate onto the model as it is now", frozenset({"changes_rebase_candidate", "change_set_rebase"}),
+    "candidates_record_operation": ("Record edits among a candidate's operations", _RECORD),
+    "candidates_rebase_candidate": (
+        "Rebase a candidate onto the model as it is now",
+        frozenset({"candidates_rebase_candidate", "candidate_rebase"}),
     ),
-    "changes_apply_candidate": (
-        "Apply a candidate to the model", frozenset({"changes_apply_candidate", "change_set_apply"}),
+    "candidates_apply_candidate": (
+        "Apply a candidate to the model", frozenset({"candidates_apply_candidate", "candidate_apply"}),
     ),
-    "changes_apply_candidate_as_target_state": (
+    "candidates_apply_candidate_as_target_state": (
         "Apply a candidate to the model as a target state beside the baseline",
-        frozenset({"changes_apply_candidate_as_target_state", "change_set_apply_as_target_state"}),
+        frozenset({"candidates_apply_candidate_as_target_state", "candidate_apply_as_target_state"}),
     ),
-    "changes_move_candidate_into_baseline": (
+    "candidates_move_candidate_into_baseline": (
         "Move a candidate's target state into the baseline",
-        frozenset({"changes_move_candidate_into_baseline", "change_set_move_into_baseline"}),
+        frozenset({"candidates_move_candidate_into_baseline", "candidate_move_into_baseline"}),
     ),
-    "changes_withdraw_candidate_target_state": (
+    "candidates_withdraw_candidate_target_state": (
         "Withdraw a candidate's target state, leaving the baseline as it was",
-        frozenset({"changes_withdraw_candidate_target_state", "change_set_withdraw_target_state"}),
+        frozenset({"candidates_withdraw_candidate_target_state", "candidate_withdraw_target_state"}),
     ),
-    "changes_save_candidate_diagram": (
+    "candidates_save_candidate_diagram": (
         "Save a candidate's picture as a diagram",
-        frozenset({"changes_save_candidate_diagram", "change_set_save_diagram"}),
+        frozenset({"candidates_save_candidate_diagram", "candidate_save_diagram"}),
     ),
-    "changes_integrate_candidates": (
-        "Integrate candidates into a new one", frozenset({"changes_integrate_candidates", "change_set_integrate"}),
+    "candidates_integrate_candidates": (
+        "Integrate candidates into a new one", frozenset({"candidates_integrate_candidates", "candidate_integrate"}),
     ),
-    "changes_delete_candidate": (
-        "Delete a candidate nothing refers to", frozenset({"changes_delete_candidate", "change_set_delete"}),
+    "candidates_delete_candidate": (
+        "Delete a candidate nothing refers to", frozenset({"candidates_delete_candidate", "candidate_delete"}),
     ),
     "documents_start_stress_analysis": (
         "Start a stress analysis", frozenset({"documents_start_stress_analysis", "analysis_start"}),

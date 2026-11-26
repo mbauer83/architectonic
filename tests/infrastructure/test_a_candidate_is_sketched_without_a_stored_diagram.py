@@ -45,7 +45,7 @@ def client(tmp_path: Path) -> Iterator[TestClient]:
 
 
 def _candidate(client: TestClient, **record: object) -> str:
-    created = client.post("/api/change-sets", json={"record": {"name": "Naive", **record}})
+    created = client.post("/api/candidates", json={"record": {"name": "Naive", **record}})
     assert created.status_code == 200, created.text
     return str(created.json()["record"]["id"])
 
@@ -57,8 +57,8 @@ def _files(root: Path) -> set[Path]:
 def test_a_candidate_that_reads_over_nothing_opens_on_the_empty_picture(client: TestClient) -> None:
     ref = _candidate(client)
 
-    picture = client.get(f"/api/change-sets/{ref}/picture")
-    context = client.get(f"/api/change-sets/{ref}/picture/context")
+    picture = client.get(f"/api/candidates/{ref}/picture")
+    context = client.get(f"/api/candidates/{ref}/picture/context")
 
     assert picture.status_code == 200, picture.text
     assert (picture.json()["elements"], picture.json()["relations"]) == ([], [])
@@ -74,11 +74,11 @@ def test_a_session_draws_what_it_proposes_over_the_empty_picture_and_writes_noth
     before = _files(root)
     proposed = "APP@1795000000.aBcDeFg.ledger"
 
-    drawn = client.post(f"/api/change-sets/{ref}/picture/preview", json={
+    drawn = client.post(f"/api/candidates/{ref}/picture/preview", json={
         "diagram_type": "archimate-layered", "name": "Naive", "entity_ids": [], "connection_ids": [],
         "proposed_elements": [{"artifact_id": proposed, "name": "Ledger"}],
     })
-    nothing = client.post(f"/api/change-sets/{ref}/picture/preview", json={
+    nothing = client.post(f"/api/candidates/{ref}/picture/preview", json={
         "diagram_type": "archimate-layered", "name": "Naive", "entity_ids": [], "connection_ids": [],
     })
 
@@ -91,9 +91,9 @@ def test_a_session_draws_what_it_proposes_over_the_empty_picture_and_writes_noth
 def test_a_candidate_reading_over_model_elements_opens_on_their_generated_view(client: TestClient) -> None:
     ref = _candidate(client, scope=[_SERVICE])
 
-    picture = client.get(f"/api/change-sets/{ref}/picture").json()
-    context = client.get(f"/api/change-sets/{ref}/picture/context").json()
-    added = client.post(f"/api/change-sets/{ref}/picture/preview", json={
+    picture = client.get(f"/api/candidates/{ref}/picture").json()
+    context = client.get(f"/api/candidates/{ref}/picture/context").json()
+    added = client.post(f"/api/candidates/{ref}/picture/preview", json={
         "diagram_type": "archimate-layered", "name": "Naive", "entity_ids": [_SERVICE], "connection_ids": [],
     })
 
@@ -106,9 +106,9 @@ def test_a_candidate_reading_over_model_elements_opens_on_their_generated_view(c
 def test_a_candidate_drawn_on_a_stored_diagram_opens_on_it_as_the_diagram_editor_does(client: TestClient) -> None:
     ref = _candidate(client, diagram=_DIAGRAM)
 
-    picture = client.get(f"/api/change-sets/{ref}/picture").json()
+    picture = client.get(f"/api/candidates/{ref}/picture").json()
     stored = client.get(f"/api/diagrams/{_DIAGRAM}/layout/geometry").json()
-    context = client.get(f"/api/change-sets/{ref}/picture/context").json()
+    context = client.get(f"/api/candidates/{ref}/picture/context").json()
     diagram_context = client.get(f"/api/diagrams/{_DIAGRAM}/context").json()
 
     assert picture["artifact_id"] == _DIAGRAM
@@ -120,13 +120,13 @@ def test_a_candidate_drawn_on_a_stored_diagram_opens_on_it_as_the_diagram_editor
 
 def test_resized_shapes_are_drawn_for_a_stored_candidate_and_refused_for_none(client: TestClient) -> None:
     ref = _candidate(client, diagram=_DIAGRAM)
-    element = client.get(f"/api/change-sets/{ref}/picture").json()["elements"][0]
+    element = client.get(f"/api/candidates/{ref}/picture").json()["elements"][0]
     drawn_at = element["extent"]
     shape = {"drawing": element["drawing"], "box": False, "drawn": drawn_at,
              "to": {**drawn_at, "right": drawn_at["right"] + 60}}
 
-    drawn = client.post(f"/api/change-sets/{ref}/picture/shapes/preview", json={"shapes": [shape]})
-    missing = client.post("/api/change-sets/CAND@1.nope/picture/shapes/preview", json={"shapes": [shape]})
+    drawn = client.post(f"/api/candidates/{ref}/picture/shapes/preview", json={"shapes": [shape]})
+    missing = client.post("/api/candidates/CAND@1.nope/picture/shapes/preview", json={"shapes": [shape]})
 
     assert drawn.status_code == 200, drawn.text
     assert len(drawn.json()["drawings"]) == 1
@@ -140,7 +140,7 @@ def test_a_stored_diagram_that_cannot_be_read_is_refused_with_why(client: TestCl
     stored = next(root.rglob(f"{_DIAGRAM}.puml"))
     stored.chmod(0)
     try:
-        context = client.get(f"/api/change-sets/{ref}/picture/context")
+        context = client.get(f"/api/candidates/{ref}/picture/context")
     finally:
         stored.chmod(0o644)
 

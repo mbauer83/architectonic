@@ -17,13 +17,13 @@ const written: string[] = []
 
 test.afterEach(async ({ request }) => {
   for (const id of written.splice(0)) {
-    const deleted = await request.delete(`/api/change-sets/${encodeURIComponent(id)}?dry_run=false`)
+    const deleted = await request.delete(`/api/candidates/${encodeURIComponent(id)}?dry_run=false`)
     expect(deleted.status(), await deleted.text()).toBe(204)
   }
 })
 
 const candidate = async (page: Page, record: Record<string, unknown>): Promise<string> => {
-  const created = await page.request.post('/api/change-sets', { data: { record, operations: [] } })
+  const created = await page.request.post('/api/candidates', { data: { record, operations: [] } })
   expect(created.ok(), await created.text()).toBe(true)
   const id = ((await created.json()) as { record: { id: string } }).record.id
   written.push(id)

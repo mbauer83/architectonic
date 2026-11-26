@@ -15,12 +15,13 @@ from src.domain.artifact_id import stable_id
 from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_SCHEMA
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
 from src.infrastructure.candidate_wire import CandidateHeader
+from src.infrastructure.candidates.repository import NotStored
 from src.infrastructure.mcp import mcp_artifact_server as model
 from src.infrastructure.mcp.artifact_mcp import candidate_tools as mcp
-from src.infrastructure.rest.routers import candidates, documents, state
+from src.infrastructure.rest.routers import candidates, documents, state, stress_evaluation
 from tests.support.api_app import build_api_app
 from tests.support.rest_state import reset_state_for_test
-from tests.support.typed_table_documents import entity_in, repository_in
+from tests.support.typed_table_documents import adr_in, entity_in, repository_in
 
 
 def _declaring_analyses(tmp_path: Path) -> Path:
@@ -37,7 +38,7 @@ def _candidate_files(root: Path) -> list[Path]:
 def _served(root: Path) -> Iterator[TestClient]:
     state.init_state(ArtifactRepository(shared_artifact_index([root])), root, None)
     try:
-        with TestClient(build_api_app(candidates.router, documents.router)) as served:
+        with TestClient(build_api_app(candidates.router, documents.router, stress_evaluation.router)) as served:
             served.root = root  # type: ignore[attr-defined]
             yield served
     finally:
@@ -57,10 +58,24 @@ def test_a_start_writes_the_naive_and_the_document_naming_it(client: TestClient)
     assert started.status_code == 200, started.text
     body = started.json()
     naive = body["naive_candidate"]["record"]["id"]
-    document = client.get(f"/api/documents/{body['document']}/progress")
+    document = client.get(f"/api/stress-analyses/{body['document']}/progress")
     assert document.status_code == 200, document.text
     assert document.json()["naive_candidate"] == naive
     assert [p.name for p in _candidate_files(client.root)] == [f"{naive}.candidate.yaml"]  # type: ignore[attr-defined]
+
+
+def test_a_document_of_another_type_is_no_stress_analysis(tmp_path: Path) -> None:
+    """The reads are addressed to a stress analysis, so any other document is not found there (404), not a
+    malformed request; MCP refuses it with the same sentence."""
+    root = _declaring_analyses(tmp_path)
+    adr = adr_in(root, "not-an-analysis").stem
+    with _served(root) as client:
+        for read in ("progress", "incidence", "test-set"):
+            answered = client.get(f"/api/stress-analyses/{adr}/{read}")
+            assert answered.status_code == 404, (read, answered.text)
+            assert f"No stress analysis {adr} is stored." in answered.text
+    with pytest.raises(NotStored, match="No stress analysis"):
+        mcp.analysis_progress(adr, repo_root=str(root))
 
 
 def test_a_refused_start_leaves_nothing_behind(tmp_path: Path) -> None:
@@ -92,14 +107,14 @@ def test_a_start_refused_only_by_the_write_takes_its_naive_back(tmp_path: Path) 
 
 
 def _delete(client: TestClient, ref: str, **query: str) -> Any:
-    return client.delete(f"/api/change-sets/{ref}", params={"dry_run": "false", **query})
+    return client.delete(f"/api/candidates/{ref}", params={"dry_run": "false", **query})
 
 
 def test_a_candidate_is_deleted_only_when_nothing_depends_on_it(client: TestClient) -> None:
     root = client.root  # type: ignore[attr-defined]
     started = mcp.analysis_start("Stress analysis — delete", CandidateHeader(name="Naive"), repo_root=str(root))
     naive = started["naive_candidate"]["record"]["id"]
-    adaptation = client.post("/api/change-sets", json={"record": {"name": "On top", "parent": naive}}).json()
+    adaptation = client.post("/api/candidates", json={"record": {"name": "On top", "parent": naive}}).json()
     on_top = adaptation["record"]["id"]
 
     stacked = _delete(client, naive)
@@ -108,28 +123,28 @@ def test_a_candidate_is_deleted_only_when_nothing_depends_on_it(client: TestClie
     named = _delete(client, naive)
     assert named.status_code == 409 and started["document"] in named.text
     with pytest.raises(ValueError, match="naive architecture of"):
-        mcp.change_set_delete(naive, dry_run=False, repo_root=str(root))
+        mcp.candidate_delete(naive, dry_run=False, repo_root=str(root))
     assert _delete(client, on_top).status_code == 404
 
-    loose = mcp.change_set_create(CandidateHeader(name="Loose"), repo_root=str(root))["record"]["id"]
-    planned = mcp.change_set_delete(loose, repo_root=str(root))
+    loose = mcp.candidate_create(CandidateHeader(name="Loose"), repo_root=str(root))["record"]["id"]
+    planned = mcp.candidate_delete(loose, repo_root=str(root))
     assert (planned["dry_run"], planned["deleted"]) == (True, False)
-    assert mcp.change_set_delete(loose, dry_run=False, repo_root=str(root))["deleted"] is True
-    assert [c["id"] for c in client.get("/api/change-sets").json()["candidates"]] == [naive]
+    assert mcp.candidate_delete(loose, dry_run=False, repo_root=str(root))["deleted"] is True
+    assert [c["id"] for c in client.get("/api/candidates").json()["candidates"]] == [naive]
 
 
 def test_a_delete_is_a_dry_run_unless_asked_and_refuses_a_version_it_was_not_read_at(client: TestClient) -> None:
-    created = client.post("/api/change-sets", json={"record": {"name": "Loose"}}).json()
+    created = client.post("/api/candidates", json={"record": {"name": "Loose"}}).json()
     ref, version = created["record"]["id"], created["version"]
 
-    planned = client.delete(f"/api/change-sets/{ref}")
+    planned = client.delete(f"/api/candidates/{ref}")
     stale = _delete(client, ref, based_on="0000000000000000")
     deleted = _delete(client, ref, based_on=version)
 
     assert planned.status_code == 200 and planned.json()["deleted"] is False
     assert stale.status_code == 409 and version in stale.json()["detail"]["message"]
     assert deleted.status_code == 204
-    assert client.get(f"/api/change-sets/{ref}").status_code == 404
+    assert client.get(f"/api/candidates/{ref}").status_code == 404
 
 
 def test_a_candidate_a_verdict_names_or_that_was_integrated_is_kept(client: TestClient) -> None:
@@ -137,7 +152,7 @@ def test_a_candidate_a_verdict_names_or_that_was_integrated_is_kept(client: Test
     root = client.root  # type: ignore[attr-defined]
     started = mcp.analysis_start("Stress analysis — kept", CandidateHeader(name="Naive"), repo_root=str(root))
     document, naive = started["document"], started["naive_candidate"]["record"]["id"]
-    judged = client.post("/api/change-sets", json={"record": {"name": "Judged", "parent": naive}}).json()
+    judged = client.post("/api/candidates", json={"record": {"name": "Judged", "parent": naive}}).json()
     ref = judged["record"]["id"]
     for table, cells in (("stressors", {"stressor": "Outage", "set": "test"}),
                          ("survival", {"stressor": "S1", "architecture": stable_id(ref), "verdict": "fails"})):
@@ -149,16 +164,16 @@ def test_a_candidate_a_verdict_names_or_that_was_integrated_is_kept(client: Test
 
     assert named.status_code == 409, named.text
     assert "survival T1" in named.json()["detail"]["message"]
-    assert client.get(f"/api/change-sets/{ref}").status_code == 200
+    assert client.get(f"/api/candidates/{ref}").status_code == 200
 
     entity = model.artifact_create_entity(
         artifact_type="application-component", name="Catalog", dry_run=False, repo_root=str(root),
     )["artifact_id"]
-    applied = client.post("/api/change-sets", json={"record": {"name": "Applied"}}).json()
+    applied = client.post("/api/candidates", json={"record": {"name": "Applied"}}).json()
     integrated = applied["record"]["id"]
-    client.post(f"/api/change-sets/{integrated}/operations", json={"based_on": applied["version"], "operations": [{
+    client.post(f"/api/candidates/{integrated}/operations", json={"based_on": applied["version"], "operations": [{
         "op": "edit_entity", "artifact_id": entity, "field": "name", "value": "Registry"}]}).raise_for_status()
-    assert client.post(f"/api/change-sets/{integrated}/apply", json={"dry_run": False}).json()["integrated"]
+    assert client.post(f"/api/candidates/{integrated}/apply", json={"dry_run": False}).json()["integrated"]
 
     kept = _delete(client, integrated)
 
@@ -170,8 +185,8 @@ def test_a_drifted_candidate_is_rebased_and_then_applies(client: TestClient) -> 
     entity = entity_in(root, "application-component", "queueing")
     notify_paths_changed([entity])
     ref = entity.stem
-    created = client.post("/api/change-sets", json={"record": {"name": "Rename", "scope": [ref]}}).json()
-    path = f"/api/change-sets/{created['record']['id']}"
+    created = client.post("/api/candidates", json={"record": {"name": "Rename", "scope": [ref]}}).json()
+    path = f"/api/candidates/{created['record']['id']}"
     rename = {"op": "edit_entity", "artifact_id": ref, "field": "name", "value": "Promotion queue"}
     recorded = client.post(path + "/operations", json={"based_on": created["version"], "operations": [rename]}).json()
 
@@ -184,14 +199,14 @@ def test_a_drifted_candidate_is_rebased_and_then_applies(client: TestClient) -> 
     assert [s["standing"] for s in client.get(path + "/standing").json()["standing"]] == ["applies"]
     operation = rebased.json()["record"]["changes"]["operations"][0]
     assert operation["value"] == "Promotion queue"
-    again = mcp.change_set_rebase(created["record"]["id"], rebased.json()["version"], str(root))
+    again = mcp.candidate_rebase(created["record"]["id"], rebased.json()["version"], str(root))
     assert again["version"] == rebased.json()["version"]
 
 
 def test_the_composed_view_names_the_id_chosen_for_what_the_candidate_creates(client: TestClient) -> None:
     queue = "DOB@1795000000.Queue01.promotion-queue"
-    created = client.post("/api/change-sets", json={"record": {"name": "Creates"}}).json()
-    path = f"/api/change-sets/{created['record']['id']}"
+    created = client.post("/api/candidates", json={"record": {"name": "Creates"}}).json()
+    path = f"/api/candidates/{created['record']['id']}"
     create = {"op": "create_entity", "artifact_id": queue,
               "fields": {"artifact_type": "data-object", "name": "Queue", "group": "uncategorized"}}
     client.post(path + "/operations", json={"based_on": created["version"], "operations": [create]}).raise_for_status()

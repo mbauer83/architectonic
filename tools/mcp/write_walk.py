@@ -567,7 +567,7 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
         lambda c: {"artifact_id": c.created["change"]},
     ),
     WriteCall(
-        "change_set_create", lambda _c: {"record": {"name": "Promotion queue"}},
+        "candidate_create", lambda _c: {"record": {"name": "Promotion queue"}},
         captures=(
             Capture("candidate", _answer_field("record", "id")),
             Capture("candidate_version", _answer_field("version")),
@@ -575,14 +575,14 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     ),
     WriteCall(
         # One edit, recorded with the base the server reads: a candidate's operations are written this way.
-        "change_set_record",
+        "candidate_record",
         lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"],
                    "operations": [{"op": "create_entity", "fields": {
                        "artifact_type": "application-component", "name": "Walk Queue", "group": "uncategorized"}}]},
         captures=(Capture("candidate_version", _answer_field("version")),),
     ),
     WriteCall(
-        "change_set_edit",
+        "candidate_edit",
         lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"],
                    "patch": {"rationale": "Queue promotions while the destination is offline.",
                              "scope": [c.fixture_entity]}},
@@ -591,12 +591,12 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     WriteCall(
         # Nothing in a fresh candidate has drifted, so this answers the record unchanged: the walk
         # proves the transport and the queue, and the drift itself is the application tests'.
-        "change_set_rebase",
+        "candidate_rebase",
         lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"]},
     ),
     WriteCall(
         # The candidate reads over one entity and is drawn on no diagram: its generated view is saved as one.
-        "change_set_save_diagram",
+        "candidate_save_diagram",
         lambda c: {"artifact_id": c.created["candidate"], "based_on": c.created["candidate_version"],
                    "name": "MCP Walk Candidate View", "dry_run": False},
         captures=(Capture("candidate_version", _answer_field("version")),),
@@ -604,25 +604,25 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     WriteCall(
         # A dry run of the one create the walk recorded. That proves the transport and the queue; the
         # write itself is the infrastructure tests'.
-        "change_set_apply",
+        "candidate_apply",
         lambda c: {"artifact_id": c.created["candidate"], "dry_run": True},
         mutates=False,
     ),
     WriteCall(
         # Dry runs, as the direct apply's is: the target state and the move are the infrastructure tests'.
-        "change_set_apply_as_target_state",
+        "candidate_apply_as_target_state",
         lambda c: {"artifact_id": c.created["candidate"], "dry_run": True},
         mutates=False,
     ),
     WriteCall(
         # Not in the model as a target state, so the dry run answers why there is nothing to move.
-        "change_set_move_into_baseline",
+        "candidate_move_into_baseline",
         lambda c: {"artifact_id": c.created["candidate"], "dry_run": True},
         mutates=False,
     ),
     WriteCall(
         # Not in the model as a target state, so the dry run answers why there is nothing to withdraw.
-        "change_set_withdraw_target_state",
+        "candidate_withdraw_target_state",
         lambda c: {"artifact_id": c.created["candidate"], "dry_run": True},
         mutates=False,
     ),
@@ -636,7 +636,7 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     ),
     WriteCall(
         # The walk's candidate and the naive architecture both stand on the model, and claim nothing in common.
-        "change_set_integrate",
+        "candidate_integrate",
         lambda c: {"candidates": [c.created["candidate"], c.created["naive"]], "name": "MCP Walk Integration",
                    "dry_run": False},
     ),
@@ -657,7 +657,7 @@ WRITE_CALLS: tuple[WriteCall, ...] = (
     WriteCall(
         # The candidate the walk made, which nothing stacks on and no analysis names. The naive the
         # start made stays: deleting it is refused while its analysis names it.
-        "change_set_delete",
+        "candidate_delete",
         lambda c: {"artifact_id": c.created["candidate"], "dry_run": False},
     ),
     # ── scratchpads: create → replace → edit → lift → delete, the whole loop an agent has ───────

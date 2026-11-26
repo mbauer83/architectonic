@@ -38,7 +38,7 @@ const reasons = computed(() => [...moved.value.drifted, ...moved.value.conflicti
       </button>
       <PermittedButton
         v-if="moved.drifted.length"
-        operation="changes_rebase_candidate"
+        operation="candidates_rebase_candidate"
         class="btn btn-sm"
         data-testid="rebase"
         :disabled="busy"

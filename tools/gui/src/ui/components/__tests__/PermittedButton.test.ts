@@ -13,7 +13,7 @@ const mounted = async (refused: readonly string[], props: Record<string, unknown
   document.body.appendChild(host)
   const click = vi.fn()
   app = answered(createApp({
-    render: () => h(PermittedButton, { operation: 'changes_apply_candidate', title: 'Apply it', onClick: click, ...props },
+    render: () => h(PermittedButton, { operation: 'candidates_apply_candidate', title: 'Apply it', onClick: click, ...props },
       () => 'Apply'),
   }), refused)
   app.mount(host)
@@ -31,7 +31,7 @@ describe('a button that writes', () => {
   })
 
   it('is disabled with the reason as its title where the operation is refused', async () => {
-    const { button } = await mounted(['changes_apply_candidate'])
+    const { button } = await mounted(['candidates_apply_candidate'])
     expect(button.disabled).toBe(true)
     expect(button.title).toBe('Not permitted for your role')
   })

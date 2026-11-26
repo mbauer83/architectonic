@@ -58,21 +58,21 @@ def _entity(client: TestClient, name: str) -> str:
 
 
 def _created(client: TestClient, record: dict[str, Any]) -> dict[str, Any]:
-    created = client.post("/api/change-sets", json={"record": record})
+    created = client.post("/api/candidates", json={"record": record})
     assert created.status_code == 200, created.text
     return dict(created.json())
 
 
 def _record(client: TestClient, ref: str, operation: dict[str, Any]) -> dict[str, Any]:
-    version = client.get(f"/api/change-sets/{ref}").json()["version"]
-    recorded = client.post(f"/api/change-sets/{ref}/operations", json={"based_on": version, "operations": [operation]})
+    version = client.get(f"/api/candidates/{ref}").json()["version"]
+    recorded = client.post(f"/api/candidates/{ref}/operations", json={"based_on": version, "operations": [operation]})
     assert recorded.status_code == 200, recorded.text
     return dict(recorded.json())
 
 
 def _offer(client: TestClient, ref: str) -> None:
-    version = client.get(f"/api/change-sets/{ref}").json()["version"]
-    offered = client.patch(f"/api/change-sets/{ref}", json={"based_on": version, "patch": {"state": "candidate"}})
+    version = client.get(f"/api/candidates/{ref}").json()["version"]
+    offered = client.patch(f"/api/candidates/{ref}", json={"based_on": version, "patch": {"state": "candidate"}})
     assert offered.status_code == 200, offered.text
 
 
@@ -80,13 +80,13 @@ def _offer(client: TestClient, ref: str) -> None:
 def test_a_candidate_is_read_by_either_spelling_of_its_id_on_both_surfaces(client: TestClient, spelled) -> None:
     full = _created(client, {"name": "Read me"})["record"]["id"]
 
-    read = client.get(f"/api/change-sets/{spelled(full)}")
-    standing = client.get(f"/api/change-sets/{spelled(full)}/standing")
+    read = client.get(f"/api/candidates/{spelled(full)}")
+    standing = client.get(f"/api/candidates/{spelled(full)}/standing")
 
     assert read.status_code == 200, read.text
     assert read.json()["record"]["id"] == full
     assert standing.json()["candidate"] == full
-    assert mcp.change_set_read(spelled(full), repo_root=str(_root(client)))["record"]["id"] == full
+    assert mcp.candidate_read(spelled(full), repo_root=str(_root(client)))["record"]["id"] == full
 
 
 @SPELLINGS
@@ -99,7 +99,7 @@ def test_two_candidates_naming_one_entity_in_two_spellings_overlap(client: TestC
     _offer(client, first)
     _offer(client, second)
 
-    checked = client.post("/api/change-set-checks", json={"candidates": [first, second]})
+    checked = client.post("/api/candidate-checks", json={"candidates": [first, second]})
 
     assert checked.status_code == 200, checked.text
     assert [overlap["kind"] for overlap in checked.json()["overlaps"]] == ["same-key"]
@@ -117,7 +117,7 @@ def test_a_connection_to_an_entity_the_candidate_creates_finds_it_in_either_spel
     _record(client, ref, {"op": "add_connection", "source_entity": source,
                           "connection_type": "archimate-serving", "target_entity": spelled(chosen)})
 
-    standing = client.get(f"/api/change-sets/{ref}/standing").json()["standing"]
+    standing = client.get(f"/api/candidates/{ref}/standing").json()["standing"]
 
     assert {item["standing"] for item in standing} == {"applies"}, standing
 
@@ -146,9 +146,10 @@ def test_an_incidence_hit_and_a_verdict_name_one_element_and_one_candidate_in_ei
         {"stressor": "S2", "architecture": spelled(adapted), "verdict": "survives", "usable": True},
     ])
 
-    incidence = client.get(f"/api/documents/{document}/incidence").json()
-    residuality = client.get(f"/api/change-sets/{stable_id(adapted)}/residuality").json()
-    judged = [one["architecture"] for one in client.get(f"/api/documents/{document}/test-set").json()["architectures"]]
+    incidence = client.get(f"/api/stress-analyses/{document}/incidence").json()
+    residuality = client.get(f"/api/candidates/{stable_id(adapted)}/residuality").json()
+    test_set = client.get(f"/api/stress-analyses/{document}/test-set").json()
+    judged = [one["architecture"] for one in test_set["architectures"]]
 
     assert incidence["stressors"][0]["missing_elements"] == []
     assert incidence["stressors"][0]["hits"] == [stable_id(entity)]

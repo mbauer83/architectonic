@@ -64,7 +64,7 @@ const lines = computed(() => {
     </span>
     <span class="sp" />
     <PermittedButton
-      operation="changes_move_candidate_into_baseline"
+      operation="candidates_move_candidate_into_baseline"
       class="btn btn-sm"
       data-testid="move-into-baseline"
       :disabled="target.busy.value"
@@ -73,7 +73,7 @@ const lines = computed(() => {
       Move into the baseline…
     </PermittedButton>
     <PermittedButton
-      operation="changes_withdraw_candidate_target_state"
+      operation="candidates_withdraw_candidate_target_state"
       class="btn btn-sm"
       data-testid="withdraw-target-state"
       title="Take the target state out of the model instead, leaving the baseline as it was"

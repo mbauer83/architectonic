@@ -171,7 +171,7 @@ onMounted(async () => {
         </RouterLink>
         <PermittedButton
           v-if="summary && applicable"
-          operation="changes_apply_candidate"
+          operation="candidates_apply_candidate"
           class="btn btn-sm"
           data-testid="apply-to-model"
           :disabled="apply.busy.value"
@@ -181,7 +181,7 @@ onMounted(async () => {
         </PermittedButton>
         <PermittedButton
           v-if="summary && applicable"
-          operation="changes_apply_candidate_as_target_state"
+          operation="candidates_apply_candidate_as_target_state"
           class="btn btn-sm"
           data-testid="apply-as-target-state"
           :disabled="target.busy.value"

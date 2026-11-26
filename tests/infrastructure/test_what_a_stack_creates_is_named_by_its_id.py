@@ -45,7 +45,7 @@ def client(tmp_path: Path) -> Iterator[TestClient]:
 
 
 def _recorded(client: TestClient, candidate: dict[str, Any], *operations: dict[str, Any]) -> dict[str, Any]:
-    path = f"/api/change-sets/{candidate['record']['id']}/operations"
+    path = f"/api/candidates/{candidate['record']['id']}/operations"
     answer = client.post(path, json={"based_on": candidate["version"], "operations": list(operations)})
     assert answer.status_code == 200, answer.text
     return answer.json()
@@ -91,8 +91,8 @@ def test_incidence_coupling_and_coverage_name_a_created_element_by_its_id(client
     document, _naive_answer, scoped = _naive(client)
     _ticked(client, document, EXTRACTOR, f"{scoped}")
 
-    incidence = client.get(f"/api/documents/{document}/incidence").json()
-    progress = client.get(f"/api/documents/{document}/progress").json()
+    incidence = client.get(f"/api/stress-analyses/{document}/incidence").json()
+    progress = client.get(f"/api/stress-analyses/{document}/progress").json()
 
     stressor = incidence["stressors"][0]
     assert stressor["missing_elements"] == []
@@ -108,7 +108,7 @@ def test_an_adaptation_row_names_its_candidate_as_it_is_stored_and_refuses_one_n
     """Through the write path, whose verification reads a temporary tree beside the repository: the
     candidate an adaptation names is found there, in either spelling, and stored by its full id."""
     document, naive, _scoped = _naive(client)
-    adaptation = client.post("/api/change-sets", json={"record": {"name": "Adapt", "parent": naive["record"]["id"]}})
+    adaptation = client.post("/api/candidates", json={"record": {"name": "Adapt", "parent": naive["record"]["id"]}})
     full = adaptation.json()["record"]["id"]
     path = f"/api/documents/{document}/tables"
     client.patch(f"{path}/end-states", json={"rows": [{"op": "add", "cells": {"end_state": "Reads offline"}}],
@@ -128,7 +128,7 @@ def test_an_adaptation_row_names_its_candidate_as_it_is_stored_and_refuses_one_n
 
 def test_a_stacked_candidate_edits_connects_and_drops_a_parent_created_element_by_its_id(client: TestClient) -> None:
     _document, naive, scoped = _naive(client)
-    adaptation = client.post("/api/change-sets", json={"record": {"name": "Adapt", "parent": naive["record"]["id"]}})
+    adaptation = client.post("/api/candidates", json={"record": {"name": "Adapt", "parent": naive["record"]["id"]}})
     assert adaptation.status_code == 200, adaptation.text
 
     renamed = _recorded(client, adaptation.json(),
@@ -136,7 +136,7 @@ def test_a_stacked_candidate_edits_connects_and_drops_a_parent_created_element_b
                          "value": "Recognised Text"},
                         {"op": "add_connection", "source_entity": scoped, "connection_type": "archimate-serving",
                          "target_entity": EXTRACTOR})
-    answered = client.get(f"/api/change-sets/{renamed['record']['id']}/diff")
+    answered = client.get(f"/api/candidates/{renamed['record']['id']}/diff")
     assert answered.status_code == 200, answered.text
     diff = answered.json()
 

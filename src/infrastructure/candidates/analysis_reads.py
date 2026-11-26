@@ -18,12 +18,10 @@ from src.infrastructure.candidates.service import CandidateService
 
 
 def analysis_tables(service: CandidateService, ref: str) -> tuple[str, str, DocumentTables]:
-    """The analysis document's id, its naive candidate's id and its typed tables; refused for any other document."""
+    """The analysis document's id, its naive candidate's id and its typed tables; not found for any other document."""
     doc = service.index.get_document(ref)
-    if doc is None:
-        raise NotStored(f"No document {ref} is stored.")
-    if doc.doc_type != STRESS_ANALYSIS:
-        raise ValueError("Select a stress-analysis document.")
+    if doc is None or doc.doc_type != STRESS_ANALYSIS:
+        raise NotStored(f"No stress analysis {ref} is stored.")
     naive = str(doc.extra.get(NAIVE_CANDIDATE) or "")
     if not naive:
         raise ValueError("Set naive-candidate on the stress-analysis document.")

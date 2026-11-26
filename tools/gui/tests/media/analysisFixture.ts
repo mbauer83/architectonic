@@ -26,7 +26,7 @@ export class AnalysisFixture {
   constructor(readonly request: APIRequestContext) {}
 
   async candidate(record: Record<string, unknown>, operations: unknown[] = []): Promise<string> {
-    const created = await this.request.post('/api/change-sets', { data: { record, operations } })
+    const created = await this.request.post('/api/candidates', { data: { record, operations } })
     expect(created.ok(), await created.text()).toBe(true)
     const id = ((await created.json()) as Written).record.id
     this.candidates.unshift(id)
@@ -34,9 +34,9 @@ export class AnalysisFixture {
   }
 
   async record(candidate: string, operations: unknown[]): Promise<void> {
-    const read = await this.request.get(`/api/change-sets/${encodeURIComponent(candidate)}`)
+    const read = await this.request.get(`/api/candidates/${encodeURIComponent(candidate)}`)
     const { version } = (await read.json()) as Written
-    const recorded = await this.request.post(`/api/change-sets/${encodeURIComponent(candidate)}/operations`,
+    const recorded = await this.request.post(`/api/candidates/${encodeURIComponent(candidate)}/operations`,
       { data: { based_on: version, operations } })
     expect(recorded.ok(), await recorded.text()).toBe(true)
   }
@@ -62,7 +62,7 @@ export class AnalysisFixture {
       expect(deleted.ok(), await deleted.text()).toBe(true)
     }
     for (const id of this.candidates.splice(0)) {
-      const deleted = await this.request.delete(`/api/change-sets/${encodeURIComponent(id)}?dry_run=false`)
+      const deleted = await this.request.delete(`/api/candidates/${encodeURIComponent(id)}?dry_run=false`)
       expect(deleted.status(), await deleted.text()).toBe(204)
     }
   }
@@ -145,7 +145,7 @@ export async function promotionPipelineAnalysis(fixture: AnalysisFixture, { queu
 }
 
 async function createdId(fixture: AnalysisFixture, candidate: string, name: string): Promise<string> {
-  const read = await fixture.request.get(`/api/change-sets/${encodeURIComponent(candidate)}`)
+  const read = await fixture.request.get(`/api/candidates/${encodeURIComponent(candidate)}`)
   const { record } = (await read.json()) as { record: { changes: { operations: { op: string; artifact_id?: string; fields?: { name?: string } }[] } } }
   const created = record.changes.operations.find((one) => one.op === 'create_entity' && one.fields?.name === name)
   expect(created?.artifact_id, `the candidate should create ${name}`).toBeTruthy()

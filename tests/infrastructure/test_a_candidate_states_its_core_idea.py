@@ -44,35 +44,35 @@ def client(root: Path) -> Iterator[TestClient]:
 
 
 def _listed(client: TestClient, ref: str) -> dict[str, Any]:
-    return next(one for one in client.get("/api/change-sets").json()["candidates"] if one["id"] == ref)
+    return next(one for one in client.get("/api/candidates").json()["candidates"] if one["id"] == ref)
 
 
 def test_a_description_written_with_the_header_is_read_and_listed_apart_from_the_rationale(client: TestClient) -> None:
     rationale = "The rules change weekly; the code does not."
-    created = client.post("/api/change-sets", json={
+    created = client.post("/api/candidates", json={
         "record": {"name": "Rule set", "description": _IDEA, "rationale": rationale},
     })
     assert created.status_code == 200, created.text
     ref = created.json()["record"]["id"]
 
-    record = client.get(f"/api/change-sets/{ref}").json()["record"]
+    record = client.get(f"/api/candidates/{ref}").json()["record"]
     assert (record["description"], record["rationale"]) == (_IDEA, rationale)
     assert _listed(client, ref)["description"] == _IDEA
 
 
 def test_an_edit_changes_the_description_and_an_empty_one_takes_it_away(client: TestClient) -> None:
-    ref = client.post("/api/change-sets", json={"record": {"name": "Rule set"}}).json()["record"]["id"]
+    ref = client.post("/api/candidates", json={"record": {"name": "Rule set"}}).json()["record"]["id"]
     assert _listed(client, ref)["description"] == ""
 
-    version = client.get(f"/api/change-sets/{ref}").json()["version"]
-    edited = client.patch(f"/api/change-sets/{ref}", json={"based_on": version, "patch": {"description": _IDEA}})
+    version = client.get(f"/api/candidates/{ref}").json()["version"]
+    edited = client.patch(f"/api/candidates/{ref}", json={"based_on": version, "patch": {"description": _IDEA}})
     assert edited.status_code == 200, edited.text
     assert _listed(client, ref)["description"] == _IDEA
 
-    cleared = client.patch(f"/api/change-sets/{ref}", json={"based_on": edited.json()["version"],
+    cleared = client.patch(f"/api/candidates/{ref}", json={"based_on": edited.json()["version"],
                                                               "patch": {"description": ""}})
     assert cleared.status_code == 200, cleared.text
-    assert "description" not in client.get(f"/api/change-sets/{ref}").json()["record"]
+    assert "description" not in client.get(f"/api/candidates/{ref}").json()["record"]
     assert _listed(client, ref)["description"] == ""
 
 
@@ -80,7 +80,7 @@ def test_a_description_longer_than_a_sentence_or_two_is_refused_on_both_surfaces
     client: TestClient, root: Path,
 ) -> None:
     too_long = "x" * (DESCRIPTION_LIMIT + 1)
-    refused = client.post("/api/change-sets", json={"record": {"name": "Wordy", "description": too_long}})
+    refused = client.post("/api/candidates", json={"record": {"name": "Wordy", "description": too_long}})
     assert refused.status_code == 422, refused.text
     with pytest.raises(ValueError, match=str(DESCRIPTION_LIMIT)):
         CandidateHeader(name="Wordy", description=too_long)
@@ -89,11 +89,11 @@ def test_a_description_longer_than_a_sentence_or_two_is_refused_on_both_surfaces
 
 
 def test_mcp_writes_reads_and_lists_the_description_as_rest_does(root: Path) -> None:
-    created = mcp.change_set_create(CandidateHeader(name="Rule set", description=_IDEA), repo_root=str(root))
+    created = mcp.candidate_create(CandidateHeader(name="Rule set", description=_IDEA), repo_root=str(root))
     ref = created["record"]["id"]
-    assert mcp.change_set_read(ref, repo_root=str(root))["record"]["description"] == _IDEA
+    assert mcp.candidate_read(ref, repo_root=str(root))["record"]["description"] == _IDEA
 
-    mcp.change_set_edit(ref, created["version"], CandidatePatch(description="Rules as data."), str(root))
+    mcp.candidate_edit(ref, created["version"], CandidatePatch(description="Rules as data."), str(root))
 
-    listed = next(one for one in mcp.change_set_list(repo_root=str(root))["candidates"] if one["id"] == ref)
+    listed = next(one for one in mcp.candidate_list(repo_root=str(root))["candidates"] if one["id"] == ref)
     assert listed["description"] == "Rules as data."

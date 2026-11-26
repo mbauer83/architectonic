@@ -18,7 +18,7 @@ const SERVICE = 'SRV@1712870400.Uv9Wx9'
 let candidate = ''
 
 test.beforeEach(async ({ request }) => {
-  const created = await request.post('/api/change-sets', {
+  const created = await request.post('/api/candidates', {
     data: {
       record: { name: 'Apply spec candidate', diagram: DIAGRAM },
       operations: [{ op: 'edit_entity', artifact_id: SERVICE, field: 'name', value: 'Promotion Review Service' }],
@@ -29,13 +29,13 @@ test.beforeEach(async ({ request }) => {
 })
 
 test.afterEach(async ({ request }) => {
-  if (candidate) await request.delete(`/api/change-sets/${encodeURIComponent(candidate)}?dry_run=false`)
+  if (candidate) await request.delete(`/api/candidates/${encodeURIComponent(candidate)}?dry_run=false`)
   candidate = ''
 })
 
 test('the apply is confirmed after its dry run, and the confirmation asks for the write', async ({ page }) => {
   const asked: unknown[] = []
-  await page.route('**/api/change-sets/*/apply', async (route) => {
+  await page.route('**/api/candidates/*/apply', async (route) => {
     const body = route.request().postDataJSON() as { dry_run: boolean }
     asked.push(body.dry_run)
     if (body.dry_run) return route.continue()

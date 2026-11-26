@@ -86,7 +86,7 @@ def refused_transition(was: CandidateState | None, becomes: CandidateState, *, a
     if becomes == "integrated":
         return None if applied and was in INITIAL_STATES else (
             "A candidate becomes integrated only by being applied, which writes its operations onto the "
-            "model: use apply (POST /api/change-sets/<id>/apply, MCP change_set_apply)."
+            "model: use apply (POST /api/candidates/<id>/apply, MCP candidate_apply)."
         )
     if was is None:
         return None if becomes in INITIAL_STATES else f"A new candidate starts as draft or candidate, not {becomes}."
@@ -110,8 +110,8 @@ def refused_while_targeted(
     before = was.target_state if was else None
     if becomes.target_state != before and not applied:
         return (
-            "A target state is recorded by applying the candidate as one (change_set_apply_as_target_state) and "
-            "cleared by moving it into the baseline (change_set_move_into_baseline)."
+            "A target state is recorded by applying the candidate as one (candidate_apply_as_target_state) and "
+            "cleared by moving it into the baseline (candidate_move_into_baseline)."
         )
     if was is None or before is None or applied:
         return None

@@ -50,7 +50,7 @@ def test_every_operation_is_decided_by_one_intent_its_carriers_share() -> None:
 def test_every_candidate_and_stress_write_is_a_catalog_operation() -> None:
     writes = {row.operation_id for row in CANDIDATE_ROWS if row.operation_id in REST_MUTATION_MANIFEST}
     assert writes - OPERATION_CATALOG.keys() == set()
-    tools = {name for name in MUTATION_TOOL_MANIFEST if name.startswith(("change_set_", "analysis_"))}
+    tools = {name for name in MUTATION_TOOL_MANIFEST if name.startswith(("candidate_", "analysis_"))}
     carried = {carrier for operation in OPERATION_CATALOG.values() for carrier in operation.carriers}
     assert tools - carried == set()
 
@@ -72,4 +72,4 @@ def test_what_a_request_states_is_carried_by_the_write_it_is_sent_to() -> None:
     arranged = {name for names in INTENT_OPERATIONS.values() for name in names}
     assert arranged <= _carried_by("diagrams_arrange_diagram_layout") & _carried_by("artifact_arrange_diagram")
     edits = {f"change_set.{_literal(one)}" for one in get_args(get_args(RecordedEdit)[0])}
-    assert edits <= _carried_by("changes_record_operation") & _carried_by("change_set_record")
+    assert edits <= _carried_by("candidates_record_operation") & _carried_by("candidate_record")

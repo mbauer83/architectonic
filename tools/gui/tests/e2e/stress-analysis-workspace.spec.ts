@@ -44,10 +44,10 @@ const analysisOf = async (request: APIRequestContext, title: string): Promise<st
   (await startAnalysis(request, title)).document
 
 const listedCandidates = async (request: APIRequestContext): Promise<string[]> =>
-  ((await (await request.get('/api/change-sets')).json()) as { candidates: { id: string }[] }).candidates.map((c) => c.id)
+  ((await (await request.get('/api/candidates')).json()) as { candidates: { id: string }[] }).candidates.map((c) => c.id)
 
 const operationsOf = async (request: APIRequestContext, id: string): Promise<unknown[]> =>
-  ((await (await request.get(`/api/change-sets/${encodeURIComponent(id)}`)).json()) as
+  ((await (await request.get(`/api/candidates/${encodeURIComponent(id)}`)).json()) as
     { record: { changes: { operations: unknown[] } } }).record.changes.operations
 
 const workspace = (page: Page, id: string, tab: string) =>
@@ -65,7 +65,7 @@ test.beforeEach(async ({ request }) => {
 test.afterEach(async ({ request }) => {
   for (const id of created.splice(0)) await request.delete(`/api/documents/${encodeURIComponent(id)}?dry_run=false`)
   for (const id of candidates.splice(0)) {
-    const deleted = await request.delete(`/api/change-sets/${encodeURIComponent(id)}?dry_run=false`)
+    const deleted = await request.delete(`/api/candidates/${encodeURIComponent(id)}?dry_run=false`)
     expect(deleted.status(), await deleted.text()).toBe(204)
   }
 })
@@ -84,20 +84,20 @@ test('starting writes the naive architecture and the document together, and a re
   expect(await listedCandidates(request)).toEqual(before)
 
   // A real delete, so the refusal is the one a reader meets, not a plan that answers the same way.
-  const named = await request.delete(`/api/change-sets/${encodeURIComponent(naive.record.id)}?dry_run=false`)
+  const named = await request.delete(`/api/candidates/${encodeURIComponent(naive.record.id)}?dry_run=false`)
   expect(named.status()).toBe(409)
   expect(await named.text()).toContain('naive architecture of')
 })
 
 test('the workspace says the model moved under a drifted operation, and re-basing settles it', async ({ page, request }) => {
   const { document, naive_candidate: naive } = await startAnalysis(request, 'Stress analysis — model moved')
-  const scope = await (await request.get(`/api/change-sets/${encodeURIComponent(naive.record.id)}`)).json() as
+  const scope = await (await request.get(`/api/candidates/${encodeURIComponent(naive.record.id)}`)).json() as
     { record: { scope: string[] } }
   const service = scope.record.scope.find((ref) => ref.startsWith('SRV@')) ?? ''
   // An edit written against a name the model no longer holds: what a rename made elsewhere leaves behind.
   const drifted = { op: 'edit_entity', artifact_id: service, field: 'name', value: 'Promotion Review Service',
     base: { value: 'Promotion Service (as it was)' } }
-  const edited = await request.patch(`/api/change-sets/${encodeURIComponent(naive.record.id)}`, {
+  const edited = await request.patch(`/api/candidates/${encodeURIComponent(naive.record.id)}`, {
     data: { based_on: naive.version, patch: { changes: { ...naive.record.changes, operations: [drifted] } } },
   })
   expect(edited.ok(), await edited.text()).toBe(true)
@@ -109,7 +109,7 @@ test('the workspace says the model moved under a drifted operation, and re-basin
   await expect(band).toContainText('changed since this edit was written')
   await band.getByTestId('rebase').click()
   await expect(band).toHaveCount(0)
-  const standing = await (await request.get(`/api/change-sets/${encodeURIComponent(naive.record.id)}/standing`)).json() as
+  const standing = await (await request.get(`/api/candidates/${encodeURIComponent(naive.record.id)}/standing`)).json() as
     { standing: { standing: string }[] }
   expect(standing.standing.map((one) => one.standing)).toEqual(['applies'])
 })
@@ -158,7 +158,7 @@ test('starting an analysis opens its empty naive architecture on its own canvas,
   await page.locator('[data-row]', { hasText: 'Repository Promotion Service' }).first().click()
   await expect(page.getByTestId('candidate-canvas').locator(`g.lab-element[data-alias="${SERVICE_ALIAS}"]`)).toBeAttached()
   await expect.poll(async () => {
-    const record = await (await request.get(`/api/change-sets/${encodeURIComponent(naive)}`)).json() as
+    const record = await (await request.get(`/api/candidates/${encodeURIComponent(naive)}`)).json() as
       { record: { scope: string[]; diagram?: string } }
     return record.record.scope.some((ref) => ref.startsWith('SRV@1712870400.Uv9Wx9'))
   }).toBe(true)
@@ -213,7 +213,7 @@ test('stressors kept in quick succession are all written, in the order they were
 test('focusing an end state turns the grid and marks what its stressors hit', async ({ page, request }) => {
   const id = await analysisOf(request, 'Stress analysis — focus')
   const naive = await (await request.get(`/api/documents/${encodeURIComponent(id)}`)).json() as { extra: Record<string, string> }
-  const scope = await (await request.get(`/api/change-sets/${encodeURIComponent(naive.extra['naive-candidate'])}`)).json() as
+  const scope = await (await request.get(`/api/candidates/${encodeURIComponent(naive.extra['naive-candidate'])}`)).json() as
     { record: { scope: string[] } }
   const [service, artifacts] = ['SRV@', 'PRC@'].map((prefix) => scope.record.scope.find((ref) => ref.startsWith(prefix)) ?? '')
   const edit = (table: string, rows: unknown[]) => request.patch(
@@ -298,8 +298,8 @@ test('a third of the design stressors is held out and judged on the naive', asyn
 
 /** Record *operations* in candidate *id*, over the version it is at. */
 const record = async (request: APIRequestContext, id: string, operations: unknown[]): Promise<Started['naive_candidate']> => {
-  const read = await (await request.get(`/api/change-sets/${encodeURIComponent(id)}`)).json() as { version: string }
-  const recorded = await request.post(`/api/change-sets/${encodeURIComponent(id)}/operations`,
+  const read = await (await request.get(`/api/candidates/${encodeURIComponent(id)}`)).json() as { version: string }
+  const recorded = await request.post(`/api/candidates/${encodeURIComponent(id)}/operations`,
     { data: { based_on: read.version, operations } })
   expect(recorded.ok(), await recorded.text()).toBe(true)
   return await recorded.json() as Started['naive_candidate']
@@ -380,7 +380,7 @@ test('a naive recorded without a canvas draws what it creates, its rename and a 
 test('an adaptation named by its candidate’s short id lists the end state it answers', async ({ page, request }) => {
   // Regression: a row written over MCP with `CAND@….random` was accepted, and the tab showed it answering nothing.
   const { document, naive } = await queuedAnalysis(request, 'Stress analysis — an adaptation by its short id')
-  const created = await request.post('/api/change-sets', { data: { record: { name: 'Gated promotions', parent: naive } } })
+  const created = await request.post('/api/candidates', { data: { record: { name: 'Gated promotions', parent: naive } } })
   expect(created.ok(), await created.text()).toBe(true)
   const adaptation = (await created.json() as Started['naive_candidate']).record.id
   candidates.unshift(adaptation)
@@ -394,7 +394,7 @@ test('an adaptation named by its candidate’s short id lists the end state it a
 
 test('the caption names an adaptation while it is judged against the test set', async ({ page, request }) => {
   const { document, naive } = await queuedAnalysis(request, 'Stress analysis — judging an adaptation')
-  const created = await request.post('/api/change-sets', { data: { record: { name: 'Queued promotions', parent: naive } } })
+  const created = await request.post('/api/candidates', { data: { record: { name: 'Queued promotions', parent: naive } } })
   expect(created.ok(), await created.text()).toBe(true)
   const adaptation = (await created.json() as Started['naive_candidate']).record.id
   candidates.unshift(adaptation)
@@ -460,7 +460,7 @@ const fullscreenTestId = (page: Page): Promise<string> =>
 
 /** The analysis's incidence rows, as the server holds them. */
 const incidenceOf = async (request: APIRequestContext, id: string): Promise<string> =>
-  JSON.stringify(((await (await request.get(`/api/documents/${encodeURIComponent(id)}/incidence`)).json()) as
+  JSON.stringify(((await (await request.get(`/api/stress-analyses/${encodeURIComponent(id)}/incidence`)).json()) as
     { incidence: unknown[] }).incidence)
 
 test('a stressor is ticked on the canvas filling the screen, its row and incidence docked beside it', async ({ page, request }) => {
@@ -501,7 +501,7 @@ test('an adaptation stacked with its core idea shows it on its card and in the i
   await page.getByTestId('new-candidate-description').fill('Rules move out of the code into a versioned rule set.')
   await page.getByRole('button', { name: /^Stack on/ }).click()
   await expect.poll(async () => (await listedCandidates(request)).length).toBeGreaterThan(1)
-  const stacked = ((await (await request.get('/api/change-sets')).json()) as
+  const stacked = ((await (await request.get('/api/candidates')).json()) as
     { candidates: { id: string; parent: string | null; description: string }[] }).candidates
     .find((one) => one.parent === naive.record.id)
   expect(stacked?.description).toBe('Rules move out of the code into a versioned rule set.')
