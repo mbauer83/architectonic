@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.domain.rank_fusion import RRF_K, fuse_ranked_lists
+from src.domain.rank_fusion import RRF_K, fuse_keeping_the_lead, fuse_ranked_lists
 from src.domain.search_records import SearchCandidate
 
 
@@ -160,3 +160,56 @@ def test_the_score_is_the_sum_of_reciprocal_ranks() -> None:
 
     assert by_id["APP@1.a"] == pytest.approx(1 / 61)
     assert by_id["APP@1.b"] == pytest.approx(1 / 62 + 1 / 61)
+
+
+class TestKeepingOneListsLead:
+    """`fuse_keeping_the_lead`: RRF, except that one named list's first place is not taken away."""
+
+    #: The shape the labelled suite lost a query to: the anchor's lead is sixth in the other list, a
+    #: candidate second in both outscores it, and one sixth-and-first ties it.
+    ANCHOR = [entity("lead"), entity("both"), *(entity(f"a{i}") for i in range(3)), entity("other-lead")]
+    OTHER = [entity("other-lead"), entity("both"), *(entity(f"b{i}") for i in range(3)), entity("lead")]
+
+    def test_plain_rrf_takes_the_lead_away_at_every_k(self) -> None:
+        """Why the variant exists: no k keeps it, because RRF is convex in rank."""
+        for k in (1, 2, 5, 10, 60, 1000):
+            assert _order(fuse_ranked_lists([self.ANCHOR, self.OTHER], k=k))[0] != "APP@1.lead", k
+
+    def test_the_anchors_lead_stays_first(self) -> None:
+        for k in (1, 10, 60):
+            assert _order(fuse_keeping_the_lead(self.ANCHOR, [self.OTHER], k=k))[0] == "APP@1.lead", k
+
+    def test_a_lead_the_other_list_never_found_stays_first(self) -> None:
+        anchor = [entity("lead"), entity("x"), entity("y")]
+        other = [entity("x"), entity("y")]
+
+        assert _order(fuse_keeping_the_lead(anchor, [other]))[0] == "APP@1.lead"
+
+    def test_everything_below_the_lead_keeps_rrfs_order_and_scores(self) -> None:
+        kept = fuse_keeping_the_lead(self.ANCHOR, [self.OTHER])
+        plain = [f for f in fuse_ranked_lists([self.ANCHOR, self.OTHER]) if f.candidate != entity("lead")]
+
+        assert kept[1:] == plain
+
+    def test_the_leads_score_is_the_highest_and_unshared(self) -> None:
+        """Scores, not only positions: the ranking policy re-sorts a kind by score."""
+        kept = fuse_keeping_the_lead(self.ANCHOR, [self.OTHER], k=60)
+
+        assert kept[0].score == pytest.approx(2 / 61)
+        assert all(entry.score < kept[0].score for entry in kept[1:])
+
+    def test_where_rrf_already_leads_with_it_nothing_changes(self) -> None:
+        anchor = [entity("a"), entity("b")]
+        other = [entity("a"), entity("c")]
+
+        assert fuse_keeping_the_lead(anchor, [other]) == fuse_ranked_lists([anchor, other])
+
+    def test_an_empty_anchor_is_plain_rrf(self) -> None:
+        other = [entity("a"), entity("b")]
+
+        assert fuse_keeping_the_lead([], [other]) == fuse_ranked_lists([[], other])
+
+    def test_with_nothing_else_to_fuse_the_anchor_is_its_own_order(self) -> None:
+        anchor = [entity("a"), entity("b")]
+
+        assert fuse_keeping_the_lead(anchor, [[]]) == fuse_ranked_lists([anchor])
