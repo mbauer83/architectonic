@@ -41,7 +41,7 @@ const fakeAccess = (initial: CandidateSummary[], refuseDelete = false) => {
     editCandidate: (id, basedOn, patch) => {
       calls.push(`edit ${id} ${basedOn} ${JSON.stringify(patch)}`)
       const at = store.findIndex((one) => one.id === id)
-      if (at >= 0 && typeof patch.state === 'string') store[at] = { ...store[at]!, state: patch.state }
+      if (at >= 0 && typeof patch.state === 'string') store[at] = { ...store[at], state: patch.state }
       return Effect.succeed({ record: { id, ...patch }, version: 'v3' })
     },
   }

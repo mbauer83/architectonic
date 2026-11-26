@@ -62,7 +62,7 @@ const integration = useIntegration(svc, (id) => {
 const elementName = (id: string): string => {
   const key = stableEntityId(id)
   const before = comparison.panes.value.flatMap((pane) => pane.reading.comparison.value?.diff ?? [])
-    .filter((row) => row.kind === 'entity' && stableEntityId(String(row.target)) === key)
+    .filter((row) => row.kind === 'entity' && typeof row.target === 'string' && stableEntityId(row.target) === key)
     .map((row) => row.fields.name?.before).find((name) => typeof name === 'string')
   const read = comparison.panes.value.flatMap((pane) => pane.reading.comparison.value?.view.entities ?? [])
     .find((one) => stableEntityId(one.artifact_id ?? one.id) === key)?.fields.name

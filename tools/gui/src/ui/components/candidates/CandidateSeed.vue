@@ -62,7 +62,7 @@ const fromDiagram = (id: string) => seed(async () => {
   const scope = [...new Map((context.diagram.entity_ids_used ?? []).map((one) => [stableEntityId(one), one])).values()]
   return { diagram: id, scope }
 })
-const onTop = (id: string) => seed(async () => ({ parent: id }))
+const onTop = (id: string) => seed(() => Promise.resolve({ parent: id }))
 
 onMounted(read)
 </script>

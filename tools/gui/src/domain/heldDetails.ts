@@ -39,5 +39,14 @@ export const withHeldDetails = (detail: EntityDetail, held: HeldFields): EntityD
 export const shownValue = (value: unknown): string => {
   if (value === null || value === undefined || value === '') return '—'
   if (Array.isArray(value)) return value.length ? value.map(String).join(', ') : '—'
-  return typeof value === 'object' ? JSON.stringify(value) : String(value)
+  return scalarText(value)
+}
+
+/** A value that is not a list as text: a scalar as itself, anything structured as its JSON. */
+const scalarText = (value: unknown): string => {
+  switch (typeof value) {
+    case 'string': return value
+    case 'number': case 'boolean': case 'bigint': case 'symbol': return value.toString()
+    default: return JSON.stringify(value) ?? '—'
+  }
 }

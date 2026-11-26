@@ -42,14 +42,17 @@ export const useCommandPermission = (operations?: CommandOperations): ComputedRe
 /**
  * The canvas editor's commands on its page: *operations* provided to the menus and the picture under it,
  * and each action wrapped to run only where the permission answer allows its command, *say*ing the reason
- * and doing nothing otherwise.
+ * and doing nothing otherwise. An action may be asynchronous: the wrapped one starts it and returns, as a
+ * menu entry or a gesture does — the action reports its own outcome.
  */
 export const useCommandGate = (operations: CommandOperations, say: (reason: string) => void) => {
   provide(canvasOperationsKey, operations)
   const permit = useCommandPermission(operations)
-  return <A extends unknown[]>(command: CanvasCommandName, run: (...args: A) => void) => (...args: A) => {
+  return <A extends unknown[]>(
+    command: CanvasCommandName, run: (...args: A) => void | Promise<unknown>,
+  ) => (...args: A): void => {
     const answer = permit.value(command)
-    if (answer.allowed) run(...args)
+    if (answer.allowed) void run(...args)
     else say(answer.reason)
   }
 }

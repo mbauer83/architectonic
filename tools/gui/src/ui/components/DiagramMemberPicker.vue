@@ -53,15 +53,17 @@ let timer: ReturnType<typeof setTimeout> | undefined
 watch(query, (text) => {
   clearTimeout(timer)
   if (!text.trim()) { found.value = []; return }
-  timer = setTimeout(async () => {
-    searching.value = true
-    const exit = await Effect.runPromiseExit(svc.searchEntityDisplay({
-      query: text.trim(), limit: 20, diagramType: props.context.diagram.diagram_type,
-    }))
-    searching.value = false
-    if (query.value === text) found.value = Exit.isSuccess(exit) ? exit.value.items : []
-  }, 200)
+  timer = setTimeout(() => void search(text), 200)
 })
+/** The elements *text* finds, kept only while it is still what the field holds. */
+const search = async (text: string) => {
+  searching.value = true
+  const exit = await Effect.runPromiseExit(svc.searchEntityDisplay({
+    query: text.trim(), limit: 20, diagramType: props.context.diagram.diagram_type,
+  }))
+  searching.value = false
+  if (query.value === text) found.value = Exit.isSuccess(exit) ? exit.value.items : []
+}
 const results = computed(() => discovered(found.value, props.drawn))
 
 const root = ref<HTMLElement | null>(null)

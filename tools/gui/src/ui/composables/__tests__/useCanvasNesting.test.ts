@@ -44,8 +44,8 @@ const nesting = (verdict: DropVerdict | null = { kind: 'nest', words: 'Nest in B
   const scope = effectScope()
   const used = scope.run(() => useCanvasNesting(
     editing, ref(null), source, members, { mode, error: ref(''), position: () => {}, close },
-    async (command) => { applied.push(command); return true },
-    { settled: async () => verdict, say: (line) => said.push(line), nested: (part, whole) => `${part} in ${whole}` },
+    (command) => { applied.push(command); return Promise.resolve(true) },
+    { settled: () => Promise.resolve(verdict), say: (line) => said.push(line), nested: (part, whole) => `${part} in ${whole}` },
   ))!
   return { session, mode, close, used, said, applied, source }
 }
