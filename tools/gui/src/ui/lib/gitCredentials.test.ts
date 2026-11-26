@@ -53,7 +53,7 @@ describe('withGitCredentials', () => {
   it('asks once, supplies the answer and repeats the operation', async () => {
     const { operation, calls } = failingThen([refusal(false)])
     const supplied: GitCredentialAnswer[] = []
-    const ask = vi.fn(async () => ({ secret: 'open sesame' }))
+    const ask = vi.fn(() => Promise.resolve({ secret: 'open sesame' }))
 
     const result = await run(withGitCredentials(
       operation, (_request, answer) => { supplied.push(answer); return Effect.void }, ask,
@@ -69,7 +69,7 @@ describe('withGitCredentials', () => {
     const { operation, calls } = failingThen([refusal(false)])
     const asked: GitCredentialRequest[] = []
     const answers = ['wrong', 'right']
-    const ask = async (request: GitCredentialRequest) => { asked.push(request); return { secret: answers.shift()! } }
+    const ask = (request: GitCredentialRequest) => { asked.push(request); return Promise.resolve({ secret: answers.shift()! }) }
     const supply = (_request: GitCredentialRequest, answer: GitCredentialAnswer) =>
       answer.secret === 'right' ? Effect.void : Effect.fail(refusal(true))
 
@@ -85,7 +85,7 @@ describe('withGitCredentials', () => {
     const { operation, calls } = failingThen([original])
     const supply = vi.fn(() => Effect.void)
 
-    const result = await run(withGitCredentials(operation, supply, async () => null))
+    const result = await run(withGitCredentials(operation, supply, () => Promise.resolve(null)))
 
     expect(result).toEqual(Either.left(original))
     expect(supply).not.toHaveBeenCalled()
@@ -94,7 +94,7 @@ describe('withGitCredentials', () => {
 
   it('passes any other failure through without asking', async () => {
     const { operation } = failingThen([other])
-    const ask = vi.fn(async () => ({ secret: 'x' }))
+    const ask = vi.fn(() => Promise.resolve({ secret: 'x' }))
 
     const result = await run(withGitCredentials(operation, () => Effect.void, ask))
 
@@ -104,7 +104,7 @@ describe('withGitCredentials', () => {
 
   it('stops asking after three prompts', async () => {
     const { operation } = failingThen([refusal(false), refusal(true), refusal(true), refusal(true)])
-    const ask = vi.fn(async () => ({ secret: 'accepted but still refused on push' }))
+    const ask = vi.fn(() => Promise.resolve({ secret: 'accepted but still refused on push' }))
 
     const result = await run(withGitCredentials(operation, () => Effect.void, ask))
 

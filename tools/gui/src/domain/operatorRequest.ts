@@ -13,6 +13,6 @@ import type { operations } from './schemas/openapi.generated'
  */
 type CredentialRequestHeaders = NonNullable<operations['sync_supply_credentials']['parameters']['header']>
 
-export const OPERATOR_REQUEST_HEADER: keyof CredentialRequestHeaders & string = 'X-Arch-Operator-Request'
+export const OPERATOR_REQUEST_HEADER: keyof CredentialRequestHeaders = 'X-Arch-Operator-Request'
 
 export const operatorRequestHeaders = (): Readonly<Record<string, string>> => ({ [OPERATOR_REQUEST_HEADER]: '1' })
