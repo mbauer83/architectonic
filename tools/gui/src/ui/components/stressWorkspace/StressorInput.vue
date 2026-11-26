@@ -3,6 +3,10 @@
  * Writing a stressor: one free-text line, kept with `Enter`. Nothing else is asked. Under it the
  * perspectives line, a thinking aid only; a perspective chosen there puts its kind on the stressor,
  * shown beside the line and taken off with ×.
+ *
+ * The line is never closed while an earlier one is being written: each kept line is handed on at once
+ * and the analysis writes them one after another (`useStressAnalysis`), so lines kept in quick
+ * succession are all written, in the order they were kept.
  */
 import { computed, inject, ref } from 'vue'
 import type { StressPerspective } from '../../../domain/schemas/stressEvaluation'
@@ -14,7 +18,6 @@ const props = defineProps<{
   /** The perspectives no stressor of this set is written from, by id, as the server reads them. */
   unwritten: readonly string[]
   placeholder: string
-  disabled?: boolean
 }>()
 const emit = defineEmits<{ write: [text: string, kind: string | undefined] }>()
 
@@ -25,7 +28,7 @@ const open = computed(() => new Set(props.unwritten))
 
 const keep = () => {
   const written = text.value.trim()
-  if (!written || props.disabled) return
+  if (!written) return
   emit('write', written, chosen.value?.kind)
   text.value = ''
   chosen.value = null

@@ -25,14 +25,15 @@ for reading one, see [Reading a diagram](../03-modeling/diagramming.md#reading-a
 | **Return to automatic boxes** | Shown once layer or type boxes have been written down for this diagram. Drops them, so they are computed again |
 | **Check layout** | Marks the lines that break a layout rule; see [Check layout](#check-layout) |
 | *n* **changes · *m* to the model** | Opens the change list. Reads **No changes** when there are none |
-| **Discard** | Returns to the last save. It does not ask first |
+| **Discard** | Returns to the last save. With changes to discard, it asks first: **Cancel** has the focus, and `Esc` cancels |
 | **Save** | Writes the session; see [Saving](#saving) |
 | Sidebar | Shows or hides the panel with **Search the model**. The choice is kept in this browser |
 
 **Done** in the page header, or `Esc`, leaves edit mode. With unsaved changes the bar asks
 *Discard and exit edit mode?* and offers **Save and exit**, **Discard and exit** and
-**Keep editing**; the arrow keys move between them. Opening another diagram while editing drops the
-session's unsaved changes without asking.
+**Keep editing**; the arrow keys move between them. Opening another diagram or another page while
+there are unsaved changes asks the same question, and **Save and exit** or **Discard and exit** then
+goes on to that page. Closing the browser tab or reloading asks through the browser's own dialog.
 
 &nbsp;
 
@@ -71,10 +72,11 @@ character they type, so they work on any keyboard layout.
 | `F` | Frame the selection |
 | `R` | Switch the selection rectangle between *touches* and *encloses* |
 | `Space` (held) | Drag pans |
+| `Alt` (held) | Drag pans |
 | `Ctrl`+`Z` | Undo |
 | `Ctrl`+`Shift`+`Z`, `Ctrl`+`Y` | Redo |
 | `0`, `+`, `−` | Fit, zoom in, zoom out |
-| `Esc` | Close the open popover, the change list or the leave question; clear the selection; then leave edit mode |
+| `Esc` | Close the open popover, the change list, the leave question or the discard question; clear the selection; then leave edit mode |
 
 On macOS, `Cmd` stands for `Ctrl`. In a menu, the up and down arrows move (and wrap), `Home` and
 `End` jump, `Enter` or `Space` chooses and `Esc` closes.
@@ -97,7 +99,8 @@ On macOS, `Cmd` stands for `Ctrl`. In a menu, the up and down arrows move (and w
 | Long press | an element / a line / a line's label | Rename / edit the relation / type the label in place |
 | Right-click | empty paper, or a box's body | The create picker |
 | Right-click | an element, a selection, a line, a box's title band | That thing's menu |
-| `Space` + drag | anywhere | Pan |
+| `Space` + drag, `Alt` + drag | anywhere | Pan |
+| Middle-button drag | anywhere | Pan |
 | Wheel | anywhere | Zoom at the pointer |
 
 A press becomes a drag after 4 px of travel; shorter, it is a click. A selection rectangle drawn

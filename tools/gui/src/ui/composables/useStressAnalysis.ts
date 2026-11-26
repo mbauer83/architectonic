@@ -60,25 +60,39 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
   const hitsOf = (stressor: string): readonly string[] => idsIn(derived.value.get(stressor)?.hits)
   const missingOf = (stressor: string): readonly string[] => idsIn(derived.value.get(stressor)?.missing_elements)
 
-  const reload = async (): Promise<void> => {
+  /** Read the document and everything derived from it; a failure to read is thrown. */
+  const read = async (): Promise<void> => {
     const id = documentId()
+    document.value = await Effect.runPromise(svc.getDocument(id))
+    const [held, grid, left, judged, composed] = await Promise.all([
+      Effect.runPromise(svc.readDocumentTables(id)),
+      Effect.runPromise(svc.readAnalysisIncidence(id)),
+      Effect.runPromise(svc.readAnalysisProgress(id)),
+      Effect.runPromise(svc.readTestSet(id)),
+      naiveId.value
+        ? Effect.runPromise(svc.compareCandidate(naiveId.value, 'model'))
+        : Promise.resolve(null),
+    ])
+    tables.value = held
+    incidence.value = grid
+    progress.value = left
+    evaluation.value = judged
+    naive.value = composed
+  }
+
+  /** Read the analysis again after a write, leaving a refusal already said where it is. */
+  const refresh = async (): Promise<void> => {
+    try {
+      await read()
+    } catch (failure) {
+      error.value = formatEffectError(failure)
+    }
+  }
+
+  const reload = async (): Promise<void> => {
     loading.value = true
     try {
-      document.value = await Effect.runPromise(svc.getDocument(id))
-      const [read, grid, left, judged, composed] = await Promise.all([
-        Effect.runPromise(svc.readDocumentTables(id)),
-        Effect.runPromise(svc.readAnalysisIncidence(id)),
-        Effect.runPromise(svc.readAnalysisProgress(id)),
-        Effect.runPromise(svc.readTestSet(id)),
-        naiveId.value
-          ? Effect.runPromise(svc.compareCandidate(naiveId.value, 'model'))
-          : Promise.resolve(null),
-      ])
-      tables.value = read
-      incidence.value = grid
-      progress.value = left
-      evaluation.value = judged
-      naive.value = composed
+      await read()
       error.value = null
     } catch (failure) {
       error.value = formatEffectError(failure)
@@ -87,25 +101,44 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
     }
   }
 
+  /** The writes asked for and not yet answered, run one at a time in the order they were asked. */
+  let queue: Promise<unknown> = Promise.resolve()
+  let waiting = 0
+
   /**
-   * Write *rows* to *table*, then read the analysis again. Answers the ids of added rows, or null when
-   * the write was refused — a stale row says so and the analysis is read again.
+   * Write *rows* to *table*, then — when no other write is waiting — read the analysis again: a run of
+   * writes is read back once, after its last. Answers the ids of added rows, or null when the write
+   * was refused — a stale row says so and the analysis is read again at once.
    */
-  const edit = async (table: TableName, rows: readonly TableRowEdit[]): Promise<readonly string[] | null> => {
-    saving.value = true
+  const write = async (table: TableName, rows: readonly TableRowEdit[]): Promise<readonly string[] | null> => {
     try {
       const written = await Effect.runPromise(svc.editDocumentTable(documentId(), table, rows))
-      await reload()
+      if (waiting === 1) await refresh()
       return written.added_row_ids
     } catch (failure) {
-      if (isConflict(failure)) await reload()
+      if (isConflict(failure)) await refresh()
       error.value = isConflict(failure)
         ? 'That row changed since it was read. It has been read again; make the edit on what it holds now.'
         : formatEffectError(failure)
       return null
-    } finally {
-      saving.value = false
     }
+  }
+
+  /**
+   * Queue a write of *rows* to *table*: it runs once every write asked for before it has been answered,
+   * so a line kept while another is being written is written after it, never dropped and never sent
+   * alongside it. A refusal stays said until a new run of writes begins.
+   */
+  const edit = (table: TableName, rows: readonly TableRowEdit[]): Promise<readonly string[] | null> => {
+    if (waiting === 0) error.value = null
+    waiting += 1
+    saving.value = true
+    const turn = queue.then(() => write(table, rows))
+    queue = turn
+    return turn.finally(() => {
+      waiting -= 1
+      saving.value = waiting > 0
+    })
   }
 
   const allStressors = computed(() => rowsOf(tables.value, 'stressors'))

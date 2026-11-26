@@ -9,7 +9,8 @@
 }
 @media (max-width: 800px) { .img-container { height: clamp(360px, 68vh, 820px); } }
 .img-container:active { cursor: grabbing; }
-/* Edit mode: the frame in the accent with a top edge, a press is the canvas's, and Space+drag pans. */
+/* Edit mode: the frame in the accent with a top edge, a press is the canvas's, and a deliberate pan
+   (Space+drag, Alt+drag, the middle button) pans. */
 .img-container.editing {
   cursor: default; border-color: var(--accent); box-shadow: inset 0 2px 0 var(--accent); background: var(--paper);
 }

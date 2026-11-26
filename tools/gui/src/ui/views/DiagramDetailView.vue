@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 import { modelServiceKey, toastKey } from '../keys'
 import type { DiagramContext, EditableMetadataSpec } from '../../domain'
 import type { RepoError } from '../../ports/ModelRepository'
@@ -130,6 +131,11 @@ const edit = useDiagramEditMode(
   }, load, toast,
 )
 const editing = computed(() => edit.active.value)
+// Opening another page — another diagram included — with unsaved edits asks first, in the edit bar;
+// saving or discarding there goes on to where the reader was going.
+const askBeforeLeaving = (to: RouteLocationNormalized) => edit.mayLeave(() => { void router.push(to.fullPath) })
+onBeforeRouteLeave(askBeforeLeaving)
+onBeforeRouteUpdate((to, from) => to.params.artifactId === from.params.artifactId || askBeforeLeaving(to))
 const drafts = useDiagramDrafts({
   context: contextQuery.data, editing: edit.editing, nodeElements: selection.nodeElements,
 })
@@ -241,7 +247,8 @@ const executeDelete = () => {
             v-bind="reader.hostAttributes.value"
             @keydown="reader.onKeydown"
             @mousedown="editing ? edit.panPress($event, panZoom.onMouseDown) : panZoom.onMouseDown($event)"
-            @pointerdown="editing && !edit.spaceHeld.value && editCanvas?.sweepFrom($event)"
+            @pointerdown.capture="editing && edit.holdForPan($event)"
+            @pointerdown="editing && !edit.pansFrom($event) && editCanvas?.sweepFrom($event)"
           >
             <div
               class="pan-canvas"

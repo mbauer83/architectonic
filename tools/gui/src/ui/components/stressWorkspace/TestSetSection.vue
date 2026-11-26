@@ -150,7 +150,6 @@ const holdOut = async () => {
           <StressorInput
             :unwritten="evaluation?.unwritten_perspectives ?? []"
             placeholder="Write a test stressor and press Enter"
-            :disabled="analysis.saving.value"
             @write="testSet.write"
           />
           <div class="acts">

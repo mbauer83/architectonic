@@ -43,10 +43,6 @@ kbd {
   100% { box-shadow: 0 0 0 0 transparent; }
 }
 @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
-.leave {
-  display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 6px;
-  background: var(--warn-soft); color: var(--warn-text); border: 1px solid var(--warn-border);
-}
 .err { color: var(--danger-strong); }
 .check { display: inline-flex; align-items: center; gap: 5px; }
 .check svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.3; }

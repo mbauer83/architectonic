@@ -46,6 +46,7 @@ const mounted = (
       returnToAutomatic: () => undefined, discard: () => undefined, save: () => Promise.resolve(true),
     },
     leaving: ref(false),
+    discarding: ref(false),
     canUndo: ref(undoStep !== null),
     canRedo: ref(false),
     checking,
