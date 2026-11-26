@@ -13,7 +13,7 @@ import DiagramDownloadMenu from './DiagramDownloadMenu.vue'
 import DiagramAutoLayoutDialog from './DiagramAutoLayoutDialog.vue'
 import { toastKey } from '../keys'
 import { useCan, useCommandPermission } from '../composables/usePermissions'
-import { DIAGRAM_OPERATIONS } from './canvasCommands'
+import { DIAGRAM_OPERATIONS } from '../../domain/canvasCommands'
 
 withDefaults(defineProps<{
   detail: DiagramDetail

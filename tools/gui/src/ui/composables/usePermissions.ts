@@ -9,7 +9,7 @@
 import { computed, inject, provide, toValue, type ComputedRef, type InjectionKey, type MaybeRefOrGetter } from 'vue'
 import { ALLOWED, NO_ANSWER_YET, type Permission } from '../../domain/permissions'
 import { type Can, permissionsKey } from '../keys'
-import { type CanvasCommandName, type CommandOperations, DIAGRAM_OPERATIONS } from '../components/canvasCommands'
+import { type CanvasCommandName, type CommandOperations, DIAGRAM_OPERATIONS } from '../../domain/canvasCommands'
 
 const UNANSWERED: ComputedRef<Can> = computed(() => () => ({ allowed: false, reason: NO_ANSWER_YET }))
 

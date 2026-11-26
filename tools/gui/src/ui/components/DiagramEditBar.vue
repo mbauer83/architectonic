@@ -14,7 +14,7 @@ import { usePulse } from '../composables/usePulse'
 import DiagramChangeList from './DiagramChangeList.vue'
 import { useCanvasBoxes } from '../composables/useCanvasBoxes'
 import { useCommandPermission } from '../composables/usePermissions'
-import { DIAGRAM_OPERATIONS } from './canvasCommands'
+import { DIAGRAM_OPERATIONS } from '../../domain/canvasCommands'
 
 const props = defineProps<{ edit: DiagramEditMode }>()
 

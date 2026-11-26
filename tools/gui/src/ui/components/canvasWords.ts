@@ -1,4 +1,4 @@
-import { CANDIDATE_OPERATIONS, type CommandOperations, DIAGRAM_OPERATIONS } from './canvasCommands'
+import { CANDIDATE_OPERATIONS, type CommandOperations, DIAGRAM_OPERATIONS } from '../../domain/canvasCommands'
 
 /**
  * What the shared canvas editor calls deleting an element: the diagram page's words, or a candidate's —

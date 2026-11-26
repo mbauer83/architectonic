@@ -4,7 +4,7 @@
  * in the danger colour. `CanvasMenu.vue` draws them; how the keys walk them is here, apart from the DOM.
  */
 import type { Permission } from '../../domain/permissions'
-import type { CanvasCommandName } from './canvasCommands'
+import type { CanvasCommandName } from '../../domain/canvasCommands'
 
 export interface CanvasMenuItem {
   /** What `choose` answers with. */
