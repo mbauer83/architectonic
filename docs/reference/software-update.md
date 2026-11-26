@@ -169,8 +169,11 @@ under `.arch/update/history/` with their outcome.
 
 Restart every MCP client that was connected before the update, or reconnect its servers (`/mcp` in
 Claude Code). A client reads the tool list once, when it connects, and keeps it. After an update it
-does not see tools the new version adds, and the stdio bridge it started still holds a session with
-the backend that was stopped, so its calls fail with `Session terminated`.
+does not see tools the new version adds. The stdio bridge it started held a session with the backend
+that was stopped, and the restarted backend does not know that session. The bridge exits on the
+first call that reaches the restarted backend: it answers that call with an error naming the
+restart, writes `the backend was restarted; restart or reconnect this MCP client to pick up its
+tools` to its standard error, and stops, so the client shows the server as disconnected.
 
 The bridge cannot tell the client to re-read the list. MCP has a notification for that
 (`notifications/tools/list_changed`), but the tool list only changes when the backend restarts, and

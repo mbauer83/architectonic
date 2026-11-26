@@ -9,6 +9,11 @@ Two levels here. The pumps are exercised over in-memory streams, because "which 
 after an exception" is the decision the hang turned on. The last test drives the real bridge process
 against a stub backend it then kills, because the previous version passed every in-process check the
 suite had: the hang lived in what the *process* did after the transport failed.
+
+A backend that restarts under a bridge is the same loss with a working transport: the new process
+answers 404 for the session the bridge holds, which the SDK reports as `Session terminated` on every
+call. Before the fix the bridge forwarded that error for each call and stayed alive, so the client
+showed a connected server whose every call failed.
 """
 
 from __future__ import annotations
@@ -27,12 +32,16 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import anyio
+import httpx2
 import pytest
+from mcp.client.streamable_http import MCP_SESSION_ID
 from mcp.shared.message import SessionMessage
-from mcp.types import CONNECTION_CLOSED, JSONRPCRequest, JSONRPCResponse
+from mcp.types import CONNECTION_CLOSED, INVALID_REQUEST, ErrorData, JSONRPCError, JSONRPCRequest, JSONRPCResponse
 
 from src.infrastructure.mcp.arch_mcp_stdio import (
     EXIT_CONNECTION_LOST,
+    BackendSession,
+    BackendSessionEnded,
     _forward_backend_replies,
     _forward_client_requests,
 )
@@ -101,7 +110,7 @@ def test_a_failure_on_the_backend_stream_ends_the_session() -> None:
         async with remote_send:
             await remote_send.send(ConnectionError("stream broke"))
         async with client_receive:
-            await _forward_backend_replies(remote_receive, client_send, outstanding)
+            await _forward_backend_replies(remote_receive, client_send, outstanding, BackendSession())
 
     with pytest.raises(ConnectionError, match="stream broke"):
         anyio.run(scenario)
@@ -116,7 +125,7 @@ def test_a_delivered_reply_settles_its_request() -> None:
         client_send, client_receive = anyio.create_memory_object_stream[SessionMessage](4)
         async with remote_send:
             await remote_send.send(_response(1))
-        await _forward_backend_replies(remote_receive, client_send, outstanding)
+        await _forward_backend_replies(remote_receive, client_send, outstanding, BackendSession())
         async with client_receive:
             return [message async for message in client_receive]
 
@@ -126,6 +135,52 @@ def test_a_delivered_reply_settles_its_request() -> None:
     assert outstanding.as_connection_closed("gone") == ()
 
 
+def _answered(status: int, headers: dict[str, str]) -> httpx2.Response:
+    return httpx2.Response(status, request=httpx2.Request("POST", "http://backend/mcp/read", headers=headers))
+
+
+@pytest.mark.parametrize(
+    ("status", "headers", "ended"),
+    [
+        pytest.param(404, {MCP_SESSION_ID: "abc"}, True, id="404-for-a-session"),
+        # Before a session exists a 404 means an unknown method or path, not a restart.
+        pytest.param(404, {}, False, id="404-without-a-session"),
+        pytest.param(200, {MCP_SESSION_ID: "abc"}, False, id="200-for-a-session"),
+        pytest.param(400, {MCP_SESSION_ID: "abc"}, False, id="400-for-a-session"),
+    ],
+)
+def test_only_a_404_for_a_held_session_ends_it(status: int, headers: dict[str, str], ended: bool) -> None:
+    session = BackendSession()
+
+    anyio.run(session.observe, _answered(status, headers))
+
+    assert session.ended is ended
+
+
+def test_a_session_the_backend_no_longer_holds_ends_the_session_and_keeps_its_request_owed() -> None:
+    """The SDK's error reply for the 404 is not forwarded: its request is answered with the reason."""
+    outstanding = OutstandingReplies()
+    outstanding.accept(_request(1).message)
+    session = BackendSession()
+    anyio.run(session.observe, _answered(404, {MCP_SESSION_ID: "abc"}))
+    terminated = SessionMessage(JSONRPCError(
+        jsonrpc="2.0", id=1, error=ErrorData(code=INVALID_REQUEST, message="Session terminated"),
+    ))
+
+    async def scenario() -> list[SessionMessage]:
+        remote_send, remote_receive = anyio.create_memory_object_stream[SessionMessage | Exception](4)
+        client_send, client_receive = anyio.create_memory_object_stream[SessionMessage](4)
+        async with remote_send:
+            await remote_send.send(terminated)
+        with pytest.raises(BackendSessionEnded, match="the backend was restarted"):
+            await _forward_backend_replies(remote_receive, client_send, outstanding, session)
+        async with client_receive:
+            return [message async for message in client_receive]
+
+    assert anyio.run(scenario) == []
+    assert len(outstanding.as_connection_closed("gone")) == 1
+
+
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
         probe.bind(("127.0.0.1", 0))
@@ -133,9 +188,9 @@ def _free_port() -> int:
 
 
 @contextmanager
-def _stub_backend(log: Path) -> Iterator[tuple[subprocess.Popen[bytes], str]]:
-    """A stub MCP backend on its own port, for as long as the test wants one."""
-    port = _free_port()
+def _stub_backend(log: Path, port: int | None = None) -> Iterator[tuple[subprocess.Popen[bytes], str]]:
+    """A stub MCP backend on its own port, or on `port` to stand in for one restarted there."""
+    port = port or _free_port()
     base_url = f"http://127.0.0.1:{port}"
     with log.open("wb") as sink:
         process = subprocess.Popen(
@@ -248,3 +303,53 @@ def test_the_bridge_answers_a_call_its_backend_can_no_longer_serve(tmp_path: Pat
             assert bridge.wait(timeout=30) == EXIT_CONNECTION_LOST, (
                 "a bridge with a dead transport must stop"
             )
+
+
+def _initialize(bridge: subprocess.Popen[str]) -> None:
+    _send(bridge, {
+        "jsonrpc": "2.0", "id": 1, "method": "initialize",
+        "params": {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {},
+            "clientInfo": {"name": "bridge-regression", "version": "0"},
+        },
+    })
+    assert _read_reply(bridge, _ANSWER_DEADLINE_SECONDS) is not None, "the bridge never connected"
+    _send(bridge, {"jsonrpc": "2.0", "method": "notifications/initialized"})
+
+
+def _call_echo(bridge: subprocess.Popen[str], request_id: int) -> dict[str, object]:
+    _send(bridge, {
+        "jsonrpc": "2.0", "id": request_id, "method": "tools/call",
+        "params": {"name": "echo", "arguments": {"text": "still here"}},
+    })
+    reply = _read_reply(bridge, _ANSWER_DEADLINE_SECONDS)
+    assert reply is not None, "the bridge left the call unanswered"
+    assert reply["id"] == request_id
+    return reply
+
+
+def test_the_bridge_exits_when_its_backend_is_restarted(tmp_path: Path) -> None:
+    """The restarted backend answers 404 for the old session; the bridge names the restart and stops."""
+    bridge_log = tmp_path / "bridge.log"
+    with _stub_backend(tmp_path / "stub.log") as (backend, base_url):
+        port = int(base_url.rsplit(":", 1)[1])
+        with _bridge_to(base_url, bridge_log) as bridge:
+            _initialize(bridge)
+            # A call on a live session is forwarded as it always was.
+            answered = _call_echo(bridge, 2)
+            assert "error" not in answered, answered
+            assert "still here" in json.dumps(answered["result"])
+
+            backend.terminate()
+            backend.wait(timeout=30)
+            with _stub_backend(tmp_path / "restarted.log", port=port):
+                reply = _call_echo(bridge, 3)
+
+                # Before the fix this was `Session terminated`, with the bridge still running.
+                error = reply["error"]
+                assert isinstance(error, dict)
+                assert error["code"] == CONNECTION_CLOSED
+                assert "the backend was restarted" in str(error["message"])
+                assert bridge.wait(timeout=30) == EXIT_CONNECTION_LOST, "a bridge with an ended session must stop"
+    assert "restart or reconnect this MCP client to pick up its tools" in bridge_log.read_text()

@@ -9,6 +9,11 @@ session's reads and writes can land in a neighbouring checkout's model before an
 A bridge also has to say when it *stops* being able to proxy. Forwarding a request id is a promise to
 deliver its answer, and a transport that has failed cannot keep that promise: the bridge answers the
 ids itself and ends the process, so the client can relaunch it and re-run the checks above.
+
+A backend that restarts is the same loss by another route. The transport still connects, but the
+new process does not know the session the bridge holds and answers every request for it with 404.
+The bridge treats that answer as the end of its connection, because no later request can succeed on
+that session and the client has to reconnect to read the restarted backend's tools.
 """
 
 from __future__ import annotations
@@ -22,7 +27,7 @@ from typing import NoReturn
 
 import anyio
 import httpx2
-from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
+from mcp.client.streamable_http import MCP_SESSION_ID, create_mcp_http_client, streamable_http_client
 from mcp.server.stdio import stdio_server
 from mcp.shared._stream_protocols import ReadStream, WriteStream
 from mcp.shared.message import SessionMessage
@@ -44,6 +49,37 @@ ENV_WORKSPACE = "ARCH_MCP_WORKSPACE"
 #: Exit status for a connection that was established and then failed. Distinct from the refusal at
 #: startup, so a client's log separates "never reached a backend" from "lost the one it had".
 EXIT_CONNECTION_LOST = 3
+
+
+class BackendSessionEnded(Exception):
+    """The backend no longer knows the session this bridge holds: it was restarted under it."""
+
+    def __init__(self) -> None:
+        super().__init__("the backend was restarted; restart or reconnect this MCP client to pick up its tools")
+
+
+class BackendSession:
+    """Whether the backend still recognises the session this bridge opened.
+
+    Read from the HTTP status rather than from the JSON-RPC error the SDK hands over for it. The MCP
+    specification states the fact at this level: a server answers 404 to a request that names a
+    session it does not hold. The SDK turns that 404 into an error reply whose wording depends on
+    whether the server sent a body, so the wording is not something to match on. Observed as a
+    response hook, which runs before the SDK reads the response, so the flag is set before the error
+    reply reaches `_forward_backend_replies`.
+    """
+
+    def __init__(self) -> None:
+        self._ended = False
+
+    @property
+    def ended(self) -> bool:
+        return self._ended
+
+    async def observe(self, response: httpx2.Response) -> None:
+        """Note a 404 to a request that named a session. A 404 before any session has no such meaning."""
+        if response.status_code == 404 and MCP_SESSION_ID in response.request.headers:
+            self._ended = True
 
 
 def _project_directory() -> Path:
@@ -79,17 +115,23 @@ async def _forward_backend_replies(
     remote_read: ReadStream[SessionMessage | Exception],
     local_write: WriteStream[SessionMessage],
     outstanding: OutstandingReplies,
+    session: BackendSession,
 ) -> None:
     """Backend → client, ending the session when the transport hands over a failure instead of a reply.
 
     Reading on past one is what left a whole session hanging: the exception carries no id, so the
     request it belonged to can never be settled, and the client waits for a reply nothing will send.
     Raising it puts the reason in front of `_answer_and_stop`, which is where both are dealt with.
+
+    A session the backend no longer holds is a failure of the same kind. The reply that reports it is
+    not forwarded: its request stays outstanding, so `_answer_and_stop` answers it with the reason.
     """
     async with remote_read, local_write:
         async for message in remote_read:
             if isinstance(message, Exception):
                 raise message
+            if session.ended:
+                raise BackendSessionEnded()
             outstanding.settle(message.message)
             await local_write.send(message)
 
@@ -137,6 +179,7 @@ READ_TIMEOUT_SECONDS = 300.0
 
 async def _run_bridge(url: str) -> None:
     outstanding = OutstandingReplies()
+    session = BackendSession()
     # Taken before `stdio_server()` claims file descriptor 1 — see `_answer_and_stop`.
     channel = os.dup(1)
     async with stdio_server() as (local_read, local_write):
@@ -146,12 +189,15 @@ async def _run_bridge(url: str) -> None:
                 pool=CONNECT_TIMEOUT_SECONDS,
             )
             # Two streams, not three: `mcp` 2.x dropped the session-id accessor, which this
-            # bridge never used — it forwards messages without reading their session.
+            # bridge never used — it forwards messages without reading their session. Whether the
+            # backend still holds that session is read from the HTTP status, by `BackendSession`.
             async with create_mcp_http_client(timeout=timeout) as http_client:
+                hooks = http_client.event_hooks
+                http_client.event_hooks = {**hooks, "response": [*hooks["response"], session.observe]}
                 async with streamable_http_client(url, http_client=http_client) as (remote_read, remote_write):
                     async with anyio.create_task_group() as tg:
                         tg.start_soon(_forward_client_requests, local_read, remote_write, outstanding)
-                        tg.start_soon(_forward_backend_replies, remote_read, local_write, outstanding)
+                        tg.start_soon(_forward_backend_replies, remote_read, local_write, outstanding, session)
         except* Exception as failure:
             _answer_and_stop(outstanding, failure, channel=channel)
 
