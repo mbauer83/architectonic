@@ -1,7 +1,18 @@
-import { Either, Schema } from 'effect'
+import { Cause, Either, Runtime, Schema } from 'effect'
 import { type ErrorBody, ErrorBodySchema } from '../../domain/schemas/errors'
 import type { WriteVerification } from '../../domain/schemas/write-results'
 import { isRecord } from '../../domain/records'
+import { NetworkError } from '../../domain'
+
+/** What a rejected `Effect.runPromise` failed with: the error itself, not the fiber's wrapper round it. */
+export const failureOf = (rejected: unknown): unknown =>
+  Runtime.isFiberFailure(rejected) ? Cause.squash(rejected[Runtime.FiberFailureCauseId]) : rejected
+
+/** Whether *rejected* is the server refusing a write that was based on an outdated read (409). */
+export const isConflict = (rejected: unknown): boolean => {
+  const failure = failureOf(rejected)
+  return failure instanceof NetworkError && failure.status === 409
+}
 
 
 /** The raw JSON text a failed `fetch` call's body carries, whichever adapter shape wraps

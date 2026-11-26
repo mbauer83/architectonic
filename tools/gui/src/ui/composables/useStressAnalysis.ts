@@ -11,7 +11,6 @@
 import { computed, ref, shallowRef } from 'vue'
 import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
-import { NetworkError } from '../../domain'
 import type { DocumentDetail } from '../../domain'
 import type {
   AnalysisIncidence, AnalysisProgress, CandidateComparison, DocumentTables,
@@ -22,9 +21,8 @@ import { rowsOf, ticksOf } from '../../domain/stressAnalysis/analysisRows'
 import { heldApartIds } from '../../domain/stressAnalysis/testSet'
 import { stableEntityId } from '../../domain/artifactId'
 import { UNNAMED_YET } from '../../domain/candidates/candidateComparison'
-import { formatEffectError } from '../lib/errors'
+import { formatEffectError, isConflict } from '../lib/errors'
 
-const isConflict = (failure: unknown): boolean => failure instanceof NetworkError && failure.status === 409
 
 /** A frontmatter value as text, empty where the document has none. */
 const frontmatter = (document: DocumentDetail | null, key: string): string => {

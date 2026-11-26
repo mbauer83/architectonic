@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { Data } from 'effect'
+import { Data, Effect } from 'effect'
 import {
   collectVerificationIssues,
+  failureOf,
+  isConflict,
   readApiErrorBody,
   hasVerificationErrors,
   readErrorMessage,
 } from './errors'
 import type { WriteVerification } from '../../domain/schemas/write-results'
+import { NetworkError as DomainNetworkError } from '../../domain'
 
 const report = (fields: Partial<WriteVerification>): WriteVerification => ({
   valid: true,
@@ -144,5 +147,24 @@ describe('hasVerificationErrors', () => {
 
   it('is false when there is no report', () => {
     expect(hasVerificationErrors(null)).toBe(false)
+  })
+})
+
+describe('isConflict', () => {
+  // `Effect.runPromise` rejects with a fiber-failure wrapper, not the error itself: a check written as
+  // `instanceof NetworkError` on the rejection never matched, so a stale table write was never read again.
+  it('recognises a 409 through the wrapper runPromise rejects with', async () => {
+    const rejected = await Effect.runPromise(Effect.fail(new DomainNetworkError({ status: 409, message: 'stale' })))
+      .catch((reason: unknown) => reason)
+    expect(rejected).not.toBeInstanceOf(DomainNetworkError)
+    expect(isConflict(rejected)).toBe(true)
+    expect(failureOf(rejected)).toBeInstanceOf(DomainNetworkError)
+  })
+
+  it('is false for another status and for something that is not a network error', async () => {
+    const refused = await Effect.runPromise(Effect.fail(new DomainNetworkError({ status: 400, message: 'no' })))
+      .catch((reason: unknown) => reason)
+    expect(isConflict(refused)).toBe(false)
+    expect(isConflict(new Error('boom'))).toBe(false)
   })
 })

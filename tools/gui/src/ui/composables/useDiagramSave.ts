@@ -8,9 +8,8 @@
  * is refused (409) rather than written over: the session is then stale and offers to read the diagram again.
  */
 import { type Ref, ref, type ShallowRef } from 'vue'
-import { Cause, Effect, Runtime } from 'effect'
+import { Effect } from 'effect'
 import type { ModelService } from '../../application/ModelService'
-import { NetworkError } from '../../domain'
 import type { ArrangedLayout, StoredLayout } from '../../domain/layout/arrangementLayout'
 import { layoutPatchBetween, patchIsEmpty } from '../../domain/layout/arrangementLayout'
 import { composeCanvas } from '../../domain/layout/canvasComposition'
@@ -18,7 +17,7 @@ import type { DrawnMembership } from '../../domain/layout/diagramMembership'
 import { membershipOf } from '../../domain/layout/diagramMembership'
 import type { PendingChange } from '../../domain/layout/sessionChanges'
 import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
-import { formatEffectError } from '../lib/errors'
+import { failureOf, formatEffectError, isConflict } from '../lib/errors'
 import type { ArrangementSession, ArrangementState } from './useArrangementSession'
 
 /** What a save reads of its session, and what it moves on once written. */
@@ -43,10 +42,6 @@ export interface SaveTarget {
   /** Where a refusal is said; shared with the session's own reads. */
   readonly error: Ref<string | null>
 }
-
-/** What *rejected* failed with: the error itself, not the fiber's wrapper round it. */
-const failureOf = (rejected: unknown): unknown =>
-  Runtime.isFiberFailure(rejected) ? Cause.squash(rejected[Runtime.FiberFailureCauseId]) : rejected
 
 export function useDiagramSave(target: SaveTarget) {
   const { svc, session, saved, stored, savedMembers, error } = target
@@ -121,7 +116,7 @@ export function useDiagramSave(target: SaveTarget) {
       // read) instead of showing the response body.
       const failure = failureOf(rejected)
       error.value = formatEffectError(failure)
-      stale.value = failure instanceof NetworkError && failure.status === 409
+      stale.value = isConflict(failure)
       return false
     } finally {
       saving.value = false
