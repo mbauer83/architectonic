@@ -18,6 +18,7 @@ from src.domain.artifact_id import (
     MalformedArtifactIdError,
     canonical_entity_key,
     connection_id_as_written,
+    is_entity_id,
     stable_id,
 )
 from src.domain.diagrams.authored_groupings import RuleKey, grouping_ids
@@ -56,6 +57,20 @@ def alias_by_instance(frontmatter: Mapping[str, object]) -> dict[str, str]:
             if isinstance(row, Mapping) and row.get("id") and row.get("alias"):
                 aliases[str(row["id"])] = normalize_puml_alias(str(row["alias"]))
     return aliases
+
+
+def entity_by_alias(frontmatter: Mapping[str, object]) -> dict[str, str]:
+    """The model element each alias stands for, in stable form — `alias_by_instance` read backwards.
+
+    An occurrence's alias stands for the element it draws again. An instance that is no model element
+    (a held record's local id, an id-shaped string naming nothing) stands for none and is left out.
+    """
+    backing = dict(occurrences_stated(frontmatter.get("diagram-entities"), frontmatter.get("bindings")))
+    return {
+        alias: stable_id(element)
+        for instance, alias in alias_by_instance(frontmatter).items()
+        if is_entity_id(element := backing.get(instance, instance))
+    }
 
 
 def occurrences_stated(diagram_entities: object, bindings: object) -> list[tuple[str, str]]:

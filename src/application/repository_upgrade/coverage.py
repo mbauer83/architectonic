@@ -18,9 +18,10 @@ REQUIRED_STEP_IDS_BY_SURFACE: dict[ScannedSurface, tuple[str, ...]] = {
     "profiles": ("schema-file-scan", "default-schemata-ensure", "default-document-types-ensure"),
     "customizations": ("specialization-declaration-scan", "viewpoint-declaration-scan"),
     "entity_frontmatter": ("unrecognized-structure-scan",),
-    "connection_declarations": ("connection-metadata-scan",),
+    "connection_declarations": ("connection-metadata-scan", "d15-outgoing-source-entity-long-form"),
     "diagram_frontmatter": (
         "d9-multiplicity-rename", "viewpoint-application-scan", "d12-grouping-ids-and-drawn-relation-keys",
+        "d13-entity-ids-used-names-elements", "d14-drawn-relations-bound",
     ),
     "group_registry": ("group-meta-ontology-archimate-4-rename",),
     "modification_stamps": ("modification-stamp-datetime",),

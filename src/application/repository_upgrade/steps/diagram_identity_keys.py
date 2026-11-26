@@ -27,20 +27,15 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
-from src.application.artifacts.parsing import extract_yaml_block
 from src.application.modeling.diagram_identities import alias_by_instance, drawn_relation_ends, strings_of
 from src.application.repository_upgrade.ports import RepoUpgradeView, RepoUpgradeWriter
+from src.application.repository_upgrade.steps._diagram_files import diagram_frontmatter
 from src.application.repository_upgrade.steps._frontmatter_blocks import with_block
 from src.application.repository_upgrade.steps._frontmatter_scan import list_frontmatter_candidate_files
 from src.domain.artifact_id import stable_id
 from src.domain.diagrams.authored_groupings import GROUPING_ID_KEY, walk_groupings, with_grouping_ids
 from src.domain.diagrams.relation_key import alias_pair_of
-from src.domain.repository.frontmatter import (
-    Frontmatter,
-    opens_with_frontmatter,
-    read_frontmatter,
-    replace_frontmatter_text,
-)
+from src.domain.repository.frontmatter import Frontmatter, read_frontmatter, replace_frontmatter_text
 from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurface, UpgradeFinding
 
 _GROUPINGS = "authored-groupings"
@@ -99,7 +94,7 @@ class DiagramIdentityKeysStep:
     def detect(self, view: RepoUpgradeView) -> list[UpgradeFinding]:
         findings: list[UpgradeFinding] = []
         for rel in list_frontmatter_candidate_files(view):
-            frontmatter = self._diagram_frontmatter(view.read_text(rel))
+            frontmatter = diagram_frontmatter(view.read_text(rel))
             if frontmatter is None:
                 continue
             if count := _unidentified(frontmatter):
@@ -154,16 +149,8 @@ class DiagramIdentityKeysStep:
             for finding in findings
         ]
 
-    def _diagram_frontmatter(self, content: str | None) -> dict[str, object] | None:
-        if content is None or not opens_with_frontmatter(content):
-            return None
-        frontmatter = extract_yaml_block(content)
-        if not isinstance(frontmatter, dict) or str(frontmatter.get("artifact-type", "")) != "diagram":
-            return None
-        return frontmatter
-
     def _rewritten(self, content: str) -> str | None:
-        frontmatter = self._diagram_frontmatter(content)
+        frontmatter = diagram_frontmatter(content)
         reading = read_frontmatter(content)
         if frontmatter is None or not isinstance(reading, Frontmatter):
             return None

@@ -5,11 +5,14 @@ import pytest
 from src.domain.artifact_id import (
     ConnectionKey,
     EntityId,
+    HeldRecordId,
     MalformedArtifactIdError,
     connection_id_as_written,
+    held_record_id,
     is_entity_id,
     parse_connection_id,
     parse_entity_id,
+    read_held_record_id,
     slug_of,
     stable_conn_id,
     stable_id,
@@ -291,3 +294,25 @@ class TestTheKeyGrammarIsLengthAgnostic:
 
         assert "-" not in _ID_ALPHABET
         assert is_entity_id("APP@1785971770.O_xvx-.legacy-id"), "existing ids must still parse"
+
+
+class TestHeldRecordId:
+    """The held-record form has one writer and one reader; asserted as a pair over what the form permits."""
+
+    @pytest.mark.parametrize("diagram_id", ["ARC@1787699731.h7Tx5pN.plan-the-manufacture", "ARC@1787699731.h7Tx5pN"])
+    @pytest.mark.parametrize("entity_type", ["occurrence", "participant", "activity-node"])
+    @pytest.mark.parametrize("local_id", ["APP_VRxUFz4_x2", "n-1", "a/b"])
+    def test_what_is_written_reads_back(self, diagram_id: str, entity_type: str, local_id: str) -> None:
+        written = held_record_id(diagram_id, entity_type, local_id)
+
+        assert read_held_record_id(written) == HeldRecordId(diagram_id, entity_type, local_id)
+
+    @pytest.mark.parametrize("text", [
+        "APP@1786362022.VRxUFz4.cad-model-engine-service",
+        "ARC@1.a#occurrence",
+        "ARC@1.a#/local",
+        "ARC@1.a#occurrence/",
+        "not-an-id#occurrence/x",
+    ])
+    def test_anything_else_is_not_one(self, text: str) -> None:
+        assert read_held_record_id(text) is None

@@ -8,9 +8,12 @@ surface goes through the same adapter (filesystem in production, in-memory in te
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from src.domain.repository.repository_upgrade import AppliedFinding, ScannedSurface, UpgradeFinding
+
+if TYPE_CHECKING:
+    from src.application.runtime_catalogs import RuntimeCatalogs
 
 
 class RepoUpgradeView(Protocol):
@@ -40,6 +43,16 @@ class RepoUpgradeView(Protocol):
     @property
     def known_entity_type_names(self) -> frozenset[str]:
         """Entity type names the currently-registered ontology modules recognize."""
+        ...
+
+    @property
+    def catalogs(self) -> RuntimeCatalogs:
+        """The registered ontology and diagram-type catalogs, for a step whose question only they answer.
+
+        Which keys of a diagram's `diagram-entities` hold records, and whether its body is reconciled
+        from its bindings, are statements its diagram type makes. A step that read them any other way
+        would be a second answer to a question the verifier already asks of the same catalog.
+        """
         ...
 
 
