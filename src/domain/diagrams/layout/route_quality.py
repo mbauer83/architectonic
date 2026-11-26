@@ -32,7 +32,9 @@ other. Mirrored in `tools/gui/src/domain/layout/routeQuality.ts` from the shared
 
 from __future__ import annotations
 
+from bisect import bisect_left
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from enum import StrEnum
 
 from src.domain.diagrams.layout.geometry import Extent, Point
@@ -172,6 +174,47 @@ def runs_along(
         if (run := _span(course[index], course[index + 1])) is not None
         and any(_alongside(run, line) for line in lines)
     )
+
+
+@dataclass(frozen=True)
+class RunIndex:
+    """Every run of many courses and every border, by orientation and the line it lies on, each with the
+    place of the course it belongs to (None for a border): what `runs_along_in` asks, built once for a
+    whole picture rather than once per line. Mirrored as `runIndex` in `routeQuality.ts`."""
+
+    level: tuple[tuple[float, float, float, int | None], ...]
+    upright: tuple[tuple[float, float, float, int | None], ...]
+
+
+def run_index(courses: Sequence[Sequence[Point]], borders: Sequence[Extent] = ()) -> RunIndex:
+    """The runs of *courses*, each owned by its place, and the edges of *borders*, owned by none."""
+    runs = [
+        (span, owner) for owner, course in enumerate(courses) for start, end in zip(course, course[1:], strict=False)
+        if (span := _span(start, end)) is not None
+    ] + [(edge, None) for border in borders for edge in _edges(border)]
+    level = sorted(((at, low, high, owner) for (is_level, at, low, high), owner in runs if is_level),
+                   key=lambda run: run[0])
+    upright = sorted(((at, low, high, owner) for (is_level, at, low, high), owner in runs if not is_level),
+                     key=lambda run: run[0])
+    return RunIndex(tuple(level), tuple(upright))
+
+
+def runs_along_in(course: Sequence[Point], index: RunIndex, own: int) -> tuple[int, ...]:
+    """`runs_along` of the course at place *own*, against every other course and every border *index* holds."""
+    found: list[int] = []
+    for at in range(len(course) - 1):
+        run = _span(course[at], course[at + 1])
+        if run is None:
+            continue
+        runs = index.level if run[0] else index.upright
+        place = bisect_left(runs, run[1] - LINE_CLEARANCE, key=lambda one: one[0])
+        while place < len(runs) and runs[place][0] < run[1] + LINE_CLEARANCE:
+            line_at, low, high, owner = runs[place]
+            if owner != own and _alongside(run, (run[0], line_at, low, high)):
+                found.append(at)
+                break
+            place += 1
+    return tuple(found)
 
 
 def unreadable(

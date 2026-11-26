@@ -2,7 +2,8 @@
  * @verifies REQ@1795725227.WvUvbkX  arrange a diagram by hand
  *
  * Shaping lines on the diagram editor's canvas (sketch 02·3–02·5, Q33, Q35): a moved element's lines
- * keep the course the drag showed when the mouse is released; a line's end goes onto another side from
+ * follow it while it is dragged, and once it is dropped no other line runs through it; a line's end goes
+ * onto another side from
  * its menu, reached by the keyboard; a double press adds a bend, Straighten drops it, and undo brings it
  * back — each one step.
  *
@@ -55,6 +56,26 @@ const middleOf = async (canvas: Locator, line: string): Promise<XY> => {
   return onScreen(canvas, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2])
 }
 
+type Rect = [number, number, number, number]
+
+/** A grip's rectangle in the picture's own units: left, top, width, height. */
+const extentOf = async (grip: Locator): Promise<Rect> =>
+  (await Promise.all(['x', 'y', 'width', 'height'].map(async (name) => Number(await grip.getAttribute(name))))) as Rect
+
+/** Whether *point* lies on the border of *extent*, give or take a pixel. */
+const onBorder = ([px, py]: XY, [x, y, w, h]: Rect): boolean => {
+  const within = px >= x - 1 && px <= x + w + 1 && py >= y - 1 && py <= y + h + 1
+  return within && Math.min(Math.abs(px - x), Math.abs(px - x - w), Math.abs(py - y), Math.abs(py - y - h)) <= 1
+}
+
+/** Whether a run of *course* passes through the inside of *extent*, two pixels in from its border. */
+const entersInside = (course: readonly XY[], [x, y, w, h]: Rect): boolean =>
+  course.slice(1).some(([bx, by], index) => {
+    const [ax, ay] = course[index]
+    return Math.max(ax, bx) > x + 2 && Math.min(ax, bx) < x + w - 2
+      && Math.max(ay, by) > y + 2 && Math.min(ay, by) < y + h - 2
+  })
+
 /** The first line on the picture with at least *corners* corners. */
 const aLineWith = async (canvas: Locator, corners: number): Promise<string> => {
   for (const one of await canvas.locator('g.lab-line').all()) {
@@ -64,7 +85,7 @@ const aLineWith = async (canvas: Locator, corners: number): Promise<string> => {
   throw new Error(`no line with ${corners} corners`)
 }
 
-test('a moved element\'s lines keep the course the drag showed when the mouse is released', async ({ page }) => {
+test('a moved element\'s lines follow it while dragged, and once dropped no other line runs through it', async ({ page }) => {
   const canvas = await open(page)
   await byHand(page, canvas)
   const line = await aLineWith(canvas, 0)
@@ -73,22 +94,31 @@ test('a moved element\'s lines keep the course the drag showed when the mouse is
   const grips = await canvas.locator('g.lab-element .lab-grip').all()
   let grip: Locator | null = null
   for (const one of grips) {
-    const [x, y, w, h] = await Promise.all(['x', 'y', 'width', 'height'].map(async (name) => Number(await one.getAttribute(name))))
+    const [x, y, w, h] = await extentOf(one)
     if (end[0] >= x - 1 && end[0] <= x + w + 1 && end[1] >= y - 1 && end[1] <= y + h + 1) grip = one
   }
   if (!grip) throw new Error('the line ends at no element')
-  const box = await grip.boundingBox()
+  // By its alias: dragging lifts the element, which changes its place among the grips.
+  const alias = await grip.locator('xpath=..').getAttribute('data-alias')
+  const dragged = canvas.locator(`g.lab-element[data-alias="${alias}"] .lab-grip`)
+  const box = await dragged.boundingBox()
   if (!box) throw new Error('not drawn')
   const [x, y] = [box.x + box.width / 2, box.y + box.height / 2]
   await page.mouse.move(x, y)
   await page.mouse.down()
   await page.mouse.move(x + 90, y + 70, { steps: 12 })
   await page.waitForTimeout(150)
-  const shown = await Promise.all((await canvas.locator('g.lab-line').all()).map(async (one) => one.locator('.lab-line-hit').getAttribute('points')))
+  expect(onBorder((await courseOf(canvas, line)).at(-1) as XY, await extentOf(dragged))).toBe(true)
   await page.mouse.up()
   await page.waitForTimeout(150)
-  const released = await Promise.all((await canvas.locator('g.lab-line').all()).map(async (one) => one.locator('.lab-line-hit').getAttribute('points')))
-  expect(released).toEqual(shown)
+
+  const moved = await extentOf(dragged)
+  expect(onBorder((await courseOf(canvas, line)).at(-1) as XY, moved)).toBe(true)
+  for (const other of await canvas.locator('g.lab-line').all()) {
+    const course = await courseOf(canvas, await other.getAttribute('data-relation') ?? '')
+    const own = [course[0], course.at(-1) as XY].some((point) => onBorder(point, moved))
+    if (!own) expect(entersInside(course, moved)).toBe(false)
+  }
 })
 
 test('a line\'s end goes onto another side from its menu, opened by the keyboard', async ({ page }) => {

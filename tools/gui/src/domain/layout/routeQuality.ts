@@ -150,6 +150,60 @@ export const runsAlong = (
     .map(({ index }) => index)
 }
 
+/** Every run of many courses and every border, indexed by orientation and line, each with its owner. */
+export interface RunIndex {
+  readonly level: readonly (readonly [Span, number])[]
+  readonly upright: readonly (readonly [Span, number])[]
+}
+
+const byLine = (one: readonly [Span, number], other: readonly [Span, number]): number => one[0].at - other[0].at
+
+/**
+ * The runs of *courses*, each owned by its key, and the edges of *borders*, owned by none: what
+ * `runsAlongIn` asks, built once for a whole picture rather than once per line.
+ */
+export const runIndex = (courses: ReadonlyMap<number, readonly Point[]>, borders: readonly Extent[]): RunIndex => {
+  const runs: (readonly [Span, number])[] = [
+    ...[...courses].flatMap(([owner, course]) =>
+      segments(course).flatMap(([start, end]): (readonly [Span, number])[] => {
+        const run = spanOf(start, end)
+        return run ? [[run, owner]] : []
+      })),
+    ...borders.flatMap((extent) => edgesOf(extent).map((edge) => [edge, Number.NaN] as const)),
+  ]
+  return {
+    level: runs.filter(([run]) => run.level).sort(byLine),
+    upright: runs.filter(([run]) => !run.level).sort(byLine),
+  }
+}
+
+/** The first place in *runs*, ordered by line, whose line is at *at* or beyond. */
+const firstAt = (runs: readonly (readonly [Span, number])[], at: number): number => {
+  let [low, high] = [0, runs.length]
+  while (low < high) {
+    const middle = (low + high) >> 1
+    if (runs[middle][0].at < at) low = middle + 1
+    else high = middle
+  }
+  return low
+}
+
+/** `runsAlong` of the course owned by *own*, against every other course and every border *index* holds. */
+export const runsAlongIn = (course: readonly Point[], index: RunIndex, own: number): number[] =>
+  segments(course)
+    .map(([start, end], at) => ({ at, run: spanOf(start, end) }))
+    .filter(({ run }) => {
+      if (run === null) return false
+      const runs = run.level ? index.level : index.upright
+      for (let place = firstAt(runs, run.at - LINE_CLEARANCE); place < runs.length; place += 1) {
+        const [other, owner] = runs[place]
+        if (other.at >= run.at + LINE_CLEARANCE) break
+        if (owner !== own && alongside(run, other)) return true
+      }
+      return false
+    })
+    .map(({ at }) => at)
+
 /** The orthogonal course a drawn line with rounded bends follows: each rounding taken back to its corner. */
 export const squareCourse = (through: readonly Point[]): Point[] => {
   if (through.length <= 2) return [...through]

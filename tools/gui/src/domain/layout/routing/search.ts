@@ -24,6 +24,9 @@ export const REVERSE: readonly number[] = [1, 0, 3, 2]
 
 export const WINDOW = 200
 
+/** How far beyond its terminals a far-reaching search first looks, as a share of how far apart they are. */
+export const SPAN_SHARE = 0.1
+
 /** How much the distance still to go is over-weighted: a promising way rather than the very cheapest. */
 export const EAGERNESS = 1.5
 
@@ -104,8 +107,9 @@ const windowsOf = (terminals: readonly Terminal[]): (Extent | null)[] => {
   const top = Math.min(...terminals.map((terminal) => terminal.point.y))
   const right = Math.max(...terminals.map((terminal) => terminal.point.x))
   const bottom = Math.max(...terminals.map((terminal) => terminal.point.y))
+  const first = Math.max(WINDOW, SPAN_SHARE * Math.max(right - left, bottom - top))
   return [
-    ...[WINDOW, 3 * WINDOW].map((reach) => ({
+    ...[first, 3 * first].map((reach) => ({
       left: left - reach,
       top: top - reach,
       right: right + reach,
@@ -134,6 +138,7 @@ const searchWithin = (
   passage: Passage,
   graph: Joined,
   window: Extent | null,
+  steps: Map<number, readonly [number, number] | null>,
 ): Found | null => {
   const goalsAt = new Map<number, number[]>()
   goals.forEach((goal, index) => {
@@ -148,27 +153,27 @@ const searchWithin = (
     return least
   }
 
-  // Where each step leads and what it costs; null where it is blocked or leaves the window.
-  const steps = new Map<number, readonly [number, number] | null>()
+  // Where each step leads and what it costs, asked once per search whatever its window (`steps`); null
+  // where it is blocked, or leaves this window.
   const step = (node: number, turn: number): readonly [number, number] | null => {
     const key = 4 * node + turn
-    const known = steps.get(key)
-    if (known !== undefined) return known
-    let answer: readonly [number, number] | null = null
-    const reached = graph.next(node, turn)
-    if (reached >= 0) {
-      const x = graph.x(reached)
-      const y = graph.y(reached)
-      const inside = window === null || (window.left <= x && x <= window.right && window.top <= y && y <= window.bottom)
-      const here = { x: graph.x(node), y: graph.y(node) }
-      const there = { x, y }
-      if (inside && !passage.stepBlocked(here, there)) {
-        const length = Math.abs(x - here.x) + Math.abs(y - here.y)
-        answer = [reached, stepCost(length, passage.crowding(here, there))]
+    let known = steps.get(key)
+    if (known === undefined) {
+      known = null
+      const reached = graph.next(node, turn)
+      if (reached >= 0) {
+        const here = { x: graph.x(node), y: graph.y(node) }
+        const there = { x: graph.x(reached), y: graph.y(reached) }
+        if (!passage.stepBlocked(here, there)) {
+          const length = Math.abs(there.x - here.x) + Math.abs(there.y - here.y)
+          known = [reached, stepCost(length, passage.crowding(here, there))]
+        }
       }
+      steps.set(key, known)
     }
-    steps.set(key, answer)
-    return answer
+    if (known === null || window === null) return known
+    const [x, y] = [graph.x(known[0]), graph.y(known[0])]
+    return window.left <= x && x <= window.right && window.top <= y && y <= window.bottom ? known : null
   }
 
   const best = new Map<number, number>()
@@ -241,10 +246,12 @@ export const search = (
 ): Found | null => {
   const terminals = [...starts, ...goals]
   const joined = graph.joined(terminals.map((terminal) => terminal.point))
+  // What each step costs does not depend on the window: a wider window asks again only the steps it adds.
+  const steps = new Map<number, readonly [number, number] | null>()
   let best: Found | null = null
   for (const window of windowsOf(terminals)) {
     if (window === null && best !== null) break
-    const found = searchWithin(starts, goals, passage, joined, window)
+    const found = searchWithin(starts, goals, passage, joined, window, steps)
     if (found && (best === null || found.cost < best.cost)) best = found
     if (best && !throughAFullChannel(best.points, passage)) return best
   }

@@ -229,18 +229,21 @@ export const linesArranged = (geometry: LayoutGeometry, before: Arrangement, aft
 /**
  * What Save states for the lines the session moved (owner, 2026-11-24): each line with an end on an
  * element now placed elsewhere than in *reference* is written as the course the editor showed, so a
- * saved diagram keeps the lines that were seen. Lines nothing moved stay the router's, and a route the
- * user stated by hand (*stated*) is kept as stated.
+ * saved diagram keeps the lines that were seen. So is each line in *rerouted* — one something moved
+ * across, which the composer would otherwise route again (`linesRoutedAgain`): the saved picture is
+ * the one shown, and the server has no line left to route. Lines nothing moved stay PlantUML's, and a
+ * route the user stated by hand (*stated*) is kept as stated.
  */
 export const shownRoutesOfMoved = (
   geometry: LayoutGeometry, reference: Arrangement, now: Arrangement,
-  routed: ReadonlyMap<string, RoutedConnector>,
+  routed: ReadonlyMap<string, RoutedConnector>, rerouted: ReadonlySet<number> = new Set(),
 ): Record<string, Route> => {
   const moved = (alias: string) => !sameExtent(reference.elements.get(alias), now.elements.get(alias))
   return Object.fromEntries(geometry.relations.flatMap((relation): [string, Route][] => {
     const connector = routed.get(String(relation.index))
     if (relation.key === undefined || now.routes.has(relation.key) || connector === undefined) return []
-    return moved(relation.source) || moved(relation.target) ? [[relation.key, statedWhole(connector)]] : []
+    return moved(relation.source) || moved(relation.target) || rerouted.has(relation.index)
+      ? [[relation.key, statedWhole(connector)]] : []
   }))
 }
 

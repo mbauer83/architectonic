@@ -15,7 +15,7 @@ import { breachMarksOf, pointsAttribute } from './canvasDrawing'
 import { paintOrder } from './canvasPaintOrder'
 import type { DrawnRelation, DrawnShape, Piece } from './canvasPieces'
 import { drawnRelations, drawnShapes, pieceOf } from './canvasPieces'
-import CanvasDrawn from './CanvasDrawn'
+import CanvasDrawn, { one } from './CanvasDrawn'
 import ArrangingWarnings from './ArrangingWarnings.vue'
 import CanvasDraftMarks from './CanvasDraftMarks.vue'
 import CanvasOutlines from './CanvasOutlines.vue'
@@ -202,7 +202,7 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
         :key="`surround-${index}`"
         class="lab-surround"
         data-testid="canvas-surround"
-        :nodes="[around.part.drawing]"
+        :nodes="one(around.part.drawing)"
         :transform="`translate(${around.by.x} ${around.by.y})`"
       />
 
@@ -221,7 +221,7 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
           @pointerdown="placing ? pressShape($event, piece.shape.alias) : pick($event, piece.shape.alias)"
         >
           <CanvasDrawn
-            :nodes="[piece.shape.drawing.drawing]"
+            :nodes="one(piece.shape.drawing.drawing)"
             :transform="piece.shape.drawing.transform"
           />
           <rect
@@ -257,10 +257,10 @@ const shapeOrder = computed(() => pieces.value.flatMap((piece) => (piece.kind ==
           />
           <CanvasDrawn
             v-if="piece.drawn.asDrawn"
-            :nodes="[piece.drawn.asDrawn]"
+            :nodes="one(piece.drawn.asDrawn)"
           />
           <template v-else>
-            <CanvasDrawn :nodes="[piece.drawn.along.line]" />
+            <CanvasDrawn :nodes="one(piece.drawn.along.line)" />
             <CanvasDrawn
               v-for="(end, side) in piece.drawn.along.ends"
               :key="side"

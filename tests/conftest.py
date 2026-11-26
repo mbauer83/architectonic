@@ -269,6 +269,17 @@ def _bound_concurrent_plantuml_renders(tmp_path_factory: pytest.TempPathFactory)
         puml_runtime.subprocess = real_subprocess
 
 
+@pytest.fixture(autouse=True)
+def _each_test_draws_its_own_pictures():
+    """No test is handed a picture another drew (`plantuml_pictures`): a test that fakes the renderer must
+    see its fake asked, whatever drew the same body earlier on the same worker."""
+    from src.application.plantuml_pictures import DRAWN
+
+    DRAWN.forget()
+    yield
+    DRAWN.forget()
+
+
 @pytest.fixture
 def plantuml_syntax_check(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> None:
     """Let this test run the real PlantUML syntax check, under the same bound as every render.

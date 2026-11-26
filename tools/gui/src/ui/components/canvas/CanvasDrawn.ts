@@ -7,8 +7,8 @@
  * out, as is any attribute that would run something or fetch something. The backend lets through
  * the same elements and no others.
  */
-import type { FunctionalComponent, VNode } from 'vue'
-import { h } from 'vue'
+import type { PropType, VNode } from 'vue'
+import { defineComponent, h } from 'vue'
 import type { DrawingNode } from '../../../domain/schemas/diagramLayoutGeometry'
 
 /** What a rendered shape or line is drawn with. */
@@ -28,14 +28,35 @@ export const drawn = (node: DrawingNode): VNode | null => {
   return h(node.tag, drawnAttributes(node), node.text === undefined ? children : [node.text, ...children])
 }
 
-/** The nodes, drawn in order inside one group that *transform* places. */
-const CanvasDrawn: FunctionalComponent<{ nodes: readonly DrawingNode[]; transform?: string }> = (props) =>
-  h(
-    'g',
-    props.transform ? { transform: props.transform } : {},
-    props.nodes.map(drawn).filter((child): child is VNode => child !== null),
-  )
+/**
+ * The nodes, drawn in order inside one group that *transform* places. A component of its own rather than
+ * a function, so a drawing whose nodes and place did not change is not drawn again when the canvas is:
+ * a drag frame redraws the few pieces that moved, not a picture of hundreds (`one` keeps the nodes the
+ * same array from frame to frame).
+ */
+const CanvasDrawn = defineComponent({
+  name: 'CanvasDrawn',
+  props: {
+    nodes: { type: Array as PropType<readonly DrawingNode[]>, required: true },
+    transform: { type: String, default: undefined },
+  },
+  setup: (props) => () =>
+    h(
+      'g',
+      props.transform ? { transform: props.transform } : {},
+      props.nodes.map(drawn).filter((child): child is VNode => child !== null),
+    ),
+})
 
-CanvasDrawn.props = ['nodes', 'transform']
+const alone = new WeakMap<DrawingNode, readonly DrawingNode[]>()
+
+/** *node* as the nodes `CanvasDrawn` draws: the same array for the same node, every time it is asked. */
+export const one = (node: DrawingNode): readonly DrawingNode[] => {
+  const known = alone.get(node)
+  if (known) return known
+  const nodes = [node]
+  alone.set(node, nodes)
+  return nodes
+}
 
 export default CanvasDrawn

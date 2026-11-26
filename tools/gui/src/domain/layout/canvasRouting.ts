@@ -24,6 +24,8 @@ import { byText } from './routing/scene'
 import type { Arrangement } from './canvasArrangement'
 import { drawnArrangement, fittedBoxes } from './canvasArrangement'
 import { portNear } from './canvasRouteEdits'
+import type { Pictured } from './canvasFollowing'
+import { followedCleanly } from './canvasFollowing'
 import { BAND_MARGIN } from './routeQuality'
 import type { GeometryBox, GeometryRelation, LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 import { pointsOf } from '../schemas/diagramLayoutGeometry'
@@ -224,10 +226,28 @@ const coursesOf = (lines: readonly ShownLine[], keep: ReadonlySet<string>): Read
 export const fullPass = (
   geometry: LayoutGeometry, placement: Placement, routes: StatedRoutes = NONE,
 ): RoutingResult => {
+  const { lines, kept } = keptAsDrawn(geometry, placement, routes)
+  return routedKeeping(geometry, placement, routes, coursesOf(lines, kept), null)
+}
+
+/** The lines no stated route decides, and which of them keep PlantUML's course where *placement* puts the shapes. */
+const keptAsDrawn = (
+  geometry: LayoutGeometry, placement: Placement, routes: StatedRoutes,
+): { readonly lines: ShownLine[]; readonly kept: ReadonlySet<string> } => {
   const drawn = placementOf(geometry, drawnArrangement(geometry))
   const lines = unstatedLines(geometry, routes, (relation) => pointsOf(relation.course))
-  const kept = keptLines(sceneOf(geometry, drawn), sceneOf(geometry, placement), lines)
-  return routedKeeping(geometry, placement, routes, coursesOf(lines, kept), null)
+  return { lines, kept: keptLines(sceneOf(geometry, drawn), sceneOf(geometry, placement), lines) }
+}
+
+/**
+ * The lines the composer routes where *placement* puts the shapes, by their place on the picture: each
+ * one no stated route decides that something moved touches (`routing/kept`), as `fullPass` routes them.
+ */
+export const linesRoutedAgain = (
+  geometry: LayoutGeometry, placement: Placement, routes: StatedRoutes = NONE,
+): ReadonlySet<number> => {
+  const { lines, kept } = keptAsDrawn(geometry, placement, routes)
+  return new Set(lines.filter((line) => !kept.has(line.key)).map((line) => Number(line.key)))
 }
 
 /**
@@ -248,6 +268,11 @@ export const quickPass = (
   const lines = unstatedLines(geometry, routes, (relation) =>
     (rerouted.has(String(relation.index)) ? undefined : previous.get(String(relation.index))?.course))
   const kept = keptLines(sceneOf(geometry, before), sceneOf(geometry, placement), lines)
+  const pictured = (where: Placement): Pictured =>
+    ({ placement: where, stated: statedCourses(geometry, where, routes), text: textRegions(geometry, where) })
+  const touched = lines.filter((line) => !kept.has(line.key))
+  const followed = followedCleanly(geometry, pictured(before), pictured(placement), previous, touched)
+  const still = new Map([...coursesOf(lines, kept), ...followed])
   const others = new Map([...previous].filter(([key]) => !rerouted.has(key) && !kept.has(key)))
-  return routedKeeping(geometry, placement, routes, coursesOf(lines, kept), { previous: others, changed })
+  return routedKeeping(geometry, placement, routes, still, { previous: others, changed })
 }

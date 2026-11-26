@@ -10,7 +10,7 @@ import { Effect } from 'effect'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Extent, Point } from '../../../domain/layout/geometry'
 import { drawnArrangement, moved } from '../../../domain/layout/canvasArrangement'
-import { fullPass, placementOf } from '../../../domain/layout/canvasRouting'
+import { fullPass, linesRoutedAgain, placementOf } from '../../../domain/layout/canvasRouting'
 import { LINE_DRAWING, SHAPE_DRAWING } from '../../../domain/layout/__tests__/canvasDrawingFixtures'
 import type { LayoutGeometry } from '../../../domain/schemas/diagramLayoutGeometry'
 import { pointsOf } from '../../../domain/schemas/diagramLayoutGeometry'
@@ -82,5 +82,15 @@ describe('a stored layout opened', () => {
   it('routes a line the moved element now stands on, though neither of its ends moved', () => {
     const where = placementOf(geometry, moved(geometry, drawnArrangement(geometry), 'C', -480, -120))
     expect(fullPass(geometry, where).routes.get('0')?.course).not.toEqual(drawn(0))
+  })
+
+  it('names the lines it routes again — those Save states as shown, so the server routes none', () => {
+    const start = drawnArrangement(geometry)
+    expect(linesRoutedAgain(geometry, placementOf(geometry, start))).toEqual(new Set())
+    expect(linesRoutedAgain(geometry, placementOf(geometry, moved(geometry, start, 'C', 0, 100))))
+      .toEqual(new Set([1]))
+    // A stands on line 0 now, and C's line moved with C.
+    expect(linesRoutedAgain(geometry, placementOf(geometry, moved(geometry, start, 'C', -480, -120))))
+      .toEqual(new Set([0, 1]))
   })
 })

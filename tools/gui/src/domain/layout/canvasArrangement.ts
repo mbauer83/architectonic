@@ -120,8 +120,13 @@ export const fittedBoxes = (geometry: LayoutGeometry, arrangement: Arrangement):
 }
 
 /** Every shape drawn inside *alias*, at any depth. */
-export const descendantsOf = (geometry: LayoutGeometry, alias: string): readonly string[] => {
-  const children = childrenOf(geometry)
+export const descendantsOf = (geometry: LayoutGeometry, alias: string): readonly string[] =>
+  descendantsIn(childrenOf(geometry), alias)
+
+/** Everything *alias* holds, at any depth, from the shapes under each box (`childrenOf`). */
+export const descendantsIn = (
+  children: ReadonlyMap<string | null, readonly string[]>, alias: string,
+): readonly string[] => {
   const walk = (parent: string): string[] =>
     (children.get(parent) ?? []).flatMap((child) => [child, ...walk(child)])
   return walk(alias)

@@ -9,7 +9,7 @@
  */
 import type { Extent, Point } from './geometry'
 import { elementsCrossed, endsConflict } from './attachment'
-import { RULE_TIERS, bendsAtEnds, kinks, runsAlong, textsCrossed } from './routeQuality'
+import { RULE_TIERS, bendsAtEnds, kinks, runIndex, runsAlongIn, textsCrossed } from './routeQuality'
 import type { Tier } from './routeQuality'
 import type { LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 import type { Placement } from './canvasRouting'
@@ -58,7 +58,7 @@ export const breachesOf = (
   unroutable: ReadonlySet<number> = new Set(),
 ): Breach[] => {
   const extents = new Map([...placement.elements, ...placement.boxes])
-  const borders = [...extents.values()]
+  const runs = runIndex(courses, [...extents.values()])
   return geometry.relations.flatMap((relation): Breach[] => {
     const source = extents.get(relation.source)
     const target = extents.get(relation.target)
@@ -67,13 +67,12 @@ export const breachesOf = (
       : []
     const course = courses.get(relation.index)
     if (unroutable.has(relation.index) || !course) return [...conflict, breach(relation.index, 'unroutable', [])]
-    const others = [...courses].filter(([index]) => index !== relation.index).map(([, other]) => other)
     return [
       ...conflict,
       ...textsCrossed(course, text).map(() => breach(relation.index, 'text', course)),
       ...bendsAtEnds(course, relation.decorated).map((end) =>
         breach(relation.index, 'bend-at-an-end', end === 'A:source' ? course.slice(0, 2) : course.slice(-2))),
-      ...runsAlong(course, others, borders).map((index) =>
+      ...runsAlongIn(course, runs, relation.index).map((index) =>
         breach(relation.index, 'runs-along', segment(course, index))),
       ...kinks(course).map((index) => breach(relation.index, 'jog', segment(course, index))),
       ...elementsCrossed(course, placement.elements, [relation.source, relation.target]).map(() =>

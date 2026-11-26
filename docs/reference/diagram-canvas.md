@@ -112,6 +112,10 @@ dashed guides show what it lines up with. A group moved together snaps to the gr
 over a box or element that would take it, that target is outlined with *Into ‹box›* or
 *Nest in ‹element›…*.
 
+The lines of a dragged element follow it and keep their shape. When it is dropped, a line that now
+runs through an element or text, bends at an arrowhead, or runs along another line or border is
+routed round; every other line keeps the course it followed.
+
 &nbsp;
 
 ## Menus
@@ -209,6 +213,7 @@ number of rows, with the model rows named separately.
 
 **Save** writes the model changes and the diagram in one transaction, model changes first. A refusal
 writes nothing; the reason is shown in the edit bar and the list stays open. You stay in edit mode.
+The saved diagram draws every line the canvas routed or moved as the canvas showed it.
 
 The list opens before the save when the session changes the model, and asks for
 **Confirm and save**. A session that changes only this diagram saves in one press, unless the

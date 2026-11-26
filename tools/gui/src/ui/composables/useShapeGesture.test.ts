@@ -88,18 +88,18 @@ describe('the canvas gesture', () => {
     expect(arranged.layout()?.elements['APP@3.c']).toEqual({ x: 400, y: 40 })
   })
 
-  it('moves an element by the pointer travel, routing live and keeping the last frame on the drop', () => {
+  it('moves an element by the pointer travel, its lines following live and routed on the drop', () => {
     const { arranged, gesture } = opened()
     press(gesture, 'C', 450, 60)
     pointer('pointermove', 470, 100)
 
     expect(gesture.dragging.value).toBe(true)
-    expect(arranged.timing.value?.kind).toBe('quick')
-    const shown = arranged.courses.value.get(0)
+    expect(arranged.timing.value?.kind).toBe('follow')
+    expect(arranged.courses.value.get(0)?.at(-1)?.x).toBe(420)
     pointer('pointerup', 470, 100)
 
     expect(gesture.dragging.value).toBe(false)
-    expect(arranged.courses.value.get(0)).toEqual(shown)
+    expect(arranged.timing.value?.kind).toBe('quick')
     expect(arranged.arrangement.value?.elements.get('C')).toEqual(at(420, 80, 520, 120))
     expect(arranged.layout()).toMatchObject({ elements: { 'APP@3.c': { x: 420, y: 80 } } })
     const course = arranged.courses.value.get(0)
