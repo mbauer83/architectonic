@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TypedDict
 
 from src.config.settings import backend_log_path as configured_backend_log_path
-from src.config.workspace_paths import STATE_DIR
+from src.config.workspace_paths import STATE_DIR, find_workspace_config
 from src.infrastructure.backend.backend_process import _read_process_state
 from src.infrastructure.workspace.workspace_init import load_init_state
 
@@ -24,10 +24,17 @@ class BackendState(TypedDict):
 
 
 def workspace_root(start: Path | None = None) -> Path | None:
+    """The workspace containing `start`: its init state's record, else the directory declaring it.
+
+    The declaration counts as well as the state because a workspace without `.arch/` yet (a fresh
+    worktree) still has one root, and its backend's pid file, lock and log belong there rather than
+    under whichever subdirectory the command happened to run from.
+    """
     state = load_init_state(start)
     if state and state.get("workspace_root"):
         return Path(str(state["workspace_root"])).resolve()
-    return None
+    declared = find_workspace_config((start or Path.cwd()).resolve())
+    return declared.parent if declared is not None else None
 
 
 def _state_dir(start: Path | None = None) -> Path:

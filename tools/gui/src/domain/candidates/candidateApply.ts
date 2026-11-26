@@ -85,3 +85,25 @@ export const appliedValues = (standing: OperationStanding): EditedValues | null 
   edits(standing.operation) && 'holds' in standing
     ? { before: standing.holds, after: standing.operation.value }
     : editedValues(standing.operation)
+
+/** The element or relation, field and key an edit writes: what a dry run's operation and its standing share. */
+const editClaim = (operation: Readonly<Record<string, unknown>>): string => JSON.stringify([
+  operation.op, operation.artifact_id, operation.source_entity, operation.connection_type, operation.target_entity,
+  operation.field, operation.key ?? null,
+])
+
+/**
+ * What each of a dry run's *operations* changes, read as `appliedValues` reads an apply: an edit against what the
+ * model holds where it writes, from the standing the same dry run answered for it. The standing is found by what
+ * the edit writes, not by position, because the server answers standings in the order it applies them. An edit
+ * with no standing is read against what it says it was written over; anything else changes no field.
+ */
+export const operationsAppliedValues = (
+  operations: readonly Readonly<Record<string, unknown>>[], standing: readonly OperationStanding[],
+): (EditedValues | null)[] => {
+  const judged = new Map(standing.filter((one) => edits(one.operation)).map((one) => [editClaim(one.operation), one]))
+  return operations.map((operation) => {
+    const one = edits(operation) ? judged.get(editClaim(operation)) : undefined
+    return one ? appliedValues(one) : editedValues(operation)
+  })
+}

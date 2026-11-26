@@ -2,7 +2,8 @@
 /**
  * A candidate's target state on its page: the band saying it stands in the model beside the baseline, with
  * its plateaus and gap linked and *Move into the baseline…*, and the confirmation for either write — what
- * the dry run says would be written and the refusal, in the server's words. The writes run only from here;
+ * the dry run says would be written and the refusal, in the server's words. An edit is read against what the
+ * model holds where it writes, as the apply card reads it (`FieldChangeView`). The writes run only from here;
  * the page that owns the candidate (`useCandidateTargetState`) is told one landed.
  */
 import { computed } from 'vue'
@@ -12,7 +13,7 @@ import {
 import type { CandidateTargetState } from '../../composables/useCandidateTargetState'
 import { entityDetailRoute } from '../../router/artifactRoutes'
 import PermittedButton from '../PermittedButton.vue'
-import { editedValues } from '../../../domain/candidates/candidateApply'
+import { operationsAppliedValues } from '../../../domain/candidates/candidateApply'
 import FieldChangeView from './FieldChangeView.vue'
 
 const props = defineProps<{ target: CandidateTargetState; candidateId: string; name: string }>()
@@ -38,8 +39,10 @@ const copies = computed(() => Object.keys(standing.value?.copies ?? {}).length)
 const lines = computed(() => {
   const shown = preview.value
   if (!shown) return []
+  // Each edit read against what the model holds where it writes, as the apply card reads it.
+  const edited = operationsAppliedValues(shown.operations, shown.standing)
   return targetOperationLines(shown.operations, shown.ids ?? standing.value)
-    .map((line, index) => ({ line, edited: editedValues(shown.operations[index] ?? {}) }))
+    .map((line, index) => ({ line, edited: edited[index] ?? null }))
 })
 </script>
 

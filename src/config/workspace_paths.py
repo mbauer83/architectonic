@@ -119,12 +119,24 @@ def load_workspace_config(start: Path | None = None) -> tuple[Path, dict] | None
 
 
 def load_workspace_state(start: Path | None = None) -> dict | None:
+    """The arch-init state of the workspace that contains `start`, if that workspace has one.
+
+    The search ends at the nearest workspace, whichever of its two files marks it: a directory that
+    declares `arch-workspace.yaml` without an init state is a workspace of its own, and its answer is
+    "no state", never an enclosing workspace's. A git worktree nested in a checkout
+    (`.claude/worktrees/<name>`) is exactly that: it carries the tracked declaration but not the
+    gitignored `.arch/`, and walking past it adopted the enclosing checkout's roots and state
+    directory — so its backend served the other checkout's repository, and a start found that
+    checkout's backend on the shared port and took it for its own.
+    """
     current = (start or Path.cwd()).resolve()
     while True:
         candidate = current / STATE_DIR / STATE_FILENAME
         if candidate.is_file():
             with open(candidate, encoding="utf-8") as fh:
                 return parse_yaml(fh)
+        if (current / CONFIG_FILENAME).is_file():
+            return None
         parent = current.parent
         if parent == current:
             return None
