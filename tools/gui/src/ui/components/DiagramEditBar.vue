@@ -191,7 +191,9 @@ const count = usePulse(
       data-testid="edit-reload"
       title="Read the diagram as it is now; what this session has not saved is left"
       @click="editing.reload()"
-    >Reload</button>
+    >
+      Reload
+    </button>
     <EditBarQuestion
       v-if="leaving"
       label="Leaving edit mode"
