@@ -59,12 +59,21 @@ test('a diagram mid-drag, with its guides and the change list', async ({ page })
   const problems = watch(page)
   await open(page)
   await edit(page)
+  // The change list opens over what is beside it; with the sidebar closed that is the canvas, so the figure
+  // shows no sidebar text cut off under the list. (The sidebar itself is the subject of the edit-mode figure.)
+  const panel = page.getByTestId('edit-panel-toggle')
+  await panel.click()
+  await expect(panel).toHaveAttribute('aria-expanded', 'false')
   const architect = page.locator(`g.lab-element[data-alias="${ARCHITECT}"] .lab-grip`)
   const repository = page.locator(`g.lab-element[data-alias="${REPOSITORY}"] .lab-grip`)
-  // Zoomed in on the part being arranged, so the guides read at the width the README renders at.
-  const near = (await repository.boundingBox())!
-  await page.mouse.move(near.x, near.y)
-  for (let step = 0; step < 4; step += 1) await page.mouse.wheel(0, -200)
+  // The whole picture, fitted to the window the closed sidebar widened, so nothing is cut at the window's edge;
+  // panned down (middle button) so the change list, opened below, covers paper rather than the picture's title.
+  const start = (await architect.boundingBox())!
+  await page.mouse.move(start.x, start.y + 300)
+  await page.mouse.down({ button: 'middle' })
+  await page.mouse.move(start.x, start.y + 400, { steps: 8 })
+  await page.mouse.up({ button: 'middle' })
+  await expect.poll(async () => (await architect.boundingBox())!.y).toBeGreaterThan(start.y + 60)
   await architect.click()
   await page.keyboard.press('ArrowRight')
   await expect(page.getByTestId('change-count')).not.toHaveText('No changes')
