@@ -263,7 +263,7 @@ come from the same rendered body rather than from two paths that agree by constr
 
 &nbsp;
 
-## Viewer interactivity
+## Reading a diagram
 
 Every rendered diagram is interactive: ArchiMate, C4, activity, sequence, datatype and GSN.
 
@@ -277,6 +277,31 @@ Every rendered diagram is interactive: ArchiMate, C4, activity, sequence, dataty
   selected; click an empty part of the diagram to clear the selection. A connection's click toggles
   it.
 
+**Focus and reach.** Selecting elements opens the **Reading** panel beside the diagram. It reads the
+diagram from the selection outward: **Incoming** and **Outgoing** each reach *none*, *1 step*,
+*2 steps* or *all*. What lies within that reach is lit on the picture and counted under
+**Drawn here**; the rest of the picture fades. **In the model, not drawn here** lists the relations
+one step away that this diagram does not draw, and **Derived** counts the relationships derived
+from the drawn ones, certain and potential (see [Impact analysis](impact-analysis.md)).
+
+**Animate** runs the direction of flow along the lit lines and stays on until it is switched off.
+In a browser set to reduced motion it stays off, and the arrowheads carry the direction.
+
+**Frame the reading** (`F`) zooms to what is lit. **Copy link** copies an address that restores the
+selection, the reach and the window; the address bar carries the same three as you read, and the
+browser's back button steps through earlier selections. `Esc` clears the reading.
+
+From the keyboard, `Enter` on the focused diagram goes into its elements, the arrow keys move to the
+nearest element in that direction, `Enter` selects and `Shift`+`Enter` adds to the selection.
+
+**Find on this diagram…** in the sidebar selects an element by name and moves the window to it. On a
+diagram larger than the window, an overview in the corner shows where the window is; press or drag
+on it to move there. The full key list is in the [Diagram canvas reference](../reference/diagram-canvas.md#view-mode).
+
+<!-- TODO screenshot: view mode with the Reading panel open — one element selected, Incoming and
+     Outgoing at "1 step", the reach lit and the rest faded, the overview visible in the corner.
+     Suggested name: docs/media/diagram-reading.png -->
+
 Assurance diagrams (bowtie, control structure, UCA matrix) have the same selection UX inside
 their own assurance viewer — see [Assurance diagrams](../04-assurance/diagrams.md).
 
@@ -284,15 +309,17 @@ their own assurance viewer — see [Assurance diagrams](../04-assurance/diagrams
 
 ## Authoring a diagram
 
-The GUI authoring flow is the same shape across families:
+An ArchiMate diagram is edited on its canvas: **Edit** on its page switches to edit mode, where it is
+arranged, given elements and relations, and saved in one write. See
+[Edit a diagram on its canvas](editing-diagrams.md) and the
+[Diagram canvas reference](../reference/diagram-canvas.md).
+
+The other families keep an editor page of the same shape:
 
 1. **Pick entities** through a search filter scoped to the view's accepted types.
 2. **Expand related entities** — pull in neighbours of what you have already placed.
 3. **Manage connections** side by side with the entity list.
-4. **Preview the PlantUML live**, then render to SVG.
-
-Rendered SVGs are interactive: click an entity to open it, and follow its relationships
-visually.
+4. **Preview the rendered diagram**, then save.
 
 Agents get the same capability through the MCP write tools, plus two helpers:
 
@@ -507,4 +534,4 @@ See [Interfaces & MCP](interfaces-and-mcp.md) for the full tool surface.
 
 ---
 
-*Next: [Icons on diagram elements →](icons.md)*
+*Next: [Edit a diagram on its canvas →](editing-diagrams.md)*
