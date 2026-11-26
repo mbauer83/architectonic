@@ -126,7 +126,7 @@ const doneSketching = async () => {
 const answeredBy = (endState: string): readonly string[] => analysis.adaptations.value
   .filter((row) => cellIds(row, 'end_states').includes(endState))
   .map((row) => cell(row, 'candidate_architecture'))
-  .map((id) => candidates.all.value.find((one) => one.id === id)?.name ?? id)
+  .map((id) => candidates.all.value.find((one) => stableEntityId(one.id) === stableEntityId(id))?.name ?? id)
 const applied = async (name: string) => {
   toast(`Applied ${name} to the model.`)
   await Promise.all([candidates.load(), analysis.reload()])

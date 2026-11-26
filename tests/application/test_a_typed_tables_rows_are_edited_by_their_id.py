@@ -24,10 +24,11 @@ from src.application.artifacts.document_part_edits import (
     TableRowEdits,
 )
 from src.application.artifacts.document_schema import DocumentSchema, normalize_document_schema
-from src.application.artifacts.document_table_edits import RowsEdited, edit_table_rows, row_values
+from src.application.artifacts.document_table_edits import CellWriters, RowsEdited, edit_table_rows, row_values
 from src.application.artifacts.document_table_rows import TypedTable, read_document_tables
 from src.application.document_links import as_link
 from src.domain.ontology_representation.property_value import encode
+from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_SCHEMA
 from tests.support.typed_table_documents import (
     STRESS_ANALYSIS,
     document_path,
@@ -41,6 +42,12 @@ from tests.support.typed_table_documents import (
 )
 
 _NOWHERE = Path("/nowhere/doc.md")
+#: One candidate stored, under the id with its slug.
+_QUEUE = "CAND@1795000000.Queue01.promotion-queue"
+#: The stress-analysis type as it ships, its candidate columns typed.
+_SHIPPED_ANALYSIS = normalize_document_schema("stress-analysis", STRESS_ANALYSIS_SCHEMA)
+_STORED = {("candidate-architecture", spelled): _QUEUE for spelled in (_QUEUE, "CAND@1795000000.Queue01")}
+_WRITERS = CellWriters(link_of=as_link, stored_id_of=lambda kind, stated: _STORED.get((kind, stated)))
 
 #: Texts a string cell may have to carry, a line break among them.
 _PERMITTED_TEXTS = (
@@ -74,7 +81,7 @@ def _document(schema: DocumentSchema = _SCHEMA, rows: list[dict[str, str]] | Non
 
 
 def _edit(content: str, *edits: RowEdit, schema: DocumentSchema = _SCHEMA, doc_path: Path = _NOWHERE) -> RowsEdited:
-    return edit_table_rows(content, TableRowEdits("notes", edits), schema=schema, doc_path=doc_path, link_of=as_link)
+    return edit_table_rows(content, TableRowEdits("notes", edits), schema=schema, doc_path=doc_path, writers=_WRITERS)
 
 
 def _read(content: str, schema: DocumentSchema = _SCHEMA, doc_path: Path = _NOWHERE) -> TypedTable:
@@ -144,12 +151,12 @@ class TestAWrittenCellReadsBackAsItsValue:
                 (RowAddition({"end_state": "Orders cannot be paid", "affects": [
                     link_to(goal, written_in=doc, label="the|goal"), link_to(driver, written_in=doc)]}),),
             ),
-            schema=schema, doc_path=doc, link_of=as_link,
+            schema=schema, doc_path=doc, writers=_WRITERS,
         )
         adapted = edit_table_rows(
             ended.content,
             TableRowEdits("adaptations", (RowAddition({"end_states": ["E1"], "candidate_architecture": "queue"}),)),
-            schema=schema, doc_path=doc, link_of=as_link,
+            schema=schema, doc_path=doc, writers=_WRITERS,
         )
 
         read = read_document_tables(doc, adapted.content, schema)
@@ -157,6 +164,42 @@ class TestAWrittenCellReadsBackAsItsValue:
         (adaptation,) = read.table("adaptations").rows  # type: ignore[union-attr]
         assert end_state.cells["affects"].value == [goal.stem, driver.stem]
         assert adaptation.cells["end_states"].value == ["E1"]
+
+    def test_a_candidate_named_by_its_short_id_is_written_as_it_is_stored(self) -> None:
+        schema = _SHIPPED_ANALYSIS
+        adapted = edit_table_rows(
+            document_text(schema, {}),
+            TableRowEdits("adaptations", (RowAddition({
+                "end_states": ["E1"], "candidate_architecture": "CAND@1795000000.Queue01"}),)),
+            schema=schema, doc_path=_NOWHERE, writers=_WRITERS,
+        )
+
+        (row,) = read_document_tables(_NOWHERE, adapted.content, schema).table("adaptations").rows  # type: ignore[union-attr]
+        assert row.cells["candidate_architecture"].value == _QUEUE
+
+    def test_a_candidate_id_naming_nothing_stored_is_refused(self) -> None:
+        """Regression: an adaptation named a candidate that did not exist, and the write verified clean."""
+        schema = _SHIPPED_ANALYSIS
+
+        with pytest.raises(DocumentEditRefused, match="no candidate-architecture CAND@1700000000.Nope000 is stored"):
+            edit_table_rows(
+                document_text(schema, {}),
+                TableRowEdits("adaptations", (RowAddition({
+                    "end_states": ["E1"], "candidate_architecture": "CAND@1700000000.Nope000"}),)),
+                schema=schema, doc_path=_NOWHERE, writers=_WRITERS,
+            )
+
+    def test_a_verdict_names_the_naive_by_its_word_and_a_candidate_by_its_stored_id(self) -> None:
+        schema = _SHIPPED_ANALYSIS
+        judged = edit_table_rows(
+            document_text(schema, {}),
+            TableRowEdits("survival", (RowAddition({"stressor": "S1", "architecture": "naive"}),
+                                       RowAddition({"stressor": "S1", "architecture": "CAND@1795000000.Queue01"}))),
+            schema=schema, doc_path=_NOWHERE, writers=_WRITERS,
+        )
+
+        rows = read_document_tables(_NOWHERE, judged.content, schema).table("survival").rows  # type: ignore[union-attr]
+        assert [row.cells["architecture"].value for row in rows] == ["naive", _QUEUE]
 
 
 class TestARowIsAddressedByItsId:
@@ -314,7 +357,7 @@ class TestAnEditThatCannotBeMadeIsRefused:
             edit_table_rows(
                 _document(),
                 TableRowEdits("nope", (RowAddition({}),)),
-                schema=_SCHEMA, doc_path=_NOWHERE, link_of=as_link,
+                schema=_SCHEMA, doc_path=_NOWHERE, writers=_WRITERS,
             )
 
     def test_a_declared_table_the_document_does_not_hold(self) -> None:
@@ -340,7 +383,7 @@ class TestAnEditThatCannotBeMadeIsRefused:
             edit_table_rows(
                 document_text(schema, {}),
                 TableRowEdits("stressors", (RowAddition({"stressor": "x", "end_state": ["E1", "E2"]}),)),
-                schema=schema, doc_path=_NOWHERE, link_of=as_link,
+                schema=schema, doc_path=_NOWHERE, writers=_WRITERS,
             )
 
 

@@ -22,6 +22,8 @@ TEST_SET = "test"
 NAIVE_ARCHITECTURE = "naive"
 #: How a verdict names the integration when candidates were integrated apart, so no one of them holds it all.
 INTEGRATION_ARCHITECTURE = "integration"
+#: What an adaptation and a verdict name an architecture by: a candidate's id, the id of a stored candidate.
+CANDIDATE_KIND = "candidate-architecture"
 #: What an architecture does under a test stressor.
 SURVIVES, DEGRADES, FAILS = "survives", "degrades", "fails"
 
@@ -83,7 +85,7 @@ STRESS_ANALYSIS_SCHEMA = {
                     "row_id": "A",
                     "columns": [
                         {"name": "end_states", "type": "row", "table": "end-states", "many": True, "required": True},
-                        {"name": "candidate_architecture", "required": True},
+                        {"name": "candidate_architecture", "type": "id", "kind": CANDIDATE_KIND, "required": True},
                         {"name": "integration", "enum": ["candidate", "integrated", "decided-out", "superseded"]},
                         {"name": "reasoning"},
                     ],
@@ -112,7 +114,10 @@ STRESS_ANALYSIS_SCHEMA = {
                     "row_id": "T",
                     "columns": [
                         {"name": "stressor", "type": "row", "table": "stressors", "required": True},
-                        {"name": "architecture", "required": True},
+                        {
+                            "name": "architecture", "type": "id", "kind": CANDIDATE_KIND,
+                            "words": [NAIVE_ARCHITECTURE, INTEGRATION_ARCHITECTURE], "required": True,
+                        },
                         {"name": "verdict", "enum": [SURVIVES, DEGRADES, FAILS]},
                         {"name": "usable", "type": "boolean"},
                         {"name": "reasoning"},

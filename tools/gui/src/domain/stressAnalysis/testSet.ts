@@ -6,6 +6,7 @@
 import type { DocumentTableRow } from '../schemas/candidates'
 import type { AnalysisEvaluation, ArchitectureStanding, Verdict } from '../schemas/stressEvaluation'
 import type { TableRowEdit } from './analysisRows'
+import { stableEntityId } from '../artifactId'
 import { cell, changeRow } from './analysisRows'
 
 /** How a verdict names the naive architecture; any other is named by its candidate id. */
@@ -31,11 +32,15 @@ export const architectureName = (
 export const heldApartIds = (evaluation: AnalysisEvaluation | null): ReadonlySet<string> =>
   new Set((evaluation?.stressors ?? []).map((stressor) => stressor.id))
 
-/** The survival row holding *architecture*'s verdict on *stressor*: the last, as a later one replaces it. */
+/**
+ * The survival row holding *architecture*'s verdict on *stressor*: the last, as a later one replaces it. A row
+ * naming a candidate by either spelling of its id names it (`stableEntityId`); `naive` and `integration` are
+ * words, which the stable form leaves as they are.
+ */
 export const verdictRow = (
   rows: readonly DocumentTableRow[], stressor: string, architecture: string,
-): DocumentTableRow | undefined =>
-  rows.filter((row) => cell(row, 'stressor') === stressor && cell(row, 'architecture') === architecture).at(-1)
+): DocumentTableRow | undefined => rows.filter((row) => cell(row, 'stressor') === stressor
+  && stableEntityId(cell(row, 'architecture')) === stableEntityId(architecture)).at(-1)
 
 /** A judgement written: the existing row changed, or a new one added. */
 export const judgement = (

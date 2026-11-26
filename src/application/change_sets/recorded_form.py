@@ -53,17 +53,26 @@ _REVISION = "revision"
 #: How a connection is addressed, in the order the address states it.
 _ADDRESS = tuple(part.name for part in dataclasses.fields(ConnectionAddress))
 
+#: How an operation is named in the form: as recorded, or as a caller is answered it.
+Shown = Callable[[Operation], Operation]
+
+
+def as_recorded(operation: Operation) -> Operation:
+    return operation
+
+
 _REPOSITORY_REVISION = "repository-revision"
 _FORMAT_VERSION = "format-version"
 _OPERATIONS = "operations"
 
 
-def to_mapping(change_set: ChangeSet) -> dict[str, Any]:
-    """The recorded form of a set: what it was written under, and its operations."""
+def to_mapping(change_set: ChangeSet, shown: Shown = as_recorded) -> dict[str, Any]:
+    """The recorded form of a set: what it was written under, and its operations, each as *shown* names it —
+    as recorded, unless the form answers a caller who names entities otherwise (`created_names`)."""
     return {
         _REPOSITORY_REVISION: change_set.repository_revision,
         _FORMAT_VERSION: change_set.format_version,
-        _OPERATIONS: [operation_to_mapping(operation) for operation in change_set.operations],
+        _OPERATIONS: [operation_to_mapping(shown(operation)) for operation in change_set.operations],
     }
 
 

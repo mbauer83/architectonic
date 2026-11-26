@@ -23,6 +23,7 @@ from src.application.change_sets.base import BaseRevision, BaseValue, record_rev
 from src.application.change_sets.candidate_architecture import CandidateArchitecture, TargetState
 from src.application.change_sets.change_set import ChangeSet
 from src.application.change_sets.composition import compose
+from src.application.change_sets.created_names import named_by_id
 from src.application.change_sets.operations import (
     AddConnection,
     ConnectionAddress,
@@ -32,7 +33,7 @@ from src.application.change_sets.operations import (
     RemoveEntity,
 )
 from src.application.change_sets.reading import RecordedReading
-from src.application.change_sets.target_state import ACTIVE, DRAFT, named_by_id, stated
+from src.application.change_sets.target_state import ACTIVE, DRAFT, stated
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.ontology_representation.target_state_relations import TargetStateRelations
 

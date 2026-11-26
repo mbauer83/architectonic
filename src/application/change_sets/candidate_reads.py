@@ -7,16 +7,12 @@ from typing import Any, Protocol
 
 from pydantic_core import to_jsonable_python
 
-from src.application.change_sets.candidate_architecture import CandidateArchitecture
-from src.application.change_sets.candidate_view import (
-    CandidateView,
-    created_ids,
-    difference,
-    named_by_reference,
-    view_of,
-)
+from src.application.change_sets.candidate_architecture import CandidateArchitecture, MalformedCandidateArchitecture
+from src.application.change_sets.candidate_recorded_form import to_mapping
+from src.application.change_sets.candidate_view import CandidateView, difference, view_of
 from src.application.change_sets.change_set import ChangeSet
 from src.application.change_sets.composition import compose
+from src.application.change_sets.created_names import ChosenIds, chosen_ids, named_by_id, named_in_sentence
 from src.application.change_sets.operations import ConnectionAddress, CreateEntity
 from src.application.change_sets.reading import ModelReading, RecordedReading
 from src.application.change_sets.recorded_form import operation_to_mapping
@@ -80,11 +76,10 @@ def comparison(
     live = live_reading(stack, registry)
     after = view_of(stack, live)
     if base == "model":
-        # Under the names the stack uses: an entity it creates that the model already holds is one entity.
-        model = named_by_reference(live, created_ids(stack))
+        # Both name what the stack creates by its id, so one the model already holds is one entity.
         before = CandidateView(
-            dict(model.entities),
-            {a: f for a, f in model.connections.items() if all(end in model.entities for end in a.endpoints)},
+            dict(live.entities),
+            {a: f for a, f in live.connections.items() if all(end in live.entities for end in a.endpoints)},
         )
     else:
         named = naive if base == "naive" else base
@@ -99,6 +94,24 @@ def comparison(
         "view": after.wire(), "diff": difference(before, after),
         "standing": _standing(candidate, stack, live),
     })
+
+
+def answered_record(candidate: CandidateArchitecture, store: CandidateLookup) -> dict[str, Any]:
+    """*candidate*'s record as a caller is answered it: what its stack creates named by the id its create chose.
+
+    A candidate whose stack cannot be read (a parent gone) is still answered, naming what it creates itself.
+    """
+    try:
+        stack = stack_of(candidate, store.find)
+    except MalformedCandidateArchitecture:
+        stack = (candidate,)
+    chosen = chosen_ids(layer.changes for layer in stack)
+    return to_mapping(candidate, lambda operation: named_by_id(operation, chosen))
+
+
+def created_beneath(candidate: CandidateArchitecture, store: CandidateLookup) -> ChosenIds:
+    """The id each create of the stack beneath *candidate* chose: what an edit recorded on it may name."""
+    return chosen_ids(sets_beneath(stack_of(candidate, store.find)))
 
 
 def reading_beneath(
@@ -128,7 +141,7 @@ def rebase(
     # Recorded as a draft records, whatever state the candidate is in: which candidates may be re-based is the
     # caller's to decide (a draft, or one held by its target state), and the state is kept.
     drafted = replace(candidate, state="draft")
-    now = rebased(drafted, drifted, compose(ChangeSet((), revision), live, beneath=beneath))
+    now = rebased(drafted, drifted, compose(ChangeSet((), revision), live, beneath=beneath), chosen_ids(beneath))
     return replace(now, state=candidate.state, changes=ChangeSet(now.changes.operations, revision))
 
 
@@ -143,12 +156,17 @@ def standing_report(
 def _standing(
     candidate: CandidateArchitecture, stack: tuple[CandidateArchitecture, ...], live: RecordedReading,
 ) -> list[dict[str, Any]]:
-    return wire_standing(standing_of(candidate.changes, live, beneath=sets_beneath(stack)))
+    standing = standing_of(candidate.changes, live, beneath=sets_beneath(stack))
+    return wire_standing(standing, chosen_ids(layer.changes for layer in stack))
 
 
-def wire_standing(standing: Iterable[OperationStanding]) -> list[dict[str, Any]]:
-    """Each operation's standing as the transports answer it: the operation, its position, the reason."""
+def wire_standing(standing: Iterable[OperationStanding], chosen: ChosenIds) -> list[dict[str, Any]]:
+    """Each operation's standing as the transports answer it: the operation, its position, the reason, each
+    naming what the stack creates by the id *chosen* says its create chose (`created_names`)."""
     return to_jsonable_python([
-        {"operation": operation_to_mapping(item.operation), "standing": item.standing, "reason": item.reason}
+        {
+            "operation": operation_to_mapping(named_by_id(item.operation, chosen)),
+            "standing": item.standing, "reason": named_in_sentence(item.reason, chosen),
+        }
         for item in standing
     ])

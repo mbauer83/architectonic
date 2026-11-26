@@ -16,6 +16,7 @@ from src.application.artifacts.document_table_edits import row_values
 from src.application.change_sets.stacking import descendants, stack_of
 from src.application.stress_analysis.evaluation import evaluate, held_out, integration_of, seed_for
 from src.application.stress_analysis.rows import held_apart, in_test_set, rows_of
+from src.domain.artifact_id import canonical_entity_key
 from src.domain.repository.repo_default_stress_analysis import NAIVE_CANDIDATE, STRESS_ANALYSIS, TEST_SET
 from src.infrastructure.candidates.analysis_reads import analysis_tables
 from src.infrastructure.candidates.perspectives import repository_perspectives
@@ -97,7 +98,10 @@ def residuality_by_analysis(service: CandidateService, candidate: str) -> dict[s
         if not doc.extra.get(NAIVE_CANDIDATE):
             continue
         read = evaluation(service, doc.artifact_id)
-        standing = next((one for one in read["architectures"] if one["architecture"] == candidate), None)
+        standing = next((
+            one for one in read["architectures"]
+            if canonical_entity_key(str(one["architecture"])) == canonical_entity_key(candidate)
+        ), None)
         if standing is not None:
             standings.append({"document": doc.artifact_id, "title": doc.title, **standing})
     return {"candidate": candidate, "analyses": standings}

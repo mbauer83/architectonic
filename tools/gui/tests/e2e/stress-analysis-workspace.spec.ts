@@ -349,6 +349,49 @@ test('a candidate read on the workspace canvas draws what it creates, marked +',
   await expect(canvas.locator('.ws-mark-tag', { hasText: '+' })).toHaveCount(1)
 })
 
+/** An id chosen for an element the naive creates, as an MCP caller states one; its random part is unique. */
+const GATE = 'APP@1795700002.PrmGate.promotion-gate'
+
+test('a naive recorded without a canvas draws what it creates, its rename and a relation to a scoped element', async ({ page, request }) => {
+  // Regression: a naive recorded over MCP and never placed on a canvas drew only its scope.
+  const { document, naive_candidate: naive } = await startAnalysis(request, 'Stress analysis — recorded, never sketched')
+  await record(request, naive.record.id, [
+    { op: 'create_entity', artifact_id: GATE,
+      fields: { artifact_type: 'application-component', name: 'Promotion Gate', group: 'platform-core' } },
+    { op: 'edit_entity', artifact_id: SERVICE, field: 'name', value: 'Promotion Review Service' },
+  ])
+  await workspace(page, document, 'naive')
+  const canvas = page.getByTestId('workspace-canvas')
+  const lines = canvas.locator('g.lab-line[data-relation]')
+  await expect(canvas.locator('g.lab-element[data-alias]', { hasText: 'Promotion Gate' })).toBeAttached({ timeout: 20_000 })
+  await expect(canvas.locator('g.lab-element[data-alias]', { hasText: 'Promotion Review Service' })).toBeAttached()
+  await expect(lines.first()).toBeAttached()
+  const unrelated = await lines.count()
+
+  // The relation joins an element the naive creates to one its diagram draws, named by the id it was given.
+  await record(request, naive.record.id, [
+    { op: 'add_connection', source_entity: GATE, connection_type: 'archimate-serving', target_entity: SERVICE },
+  ])
+  await page.reload()
+  await expect(canvas.locator('g.lab-element[data-alias]', { hasText: 'Promotion Gate' })).toBeAttached({ timeout: 20_000 })
+  await expect(lines).toHaveCount(unrelated + 1)
+})
+
+test('an adaptation named by its candidate’s short id lists the end state it answers', async ({ page, request }) => {
+  // Regression: a row written over MCP with `CAND@….random` was accepted, and the tab showed it answering nothing.
+  const { document, naive } = await queuedAnalysis(request, 'Stress analysis — an adaptation by its short id')
+  const created = await request.post('/api/change-sets', { data: { record: { name: 'Gated promotions', parent: naive } } })
+  expect(created.ok(), await created.text()).toBe(true)
+  const adaptation = (await created.json() as Started['naive_candidate']).record.id
+  candidates.unshift(adaptation)
+  const edit = tables(request, document)
+  await edit('end-states', [{ op: 'add', cells: { end_state: 'Promotions stall' } }])
+  await edit('adaptations', [{ op: 'add', cells: { end_states: ['E1'], candidate_architecture: adaptation.split('.').slice(0, 2).join('.') } }])
+
+  await workspace(page, document, 'adaptations')
+  await expect(page.locator(`tr[data-candidate="${adaptation}"]`)).toContainText('Promotions stall')
+})
+
 test('the caption names an adaptation while it is judged against the test set', async ({ page, request }) => {
   const { document, naive } = await queuedAnalysis(request, 'Stress analysis — judging an adaptation')
   const created = await request.post('/api/change-sets', { data: { record: { name: 'Queued promotions', parent: naive } } })

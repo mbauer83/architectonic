@@ -67,6 +67,11 @@ def shipped_document_types() -> tuple[ShippedFile, ...]:
     )
 
 
+def shipped_document_type(doc_type: str) -> ShippedFile:
+    """The shipped document type called *doc_type*: for a step that brings part of a repository's own in line."""
+    return next(one for one in shipped_document_types() if one.key == doc_type)
+
+
 def missing_shipped(shipped: Iterable[ShippedFile], present: Callable[[str], bool]) -> tuple[ShippedFile, ...]:
     """The files of *shipped* a repository lacks, by *present* asked of each location."""
     return tuple(one for one in shipped if not present(one.location))

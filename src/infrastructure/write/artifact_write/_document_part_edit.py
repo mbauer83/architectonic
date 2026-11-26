@@ -28,7 +28,8 @@ from src.application.artifacts.document_part_edits import (
     replace_text,
 )
 from src.application.artifacts.document_schema import get_document_schema_object
-from src.application.artifacts.document_table_edits import edit_table_rows
+from src.application.artifacts.document_table_edits import CellWriters, edit_table_rows
+from src.application.artifacts.stored_ids import stored_id
 from src.application.document_links import ArtifactPathOf, as_link, id_links_expanded
 from src.application.verification.artifact_verifier import ArtifactRegistry
 from src.domain.repository.frontmatter import Frontmatter, body_after_frontmatter, read_frontmatter
@@ -88,9 +89,11 @@ def edit_part(
             schema = get_document_schema_object(repo_root, doc_type)
             if schema is None:
                 raise DocumentEditRefused(f"Document type '{doc_type}' is not declared here, so it declares no table.")
-            edited = edit_table_rows(
-                stored, part, schema=schema, doc_path=doc_path, link_of=lambda stated: _expanded(as_link(stated))
+            writers = CellWriters(
+                link_of=lambda stated: _expanded(as_link(stated)),
+                stored_id_of=lambda kind, stated: stored_id(repo_root, kind, stated),
             )
+            edited = edit_table_rows(stored, part, schema=schema, doc_path=doc_path, writers=writers)
             return PartEdited(edited.content, edited.added_row_ids)
 
 

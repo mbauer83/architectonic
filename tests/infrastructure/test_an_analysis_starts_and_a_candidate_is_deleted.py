@@ -198,4 +198,5 @@ def test_the_composed_view_names_the_id_chosen_for_what_the_candidate_creates(cl
 
     entities = client.get(path + "/diff").json()["view"]["entities"]
 
-    assert [(one["id"].startswith("$ref:"), one.get("artifact_id")) for one in entities] == [(True, queue)]
+    # Named as a caller names it: by the stable form of the id its create chose, never by the alias.
+    assert [(one["id"], one.get("artifact_id")) for one in entities] == [("DOB@1795000000.Queue01", queue)]

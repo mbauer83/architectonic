@@ -15,8 +15,9 @@ nothing and takes the next id as the table then stands.
 artifact id, a row column's row id, a list of them for a `many` column — and, for a stated cell the
 reading could make no value of, the cell's text as spelled, so that no cell is invisible to the
 comparison. A cell is written from the same vocabulary: a typed value through the typed-property
-codec, a row id through the declaration, and a reference as an artifact id or a markdown link, which
-`link_of` makes into the link the document stores.
+codec, a row id through the declaration, a reference as an artifact id or a markdown link, which
+`link_of` makes into the link the document stores, and an id as the id the artifact is stored under, which
+`stored_id_of` answers for either spelling — an id naming nothing stored is refused.
 
 Every line of the document that is not a changed, removed or added row stays as it was. That is the
 table owner's `with_rows`; nothing here spells a row.
@@ -44,12 +45,21 @@ from src.application.artifacts.document_schema import DocumentSchema
 from src.application.artifacts.document_sections import document_body
 from src.application.artifacts.document_table_rows import TypedCell, TypedRow, TypedTable, read_document_tables
 from src.application.artifacts.document_tables import ColumnSpec, format_row_ids
+from src.application.artifacts.stored_ids import StoredIdOf
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.markdown_table import MarkdownTable, escape_cell, with_rows
 from src.domain.ontology_representation.property_value import encode
 
 #: A reference as the caller states it — an artifact id or a markdown link — to the link stored.
 LinkOf = Callable[[str], str]
+
+
+@dataclass(frozen=True)
+class CellWriters:
+    """How a cell that addresses something is written: a reference as its link, an id as it is stored."""
+
+    link_of: LinkOf
+    stored_id_of: StoredIdOf
 
 _LINK_SEPARATOR = ", "
 
@@ -96,18 +106,32 @@ def _comparable(column: ColumnSpec, value: CellValue) -> tuple[str, ...]:
     return tuple(canonical_entity_key(str(item)) for item in items)
 
 
+def _stored(table: TypedTable, column: ColumnSpec, named: str, stored_id_of: StoredIdOf) -> str:
+    """An id cell's text: one of the column's words as it is, else the id the artifact is stored under."""
+    if named in column.words or column.id_kind is None:
+        return named
+    stored = stored_id_of(column.id_kind, named)
+    if stored is None:
+        instead = f" or one of {', '.join(column.words)}" if column.words else ""
+        raise DocumentEditRefused(
+            f"Table '{table.spec.name}' column '{column.name}' takes the id of a stored {column.id_kind}{instead}, "
+            f"and no {column.id_kind} {named} is stored here."
+        )
+    return stored
+
+
 def _shown(value: CellValue) -> str:
     return "nothing" if not _items(value) else json.dumps(value, ensure_ascii=False)
 
 
-def _spelled(table: TypedTable, column: ColumnSpec, value: CellValue, link_of: LinkOf) -> str:
+def _spelled(table: TypedTable, column: ColumnSpec, value: CellValue, writers: CellWriters) -> str:
     """The cell that states `value` in `column`, as the table owner writes one."""
     items = _items(value)
     if not items:
         return ""
     too_many = len(items) > 1 and not column.many
     if column.kind != "value" and (too_many or not all(isinstance(item, str) for item in items)):
-        takes = "one row id" if column.kind == "row" else "one artifact id or markdown link"
+        takes = {"row": "one row id", "id": "one id"}.get(column.kind, "one artifact id or markdown link")
         raise DocumentEditRefused(
             f"Table '{table.spec.name}' column '{column.name}' takes {takes}"
             f"{', or a list of them' if column.many else ''}, and was given {_shown(value)}."
@@ -116,7 +140,9 @@ def _spelled(table: TypedTable, column: ColumnSpec, value: CellValue, link_of: L
         case "row":
             return escape_cell(format_row_ids(str(item) for item in items))
         case "reference":
-            return escape_cell(_LINK_SEPARATOR.join(link_of(str(item)) for item in items))
+            return escape_cell(_LINK_SEPARATOR.join(writers.link_of(str(item)) for item in items))
+        case "id":
+            return escape_cell(_stored(table, column, str(items[0]), writers.stored_id_of))
         case _:
             return _encoded(table, column, value)
 
@@ -147,12 +173,12 @@ def _column(table: TypedTable, name: str) -> ColumnSpec:
 
 
 def _with_cells(
-    table: TypedTable, cells: Sequence[str], stated: Mapping[str, CellValue], link_of: LinkOf
+    table: TypedTable, cells: Sequence[str], stated: Mapping[str, CellValue], writers: CellWriters
 ) -> tuple[str, ...]:
     """`cells` of one row with each stated column's cell rewritten."""
     columns = {name: _column(table, name) for name in stated}
     rewritten = {
-        table.positions[name]: _spelled(table, columns[name], value, link_of) for name, value in stated.items()
+        table.positions[name]: _spelled(table, columns[name], value, writers) for name, value in stated.items()
     }
     return tuple(rewritten.get(at, cell) for at, cell in enumerate(cells))
 
@@ -187,7 +213,7 @@ def _assert_based_on_what_stands(table: TypedTable, row: TypedRow, based_on: Map
         )
 
 
-def _gather(table: TypedTable, held: MarkdownTable, edits: Sequence[RowEdit], link_of: LinkOf) -> _Pending:
+def _gather(table: TypedTable, held: MarkdownTable, edits: Sequence[RowEdit], writers: CellWriters) -> _Pending:
     addressed = Counter(edit.row_id for edit in edits if not isinstance(edit, RowAddition))
     if repeated := sorted(row_id for row_id, count in addressed.items() if count > 1):
         raise DocumentEditRefused(
@@ -201,12 +227,12 @@ def _gather(table: TypedTable, held: MarkdownTable, edits: Sequence[RowEdit], li
             case RowAddition(cells=cells):
                 row_id = table.spec.row_id(max(numbers, default=0) + len(pending.added) + 1)
                 empty = (escape_cell(row_id), *("" for _ in held.header[1:]))
-                pending.added.append(_with_cells(table, empty, cells, link_of))
+                pending.added.append(_with_cells(table, empty, cells, writers))
                 pending.added_ids.append(row_id)
             case RowChange(row_id=row_id, based_on=based_on, cells=cells):
                 index = _row_index(table, row_id)
                 _assert_based_on_what_stands(table, table.rows[index], based_on)
-                pending.changed[index] = _with_cells(table, held.rows[index], cells, link_of)
+                pending.changed[index] = _with_cells(table, held.rows[index], cells, writers)
             case RowRemoval(row_id=row_id, based_on=based_on):
                 index = _row_index(table, row_id)
                 _assert_based_on_what_stands(table, table.rows[index], based_on)
@@ -215,7 +241,7 @@ def _gather(table: TypedTable, held: MarkdownTable, edits: Sequence[RowEdit], li
 
 
 def edit_table_rows(
-    content: str, edits: TableRowEdits, *, schema: DocumentSchema, doc_path: Path, link_of: LinkOf
+    content: str, edits: TableRowEdits, *, schema: DocumentSchema, doc_path: Path, writers: CellWriters
 ) -> RowsEdited:
     """`content` with `edits` made to one declared table, and every other line as it was.
 
@@ -237,7 +263,7 @@ def edit_table_rows(
             f"Section '{table.section}' holds no table '{table.spec.name}'. Add one headed "
             f"{' | '.join(table.spec.header)}, and then its rows."
         )
-    pending = _gather(table, held, edits.edits, link_of)
+    pending = _gather(table, held, edits.edits, writers)
     body = document_body(content)
     edited = with_rows(body, held, changed=pending.changed, removed=pending.removed, added=pending.added)
     return RowsEdited(content[: len(content) - len(body)] + edited, tuple(pending.added_ids))

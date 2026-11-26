@@ -15,7 +15,9 @@ from src.application.change_sets.base import record_revision
 from src.application.change_sets.candidate_apply import TERMINAL, application_of
 from src.application.change_sets.candidate_architecture import CandidateArchitecture
 from src.application.change_sets.candidate_reads import (
+    answered_record,
     comparison,
+    created_beneath,
     reading_beneath,
     rebase,
     standing_report,
@@ -24,6 +26,7 @@ from src.application.change_sets.candidate_reads import (
 from src.application.change_sets.candidate_recorded_form import from_mapping, to_mapping
 from src.application.change_sets.candidate_work import conflicts_between
 from src.application.change_sets.change_set import ChangeSet
+from src.application.change_sets.created_names import chosen_ids, named_by_id, named_in_sentence
 from src.application.change_sets.recorded_form import operation_to_mapping
 from src.application.change_sets.recorded_form import to_mapping as set_to_mapping
 from src.application.change_sets.recording import recorded
@@ -67,8 +70,9 @@ class CandidateService:
         return self.store.require(ref).id
 
     def read(self, ref: str) -> dict[str, Any]:
-        record = to_mapping(self.store.require(ref))
-        return {"record": record, "version": record_revision(record)}
+        """The candidate as a caller is answered it (`answered_record`), and the version of its stored record."""
+        candidate = self.store.require(ref)
+        return {"record": answered_record(candidate, self.store), "version": record_revision(to_mapping(candidate))}
 
     def save(
         self, record: Mapping[str, Any], based_on: str | None, *, ref: str | None = None, applied: bool = False,
@@ -82,7 +86,7 @@ class CandidateService:
         candidate = from_mapping(body)
         version = self.store.save(candidate, based_on, applied=applied)
         notify_paths_changed([self.store.path(candidate.id)])
-        return {"record": to_mapping(candidate), "version": version}
+        return {"record": answered_record(candidate, self.store), "version": version}
 
     def create(self, record: Mapping[str, Any], edits: Sequence[Mapping[str, Any]] = ()) -> dict[str, Any]:
         """A new candidate from its header, with *edits* recorded, in one write.
@@ -196,7 +200,7 @@ class CandidateService:
         return {
             "candidate": ref, "dry_run": dry_run, "integrated": integrated, "refusal": refusal,
             "operation_id": written.operation_id if written else None,
-            "standing": wire_standing(application.standing),
+            "standing": wire_standing(application.standing, application.ids),
         }
 
     def _mark_integrated(self, applied: CandidateArchitecture) -> bool:
@@ -227,8 +231,8 @@ class CandidateService:
         """*patch* over *ref*'s header, written over *based_on*; a diagram it names must host candidates."""
         if diagram := patch.get("diagram"):
             self._hosting(str(diagram))
-        current = self.read(ref)
-        return self.save(current["record"] | dict(patch), based_on, ref=str(current["record"]["id"]))
+        current = to_mapping(self.store.require(ref))
+        return self.save(current | dict(patch), based_on, ref=str(current["id"]))
 
     def record(self, ref: str, based_on: str, edits: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         """Record *edits* among the candidate's operations, in order, as one write over *based_on*.
@@ -243,13 +247,14 @@ class CandidateService:
     def _recorded_all(
         self, candidate: CandidateArchitecture, edits: Sequence[Mapping[str, Any]],
     ) -> CandidateArchitecture:
+        created = created_beneath(candidate, self.store)
         for edit in edits:
             intent = _with_minted_id(edit)
             named = [
                 str(intent[part]) for part in ("artifact_id", "source_entity", "target_entity") if intent.get(part)
             ]
             beneath = reading_beneath(candidate, self.store, self.registry, named)
-            candidate = recorded(candidate, intent, beneath)
+            candidate = recorded(candidate, intent, beneath, created)
         return candidate
 
     def compare(
@@ -291,9 +296,12 @@ class CandidateService:
                     f"{candidate.id} is {candidate.state}; only a draft or an offered candidate is checked."
                 )
             layers.update((c.id, c) for c in stack_of(candidate, self.store.find))
+        # Answered as a caller names what the layers create: by the id each create chose (`created_names`).
+        chosen = chosen_ids(layer.changes for layer in layers.values())
         return {"candidates": [candidate.id for candidate in selected], "overlaps": [
-            {"kind": overlap.kind, "subject": overlap.subject, "parties": [
-                {"set_id": p.set_id, "operation": operation_to_mapping(p.operation)} for p in overlap.parties
+            {"kind": overlap.kind, "subject": named_in_sentence(overlap.subject, chosen), "parties": [
+                {"set_id": p.set_id, "operation": operation_to_mapping(named_by_id(p.operation, chosen))}
+                for p in overlap.parties
             ]} for overlap in conflicts_between(tuple(layers.values()))
         ]}
 

@@ -7,6 +7,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+from src.application.artifacts.stored_ids import stored_id
 from src.application.change_sets.base import record_revision
 from src.application.change_sets.candidate_architecture import (
     CandidateArchitecture,
@@ -17,7 +18,7 @@ from src.application.change_sets.candidate_architecture import (
 from src.application.change_sets.candidate_recorded_form import dump_candidate, load_candidate, to_mapping
 from src.application.change_sets.ordering import application_order
 from src.application.change_sets.stacking import sets_beneath, stack_of
-from src.domain.artifact_id import canonical_entity_key, parse_entity_id
+from src.domain.artifact_id import parse_entity_id
 from src.domain.repository.artifact_location import artifact_kind
 from src.infrastructure.atomic_file import write_atomic
 
@@ -42,6 +43,7 @@ class NotStored(ValueError):
 
 class CandidateArchitectureStore:
     def __init__(self, root: Path) -> None:
+        self.root = root
         self.directory = root.joinpath(*KIND.roots[0])
 
     def path(self, ref: str) -> Path:
@@ -60,11 +62,7 @@ class CandidateArchitectureStore:
         """
         if self.path(ref).is_file():  # also refuses what is not a candidate id, in the store's own words
             return ref
-        wanted = canonical_entity_key(ref)
-        return next((
-            identity for identity in (KIND.file_identity(p) for p in self.directory.glob("*" + KIND.suffixes[0]))
-            if canonical_entity_key(identity) == wanted
-        ), None)
+        return stored_id(self.root, KIND.name, ref)
 
     def find(self, ref: str) -> CandidateArchitecture | None:
         stored = self.stored_id(ref)

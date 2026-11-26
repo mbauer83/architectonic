@@ -6,6 +6,7 @@ applied_upgrade_steps:
 - default-document-types-ensure
 - default-schemata-ensure
 - modification-stamp-datetime
+- stress-analysis-candidate-columns
 - stress-analysis-naive-owns-scope
 - viewpoint-selection-mode-stamp
 format_contract_version: '7'

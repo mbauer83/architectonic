@@ -136,6 +136,8 @@
             },
             {
               "name": "candidate_architecture",
+              "type": "id",
+              "kind": "candidate-architecture",
               "required": true
             },
             {
@@ -193,6 +195,12 @@
             },
             {
               "name": "architecture",
+              "type": "id",
+              "kind": "candidate-architecture",
+              "words": [
+                "naive",
+                "integration"
+              ],
               "required": true
             },
             {

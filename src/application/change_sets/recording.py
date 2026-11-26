@@ -13,12 +13,16 @@ that is the base the operation is later judged by and the client has no business
   created rewrites its create; removing it drops the create and everything that names it. An entity
   the candidate created is addressed by the id chosen for it, never by its alias, which is
   `provisional_reference`'s to spell.
+- **so is what the stack beneath creates.** An edit, a removal or a connection naming the id a lower
+  candidate's create chose is recorded under that create's alias, as the composition beneath names it
+  (`created_names.reference_for`): a caller names an element the same way at every level of a stack.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import asdict, replace
+from types import MappingProxyType
 from typing import Any
 
 from src.application.change_sets.base import (
@@ -32,6 +36,7 @@ from src.application.change_sets.base import (
 from src.application.change_sets.candidate_architecture import CandidateArchitecture
 from src.application.change_sets.change_set import ChangeSet
 from src.application.change_sets.composition import patched
+from src.application.change_sets.created_names import ChosenIds, reference_for
 from src.application.change_sets.operations import (
     AddConnection,
     ConnectionAddress,
@@ -51,9 +56,16 @@ from src.domain.artifact_id import MalformedArtifactIdError, canonical_entity_ke
 
 Intent = Mapping[str, Any]
 
+#: What a candidate with nothing beneath it inherits: no create.
+_NOTHING_CREATED_BENEATH: ChosenIds = MappingProxyType({})
 
-def recorded(candidate: CandidateArchitecture, intent: Intent, beneath: ModelReading) -> CandidateArchitecture:
-    """*candidate* with *intent* recorded among its operations, read against *beneath*."""
+
+def recorded(
+    candidate: CandidateArchitecture, intent: Intent, beneath: ModelReading,
+    created_beneath: ChosenIds = _NOTHING_CREATED_BENEATH,
+) -> CandidateArchitecture:
+    """*candidate* with *intent* recorded among its operations, read against *beneath*: the model with the stack
+    beneath the candidate laid over, whose creates chose the ids in *created_beneath* (`chosen_ids`)."""
     if candidate.state != "draft":
         raise MalformedChangeSet(f"{candidate.name!r} is {candidate.state}; only a draft records new operations.")
     reader = _RECORDERS.get(str(intent.get("op", "")))
@@ -61,7 +73,7 @@ def recorded(candidate: CandidateArchitecture, intent: Intent, beneath: ModelRea
         edits = ", ".join(_RECORDERS)
         raise MalformedChangeSet(f"{intent.get('op')!r} is not an edit a candidate records. The edits are {edits}.")
     try:
-        operations = reader(_Set(candidate.changes.operations), intent, beneath)
+        operations = reader(_Set(candidate.changes.operations, created_beneath), intent, beneath)
     except KeyError as missing:
         raise MalformedChangeSet(f"a {intent['op']} edit states its {missing.args[0]}") from missing
     return replace(candidate, changes=ChangeSet(operations, candidate.changes.repository_revision))
@@ -69,6 +81,7 @@ def recorded(candidate: CandidateArchitecture, intent: Intent, beneath: ModelRea
 
 def rebased(
     candidate: CandidateArchitecture, operations: Iterable[Operation], beneath: ModelReading,
+    created_beneath: ChosenIds = _NOTHING_CREATED_BENEATH,
 ) -> CandidateArchitecture:
     """*candidate* with each of *operations* recorded again against *beneath*, the model as it stands now.
 
@@ -78,7 +91,7 @@ def rebased(
     with drops, as any edit back to its base does. Only what has a base can be re-based.
     """
     for operation in operations:
-        candidate = recorded(candidate, _intent_of(operation), beneath)
+        candidate = recorded(candidate, _intent_of(operation), beneath, created_beneath)
     return candidate
 
 
@@ -100,22 +113,27 @@ def _intent_of(operation: Operation) -> Intent:
 class _Set:
     """The candidate's operations while one edit is recorded among them."""
 
-    def __init__(self, operations: tuple[Operation, ...]) -> None:
+    def __init__(self, operations: tuple[Operation, ...], created_beneath: ChosenIds) -> None:
         self.operations = operations
+        self.created_beneath = created_beneath
+        creates = [op for op in operations if isinstance(op, CreateEntity)]
         self.created = {
-            canonical_entity_key(op.artifact_id): op
-            for op in operations if isinstance(op, CreateEntity) and op.artifact_id
+            **{op.reference: op for op in creates},
+            **{canonical_entity_key(op.artifact_id): op for op in creates if op.artifact_id},
         }
         self.added = {op.address: op for op in operations if isinstance(op, AddConnection)}
 
-    def reference(self, artifact_id: str) -> str:
-        """How the set names *artifact_id*: the alias of what it creates, else the id, in either spelling."""
-        create = self.creating(artifact_id)
-        return create.reference if create else artifact_id
+    def reference(self, named: str) -> str:
+        """How the set names *named*: the alias of what it or the stack beneath creates, else the id as named."""
+        create = self.creating(named)
+        return create.reference if create else reference_for(named, self.created_beneath)
 
-    def creating(self, artifact_id: str) -> CreateEntity | None:
-        """The create that chose *artifact_id*, however the caller spells it."""
-        return self.created.get(canonical_entity_key(artifact_id))
+    def creating(self, named: str) -> CreateEntity | None:
+        """The create of this set that *named* names: by the id it chose, in either spelling, or by its alias."""
+        return self.created.get(canonical_entity_key(named))
+
+    def kept(self, operations: tuple[Operation, ...]) -> _Set:
+        return _Set(operations, self.created_beneath)
 
     def address(self, intent: Intent) -> ConnectionAddress:
         return ConnectionAddress(
@@ -161,14 +179,15 @@ def _create_entity(held: _Set, intent: Intent, _: ModelReading) -> tuple[Operati
 
 
 def _edit_entity(held: _Set, intent: Intent, beneath: ModelReading) -> tuple[Operation, ...]:
-    target, field, key, value = str(intent["artifact_id"]), str(intent["field"]), _key(intent), intent.get("value")
-    create = held.creating(target)
+    named, field, key, value = str(intent["artifact_id"]), str(intent["field"]), _key(intent), intent.get("value")
+    create = held.creating(named)
     if create is not None:
         edit = EditEntity(target=create.reference, field=field, value=value, base=_base("entity", field, None), key=key)
         return held.put(replace(create, fields=patched("entity", create.fields, edit)))
+    target = held.reference(named)
     current = beneath.entity(target)
     if current is None:
-        raise MalformedChangeSet(f"{target!r} is not an entity this candidate can see, so it cannot be edited here.")
+        raise MalformedChangeSet(f"{named!r} is not an entity this candidate can see, so it cannot be edited here.")
     was = _held("entity", current, field, key)
     base = _base("entity", field, was)
     edit = EditEntity(target=target, field=field, value=value, base=base, key=key)
@@ -176,15 +195,16 @@ def _edit_entity(held: _Set, intent: Intent, beneath: ModelReading) -> tuple[Ope
 
 
 def _remove_entity(held: _Set, intent: Intent, beneath: ModelReading) -> tuple[Operation, ...]:
-    target = str(intent["artifact_id"])
-    create = held.creating(target)
+    named = str(intent["artifact_id"])
+    create = held.creating(named)
     if create is not None:
         return held.without(lambda op: op is create or create.reference in entities_used(op))
+    target = held.reference(named)
     current = beneath.entity(target)
     if current is None:
-        raise MalformedChangeSet(f"{target!r} is not an entity this candidate can see, so it cannot be removed here.")
+        raise MalformedChangeSet(f"{named!r} is not an entity this candidate can see, so it cannot be removed here.")
     kept = held.without(lambda op: isinstance(op, EditEntity) and op.target == canonical_entity_key(target))
-    return _Set(kept).put(RemoveEntity(target=target, base=BaseRevision(record_revision(current))))
+    return held.kept(kept).put(RemoveEntity(target=target, base=BaseRevision(record_revision(current))))
 
 
 def _add_connection(held: _Set, intent: Intent, _: ModelReading) -> tuple[Operation, ...]:
@@ -214,31 +234,38 @@ def _remove_connection(held: _Set, intent: Intent, beneath: ModelReading) -> tup
     if current is None:
         raise MalformedChangeSet(f"{address} is not a connection this candidate can see, so it cannot be removed here.")
     kept = held.without(lambda op: isinstance(op, EditConnection) and op.address == address)
-    return _Set(kept).put(RemoveConnection(address=address, base=BaseRevision(record_revision(current))))
+    return held.kept(kept).put(RemoveConnection(address=address, base=BaseRevision(record_revision(current))))
 
 
 def _drop(held: _Set, intent: Intent, _: ModelReading) -> tuple[Operation, ...]:
     """Take back what the set records about one entity or connection — or about one field of it.
 
     Dropping what the set creates drops the create and everything that names it, as removing it does.
-    Nothing recorded about it is a refusal: a drop that takes back nothing is a mistaken address.
+    Nothing recorded about it is a refusal: a drop that takes back nothing is a mistaken address. An
+    operation is found under the reference the stack names its subject with, and under the id as named:
+    one recorded before a lower candidate's create was read by its id still names that id, and stays
+    the caller's to take back.
     """
     field, key = intent.get("field"), _key(intent)
     if intent.get("artifact_id"):
-        create = held.creating(str(intent["artifact_id"]))
+        named = str(intent["artifact_id"])
+        create = held.creating(named)
         if create is not None and field is None:
             return held.without(lambda op: op is create or create.reference in entities_used(op))
-        named = str(intent["artifact_id"])
-        subject: str | ConnectionAddress = create.reference if create else canonical_entity_key(named)
+        subjects: set[str | ConnectionAddress] = {
+            canonical_entity_key(held.reference(named)), canonical_entity_key(named),
+        }
     else:
-        subject = held.address(intent)
+        stated = (str(intent["source_entity"]), str(intent["connection_type"]), str(intent["target_entity"]))
+        subjects = {held.address(intent), ConnectionAddress(*stated)}
 
     def taken(op: Operation) -> bool:
         claim = op.claim
-        return claim.subject == subject and (field is None or (claim.field == field and claim.key == (key or "")))
+        return claim.subject in subjects and (field is None or (claim.field == field and claim.key == (key or "")))
 
     kept = held.without(taken)
     if len(kept) == len(held.operations):
+        subject = min(subjects, key=str)
         what = f"{field} of {subject}" if field else str(subject)
         raise MalformedChangeSet(f"This candidate records nothing about {what}, so there is nothing to drop.")
     return kept

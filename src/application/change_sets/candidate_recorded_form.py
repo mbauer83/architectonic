@@ -42,8 +42,11 @@ _REQUIRED = (_ID, _NAME, _STATE, _CHANGES)
 _OPTIONAL = (_RATIONALE, _PARENT, _ANSWERS, _SATISFIES, _SCOPE, _DIAGRAM, _TARGET_STATE)
 
 
-def to_mapping(candidate: CandidateArchitecture) -> dict[str, Any]:
-    """The recorded form of a candidate. Optional parts that are empty are left out."""
+def to_mapping(
+    candidate: CandidateArchitecture, shown: recorded_form.Shown = recorded_form.as_recorded,
+) -> dict[str, Any]:
+    """The recorded form of a candidate, its operations as *shown* names them (`recorded_form.to_mapping`).
+    Optional parts that are empty are left out."""
     recorded: dict[str, Any] = {
         _ID: candidate.id,
         _NAME: candidate.name,
@@ -54,7 +57,7 @@ def to_mapping(candidate: CandidateArchitecture) -> dict[str, Any]:
         _SATISFIES: list(candidate.satisfies),
         _SCOPE: list(candidate.scope),
         _DIAGRAM: candidate.diagram,
-        _CHANGES: recorded_form.to_mapping(candidate.changes),
+        _CHANGES: recorded_form.to_mapping(candidate.changes, shown),
         _TARGET_STATE: _target_state_to_mapping(candidate.target_state),
     }
     return {key: value for key, value in recorded.items() if key in _REQUIRED or value}

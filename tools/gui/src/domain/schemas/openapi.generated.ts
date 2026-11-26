@@ -9376,6 +9376,8 @@ export interface components {
          *     Schema's keywords, and this model with `type` is the schema of one cell.
          */
         DocumentTableColumn: {
+            /** Kind */
+            kind?: string;
             /** Many */
             many?: boolean;
             /** Name */
@@ -9390,6 +9392,8 @@ export interface components {
             to?: string[];
             /** Type */
             type: string;
+            /** Words */
+            words?: string[];
         } & {
             [key: string]: unknown;
         };
