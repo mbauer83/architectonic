@@ -316,13 +316,6 @@ def _inconsistencies(by_section: Sequence[tuple[TableSpec, ...]]) -> list[str]:
     ]
 
 
-def stated_columns(raw_type: Mapping[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
-    """Each column a document type's file states, as stated, with its table's name: for a step that rewrites
-    one declaration in place and leaves the rest of the file as it is."""
-    for section in raw_type.get("sections", ()):
-        yield from ((table["name"], column) for table in section.get(TABLES_KEY, ()) for column in table["columns"])
-
-
 def table_declarations(doc_type: str, sections: Sequence[Mapping[str, Any]]) -> tuple[tuple[TableSpec, ...], ...]:
     """Each section's declared tables, in the order the sections were given.
 

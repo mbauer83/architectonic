@@ -113,7 +113,7 @@ def test_a_candidate_drops_what_it_creates_by_its_handle_as_by_its_id() -> None:
         assert _record(_naive(), op="drop", artifact_id=spelled).changes.operations == (_TEXT,), spelled
 
 
-def test_the_view_of_a_stack_names_every_created_element_by_its_id_and_reads_a_kept_handle() -> None:
+def test_the_view_of_a_stack_names_every_created_element_by_its_id() -> None:
     adapted = _record(_adaptation(), op="add_connection", source_entity=TEXT,
                       connection_type="archimate-association", target_entity=READER)
     view = view_of((_naive(), adapted), MODEL)
@@ -121,5 +121,4 @@ def test_the_view_of_a_stack_names_every_created_element_by_its_id_and_reads_a_k
     assert set(view.entities) == {READER, EXTRACTOR, TEXT}
     assert {(a.source_entity, a.target_entity) for a in view.connections} == {(EXTRACTOR, READER), (TEXT, READER)}
     assert view.chosen == {EXTRACTOR: _EXTRACTOR.artifact_id, TEXT: TEXT}
-    assert view.spelling()[_TEXT.reference] == TEXT  # a row written with the handle still reads
     assert "$ref:" not in str(view.wire())

@@ -32,12 +32,6 @@ from src.application.repository_upgrade.steps.specialization_declaration_scan im
     SpecializationDeclarationScanStep,
 )
 from src.application.repository_upgrade.steps.stale_slug_references import StaleSlugReferenceStep
-from src.application.repository_upgrade.steps.stress_analysis_candidate_columns import (
-    StressAnalysisCandidateColumnsStep,
-)
-from src.application.repository_upgrade.steps.stress_analysis_naive_owns_scope import (
-    StressAnalysisNaiveOwnsScopeStep,
-)
 from src.application.repository_upgrade.steps.unrecognized_structure import UnrecognizedStructureScanStep
 from src.application.repository_upgrade.steps.viewpoint_application_scan import ViewpointApplicationScanStep
 from src.application.repository_upgrade.steps.viewpoint_declaration_scan import ViewpointDeclarationScanStep
@@ -100,8 +94,6 @@ def build_registry(selection_resolutions: Mapping[str, SelectionMode] | None = N
     registry.register(SchemaFileScanStep())
     registry.register(DefaultSchemataEnsureStep())
     registry.register(DefaultDocumentTypesEnsureStep())
-    registry.register(StressAnalysisNaiveOwnsScopeStep())
-    registry.register(StressAnalysisCandidateColumnsStep())
     registry.register(OrdinalEnumDeclarationStep())
     registry.register(ProfileReconciliationScanStep())
     registry.register(ConnectionMetadataScanStep())

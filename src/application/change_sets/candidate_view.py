@@ -25,17 +25,6 @@ class CandidateView:
     connections: dict[ConnectionAddress, FieldValues]
     #: The id chosen for each entity the stack creates, as its create states it, by the id the view names it with.
     chosen: dict[str, str] = field(default_factory=dict)
-    #: The id the view names each entity the stack creates with, by the alias its operations name it with: what a
-    #: reader that kept an alias (a row written before ids were answered) is read by.
-    aliases: dict[str, str] = field(default_factory=dict)
-
-    def spelling(self) -> dict[str, str]:
-        """The id the view names each entity with, by every key it may be written under: the key of its id
-        (`canonical_entity_key`), and for one the stack creates, the alias its operations name it with too."""
-        return {
-            **{canonical_entity_key(ref): ref for ref in self.entities},
-            **{alias: ref for alias, ref in self.aliases.items() if ref in self.entities},
-        }
 
     def wire(self) -> dict[str, Any]:
         return {
@@ -92,7 +81,6 @@ def _named_by_id(view: CandidateView, chosen: Mapping[str, str]) -> CandidateVie
             for a, fields in view.connections.items()
         },
         chosen={canonical_entity_key(artifact_id): artifact_id for artifact_id in chosen.values()},
-        aliases={provisional(alias): canonical_entity_key(artifact_id) for alias, artifact_id in chosen.items()},
     )
 
 
