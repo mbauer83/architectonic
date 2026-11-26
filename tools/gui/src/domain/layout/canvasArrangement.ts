@@ -34,6 +34,14 @@ const TITLE_MARGIN = 8
 /** The smallest an element may be resized to, either way. */
 export const SMALLEST_ELEMENT = 24
 
+/** The least size *alias* may be resized to, across and down: a box its contents hold open (`fittedBoxes`); an
+ * element no narrower than its longest word and glyph (A-02.08), whose label is never broken inside a word. */
+export const leastSizeOf = (geometry: LayoutGeometry, alias: string): { across: number; down: number } => {
+  if (geometry.boxes.some((box) => box.alias === alias)) return { across: 1, down: 1 }
+  const element = geometry.elements.find((one) => one.alias === alias)
+  return { across: Math.max(SMALLEST_ELEMENT, element?.least_width ?? 0), down: SMALLEST_ELEMENT }
+}
+
 export const translated = (extent: Extent, dx: number, dy: number): Extent => ({
   left: extent.left + dx,
   top: extent.top + dy,
@@ -189,12 +197,18 @@ export type Handle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
 
 export const HANDLES: readonly Handle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
 
-/** *start* with the edges *handle* names dragged by (dx, dy), never smaller than *least* either way. */
-export const resizedExtent = (start: Extent, handle: Handle, dx: number, dy: number, least: number): Extent => {
-  const left = handle.includes('w') ? Math.min(start.left + dx, start.right - least) : start.left
-  const right = handle.includes('e') ? Math.max(start.right + dx, start.left + least) : start.right
-  const top = handle.includes('n') ? Math.min(start.top + dy, start.bottom - least) : start.top
-  const bottom = handle.includes('s') ? Math.max(start.bottom + dy, start.top + least) : start.bottom
+/**
+ * *start* with the edges *handle* names dragged by (dx, dy), never smaller than *least* either way — or, given
+ * one size each way (`leastSizeOf`), than that across and down.
+ */
+export const resizedExtent = (
+  start: Extent, handle: Handle, dx: number, dy: number, least: number | { across: number; down: number },
+): Extent => {
+  const { across, down } = typeof least === 'number' ? { across: least, down: least } : least
+  const left = handle.includes('w') ? Math.min(start.left + dx, start.right - across) : start.left
+  const right = handle.includes('e') ? Math.max(start.right + dx, start.left + across) : start.right
+  const top = handle.includes('n') ? Math.min(start.top + dy, start.bottom - down) : start.top
+  const bottom = handle.includes('s') ? Math.max(start.bottom + dy, start.top + down) : start.bottom
   return { left, top, right, bottom }
 }
 

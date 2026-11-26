@@ -212,3 +212,34 @@ def test_a_drawing_that_is_not_one_is_refused(client: TestClient, model: Rendere
 
 def _wire(extent: Extent) -> dict[str, float]:
     return {"left": extent.left, "top": extent.top, "right": extent.right, "bottom": extent.bottom}
+
+
+def _words_across(group: Element) -> list[tuple[float, float]]:
+    """Where each word of a drawn element's label starts and ends, across."""
+    return [
+        (float(text.get("x") or 0), float(text.get("x") or 0) + float(text.get("textLength") or 0))
+        for text in group.iter() if text.tag.endswith("text") and (text.text or "").strip("  \t\n")
+    ]
+
+
+def test_an_element_sized_to_its_least_width_keeps_every_word_inside_it(model: RenderedModel) -> None:
+    """The pair, A-02.08: the least width the canvas is offered (`least_width`) and the label the composer sets
+    again at that width (`resized_element`). Over every element of every scene drawn; before, the canvas
+    floored a resize at 24 units and the words were drawn across the outline."""
+    offered = 0
+    for name, scene in model.scenes.items():
+        drawing = read_rendered_drawing(scene.svg)
+        assert isinstance(drawing, RenderedDrawing)
+        rows = {str(row["alias"]): row for row in _rows(_geometry(model, name), "elements")}
+        for alias, element in drawing.picture.elements.items():
+            least = rows[alias].get("least_width")
+            if least is None:
+                continue
+            offered += 1
+            assert isinstance(least, float)
+            drawn = element.extent
+            narrowest = Extent(drawn.left, drawn.top, drawn.left + least, drawn.bottom)
+            for start, end in _words_across(resized_element(drawing.shapes[alias], drawn, narrowest)):
+                assert narrowest.left <= start + 0.01 and end <= narrowest.right + 0.01, (name, alias, start, end)
+            assert least <= drawn.width + 0.01, (name, alias)
+    assert offered > 0

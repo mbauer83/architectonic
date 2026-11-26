@@ -14,7 +14,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { ModelService } from '../../application/ModelService'
-import { SMALLEST_ELEMENT, movedTogether, resized, resizedExtent } from '../../domain/layout/canvasArrangement'
+import { leastSizeOf, movedTogether, resized, resizedExtent } from '../../domain/layout/canvasArrangement'
 import { GRID } from '../../domain/layout/canvasSnapping'
 import { type BendRef, withBendsMoved } from '../../domain/layout/canvasSelection'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
@@ -166,8 +166,9 @@ export function useDiagramEditMode(
           x * by, y * by)
       }
       const extent = placement.elements.get(alias) ?? placement.boxes.get(alias)
-      const least = placement.boxes.has(alias) ? 1 : SMALLEST_ELEMENT
-      return extent ? resized(geometry, from, alias, resizedExtent(extent, 'se', x * by, y * by, least)) : from
+      return extent
+        ? resized(geometry, from, alias, resizedExtent(extent, 'se', x * by, y * by, leastSizeOf(geometry, alias)))
+        : from
     })
   }
 

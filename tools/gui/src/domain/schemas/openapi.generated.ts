@@ -10958,6 +10958,8 @@ export interface components {
             key?: string;
             /** Label */
             label: string;
+            /** Least Width */
+            least_width?: number;
             outside_label?: components["schemas"]["ExtentContract"];
             /** Words */
             words: components["schemas"]["MeasuredWordContract"][];

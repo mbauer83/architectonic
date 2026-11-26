@@ -41,6 +41,7 @@ from src.infrastructure.rendering.layout.drawing_wire import node_of, relation_d
 from src.infrastructure.rendering.layout.membership_placement import with_new_members
 from src.infrastructure.rendering.layout.plantuml_svg_reader import RenderedDrawing, read_rendered_drawing
 from src.infrastructure.rendering.layout.relation_identities import DrawnAs, relation_keys_by_index
+from src.infrastructure.rendering.layout.shape_drawing import least_width
 from src.infrastructure.rendering.layout.svg_markup import drawn_extent
 from src.infrastructure.write.artifact_write.parse_existing import ParsedDiagram
 
@@ -73,6 +74,8 @@ def _element(element: DrawnElement, diagram: LaidOutDiagram, drawing: RenderedDr
         "words": _words(element.words),
         # A label set outside its outline — an actor's, below it — is text a route keeps out of.
         "outside_label": _extent(padded(label)) if outside and label is not None else None,
+        # The narrowest it may be sized: a resize sets its label again a word at a time and never breaks one.
+        "least_width": least_width(drawing.shapes[element.alias], element.extent),
         "drawing": node_of(drawing.shapes[element.alias]),
     }
 

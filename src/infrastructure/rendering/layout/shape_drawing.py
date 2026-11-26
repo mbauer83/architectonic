@@ -129,19 +129,29 @@ def _set_again(word: _Word, x: float, baseline: float) -> Element:
     return moved(word.text, Motion.shift(x - word.x, baseline - word.baseline))
 
 
-def resized_element(group: Element, drawn: Extent, to: Extent) -> Element:
-    """An element's drawing at the size *to* states: outline stretched, glyph carried, label set again."""
-    outline, *rest = list(group)
+@dataclass(frozen=True)
+class _Label:
+    """An element's label as the renderer set it: its words by line, and the room round them."""
+
+    marks: list[Element]
+    lines: list[list[_Word]]
+    space: float
+    line_height: float
+    #: What leads the first line before its first word: the element's glyph.
+    leading: list[Element]
+    glyph_left: float
+    glyph_room: float
+    padding: float
+
+
+def _label(group: Element, drawn: Extent) -> _Label | None:
+    """The label of the element drawn in *group* at *drawn*; None where it says nothing."""
+    _outline, *rest = list(group)
     texts = [part for part in rest if tag_of(part) == "text"]
     marks = [part for part in rest if tag_of(part) != "text"]
     words = _words(texts)
-    resized = _like(group)
-    resized.append(fitted(outline, drawn, to))
     if not words:
-        middle = Motion.shift(to.centre.x - drawn.centre.x, to.centre.y - drawn.centre.y)
-        resized.extend(moved(mark, middle) for mark in marks)
-        return resized
-
+        return None
     lines = _lines(words)
     first = lines[0][0]
     size = _font_size(first.text)
@@ -157,22 +167,52 @@ def resized_element(group: Element, drawn: Extent, to: Extent) -> Element:
         and extent.top <= first.baseline <= extent.bottom + line_height
     ]
     glyph_left = min((extent.left for mark in leading if (extent := drawn_extent(mark)) is not None), default=first.x)
-    glyph_room = first.x - glyph_left
     padding = max(_LEAST_PADDING, min(glyph_left - drawn.left, drawn.right - max(w.x + w.width for w in words)))
+    return _Label(marks, lines, space, line_height, leading, glyph_left, first.x - glyph_left, padding)
 
-    set_lines = _wrapped(_paragraphs(lines), to.width - 2 * padding, space, glyph_room)
+
+def least_width(group: Element, drawn: Extent) -> float | None:
+    """The narrowest the element drawn in *group* at *drawn* may be sized: its longest word, and its first word
+    after its glyph, each with the padding either side that `resized_element` keeps. None where it has no label.
+
+    The label is set again by `resized_element` a word at a time and never breaks a word, so a narrower element
+    would draw its words over its outline.
+    """
+    label = _label(group, drawn)
+    if label is None:
+        return None
+    widest = max(word.width for line in label.lines for word in line)
+    first = label.glyph_room + label.lines[0][0].width
+    return max(widest, first) + 2 * label.padding
+
+
+def resized_element(group: Element, drawn: Extent, to: Extent) -> Element:
+    """An element's drawing at the size *to* states: outline stretched, glyph carried, label set again."""
+    outline = list(group)[0]
+    resized = _like(group)
+    resized.append(fitted(outline, drawn, to))
+    label = _label(group, drawn)
+    if label is None:
+        marks = [part for part in list(group)[1:] if tag_of(part) != "text"]
+        middle = Motion.shift(to.centre.x - drawn.centre.x, to.centre.y - drawn.centre.y)
+        resized.extend(moved(mark, middle) for mark in marks)
+        return resized
+
+    first = label.lines[0][0]
+    space, line_height, glyph_room = label.space, label.line_height, label.glyph_room
+    set_lines = _wrapped(_paragraphs(label.lines), to.width - 2 * label.padding, space, glyph_room)
     top = to.top + (to.height - len(set_lines) * line_height) / 2
     for row, line in enumerate(set_lines):
         baseline = top + row * line_height + line_height * _BASELINE_SHARE
         lead = glyph_room if row == 0 else 0.0
         x = to.left + (to.width - (lead + sum(word.width for word in line) + space * (len(line) - 1))) / 2
         if row == 0:
-            beside = Motion.shift(x - glyph_left, baseline - first.baseline)
-            resized.extend(moved(mark, beside) for mark in leading)
+            beside = Motion.shift(x - label.glyph_left, baseline - first.baseline)
+            resized.extend(moved(mark, beside) for mark in label.leading)
         x += lead
         for word in line:
             resized.append(_set_again(word, x, baseline))
             x += word.width + space
     corner = Motion.shift(to.right - drawn.right, to.top - drawn.top)
-    resized.extend(moved(mark, corner) for mark in marks if all(mark is not led for led in leading))
+    resized.extend(moved(mark, corner) for mark in label.marks if all(mark is not led for led in label.leading))
     return resized
