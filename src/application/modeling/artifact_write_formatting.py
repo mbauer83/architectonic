@@ -1,14 +1,8 @@
 from collections.abc import Sequence
-from pathlib import Path
 from typing import Any
 
 import yaml  # type: ignore[import-untyped]
 
-from src.application.artifacts.schema import (
-    load_attribute_schema,
-    schema_all_properties,
-    schema_required_properties,
-)
 from src.domain.ontology_representation.property_value import encode as _encode_cell
 from src.domain.repository.connection_declaration import ConnectionDeclaration, format_connection_declaration
 from src.domain.repository.properties_section import format_properties_section
@@ -64,7 +58,6 @@ def format_entity_markdown(
     notes: str | None,
     display_section_id: str,
     display_content: str,
-    repo_root: Path | None = None,
     extra_frontmatter: dict[str, object] | None = None,
 ) -> str:
     """Format a complete entity markdown file.
@@ -109,10 +102,13 @@ def format_entity_markdown(
         content_lines.append(summary.strip())
         content_lines.append("")
 
+    # An empty value cell states nothing wherever the model reads one, so none is written: not for an
+    # attribute given as empty, and not for one the type's schema declares and the entity does not state.
+    # Writing those made every write of an entity change its table — an unrelated edit added a row for
+    # each attribute its schema had gained since.
     props = properties or {}
-    stated = [(key, _encode_cell(props[key])) for key in sorted(props)]
-    scaffold = [(key, "") for key in _scaffold_keys_from_schema(repo_root, artifact_type) if key not in props]
-    content_lines.extend([*format_properties_section([*stated, *scaffold]), ""])
+    stated = [(key, cell) for key in sorted(props) if (cell := _encode_cell(props[key]))]
+    content_lines.extend([*format_properties_section(stated), ""])
 
     if notes and notes.strip():
         content_lines.extend(["## Notes", "", notes.strip(), ""])
@@ -251,16 +247,3 @@ def format_matrix_markdown(
     yaml_text = _dump_yaml_text(fm_out)
     body = matrix_markdown.strip("\n") + "\n"
     return f"---\n{yaml_text}\n---\n\n{body}"
-
-
-def _scaffold_keys_from_schema(repo_root: Path | None, artifact_type: str) -> list[str]:
-    """Return ordered attribute keys from the attribute schema for scaffolding."""
-    if repo_root is None:
-        return []
-    schema = load_attribute_schema(repo_root, artifact_type)
-    if schema is None:
-        return []
-    required = schema_required_properties(schema)
-    all_props = schema_all_properties(schema)
-    optional = [key for key in all_props if key not in required]
-    return required + optional
