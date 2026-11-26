@@ -17,18 +17,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationResult
-from src.domain.ontology_representation.ontology_protocol import (
-    DiagramTypeModule,
-    GeneratedHeaderRefreshingRenderer,
-)
+from src.domain.ontology_representation.ontology_protocol import DiagramTypeModule, generated_header_is_current
 from src.domain.repository.frontmatter import body_after_frontmatter
-
-
-def generated_header_is_current(renderer: object, body: str, repo_root: Path) -> bool:
-    """Whether *body* already states everything *renderer* generates, as it states it today."""
-    if not isinstance(renderer, GeneratedHeaderRefreshingRenderer):
-        return True
-    return renderer.refresh_generated_header(body, repo_root) == body
 
 
 def check_generated_header(

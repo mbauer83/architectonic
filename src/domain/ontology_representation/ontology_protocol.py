@@ -198,6 +198,15 @@ class GeneratedHeaderRefreshingRenderer(Protocol):
     def refresh_generated_header(self, body: str, repo_root: Path) -> str: ...
 
 
+def generated_header_is_current(renderer: DiagramRenderer, body: str, repo_root: Path) -> bool:
+    """Whether *body* already states everything *renderer* generates, as it states it today; true for a
+    renderer whose header states nothing generated. The one predicate the verifier's W387 and the static
+    includes gate both ask."""
+    if not isinstance(renderer, GeneratedHeaderRefreshingRenderer):
+        return True
+    return renderer.refresh_generated_header(body, repo_root) == body
+
+
 @runtime_checkable
 class IconPresentingRenderer(Protocol):
     """Optional capability for a renderer that draws the icons a diagram assigns its elements.
