@@ -37,19 +37,19 @@ describe('FieldChangeView', () => {
     expect(seen(host.querySelectorAll('ins'))).toEqual(['reads', 'stores', 'answers'])
     expect(seen(host.querySelectorAll('del'))).toEqual(['word10', 'word30', 'word50'])
     expect([...host.querySelectorAll('.fc-same')].every((same) => !same.closest('del'))).toBe(true)
-    // Words 11–29 and 31–49 are long enough to fold; the short runs at either end are shown whole.
-    expect(host.querySelectorAll('.fc-fold')).toHaveLength(2)
+    // Words 0–5, 15–25 and 35–45 fold, keeping four words beside each change; the last run is too short to.
+    expect(host.querySelectorAll('.fc-fold')).toHaveLength(3)
   })
 
   it('opens a folded stretch of unchanged words on a press, plain and unstruck', async () => {
     const host = render(before, after)
     await nextTick()
-    const fold = host.querySelector<HTMLButtonElement>('.fc-fold')!
+    const fold = host.querySelectorAll<HTMLButtonElement>('.fc-fold')[1]
     expect(fold.textContent).toContain('11 words unchanged')
     expect(host.textContent).not.toContain('word20')
     fold.click()
     await nextTick()
-    expect(host.querySelectorAll('.fc-fold')).toHaveLength(1)
+    expect(host.querySelectorAll('.fc-fold')).toHaveLength(2)
     expect(host.textContent).toContain('word14 word15 word16 word17 word18 word19 word20')
     expect(seen(host.querySelectorAll('del'))).toEqual(['word10', 'word30', 'word50'])
   })

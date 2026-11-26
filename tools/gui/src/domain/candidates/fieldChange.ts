@@ -34,8 +34,8 @@ export interface KeyChange {
 
 /** How many words of an unchanged run stay in view beside a change when the rest of it is folded. */
 export const KEPT_BESIDE_A_CHANGE = 4
-/** An unchanged run this long or shorter is always shown whole. */
-const SHOWN_WHOLE = 2 * KEPT_BESIDE_A_CHANGE + 3
+/** The fewest words worth folding: a shorter stretch reads faster than the control that would hide it. */
+const FEWEST_FOLDED = 6
 /**
  * Above this many word pairs the comparison is not made and the value is shown replaced whole. The table is
  * quadratic; this is roughly two texts of 2,000 words each, far beyond a field anyone reviews word by word.
@@ -114,7 +114,7 @@ export const wordRuns = (before: string, after: string): WordRun[] => {
 const folding = (run: WordRun, first: boolean, last: boolean): ShownRun[] => {
   const head = first ? 0 : KEPT_BESIDE_A_CHANGE
   const tail = last ? 0 : KEPT_BESIDE_A_CHANGE
-  if (run.kind !== 'same' || run.words.length <= SHOWN_WHOLE || run.words.length - head - tail < 2) return [run]
+  if (run.kind !== 'same' || run.words.length - head - tail < FEWEST_FOLDED) return [run]
   const folded: ShownRun = { kind: 'folded', words: run.words.slice(head, run.words.length - tail) }
   return [
     ...(head ? [{ kind: 'same' as const, words: run.words.slice(0, head) }] : []),

@@ -47,6 +47,15 @@ describe('shownRuns', () => {
     expect(shown.map((run) => [run.kind, run.words.length])).toEqual([['folded', 16], ['same', 4], ['added', 1]])
   })
 
+  it('shows an unchanged run whole where fewer than six words would fold', () => {
+    const between: WordRun[] = [
+      { kind: 'added', words: ['x '] }, { kind: 'same', words: words(13) }, { kind: 'added', words: ['y '] },
+    ]
+    expect(shownRuns(between)).toEqual(between)
+    expect(shownRuns([...between.slice(0, 1), { kind: 'same', words: words(14) }, ...between.slice(2)])
+      .map((run) => run.kind)).toEqual(['added', 'same', 'folded', 'same', 'added'])
+  })
+
   it('shows a short unchanged run whole', () => {
     const runs: WordRun[] = [{ kind: 'same', words: words(8) }, { kind: 'added', words: ['x '] }]
     expect(shownRuns(runs)).toEqual(runs)

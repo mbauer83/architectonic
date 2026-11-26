@@ -2,12 +2,12 @@
 /**
  * The confirmation for *Apply to the model…*: what the dry run says would be written, what is skipped
  * because the model already holds it, and the refusal when there is one — in the server's words. An edit is
- * read against the value it was written over (`FieldChangeView`). The
+ * read against what the model holds where it writes (`FieldChangeView`). The
  * apply runs only from here, and writes every operation in one write or none. The page that owns the
  * apply (`useCandidateApply`) is told it was applied: this confirmation is gone by then.
  */
 import { computed } from 'vue'
-import { canApply, editedValues, operationLabel, previewSentence } from '../../../domain/candidates/candidateApply'
+import { appliedValues, canApply, operationLabel, previewSentence } from '../../../domain/candidates/candidateApply'
 import type { CandidateApply } from '../../composables/useCandidateApply'
 import PermittedButton from '../PermittedButton.vue'
 import FieldChangeView from './FieldChangeView.vue'
@@ -15,8 +15,8 @@ import FieldChangeView from './FieldChangeView.vue'
 const props = defineProps<{ apply: CandidateApply; name: string }>()
 
 const preview = computed(() => props.apply.preview.value)
-/** What is written, each edit with the values it changes between. */
-const writes = computed(() => (preview.value?.writes ?? []).map((one) => ({ ...one, edited: editedValues(one.operation) })))
+/** What is written, each edit with what it replaces in the model and what it writes. */
+const writes = computed(() => (preview.value?.writes ?? []).map((one) => ({ ...one, edited: appliedValues(one) })))
 </script>
 
 <template>

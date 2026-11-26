@@ -157,10 +157,13 @@ const cardRows = (row: ChangeDifference) => {
             'base-only': changeWord(row) === 'only in the base',
           }"
           @click="select(index, row)"
-          @mouseenter="card = index"
-          @mouseleave="card = null"
         >
-          <td>
+          <!-- The card opens over the artifact's name, not the whole row: it lies over the change beside it, which
+               a reader reaches by moving to it, and passes presses through to it. -->
+          <td
+            @mouseenter="card = index"
+            @mouseleave="card = null"
+          >
             {{ targetName(row) }}
             <span class="sub">{{ row.kind }}</span>
             <div
@@ -260,7 +263,7 @@ const cardRows = (row: ChangeDifference) => {
 .standing--drifted { background: var(--warn-soft); color: var(--warn-text); }
 .standing--conflicting { background: var(--danger-soft); color: var(--danger-strong); }
 .fcard {
-  position: absolute; left: 100%; top: 0; z-index: 40; width: 340px; background: var(--surface);
+  position: absolute; left: 100%; top: 0; z-index: 40; width: 340px; background: var(--surface); pointer-events: none;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
   box-shadow: var(--shadow);
