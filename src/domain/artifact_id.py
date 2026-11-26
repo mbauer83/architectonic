@@ -252,6 +252,12 @@ class ConnectionKey:
         return self
 
 
+def connection_id(source: str, target: str, conn_type: str) -> str:
+    """The id of the connection of type *conn_type* from *source* to *target*, each end as given — the one
+    writer of the form `connection_id_as_written` and `parse_connection_id` read."""
+    return f"{source}---{target}@@{conn_type}"
+
+
 def stable_conn_id(s: str) -> str:
     """Return the stable (slug-free) string form of a connection ID.
 

@@ -6,7 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from src.application.verification.artifact_verifier import ArtifactRegistry
-from src.domain.artifact_id import stable_id
+from src.domain.artifact_id import connection_id, stable_id
 
 from .boundary import assert_engagement_write_root, assert_owned_by, refuse_diagram_hosted
 from .types import WriteResult
@@ -28,7 +28,7 @@ def _owned_outgoing_path(entity_file: Path) -> Path:
 def _owned_connection_ids(registry: ArtifactRegistry, artifact_id: str) -> list[str]:
     ids: list[str] = []
     for conn in registry.find_connections_for(artifact_id, direction="outbound"):
-        ids.append(f"{conn.source}---{conn.target}@@{conn.conn_type}")
+        ids.append(connection_id(conn.source, conn.target, conn.conn_type))
         ids.append(f"{conn.source} {conn.conn_type} → {conn.target}")
     return ids
 

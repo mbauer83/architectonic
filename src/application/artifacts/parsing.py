@@ -11,7 +11,7 @@ from src.application.puml_alias_declarations import (
     macro_alias_declared_on,
 )
 from src.application.verification.artifact_verifier_types import entity_id_from_path
-from src.domain.artifact_id import stable_id
+from src.domain.artifact_id import connection_id, stable_id
 from src.domain.diagrams.diagram_type_field import stated_diagram_type
 from src.domain.ontology_representation.artifact_types import (
     STANDARD_DIAGRAM_FIELDS,
@@ -310,7 +310,7 @@ def parse_outgoing_file(path: Path) -> list[ConnectionRecord]:
 
     records: list[ConnectionRecord] = []
     for decl in parse_connection_declarations(content):
-        artifact_id = f"{stable_id(source_entity)}---{stable_id(decl.target_id)}@@{decl.conn_type}"
+        artifact_id = connection_id(stable_id(source_entity), stable_id(decl.target_id), decl.conn_type)
         specializations = applied_specialization_slugs(decl.metadata.get("specialization"))
         records.append(
             ConnectionRecord(

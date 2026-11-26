@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS
+from src.domain.artifact_id import connection_id
 from src.domain.diagrams.bindings import Binding, BindingSubject, Target, bindings_to_raw
 
 from .boundary import assert_engagement_write_root
@@ -282,7 +283,7 @@ def materialize_connection(
             wrote=False, error=f"Target '{tgt_elem}' has no represents binding to a model entity",
         )
 
-    proposed_conn_id = f"{src_entity}---{tgt_entity}@@{connection_type}"
+    proposed_conn_id = connection_id(src_entity, tgt_entity, connection_type)
     kept = filter_bindings(parsed.bindings, ref.diagram_element_id, "connection", _CONN_REPLACE_KINDS)
     proposed_binding: dict[str, object] = {
         "subject": {"kind": "connection", "id": ref.diagram_element_id},

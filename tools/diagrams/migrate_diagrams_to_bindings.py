@@ -23,6 +23,7 @@ from pathlib import Path
 
 import yaml  # type: ignore[import-untyped]
 
+from src.domain.artifact_id import connection_id
 from src.domain.repository.frontmatter import body_after_frontmatter, parse_frontmatter
 
 # ---------------------------------------------------------------------------
@@ -183,7 +184,7 @@ def delete_c4_contains(path: Path) -> list[str]:
     for conn in parsed.connections:
         if conn.get("connection_type") == _C4_CONTAINS:
             target = str(conn.get("target_entity", ""))
-            artifact_id = f"{source}---{target}@@{_C4_CONTAINS}"
+            artifact_id = connection_id(source, target, _C4_CONTAINS)
             deleted.append(artifact_id)
         else:
             kept.append(conn)

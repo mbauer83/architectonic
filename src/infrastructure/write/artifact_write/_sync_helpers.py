@@ -13,6 +13,7 @@ from src.application.puml_relation_parsing import declared_relations
 from src.application.read_models import EntityContextConnection
 from src.domain.artifact_id import (
     ConnectionReference,
+    connection_id,
     parse_connection_reference,
     stable_id,
 )
@@ -274,7 +275,7 @@ def resolve_relation_connection(
     conn_type: str,
     connections: list[ConnectionRecord],
 ) -> ConnectionRecord | None:
-    direct = resolve_connection_by_parts(f"{src_id}---{tgt_id}@@{conn_type}", connections)
+    direct = resolve_connection_by_parts(connection_id(src_id, tgt_id, conn_type), connections)
     if direct is not None:
         return direct
     from src.domain.modules.module_types import ConnectionTypeName  # noqa: PLC0415
@@ -282,7 +283,7 @@ def resolve_relation_connection(
 
     ct_info = get_module_registry().find_connection_type(ConnectionTypeName(conn_type))
     if ct_info is not None and ct_info.bidirectional_sync:
-        return resolve_connection_by_parts(f"{tgt_id}---{src_id}@@{conn_type}", connections)
+        return resolve_connection_by_parts(connection_id(tgt_id, src_id, conn_type), connections)
     return None
 
 
@@ -316,7 +317,7 @@ def infer_connections_from_puml(
         )
         if record is None:
             removed.append(
-                f"{src.artifact_id}---{tgt.artifact_id}@@{relation.connection_type or 'unresolved'}"
+                connection_id(src.artifact_id, tgt.artifact_id, relation.connection_type or 'unresolved')
             )
             continue
         if record.artifact_id in seen:
