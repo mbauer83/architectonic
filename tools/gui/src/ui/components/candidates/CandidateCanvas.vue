@@ -18,7 +18,7 @@ import type { Marks } from '../../../domain/candidates/elementMarks'
 import { stableEntityId } from '../../../domain/artifactId'
 import { modelServiceKey } from '../../keys'
 import { formatEffectError } from '../../lib/errors'
-import { membershipOf } from '../../../domain/layout/diagramMembership'
+import { composedOver } from '../../../domain/candidates/candidateDrawing'
 import { drawnByEntity, relationsDrawn } from '../../../domain/layout/canvasComposition'
 import { useCandidateDetails } from '../../composables/useCandidateDetails'
 import { useCandidateEditing } from '../../composables/useCandidateEditing'
@@ -62,7 +62,9 @@ const recorded = () => {
 }
 /** Where the session started from: read when it opens, so the context read later does not move it. */
 const started = shallowRef<PictureContext['diagram'] | null>(null)
-const editing = useCandidateEditing(svc, () => membershipOf(started.value), () => props.candidateId, recorded)
+const editing = useCandidateEditing(
+  svc, (start) => composedOver(started.value, start), () => props.candidateId, recorded,
+)
 /** The panel is open to begin with on a picture that starts empty, where finding elements is the first step. */
 const panelOpen = ref(false)
 const canvas = ref<InstanceType<typeof DiagramCanvas> | null>(null)
@@ -118,6 +120,14 @@ onMounted(openCanvas)
     class="sketching"
     data-testid="candidate-canvas"
   >
+    <!-- A note shown above the sketch (the naive architecture's introduction): inside the column, so the
+         canvas is fitted to what the note leaves of it. -->
+    <div
+      v-if="$slots.intro"
+      class="intro"
+    >
+      <slot name="intro" />
+    </div>
     <div class="cs-banner">
       <span class="what">Sketching {{ name }}<small
         v-if="stack"
@@ -251,10 +261,11 @@ onMounted(openCanvas)
 <style scoped>
 /*
  * Fitted to its pane: the sketch is as tall as the window leaves below the page's header, and the canvas takes
- * what the banner leaves of that, so the bottom of the picture is never below the window however the banner
- * wraps in a narrow pane.
+ * what the banner and any note above it (the `intro` slot) leave of that, so the bottom of the picture is never
+ * below the window however either wraps in a narrow pane.
  */
 .sketching { display: flex; flex-direction: column; height: clamp(480px, calc(100vh - 220px), 1240px); }
+.intro { flex: none; }
 .cs-banner {
   display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; justify-content: space-between;
   padding: 7px 10px; margin-bottom: 8px; border: 1px solid var(--accent-border); background: var(--accent-soft);

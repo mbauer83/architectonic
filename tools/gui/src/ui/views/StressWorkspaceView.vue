@@ -294,10 +294,6 @@ onMounted(async () => {
       </template>
       <template #canvas>
         <section aria-label="Canvas">
-          <NaiveIntroNote
-            v-if="introducing && sketched?.id === analysis.naiveId.value"
-            @dismiss="introducing = false"
-          />
           <CandidateCanvas
             v-if="sketched"
             :key="sketched.id"
@@ -309,7 +305,14 @@ onMounted(async () => {
             :changed="diffMarks(candidates.comparison.value)"
             @recorded="recorded"
             @done="doneSketching"
-          />
+          >
+            <template
+              v-if="introducing && sketched.id === analysis.naiveId.value"
+              #intro
+            >
+              <NaiveIntroNote @dismiss="introducing = false" />
+            </template>
+          </CandidateCanvas>
           <MarkedCanvas
             v-else
             :diagram-id="analysis.drawnOn.value"

@@ -389,3 +389,24 @@ test('the sketching canvas fits the window below the page header', async ({ page
   const whole = (await sketch.boundingBox())!
   expect(banner.x + banner.width).toBeLessThanOrEqual(whole.x + whole.width + 1)
 })
+
+test('the first sketch of the naive fits the window with its introduction shown above the canvas', async ({ page, request }) => {
+  const { document } = await startAnalysis(request, 'Stress analysis — first sketch fits', 'Promotion pipeline as it stands')
+  await page.setViewportSize({ width: 1440, height: 900 })
+  // As the start leaves it: the naive opened on its canvas, its introduction shown once above it.
+  await page.goto(`/documents/${encodeURIComponent(document)}/workspace?tab=naive&sketch=naive`)
+  const sketch = page.getByTestId('candidate-canvas')
+  const note = page.getByTestId('naive-intro')
+  await expect(note).toBeVisible()
+  await expect(sketch.locator('g.lab-element').first()).toBeVisible()
+  const pane = (await sketch.locator('.img-container').boundingBox())!
+  const shown = (await note.boundingBox())!
+  expect(shown.y + shown.height).toBeLessThanOrEqual(pane.y)
+  expect(pane.y + pane.height).toBeLessThanOrEqual(900)
+  // Dismissed, the canvas takes the room the note held and still ends inside the window.
+  await note.getByRole('button', { name: 'Understood' }).click()
+  await expect(note).toHaveCount(0)
+  await expect.poll(async () => (await sketch.locator('.img-container').boundingBox())!.height).toBeGreaterThan(pane.height)
+  const after = (await sketch.locator('.img-container').boundingBox())!
+  expect(after.y + after.height).toBeLessThanOrEqual(900)
+})

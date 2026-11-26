@@ -9,6 +9,7 @@ import type { ModelService } from '../../application/ModelService'
 import type { Extent } from '../../domain/layout/geometry'
 import { SHAPE_DRAWING } from '../../domain/layout/__tests__/canvasDrawingFixtures'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
+import type { GeometryComposition } from '../../ports/diagramWriteBodies'
 import { useCandidateEditing } from './useCandidateEditing'
 
 const at = (left: number, top: number, right: number, bottom: number): Extent => ({ left, top, right, bottom })
@@ -68,6 +69,29 @@ describe('useCandidateEditing', () => {
     editing.remove(['L'])
     await settled()
     expect(server.scope()).toEqual([])
+  })
+
+  it('composes over what its start states once that picture is read, so the boxes it was read with stay', async () => {
+    const server = fakeServer()
+    const composed: unknown[] = []
+    const svc = {
+      ...server.svc,
+      previewCandidatePicture: (id: string, composition: GeometryComposition) => {
+        composed.push(composition)
+        return server.svc.previewCandidatePicture(id, composition)
+      },
+    } as unknown as ModelService
+    const boxes = [{ label: 'Application Components', 'entity-ids': [], rule: { type: 'application-component' } }]
+    const starts: (LayoutGeometry | null)[] = []
+    const editing = useCandidateEditing(svc, (start) => {
+      starts.push(start)
+      return start ? { ...START, authored_groupings: boxes } : START
+    }, () => 'CAND@1.n', () => undefined)
+    await editing.open()
+    await editing.add('APP@1.ledger', 'Ledger', 'application-component')
+
+    expect(starts).toContainEqual(picture())
+    expect(composed).toEqual([expect.objectContaining({ authored_groupings: boxes })])
   })
 
   it('writes the references back when Undo takes a step back', async () => {

@@ -17,10 +17,9 @@ import type { PictureContext } from '../../domain'
 import type { CandidateComparison } from '../../domain/schemas/candidates'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
 import type { GeometryComposition } from '../../ports/diagramWriteBodies'
-import { drawnCommands } from '../../domain/candidates/candidateDrawing'
+import { composedOver, drawnCommands } from '../../domain/candidates/candidateDrawing'
 import { arrangedBy, layoutOf } from '../../domain/layout/arrangementLayout'
 import { composeCanvas } from '../../domain/layout/canvasComposition'
-import { membershipOf } from '../../domain/layout/diagramMembership'
 
 export type ComposedDrawingAccess = Pick<ModelService,
   'getDiagramContext' | 'previewLayoutGeometry' | 'readCandidatePictureContext' | 'previewCandidatePicture'>
@@ -57,7 +56,7 @@ export function useComposedDrawing(svc: ComposedDrawingAccess, comparison: () =>
   const composed = async (read: CandidateComparison, base: LayoutGeometry | null): Promise<LayoutGeometry | null> => {
     const source = sourceOf(read, base)
     const context = await source.context()
-    const membership = membershipOf(context.diagram)
+    const membership = composedOver(context.diagram, base)
     const commands = drawnCommands(read.view, {
       entities: context.entities, connections: context.connections, undrawn: context.candidate_connections,
     })
