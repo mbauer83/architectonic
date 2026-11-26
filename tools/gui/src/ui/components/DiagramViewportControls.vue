@@ -148,7 +148,8 @@ const percent = computed(() => (props.zoom ? `${Math.round(props.zoom.scale.valu
 .viewport-btn:hover { background: var(--surface); }
 /* The zoom cluster, bottom left: the overview has the bottom right. */
 .zoom-cluster {
-  position: absolute; left: 8px; bottom: calc(var(--viewport-hint-height, 18px) + 10px); z-index: 3; display: flex; align-items: center;
+  position: absolute; left: 8px; bottom: calc(var(--viewport-hint-height, 18px) + 10px); z-index: 3;
+  display: flex; align-items: center;
   background: var(--overlay); border: 1px solid var(--border-strong); border-radius: 5px; color: var(--text-2);
 }
 .zoom-cluster button {

@@ -153,7 +153,9 @@ const press = (event: PointerEvent) => {
   opacity: 0; pointer-events: none; transition: opacity 180ms ease-out;
 }
 .diagram-overview.corner { right: 10px; bottom: calc(var(--viewport-hint-height, 18px) + 10px); }
-.diagram-overview.strip { left: 50%; bottom: calc(var(--viewport-hint-height, 18px) + 10px); transform: translateX(-50%); }
+.diagram-overview.strip {
+  left: 50%; bottom: calc(var(--viewport-hint-height, 18px) + 10px); transform: translateX(-50%);
+}
 /* Shown while the reader is at the canvas: the pointer over it, or the keyboard inside it. */
 .viewport-host:hover > .diagram-overview,
 .viewport-host:focus-within > .diagram-overview { opacity: 1; pointer-events: auto; }
