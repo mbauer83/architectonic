@@ -25,7 +25,8 @@ GUI, the REST API, the CLI, and the MCP tools.
 | [Icons on diagram elements](icons.md) | Product logos and pictures of your own on ArchiMate and C4 elements — the library, a diagram's own icons, and which one an element shows |
 | [Viewpoints](viewpoints.md) | Saved, criteria-based ways of looking at a slice of the model — definitions, applications to existing diagrams, and ad-hoc execution |
 | [Motivation coverage](coverage-semantics.md) | What "covered" means when a goal fans out — branch-complete realization, obligations for absent nodes, and why a diagnostic observation is never a gap |
-| [Candidate architectures](candidate-architectures.md) | Recording, comparing, checking and applying candidate architectures, and arranging and saving a diagram, through MCP and REST |
+| [Candidate architectures](candidate-architectures.md) | Named alternatives read over the live model: sketching, stacking, comparing, integrating, applying directly or as a target state, and abandoning; the same through MCP and REST, with arranging and saving a diagram |
+| [Run a stress analysis](stress-analysis.md) | Testing an architecture against its environment: the naive architecture on its canvas, stressors, incidence, end states, adaptations, and what residuality measures |
 | [Stress test set](stress-test-set.md) | Judging a stress analysis against a test set kept apart from the design work, and reading the residuality coefficient |
 | [Impact analysis](impact-analysis.md) | Deriving indirect relationships from real connections — certain vs. potential, impact workflows, materializing a derived relationship |
 | [Interfaces & MCP](interfaces-and-mcp.md) | The MCP read/write tool surface, REST API, and GUI parity |
