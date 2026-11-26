@@ -30,6 +30,8 @@ export const TableColumnSchema = Schema.Struct(
     type: Schema.String,
     to: Schema.optional(Schema.Array(Schema.String)),
     table: Schema.optional(Schema.String),
+    kind: Schema.optional(Schema.String),
+    words: Schema.optional(Schema.Array(Schema.String)),
     many: Schema.optional(Schema.Boolean),
   },
   Schema.Record({ key: Schema.String, value: Schema.Unknown }),

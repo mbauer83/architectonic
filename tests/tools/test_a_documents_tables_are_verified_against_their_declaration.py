@@ -15,14 +15,17 @@ from pathlib import Path
 
 import pytest
 
-from src.application.artifacts.document_schema import DocumentSchema
+from src.application.artifacts.document_schema import DocumentSchema, normalize_document_schema
 from src.application.artifacts.document_table_rows import read_document_tables
+from src.application.change_sets.candidate_recorded_form import dump_candidate
 from src.application.verification.artifact_verifier import ArtifactRegistry, ArtifactVerifier
 from src.application.verification.artifact_verifier_types import VerificationResult
+from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_SCHEMA
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.verification.kind_bindings import KIND_BINDINGS
 from src.infrastructure.write.artifact_write.document import create_document
 from src.infrastructure.write.artifact_write.types import WriteResult
+from tests.support.change_sets import candidate
 from tests.support.typed_table_documents import (
     ARCHITECTURE_EVALUATION,
     EXAMPLE_TYPES,
@@ -418,3 +421,41 @@ class TestADocumentInProgressStaysWritable:
             "Table 'stressors' row S1 column 'Plausible': Cannot decode 'likely' as boolean; "
             "expected literal 'true' or 'false'"
         ]
+
+
+class TestAnIdCellNamesAStoredArtifact:
+    """Regression: an adaptation naming its candidate by an id nothing stores verified clean, and the
+    workspace then showed it answering nothing."""
+
+    @staticmethod
+    def _shipped(tmp_path: Path) -> tuple[Path, DocumentSchema, Path]:
+        repo = repository_in(tmp_path)
+        (repo / ".arch-repo/documents/stress-analysis.json").write_text(json.dumps(STRESS_ANALYSIS_SCHEMA))
+        stored = candidate(id="CAND@1795689702.C6UOgl5.local-text-reader", name="Local text reader")
+        (repo / "candidate-architectures").mkdir()
+        (repo / f"candidate-architectures/{stored.id}.candidate.yaml").write_text(dump_candidate(stored))
+        schema = normalize_document_schema(STRESS_ANALYSIS, STRESS_ANALYSIS_SCHEMA)
+        return repo, schema, document_path(repo, schema)
+
+    @pytest.mark.parametrize("named", ["CAND@1795689702.C6UOgl5", "CAND@1795689702.C6UOgl5.local-text-reader"])
+    def test_a_stored_candidate_in_either_spelling(self, tmp_path: Path, named: str) -> None:
+        repo, schema, doc = self._shipped(tmp_path)
+        rows: Rows = {"end-states": [{"end_state": "Reads offline"}],
+                      "adaptations": [{"end_states": "E1", "candidate_architecture": named}],
+                      "survival": [{"stressor": "S1", "architecture": "naive"}]}
+
+        result = _verify(repo, doc, _written(schema, rows))
+
+        assert [issue.code for issue in result.issues if issue.code.startswith("E16")] == []
+
+    def test_a_candidate_nothing_stores_is_an_error(self, tmp_path: Path) -> None:
+        repo, schema, doc = self._shipped(tmp_path)
+        rows: Rows = {"end-states": [{"end_state": "Reads offline"}],
+                      "adaptations": [{"end_states": "E1", "candidate_architecture": "CAND@1700000000.Nope000"}],
+                      "survival": [{"stressor": "S1", "architecture": "nobody"}]}
+
+        result = _verify(repo, doc, _written(schema, rows))
+
+        found = [(issue.code, str(issue.severity)) for issue in result.issues if issue.code in {"E162", "E164"}]
+        assert sorted(found) == [("E162", "error"), ("E164", "error")]
+        assert "no candidate-architecture of that id is stored here" in _messages(result)

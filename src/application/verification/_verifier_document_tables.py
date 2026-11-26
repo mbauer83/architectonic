@@ -22,6 +22,10 @@ incomplete:
 * **E162** a cell is not readable as its column's type
 * **E163** a row id is not of its table's form, or is carried by two rows
 
+and a third, because a cell naming nothing names *something else* to whoever joins on it:
+
+* **E164** an id cell names no stored artifact of its column's kind
+
 W165 is one code for every row-schema violation because it is one check: the row schema compiled from
 the declaration, through the validator every attribute schema goes through — where the corresponding
 attribute finding, W042, is likewise one code and a warning.
@@ -37,6 +41,7 @@ from src.application.artifacts.document_table_rows import DocumentTables, TypedC
 from src.application.artifacts.document_tables import ColumnSpec
 from src.application.artifacts.reference_terms import ReferenceTermVocabulary, TermStatus
 from src.application.artifacts.schema import validate_against_schema
+from src.application.artifacts.stored_ids import StoredIdOf
 from src.domain.verification_findings import Issue, Severity
 
 #: What says a table is not finished, as against not readable. A document is written with these.
@@ -130,8 +135,15 @@ def _reference(
     )
 
 
+def _unstored(where: str, column: ColumnSpec, cell: TypedCell, stored_id_of: StoredIdOf, loc: str) -> Iterator[Issue]:
+    named = str(cell.value)
+    if column.id_kind is not None and named not in column.words and stored_id_of(column.id_kind, named) is None:
+        yield _error("E164", f"{where} column '{column.title}' names {named}, and no {column.id_kind} of that id "
+                             "is stored here", loc)
+
+
 def _cells(
-    table: TypedTable, tables: DocumentTables, vocabulary: ReferenceTermVocabulary, loc: str
+    table: TypedTable, tables: DocumentTables, vocabulary: ReferenceTermVocabulary, stored_id_of: StoredIdOf, loc: str
 ) -> Iterator[Issue]:
     for ordinal, row in enumerate(table.rows, start=1):
         where = f"Table '{table.spec.name}' {_row_label(row, ordinal)}"
@@ -139,6 +151,8 @@ def _cells(
             cell = row.cells[column.name]
             if cell.unreadable:
                 yield _error("E162", f"{where} column '{column.title}': {cell.unreadable}", loc)
+            elif column.kind == "id" and cell.value is not None:
+                yield from _unstored(where, column, cell, stored_id_of, loc)
             elif column.kind == "reference":
                 yield from _reference(where, column, cell, vocabulary, loc)
             elif column.kind == "row" and cell.value is not None:
@@ -193,6 +207,7 @@ def document_table_issues(
     *,
     present_sections: Collection[str],
     vocabulary: ReferenceTermVocabulary,
+    stored_id_of: StoredIdOf,
     loc: str,
 ) -> list[Issue]:
     """Every finding about the declared tables of one document.
@@ -215,6 +230,6 @@ def document_table_issues(
             continue
         issues.extend(_structure(table, loc))
         issues.extend(_row_ids(table, loc))
-        issues.extend(_cells(table, tables, vocabulary, loc))
+        issues.extend(_cells(table, tables, vocabulary, stored_id_of, loc))
         issues.extend(_row_schema(table, loc))
     return issues

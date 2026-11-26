@@ -24,6 +24,8 @@ from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_S
 from tests.support.typed_table_documents import document_path, document_text, table_of, table_text
 
 SCHEMA = normalize_document_schema("stress-analysis", STRESS_ANALYSIS_SCHEMA)
+#: Two candidates a verdict names, by id: a verdict cell takes a candidate's id, or `naive` or `integration`.
+ONE, TWO = "CAND@1795000001.Adapt01", "CAND@1795000002.Adapt02"
 
 
 def _tables(tmp_path: Path, **rows: list[dict[str, str]]) -> DocumentTables:
@@ -44,14 +46,14 @@ def _verdict(stressor: str, architecture: str, verdict: str, **more: str) -> dic
 class TestTheCoefficient:
     def test_a_degraded_verdict_counts_one_half_and_the_strict_figure_none(self) -> None:
         naive = ArchitectureStanding("naive", usable=4, survives=1, degrades=0, fails=3)
-        adapted = ArchitectureStanding("CAND@1", usable=4, survives=2, degrades=2, fails=0)
+        adapted = ArchitectureStanding(ONE, usable=4, survives=2, degrades=2, fails=0)
 
         assert residuality(adapted, naive) == pytest.approx(0.5)
         assert residuality(adapted, naive, strict=True) == pytest.approx(0.25)
 
     def test_no_figure_until_both_are_judged_on_every_usable_stressor(self) -> None:
         naive = ArchitectureStanding("naive", usable=3, survives=1, degrades=0, fails=1)
-        adapted = ArchitectureStanding("CAND@1", usable=3, survives=3, degrades=0, fails=0)
+        adapted = ArchitectureStanding(ONE, usable=3, survives=3, degrades=0, fails=0)
 
         assert residuality(adapted, naive) is None
         assert residuality(naive, adapted) is None
@@ -65,7 +67,7 @@ class TestTheCoefficient:
         rows: list[dict[str, Any]] = [
             {"id": "T1", **_verdict("S1", "naive", "fails")},
             {"id": "T2", **_verdict("S1", "naive", "survives")},
-            {"id": "T3", **_verdict("S1", "CAND@1", "fails")},
+            {"id": "T3", **_verdict("S1", ONE, "fails")},
         ]
 
         standing = architecture_standing("naive", ["S1"], verdicts_of(rows))
@@ -81,21 +83,21 @@ class TestTheTestSet:
             survival=[
                 _verdict("S2", "naive", "fails"), _verdict("S3", "naive", "survives"),
                 _verdict("S4", "naive", "fails"),
-                _verdict("S2", "CAND@1", "survives"), _verdict("S3", "CAND@1", "survives"),
-                _verdict("S4", "CAND@1", "degrades"),
-                _verdict("S2", "CAND@2", "survives"),
+                _verdict("S2", ONE, "survives"), _verdict("S3", ONE, "survives"),
+                _verdict("S4", ONE, "degrades"),
+                _verdict("S2", TWO, "survives"),
             ],
         )
 
-        read = evaluate(tables, integrated=["CAND@1"], adapted=True)
+        read = evaluate(tables, integrated=[ONE], adapted=True)
 
         by = {one["architecture"]: one for one in read["architectures"]}
-        assert list(by) == ["naive", "CAND@1", "CAND@2"]
-        assert by["CAND@1"]["residuality"] == pytest.approx((2.5 - 1) / 3)
-        assert by["CAND@1"]["strict"] == pytest.approx((2 - 1) / 3)
-        assert (by["CAND@1"]["integrated"], by["CAND@1"]["naive_survives"]) == (True, 1)
+        assert list(by) == ["naive", ONE, TWO]
+        assert by[ONE]["residuality"] == pytest.approx((2.5 - 1) / 3)
+        assert by[ONE]["strict"] == pytest.approx((2 - 1) / 3)
+        assert (by[ONE]["integrated"], by[ONE]["naive_survives"]) == (True, 1)
         assert "residuality" not in by["naive"]
-        assert (by["CAND@2"]["judged"], by["CAND@2"]["usable"], "residuality" in by["CAND@2"]) == (1, 3, False)
+        assert (by[TWO]["judged"], by[TWO]["usable"], "residuality" in by[TWO]) == (1, 3, False)
         assert read["stage"] == {"naive_judged": True, "adapted": True, "integrated": True, "integration_judged": True}
         assert [row["id"] for row in read["stressors"]] == ["S2", "S3", "S4"]
 
@@ -105,15 +107,15 @@ class TestTheTestSet:
             stressors=_stressors(design=1, test=2),
             survival=[
                 _verdict("S2", "naive", "fails"), _verdict("S3", "naive", "fails"),
-                _verdict("S2", "CAND@1", "survives"), _verdict("S3", "CAND@1", "fails"),
+                _verdict("S2", ONE, "survives"), _verdict("S3", ONE, "fails"),
                 _verdict("S2", "integration", "survives"), _verdict("S3", "integration", "degrades"),
             ],
         )
 
-        read = evaluate(tables, integrated=["CAND@1", "CAND@2"], integration="integration", adapted=True)
+        read = evaluate(tables, integrated=[ONE, TWO], integration="integration", adapted=True)
 
         by = {one["architecture"]: one for one in read["architectures"]}
-        assert list(by) == ["naive", "CAND@1", "CAND@2", "integration"]
+        assert list(by) == ["naive", ONE, TWO, "integration"]
         assert by["integration"]["residuality"] == pytest.approx((1.5 - 0) / 2)
         assert by["integration"]["strict"] == pytest.approx(1 / 2)
         assert read["stage"]["integration_judged"] is True
@@ -121,10 +123,10 @@ class TestTheTestSet:
     def test_the_integration_stands_unjudged_until_it_is_judged(self, tmp_path: Path) -> None:
         tables = _tables(
             tmp_path, stressors=_stressors(design=1, test=1),
-            survival=[_verdict("S2", "naive", "fails"), _verdict("S2", "CAND@1", "survives")],
+            survival=[_verdict("S2", "naive", "fails"), _verdict("S2", ONE, "survives")],
         )
 
-        read = evaluate(tables, integrated=["CAND@1", "CAND@2"], integration="integration", adapted=True)
+        read = evaluate(tables, integrated=[ONE, TWO], integration="integration", adapted=True)
 
         by = {one["architecture"]: one for one in read["architectures"]}
         assert (by["integration"]["judged"], "residuality" in by["integration"]) == (0, False)
@@ -133,14 +135,14 @@ class TestTheTestSet:
 
 class TestWhatStandsForTheIntegration:
     def test_an_integrated_candidate_whose_stack_holds_every_other_one_is_the_integration(self) -> None:
-        stacks = {"CAND@1": ["CAND@1"], "CAND@2": ["CAND@1", "CAND@2"]}
+        stacks = {ONE: [ONE], TWO: [ONE, TWO]}
 
-        assert integration_of(["CAND@1", "CAND@2"], stacks.__getitem__) == "CAND@2"
+        assert integration_of([ONE, TWO], stacks.__getitem__) == TWO
 
     def test_candidates_integrated_apart_are_stood_for_by_the_integration(self) -> None:
-        stacks = {"CAND@1": ["CAND@1"], "CAND@2": ["CAND@2"]}
+        stacks = {ONE: [ONE], TWO: [TWO]}
 
-        assert integration_of(["CAND@1", "CAND@2"], stacks.__getitem__) == "integration"
+        assert integration_of([ONE, TWO], stacks.__getitem__) == "integration"
 
     def test_nothing_stands_for_it_while_nothing_is_integrated(self) -> None:
         assert integration_of([], lambda ref: [ref]) is None
@@ -162,7 +164,7 @@ class TestWhatTheTestSetCounts:
             stressors=_stressors(design=0, test=2),
             survival=[
                 {"stressor": "S1", "architecture": "naive", "usable": "false", "reasoning": "contradicts itself"},
-                _verdict("S2", "naive", "fails"), _verdict("S2", "CAND@1", "survives"),
+                _verdict("S2", "naive", "fails"), _verdict("S2", ONE, "survives"),
             ],
         )
 
@@ -175,7 +177,7 @@ class TestWhatTheTestSetCounts:
 
     def test_a_verdict_on_a_design_stressor_is_not_a_test_verdict(self, tmp_path: Path) -> None:
         tables = _tables(tmp_path, stressors=_stressors(design=1, test=1),
-                         survival=[_verdict("S1", "CAND@1", "survives")])
+                         survival=[_verdict("S1", ONE, "survives")])
 
         read = evaluate(tables, integrated=[], adapted=False)
 

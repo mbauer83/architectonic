@@ -30,8 +30,10 @@ from src.application.artifacts.document_schema import DocumentSchema, get_docume
 from src.application.artifacts.document_sections import document_body, document_sections
 from src.application.artifacts.document_tables import ColumnSpec, TableSpec, row_ids_in
 from src.application.document_links import ResolvedArtifactLink, iter_markdown_links, resolve_artifact_links
+from src.domain.artifact_id import is_entity_id, parse_entity_id
 from src.domain.markdown_table import MarkdownTable, tables_in, text_lines, unescape_cell
 from src.domain.ontology_representation.property_value import PropertyValue, decode_lenient
+from src.domain.repository.artifact_location import ArtifactKindName, own_id_prefix
 
 
 @dataclass(frozen=True)
@@ -40,8 +42,8 @@ class TypedCell:
 
     spelled: str
     #: The typed value: a value column's decoded value, a reference column's artifact id, a row
-    #: column's row id — a list of them for a `many` column. `None` when the cell states nothing,
-    #: cannot be read, or links nothing that resolves.
+    #: column's row id — a list of them for a `many` column — or an id column's id or word, as written.
+    #: `None` when the cell states nothing, cannot be read, or links nothing that resolves.
     value: PropertyValue | None = None
     #: Why the cell cannot be read as its column's type. Empty when it can.
     unreadable: str = ""
@@ -135,6 +137,20 @@ def _row_cell(column: ColumnSpec, spelled: str) -> TypedCell:
     return TypedCell(spelled, value=list(named) if column.many else named[0])
 
 
+def _names_one_of(text: str, kind: ArtifactKindName | None) -> bool:
+    """Whether *text* is an id, in either spelling, of an artifact of *kind*."""
+    return kind is not None and is_entity_id(text) and parse_entity_id(text).prefix == own_id_prefix(kind)
+
+
+def _id_cell(column: ColumnSpec, spelled: str) -> TypedCell:
+    """An id of the column's kind, or one of its words. Whether such an artifact is stored is the verifier's."""
+    named = unescape_cell(spelled).strip()
+    if named in column.words or _names_one_of(named, column.id_kind):
+        return TypedCell(spelled, value=named)
+    instead = f", or {' or '.join(column.words)}" if column.words else ""
+    return TypedCell(spelled, unreadable=f"the column takes the id of a {column.id_kind}{instead}")
+
+
 def _cell(column: ColumnSpec, spelled: str, doc_path: Path) -> TypedCell:
     if not spelled:
         return _UNSTATED
@@ -143,6 +159,8 @@ def _cell(column: ColumnSpec, spelled: str, doc_path: Path) -> TypedCell:
             return _reference_cell(column, spelled, doc_path)
         case "row":
             return _row_cell(column, spelled)
+        case "id":
+            return _id_cell(column, spelled)
         case _:
             return _value_cell(column, spelled)
 

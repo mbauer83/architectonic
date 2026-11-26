@@ -18,6 +18,7 @@ from src.application.artifacts.reference_terms import (
     TermStatus,
     parse_reference_term,
 )
+from src.application.artifacts.stored_ids import stored_id
 from src.application.document_links import resolve_artifact_links
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification._verifier_document_tables import document_table_issues
@@ -142,7 +143,7 @@ def _verify_section_connections(
 #: codes its modules emit.
 RULE_CODES: frozenset[str] = frozenset({
     "E001", "E011", "E012", "E013", "E014", "E021", "E022", "E031", "E101", "E102", "E104", "E153", "E154",
-    "E155", "E156", "E162", "E163", "E303", "E304", "E305", "E308", "E309", "E311", "E312", "E313", "W031",
+    "E155", "E156", "E162", "E163", "E164", "E303", "E304", "E305", "E308", "E309", "E311", "E312", "E313", "W031",
     "W155", "W156", "W157", "W159", "W162", "W163", "W164", "W165", "W166", "W167", "W168", "W321", "W322",
 })
 
@@ -231,6 +232,7 @@ def verify_document(  # noqa: C901
                         read_document_tables(path, content, schema),
                         present_sections=present,
                         vocabulary=vocabulary,
+                        stored_id_of=lambda kind, named: stored_id(repo_root, kind, named),
                         loc=loc,
                     )
                 )

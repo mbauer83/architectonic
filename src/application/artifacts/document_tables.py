@@ -16,11 +16,13 @@ exactly as a property of an attribute schema is — `type` from the typed-proper
 validator every attribute schema goes through, against the row schema compiled here. There is no
 second type vocabulary and no second validator.
 
-**Two column types are not attribute types**, because their cells address something. `reference`
+**Three column types are not attribute types**, because their cells address something. `reference`
 takes `to`, a list of reference terms (`src.application.artifacts.reference_terms`), and its cell is a
 markdown link. `row` takes `table`, another table of the same document type, and its cell is that
 table's row id. Either may be `many`. A row is not a fourth kind of reference term: a term names what
-a *link* resolves to, and a row is not a file.
+a *link* resolves to, and a row is not a file. `id` takes `kind`, an artifact kind whose files no
+document links (`ID_COLUMN_KINDS`: a candidate architecture), and its cell is the id of a stored artifact
+of that kind; `words` lists what the cell may say instead (`naive`). One artifact per cell.
 
 **A row's id is the first column**, written `<prefix><number>` — `S3`. In the table, because an id
 kept anywhere else (a comment, an anchor, the row's position) is lost or moved by the first hand edit;
@@ -43,17 +45,21 @@ from typing import Any, Literal
 from src.application.artifacts.schema import validate_against_schema
 from src.domain.markdown_table import escape_cell, format_table
 from src.domain.ontology_representation.property_value import SUPPORTED_SCHEMA_TYPES
+from src.domain.repository.artifact_location import ArtifactKindName
 
 TABLES_KEY = "tables"
 
-ColumnKind = Literal["value", "reference", "row"]
+ColumnKind = Literal["value", "reference", "row", "id"]
 
 REFERENCE_COLUMN_TYPE = "reference"
 ROW_COLUMN_TYPE = "row"
+ID_COLUMN_TYPE = "id"
+#: The artifact kinds an `id` column may name: those whose artifacts a document names by id, not by a link.
+ID_COLUMN_KINDS: tuple[ArtifactKindName, ...] = ("candidate-architecture",)
 DEFAULT_ROW_ID_TITLE = "Id"
 
 #: The keys of a column that are this module's. Every other key of a value column is JSON Schema's.
-_COLUMN_KEYS = frozenset({"name", "title", "required", "to", "table", "many"})
+_COLUMN_KEYS = frozenset({"name", "title", "required", "to", "table", "many", "kind", "words"})
 
 _ROW_ID_PREFIX = r"[A-Z][A-Za-z]*"
 _ROW_ID = re.compile(rf"({_ROW_ID_PREFIX})([1-9][0-9]*)")
@@ -67,7 +73,7 @@ _TITLE = {"type": "string", "pattern": r"^\S([^\r\n]*\S)?$"}
 
 
 #: The key each addressing column type states, and no other column type may.
-_KEY_OF_TYPE = {REFERENCE_COLUMN_TYPE: "to", ROW_COLUMN_TYPE: "table"}
+_KEY_OF_TYPE = {REFERENCE_COLUMN_TYPE: "to", ROW_COLUMN_TYPE: "table", ID_COLUMN_TYPE: "kind"}
 
 _COLUMN_DECLARATION: dict[str, Any] = {
     "type": "object",
@@ -76,10 +82,12 @@ _COLUMN_DECLARATION: dict[str, Any] = {
         "name": _NAME,
         "title": _TITLE,
         "required": {"type": "boolean"},
-        "type": {"enum": [*sorted(SUPPORTED_SCHEMA_TYPES), REFERENCE_COLUMN_TYPE, ROW_COLUMN_TYPE]},
+        "type": {"enum": [*sorted(SUPPORTED_SCHEMA_TYPES), REFERENCE_COLUMN_TYPE, ROW_COLUMN_TYPE, ID_COLUMN_TYPE]},
         "to": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
         "table": _NAME,
         "many": {"type": "boolean"},
+        "kind": {"enum": list(ID_COLUMN_KINDS)},
+        "words": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": r"^\S+$"}},
     },
 }
 
@@ -118,11 +126,17 @@ class ColumnSpec:
     #: A row column's target table.
     row_table: str = ""
     many: bool = False
+    #: An id column's artifact kind.
+    id_kind: ArtifactKindName | None = None
+    #: What an id column's cell may say instead of an id.
+    words: tuple[str, ...] = ()
 
     @property
     def kind(self) -> ColumnKind:
         if self.reference_terms:
             return "reference"
+        if self.id_kind:
+            return "id"
         return "row" if self.row_table else "value"
 
     @property
@@ -141,6 +155,9 @@ class ColumnSpec:
                 stated |= {"type": REFERENCE_COLUMN_TYPE, "to": list(self.reference_terms), "many": self.many}
             case "row":
                 stated |= {"type": ROW_COLUMN_TYPE, "table": self.row_table, "many": self.many}
+            case "id":
+                words = {"words": list(self.words)} if self.words else {}
+                stated |= {"type": ID_COLUMN_TYPE, "kind": self.id_kind, **words}
             case _:
                 stated |= self.value_schema
         return stated
@@ -220,12 +237,14 @@ def _column_from(raw: Mapping[str, Any]) -> ColumnSpec:
         required=bool(raw.get("required", False)),
         value_schema=(
             {}
-            if column_type in (REFERENCE_COLUMN_TYPE, ROW_COLUMN_TYPE)
+            if column_type in _KEY_OF_TYPE
             else {"type": column_type} | {key: value for key, value in raw.items() if key not in _COLUMN_KEYS}
         ),
         reference_terms=tuple(str(term) for term in raw.get("to", ())),
         row_table=str(raw.get("table", "")),
         many=bool(raw.get("many", False)),
+        id_kind=next((kind for kind in ID_COLUMN_KINDS if kind == raw.get("kind")), None),
+        words=tuple(str(word) for word in raw.get("words", ())),
     )
 
 
@@ -256,8 +275,10 @@ def _misplaced_keys(table: Mapping[str, Any]) -> Iterator[str]:
                 yield f"{where}: a {owner} column states `{key}`"
             if column_type != owner and key in column:
                 yield f"{where}: `{key}` is a {owner} column's; give the column that type or remove the key"
-        if "many" in column and column_type not in _KEY_OF_TYPE:
+        if "many" in column and column_type not in (REFERENCE_COLUMN_TYPE, ROW_COLUMN_TYPE):
             yield f"{where}: only a reference or a row column may be `many`; a value column of several is an array"
+        if "words" in column and column_type != ID_COLUMN_TYPE:
+            yield f"{where}: `words` are an id column's, what its cell may say instead of an id"
 
 
 def _inconsistencies(by_section: Sequence[tuple[TableSpec, ...]]) -> list[str]:
@@ -293,6 +314,13 @@ def _inconsistencies(by_section: Sequence[tuple[TableSpec, ...]]) -> list[str]:
             if column.kind == "row" and column.row_table not in names
         ),
     ]
+
+
+def stated_columns(raw_type: Mapping[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
+    """Each column a document type's file states, as stated, with its table's name: for a step that rewrites
+    one declaration in place and leaves the rest of the file as it is."""
+    for section in raw_type.get("sections", ()):
+        yield from ((table["name"], column) for table in section.get(TABLES_KEY, ()) for column in table["columns"])
 
 
 def table_declarations(doc_type: str, sections: Sequence[Mapping[str, Any]]) -> tuple[tuple[TableSpec, ...], ...]:

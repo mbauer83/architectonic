@@ -111,9 +111,11 @@ section, a markdown table whose columns are typed and whose rows carry ids.
 | `name` | Identifies the column. Lowercase with underscores, unique within the table. |
 | `title` | The header cell. Defaults to the name with underscores as spaces, capitalised. |
 | `required` | Whether a row is incomplete while the cell is empty. |
-| `type` | `string` (the default), `integer`, `number`, `boolean`, `array`, `reference` or `row`. |
+| `type` | `string` (the default), `integer`, `number`, `boolean`, `array`, `reference`, `row` or `id`. |
 | `to` | On a `reference` column: the [reference terms](#reference-terms) a linked artifact must satisfy one of. |
 | `table` | On a `row` column: the table whose rows its cells name. |
+| `kind` | On an `id` column: the kind of artifact its cells name. `candidate-architecture` is the one kind taken. |
+| `words` | On an `id` column: words a cell may hold instead of an id, such as `naive`. |
 | `many` | On a `reference` or `row` column: whether a cell may address several. |
 
 A column of any of the first five types is written as a property of an
@@ -123,7 +125,10 @@ attribute values are: `true` and `false` for a boolean, a JSON array for an `arr
 
 A `reference` cell holds a markdown link to an entity, a document or a diagram, written as a link in
 the document's prose is. A `many` cell holds several links. A `row` cell holds a row id of the named
-table, and a `many` cell holds several separated by commas.
+table, and a `many` cell holds several separated by commas. An `id` cell holds the id of a stored
+artifact of the column's kind, or one of its `words`. Either spelling of the id is accepted, and a cell
+written through `artifact_edit_document_table` or the REST table edit is stored under the id the
+artifact carries; an id that names nothing stored is refused.
 
 **Row ids.** The first column of every table is the row's id: the table's prefix and a number, such
 as `S3`. An id stays with its row when rows are
@@ -147,6 +152,7 @@ is reported and does not refuse the write.
 | W168 | warning | A `row` cell names a row its table does not hold. |
 | E162 | error | A cell cannot be read as its column's type. |
 | E163 | error | A row id is not its table's prefix and a number, or two rows carry the same id. |
+| E164 | error | An `id` cell names no stored artifact of its column's kind. |
 
 A `to` term that does not expand is **W157**, as for a section's own terms.
 

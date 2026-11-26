@@ -35,12 +35,17 @@ class DocumentTableColumn(NullsOmitted):
     #: The header cell the column is found under.
     title: str
     required: bool
-    #: An attribute type, or `reference` (a link to an artifact) or `row` (a row of another table).
+    #: An attribute type, or `reference` (a link to an artifact), `row` (a row of another table) or `id` (the id
+    #: of a stored artifact).
     type: str
     #: On a `reference` column: the reference terms a linked artifact must satisfy one of.
     to: list[str] | None = None
     #: On a `row` column: the table whose row ids its cells hold.
     table: str | None = None
+    #: On an `id` column: the kind of artifact whose stored id its cells hold.
+    kind: str | None = None
+    #: On an `id` column: what a cell may hold instead of an id.
+    words: list[str] | None = None
     #: On a `reference` or `row` column: whether a cell may address several.
     many: bool | None = None
 
