@@ -8,9 +8,12 @@ it does not report.
 
 from __future__ import annotations
 
+import random
+from itertools import combinations
+
 import pytest
 
-from src.domain.diagrams.layout.geometry import Extent, Point, courses_cross, segments_cross
+from src.domain.diagrams.layout.geometry import Extent, Point, courses_cross, crossings, segments_cross
 from src.domain.diagrams.layout.picture_checks import PictureDefect, check_picture
 from src.domain.diagrams.layout.rendered_picture import (
     DrawnBox,
@@ -19,6 +22,7 @@ from src.domain.diagrams.layout.rendered_picture import (
     MeasuredWord,
     RenderedPicture,
 )
+from src.domain.diagrams.layout.route_quality import run_index, runs_along, runs_along_in
 
 
 def _element(alias: str, left: float, top: float, *, inside: str | None = None, width: float = 100,
@@ -209,6 +213,65 @@ class TestTheGeometryUnderneath:
         zigzag = (Point(0, -5), Point(10, 5), Point(20, -5), Point(30, 5))
 
         assert courses_cross(zigzag, (Point(-10, 0), Point(40, 0))) == 3
+
+    def test_the_crossings_of_a_picture_are_every_pair_counted(self) -> None:
+        """Comparing only the pairs that lie near each other counts what comparing every pair does: on
+        lines that touch, cross at corners, run along each other and lie far apart."""
+        generator = random.Random(7)
+        courses = [
+            tuple(Point(generator.randint(0, 60) * 10, generator.randint(0, 60) * 10)
+                  for _ in range(generator.randint(2, 6)))
+            for _ in range(120)
+        ]
+        every_pair = sum(courses_cross(one, other) for one, other in combinations(courses, 2))
+
+        assert every_pair > 0
+        assert crossings(courses) == every_pair
+
+    def test_the_crossings_of_a_wide_picture_compare_only_segments_near_each_other(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A-04.11: a 259-element picture's 447 lines took 8.6 s to count crossings pair by pair, most of
+        a save. Counted, not timed: lines in bands of their own across a wide picture are compared with
+        the few near them."""
+        from src.domain.diagrams.layout import geometry
+
+        compared = 0
+        real = geometry.segments_cross
+
+        def counting(a: Point, b: Point, c: Point, d: Point) -> bool:
+            nonlocal compared
+            compared += 1
+            return real(a, b, c, d)
+
+        monkeypatch.setattr(geometry, "segments_cross", counting)
+        courses = [
+            (Point(x, 40 * band), Point(x + 3000, 40 * band), Point(x + 3000, 40 * band + 20))
+            for band in range(30) for x in range(0, 30000, 3000)
+        ]
+        segments = sum(len(course) - 1 for course in courses)
+
+        assert crossings(courses) == 0
+        assert compared < segments * segments // 40  # a tenth of the pairs of segments the pairwise count asked
+
+    def test_runs_along_asked_of_a_whole_picture_find_what_asking_each_line_finds(self) -> None:
+        generator = random.Random(11)
+        courses: list[tuple[Point, ...]] = []
+        for _ in range(60):
+            points = [Point(generator.randint(0, 40) * 10, generator.randint(0, 40) * 10)]
+            for turn in range(4):
+                last = points[-1]
+                step = generator.randint(0, 40) * 10 + generator.randint(0, 2)
+                points.append(Point(step, last.y) if turn % 2 == 0 else Point(last.x, step))
+            courses.append(tuple(points))
+        borders = [Extent(0, 0, 100, 60), Extent(150, 150, 300, 260), Extent(42, 300, 61, 390)]
+        index = run_index(courses, borders)
+        found = 0
+        for own, course in enumerate(courses):
+            every = runs_along(course, courses[:own] + courses[own + 1 :], borders)
+            found += len(every)
+            assert runs_along_in(course, index, own) == every
+        assert found > 0
 
     def test_an_extent_is_entered_only_by_a_segment_with_a_point_inside(self) -> None:
         extent = Extent(10, 10, 20, 20)

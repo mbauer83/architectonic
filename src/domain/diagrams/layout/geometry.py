@@ -8,6 +8,7 @@ which is why every question takes a *margin* — how far inside counts as inside
 from __future__ import annotations
 
 import math
+from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
@@ -143,3 +144,39 @@ def courses_cross(first: Sequence[Point], second: Sequence[Point]) -> int:
         for j in range(len(second) - 1)
         if segments_cross(first[i], first[i + 1], second[j], second[j + 1])
     )
+
+
+#: The side of a cell of the grid that finds which segments of a picture lie near each other.
+_CROSSING_CELL = 256.0
+
+
+def crossings(courses: Sequence[Sequence[Point]]) -> int:
+    """How many times the courses pass through each other, every pair counted (`courses_cross`).
+
+    Only segments that share a cell of a grid are compared: a proper crossing lies inside both
+    segments, so in a cell both cover. A picture of hundreds of lines across tens of thousands of pixels
+    compares the segments that lie near each other rather than every segment of every pair of lines.
+    """
+    segments = [
+        (owner, course[index], course[index + 1])
+        for owner, course in enumerate(courses)
+        for index in range(len(course) - 1)
+    ]
+    cells: dict[tuple[int, int], list[int]] = defaultdict(list)
+    for number, (_owner, a, b) in enumerate(segments):
+        columns = range(math.floor(min(a.x, b.x) / _CROSSING_CELL), math.floor(max(a.x, b.x) / _CROSSING_CELL) + 1)
+        rows = range(math.floor(min(a.y, b.y) / _CROSSING_CELL), math.floor(max(a.y, b.y) / _CROSSING_CELL) + 1)
+        for column in columns:
+            for row in rows:
+                cells[(column, row)].append(number)
+    compared: set[tuple[int, int]] = set()
+    count = 0
+    for members in cells.values():
+        for place, one in enumerate(members):
+            for other in members[place + 1 :]:
+                if segments[one][0] == segments[other][0] or (one, other) in compared:
+                    continue
+                compared.add((one, other))
+                if segments_cross(segments[one][1], segments[one][2], segments[other][1], segments[other][2]):
+                    count += 1
+    return count

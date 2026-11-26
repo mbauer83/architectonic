@@ -30,12 +30,13 @@ question, so a line grazing a rounded corner or two boxes sharing a border are n
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from itertools import combinations
 
 from src.domain.diagrams.layout.channels import too_narrow
-from src.domain.diagrams.layout.geometry import Extent, Point, course_length, courses_cross
+from src.domain.diagrams.layout.geometry import Extent, Point, course_length, crossings
 from src.domain.diagrams.layout.rendered_picture import (
     DrawnBox,
     DrawnElement,
@@ -43,7 +44,7 @@ from src.domain.diagrams.layout.rendered_picture import (
     RenderedPicture,
     extent_across,
 )
-from src.domain.diagrams.layout.route_quality import Unreadable, kinks, square_course, unreadable
+from src.domain.diagrams.layout.route_quality import bends_at_ends, kinks, run_index, runs_along_in, square_course
 from src.domain.diagrams.layout.routing.scene import run_for
 from src.domain.diagrams.layout.text_clearance import runs_through_text, text_regions
 
@@ -137,13 +138,28 @@ def _is_drawn_through(relation: DrawnRelation, extent: Extent) -> bool:
     return any(interior.is_entered_by(course[i], course[i + 1]) for i in range(len(course) - 1))
 
 
+def _reach_of(course: Sequence[Point]) -> Extent:
+    xs, ys = [point.x for point in course], [point.y for point in course]
+    return Extent(min(xs), min(ys), max(xs), max(ys))
+
+
 def _relations_through_elements(picture: RenderedPicture) -> list[PictureFinding]:
-    return [
-        PictureFinding(PictureDefect.RELATION_THROUGH_ELEMENT, (*relation.ends, element.alias))
-        for relation in picture.relations
-        for element in picture.elements.values()
-        if element.alias not in relation.ends and _is_drawn_through(relation, element.extent)
-    ]
+    """Each relation drawn through an element it does not join. An element outside the rectangle a
+    relation's course spans is not asked: nothing of the course can enter it."""
+    findings: list[PictureFinding] = []
+    for relation in picture.relations:
+        if not relation.course:
+            continue
+        reach = _reach_of(relation.course)
+        findings += [
+            PictureFinding(PictureDefect.RELATION_THROUGH_ELEMENT, (*relation.ends, element.alias))
+            for element in picture.elements.values()
+            if element.alias not in relation.ends
+            and element.extent.left <= reach.right and reach.left <= element.extent.right
+            and element.extent.top <= reach.bottom and reach.top <= element.extent.bottom
+            and _is_drawn_through(relation, element.extent)
+        ]
+    return findings
 
 
 def are_drawn_over_each_other(first: Extent, second: Extent) -> bool:
@@ -229,22 +245,18 @@ def _course_to_borders(relation: DrawnRelation, picture: RenderedPicture) -> tup
 
 
 def _hard_to_follow(picture: RenderedPicture) -> list[PictureFinding]:
-    """A, B and C of `route_quality`, for each relation of *picture*."""
+    """A and C of `route_quality`, for each relation of *picture*: its runs asked of one index of every
+    line and border, built once (`run_index`), not of every other line once per line."""
     courses = [_course_to_borders(relation, picture) for relation in picture.relations]
     borders = [shape.extent for shape in (*picture.elements.values(), *picture.boxes.values())]
+    runs = run_index(courses, borders)
     findings: list[PictureFinding] = []
     for index, (relation, course) in enumerate(zip(picture.relations, courses, strict=True)):
-        others = courses[:index] + courses[index + 1 :]
         decorated = (bool(relation.first_marks), bool(relation.second_marks))
-        broken = unreadable(course, others, borders, decorated)
-        findings += [
-            PictureFinding(defect, relation.ends)
-            for defect, rules in (
-                (PictureDefect.BEND_AT_AN_END, {Unreadable.BEND_AT_SOURCE, Unreadable.BEND_AT_TARGET}),
-                (PictureDefect.RUNS_ALONG, {Unreadable.RUNS_ALONG}),
-            )
-            if rules & set(broken)
-        ]
+        if bends_at_ends(course, decorated):
+            findings.append(PictureFinding(PictureDefect.BEND_AT_AN_END, relation.ends))
+        if runs_along_in(course, runs, index):
+            findings.append(PictureFinding(PictureDefect.RUNS_ALONG, relation.ends))
     return findings
 
 
@@ -350,10 +362,7 @@ def check_picture(picture: RenderedPicture) -> PictureReport:
             *_leaving_their_box(picture),
             *_slanted(picture),
         ),
-        crossings=sum(
-            courses_cross(first.course, second.course)
-            for first, second in combinations(picture.relations, 2)
-        ),
+        crossings=crossings([relation.course for relation in picture.relations]),
         worst_detour=_worst_detour(picture),
         jogs=sum(len(kinks(square_course(relation.path))) for relation in picture.relations),
         heads_together=_heads_together(picture),
