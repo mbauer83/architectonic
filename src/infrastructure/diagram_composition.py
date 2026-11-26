@@ -134,6 +134,9 @@ class DiagramReplacement(DiagramComposition, _Body, Rehomeable):
             "composition from then on, and the diagram can be laid out. Absent keeps the diagram's own."
         ),
     )
+    base_revision: str | None = Field(default=None, description=(
+        "The diagram's `revision` as read. One changed since is not written over: the replacement is refused "
+        "(409), naming what changed. Absent writes over whatever the diagram holds now."))
     version: str | None = None
     status: str | None = None
     tlp: str | None = None

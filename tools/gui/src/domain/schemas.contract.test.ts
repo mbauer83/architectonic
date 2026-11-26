@@ -75,6 +75,8 @@ const C4_CONTEXT_RESPONSE = {
     is_global: false,
     content_snippet: '',
     puml_source: '@startuml\n@enduml\n',
+    // The revision a replacement sends back (`base_revision`), which every diagram read answers since 0.12.0.
+    revision: '0f1e2d3c4b5a6978-0f1e2d3c4b5a6978-0f1e2d3c4b5a6978',
   },
   entities: [{
     artifact_id: 'ROL@1776633082.udXPfB.ai-agent',

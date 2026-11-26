@@ -65,6 +65,9 @@ export const DiagramDetailSchema = Schema.Struct({
    * contributes. Absent for a kind that adds nothing. */
   type_extras: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
   viewpoint: Schema.optional(ViewpointApplicationSchema),
+  /** The revision of what a replacement replaces, as read: sent back as `base_revision`, so a diagram changed
+   * since is refused (409) rather than written over. */
+  revision: Schema.String,
   /** Why the diagram keeps a body written by hand, which a save generating its body would discard: the
    * server's answer, `manual-layout` or what the body draws that its composition does not. Absent where the
    * body is generated. */

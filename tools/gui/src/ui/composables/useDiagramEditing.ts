@@ -12,7 +12,7 @@
 import { ref, shallowRef } from 'vue'
 import { Cause, Effect, Runtime } from 'effect'
 import type { ModelService } from '../../application/ModelService'
-import type { PictureContext } from '../../domain'
+import { NetworkError, type PictureContext } from '../../domain'
 import type { AuthoredGrouping } from '../../domain/authoredGrouping'
 import type { ArrangedLayout, StoredLayout } from '../../domain/layout/arrangementLayout'
 import {
@@ -67,6 +67,10 @@ export function useDiagramEditing(
   const loading = ref(false)
   const saving = ref(false)
   const error = ref<string | null>(null)
+  /** Whether the last save was refused because the diagram changed since it was read (409): Reload is offered. */
+  const stale = ref(false)
+  /** The revision of the diagram as read (`revision`), which a save sends back; arranging does not move it. */
+  let revision: string | undefined
 
   const savedState = (geometry: LayoutGeometry, layout: StoredLayout | null): ArrangementState =>
     layout ? { arrangement: arrangedBy(geometry, layout), byHand: true }
@@ -75,6 +79,7 @@ export function useDiagramEditing(
   /** Read the picture as stored and start from it; *carried* is an arrangement to keep, as a save does. */
   const reopen = async (carried: ArrangedLayout | null = null): Promise<void> => {
     const geometry = await Effect.runPromise(source.read(lens()))
+    revision = geometry.revision
     const layout = geometry.layout && (geometry.layout.elements || geometry.layout.boxes || geometry.layout.z)
       ? geometry.layout : null
     stored.value = layout
@@ -149,6 +154,7 @@ export function useDiagramEditing(
     const { write } = composeCanvas(drawn, state, removed)
     const written = await Effect.runPromise(svc.editDiagram(diagramId(), {
       ...write, ...(state.commands?.length ? { commands: state.commands } : {}),
+      ...(revision ? { base_revision: revision } : {}),
       layout_patch: layoutPatch,
       dry_run: false,
     }))
@@ -171,6 +177,7 @@ export function useDiagramEditing(
     if (patchIsEmpty(layoutPatchBetween(stored.value ?? {}, wanted())) && changes.value.length === 0) return true
     saving.value = true
     error.value = null
+    stale.value = false
     try {
       const patch = layoutPatchBetween(stored.value ?? {}, wanted())
       // One write when what the diagram holds changes: membership and layout together, so the stored
@@ -198,6 +205,7 @@ export function useDiagramEditing(
       // says why (a body written by hand, a diagram changed since read) instead of showing the response body.
       const failure = Runtime.isFiberFailure(rejected) ? Cause.squash(rejected[Runtime.FiberFailureCauseId]) : rejected
       error.value = formatEffectError(failure)
+      stale.value = failure instanceof NetworkError && failure.status === 409
       return false
     } finally {
       saving.value = false
@@ -376,7 +384,9 @@ export function useDiagramEditing(
   }
 
   return {
-    add, propose, session, changes, undoStep, redoStep, nameOf, loading, saving, error, open, save, discard,
+    add, propose, session, changes, undoStep, redoStep, nameOf, loading, saving, error, stale, open, save, discard,
+    /** Read the diagram as it is now, leaving what this session had not saved. */
+    reload: (): Promise<boolean> => { stale.value = false; return open() },
     returnToAutomatic, remove, restack, nest, addOccurrence, discardDraft, drawRelation, restate,
     /** The boxes the diagram states, as last read or saved. */
     statedGroupings: (): readonly AuthoredGrouping[] => savedMembers.value?.authored_groupings ?? [],

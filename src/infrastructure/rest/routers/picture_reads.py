@@ -18,6 +18,7 @@ from fastapi import HTTPException
 
 from src.application.artifacts.parsing import parse_diagram_source
 from src.application.modeling.binding_normalize import restore_diagram_shorthand
+from src.application.modeling.diagram_revision import replaced_revision
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.repo_path_helpers import rendered_dir_for_diagram
 from src.application.runtime_catalogs import RuntimeCatalogs
@@ -126,6 +127,7 @@ def diagram_read(artifact_id: str, catalogs: RuntimeCatalogs) -> dict[str, Any]:
     result = s.get_repo().read_artifact(artifact_id, mode="full")
     if result is None or result.get("record_type") != "diagram":
         raise HTTPException(404, f"Diagram not found: {artifact_id!r}")
+    result["revision"] = replaced_revision(str(result.get("puml_source", "")))
     diag_rec = s.get_repo().get_diagram(artifact_id)
     if diag_rec:
         raw_diagram_entities = diag_rec.extra.get("diagram-entities")

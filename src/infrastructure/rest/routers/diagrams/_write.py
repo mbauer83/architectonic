@@ -6,6 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
+from src.application.modeling.diagram_revision import DiagramChanged
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.diagrams.diagram_selection import DiagramSelectionError
 from src.domain.diagrams.layout.layout_patch import LayoutConflict
@@ -109,7 +110,7 @@ def edit_diagram_gui(artifact_id: str, body: DiagramReplacement,
             "diagrams_replace_diagram", replace_diagram, artifact_id, body, root=root, catalogs=catalogs,
             live_repo=s.get_repo(), live_verifier=live_verifier, clear_caches=s.clear_caches,
         )
-    except LayoutConflict as conflict:
+    except (LayoutConflict, DiagramChanged) as conflict:
         raise HTTPException(409, str(conflict)) from conflict
     except DiagramNotStored as missing:
         raise HTTPException(404, str(missing)) from missing

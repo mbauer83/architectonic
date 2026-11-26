@@ -127,6 +127,9 @@ export const DiagramLayoutGeometrySchema = Schema.Struct({
   relations: Schema.Array(GeometryRelationSchema),
   /** The layout the diagram states; absent where PlantUML arranges it. */
   layout: Schema.optional(DiagramLayoutSchema),
+  /** The revision of the stored diagram this picture is drawn from, which a save sends back (`base_revision`);
+   * absent for a picture of no stored diagram. */
+  revision: Schema.optional(Schema.String),
 })
 
 /** How far each part drawn round the diagram moves, in the order asked (`layout/surround/preview`). */

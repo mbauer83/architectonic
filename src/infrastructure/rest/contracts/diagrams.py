@@ -323,6 +323,9 @@ class DiagramDetailResponse(NullsOmitted):
     #: Frontmatter this surface does not model, returned as written.
     extra: dict[str, Any] | None = None
     viewpoint: ViewpointApplicationResponse | None = None
+    #: The revision of what a replacement replaces, as read: sent back as its `base_revision`, so a diagram
+    #: changed since is refused rather than written over.
+    revision: str
     #: Why this diagram keeps a body written by hand, which a save generating its body from the composition
     #: would discard — `manual-layout`, or what the body draws that its composition does not generate. A
     #: replacement is refused unless it gives the body up (`manual_layout: false`). Absent where the body is

@@ -16,6 +16,7 @@ const LANDSCAPE: DiagramDetail = {
   artifact_id: 'ARC@1.a.landscape', artifact_type: 'diagram', name: 'Landscape', diagram_type: 'archimate-layered',
   version: '1.0.0', status: 'active', record_type: 'diagram', path: 'diagram-catalog/diagrams/landscape.puml',
   is_global: false, baseline_standing: { kind: 'enterprise-baseline' }, content_snippet: '', puml_source: '',
+  revision: 'r1',
 }
 
 let app: App | null = null

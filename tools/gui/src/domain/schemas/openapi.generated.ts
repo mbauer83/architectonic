@@ -8535,6 +8535,8 @@ export interface components {
             record_type: "diagram";
             /** Rendered Filename */
             rendered_filename?: string;
+            /** Revision */
+            revision: string;
             /** Status */
             status: string;
             /** Type Extras */
@@ -8628,6 +8630,8 @@ export interface components {
             name: string;
             /** Relations */
             relations: components["schemas"]["GeometryRelationContract"][];
+            /** Revision */
+            revision?: string;
             surround: components["schemas"]["SurroundContract"];
         };
         /**
@@ -8855,6 +8859,11 @@ export interface components {
             authored_groupings?: {
                 [key: string]: unknown;
             }[] | null;
+            /**
+             * Base Revision
+             * @description The diagram's `revision` as read. One changed since is not written over: the replacement is refused (409), naming what changed. Absent writes over whatever the diagram holds now.
+             */
+            base_revision?: string | null;
             /**
              * Commands
              * @description Model edits saved in the same write as the diagram: model.element.create / rename / edit / delete, model.relation.create / edit. All land or none do.

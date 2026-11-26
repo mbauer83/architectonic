@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.application.modeling.diagram_identities import alias_by_instance
+from src.application.modeling.diagram_revision import replaced_revision
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.viewpoints.diagram_reading_lens import ReadingLens
 from src.domain.diagrams.layout.geometry import Extent, Point
@@ -113,8 +114,11 @@ def _stored_diagram(artifact_id: str) -> ParsedDiagram:
 )
 def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs, lens: Lens) -> dict[str, object]:
     parsed = _stored_diagram(artifact_id)
+    # The revision of the file this picture is drawn from: what a save of the session opened on it sends back.
+    revision = {"revision": replaced_revision(parsed.raw_text)}
     if lens.is_empty:
-        return geometry_read(lambda: stored_geometry(parsed, artifact_id, repo_root(), catalogs.ontology))
+        drawn = geometry_read(lambda: stored_geometry(parsed, artifact_id, repo_root(), catalogs.ontology))
+        return {**drawn, **revision}
     record = _stored_record(artifact_id)
     root = repo_root()
     path = Path(record.path)
@@ -123,10 +127,10 @@ def read_diagram_layout_geometry(artifact_id: str, catalogs: Catalogs, lens: Len
         artifact_id, path, lens, picture_sources(catalogs), root, diagram_type=record.diagram_type,
         laid_out=stored_layout(path, catalogs.ontology), stored_svg=rendered_image(record, ".svg"),
     )
-    return geometry_read(lambda: geometry_response(
+    return {**geometry_read(lambda: geometry_response(
         body, artifact_id, dict(parsed.frontmatter), root, catalogs.ontology,
         restyle_prepared=kind_muting(lens, root),
-    ))
+    )), **revision}
 
 
 @router.post(

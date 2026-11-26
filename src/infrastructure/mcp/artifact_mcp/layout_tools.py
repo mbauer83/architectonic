@@ -14,6 +14,7 @@ from typing import Annotated, Any
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 from pydantic import Field
 
+from src.application.modeling.diagram_revision import replaced_revision
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.diagram_composition import DiagramReplacement, replace_diagram
 from src.infrastructure.diagram_layout_wire import ArrangeIntent, LayoutPatch, stated_intents
@@ -54,7 +55,8 @@ QUERY_DIAGRAM_LAYOUT_DESCRIPTION = (
     "What arranging a diagram needs, as it is drawn now: each element's layout key, label, extent and the box "
     "it sits in; each box's key, kind (domain, type, grouping, element) and extent; each relation's key and "
     "the element keys it joins; and the stored layout block (absent while PlantUML arranges the diagram), "
-    "whose entries are what a layout patch states as based_on. The canvas is in the same units."
+    "whose entries are what a layout patch states as based_on. The canvas is in the same units. `revision` is "
+    "what artifact_replace_diagram takes as base_revision."
 )
 
 REPLACE_DIAGRAM_DESCRIPTION = (
@@ -66,8 +68,9 @@ REPLACE_DIAGRAM_DESCRIPTION = (
     "naming what the diagram no longer holds are dropped and new members placed), and model `commands` "
     "(model.element.create / rename / edit / delete, model.relation.create / edit; an edit changes only the "
     "fields it states), all in one write or none. replacement.dry_run defaults to true. A layout_patch entry "
-    "whose based_on no longer holds refuses the whole save. A body written by hand is not replaced unless "
-    "manual_layout is false."
+    "whose based_on no longer holds refuses the whole save, and so does a base_revision (the `revision` "
+    "artifact_query_diagram_layout answers) the diagram no longer has. A body written by hand is not "
+    "replaced unless manual_layout is false."
 )
 
 
@@ -80,10 +83,9 @@ def artifact_query_diagram_layout(artifact_id: DiagramId, repo_root: RepoRoot = 
     record = repo_cached(roots_key(roots)).get_diagram(artifact_id)
     if record is None:
         raise ValueError(f"No diagram {artifact_id} is stored; artifact_query_list_artifacts lists them.")
-    drawn = stored_geometry(
-        parse_diagram_file(Path(record.path)), record.artifact_id, roots[0], process_runtime_catalogs().ontology,
-    )
-    return arrangement_of(drawn)
+    parsed = parse_diagram_file(Path(record.path))
+    drawn = stored_geometry(parsed, record.artifact_id, roots[0], process_runtime_catalogs().ontology)
+    return {**arrangement_of(drawn), "revision": replaced_revision(parsed.raw_text)}
 
 
 def arrangement_of(drawn: dict[str, Any]) -> dict[str, object]:
