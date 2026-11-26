@@ -102,6 +102,30 @@ def test_incidence_coupling_and_coverage_name_a_created_element_by_its_id(client
     assert HANDLE not in json.dumps(incidence) + json.dumps(progress)
 
 
+def test_an_adaptation_row_names_its_candidate_as_it_is_stored_and_refuses_one_nothing_stores(
+    client: TestClient,
+) -> None:
+    """Through the write path, whose verification reads a temporary tree beside the repository: the
+    candidate an adaptation names is found there, in either spelling, and stored by its full id."""
+    document, naive, _scoped = _naive(client)
+    adaptation = client.post("/api/change-sets", json={"record": {"name": "Adapt", "parent": naive["record"]["id"]}})
+    full = adaptation.json()["record"]["id"]
+    path = f"/api/documents/{document}/tables"
+    client.patch(f"{path}/end-states", json={"rows": [{"op": "add", "cells": {"end_state": "Reads offline"}}],
+                                             "dry_run": False}).raise_for_status()
+
+    written = client.patch(f"{path}/adaptations", json={"dry_run": False, "rows": [
+        {"op": "add", "cells": {"end_states": ["E1"], "candidate_architecture": stable_id(full)}}]})
+    refused = client.patch(f"{path}/adaptations", json={"dry_run": False, "rows": [
+        {"op": "add", "cells": {"end_states": ["E1"], "candidate_architecture": "CAND@1700000000.Nope000"}}]})
+
+    assert written.status_code == 200, written.text
+    rows = client.get(path).json()
+    (adapted,) = next(table for table in rows["tables"] if table["name"] == "adaptations")["rows"]
+    assert adapted["values"]["candidate_architecture"] == full
+    assert refused.status_code == 400 and "no candidate-architecture CAND@1700000000.Nope000" in refused.text
+
+
 def test_a_stacked_candidate_edits_connects_and_drops_a_parent_created_element_by_its_id(client: TestClient) -> None:
     _document, naive, scoped = _naive(client)
     adaptation = client.post("/api/change-sets", json={"record": {"name": "Adapt", "parent": naive["record"]["id"]}})

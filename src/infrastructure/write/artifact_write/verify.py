@@ -3,12 +3,14 @@ import tempfile
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
+from src.application.artifacts.document_tables import ID_COLUMN_KINDS
 from src.application.document_links import ArtifactPathOf, unresolved_id_links
 from src.application.verification._verifier_document_tables import is_about_a_table_in_progress
 from src.application.verification.artifact_verifier import ArtifactVerifier, VerificationResult
 from src.application.verification.artifact_verifier_rules import unresolvable_id_link_issues
 from src.application.verification.artifact_verifier_types import Issue, Severity, VerificationFileType
 from src.config.repo_paths import ARCH_REPO, DIAGRAM_CATALOG, DIAGRAMS, DOCS, MODEL, PROJECTS
+from src.domain.repository.artifact_location import artifact_kind
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.verification.verifier_factory import build_artifact_verifier
 
@@ -85,20 +87,26 @@ def _mirror_doc_entry(existing: Path, source_root: Path, mirror_root: Path, skip
         os.symlink(existing, target)
 
 
+#: Where the artifacts an `id` column names are stored: the top directory of each such kind's roots.
+_ID_COLUMN_ROOTS = tuple(dict.fromkeys(root[0] for kind in ID_COLUMN_KINDS for root in artifact_kind(kind).roots))
+
+
 def _document_temp_path(tmp_root: Path, desired_name: str, support_repo_root: Path | None) -> Path:
     """Mirror the docs tree (symlinks) around the document under test so cross-doc checks resolve.
 
     The diagram catalog is mirrored for the same reason the model is: a document's prose may point
     at a diagram, and a document type may now *require* that it does. Without it the link rule
     resolved every `.puml` href against a tree that has no diagrams in it and reported each one as
-    unresolvable, refusing a write the real repository would have accepted.
+    unresolvable, refusing a write the real repository would have accepted. So is every kind an `id`
+    column may name (`ID_COLUMN_KINDS`): an adaptation naming a stored candidate was refused as naming
+    none, because the temp tree held no candidates.
     """
     tmp_path = tmp_root / DOCS / desired_name
     if support_repo_root is None:
         tmp_path.parent.mkdir(parents=True, exist_ok=True)
         return tmp_path
 
-    for top in (ARCH_REPO, MODEL, PROJECTS, DIAGRAM_CATALOG):
+    for top in (ARCH_REPO, MODEL, PROJECTS, DIAGRAM_CATALOG, *_ID_COLUMN_ROOTS):
         src = support_repo_root / top
         if src.exists():
             os.symlink(src, tmp_root / top, target_is_directory=True)
