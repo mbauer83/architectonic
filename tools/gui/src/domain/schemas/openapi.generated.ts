@@ -995,10 +995,10 @@ export interface paths {
          *     rebuild alone would re-apply the policy and start locked again, so the command would appear
          *     to succeed and change nothing.
          *
-         *     Changing the process's authorization is an operator's act and is accepted only as a local
-         *     operator request (`operator_request`): anything that could reach the port could otherwise
-         *     authorize the process to open the confidential store. A reload that leaves authorization as it
-         *     is stays open to any caller.
+         *     Changing the process's authorization is an operator's act, so the operation is accepted only as a
+         *     local operator request (`require_local_operator`, which its route-policy row declares): anything that
+         *     could reach the port could otherwise authorize the process to open the confidential store. The
+         *     command line is its only caller and sends every reload that way.
          */
         post: operations["assurance_reload_store"];
         delete?: never;
@@ -3573,9 +3573,10 @@ export interface paths {
          *     then repeats the operation. The credential is kept in memory until the backend stops: it is
          *     never written to disk, logged, or returned, and nothing answers with it.
          *
-         *     Accepted only as a local operator request (`operator_request`), the gate `arch-assurance unlock`
-         *     uses: from the loopback, carrying the operator header, which a page from another origin cannot
-         *     send. A deployment reached through a proxy therefore cannot be handed a credential this way.
+         *     Accepted only as a local operator request (`require_local_operator`, which its route-policy row
+         *     declares), the gate `arch-assurance unlock` uses: from the loopback, carrying the operator header,
+         *     which a page from another origin cannot send. A deployment reached through a proxy therefore cannot
+         *     be handed a credential this way.
          *
          *     There is deliberately no MCP tool for this. An agent session would have to hold the secret in
          *     its context and transcript to pass it on; MCP callers are told to have the person enter it in
@@ -19154,7 +19155,10 @@ export interface operations {
     assurance_reload_store: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description `1` from the GUI or command line on this machine; any other request is refused */
+                "X-Arch-Operator-Request"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -19173,7 +19177,7 @@ export interface operations {
                     "application/json": components["schemas"]["AssuranceStoreStatusResponse"];
                 };
             };
-            /** @description `authorize` was given by a request that is not a local operator request: one from the loopback carrying `X-Arch-Operator-Request`, as `arch-assurance unlock` and `lock` send */
+            /** @description The request is not a local operator request: one from the loopback carrying `X-Arch-Operator-Request`, as this backend's GUI and command line send */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -28867,7 +28871,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The request is not a local operator request: one from the loopback carrying `X-Arch-Operator-Request`, as the GUI served by this backend sends */
+            /** @description The request is not a local operator request: one from the loopback carrying `X-Arch-Operator-Request`, as this backend's GUI and command line send */
             403: {
                 headers: {
                     [name: string]: unknown;

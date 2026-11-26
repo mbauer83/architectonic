@@ -87,8 +87,14 @@ def test_a_loopback_request_without_the_header_is_refused(authorizations: list[s
     assert authorizations == []
 
 
-def test_a_plain_reload_stays_open_to_any_caller(authorizations: list[str]) -> None:
+def test_a_plain_reload_is_gated_too(authorizations: list[str]) -> None:
+    """The whole operation is a local operator request now (owner, 2026-11-26), declared on its route-policy
+    row rather than decided per body inside the handler; its only caller, the command line, sends every
+    reload that way."""
     client = TestClient(_build_app(), base_url="http://127.0.0.1:8188", client=_REMOTE_CLIENT)
 
-    assert client.post("/api/assurance/reload", json={}).status_code == 200
+    response = client.post("/api/assurance/reload", json={})
+
+    assert response.status_code == 403
+    assert response.json()["detail"]["details"]["reason_code"] == "operator_request_required"
     assert authorizations == []

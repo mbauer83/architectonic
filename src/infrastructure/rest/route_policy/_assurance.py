@@ -203,7 +203,7 @@ STORE_ROWS: tuple[RouteRow, ...] = (
     ),
     RouteRow(
         "POST", "/api/assurance/reload", "operation", "assurance_reload_store", TYPED,
-        mutation_domain="assurance",
+        mutation_domain="assurance", gate="local_operator",
     ),
     RouteRow(
         "POST", "/api/assurance/model-this", "operation", "assurance_model_this",

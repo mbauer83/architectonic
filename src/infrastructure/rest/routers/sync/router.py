@@ -18,9 +18,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Annotated, Literal
+from typing import Literal
 
-from fastapi import APIRouter, Header, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field, SecretStr
 
 from src.infrastructure.git.credential_refusal import GitCredentialsRequired
@@ -28,11 +28,6 @@ from src.infrastructure.git.review_link import review_url_for
 from src.infrastructure.rest.contracts.error_responses import (
     GIT_CREDENTIALS_REQUIRED_STATUS,
     git_credentials_error,
-)
-from src.infrastructure.rest.contracts.errors import ApiError, DenialDetails
-from src.infrastructure.rest.contracts.operator_request import (
-    OPERATOR_REQUEST_HEADER,
-    is_local_operator_request,
 )
 from src.infrastructure.rest.contracts.platform import SyncStatusResponse
 from src.infrastructure.rest.contracts.sync import (
@@ -43,6 +38,7 @@ from src.infrastructure.rest.contracts.sync import (
     SyncChangesResponse,
 )
 from src.infrastructure.rest.routers._openapi import CREDENTIALS_RESPONSES, TAG_SYNC, error_response
+from src.infrastructure.rest.routers._operator_gate import LOCAL_OPERATOR_RESPONSES, require_local_operator
 from src.infrastructure.rest.routers.sync import status_cache as sync_status_cache
 
 logger = logging.getLogger(__name__)
@@ -316,37 +312,26 @@ class SyncCredentialsBody(BaseModel):
     "/api/sync/credentials",
     status_code=204,
     response_class=Response,
+    dependencies=[Depends(require_local_operator)],
     responses={
-        403: error_response(
-            "The request is not a local operator request: one from the loopback carrying "
-            f"`{OPERATOR_REQUEST_HEADER}`, as the GUI served by this backend sends"
-        ),
+        **LOCAL_OPERATOR_RESPONSES,
         GIT_CREDENTIALS_REQUIRED_STATUS: error_response(
             "`git_credentials_required` with `rejected: true`: a remote that uses this protocol "
             "refused the credential, which is not kept"
         ),
     },
 )
-def supply_sync_credentials(
-    request: Request,
-    body: SyncCredentialsBody,
-    operator_request: Annotated[
-        str | None,
-        Header(
-            alias=OPERATOR_REQUEST_HEADER,
-            description="`1` from the GUI or command line on this machine; any other request is refused",
-        ),
-    ] = None,
-) -> Response:
+def supply_sync_credentials(body: SyncCredentialsBody) -> Response:
     """Hold a git credential for this process, after the remotes that use it have accepted it.
 
     The GUI sends this when a save, submit or discard was refused with `git_credentials_required`,
     then repeats the operation. The credential is kept in memory until the backend stops: it is
     never written to disk, logged, or returned, and nothing answers with it.
 
-    Accepted only as a local operator request (`operator_request`), the gate `arch-assurance unlock`
-    uses: from the loopback, carrying the operator header, which a page from another origin cannot
-    send. A deployment reached through a proxy therefore cannot be handed a credential this way.
+    Accepted only as a local operator request (`require_local_operator`, which its route-policy row
+    declares), the gate `arch-assurance unlock` uses: from the loopback, carrying the operator header,
+    which a page from another origin cannot send. A deployment reached through a proxy therefore cannot
+    be handed a credential this way.
 
     There is deliberately no MCP tool for this. An agent session would have to hold the secret in
     its context and transcript to pass it on; MCP callers are told to have the person enter it in
@@ -355,16 +340,6 @@ def supply_sync_credentials(
     from src.infrastructure.git import held_credentials  # noqa: PLC0415
     from src.infrastructure.rest.routers import state as s  # noqa: PLC0415
 
-    # Declared so the published document names the header a client must send; the gate below reads
-    # the request itself, so the loopback condition is checked with it.
-    del operator_request
-    if not is_local_operator_request(request):
-        raise ApiError(
-            403, "forbidden",
-            "A git credential is accepted only from the GUI or command line on the machine the "
-            "backend runs on.",
-            DenialDetails(reason_code="operator_request_required"),
-        )
     roots = [root for root in (s.maybe_engagement_root(), s.maybe_enterprise_root()) if root is not None]
     try:
         held_credentials.supply(

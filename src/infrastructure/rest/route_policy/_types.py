@@ -37,9 +37,14 @@ _IDENTITY_FREE_KINDS = frozenset({"collection", "singleton", "catalog", "stream"
 
 #: Which policy domain a write belongs to. ``repository`` writes are gated by
 #: ``REST_MUTATION_MANIFEST`` + ``authorized_write``; ``assurance`` writes are gated by the
-#: confidential store's own unlock/capability checks; ``none`` covers reads *and* the
+#: confidential store's own unlock/capability checks; ``process`` writes change what the running
+#: process may do (a held credential) and nothing a repository holds; ``none`` covers reads *and* the
 #: write-shaped operations (previews, plans, query execution) that mutate nothing.
-MutationDomain = Literal["repository", "assurance", "none"]
+MutationDomain = Literal["repository", "assurance", "process", "none"]
+
+#: Who may make the request at all, before any other policy: anyone the backend serves, or only a local
+#: operator request (`routers._operator_gate.require_local_operator`), which the route declares.
+Gate = Literal["none", "local_operator"]
 
 #: ``Cache-Control`` this operation's responses carry — success **and** error alike.
 #: Independent of ``ConditionalRead``: a confidential response is ``no-store`` precisely
@@ -101,6 +106,7 @@ class RouteRow:
     response_kind: str
     identity_parameters: tuple[str, ...] = ()
     mutation_domain: MutationDomain = "none"
+    gate: Gate = "none"
     cache_directive: CacheDirective = "no-store"
     conditional_read: ConditionalRead = "none"
     timeout_class: TimeoutClass = "default"
