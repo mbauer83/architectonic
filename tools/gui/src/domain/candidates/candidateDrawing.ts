@@ -35,7 +35,8 @@ const text = (value: unknown): string => (typeof value === 'string' ? value : ''
 export const drawnCommands = (view: ComposedView, drawn: DrawnContent): readonly CanvasCommand[] => {
   const chosen = chosenIds(view)
   const names = new Map(drawn.entities.map((one) => [stableEntityId(one.artifact_id), one.name]))
-  const creates = view.entities.flatMap((one) => (one.artifact_id ? [creationCommand(one.artifact_id, one.fields)] : []))
+  const creates = view.entities.flatMap((one) => (
+    one.artifact_id ? [creationCommand(one.artifact_id, one.fields)] : []))
   const renames = view.entities.flatMap((one): CanvasCommand[] => {
     const was = names.get(stableEntityId(one.id))
     const now = text(one.fields.name)

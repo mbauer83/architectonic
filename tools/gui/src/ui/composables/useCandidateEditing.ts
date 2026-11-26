@@ -113,7 +113,8 @@ export function useCandidateEditing(
       recordedAt.clear()
       const starts = membership(null)?.entity_ids ?? []
       const referenced = undrawn(held.scope, starts, composed.view.entities)
-      const commands = commandsOf(operationsOf(read.record), chosenIds(composed.view), [...starts, ...referenced.keys()])
+      const drawn = [...starts, ...referenced.keys()]
+      const commands = commandsOf(operationsOf(read.record), chosenIds(composed.view), drawn)
       const opened = await editing.open(commands, referenced)
       remember()
       return opened

@@ -62,7 +62,9 @@ const recorded = () => {
 }
 /** Where the session started from: read when it opens, so the context read later does not move it. */
 const started = shallowRef<PictureContext['diagram'] | null>(null)
-const editing = useCandidateEditing(svc, (start) => composedOver(started.value, start), () => props.candidateId, recorded)
+const editing = useCandidateEditing(
+  svc, (start) => composedOver(started.value, start), () => props.candidateId, recorded,
+)
 /** The panel is open to begin with on a picture that starts empty, where finding elements is the first step. */
 const panelOpen = ref(false)
 const canvas = ref<InstanceType<typeof DiagramCanvas> | null>(null)
