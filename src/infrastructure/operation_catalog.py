@@ -139,8 +139,52 @@ _WRITES: Mapping[str, tuple[str, frozenset[str]]] = {
     ),
 }
 
+#: The writes the detail pages, the viewpoint pages and the document form make. An enterprise artifact is
+#: written by its admin twin, which only a backend in admin mode allows; the projection answers why not.
+_ARTIFACT_WRITES: Mapping[str, tuple[str, frozenset[str]]] = {
+    "entities_update_entity": (
+        "Change an entity, or record a change to an enterprise one",
+        frozenset({"entities_update_entity", "artifact_edit_entity"}),
+    ),
+    "entities_delete_entity": (
+        "Delete an entity and its relations", frozenset({"entities_delete_entity", "artifact_delete_entity"}),
+    ),
+    "connections_create_connection": (
+        "Create a relation", frozenset({"connections_create_connection", "artifact_add_connection"}),
+    ),
+    "connections_update_connection": (
+        "Change a relation", frozenset({"connections_update_connection", "artifact_edit_connection"}),
+    ),
+    "connections_delete_connection": ("Delete a relation", frozenset({"connections_delete_connection"})),
+    "connections_update_connection_associations": (
+        "Change what a relation is associated with",
+        frozenset({"connections_update_connection_associations", "artifact_edit_connection_associations"}),
+    ),
+    "diagrams_delete_diagram": (
+        "Delete a diagram", frozenset({"diagrams_delete_diagram", "artifact_delete_diagram"}),
+    ),
+    "admin_update_entity": ("Change an enterprise entity in place", frozenset({"admin_update_entity"})),
+    "admin_delete_entity": ("Delete an enterprise entity", frozenset({"admin_delete_entity"})),
+    "admin_create_connection": ("Create an enterprise relation", frozenset({"admin_create_connection"})),
+    "admin_delete_connection": ("Delete an enterprise relation", frozenset({"admin_delete_connection"})),
+    "admin_delete_diagram": ("Delete an enterprise diagram", frozenset({"admin_delete_diagram"})),
+    "documents_create_document": (
+        "Create a document", frozenset({"documents_create_document", "artifact_create_document"}),
+    ),
+    "viewpoints_create_viewpoint": (
+        "Create a viewpoint", frozenset({"viewpoints_create_viewpoint", "artifact_viewpoint"}),
+    ),
+    "viewpoints_replace_viewpoint": (
+        "Change a viewpoint's definition", frozenset({"viewpoints_replace_viewpoint", "artifact_viewpoint"}),
+    ),
+    "viewpoints_delete_viewpoint": (
+        "Delete a viewpoint", frozenset({"viewpoints_delete_viewpoint", "artifact_viewpoint"}),
+    ),
+}
+
 OPERATION_CATALOG: Mapping[str, CatalogOperation] = {
     **{name: CatalogOperation(summary, carriers) for name, (summary, carriers) in _WRITES.items()},
+    **{name: CatalogOperation(summary, carriers) for name, (summary, carriers) in _ARTIFACT_WRITES.items()},
     COMPOSE: CatalogOperation(
         "Change what a diagram draws: add or remove elements, relations and occurrences, its boxes and their members",
         _REPLACE | _ARRANGE,

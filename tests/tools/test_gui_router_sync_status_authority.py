@@ -109,6 +109,17 @@ class TestAuthorityFreshness:
         for name, decision in during["denied_operations"].items():
             assert decision == during["denied_intents"][operation_intent(name)], name
 
+    def test_an_enterprise_artifact_is_written_in_place_only_in_admin_mode(self, workspace) -> None:
+        """What the detail pages read instead of fetching the backend's mode themselves."""
+        client, _, _ = workspace
+        answered = _authority(client)["denied_operations"]
+        for name in ("admin_update_entity", "admin_delete_entity", "admin_create_connection",
+                     "admin_delete_connection", "admin_delete_diagram"):
+            assert answered[name] == {"denied": True, "code": "admin_mode_required"}, name
+        for name in ("entities_update_entity", "entities_delete_entity", "diagrams_delete_diagram",
+                     "documents_create_document", "viewpoints_create_viewpoint"):
+            assert answered[name] == {"denied": False, "code": None}, name
+
     def test_read_only_denies_all_external_intents(self, workspace) -> None:
         client, engagement, enterprise = workspace
         _install(engagement, enterprise, read_only=True)
