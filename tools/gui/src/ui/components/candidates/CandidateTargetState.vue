@@ -12,6 +12,8 @@ import {
 import type { CandidateTargetState } from '../../composables/useCandidateTargetState'
 import { entityDetailRoute } from '../../router/artifactRoutes'
 import PermittedButton from '../PermittedButton.vue'
+import { editedValues } from '../../../domain/candidates/candidateApply'
+import FieldChangeView from './FieldChangeView.vue'
 
 const props = defineProps<{ target: CandidateTargetState; candidateId: string; name: string }>()
 
@@ -33,9 +35,12 @@ const TITLES = {
 } as const
 const VERBS = { apply: 'Apply as a target state', move: 'Move into the baseline', withdraw: 'Withdraw' } as const
 const copies = computed(() => Object.keys(standing.value?.copies ?? {}).length)
-const lines = computed(() => preview.value
-  ? targetOperationLines(preview.value.operations, preview.value.ids ?? standing.value)
-  : [])
+const lines = computed(() => {
+  const shown = preview.value
+  if (!shown) return []
+  return targetOperationLines(shown.operations, shown.ids ?? standing.value)
+    .map((line, index) => ({ line, edited: editedValues(shown.operations[index] ?? {}) }))
+})
 </script>
 
 <template>
@@ -103,10 +108,16 @@ const lines = computed(() => preview.value
       <summary>The {{ preview.operations.length }} operations</summary>
       <ul>
         <li
-          v-for="(line, index) in lines"
+          v-for="(one, index) in lines"
           :key="index"
         >
-          {{ line }}
+          {{ one.line }}
+          <FieldChangeView
+            v-if="one.edited"
+            class="edit"
+            :before="one.edited.before"
+            :after="one.edited.after"
+          />
         </li>
       </ul>
     </details>
@@ -148,6 +159,7 @@ header span { color: var(--muted); }
 details { margin-top: 6px; color: var(--text); }
 ul { margin: 4px 0 0; padding-left: 18px; }
 li { margin: 2px 0; }
+.edit { display: block; margin: 2px 0 4px; }
 .note { color: var(--muted); margin: 6px 0 0; }
 .refusal { color: var(--danger-strong); margin: 6px 0 0; }
 footer { display: flex; gap: 8px; margin-top: 8px; }

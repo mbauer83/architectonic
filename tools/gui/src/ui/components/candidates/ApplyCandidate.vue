@@ -1,18 +1,22 @@
 <script setup lang="ts">
 /**
  * The confirmation for *Apply to the model…*: what the dry run says would be written, what is skipped
- * because the model already holds it, and the refusal when there is one — in the server's words. The
+ * because the model already holds it, and the refusal when there is one — in the server's words. An edit is
+ * read against the value it was written over (`FieldChangeView`). The
  * apply runs only from here, and writes every operation in one write or none. The page that owns the
  * apply (`useCandidateApply`) is told it was applied: this confirmation is gone by then.
  */
 import { computed } from 'vue'
-import { canApply, operationLabel, previewSentence } from '../../../domain/candidates/candidateApply'
+import { canApply, editedValues, operationLabel, previewSentence } from '../../../domain/candidates/candidateApply'
 import type { CandidateApply } from '../../composables/useCandidateApply'
 import PermittedButton from '../PermittedButton.vue'
+import FieldChangeView from './FieldChangeView.vue'
 
 const props = defineProps<{ apply: CandidateApply; name: string }>()
 
 const preview = computed(() => props.apply.preview.value)
+/** What is written, each edit with the values it changes between. */
+const writes = computed(() => (preview.value?.writes ?? []).map((one) => ({ ...one, edited: editedValues(one.operation) })))
 </script>
 
 <template>
@@ -34,13 +38,19 @@ const preview = computed(() => props.apply.preview.value)
     >
       {{ preview.refusal }}
     </p>
-    <ul v-if="preview.writes.length">
+    <ul v-if="writes.length">
       <li
-        v-for="(one, index) in preview.writes"
+        v-for="(one, index) in writes"
         :key="`w${index}`"
       >
         <span :class="`standing standing--${one.standing}`">{{ one.standing }}</span>
         {{ operationLabel(one.operation) }} <small>{{ one.reason }}</small>
+        <FieldChangeView
+          v-if="one.edited"
+          class="edit"
+          :before="one.edited.before"
+          :after="one.edited.after"
+        />
       </li>
     </ul>
     <ul
@@ -89,6 +99,7 @@ header span { color: var(--muted); }
 ul { margin: 6px 0 0; padding-left: 18px; color: var(--text); }
 li { margin: 2px 0; }
 li small { color: var(--muted); }
+.edit { display: block; margin: 2px 0 4px; }
 .skipped { color: var(--muted); }
 .standing { font-size: 11px; font-weight: 600; padding: 0 5px; border-radius: 3px; background: var(--soft); }
 .standing--conflicting, .standing--drifted { color: var(--danger-strong); }

@@ -4,17 +4,19 @@
  * on the candidate page and on a stress analysis's Naive architecture and Adaptations tabs; *role* is
  * what its reader calls the candidate. The canvas marks the same comparison; a row selected here frames
  * its element there, and an element selected there selects its rows here (*framed*). A row's card shows
- * the element's fields, base against candidate: changed rows highlighted with the base struck through,
- * unchanged rows greyed. A comparison of several candidates reads each *fixed* to their common base: the
+ * the element's fields, base against candidate: changed rows highlighted and read as `FieldChangeView` reads
+ * them (text word by word), unchanged rows greyed. A comparison of several candidates reads each *fixed* to their common base: the
  * base is named, not chosen, and nothing is sketched there.
  */
 import { computed, nextTick, ref, watch } from 'vue'
 import { stableEntityId } from '../../../domain/artifactId'
 import type { ChangeDifference } from '../../../domain/schemas/candidates'
 import { chosenIds } from '../../../domain/candidates/candidateCanvas'
+import { valueText } from '../../../domain/candidates/fieldChange'
 import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
 import PermittedButton from '../PermittedButton.vue'
+import FieldChangeView from './FieldChangeView.vue'
 
 const props = defineProps<{
   candidates: Candidates; role: string; nameOf: (id: string) => string; fixed?: boolean
@@ -51,10 +53,7 @@ const targetName = (row: ChangeDifference): string => {
 const CHANGE_WORD: Readonly<Record<string, string>> = { added: '+ added', edited: '~ changed', removed: '− removed' }
 const changeWord = (row: ChangeDifference): string =>
   row.change === 'removed' && !onBranch.value ? 'only in the base' : (CHANGE_WORD[row.change] ?? row.change)
-const shown = (value: unknown): string =>
-  value === null || value === undefined || value === ''
-    ? '—'
-    : typeof value === 'string' ? value : JSON.stringify(value)
+const shown = (value: unknown): string => valueText(value) ?? '—'
 
 const standingOf = (row: ChangeDifference): string => {
   const target = typeof row.target === 'string' ? row.target : null
@@ -171,10 +170,19 @@ const cardRows = (row: ChangeDifference) => {
                   :class="field.changed ? 'chg' : 'same'"
                 >
                   <td>{{ field.name }}</td>
-                  <td :class="{ was: field.changed }">
-                    <span class="v">{{ shown(field.changed ? field.changed.before : field.value) }}</span>
+                  <td
+                    v-if="field.changed"
+                    colspan="2"
+                  >
+                    <FieldChangeView
+                      :before="field.changed.before"
+                      :after="field.changed.after"
+                    />
                   </td>
-                  <td><span class="v">{{ shown(field.changed ? field.changed.after : field.value) }}</span></td>
+                  <template v-else>
+                    <td><span class="v">{{ shown(field.value) }}</span></td>
+                    <td><span class="v">{{ shown(field.value) }}</span></td>
+                  </template>
                 </tr>
               </table>
             </div>
@@ -189,8 +197,10 @@ const cardRows = (row: ChangeDifference) => {
               class="field"
             >
               <span class="fname">{{ name }}</span>
-              <s v-if="row.change !== 'added'">{{ shown(field.before) }}</s>
-              <b v-if="row.change !== 'removed'">{{ shown(field.after) }}</b>
+              <FieldChangeView
+                :before="field.before"
+                :after="field.after"
+              />
             </div>
           </td>
           <td>
@@ -237,7 +247,6 @@ const cardRows = (row: ChangeDifference) => {
 .chg-word { white-space: nowrap; }
 .field { display: flex; gap: 6px; flex-wrap: wrap; }
 .fname { color: var(--muted); }
-.field s { color: var(--warn-text); }
 .standing { font-size: 11px; font-weight: 600; padding: 0 5px; border-radius: 3px; background: var(--soft); }
 .standing--applies { background: var(--ok-soft); color: var(--ok-text); }
 .standing--drifted { background: var(--warn-soft); color: var(--warn-text); }
@@ -261,6 +270,5 @@ const cardRows = (row: ChangeDifference) => {
 .fcard tr.same td { color: var(--faint); }
 .fcard tr.chg td { background: var(--warn-soft); color: var(--text); }
 .fcard tr.chg td:first-child { box-shadow: inset 3px 0 0 var(--warn-text); font-weight: 600; }
-.fcard .was { text-decoration: line-through; color: var(--warn-text); }
 .err { color: var(--danger-strong); padding: 6px 10px; font-size: 12px; }
 </style>

@@ -55,3 +55,21 @@ export const operationLabel = (operation: Readonly<Record<string, unknown>>): st
     default: return text(operation.op)
   }
 }
+
+/** What an edit changes its field (or key) from and to: the value its base was written over, and its own. */
+export interface EditedValues {
+  readonly before: unknown
+  readonly after: unknown
+}
+
+/**
+ * The values an edit operation changes between, for `FieldChangeView`; null for any other operation, and for an
+ * edit whose base names a revision rather than the value it was written over.
+ */
+export const editedValues = (operation: Readonly<Record<string, unknown>>): EditedValues | null => {
+  const base = operation.base
+  const edits = operation.op === 'edit_entity' || operation.op === 'edit_connection'
+  return edits && typeof base === 'object' && base !== null && 'value' in base
+    ? { before: base.value, after: operation.value }
+    : null
+}
