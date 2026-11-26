@@ -453,3 +453,82 @@ test('the first sketch of the naive fits the window with its introduction shown 
   const after = (await sketch.locator('.img-container').boundingBox())!
   expect(after.y + after.height).toBeLessThanOrEqual(900)
 })
+
+/** Which element has the screen, by its test id; empty while none has. */
+const fullscreenTestId = (page: Page): Promise<string> =>
+  page.evaluate(() => document.fullscreenElement?.getAttribute('data-testid') ?? '')
+
+/** The analysis's incidence rows, as the server holds them. */
+const incidenceOf = async (request: APIRequestContext, id: string): Promise<string> =>
+  JSON.stringify(((await (await request.get(`/api/documents/${encodeURIComponent(id)}/incidence`)).json()) as
+    { incidence: unknown[] }).incidence)
+
+test('a stressor is ticked on the canvas filling the screen, its row and incidence docked beside it', async ({ page, request }) => {
+  const { document } = await startAnalysis(request, 'Stress analysis — ticked full size')
+  await tables(request, document)('stressors', [{ op: 'add', cells: { stressor: 'Forty promote at once', set: 'design' } }])
+  await workspace(page, document, 'stressors')
+  const row = page.locator('tr.st-row[data-row="S1"]')
+  await row.locator('td').first().click()
+  await expect(row).toHaveClass(/sel/)
+
+  const canvas = page.getByTestId('workspace-canvas')
+  await canvas.getByRole('button', { name: 'View fullscreen' }).click()
+  await expect.poll(() => fullscreenTestId(page)).toBe('workspace-canvas')
+  const dock = canvas.getByTestId('stressor-focus-dock')
+  await expect(dock).toBeVisible()
+  await expect(dock.locator('tr.st-row[data-row="S1"]')).toContainText('Forty promote at once')
+
+  await element(page, SERVICE_ALIAS).click({ force: true })
+  await expect(dock.getByTestId('incidence-grid')).toContainText('Repository Promotion Service')
+
+  // Esc is the browser's own: it leaves fullscreen in its chrome, where a key Playwright sends to the page
+  // may not reach. Where it does not, the page is left the way Esc leaves it, through `exitFullscreen`.
+  await page.keyboard.press('Escape')
+  if (await fullscreenTestId(page)) await page.evaluate(() => window.document.exitFullscreen())
+  await expect.poll(() => fullscreenTestId(page)).toBe('')
+
+  expect(await incidenceOf(request, document)).toContain(SERVICE)
+  await expect(row).toHaveClass(/sel/)
+  await expect(page.getByTestId('incidence-grid')).toContainText('Repository Promotion Service')
+  await expect(canvas.locator('[data-marked]')).toHaveCount(1)
+})
+
+test('the sketch fills the screen with its band, and its menu opens where it can be seen', async ({ page, request }) => {
+  const { document } = await startAnalysis(request, 'Stress analysis — sketched full size')
+  await workspace(page, document, 'naive')
+  await page.getByTestId('sketch').click()
+  const sketch = page.getByTestId('candidate-canvas')
+  await expect(sketch.locator('g.lab-element').first()).toBeVisible()
+  await sketch.getByRole('button', { name: 'View fullscreen' }).click()
+  await expect.poll(() => fullscreenTestId(page)).toBe('candidate-canvas')
+  await expect(sketch.getByTestId('done-sketching')).toBeVisible()
+
+  // The browser paints nothing outside the element that has the screen: a menu opened in the body is not seen.
+  await sketch.locator(`g.lab-element[data-alias="${SERVICE_ALIAS}"] .lab-grip`).click({ button: 'right', force: true })
+  const menu = page.getByRole('dialog', { name: 'element' })
+  await expect(menu).toBeVisible()
+  expect(await menu.evaluate((element) => window.document.fullscreenElement?.contains(element) ?? false)).toBe(true)
+  await page.keyboard.press('Escape')
+  await page.evaluate(() => window.document.exitFullscreen())
+  await expect.poll(() => fullscreenTestId(page)).toBe('')
+})
+
+test('the judge walk goes with the canvas when it fills the screen', async ({ page, request }) => {
+  const { document } = await startAnalysis(request, 'Stress analysis — judged full size')
+  await tables(request, document)('stressors', [{ op: 'add', cells: { stressor: 'Promotion volume halves', set: 'test' } }])
+  await workspace(page, document, 'stressors')
+  const section = page.getByTestId('test-set')
+  await section.locator('button.head').click()
+  await section.locator('[data-judge="naive"]').click()
+  await expect(page.getByTestId('judge-walk')).toBeVisible()
+
+  const canvas = page.getByTestId('workspace-canvas')
+  await canvas.getByRole('button', { name: 'View fullscreen' }).click()
+  await expect.poll(() => fullscreenTestId(page)).toBe('workspace-canvas')
+  await expect(canvas.getByTestId('judge-walk')).toBeVisible()
+  await expect(canvas.getByTestId('stressor-focus-dock')).toHaveCount(0)
+
+  await page.evaluate(() => window.document.exitFullscreen())
+  await expect.poll(() => fullscreenTestId(page)).toBe('')
+  await expect(section.getByTestId('judge-walk')).toBeVisible()
+})

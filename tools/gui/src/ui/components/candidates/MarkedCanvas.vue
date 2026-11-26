@@ -4,6 +4,10 @@
  * it: a candidate against its base, and whatever else the reader marks (a stress analysis marks what
  * its focus hits). A press on an element answers `pick` with its entity id, which is how a stress
  * analysis makes a tick on the picture.
+ *
+ * It can take the whole screen (`useFullscreen`, as the diagram page does). What a reader works with beside it
+ * is docked over it by the reader (`FullscreenDock`), into the element it exposes as `frameEl`; the marks and
+ * whatever is selected are the reader's, so entering or leaving changes neither.
  */
 import { computed, inject, ref, shallowRef, watch } from 'vue'
 import { Effect } from 'effect'
@@ -14,6 +18,7 @@ import { modelServiceKey } from '../../keys'
 import { useArrangementSession } from '../../composables/useArrangementSession'
 import { useDrawnEntities } from '../../composables/useDrawnEntities'
 import { useFittedPanZoom } from '../../composables/useFittedPanZoom'
+import { useFullscreen } from '../../composables/useFullscreen'
 import DiagramCanvas from '../canvas/DiagramCanvas.vue'
 import DiagramViewportOverlays from '../DiagramViewportOverlays.vue'
 import ElementMarksLayer from './ElementMarksLayer.vue'
@@ -52,8 +57,17 @@ const containerRef = ref<HTMLElement | null>(null)
 const svgContainer = ref<HTMLElement | null>(null)
 const panZoom = useFittedPanZoom(containerRef, svgContainer)
 watch(() => session.geometry.value, () => { void panZoom.fitDiagramToViewport() })
+const fullscreen = useFullscreen(containerRef)
+// Entering or leaving fullscreen is a framing request: the point of the gesture is to see the picture whole.
+watch(fullscreen.isFullscreen, () => { void panZoom.fitDiagramToViewport() })
 /** A tag is the same size on screen however far the picture is zoomed: one drawing unit is `scale` pixels. */
 const tagSize = computed(() => 12 / Math.max(panZoom.scale.value, 0.05))
+
+defineExpose({
+  /** The element the browser makes fullscreen, and so the host a docked panel teleports into. */
+  frameEl: containerRef,
+  isFullscreen: fullscreen.isFullscreen,
+})
 </script>
 
 <template>
@@ -97,6 +111,9 @@ const tagSize = computed(() => 12 / Math.max(panZoom.scale.value, 0.05))
       :window="panZoom"
       :picture="svgContainer"
       :hint="hint"
+      :is-fullscreen="fullscreen.isFullscreen.value"
+      :can-fullscreen="fullscreen.isSupported"
+      @toggle-fullscreen="fullscreen.toggle"
     />
   </div>
 </template>
@@ -107,6 +124,8 @@ const tagSize = computed(() => 12 / Math.max(panZoom.scale.value, 0.05))
   border: 1px solid var(--border); border-radius: 8px;
   height: clamp(380px, calc(100vh - 300px), 900px); cursor: grab; user-select: none;
 }
+/* Fullscreen overrides the clamped height, and the browser paints black behind what the element does not cover. */
+.workspace-canvas:fullscreen { width: 100vw; height: 100vh; max-height: none; border: none; border-radius: 0; }
 .svg-wrap :deep(svg) { display: block; max-width: none; }
 .no-img { padding: 60px 40px; text-align: center; color: var(--on-paper); font-size: 13px; }
 </style>

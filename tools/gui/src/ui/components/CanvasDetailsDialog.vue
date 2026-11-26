@@ -20,6 +20,7 @@ import EntityEditFormCard from './EntityEditFormCard.vue'
 import { withPendingDetails } from '../../domain/layout/canvasComposition'
 import { shownValue, withHeldDetails } from '../../domain/heldDetails'
 import { detailsSourceKey, type HeldElement } from './canvasDetails'
+import { useOverlayHost } from '../composables/useOverlayHost'
 
 const props = defineProps<{
   artifactId: string
@@ -69,10 +70,12 @@ onMounted(async () => {
     failed.value = String(e)
   }
 })
+/** Opened over the canvas while it has the screen, where the body would not be painted. */
+const overlayHost = useOverlayHost()
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport :to="overlayHost">
     <div
       class="details-back"
       @pointerdown.self="emit('close')"
