@@ -47,7 +47,8 @@ def _strings(value: object) -> list[str]:
 
 def stated_diagram_entities(frontmatter: Mapping[str, object]) -> dict[str, Any] | None:
     """The diagram's statements about its instances as a composition carries them: the binding shorthand the
-    persist path strips restored, and the diagram's own connections under `_connections`."""
+    persist path strips restored, and the diagram's own connections under `_connections`. The diagram read
+    answers them this way too, so what the editor sends back is what this compares."""
     raw = frontmatter.get("diagram-entities")
     stated = dict(raw) if isinstance(raw, dict) else {}
     stated = restore_diagram_shorthand(stated, frontmatter.get("bindings")) or stated
