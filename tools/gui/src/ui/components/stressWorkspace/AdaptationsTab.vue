@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * The Adaptations tab (06·6, Q39): every candidate stacked on the naive architecture, each saying what
- * it stacks on and which end states it answers, and below it the selected one's operations against
+ * it stacks on, its core idea and which end states it answers, and below it the selected one's operations against
  * *against*. *New candidate on top…* stacks a new candidate on the selected one and records it as an
  * adaptation of the end state it answers. A row takes focus, and Enter or Space selects it. The selected
  * adaptation can be abandoned — rejected, kept as a considered alternative, or deleted — with its target state
@@ -9,6 +9,7 @@
  */
 import { computed, inject, ref, watch } from 'vue'
 import { modelServiceKey } from '../../keys'
+import { DESCRIPTION_LIMIT } from '../../../domain/schemas/candidates'
 import { useCandidateTargetState } from '../../composables/useCandidateTargetState'
 import AbandonCandidate from '../candidates/AbandonCandidate.vue'
 import CandidateTargetState from '../candidates/CandidateTargetState.vue'
@@ -49,11 +50,12 @@ watch(() => chosen.value?.id, (id) => {
 
 const stacking = ref(false)
 const name = ref('')
+const description = ref('')
 const endState = ref('')
 const stackOn = computed(() => props.candidates.selected.value ?? props.analysis.naiveId.value)
 const stackOnName = computed(() => props.candidates.all.value.find((one) => one.id === stackOn.value)?.name ?? '')
 const create = async () => {
-  const id = await props.candidates.stackOn(stackOn.value, name.value.trim())
+  const id = await props.candidates.stackOn(stackOn.value, name.value.trim(), description.value.trim())
   if (!id) return
   if (endState.value) {
     await props.analysis.edit('adaptations', [{
@@ -62,6 +64,7 @@ const create = async () => {
   }
   stacking.value = false
   name.value = ''
+  description.value = ''
   emit('sketch', id)
 }
 </script>
@@ -88,6 +91,11 @@ const create = async () => {
               class="ind"
               :style="{ paddingLeft: `${Math.max(depth(one.id), 0) * 14}px` }"
             >{{ depth(one.id) > 0 ? '└ ' : '' }}</span><b>{{ one.name }}</b>
+            <span
+              v-if="one.description"
+              class="desc"
+              data-testid="adaptation-description"
+            >{{ one.description }}</span>
             <span class="role">adaptation · {{ stackLine(one.id, candidates.all.value) }}</span>
           </td>
           <td>{{ answers(one.id) || '—' }}</td>
@@ -121,6 +129,12 @@ const create = async () => {
           v-model="name"
           required
           autofocus
+        ></label>
+        <label class="idea">Core idea <input
+          v-model="description"
+          :maxlength="DESCRIPTION_LIMIT"
+          placeholder="In a sentence or two"
+          data-testid="new-candidate-description"
         ></label>
         <label>Answers <select v-model="endState">
           <option value="">no end state yet</option>
@@ -194,6 +208,9 @@ const create = async () => {
 .oprow:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .ind { color: var(--faint); font-family: ui-monospace, monospace; }
 .role { display: block; font-size: 11px; color: var(--muted); }
+.desc { display: block; font-size: 12px; color: var(--text-2); font-style: italic; }
+.new-form .idea { flex: 1 1 260px; display: flex; align-items: center; }
+.new-form .idea input { flex: 1; }
 .state { font-size: 11px; font-weight: 600; color: var(--text-2); }
 .empty { padding: 10px; font-size: 12.5px; color: var(--muted); }
 .new { padding: 8px 10px; border-top: 1px solid var(--border); }

@@ -2,11 +2,12 @@
 /**
  * One candidate's operations against the base chosen in *against* (06·6, F15, Q39): the same component
  * on the candidate page and on a stress analysis's Naive architecture and Adaptations tabs; *role* is
- * what its reader calls the candidate. The canvas marks the same comparison; a row selected here frames
+ * what its reader calls the candidate; under its name, its core idea (`CandidateDescription`), written here
+ * unless the base is *fixed*. The canvas marks the same comparison; a row selected here frames
  * its element there, and an element selected there selects its rows here (*framed*). A row's card shows
  * the element's fields, base against candidate: changed rows highlighted and read as `FieldChangeView` reads
- * them (text word by word), unchanged rows greyed. A comparison of several candidates reads each *fixed* to their common base: the
- * base is named, not chosen, and nothing is sketched there.
+ * them (text word by word), unchanged rows greyed. A comparison of several candidates reads each *fixed* to
+ * their common base: the base is named, not chosen, and nothing is sketched there.
  */
 import { computed, nextTick, ref, watch } from 'vue'
 import { stableEntityId } from '../../../domain/artifactId'
@@ -16,6 +17,7 @@ import { valueText } from '../../../domain/candidates/fieldChange'
 import { chainOf, stackLine } from '../../../domain/candidates/candidateStack'
 import type { Candidates } from '../../composables/useCandidates'
 import PermittedButton from '../PermittedButton.vue'
+import CandidateDescription from './CandidateDescription.vue'
 import FieldChangeView from './FieldChangeView.vue'
 
 const props = defineProps<{
@@ -101,6 +103,11 @@ const cardRows = (row: ChangeDifference) => {
         <b>{{ summary.name }}</b>
         <span class="role">{{ role }} · {{ summary.state }}</span>
         <span class="stack-of">{{ stackLine(summary.id, candidates.all.value) }}</span>
+        <CandidateDescription
+          :candidates="candidates"
+          :summary="summary"
+          :editable="!fixed"
+        />
       </div>
       <PermittedButton
         v-if="summary.state === 'draft' && !fixed"
@@ -224,6 +231,7 @@ const cardRows = (row: ChangeDifference) => {
 
 <style scoped>
 .ops-h { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; padding: 8px 10px 4px; }
+.ops-h > div { min-width: 0; flex: 1; }
 .ops-h b { font-size: 13px; }
 .role, .stack-of { display: block; font-size: 11.5px; color: var(--muted); }
 .reads {
