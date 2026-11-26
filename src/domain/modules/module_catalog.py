@@ -15,6 +15,7 @@ from collections.abc import Mapping
 from src.domain.modules.module_types import ConnectionTypeName, ElementClassName, EntityTypeName
 from src.domain.ontology_representation.ontology_protocol import DiagramTypeModule, OntologyModule
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, ElementClassInfo, EntityTypeInfo
+from src.domain.ontology_representation.target_state_relations import TargetStateRelations
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet
 
 
@@ -205,6 +206,19 @@ class ModuleCatalog:
             if name in om.entity_types:
                 return om
         return None
+
+    def target_state_relations(self) -> TargetStateRelations | None:
+        """The relations a target state is written with: the one ontology that declares them, or None.
+
+        Two ontologies declaring them would leave a target state's trace ambiguous, so that is refused.
+        """
+        declared = {
+            name: relations for name, om in self._ontologies.items()
+            if (relations := om.target_state_relations) is not None
+        }
+        if len(declared) > 1:
+            raise ValueError(f"More than one ontology declares target-state relations: {sorted(declared)}")
+        return next(iter(declared.values()), None)
 
     def aggregated_permitted_relationships(self) -> PermittedRelationshipSet:
         result = PermittedRelationshipSet.empty()

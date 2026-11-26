@@ -33,6 +33,7 @@ from src.application.change_sets.target_move import move_into_baseline
 from src.application.change_sets.target_state import TargetPlan, target_plan
 from src.application.change_sets.target_withdraw import withdrawal_of
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
+from src.domain.ontology_representation.target_state_relations import TargetStateRelations
 from src.infrastructure.app_bootstrap import get_module_registry
 from src.infrastructure.artifact_index import notify_paths_changed
 from src.infrastructure.candidates.apply import Written, write_operations
@@ -86,7 +87,7 @@ def move_target_into_baseline(service: CandidateService, ref: str, *, dry_run: b
         *state.written, *state.added.values(), *(end for address in near.connections for end in address.endpoints),
     ))
     revision = service.index.read_model_version().etag
-    move = move_into_baseline(candidate, state, live, revision=revision)
+    move = move_into_baseline(candidate, state, live, revision=revision, relations=target_state_relations())
     moving = replace(candidate, changes=move, target_state=None)
     application = judged(moving, stack, standing_of(move, live, beneath=sets_beneath(stack)))
     written = None if application.refusal else write_operations(application, service.root, dry_run=dry_run)
@@ -122,8 +123,10 @@ def withdraw_target_state(service: CandidateService, ref: str, *, dry_run: bool)
     for element in written:
         for diagram in service.index.diagrams_referencing_artifact(element):
             drawn.setdefault(diagram.artifact_id, []).append(element)
-    withdrawal = withdrawal_of(candidate, state, live, revision=service.index.read_model_version().etag,
-                               drawn_by=drawn)
+    withdrawal = withdrawal_of(
+        candidate, state, live, revision=service.index.read_model_version().etag,
+        relations=target_state_relations(), drawn_by=drawn,
+    )
     application = Application(
         candidate=candidate, standing=standing_of(withdrawal.changes, live), applying=withdrawal.changes,
         named=ChangeSet((), withdrawal.changes.repository_revision), ids={}, refusal=withdrawal.refusal,
@@ -175,8 +178,22 @@ def _plan(service: CandidateService, candidate: CandidateArchitecture) -> Target
         permits=lambda source, target, kind: rules.permits(
             EntityTypeName(source), EntityTypeName(target), ConnectionTypeName(kind),
         ),
+        relations=target_state_relations(),
         beneath=sets_beneath(stack),
     )
+
+
+def target_state_relations() -> TargetStateRelations:
+    """The relations a target state is written with, as the deployment's ontology declares them.
+
+    Refused where no ontology declares them: a target state cannot be written in a vocabulary that has no
+    way to trace a copy to its original.
+    """
+    relations = get_module_registry().target_state_relations()
+    if relations is None:
+        raise ValueError("No ontology in this deployment declares how a target state is related, so none can be "
+                         "written.")
+    return relations
 
 
 def _written(service: CandidateService, application: Application, plan: TargetPlan) -> Written:

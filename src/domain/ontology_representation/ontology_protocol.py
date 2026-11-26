@@ -34,6 +34,7 @@ from src.domain.ontology_representation.ontology_types import (
 )
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
 from src.domain.ontology_representation.specializations import SpecializationCatalog
+from src.domain.ontology_representation.target_state_relations import TargetStateRelations
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet
 from src.domain.relationships.relationship_derivation_restrictions import DerivationRestriction
 from src.domain.relationships.relationship_derivation_rules import CompositionRule
@@ -114,6 +115,12 @@ class OntologyModule(Protocol):
         valid answer and means the ontology has not said.
         """
         return ElementAppearance()
+
+    @property
+    def target_state_relations(self) -> TargetStateRelations | None:
+        """How a candidate applied as a target state is related in this ontology: what traces a copy to its
+        original, and what a plateau holds its elements by. None where the ontology cannot express one."""
+        ...
 
     @property
     def display_section_id(self) -> str: ...

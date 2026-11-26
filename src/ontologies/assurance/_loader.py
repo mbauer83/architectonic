@@ -13,6 +13,7 @@ from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
 from src.domain.ontology_representation.relation_notation import parse_relation_notation
 from src.domain.ontology_representation.specializations import SpecializationCatalog
+from src.domain.ontology_representation.target_state_relations import TargetStateRelations
 from src.domain.relationships.permitted_relationships import (
     PermittedRelationship,
     PermittedRelationshipSet,
@@ -106,6 +107,11 @@ class _AssuranceModule:
         """Empty: this ontology's types are not architecture elements, so none of them acts in the
         sense the declaration is about. Stated rather than inherited, so the answer is deliberate."""
         return BehavioralElementDeclaration()
+
+    @property
+    def target_state_relations(self) -> TargetStateRelations | None:
+        """None: this ontology has no vocabulary for a candidate applied as a target state."""
+        return None
 
     @property
     def element_appearance(self) -> ElementAppearance:

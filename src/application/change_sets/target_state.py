@@ -19,7 +19,8 @@ of a relation the candidate adds, edits or removes between elements the model al
 to an element the candidate adds is already the target state's through that element, and the elements
 a candidate removes stay in the baseline without a copy.
 
-**Pure.** Ids are allocated and the permitted relations read by the caller (`Allocate`, `Permits`).
+**Pure.** Ids are allocated and the permitted relations read by the caller (`Allocate`, `Permits`), and
+the relations a target state is written with are the ontology's (`TargetStateRelations`), handed in.
 """
 
 from __future__ import annotations
@@ -44,6 +45,7 @@ from src.application.change_sets.operations import (
 from src.application.change_sets.reading import FieldValues, ModelReading, RecordedReading
 from src.application.modeling.edit_field_catalogue import creatable
 from src.domain.artifact_id import canonical_entity_key
+from src.domain.ontology_representation.target_state_relations import TargetStateRelations
 from src.domain.provisional_reference import alias_of, provisional
 
 #: A new id for an element of this type and name.
@@ -51,11 +53,6 @@ Allocate: TypeAlias = Callable[[str, str], str]
 #: Whether the ontology permits a relation of this type from a source type to a target type.
 Permits: TypeAlias = Callable[[str, str, str], bool]
 
-#: What traces a "(target)" copy to its original. ArchiMate has no trace relation; an association is the
-#: relation every pair of elements may have.
-TRACE = "archimate-association"
-#: How a plateau holds the elements of its state.
-HOLDS = "archimate-aggregation"
 PLATEAU = "plateau"
 #: The «gap»: the ontology's specialization of an assessment.
 GAP_TYPE, GAP = "assessment", "gap"
@@ -87,9 +84,11 @@ def target_plan(
     revision: str,
     allocate: Allocate,
     permits: Permits,
+    relations: TargetStateRelations,
     beneath: Sequence[ChangeSet] = (),
 ) -> TargetPlan:
-    """The operations that put *candidate* in the model as a target state, over the *live* model."""
+    """The operations that put *candidate* in the model as a target state, over the *live* model, related by
+    the ontology's *relations*."""
     operations = candidate.changes.operations
     composed = compose(candidate.changes, live, beneath=beneath)
     created = candidate.changes.created
@@ -119,13 +118,13 @@ def target_plan(
     writes: list[Operation] = [
         *(CreateEntity(c.ref, {**c.fields, "status": DRAFT}, artifact_id=added[c.ref]) for c in created.values()),
         *(_copy(o, fields_of(o), alias[o], copies[o]) for o in changed),
-        *(_trace(provisional(alias[o]), o, fields_of(o), candidate.name) for o in changed),
+        *(_trace(relations, provisional(alias[o]), o, fields_of(o), candidate.name) for o in changed),
         *_relations(_addresses(live, operations), composed, routed, frozenset(created) | set(alias), removed),
         CreateEntity(refs["baseline"], _plateau(names["baseline"], home), artifact_id=ids["baseline"]),
         CreateEntity(refs["target"], _plateau(names["target"], home), artifact_id=ids["target"]),
         CreateEntity(refs["gap"], _gap(names["gap"], home, candidate.rationale), artifact_id=ids["gap"]),
         *(
-            AddConnection(ConnectionAddress(provisional(refs["gap"]), TRACE, provisional(refs[plateau])), {})
+            AddConnection(ConnectionAddress(provisional(refs["gap"]), relations.trace, provisional(refs[plateau])), {})
             for plateau in ("baseline", "target")
         ),
     ]
@@ -133,8 +132,8 @@ def target_plan(
         (provisional(alias[o]), _type(fields_of(o))) for o in changed
     ]
     baseline_members = [(o, _type(fields_of(o))) for o in (*changed, *sorted(removed))]
-    held, unheld = _held(provisional(refs["target"]), target_members, permits)
-    held_too, unheld_too = _held(provisional(refs["baseline"]), baseline_members, permits)
+    held, unheld = _held(provisional(refs["target"]), target_members, permits, relations.holds)
+    held_too, unheld_too = _held(provisional(refs["baseline"]), baseline_members, permits, relations.holds)
     state = TargetState(ids["baseline"], ids["target"], ids["gap"], copies=copies, added=added)
     chosen = {**added, **{alias[o]: copies[o] for o in changed}, **{refs[part]: ids[part] for part in refs}}
     return TargetPlan(
@@ -212,9 +211,11 @@ def _copy(original: str, fields: FieldValues, ref: str, artifact_id: str) -> Cre
     )
 
 
-def _trace(copy: str, original: str, fields: FieldValues, candidate: str) -> AddConnection:
+def _trace(
+    relations: TargetStateRelations, copy: str, original: str, fields: FieldValues, candidate: str,
+) -> AddConnection:
     return AddConnection(
-        ConnectionAddress(copy, TRACE, original),
+        ConnectionAddress(copy, relations.trace, original),
         {"description": f"The target state of {_name(fields)} in {candidate}."},
     )
 
@@ -229,15 +230,15 @@ def _gap(name: str, group: str, rationale: str) -> dict[str, Any]:
 
 
 def _held(
-    plateau: str, members: Iterable[tuple[str, str]], permits: Permits,
+    plateau: str, members: Iterable[tuple[str, str]], permits: Permits, holds: str,
 ) -> tuple[list[AddConnection], list[str]]:
-    """Aggregations from *plateau* to each member it may hold, and the types of those it may not."""
+    """Relations *holds* from *plateau* to each member it may hold, and the types of those it may not."""
     listed = list(members)
     held = [
-        AddConnection(ConnectionAddress(plateau, HOLDS, ref), {})
-        for ref, kind in listed if permits(PLATEAU, kind, HOLDS)
+        AddConnection(ConnectionAddress(plateau, holds, ref), {})
+        for ref, kind in listed if permits(PLATEAU, kind, holds)
     ]
-    return held, [kind for _ref, kind in listed if not permits(PLATEAU, kind, HOLDS)]
+    return held, [kind for _ref, kind in listed if not permits(PLATEAU, kind, holds)]
 
 
 def _home_group(subjects: Iterable[str], fields_of: Callable[[str], FieldValues]) -> str:

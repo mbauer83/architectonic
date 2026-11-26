@@ -32,8 +32,8 @@ from src.application.change_sets.operations import (
     RemoveEntity,
 )
 from src.application.change_sets.reading import RecordedReading
-from src.application.change_sets.target_state import HOLDS, TRACE
 from src.domain.artifact_id import canonical_entity_key
+from src.domain.ontology_representation.target_state_relations import TargetStateRelations
 from src.domain.provisional_reference import provisional
 
 
@@ -64,14 +64,15 @@ class Withdrawal:
 
 def withdrawal_of(
     candidate: CandidateArchitecture, state: TargetState, live: RecordedReading, *, revision: str,
-    drawn_by: Mapping[str, Sequence[str]] | None = None,
+    relations: TargetStateRelations, drawn_by: Mapping[str, Sequence[str]] | None = None,
 ) -> Withdrawal:
     """The operations that take *candidate*'s target *state* out of the *live* model, and what refuses them.
 
-    *drawn_by* maps a diagram's id to the target state's elements it draws.
+    *relations* are the ones the target state was written with; *drawn_by* maps a diagram's id to the
+    target state's elements it draws.
     """
     written = {canonical_entity_key(ref) for ref in (*state.written, *state.added.values())}
-    own = _Written.of(candidate, state, live).relation
+    own = _Written.of(candidate, state, live, relations).relation
     cut, foreign = [], []
     for address, fields in sorted(live.connections.items(), key=lambda pair: str(pair[0])):
         if not set(address.endpoints) & written:
@@ -102,9 +103,13 @@ class _Written:
     gap: str
     added_by_candidate: frozenset[ConnectionAddress]
     live: RecordedReading
+    relations: TargetStateRelations
 
     @classmethod
-    def of(cls, candidate: CandidateArchitecture, state: TargetState, live: RecordedReading) -> _Written:
+    def of(
+        cls, candidate: CandidateArchitecture, state: TargetState, live: RecordedReading,
+        relations: TargetStateRelations,
+    ) -> _Written:
         return cls(
             originals={canonical_entity_key(copy): original for original, copy in state.copies.items()},
             aliases={canonical_entity_key(added): provisional(alias) for alias, added in state.added.items()},
@@ -114,17 +119,18 @@ class _Written:
                 op.address for op in candidate.changes.operations if isinstance(op, AddConnection)
             ),
             live=live,
+            relations=relations,
         )
 
     def relation(self, address: ConnectionAddress) -> bool:
         source, kind, target = address.source_entity, address.connection_type, address.target_entity
         if source in self.plateaus:
-            return kind == HOLDS
+            return kind == self.relations.holds
         if source == self.gap:
-            return kind == TRACE and target in self.plateaus
+            return kind == self.relations.trace and target in self.plateaus
         if target in self.plateaus or target == self.gap:
             return False
-        if kind == TRACE and self.originals.get(source) == target:
+        if kind == self.relations.trace and self.originals.get(source) == target:
             return True
         mapped = ConnectionAddress(self._back(source), kind, self._back(target))
         mirrored = mapped != address and self.live.connection(mapped) is not None

@@ -32,14 +32,17 @@ from src.application.change_sets.operations import (
     RemoveEntity,
 )
 from src.application.change_sets.reading import RecordedReading
-from src.application.change_sets.target_state import ACTIVE, DRAFT, TRACE, named_by_id, stated
+from src.application.change_sets.target_state import ACTIVE, DRAFT, named_by_id, stated
 from src.domain.artifact_id import canonical_entity_key
+from src.domain.ontology_representation.target_state_relations import TargetStateRelations
 
 
 def move_into_baseline(
     candidate: CandidateArchitecture, state: TargetState, live: RecordedReading, *, revision: str,
+    relations: TargetStateRelations,
 ) -> ChangeSet:
-    """The operations that move *candidate*'s target *state* into the baseline, over the *live* model."""
+    """The operations that move *candidate*'s target *state* into the baseline, over the *live* model; the
+    target state was written with *relations*."""
     kept = tuple(
         named_by_id(operation, state.added) for operation in candidate.changes.operations
         if not isinstance(operation, CreateEntity)
@@ -64,7 +67,8 @@ def move_into_baseline(
             originals.get(address.target_entity, address.target_entity),
         )
         if (
-            set(address.endpoints) & containers or set(back.endpoints) & removed or _traces(address, originals)
+            set(address.endpoints) & containers or set(back.endpoints) & removed
+            or _traces(address, originals, relations.trace)
             or back.source_entity == back.target_entity or AddConnection(back, {}).claim in claimed
             or composed.connection(back) is not None
         ):
@@ -77,9 +81,9 @@ def move_into_baseline(
     return ChangeSet((*kept, *activated, *_once(moved), *cut, *gone), revision)
 
 
-def _traces(address: ConnectionAddress, originals: Mapping[str, str]) -> bool:
-    """Whether *address* is the association that traces a copy to its original."""
-    return address.connection_type == TRACE and originals.get(address.source_entity) == address.target_entity
+def _traces(address: ConnectionAddress, originals: Mapping[str, str], trace: str) -> bool:
+    """Whether *address* is the relation *trace* that traces a copy to its original."""
+    return address.connection_type == trace and originals.get(address.source_entity) == address.target_entity
 
 
 def _once(additions: list[AddConnection]) -> tuple[AddConnection, ...]:
