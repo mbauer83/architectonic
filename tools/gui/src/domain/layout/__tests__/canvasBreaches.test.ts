@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { Extent, Point } from '../geometry'
-import { RULE_TIERS } from '../routeQuality'
+import { RULE_TIERS, runIndex, runsAlong, runsAlongIn } from '../routeQuality'
 import { breachesOf, countByTier, tierOf } from '../canvasBreaches'
 import { LINE_DRAWING, SHAPE_DRAWING } from './canvasDrawingFixtures'
 import type { LayoutGeometry } from '../../schemas/diagramLayoutGeometry'
@@ -70,5 +70,35 @@ describe('the canvas breaches', () => {
     const courses = new Map([...routed.routes].map(([key, one]) => [Number(key), one.course]))
     const breaches = breachesOf(geometry, placement, courses, text, new Set(routed.unroutable.map(Number)))
     expect(countByTier(breaches).hard).toBe(0)
+  })
+})
+
+describe('runs along, asked of a whole picture at once', () => {
+  it('finds what asking each line against every other finds', () => {
+    let seed = 7
+    const next = (below: number): number => {
+      seed = (seed * 1103515245 + 12345) % 2147483648
+      return seed % below
+    }
+    const courses = new Map<number, Point[]>(Array.from({ length: 60 }, (_, index) => {
+      const points: Point[] = [{ x: next(40) * 10, y: next(40) * 10 }]
+      for (let turn = 0; turn < 4; turn += 1) {
+        const last = points[points.length - 1]
+        points.push(turn % 2 === 0
+          ? { x: next(40) * 10 + next(3), y: last.y }
+          : { x: last.x, y: next(40) * 10 + next(3) })
+      }
+      return [index, points]
+    }))
+    const borders = [at(0, 0, 100, 60), at(150, 150, 300, 260), at(42, 300, 61, 390)]
+    const index = runIndex(courses, borders)
+    let found = 0
+    for (const [own, course] of courses) {
+      const others = [...courses].filter(([one]) => one !== own).map(([, other]) => other)
+      const every = runsAlong(course, others, borders)
+      found += every.length
+      expect(runsAlongIn(course, index, own)).toEqual(every)
+    }
+    expect(found).toBeGreaterThan(0)
   })
 })

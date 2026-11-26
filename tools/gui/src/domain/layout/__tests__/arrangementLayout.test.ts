@@ -141,6 +141,12 @@ describe('what Save states for the lines the session moved', () => {
     expect(shownRoutesOfMoved(geometry, before, before, routed)).toEqual({})
   })
 
+  it('states the shown course of a line routed again because something moved across it', () => {
+    expect(shownRoutesOfMoved(geometry, before, before, routed, new Set([0]))).toEqual({
+      r: { from: { side: 'right', at: 0.5 }, to: { side: 'left', at: 0.5 }, via: [[320, 60], [320, 120]] },
+    })
+  })
+
   it('keeps a route the user stated', () => {
     const stated = new Map([['r', { via: [[300, 70]] as [number, number][] }]])
     const now = { ...moved(geometry, before, 'C', 0, 60), routes: stated }

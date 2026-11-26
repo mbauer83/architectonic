@@ -18,7 +18,7 @@ import type { Point } from '../../domain/layout/geometry'
 import type { Arrangement } from '../../domain/layout/canvasArrangement'
 import { drawnArrangement } from '../../domain/layout/canvasArrangement'
 import { breachesOf } from '../../domain/layout/canvasBreaches'
-import { changedShapes, fullPass, placementOf, quickPass, textRegions } from '../../domain/layout/canvasRouting'
+import { changedShapes, followPass, fullPass, placementOf, quickPass, textRegions } from '../../domain/layout/canvasRouting'
 import type { Placement } from '../../domain/layout/canvasRouting'
 import type { Reshaped } from '../../domain/layout/canvasShapeDrawing'
 import { stillToReshape } from '../../domain/layout/canvasShapeDrawing'
@@ -59,7 +59,7 @@ export interface ArrangementState {
 
 /** How long the last pass took: the budget is a drag frame. */
 export interface PassTiming {
-  readonly kind: 'quick' | 'full'
+  readonly kind: 'quick' | 'full' | 'follow'
   readonly ms: number
 }
 
@@ -257,11 +257,23 @@ export function useArrangementSession(drawShapes: DrawShapes) {
 
   /** The frame waiting to be drawn: the state its lines are routed from, and the shapes the drag moved. */
   let pending: { readonly from: ArrangementState; changed: ReadonlySet<string> } | null = null
+  /**
+   * Where a drag of shapes began: the state and the lines shown then. Its frames only follow (`followPass`)
+   * from those lines, so a frame costs what following costs on any picture; the drop routes from them.
+   */
+  let dragged: { readonly from: ArrangementState; readonly shown: RoutingResult } | null = null
 
   const drawFrame = () => {
     frame = null
     const shown = routes.value
-    if (pending && shown) routedFrom(pending.from, shown, pending.changed)
+    if (pending && shown && pending.changed.size > 0) {
+      dragged ??= { from: pending.from, shown }
+      const [drawn, where, now, changed] = [geometry.value, placement.value, state.value, pending.changed]
+      const start = dragged.shown
+      if (drawn && where && now) routes.value = timed('follow', () => followPass(drawn, where, now.arrangement.routes, start, changed))
+    } else if (pending && shown) {
+      routedFrom(pending.from, shown, pending.changed)
+    }
     pending = null
   }
 
@@ -271,15 +283,23 @@ export function useArrangementSession(drawShapes: DrawShapes) {
     if (!from) return
     if (!routes.value) routeEverything()
     state.value = { ...from, arrangement: next, byHand: true }
-    pending = { from: pending?.from ?? from, changed }
+    pending = { from: pending?.from ?? dragged?.from ?? from, changed }
     if (frame === null) frame = requestAnimationFrame(drawFrame)
   }
 
-  /** The change is dropped: the picture keeps the lines its last frame showed, routed now if still pending. */
+  /**
+   * The change is dropped. A drag of shapes is routed now, once, from the lines shown before it: only the
+   * lines touching what it moved (`quickPass`). Any other change keeps the lines its last frame showed,
+   * routed now if still pending.
+   */
   const commit = () => {
     if (frame !== null) cancelAnimationFrame(frame)
-    if (pending) drawFrame()
     frame = null
+    if (pending && pending.changed.size > 0) dragged ??= routes.value ? { from: pending.from, shown: routes.value } : null
+    else if (pending) drawFrame()
+    pending = null
+    if (dragged) routedFrom(dragged.from, dragged.shown)
+    dragged = null
     const now = state.value
     if (now?.byHand && routes.value) state.value = { ...now, routed: routes.value }
   }

@@ -19,6 +19,7 @@ import {
   arrangedBy, layoutOf, layoutPatchBetween, patchIsEmpty, shownRoutesOfMoved,
 } from '../../domain/layout/arrangementLayout'
 import { drawnArrangement, placedAt } from '../../domain/layout/canvasArrangement'
+import { linesRoutedAgain } from '../../domain/layout/canvasRouting'
 import type { Point } from '../../domain/layout/geometry'
 import { occurrenceItems } from '../../domain/diagramOccurrences'
 import type { PendingChange } from '../../domain/layout/sessionChanges'
@@ -120,7 +121,9 @@ export function useDiagramEditing(
     const before = saved.value
     const routed = session.routes.value?.routes
     if (!before || !routed) return layout
-    const shown = shownRoutesOfMoved(geometry, referenceOf(before, now), now.arrangement, routed)
+    const where = session.placement.value
+    const rerouted = where ? linesRoutedAgain(geometry, where, now.arrangement.routes) : undefined
+    const shown = shownRoutesOfMoved(geometry, referenceOf(before, now), now.arrangement, routed, rerouted)
     return { ...layout, relations: { ...shown, ...layout.relations } }
   }
 
