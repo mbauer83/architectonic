@@ -60,8 +60,9 @@ def analyse(
     missing: dict[str, set[str]] = defaultdict(set)
     unexplained = []
     # An element is matched by its stable id, so either spelling of it is one element, and answered
-    # as the naive view names it.
-    spelled = {canonical_entity_key(ref): ref for ref in naive.entities}
+    # as the naive view names it — one the naive creates by its reference, whether written so or by
+    # the id chosen for it: what the naive creates is in the naive architecture.
+    spelled = naive.spelling()
 
     def element(written: object) -> str:
         return spelled.get(canonical_entity_key(str(written)), str(written))

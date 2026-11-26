@@ -41,15 +41,21 @@ export const drawnCommands = (view: ComposedView, drawn: DrawnContent): readonly
     return !one.artifact_id && was !== undefined && now !== '' && now !== was
       ? [{ op: 'model.element.rename', artifact_id: one.id, name: now }] : []
   })
-  const ends = new Set([...names.keys(), ...creates.map((one) => stableEntityId(one.artifact_id))])
+  // Each end as the picture draws it: an operation may name an element by its short id and the picture by its
+  // full one, which is the spelling the composer matches a relation's end to.
+  const ends = new Map([...drawn.entities, ...creates]
+    .map((one) => [stableEntityId(one.artifact_id), one.artifact_id] as const))
+  const drawnAs = (ref: string): string | undefined => {
+    const id = chosen.get(ref) ?? ref
+    return isEntityId(id) ? ends.get(stableEntityId(id)) : undefined
+  }
   const held = new Set([...drawn.connections, ...drawn.undrawn].map((one) => stableConnectionId(one.artifact_id)))
   const relations = view.connections.flatMap((one): CanvasCommand[] => {
-    const source = chosen.get(one.source_entity) ?? one.source_entity
-    const target = chosen.get(one.target_entity) ?? one.target_entity
+    const source = drawnAs(one.source_entity)
+    const target = drawnAs(one.target_entity)
+    if (!source || !target) return []
     const id = connectionId(source, one.connection_type, target)
-    const drawable = isEntityId(source) && isEntityId(target)
-      && ends.has(stableEntityId(source)) && ends.has(stableEntityId(target))
-    return drawable && !held.has(stableConnectionId(id)) ? [{
+    return !held.has(stableConnectionId(id)) ? [{
       op: 'model.relation.create', artifact_id: id, description: text(one.fields.description),
       src_multiplicity: text(one.fields.src_multiplicity), tgt_multiplicity: text(one.fields.tgt_multiplicity),
     }] : []

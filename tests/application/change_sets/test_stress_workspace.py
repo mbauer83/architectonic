@@ -34,3 +34,26 @@ def test_promotion_outage_tracks_the_naive_queue_even_after_it_is_removed(tmp_pa
     assert report["progress"]["without_adaptation"] == ["E1"]
     del view.entities["$ref:queue"]
     assert analyse(tables, view)["stressors"][0]["missing_elements"] == ["$ref:queue"]
+
+
+QUEUE_ID = "APP@1795700000.PrmQueu.promotion-queue"
+
+
+def test_a_tick_on_an_element_the_naive_creates_written_by_its_chosen_id_hits_it(tmp_path: Path) -> None:
+    """The workspace ticks a created element by the id the canvas drew it with, not by its reference."""
+    schema = normalize_document_schema("stress-analysis", STRESS_ANALYSIS_SCHEMA)
+    rows = {
+        "stressors": [
+            {"stressor": "Forty engagements promote in one week", "kind": "economic", "set": "design",
+             "subject": "APP@1795700000.PrmQueu", "consequence": "Promotions wait", "end_state": "E1"},
+        ],
+        "end-states": [{"end_state": "Promotions stall"}],
+        "incidence": [{"stressor": "S1", "component": c, "note": "Queued"} for c in (SERVICE, QUEUE_ID)],
+    }
+    body = document_text(schema, {k: table_text(table_of(schema, k), v) for k, v in rows.items()})
+    tables = read_document_tables(document_path(tmp_path, schema), body, schema)
+    view = CandidateView({SERVICE: {}, "$ref:queue": {"name": "Promotion Queue"}}, {}, {"$ref:queue": QUEUE_ID})
+    report = analyse(tables, view)
+    assert report["stressors"][0]["missing_elements"] == []
+    assert report["stressors"][0]["hits"] == sorted(["$ref:queue", SERVICE])
+    assert report["coverage"]["untouched"] == []

@@ -12,8 +12,7 @@ import { diagramsHostingCandidates } from '../composables/useDiagramTypeCapabili
 import { computed, inject, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { DiagramSummary } from '../../domain'
-import { comparedIds } from '../../domain/candidates/candidateComparison'
-import { stableEntityId } from '../../domain/artifactId'
+import { comparedIds, elementNameIn } from '../../domain/candidates/candidateComparison'
 import { modelServiceKey, toastKey } from '../keys'
 import { candidateDetailRoute, candidateListRoute } from '../router/artifactRoutes'
 import { useCandidateComparison } from '../composables/useCandidateComparison'
@@ -58,16 +57,9 @@ const integration = useIntegration(svc, (id) => {
   toast(`Integrated into ${integration.name.value}, a new candidate.`)
   void router.push(candidateDetailRoute(id))
 })
-/** An element by its name in the common base, as a comparison's change reads it; its id where none does. */
-const elementName = (id: string): string => {
-  const key = stableEntityId(id)
-  const before = comparison.panes.value.flatMap((pane) => pane.reading.comparison.value?.diff ?? [])
-    .filter((row) => row.kind === 'entity' && typeof row.target === 'string' && stableEntityId(row.target) === key)
-    .map((row) => row.fields.name?.before).find((name) => typeof name === 'string')
-  const read = comparison.panes.value.flatMap((pane) => pane.reading.comparison.value?.view.entities ?? [])
-    .find((one) => stableEntityId(one.artifact_id ?? one.id) === key)?.fields.name
-  return typeof before === 'string' ? before : typeof read === 'string' ? read : id
-}
+/** An element by its name in the common base, as the compared candidates' comparisons read it (`elementNameIn`). */
+const elementName = (id: string): string =>
+  elementNameIn(comparison.panes.value.map((pane) => pane.reading.comparison.value), id)
 const integrate = async () => {
   integrating.value = true
   await integration.choose(comparison.known.value)

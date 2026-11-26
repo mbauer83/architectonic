@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { ChangeDifference, CandidateSummary } from '../schemas/candidates'
+import type { CandidateComparison, ChangeDifference, CandidateSummary } from '../schemas/candidates'
 import { diffMarks } from './elementMarks'
-import { changedByOthers, commonBase, comparedIds, sharedBases, withOthers } from './candidateComparison'
+import {
+  UNNAMED_YET, changedByOthers, commonBase, comparedIds, elementNameIn, sharedBases, withOthers,
+} from './candidateComparison'
 
 const candidate = (id: string, parent: string | null = null): CandidateSummary =>
   ({ id, name: `${id} name`, state: 'draft', parent, scope: [], diagram: null, operations: 0 })
@@ -57,10 +59,32 @@ describe('comparing candidate architectures', () => {
   })
 
   it('says on a mark which other candidates change the same element, and leaves the rest alone', () => {
-    const marks = diffMarks([changed('ENT@1.x.db'), changed('ENT@2.y.api', 'added')])
+    const marks = diffMarks({
+      diff: [changed('ENT@1.x.db'), changed('ENT@2.y.api', 'added')], view: { entities: [], connections: [] },
+    })
     const told = withOthers(marks, new Map([['ENT@1.x', ['b']]]), (id) => `${id} name`)
     expect(told.get('ENT@1.x')?.title).toContain('also changed in b name')
     expect(told.get('ENT@1.x')?.tag).toBe('~')
     expect(told.get('ENT@2.y')).toEqual(marks.get('ENT@2.y'))
+  })
+})
+
+describe('an element named on an integration card', () => {
+  const SERVICE = 'SRV@1712870400.Uv9Wx9.repository-promotion-service'
+  const read: CandidateComparison = {
+    candidate: 'queued', base: 'model', stack: ['queued'], standing: [],
+    diff: [{ kind: 'entity', target: SERVICE, change: 'edited',
+      fields: { name: { before: 'Repository Promotion Service', after: 'Queued Promotion Service' } } }],
+    view: { entities: [], connections: [] },
+  }
+
+  it('is never called by its id while a comparison that may name it is still being read', () => {
+    expect(elementNameIn([null, null], SERVICE)).toBe(UNNAMED_YET)
+    expect(elementNameIn([read, null], 'APP@1.unnamed')).toBe(UNNAMED_YET)
+  })
+
+  it('is called by its name in the common base once read, and by its id only when nothing names it', () => {
+    expect(elementNameIn([read, null], 'SRV@1712870400.Uv9Wx9')).toBe('Repository Promotion Service')
+    expect(elementNameIn([read, read], 'APP@1.unnamed')).toBe('APP@1.unnamed')
   })
 })

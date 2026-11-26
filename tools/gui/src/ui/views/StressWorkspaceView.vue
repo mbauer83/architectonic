@@ -306,7 +306,7 @@ onMounted(async () => {
             :role="sketched.id === analysis.naiveId.value ? 'Naive architecture' : 'Adaptation'"
             :stack="stackLine(sketched.id, candidates.all.value)"
             :done-label="sketched.id === analysis.naiveId.value ? 'Done sketching · on to Stressors' : 'Done sketching'"
-            :changed="diffMarks(candidates.comparison.value?.diff ?? [])"
+            :changed="diffMarks(candidates.comparison.value)"
             @recorded="recorded"
             @done="doneSketching"
           />
@@ -316,7 +316,7 @@ onMounted(async () => {
             :drawing="canvas.drawing.value"
             :marks="canvas.marks.value"
             :hint="canvas.hint.value"
-            empty-text="Nothing to draw yet: sketch the naive architecture to define it."
+            :empty-text="canvas.emptyText.value"
             @pick="canvas.pick"
           />
           <p

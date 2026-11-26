@@ -122,8 +122,8 @@ const aboutElement = async (id: string) => {
     </div>
     <details class="coupling">
       <summary>
-        <b>Coupling</b>
-        <span class="cnt">
+        <!-- The space is said: whitespace between two elements on separate lines is condensed away. -->
+        <b>Coupling</b>{{ ' ' }}<span class="cnt">
           {{ coupling.length }} pair{{ coupling.length === 1 ? '' : 's' }} hit together by stressors
         </span>
       </summary>

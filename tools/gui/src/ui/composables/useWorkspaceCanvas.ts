@@ -10,9 +10,11 @@ import { computed, type Ref } from 'vue'
 import { stableEntityId } from '../../domain/artifactId'
 import type { Marks } from '../../domain/candidates/elementMarks'
 import { diffMarks, framedMarks } from '../../domain/candidates/elementMarks'
+import { chosenIds } from '../../domain/candidates/candidateCanvas'
 import type { WorkspaceTab } from '../../domain/stressAnalysis/analysisProgress'
 import { cell } from '../../domain/stressAnalysis/analysisRows'
-import { INTEGRATION } from '../../domain/stressAnalysis/testSet'
+import { INTEGRATION, NAIVE } from '../../domain/stressAnalysis/testSet'
+import { type CanvasReading, canvasCaption, emptyCaption } from '../../domain/stressAnalysis/canvasCaption'
 import { hitMarks, stressorsTicking } from '../../domain/stressAnalysis/workspaceMarks'
 import type { AnalysisEdits } from './useAnalysisEdits'
 import type { Candidates } from './useCandidates'
@@ -40,15 +42,21 @@ export function useWorkspaceCanvas(
   const { tab, selected, endStateFocus, framed, judging, judgedCandidate } = focus
   /** Whether the canvas reads the selected candidate's comparison: on a candidate tab, or judging a candidate. */
   const readsCandidate = computed(() => (judging.value
-    ? judgedCandidate.value !== null
+    ? judging.value !== NAIVE && judging.value !== INTEGRATION
     : tab.value === 'naive' || tab.value === 'adaptations'))
 
   const naiveDrawn = useComposedDrawing(svc, () => analysis.naive.value)
   const candidateDrawn = useComposedDrawing(svc, () => candidates.comparison.value)
   // The integration is in the model: it is drawn as the model draws it, without the naive's own changes.
-  const drawing = computed(() => (judging.value === INTEGRATION ? analysis.naive.value?.drawing : null)
-    ?? (readsCandidate.value ? candidateDrawn.value : null) ?? naiveDrawn.value)
+  // A candidate being judged is drawn once its comparison is read, never the naive in its place meanwhile.
+  const drawing = computed(() => {
+    if (judging.value === INTEGRATION) return analysis.naive.value?.drawing ?? naiveDrawn.value
+    if (judging.value && readsCandidate.value) return judgedCandidate.value ? candidateDrawn.value : null
+    return (readsCandidate.value ? candidateDrawn.value : null) ?? naiveDrawn.value
+  })
 
+  /** The id the picture draws each element the naive creates with, by the reference the incidence read names it by. */
+  const chosen = computed(() => chosenIds(analysis.naive.value?.view ?? { entities: [] }))
   const hitsOf = (stressors: readonly string[]): ReadonlyMap<string, readonly string[]> =>
     new Map(stressors.map((id) => [id, analysis.hitsOf(id)]))
   /** The stressor rows that tick the element selected on the canvas, while no row is in focus. */
@@ -56,32 +64,26 @@ export function useWorkspaceCanvas(
 
   const marks = computed((): Marks => {
     const around = framed.value ? framedMarks([framed.value], 'The row, hint or element selected') : new Map()
-    if (readsCandidate.value) return new Map([...diffMarks(candidates.comparison.value?.diff ?? []), ...around])
+    if (readsCandidate.value) return new Map([...diffMarks(candidates.comparison.value), ...around])
     if (judging.value) return around
-    if (tab.value === 'stressors' && selected.value) return new Map([...hitMarks(hitsOf([selected.value])), ...around])
+    if (tab.value === 'stressors' && selected.value) {
+      return new Map([...hitMarks(hitsOf([selected.value]), chosen.value), ...around])
+    }
     if (tab.value === 'end-states' && endStateFocus.value) {
       const under = analysis.stressors.value.filter((row) => cell(row, 'end_state') === endStateFocus.value)
-      return hitMarks(hitsOf(under.map((row) => row.row_id)))
+      return hitMarks(hitsOf(under.map((row) => row.row_id)), chosen.value)
     }
     return around
   })
 
-  const hint = computed(() => {
-    if (judging.value === INTEGRATION) {
-      return 'The integration is the model as the integrated candidates left it · Scroll to zoom · Drag to pan'
-    }
-    if (judging.value) {
-      return judgedCandidate.value
-        ? 'The candidate being judged, marked with what it changes from the naive · Scroll to zoom'
-        : 'The naive architecture, being judged · Scroll to zoom · Drag to pan'
-    }
-    if (tab.value === 'stressors' && selected.value) {
-      return `Press an element to tick or untick it for ${selected.value} · Scroll to zoom · Drag to pan`
-    }
-    return tab.value === 'stressors'
-      ? 'Select a row, or an element to mark the rows that tick it · Scroll to zoom · Drag to pan'
-      : 'Select a row or an element · Scroll to zoom · Drag to pan'
-  })
+  /** What the canvas shows, as its caption reads it. */
+  const reading = computed((): CanvasReading => ({
+    tab: tab.value, selected: selected.value, judging: judging.value,
+    judgedName: candidates.all.value.find((one) => one.id === judging.value)?.name ?? judging.value ?? '',
+    judgedRead: judgedCandidate.value !== null,
+  }))
+  const hint = computed(() => canvasCaption(reading.value))
+  const emptyText = computed(() => emptyCaption(reading.value))
 
   /** The naive architecture's own id for an element the canvas names by its stable id. */
   const fullIdOf = (stableId: string): string =>
@@ -100,5 +102,5 @@ export function useWorkspaceCanvas(
     void (tick ? edits.untick(tick) : edits.tick(stressor, fullIdOf(stableId)))
   }
 
-  return { readsCandidate, drawing, marks, hint, ticking, pick }
+  return { readsCandidate, drawing, marks, hint, emptyText, ticking, pick }
 }

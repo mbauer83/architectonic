@@ -20,6 +20,16 @@ class CandidateView:
     #: The id chosen for each entity the stack creates, by the reference the view names it with.
     chosen: dict[str, str] = field(default_factory=dict)
 
+    def spelling(self) -> dict[str, str]:
+        """The reference the view names each entity with, by every key it may be written under: its own
+        reference's, and for one the stack creates, the key of the id chosen for it (`canonical_entity_key`).
+        An element the stack creates is in the architecture it describes, however a reader writes it."""
+        return {
+            **{canonical_entity_key(ref): ref for ref in self.entities},
+            **{canonical_entity_key(artifact_id): ref for ref, artifact_id in self.chosen.items()
+               if ref in self.entities},
+        }
+
     def wire(self) -> dict[str, Any]:
         return {
             "entities": [
