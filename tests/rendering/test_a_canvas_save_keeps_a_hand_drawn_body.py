@@ -9,6 +9,7 @@ not offer a canvas whose save would be refused. Arranging alone writes the layou
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -30,6 +31,8 @@ from tests.support.rest_state import reset_state_for_test
 pytestmark = pytest.mark.skipif(not plantuml_available(), reason="plantuml.jar not found")
 
 TEAM_BOX = 'rectangle "Team / Project A" <<BusinessGrouping>> {'
+#: A PlantUML alias as the renderer spells one, a further drawing's or a first: what a reader is never shown.
+RAW_ALIAS = re.compile(r"[A-Z]{2,4}_\w+__\d|\b[A-Z]{2,4}_[A-Za-z0-9_-]{6,}\b")
 
 
 @pytest.fixture
@@ -86,6 +89,8 @@ def test_the_read_says_the_body_is_written_by_hand(model: RenderedModel, client:
     detail = client.get(f"/api/diagrams/{_hand_drawn(model).stem}").json()
 
     assert "Team / Project A" in detail["written_by_hand"]
+    assert detail["hand_drawn"]["boxes"] == ["Team / Project A"]
+    assert not RAW_ALIAS.search(detail["written_by_hand"])
 
 
 def test_a_rest_canvas_save_is_refused_and_the_body_kept(model: RenderedModel, client: TestClient) -> None:
@@ -98,7 +103,9 @@ def test_a_rest_canvas_save_is_refused_and_the_body_kept(model: RenderedModel, c
 
     assert saved.status_code == 400, saved.text
     error = saved.json()["detail"]
+    assert error["message"].startswith(f"Diagram '{path.stem}' has a picture drawn by hand: ")
     assert "Team / Project A" in error["message"]
+    assert not RAW_ALIAS.search(error["message"])
     assert error["details"]["field_errors"][0]["field"] == "manual_layout"
     assert path.read_bytes() == before
 

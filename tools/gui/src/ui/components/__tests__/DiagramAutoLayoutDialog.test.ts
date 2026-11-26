@@ -29,13 +29,13 @@ const settle = async (): Promise<void> => {
   await nextTick()
 }
 
-const mounted = (svc: Partial<ModelService>) => {
+const mounted = (svc: Partial<ModelService>, more: Partial<DiagramDetail> = {}) => {
   const [laidOut, closed] = [vi.fn(), vi.fn()]
   host = document.createElement('div')
   document.body.appendChild(host)
   globalThis.URL.createObjectURL = () => 'blob:now'
   globalThis.URL.revokeObjectURL = () => undefined
-  app = createApp({ render: () => h(DiagramAutoLayoutDialog, { detail: DETAIL, onLaidOut: laidOut, onClose: closed }) })
+  app = createApp({ render: () => h(DiagramAutoLayoutDialog, { detail: { ...DETAIL, ...more }, onLaidOut: laidOut, onClose: closed }) })
   app.provide(modelServiceKey, {
     getDiagramSvg: () => Effect.succeed('<svg xmlns="http://www.w3.org/2000/svg"/>'),
     previewDiagram: () => Effect.succeed(PREVIEW), getDiagram: () => Effect.succeed(DETAIL), ...svc,
@@ -81,10 +81,22 @@ describe('laying a hand-written diagram out automatically', () => {
     expect(laidOut).not.toHaveBeenCalled()
   })
 
-  it('says why the body is written by hand', async () => {
+  it('names nothing more for a diagram only marked manual-layout', async () => {
     mounted({})
     await settle()
-    expect(host.querySelector('[data-testid="auto-layout-why"]')?.textContent).toContain('it is manual-layout')
+    expect(host.querySelector('[data-testid="auto-layout-why"]')).toBeNull()
+    expect(host.textContent).toContain("This diagram's picture is drawn by hand.")
+  })
+
+  it('names what only the hand-drawn picture has, collapsed', async () => {
+    mounted({}, {
+      written_by_hand: 'it draws what a generated picture would not: boxes "Team A"',
+      hand_drawn: { boxes: ['Team A'], elements: [], relations: [], directions: [] },
+    })
+    await settle()
+    const details = host.querySelector<HTMLDetailsElement>('[data-testid="auto-layout-why"] details')
+    expect(details?.open).toBe(false)
+    expect(details?.textContent).toContain('Box "Team A"')
   })
 
   it('says why when the write refuses, and reports nothing laid out', async () => {

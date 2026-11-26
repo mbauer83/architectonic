@@ -35,6 +35,20 @@ export const AuthoredGroupingSchema: Schema.Schema<AuthoredGroupingWire> = Schem
   stereotype: Schema.optional(Schema.String),
 })
 
+/** What only a hand-drawn picture has: boxes by their labels, elements by their names, relations by the
+ * names of their ends and the model's type for them. Never PlantUML aliases. */
+export const HandDrawnSchema = Schema.Struct({
+  boxes: Schema.Array(Schema.String),
+  elements: Schema.Array(Schema.String),
+  relations: Schema.Array(Schema.Struct({
+    source: Schema.String,
+    target: Schema.String,
+    type: Schema.optional(Schema.String),
+  })),
+  directions: Schema.Array(Schema.String),
+})
+export type HandDrawn = typeof HandDrawnSchema.Type
+
 export const DiagramDetailSchema = Schema.Struct({
   artifact_id: Schema.String,
   artifact_type: Schema.String,
@@ -68,10 +82,13 @@ export const DiagramDetailSchema = Schema.Struct({
   /** The revision of what a replacement replaces, as read: sent back as `base_revision`, so a diagram changed
    * since is refused (409) rather than written over. */
   revision: Schema.String,
-  /** Why the diagram keeps a body written by hand, which a save generating its body would discard: the
-   * server's answer, `manual-layout` or what the body draws that its composition does not. Absent where the
-   * body is generated. */
+  /** Why the diagram's picture is drawn by hand, which a save generating its body would discard: the
+   * server's answer, `manual-layout` or what the picture draws that its generated picture would not. Absent
+   * where the body is generated. */
   written_by_hand: Schema.optional(Schema.String),
+  /** What only the hand-drawn picture has, named as a reader sees it. Absent where the body is generated,
+   * and for a diagram marked `manual-layout`. */
+  hand_drawn: Schema.optional(HandDrawnSchema),
 })
 export type DiagramDetail = typeof DiagramDetailSchema.Type
 

@@ -8517,6 +8517,7 @@ export interface components {
             };
             /** Group */
             group?: string;
+            hand_drawn?: components["schemas"]["HandDrawnResponse"];
             /** Is Global */
             is_global: boolean;
             /** Last Updated */
@@ -11465,6 +11466,33 @@ export interface components {
             node: string;
             /** Text */
             text: string;
+        };
+        /**
+         * HandDrawnRelationResponse
+         * @description A relation only a hand-drawn picture has: its two ends by name, and the model's type for it.
+         */
+        HandDrawnRelationResponse: {
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+            /** Type */
+            type?: string;
+        };
+        /**
+         * HandDrawnResponse
+         * @description What a hand-drawn picture has that its generated picture would not, named as a reader sees it: boxes
+         *     by their labels, elements by their names, relations by the names of their ends — never PlantUML aliases.
+         */
+        HandDrawnResponse: {
+            /** Boxes */
+            boxes: string[];
+            /** Directions */
+            directions: string[];
+            /** Elements */
+            elements: string[];
+            /** Relations */
+            relations: components["schemas"]["HandDrawnRelationResponse"][];
         };
         /** HeldApartStressor */
         HeldApartStressor: {

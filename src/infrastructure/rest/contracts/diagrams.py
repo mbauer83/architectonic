@@ -278,6 +278,26 @@ class DiagramPreviewResponse(Closed):
     derived_entities: list[DerivedViewEntityResponse] | None
 
 
+class HandDrawnRelationResponse(NullsOmitted):
+    """A relation only a hand-drawn picture has: its two ends by name, and the model's type for it."""
+
+    source: str
+    target: str
+    #: As a reader names it (`assignment`). Absent where the diagram's connections give the pair no one type.
+    type: str | None = None
+
+
+class HandDrawnResponse(NullsOmitted):
+    """What a hand-drawn picture has that its generated picture would not, named as a reader sees it: boxes
+    by their labels, elements by their names, relations by the names of their ends — never PlantUML aliases."""
+
+    boxes: list[str]
+    elements: list[str]
+    relations: list[HandDrawnRelationResponse]
+    #: A layout direction the picture states, `left to right`.
+    directions: list[str]
+
+
 class DiagramDetailResponse(NullsOmitted):
     """One diagram, read whole: the record, its source, and what the source declares.
 
@@ -326,11 +346,14 @@ class DiagramDetailResponse(NullsOmitted):
     #: The revision of what a replacement replaces, as read: sent back as its `base_revision`, so a diagram
     #: changed since is refused rather than written over.
     revision: str
-    #: Why this diagram keeps a body written by hand, which a save generating its body from the composition
-    #: would discard — `manual-layout`, or what the body draws that its composition does not generate. A
-    #: replacement is refused unless it gives the body up (`manual_layout: false`). Absent where the body is
-    #: the generator's.
+    #: Why this diagram's picture is drawn by hand, which a save generating its body from the composition
+    #: would discard — `manual-layout`, or what the picture draws that its generated picture would not, named
+    #: as `hand_drawn` names it. A replacement is refused unless it gives the body up (`manual_layout: false`).
+    #: Absent where the body is the generator's.
     written_by_hand: str | None = None
+    #: What only the hand-drawn picture has, for a diagram whose picture draws more than its composition
+    #: generates. Absent where the body is the generator's, and for a diagram marked `manual-layout`.
+    hand_drawn: HandDrawnResponse | None = None
     #: This diagram kind's own additions — a matrix's rendered body, and whatever a future kind
     #: contributes. Absent for a kind that adds nothing.
     type_extras: dict[str, Any] | None = None

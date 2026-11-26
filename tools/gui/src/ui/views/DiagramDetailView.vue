@@ -26,6 +26,7 @@ import { useDiagramSvgSelection } from '../composables/useDiagramSvgSelection'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
 import DiagramDetailHeader from '../components/DiagramDetailHeader.vue'
 import DiagramC4Navigation from '../components/DiagramC4Navigation.vue'
+import DiagramHandDrawnNotice from '../components/DiagramHandDrawnNotice.vue'
 import CanvasContentEditor from '../components/CanvasContentEditor.vue'
 import DiagramPageSidebar from '../components/DiagramPageSidebar.vue'
 import FullscreenDock from '../components/FullscreenDock.vue'
@@ -217,15 +218,10 @@ const executeDelete = () => {
         ref="editBar"
         :edit="edit"
       />
-      <p
+      <DiagramHandDrawnNotice
         v-if="editing && detail.written_by_hand"
-        class="kept-by-hand"
-        role="note"
-        data-testid="edit-body-by-hand"
-      >
-        This diagram's body is written by hand: {{ detail.written_by_hand }}. Arranging it is saved; a change to
-        what it draws is not, because saving one would replace that body.
-      </p>
+        :hand-drawn="detail.hand_drawn"
+      />
 
       <DiagramC4Navigation
         v-if="c4Nav"
