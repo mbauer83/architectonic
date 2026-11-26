@@ -330,10 +330,11 @@ async def ent_switch_to_main(
     block_repo(root)
     await event_bus.publish({"type": "sync_enterprise_merging", "repo": root_label})
     try:
-        for git_args in [["checkout", "main"], ["pull", "--ff-only"]]:
-            rc, _, err = await sync._git(root, *git_args, timeout=_PULL_TIMEOUT_S)
-            if rc != 0:
-                raise RuntimeError(err.strip() or "git error")
+        rc, _, err = await sync._git(root, "checkout", "main", timeout=_PULL_TIMEOUT_S)
+        if rc == 0:
+            rc, _, err = await sync._ask_origin(root, "pull", "--ff-only", timeout=_PULL_TIMEOUT_S)
+        if rc != 0:
+            raise RuntimeError(err.strip() or "git error")
         if state.branch:
             await sync._git(root, "branch", "-D", state.branch)
         enterprise_sync_state.clear_lifecycle(root)

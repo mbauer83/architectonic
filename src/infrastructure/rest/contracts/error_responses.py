@@ -116,11 +116,12 @@ GIT_CREDENTIALS_REQUIRED_STATUS = 409
 
 
 def git_credentials_error(exc: GitCredentialsRequired) -> ApiError:
-    """`exc` as the typed refusal: protocol, remote and whether a held credential was refused."""
+    """`exc` as the typed refusal: protocol, remote and whether a held credential was refused, and how a
+    caller of this surface supplies it."""
     return ApiError(
         GIT_CREDENTIALS_REQUIRED_STATUS,
         "git_credentials_required",
-        str(exc),
+        f"{exc} Enter it when the GUI asks, or set {exc.environment_hint} and restart the backend.",
         GitCredentialsRequiredDetails(protocol=exc.protocol, remote=exc.remote_url, rejected=exc.rejected),
     )
 
@@ -129,8 +130,8 @@ async def git_credentials_required_handler(request: Request, exc: Exception) -> 
     """A git operation the remote refused for want of a credential, wherever in a handler it arose.
 
     Installed for the exception type rather than caught per route, so every operation that pushes,
-    fetches or lists the remote answers the same refusal. A route that reports other failures of
-    the same operation re-raises this one rather than folding it into its own 500.
+    fetches or lists the remote answers the same refusal. It is not a `RuntimeError`, so a route that
+    reports other failures of the same operation as its own 500 does not catch it.
     """
     assert isinstance(exc, GitCredentialsRequired)
     return api_error_response(git_credentials_error(exc), request_id=request_id_of(request))

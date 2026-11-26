@@ -18,13 +18,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Header, HTTPException, Request, Response
 from pydantic import BaseModel, Field, SecretStr
 
 from src.infrastructure.git.credential_refusal import GitCredentialsRequired
+from src.infrastructure.git.review_link import review_url_for
 from src.infrastructure.rest.contracts.error_responses import (
     GIT_CREDENTIALS_REQUIRED_STATUS,
     git_credentials_error,
@@ -42,21 +42,12 @@ from src.infrastructure.rest.contracts.sync import (
     EnterpriseWithdrawResponse,
     SyncChangesResponse,
 )
-from src.infrastructure.rest.routers._openapi import TAG_SYNC, error_response
+from src.infrastructure.rest.routers._openapi import CREDENTIALS_RESPONSES, TAG_SYNC, error_response
 from src.infrastructure.rest.routers.sync import status_cache as sync_status_cache
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=[TAG_SYNC])
-
-#: Every operation here that reaches the remote can be refused for want of a git credential.
-_CREDENTIALS_RESPONSES: dict[int | str, dict[str, object]] = {
-    GIT_CREDENTIALS_REQUIRED_STATUS: error_response(
-        "`git_credentials_required`: the remote refused for want of a credential. Supply it with "
-        "`PUT /api/sync/credentials` and repeat the request"
-    ),
-}
-
 
 class SaveBody(BaseModel):
     message: str
@@ -119,7 +110,7 @@ def _status_label(status: str) -> str:
 
 
 @router.post("/api/sync/engagement/save", response_model=EngagementSaveResponse,
-    response_model_exclude_none=True, responses=_CREDENTIALS_RESPONSES)
+    response_model_exclude_none=True, responses=CREDENTIALS_RESPONSES)
 async def save_engagement(body: SaveBody) -> dict:
     """Commit (and optionally push) all engagement repository changes."""
     from src.infrastructure.git import git_work_commits
@@ -154,8 +145,6 @@ async def save_engagement(body: SaveBody) -> dict:
         return {"ok": True, "commit": commit, "pushed": body.push, "message": body.message}
     except ValueError as exc:
         raise HTTPException(400, str(exc))
-    except GitCredentialsRequired:
-        raise  # answered as `git_credentials_required` by its own handler
     except RuntimeError as exc:
         raise HTTPException(500, str(exc))
 
@@ -203,14 +192,12 @@ async def save_enterprise(body: SaveBody) -> dict:
         return {"ok": True, "commit": commit, "message": body.message}
     except ValueError as exc:
         raise HTTPException(400, str(exc))
-    except GitCredentialsRequired:
-        raise  # answered as `git_credentials_required` by its own handler
     except RuntimeError as exc:
         raise HTTPException(500, str(exc))
 
 
 @router.post("/api/sync/enterprise/submit", response_model=EnterpriseSubmitResponse,
-    response_model_exclude_none=True, responses=_CREDENTIALS_RESPONSES)
+    response_model_exclude_none=True, responses=CREDENTIALS_RESPONSES)
 async def submit_enterprise() -> dict:
     """Push the enterprise working branch for team review."""
     from src.infrastructure.git import enterprise_branch_lifecycle
@@ -248,17 +235,15 @@ async def submit_enterprise() -> dict:
                 ),
             }
         )
-        return {"ok": True, "branch": branch, "review_url": _review_url(ent_root, branch)}
+        return {"ok": True, "branch": branch, "review_url": review_url_for(ent_root, branch=branch)}
     except ValueError as exc:
         raise HTTPException(400, str(exc))
-    except GitCredentialsRequired:
-        raise  # answered as `git_credentials_required` by its own handler
     except RuntimeError as exc:
         raise HTTPException(500, str(exc))
 
 
 @router.post("/api/sync/enterprise/withdraw", response_model=EnterpriseWithdrawResponse,
-    response_model_exclude_none=True, responses=_CREDENTIALS_RESPONSES)
+    response_model_exclude_none=True, responses=CREDENTIALS_RESPONSES)
 async def withdraw_enterprise(body: WithdrawBody) -> dict:
     """Discard all pending enterprise changes and return the repo to main."""
     from src.infrastructure.git import enterprise_branch_lifecycle
@@ -297,22 +282,8 @@ async def withdraw_enterprise(body: WithdrawBody) -> dict:
         return {"ok": True, "discarded_branch": branch}
     except ValueError as exc:
         raise HTTPException(400, str(exc))
-    except GitCredentialsRequired:
-        raise  # answered as `git_credentials_required` by its own handler
     except RuntimeError as exc:
         raise HTTPException(500, str(exc))
-
-
-def _review_url(enterprise_root: Path, branch: str) -> str | None:
-    """The platform's new-pull-request page for `branch` against the enterprise base branch.
-
-    Returned by a fresh submit only; an already-pending one is answered without it, and the sync
-    status carries it for as long as the review is pending.
-    """
-    from src.infrastructure.git.git_repository_state import UPSTREAM_BRANCH
-    from src.infrastructure.git.review_link import review_url_for
-
-    return review_url_for(enterprise_root, branch=branch, base=UPSTREAM_BRANCH)
 
 
 def _settle_the_withdrawn_changes() -> None:

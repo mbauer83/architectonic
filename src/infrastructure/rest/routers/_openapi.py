@@ -27,6 +27,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from src.infrastructure.rest.contracts.error_responses import GIT_CREDENTIALS_REQUIRED_STATUS
 from src.infrastructure.rest.contracts.errors import ErrorEnvelope
 from src.infrastructure.rest.contracts.verification import WriteVerificationResponse
 
@@ -168,6 +169,23 @@ WRITE_RESPONSES: dict[int | str, dict[str, Any]] = {
     409: error_response("Write conflict"),
     413: error_response("Request body larger than the operation accepts; the details carry the limit"),
     423: error_response("Write temporarily rejected by the workspace gate (retryable)"),
+}
+
+#: What an operation that reaches the remote answers where the remote refused for want of a git credential.
+_CREDENTIALS_REFUSAL = (
+    "`git_credentials_required`: the remote refused for want of a credential. Supply it with "
+    "`PUT /api/sync/credentials` and repeat the request"
+)
+
+#: Attach to an operation that pushes, fetches or lists the remote and has no other 409.
+CREDENTIALS_RESPONSES: dict[int | str, dict[str, Any]] = {
+    GIT_CREDENTIALS_REQUIRED_STATUS: error_response(_CREDENTIALS_REFUSAL),
+}
+
+#: Attach to a write that also reaches the remote: its write conflict, or the credential refusal.
+REMOTE_WRITE_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **WRITE_RESPONSES,
+    GIT_CREDENTIALS_REQUIRED_STATUS: error_response(f"Write conflict; or {_CREDENTIALS_REFUSAL}"),
 }
 
 #: Declared on the application, so every operation's 422 documents the envelope its handler

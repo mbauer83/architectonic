@@ -21516,7 +21516,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description Write conflict */
+            /** @description Write conflict; or `git_credentials_required`: the remote refused for want of a credential. Supply it with `PUT /api/sync/credentials` and repeat the request */
             409: {
                 headers: {
                     [name: string]: unknown;

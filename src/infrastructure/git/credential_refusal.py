@@ -2,60 +2,56 @@
 
 Separate from `git_auth`, which collects and wires credentials, because this is the other direction:
 reading a failed command's output as "a credential is needed" (or "the one held was refused") and
-naming the protocol and remote it was for. Every operation that reaches `origin` reports a refusal
-through here (`_git_command.refuse_for_missing_credentials`), and REST and MCP both read the result.
+naming the protocol and remote it was for. Every git command that reaches `origin` runs through the
+remote runners in `_git_command`, which raise the refusal from here; REST and MCP each map it once.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from urllib.parse import urlsplit, urlunsplit
 
 from src.infrastructure.git.git_auth import (
     GitCredentials,
     RemoteProtocol,
     is_authentication_failure,
     protocol_of_url,
+    redacted_url,
     remote_urls,
 )
 
 
-class GitCredentialsRequired(RuntimeError):
+class GitCredentialsRequired(Exception):
     """A git command that reaches a remote was refused for want of a credential.
 
-    Raised in place of the plain failure so a caller can ask for the credential instead of
-    reporting a push that failed. A `RuntimeError`, so every caller that already reports a failed
-    push keeps doing so with this message. The message and fields name the protocol and the remote
-    (with any userinfo removed) and never a secret.
+    Raised in place of the plain failure so a caller can ask for the credential instead of reporting a
+    failed push. Deliberately not a `RuntimeError`: a caller that reports other failures of the same
+    operation as its own error does not fold this one in with them, so it reaches the transport's one
+    mapping (`git_credentials_required` over REST, the MCP tools' refusal) wherever it arises.
+
+    The message names the protocol and the remote (with any userinfo removed) and never a secret, and says
+    nothing about which transport is asking: each adds its own remedy, and `environment_hint` names what
+    every one of them can point to — where the credential is read from without anyone being asked.
     """
 
     def __init__(self, *, protocol: RemoteProtocol, remote_url: str, rejected: bool) -> None:
         self.protocol: RemoteProtocol = protocol
-        self.remote_url = redact_url(remote_url)
+        self.remote_url = redacted_url(remote_url)
         #: True when a credential for this protocol was held and the remote refused it anyway.
         self.rejected = rejected
         what = "SSH key passphrase" if protocol == "ssh" else "HTTPS username and token"
         state = "was refused" if rejected else "is needed"
-        super().__init__(
-            f"The {what} for origin ({self.remote_url}) {state}. Enter it when the GUI asks, or set "
-            f"{_ENVIRONMENT_HINT[protocol]} and restart the backend. Secrets are not accepted over MCP."
-        )
+        super().__init__(f"The {what} for origin ({self.remote_url}) {state}.")
+
+    @property
+    def environment_hint(self) -> str:
+        """Where this credential is read from without a prompt: the environment variable (or the agent)."""
+        return _ENVIRONMENT_HINT[self.protocol]
 
 
 _ENVIRONMENT_HINT: dict[RemoteProtocol, str] = {
     "ssh": "ARCH_GIT_SSH_PASSWORD (or load the key into ssh-agent)",
     "https": "ARCH_GIT_HTTPS_TOKEN",
 }
-
-
-def redact_url(url: str) -> str:
-    """`url` without the userinfo of a URL-form remote, where a token can be embedded."""
-    if "://" not in url:
-        return url  # scp-like `user@host:path` carries a login name, never a secret
-    parts = urlsplit(url)
-    host = parts.hostname or ""
-    netloc = f"{host}:{parts.port}" if parts.port else host
-    return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
 
 
 def credentials_required_for(
@@ -70,10 +66,7 @@ def credentials_required_for(
     if not is_authentication_failure(git_output):
         return None
     urls = remote_urls(repo)
-    if not urls:
-        return None
-    # `remote_urls` is the fetch URL followed by the push URLs that differ from it.
-    candidates = (urls[1:] or urls[:1]) if pushing else urls[:1]
+    candidates = urls.pushed_to if pushing else urls.all[:1]
     by_protocol = {p: url for url in candidates if (p := protocol_of_url(url)) is not None}
     if not by_protocol:
         return None

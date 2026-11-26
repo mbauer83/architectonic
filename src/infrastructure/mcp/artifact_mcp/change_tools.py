@@ -172,6 +172,8 @@ def artifact_submit_changes(
     repo_root: str | None = None,
     enterprise_root: str | None = None,
 ) -> dict[str, Any]:
+    from src.infrastructure.git.credential_refusal import GitCredentialsRequired  # noqa: PLC0415
+    from src.infrastructure.mcp.execution_failure import git_credentials_refusal  # noqa: PLC0415
     from src.infrastructure.write.artifact_write.change_submission import (  # noqa: PLC0415
         SubmissionUnavailable,
         submit_changes,
@@ -194,6 +196,8 @@ def artifact_submit_changes(
         )
     except SubmissionUnavailable as refused:
         raise ValueError(str(refused)) from refused
+    except GitCredentialsRequired as refused:
+        raise ValueError(git_credentials_refusal(refused)) from refused
     mutation_context.finalize()
     return {
         "branch": report.branch,

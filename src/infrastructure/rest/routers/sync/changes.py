@@ -59,7 +59,7 @@ def list_changes(repo_root: Path) -> list[dict]:
 
 
 def _run(repo: Path, *args: str) -> tuple[int, str]:
-    from src.infrastructure.git.git_env import get_ssh_env
+    from src.infrastructure.git.held_credentials import git_environment
 
     r = subprocess.run(
         ["git", *args],
@@ -67,7 +67,7 @@ def _run(repo: Path, *args: str) -> tuple[int, str]:
         capture_output=True,
         text=True,
         timeout=10,
-        env=get_ssh_env(),
+        env=git_environment(),
     )
     return r.returncode, r.stdout
 

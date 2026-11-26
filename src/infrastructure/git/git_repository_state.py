@@ -17,9 +17,8 @@ from pathlib import Path
 
 from src.infrastructure.git._git_command import (
     CONTENT_PATHSPEC,
-    PUSH_TIMEOUT,
     UNCOMMITTED_CONTENT_QUERY,
-    refuse_for_missing_credentials,
+    ask_origin,
     run_repo_git,
 )
 
@@ -136,9 +135,8 @@ def remote_ref_commit(enterprise_root: Path, branch: str) -> str | None:
     else's work to report rather than overwrite. `remote_ref_exists` is this question with the answer
     thrown away, and is kept as the narrower form for callers that only need presence.
     """
-    rc, out, stderr = run_repo_git(enterprise_root, "ls-remote", "--heads", "origin", branch, timeout=PUSH_TIMEOUT)
+    rc, out, _ = ask_origin(enterprise_root, "ls-remote", "--heads", "origin", branch)
     if rc != 0:
-        refuse_for_missing_credentials(enterprise_root, ("ls-remote",), stderr)
         raise RuntimeError(f"Could not inspect origin for branch '{branch}'")
     first = out.split("\n", 1)[0].strip()
     return first.split()[0] if first else None

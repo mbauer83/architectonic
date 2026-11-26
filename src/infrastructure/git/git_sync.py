@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-from src.infrastructure.git._git_command import UNCOMMITTED_CONTENT_QUERY
+from src.infrastructure.git._git_command import UNCOMMITTED_CONTENT_QUERY, raise_a_refusal
 from src.infrastructure.git.fetch_attempts import (
     FetchAttempts,
     FetchDeferred,
@@ -143,8 +143,16 @@ class GitSyncManager:
         report_attempt(repo, outcome)
         return outcome
 
+    async def _ask_origin(self, repo: Path, *args: str, timeout: float) -> tuple[int, str, str]:
+        """A command that reads `origin` (a pull), on the event loop; a refusal for want of a credential is
+        raised as `GitCredentialsRequired`, as the synchronous runner raises it (`_git_command.ask_origin`).
+        The background fetch does not come through here: a failing fetch is deferred, not raised."""
+        rc, out, err = await self._git(repo, *args, timeout=timeout)
+        await asyncio.to_thread(raise_a_refusal, repo, pushing=False, returncode=rc, stderr=err)
+        return rc, out, err
+
     async def _git(self, repo: Path, *args: str, timeout: float = 10.0) -> tuple[int, str, str]:
-        from src.infrastructure.git.git_env import get_ssh_env
+        from src.infrastructure.git.held_credentials import git_environment
 
         proc = await asyncio.create_subprocess_exec(
             "git",
@@ -152,7 +160,7 @@ class GitSyncManager:
             cwd=repo,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            env=get_ssh_env(),
+            env=git_environment(),
         )
         try:
             out, err = await asyncio.wait_for(proc.communicate(), timeout=timeout)

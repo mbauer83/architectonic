@@ -44,7 +44,8 @@ def _no_credentials_in_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_both_the_fetch_and_the_push_url_are_read(split_remote: Path) -> None:
-    assert git_auth.remote_urls(split_remote) == (_FETCH, _PUSH)
+    assert git_auth.remote_urls(split_remote) == git_auth.RemoteUrls(_FETCH, (_PUSH,))
+    assert git_auth.remote_urls(split_remote).all == (_FETCH, _PUSH)
     assert git_auth.detect_remote_protocols(split_remote) == frozenset({"https", "ssh"})
 
 

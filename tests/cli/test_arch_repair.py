@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from src.infrastructure.cli import arch_repair
-from src.infrastructure.git import repair_adapter
+from src.infrastructure.git import _git_command, repair_adapter
 from src.infrastructure.git._git_command import STAGE_ALL_BUT_RUNTIME_STATE
 from src.infrastructure.git.git_auth import GitCredentials
 
@@ -16,6 +16,13 @@ def repo(tmp_path: Path) -> Path:
     path = tmp_path / "repo"
     (path / ".git").mkdir(parents=True)
     return path
+
+
+@pytest.fixture(autouse=True)
+def _one_git_for_the_repair(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The repair's commands that reach origin run through the remote runners (`_git_command`); each test
+    fakes the repair's git in one place, so those calls reach the same fake."""
+    monkeypatch.setattr(_git_command, "run_git", lambda *args, **kwargs: repair_adapter.run_git(*args, **kwargs))
 
 
 def test_repair_wires_auth_and_runs_guarded_sequence(

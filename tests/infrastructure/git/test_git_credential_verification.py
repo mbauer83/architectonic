@@ -64,12 +64,12 @@ class TestAuthRejection:
 
 class TestVerifyCredentials:
     def test_repos_without_remote_are_skipped(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-        monkeypatch.setattr(git_auth, "remote_urls", lambda p: ())
+        monkeypatch.setattr(git_auth, "remote_urls", lambda p: git_auth.RemoteUrls(None))
         monkeypatch.setattr(git_auth, "_auth_rejection", lambda *a: pytest.fail("must not probe a remoteless repo"))
         assert verify_credentials([tmp_path], {}) == []
 
     def test_collects_rejections(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-        monkeypatch.setattr(git_auth, "remote_urls", lambda p: (_URL,))
+        monkeypatch.setattr(git_auth, "remote_urls", lambda p: git_auth.RemoteUrls(_URL))
         monkeypatch.setattr(git_auth, "_auth_rejection", lambda p, u, e: "permission denied")
         assert verify_credentials([tmp_path], {}) == [(tmp_path, "permission denied")]
 

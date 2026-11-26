@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
+from src.infrastructure.git.git_auth import protocol_of_url
 from src.infrastructure.workspace.engagement_repo_template import (
     create_engagement_repo,
     initialize_arch_repo_in_place,
@@ -135,7 +136,7 @@ def _effective_env(env: dict[str, str] | None) -> Mapping[str, str]:
 def _credential_scheme_mismatch_hint(url: str, env: Mapping[str, str]) -> str:
     """Configured-but-inapplicable credentials are the hardest miss to see: the token IS set,
     so the operator looks everywhere except at the URL scheme."""
-    is_ssh = url.startswith(("git@", "ssh://"))
+    is_ssh = protocol_of_url(url) == "ssh"
     if is_ssh and any(env.get(name) for name in _HTTPS_CREDENTIAL_VARS) and not env.get("GIT_SSH_COMMAND"):
         return (
             "\nHINT: HTTPS credentials (ARCH_GIT_HTTPS_*) are configured, but this remote is SSH "
