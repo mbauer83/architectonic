@@ -83,7 +83,6 @@ const aboutElement = async (id: string) => {
     <StressorInput
       :unwritten="analysis.progress.value?.coverage.unwritten_perspectives ?? []"
       placeholder="Write a stressor and press Enter"
-      :disabled="analysis.saving.value"
       @write="write"
     />
     <p class="help">

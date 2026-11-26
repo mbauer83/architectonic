@@ -193,6 +193,22 @@ test('a stressor is written, grouped under a new end state, ticked on the canvas
   await expect(page.locator('tr.st-row').first()).toContainText('Forty engagement repositories')
 })
 
+test('stressors kept in quick succession are all written, in the order they were kept', async ({ page, request }) => {
+  const id = await analysisOf(request, 'Stress analysis — stressors in quick succession')
+  await workspace(page, id, 'stressors')
+  const text = page.getByTestId('stressor-input').first()
+  const lines = ['First load spike', 'Second region fails', 'Third vendor withdraws', 'Fourth audit lands',
+    'Fifth key rotates', 'Sixth schema changes']
+  for (const line of lines) {
+    await text.fill(line)
+    await text.press('Enter')
+  }
+  await expect(page.locator('tr.st-row')).toHaveCount(lines.length)
+  for (const [at, line] of lines.entries()) {
+    await expect(page.locator(`tr.st-row[data-row="S${at + 1}"]`)).toContainText(line)
+  }
+})
+
 test('focusing an end state turns the grid and marks what its stressors hit', async ({ page, request }) => {
   const id = await analysisOf(request, 'Stress analysis — focus')
   const naive = await (await request.get(`/api/documents/${encodeURIComponent(id)}`)).json() as { extra: Record<string, string> }
