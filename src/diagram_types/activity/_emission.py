@@ -239,6 +239,22 @@ def _emit_loop(
     return loop.exit_target
 
 
+def _arm_label(label: str, first: str | None, ctx: EmissionContext, path: frozenset[str]) -> str:
+    """A decision arm's label, naming the step it returns to when the drawing cannot show the return.
+
+    An arm whose first step is one this walk is already inside is a back edge. Outside a `repeat` the
+    notation has no arrow for it, so the walk draws nothing in the arm, and an empty arm reads as a
+    dead end — the opposite of what the model declares. W048/W049 tell the author; this tells the
+    reader. An arm that is empty because it goes straight to the convergence point is a forward edge
+    the `endif` draws, and is not in *path*.
+    """
+    if not first or first not in path:
+        return label
+    target = ctx.graph.step_by_id.get(first) or {}
+    named = _asked(target) if target.get("type") == "decision" else puml_text(str(target.get("label") or first))
+    return f"{label}, back to {named}"
+
+
 def _asked(step: Mapping[str, Any]) -> str:
     """A decision's condition as the question its diamond asks — with exactly one question mark.
 
@@ -296,13 +312,14 @@ def _emit_step(
         # decision appeared twice while a note on an action appeared once. Measured on a minimal
         # two-lane diagram: inside-branch 2, floating-inside-branch 2, before-the-if 1.
         _emit_step_note(step_id, ctx, lines)
-        lines.append(
-            f"if ({sentinel_wrapped(step, question)}{user_link_suffix(step)}) then ({then_label})"
-        )
         then_first = ctx.graph.then_target.get(step_id)
-        from_then = emit_until_join(then_first, ctx, lines, drawn, stops, path) if then_first else None
-        lines.append(f"else ({else_label})")
         else_first = ctx.graph.else_target.get(step_id)
+        lines.append(
+            f"if ({sentinel_wrapped(step, question)}{user_link_suffix(step)}) "
+            f"then ({_arm_label(then_label, then_first, ctx, path)})"
+        )
+        from_then = emit_until_join(then_first, ctx, lines, drawn, stops, path) if then_first else None
+        lines.append(f"else ({_arm_label(else_label, else_first, ctx, path)})")
         from_else = emit_until_join(else_first, ctx, lines, drawn, stops, path) if else_first else None
         lines.append("endif")
         return from_then or from_else
