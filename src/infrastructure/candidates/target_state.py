@@ -98,7 +98,7 @@ def move_target_into_baseline(service: CandidateService, ref: str, *, dry_run: b
     return {
         "candidate": candidate.id, "dry_run": dry_run, "integrated": integrated, "refusal": refusal,
         "operation_id": written.operation_id if written else None,
-        "standing": wire_standing(application.standing),
+        "standing": wire_standing(application.standing, application.ids),
         "operations": to_jsonable_python([operation_to_mapping(operation) for operation in move.operations]),
     }
 
@@ -211,7 +211,7 @@ def _answer(
 ) -> dict[str, Any]:
     return {
         "candidate": candidate.id, "dry_run": dry_run, "applied": False, "refusal": refusal,
-        "standing": wire_standing(application.standing),
+        "standing": wire_standing(application.standing, {**application.ids, **(plan.chosen if plan else {})}),
         **({
             "target_state": {
                 "baseline": plan.state.baseline, "target": plan.state.target, "gap": plan.state.gap,

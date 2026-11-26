@@ -1,4 +1,8 @@
-"""Scoped entities and relations as the model or a stack of candidates describes them."""
+"""Scoped entities and relations as the model or a stack of candidates describes them.
+
+A view is an answer, so it names every entity as a caller does (`created_names`): one the stack creates
+by the stable form of the id its create chose, never by the alias its operations name it with.
+"""
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -7,27 +11,30 @@ from typing import Any
 
 from src.application.change_sets.candidate_architecture import CandidateArchitecture
 from src.application.change_sets.composition import ComposedReading, compose
+from src.application.change_sets.created_names import chosen_ids, spoken
 from src.application.change_sets.operations import ConnectionAddress
 from src.application.change_sets.reading import FieldValues, RecordedReading
 from src.application.change_sets.stacking import sets_beneath
 from src.domain.artifact_id import canonical_entity_key
+from src.domain.provisional_reference import provisional
 
 
 @dataclass(frozen=True)
 class CandidateView:
     entities: dict[str, FieldValues]
     connections: dict[ConnectionAddress, FieldValues]
-    #: The id chosen for each entity the stack creates, by the reference the view names it with.
+    #: The id chosen for each entity the stack creates, as its create states it, by the id the view names it with.
     chosen: dict[str, str] = field(default_factory=dict)
+    #: The id the view names each entity the stack creates with, by the alias its operations name it with: what a
+    #: reader that kept an alias (a row written before ids were answered) is read by.
+    aliases: dict[str, str] = field(default_factory=dict)
 
     def spelling(self) -> dict[str, str]:
-        """The reference the view names each entity with, by every key it may be written under: its own
-        reference's, and for one the stack creates, the key of the id chosen for it (`canonical_entity_key`).
-        An element the stack creates is in the architecture it describes, however a reader writes it."""
+        """The id the view names each entity with, by every key it may be written under: the key of its id
+        (`canonical_entity_key`), and for one the stack creates, the alias its operations name it with too."""
         return {
             **{canonical_entity_key(ref): ref for ref in self.entities},
-            **{canonical_entity_key(artifact_id): ref for ref, artifact_id in self.chosen.items()
-               if ref in self.entities},
+            **{alias: ref for alias, ref in self.aliases.items() if ref in self.entities},
         }
 
     def wire(self) -> dict[str, Any]:
@@ -49,7 +56,7 @@ def view_of(stack: tuple[CandidateArchitecture, ...], live: RecordedReading) -> 
     An entity the stack creates is one entity whether or not the model holds it yet: once the id chosen for it
     is in the model (applied as a target state, say), the model's record and the create are read as one, under
     the reference the operations name it with (`named_by_reference`), with what the create states over what
-    the model holds.
+    the model holds. The view answers it by that id.
     """
     reading = compose(stack[-1].changes, live, beneath=sets_beneath(stack))
     created = created_ids(stack)
@@ -67,8 +74,26 @@ def view_of(stack: tuple[CandidateArchitecture, ...], live: RecordedReading) -> 
         if all(ref in entities for ref in address.endpoints)
         and (fields := _connection(address, reading, named)) is not None
     }
-    chosen = {ref: artifact_id for ref, artifact_id in created.items() if ref in entities}
-    return CandidateView(entities, connections, chosen)
+    chosen = chosen_ids(layer.changes for layer in stack)
+    return _named_by_id(CandidateView(entities, connections), {
+        alias: artifact_id for alias, artifact_id in chosen.items() if provisional(alias) in entities
+    })
+
+
+def _named_by_id(view: CandidateView, chosen: Mapping[str, str]) -> CandidateView:
+    """*view*, read under the stack's references, with each entity the stack creates named by its id."""
+    def name(ref: str) -> str:
+        return spoken(ref, chosen)
+
+    return CandidateView(
+        {name(ref): fields for ref, fields in view.entities.items()},
+        {
+            ConnectionAddress(name(a.source_entity), a.connection_type, name(a.target_entity)): fields
+            for a, fields in view.connections.items()
+        },
+        chosen={canonical_entity_key(artifact_id): artifact_id for artifact_id in chosen.values()},
+        aliases={provisional(alias): canonical_entity_key(artifact_id) for alias, artifact_id in chosen.items()},
+    )
 
 
 def created_ids(stack: tuple[CandidateArchitecture, ...]) -> dict[str, str]:

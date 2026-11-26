@@ -26,12 +26,13 @@ the relations a target state is written with are the ontology's (`TargetStateRel
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from typing import Any, TypeAlias
 
 from src.application.change_sets.candidate_architecture import CandidateArchitecture, TargetState
 from src.application.change_sets.change_set import ChangeSet
 from src.application.change_sets.composition import compose
+from src.application.change_sets.created_names import named_by_id
 from src.application.change_sets.operations import (
     AddConnection,
     ConnectionAddress,
@@ -46,7 +47,7 @@ from src.application.change_sets.reading import FieldValues, ModelReading, Recor
 from src.application.modeling.edit_field_catalogue import creatable
 from src.domain.artifact_id import canonical_entity_key
 from src.domain.ontology_representation.target_state_relations import TargetStateRelations
-from src.domain.provisional_reference import alias_of, provisional
+from src.domain.provisional_reference import provisional
 
 #: A new id for an element of this type and name.
 Allocate: TypeAlias = Callable[[str, str], str]
@@ -139,24 +140,6 @@ def target_plan(
     return TargetPlan(
         ChangeSet((*writes, *held, *held_too), revision), state, tuple(sorted({*unheld, *unheld_too})), chosen,
     )
-
-
-def named_by_id(operation: Operation, chosen: Mapping[str, str]) -> Operation:
-    """*operation* with each element it names by an alias in *chosen* named by the id it is given instead."""
-
-    def by_id(reference: str) -> str:
-        alias = alias_of(reference)
-        return chosen.get(alias, reference) if alias is not None else reference
-
-    match operation:
-        case CreateEntity():
-            return operation
-        case EditEntity(target=target) | RemoveEntity(target=target):
-            return replace(operation, target=by_id(target))
-        case AddConnection(address=address) | EditConnection(address=address) | RemoveConnection(address=address):
-            return replace(operation, address=ConnectionAddress(
-                by_id(address.source_entity), address.connection_type, by_id(address.target_entity),
-            ))
 
 
 def _changed(operations: Sequence[Operation], created: frozenset[str], removed: frozenset[str]) -> tuple[str, ...]:

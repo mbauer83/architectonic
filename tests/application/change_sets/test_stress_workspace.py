@@ -37,6 +37,7 @@ def test_promotion_outage_tracks_the_naive_queue_even_after_it_is_removed(tmp_pa
 
 
 QUEUE_ID = "APP@1795700000.PrmQueu.promotion-queue"
+QUEUE_KEY = "APP@1795700000.PrmQueu"
 
 
 def test_a_tick_on_an_element_the_naive_creates_written_by_its_chosen_id_hits_it(tmp_path: Path) -> None:
@@ -52,8 +53,8 @@ def test_a_tick_on_an_element_the_naive_creates_written_by_its_chosen_id_hits_it
     }
     body = document_text(schema, {k: table_text(table_of(schema, k), v) for k, v in rows.items()})
     tables = read_document_tables(document_path(tmp_path, schema), body, schema)
-    view = CandidateView({SERVICE: {}, "$ref:queue": {"name": "Promotion Queue"}}, {}, {"$ref:queue": QUEUE_ID})
+    view = CandidateView({SERVICE: {}, QUEUE_KEY: {"name": "Promotion Queue"}}, {}, {QUEUE_KEY: QUEUE_ID})
     report = analyse(tables, view)
     assert report["stressors"][0]["missing_elements"] == []
-    assert report["stressors"][0]["hits"] == sorted(["$ref:queue", SERVICE])
+    assert report["stressors"][0]["hits"] == sorted([QUEUE_KEY, SERVICE])
     assert report["coverage"]["untouched"] == []
