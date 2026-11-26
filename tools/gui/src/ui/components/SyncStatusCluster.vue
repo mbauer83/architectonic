@@ -175,7 +175,10 @@ const closeMenu = () => {
    losing its tail still reads. The menu button never shrinks — it is the only way to reach the
    write actions. */
 .cluster { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.cluster__menu-detail { margin: 0; padding: 6px 12px 8px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--border); max-width: 320px; }
+.cluster__menu-detail {
+  margin: 0; padding: 6px 12px 8px; font-size: 12px; color: var(--muted);
+  border-bottom: 1px solid var(--border); max-width: 320px;
+}
 .cluster__status { flex-shrink: 1; min-width: 0; font-size: 12px; padding: 3px 9px; border-radius: 10px; font-weight: 600; white-space: nowrap; max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
 .cluster__status--ok { background: #14352a; color: #6ee7b7; }
 .cluster__status--info { background: #1e3a5f; color: #93c5fd; }
