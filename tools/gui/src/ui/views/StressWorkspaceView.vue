@@ -316,7 +316,7 @@ onMounted(async () => {
             :drawing="canvas.drawing.value"
             :marks="canvas.marks.value"
             :hint="canvas.hint.value"
-            empty-text="Nothing to draw yet: sketch the naive architecture to define it."
+            :empty-text="canvas.emptyText.value"
             @pick="canvas.pick"
           />
           <p
