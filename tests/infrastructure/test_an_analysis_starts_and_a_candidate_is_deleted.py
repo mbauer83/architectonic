@@ -15,12 +15,13 @@ from src.domain.artifact_id import stable_id
 from src.domain.repository.repo_default_stress_analysis import STRESS_ANALYSIS_SCHEMA
 from src.infrastructure.artifact_index import notify_paths_changed, shared_artifact_index
 from src.infrastructure.candidate_wire import CandidateHeader
+from src.infrastructure.candidates.repository import NotStored
 from src.infrastructure.mcp import mcp_artifact_server as model
 from src.infrastructure.mcp.artifact_mcp import candidate_tools as mcp
-from src.infrastructure.rest.routers import candidates, documents, state
+from src.infrastructure.rest.routers import candidates, documents, state, stress_evaluation
 from tests.support.api_app import build_api_app
 from tests.support.rest_state import reset_state_for_test
-from tests.support.typed_table_documents import entity_in, repository_in
+from tests.support.typed_table_documents import adr_in, entity_in, repository_in
 
 
 def _declaring_analyses(tmp_path: Path) -> Path:
@@ -37,7 +38,7 @@ def _candidate_files(root: Path) -> list[Path]:
 def _served(root: Path) -> Iterator[TestClient]:
     state.init_state(ArtifactRepository(shared_artifact_index([root])), root, None)
     try:
-        with TestClient(build_api_app(candidates.router, documents.router)) as served:
+        with TestClient(build_api_app(candidates.router, documents.router, stress_evaluation.router)) as served:
             served.root = root  # type: ignore[attr-defined]
             yield served
     finally:
@@ -57,10 +58,24 @@ def test_a_start_writes_the_naive_and_the_document_naming_it(client: TestClient)
     assert started.status_code == 200, started.text
     body = started.json()
     naive = body["naive_candidate"]["record"]["id"]
-    document = client.get(f"/api/documents/{body['document']}/progress")
+    document = client.get(f"/api/stress-analyses/{body['document']}/progress")
     assert document.status_code == 200, document.text
     assert document.json()["naive_candidate"] == naive
     assert [p.name for p in _candidate_files(client.root)] == [f"{naive}.candidate.yaml"]  # type: ignore[attr-defined]
+
+
+def test_a_document_of_another_type_is_no_stress_analysis(tmp_path: Path) -> None:
+    """The reads are addressed to a stress analysis, so any other document is not found there (404), not a
+    malformed request; MCP refuses it with the same sentence."""
+    root = _declaring_analyses(tmp_path)
+    adr = adr_in(root, "not-an-analysis").stem
+    with _served(root) as client:
+        for read in ("progress", "incidence", "test-set"):
+            answered = client.get(f"/api/stress-analyses/{adr}/{read}")
+            assert answered.status_code == 404, (read, answered.text)
+            assert f"No stress analysis {adr} is stored." in answered.text
+    with pytest.raises(NotStored, match="No stress analysis"):
+        mcp.analysis_progress(adr, repo_root=str(root))
 
 
 def test_a_refused_start_leaves_nothing_behind(tmp_path: Path) -> None:

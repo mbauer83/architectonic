@@ -146,9 +146,10 @@ def test_an_incidence_hit_and_a_verdict_name_one_element_and_one_candidate_in_ei
         {"stressor": "S2", "architecture": spelled(adapted), "verdict": "survives", "usable": True},
     ])
 
-    incidence = client.get(f"/api/documents/{document}/incidence").json()
+    incidence = client.get(f"/api/stress-analyses/{document}/incidence").json()
     residuality = client.get(f"/api/candidates/{stable_id(adapted)}/residuality").json()
-    judged = [one["architecture"] for one in client.get(f"/api/documents/{document}/test-set").json()["architectures"]]
+    test_set = client.get(f"/api/stress-analyses/{document}/test-set").json()
+    judged = [one["architecture"] for one in test_set["architectures"]]
 
     assert incidence["stressors"][0]["missing_elements"] == []
     assert incidence["stressors"][0]["hits"] == [stable_id(entity)]

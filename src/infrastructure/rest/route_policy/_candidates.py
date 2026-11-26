@@ -1,4 +1,4 @@
-"""Route policy for candidate architectures and analysis reads."""
+"""Route policy for candidate architectures and the stress analyses read over them."""
 from src.infrastructure.rest.route_policy._types import BODYLESS, TYPED, RouteRow
 
 CANDIDATE_ROWS = (
@@ -54,14 +54,17 @@ CANDIDATE_ROWS = (
              identity_parameters=("artifact_id",), cache_directive="no-store", timeout_class="derived-graph"),
     RouteRow("POST", "/api/stress-analyses", "collection", "documents_start_stress_analysis", TYPED,
              mutation_domain="repository"),
-    RouteRow("GET", "/api/documents/{artifact_id}/progress", "subresource", "documents_analysis_progress", TYPED,
+    RouteRow("GET", "/api/stress-analyses/{artifact_id}/progress", "subresource",
+             "documents_analysis_progress", TYPED,
              identity_parameters=("artifact_id",), cache_directive="no-cache"),
-    RouteRow("GET", "/api/documents/{artifact_id}/incidence", "subresource", "documents_analysis_incidence", TYPED,
+    RouteRow("GET", "/api/stress-analyses/{artifact_id}/incidence", "subresource",
+             "documents_analysis_incidence", TYPED,
              identity_parameters=("artifact_id",), cache_directive="no-cache"),
-    RouteRow("GET", "/api/documents/{artifact_id}/test-set", "subresource", "documents_analysis_test_set", TYPED,
+    RouteRow("GET", "/api/stress-analyses/{artifact_id}/test-set", "subresource",
+             "documents_analysis_test_set", TYPED,
              identity_parameters=("artifact_id",), cache_directive="no-cache"),
-    RouteRow("POST", "/api/documents/{artifact_id}/test-set/hold-out", "operation", "documents_hold_out_test_set",
-             TYPED, identity_parameters=("artifact_id",), mutation_domain="repository"),
+    RouteRow("POST", "/api/stress-analyses/{artifact_id}/test-set/hold-out", "operation",
+             "documents_hold_out_test_set", TYPED, identity_parameters=("artifact_id",), mutation_domain="repository"),
     RouteRow("GET", "/api/candidates/{artifact_id}/residuality", "subresource", "candidates_read_residuality", TYPED,
              identity_parameters=("artifact_id",), cache_directive="no-cache"),
     RouteRow("GET", "/api/stress-perspectives", "catalog", "documents_list_stress_perspectives", TYPED,

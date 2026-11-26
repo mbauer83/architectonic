@@ -42,7 +42,7 @@ def _table_writer(catalogs: RuntimeCatalogs) -> TableWriter:
 
 
 @router.get(
-    "/api/documents/{artifact_id}/test-set",
+    "/api/stress-analyses/{artifact_id}/test-set",
     operation_id="documents_analysis_test_set",
     tags=[TAG_DOCUMENTS],
     summary="Read a stress analysis's test set, its verdicts and the residuality they give",
@@ -57,7 +57,7 @@ def documents_analysis_test_set(artifact_id: str) -> dict[str, Any]:
 
 
 @router.post(
-    "/api/documents/{artifact_id}/test-set/hold-out",
+    "/api/stress-analyses/{artifact_id}/test-set/hold-out",
     operation_id="documents_hold_out_test_set",
     tags=[TAG_DOCUMENTS],
     summary="Hold a random third of the design stressors out into the test set",

@@ -17,6 +17,8 @@ import { buildUrl, deleteNoContent, fetchJson, patchJson, postJson } from './htt
 const candidateUrl = (id: string, part = '', query?: Record<string, string | undefined>): string =>
   buildUrl(`/candidates/${encodeIdentitySegment(id)}${part}`, query)
 const documentUrl = (id: string, part: string): string => buildUrl(`/documents/${encodeIdentitySegment(id)}${part}`)
+const analysisUrl = (id: string, part: string): string =>
+  buildUrl(`/stress-analyses/${encodeIdentitySegment(id)}${part}`)
 
 /** The stress-analysis workspace's half of the HTTP adapter. */
 export const stressAnalysisMethods = (): StressAnalysisRepository => ({
@@ -55,11 +57,11 @@ export const stressAnalysisMethods = (): StressAnalysisRepository => ({
     documentUrl(documentId, `/tables/${encodeIdentitySegment(table)}`), { rows, dry_run: false },
     DocumentTableWriteSchema,
   ),
-  readAnalysisProgress: (documentId) => fetchJson(documentUrl(documentId, '/progress'), AnalysisProgressSchema),
-  readAnalysisIncidence: (documentId) => fetchJson(documentUrl(documentId, '/incidence'), AnalysisIncidenceSchema),
-  readTestSet: (documentId) => fetchJson(documentUrl(documentId, '/test-set'), AnalysisEvaluationSchema),
+  readAnalysisProgress: (documentId) => fetchJson(analysisUrl(documentId, '/progress'), AnalysisProgressSchema),
+  readAnalysisIncidence: (documentId) => fetchJson(analysisUrl(documentId, '/incidence'), AnalysisIncidenceSchema),
+  readTestSet: (documentId) => fetchJson(analysisUrl(documentId, '/test-set'), AnalysisEvaluationSchema),
   holdOutTestSet: (documentId, seed) => postJson(
-    documentUrl(documentId, '/test-set/hold-out'), { ...(seed === undefined ? {} : { seed }), dry_run: false },
+    analysisUrl(documentId, '/test-set/hold-out'), { ...(seed === undefined ? {} : { seed }), dry_run: false },
     HeldOutSchema,
   ),
   readResiduality: (candidateId) => fetchJson(candidateUrl(candidateId, '/residuality'), CandidateResidualitySchema),

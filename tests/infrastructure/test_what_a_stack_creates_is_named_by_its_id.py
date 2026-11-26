@@ -91,8 +91,8 @@ def test_incidence_coupling_and_coverage_name_a_created_element_by_its_id(client
     document, _naive_answer, scoped = _naive(client)
     _ticked(client, document, EXTRACTOR, f"{scoped}")
 
-    incidence = client.get(f"/api/documents/{document}/incidence").json()
-    progress = client.get(f"/api/documents/{document}/progress").json()
+    incidence = client.get(f"/api/stress-analyses/{document}/incidence").json()
+    progress = client.get(f"/api/stress-analyses/{document}/progress").json()
 
     stressor = incidence["stressors"][0]
     assert stressor["missing_elements"] == []

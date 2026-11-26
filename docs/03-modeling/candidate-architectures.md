@@ -411,7 +411,8 @@ diagram draws only what the model holds. A candidate that reads over nothing of 
 to save. Stressors, end states, incidence, adaptations and verdicts are rows of the
 document's tables, written with `artifact_edit_document_table`
 (`PATCH /api/documents/{id}/tables/{table}`). The reads are `analysis_progress`, `analysis_incidence`
-and `analysis_test_set`. Holding out a test set and reading residuality are described in
+and `analysis_test_set`, served over REST as `GET /api/stress-analyses/{id}/progress`, `…/incidence`
+and `…/test-set`. Holding out a test set and reading residuality are described in
 [Stress test set](stress-test-set.md).
 
 &nbsp;

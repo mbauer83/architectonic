@@ -1,7 +1,7 @@
 import { Schema } from 'effect'
 
 /**
- * A stress analysis's test set (`/api/documents/{id}/test-set`), a candidate's residuality in each
+ * A stress analysis's test set (`/api/stress-analyses/{id}/test-set`), a candidate's residuality in each
  * analysis that judged it (`/api/candidates/{id}/residuality`), and the perspectives offered to
  * whoever writes stressors (`/api/stress-perspectives`).
  */

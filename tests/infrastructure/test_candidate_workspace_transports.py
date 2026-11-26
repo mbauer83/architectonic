@@ -116,7 +116,7 @@ def test_analysis_reads_the_scoped_naive_candidate_on_both_surfaces(tmp_path: Pa
         comparison = client.get(f"/api/candidates/{naive_id}/diff")
         comparison.raise_for_status()
         assert {row["id"] for row in comparison.json()["view"]["entities"]} >= {stable_service, "$ref:queue"}
-        path = f"/api/documents/{document.stem}"
+        path = f"/api/stress-analyses/{document.stem}"
         grid = client.get(path + "/incidence").json()
         assert grid == mcp.analysis_incidence(document.stem, str(root))
         assert grid["stressors"][0]["missing_elements"] == []

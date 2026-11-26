@@ -302,7 +302,7 @@ def candidates_integrate_candidates(body: CandidateIntegrate) -> dict[str, Any]:
 
 
 @router.get(
-    "/api/documents/{artifact_id}/progress",
+    "/api/stress-analyses/{artifact_id}/progress",
     operation_id="documents_analysis_progress",
     tags=[TAG_DOCUMENTS],
     summary="Read unfinished stress analysis and coverage hints",
@@ -317,7 +317,7 @@ def documents_analysis_progress(artifact_id: str) -> dict[str, Any]:
 
 
 @router.get(
-    "/api/documents/{artifact_id}/incidence",
+    "/api/stress-analyses/{artifact_id}/incidence",
     operation_id="documents_analysis_incidence",
     tags=[TAG_DOCUMENTS],
     summary="Read stressor hits and coupling counts",

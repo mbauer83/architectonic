@@ -460,7 +460,7 @@ const fullscreenTestId = (page: Page): Promise<string> =>
 
 /** The analysis's incidence rows, as the server holds them. */
 const incidenceOf = async (request: APIRequestContext, id: string): Promise<string> =>
-  JSON.stringify(((await (await request.get(`/api/documents/${encodeURIComponent(id)}/incidence`)).json()) as
+  JSON.stringify(((await (await request.get(`/api/stress-analyses/${encodeURIComponent(id)}/incidence`)).json()) as
     { incidence: unknown[] }).incidence)
 
 test('a stressor is ticked on the canvas filling the screen, its row and incidence docked beside it', async ({ page, request }) => {
