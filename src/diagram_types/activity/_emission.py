@@ -202,6 +202,13 @@ def _emit_loop(
     """
     graph = ctx.graph
     condition_step = graph.step_by_id.get(loop.condition) or {}
+    # `repeat` draws the loop's entry point, so it belongs in the header's lane. The header's own
+    # switch comes too late — it is part of the walk below — and the entry point was drawn in
+    # whichever lane the walk was in before the loop. A drawn loop never crosses a lane
+    # (`_step_cycles` refuses one that does), so the header's lane is the loop's. A header with no
+    # lane is left to the walk, which reports it.
+    if ctx.lanes.index.get(loop.header):
+        _maybe_switch_lane(loop.header, ctx, lines)
     lines.append("repeat")
     # Marked before the body is walked, because the walk asks `ctx.loops` at every step and would
     # otherwise re-open this same `repeat` on reaching the header again — endlessly. The mark does not
