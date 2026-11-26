@@ -35,7 +35,8 @@ const mounted = (svc: Partial<ModelService>, more: Partial<DiagramDetail> = {}) 
   document.body.appendChild(host)
   globalThis.URL.createObjectURL = () => 'blob:now'
   globalThis.URL.revokeObjectURL = () => undefined
-  app = createApp({ render: () => h(DiagramAutoLayoutDialog, { detail: { ...DETAIL, ...more }, onLaidOut: laidOut, onClose: closed }) })
+  const detail = { ...DETAIL, ...more }
+  app = createApp({ render: () => h(DiagramAutoLayoutDialog, { detail, onLaidOut: laidOut, onClose: closed }) })
   app.provide(modelServiceKey, {
     getDiagramSvg: () => Effect.succeed('<svg xmlns="http://www.w3.org/2000/svg"/>'),
     previewDiagram: () => Effect.succeed(PREVIEW), getDiagram: () => Effect.succeed(DETAIL), ...svc,

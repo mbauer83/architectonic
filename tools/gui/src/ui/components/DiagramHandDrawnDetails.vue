@@ -5,7 +5,7 @@
  * sentence above it reads first. Nothing renders where the read names nothing.
  */
 import { computed } from 'vue'
-import type { HandDrawn } from '../../domain/schemas/diagrams'
+import type { HandDrawn } from '../../domain/schemas/handDrawn'
 
 const props = defineProps<{ handDrawn?: HandDrawn | undefined }>()
 

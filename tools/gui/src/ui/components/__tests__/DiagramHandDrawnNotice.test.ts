@@ -6,7 +6,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { createApp, h, nextTick, type App } from 'vue'
 import DiagramHandDrawnNotice from '../DiagramHandDrawnNotice.vue'
-import type { HandDrawn } from '../../../domain/schemas/diagrams'
+import type { HandDrawn } from '../../../domain/schemas/handDrawn'
 
 /** A PlantUML alias as the renderer spells one, a further drawing's included: `ACT_Nn7Oo7__2`. */
 const RAW_ALIAS = /[A-Z]{2,4}_\w+__\d/

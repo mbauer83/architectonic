@@ -1,6 +1,7 @@
 import { Schema } from 'effect'
 import { BaselineStandingSchema } from './baselineStanding'
 import { DiagramLayoutSchema } from './diagramLayout'
+import { HandDrawnSchema } from './handDrawn'
 import { ViewpointApplicationSchema } from './viewpoints'
 import { EntityContextConnectionSchema } from './connections'
 import { EntityDisplayInfoSchema } from './entities'
@@ -34,20 +35,6 @@ export const AuthoredGroupingSchema: Schema.Schema<AuthoredGroupingWire> = Schem
   groups: Schema.optional(Schema.Array(Schema.suspend(() => AuthoredGroupingSchema))),
   stereotype: Schema.optional(Schema.String),
 })
-
-/** What only a hand-drawn picture has: boxes by their labels, elements by their names, relations by the
- * names of their ends and the model's type for them. Never PlantUML aliases. */
-export const HandDrawnSchema = Schema.Struct({
-  boxes: Schema.Array(Schema.String),
-  elements: Schema.Array(Schema.String),
-  relations: Schema.Array(Schema.Struct({
-    source: Schema.String,
-    target: Schema.String,
-    type: Schema.optional(Schema.String),
-  })),
-  directions: Schema.Array(Schema.String),
-})
-export type HandDrawn = typeof HandDrawnSchema.Type
 
 export const DiagramDetailSchema = Schema.Struct({
   artifact_id: Schema.String,
@@ -86,8 +73,7 @@ export const DiagramDetailSchema = Schema.Struct({
    * server's answer, `manual-layout` or what the picture draws that its generated picture would not. Absent
    * where the body is generated. */
   written_by_hand: Schema.optional(Schema.String),
-  /** What only the hand-drawn picture has, named as a reader sees it. Absent where the body is generated,
-   * and for a diagram marked `manual-layout`. */
+  /** What only the hand-drawn picture has, by name; absent where generated or marked `manual-layout`. */
   hand_drawn: Schema.optional(HandDrawnSchema),
 })
 export type DiagramDetail = typeof DiagramDetailSchema.Type

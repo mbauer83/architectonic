@@ -4,7 +4,7 @@
  * what a save keeps and what it refuses, and where to go to change what the picture draws. What only the
  * hand-drawn picture has follows, collapsed.
  */
-import type { HandDrawn } from '../../domain/schemas/diagrams'
+import type { HandDrawn } from '../../domain/schemas/handDrawn'
 import DiagramHandDrawnDetails from './DiagramHandDrawnDetails.vue'
 
 defineProps<{ handDrawn?: HandDrawn | undefined }>()

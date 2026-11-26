@@ -2,8 +2,9 @@
 /**
  * *Lay out automatically…* on a diagram whose picture is drawn by hand (`manual-layout`, or `written_by_hand`
  * on the read): the picture it would have, generated from what it draws, beside the one it has, and a plain
- * word that the hand-written body is replaced, with what only the hand-drawn picture has. Confirming is the diagram's own replacement with `manual_layout: false` — the save the
- * canvas makes, no write of its own — after which the diagram is arranged on its canvas like any other.
+ * word that the hand-written body is replaced, with what only the hand-drawn picture has. Confirming is the
+ * diagram's own replacement with `manual_layout: false` — the save the canvas makes, no write of its own —
+ * after which the diagram is arranged on its canvas like any other.
  *
  * The preview is the composition preview every diagram editor reads (`previewDiagram`), from the
  * membership the diagram states.
