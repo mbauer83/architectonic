@@ -16,12 +16,15 @@ from src.application.repository_upgrade.steps.connection_metadata_scan import Co
 from src.application.repository_upgrade.steps.default_document_types_ensure import DefaultDocumentTypesEnsureStep
 from src.application.repository_upgrade.steps.default_schemata_ensure import DefaultSchemataEnsureStep
 from src.application.repository_upgrade.steps.diagram_identity_keys import DiagramIdentityKeysStep
+from src.application.repository_upgrade.steps.drawn_relations_bound import DrawnRelationsBoundStep
+from src.application.repository_upgrade.steps.entity_list_names_elements import EntityListNamesElementsStep
 from src.application.repository_upgrade.steps.group_meta_ontology_rename import GroupMetaOntologyRenameStep
 from src.application.repository_upgrade.steps.modification_stamp_datetime import (
     ModificationStampDatetimeStep,
 )
 from src.application.repository_upgrade.steps.multiplicity_rename import MultiplicityRenameStep
 from src.application.repository_upgrade.steps.ordinal_enum_declaration import OrdinalEnumDeclarationStep
+from src.application.repository_upgrade.steps.outgoing_source_long_form import OutgoingSourceLongFormStep
 from src.application.repository_upgrade.steps.profile_reconciliation_scan import ProfileReconciliationScanStep
 from src.application.repository_upgrade.steps.rendered_output_collection import RenderedOutputCollectionStep
 from src.application.repository_upgrade.steps.schema_file_scan import SchemaFileScanStep
@@ -54,8 +57,10 @@ from src.domain.repository.repository_upgrade import StepIdentity
 # enums, which change how an existing repo's severity-like values sort. "5" adds the reference
 # respelling a cascading rename now keeps current, which an older repo never had. "6" gives every
 # diagram grouping an id of its own and keys an edge label by the relation it labels; a diagram in
-# the earlier form is refused by verification until it is upgraded.
-FORMAT_CONTRACT_VERSION = "6"
+# the earlier form is refused by verification until it is upgraded. "7" takes statements about a
+# diagram's instances out of `entity-ids-used`, lists in `connection-ids-used` the model relations a
+# body draws, and spells a connection file's `source-entity` long — each a form the verifier refuses.
+FORMAT_CONTRACT_VERSION = "7"
 
 
 class StepRegistry:
@@ -81,6 +86,8 @@ def build_registry(selection_resolutions: Mapping[str, SelectionMode] | None = N
     registry.register(MultiplicityRenameStep())
     registry.register(GroupMetaOntologyRenameStep())
     registry.register(DiagramIdentityKeysStep())
+    registry.register(EntityListNamesElementsStep())
+    registry.register(DrawnRelationsBoundStep())
     registry.register(UnrecognizedStructureScanStep())
     registry.register(SpecializationDeclarationScanStep())
     registry.register(ViewpointDeclarationScanStep())
@@ -94,6 +101,7 @@ def build_registry(selection_resolutions: Mapping[str, SelectionMode] | None = N
     registry.register(OrdinalEnumDeclarationStep())
     registry.register(ProfileReconciliationScanStep())
     registry.register(ConnectionMetadataScanStep())
+    registry.register(OutgoingSourceLongFormStep())
     registry.register(ViewpointApplicationScanStep())
     registry.register(ModificationStampDatetimeStep())
     registry.register(StaleSlugReferenceStep())

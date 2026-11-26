@@ -440,3 +440,31 @@ class TestAssociateConnection:
         )
         assert r.status_code == 200
         assert "wrote" in r.json()
+
+
+class TestAnEditKeepsTheSourceSpelledLong:
+    """Every edit rewrites the whole connection file, `source-entity` included.
+
+    The route addresses a connection by its composite id, whose endpoints the handler reads in short
+    form — so an edit wrote the file's source short, and the file's own schema then refused it (W041).
+    The rewritten file must name its source as the model spells it, whichever form addressed it.
+    """
+
+    SHORT = "REQ@1000000010.SrcCon---REQ@1000000011.TgtCon@@archimate-association"
+
+    def test_an_edit(self, sync_client) -> None:
+        r = sync_client.patch(f"/api/connections/{self.SHORT}", json={"description": "Edited.", "dry_run": True})
+        assert r.status_code == 200
+        assert f"source-entity: {SRC_ID}\n" in r.json()["content"]
+
+    def test_a_removal_that_leaves_a_connection(self, sync_client) -> None:
+        r = sync_client.delete(f"/api/connections/{self.SHORT}?dry_run=true")
+        assert r.status_code == 200
+        assert f"source-entity: {SRC_ID}\n" in r.json()["content"]
+
+    def test_an_association_change(self, sync_client) -> None:
+        r = sync_client.patch(
+            f"/api/connections/{self.SHORT}/associated-entities", json={"add_entities": [FAR_ID], "dry_run": True},
+        )
+        assert r.status_code == 200
+        assert f"source-entity: {SRC_ID}\n" in r.json()["content"]

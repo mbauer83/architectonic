@@ -29,6 +29,10 @@ class _FakeRegistry:
     def find_file_by_id(self, eid: str) -> Path | None:
         return self._map.get(eid)
 
+    def entity_ids(self) -> set[str]:
+        """What the write path spells a rewritten file's source from."""
+        return set(self._map)
+
 
 class _FakeVerifier:
     def __init__(self, *, valid: bool = True) -> None:

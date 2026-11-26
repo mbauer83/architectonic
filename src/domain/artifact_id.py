@@ -82,6 +82,27 @@ def held_record_id(diagram_id: str, entity_type: str, local_id: str) -> str:
     return f"{diagram_id}#{entity_type}/{local_id}"
 
 
+@dataclass(frozen=True)
+class HeldRecordId:
+    """The three parts `held_record_id` joins: the host diagram, the record's key, its local id."""
+
+    diagram_id: str
+    entity_type: str
+    local_id: str
+
+
+def read_held_record_id(s: str) -> HeldRecordId | None:
+    """The parts of a held record's id, or None when *s* is not spelled as one.
+
+    The reading of `held_record_id`, kept beside it so the form has one writer and one reader.
+    """
+    host, hosted, rest = s.strip().partition("#")
+    entity_type, slash, local = rest.partition("/")
+    if not hosted or not slash or not entity_type or not local or not is_entity_id(host):
+        return None
+    return HeldRecordId(diagram_id=host, entity_type=entity_type, local_id=local)
+
+
 def stable_id(s: str) -> str:
     """Return the short (rename-stable) form of an artifact ID.
 

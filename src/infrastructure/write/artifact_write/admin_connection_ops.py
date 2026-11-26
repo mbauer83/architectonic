@@ -14,6 +14,7 @@ from .connection import (
     _build_content as _build_conn_content,
 )
 from .connection import (
+    _canonical_entity_id,
     _resolve_outgoing_path,
     _rollback,
     _validate_inputs,
@@ -45,6 +46,8 @@ def admin_add_connection(
 ) -> WriteResult:
     assert_enterprise_write_root(repo_root)
     _validate_inputs(registry, connection_type, source_entity, target_entity)
+    source_entity = _canonical_entity_id(registry, source_entity)
+    target_entity = _canonical_entity_id(registry, target_entity)
 
     outgoing_path = _resolve_outgoing_path(registry, source_entity)
     conn_id = f"{connection_type} → {target_entity}"
@@ -66,9 +69,11 @@ def admin_add_connection(
     return result
 
 
-def _format_remaining(source_entity: str, parsed: ParsedOutgoing, remaining: list[dict[str, object]]) -> str:
+def _format_remaining(
+    registry: ArtifactRegistry, source_entity: str, parsed: ParsedOutgoing, remaining: list[dict[str, object]]
+) -> str:
     return format_outgoing_markdown(
-        source_entity=source_entity,
+        source_entity=_canonical_entity_id(registry, source_entity),
         version=str(parsed.frontmatter.get("version", "0.1.0")),
         status=str(parsed.frontmatter.get("status", "active")),
         last_updated=modification_stamp(),
@@ -110,7 +115,7 @@ def admin_remove_connection(
         content = (
             "(file would be deleted — last connection removed)"
             if deletes_file
-            else _format_remaining(source_entity, parsed, remaining)
+            else _format_remaining(registry, source_entity, parsed, remaining)
         )
         return WriteResult(
             wrote=False, path=outgoing_path, artifact_id=conn_id, content=content, warnings=[], verification=None
@@ -125,7 +130,7 @@ def admin_remove_connection(
             verification={"path": str(outgoing_path), "file_type": "connection", "valid": True, "issues": []},
         )
 
-    content = _format_remaining(source_entity, parsed, remaining)
+    content = _format_remaining(registry, source_entity, parsed, remaining)
     prev = outgoing_path.read_text(encoding="utf-8")
     outgoing_path.write_text(content, encoding="utf-8")
     res = verifier.verify_outgoing_file(outgoing_path)

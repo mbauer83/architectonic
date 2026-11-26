@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.atomic_file import write_atomic
 from src.infrastructure.repository_upgrade.config_store import (
@@ -52,6 +53,10 @@ class FilesystemRepoUpgradeView:
     @property
     def known_entity_type_names(self) -> frozenset[str]:
         return _known_entity_type_names()
+
+    @property
+    def catalogs(self) -> RuntimeCatalogs:
+        return process_runtime_catalogs()
 
 
 def _prune_empty_parents(directory: Path, *, stop_at: Path) -> None:
