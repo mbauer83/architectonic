@@ -89,12 +89,16 @@ def placed_instances(frontmatter: dict[str, Any]) -> frozenset[str]:
 
 
 def start_record(start: PictureStart, repo: Any, root: Path) -> tuple[DiagramRecord, str]:
-    """The record and body the editor's context is read from: the stored diagram's, or the generated view's."""
+    """The record and body the editor's context is read from: the stored diagram's, or the generated view's.
+
+    Refused (`NotStored`) where the stored diagram's file cannot be read: an empty body would serve its
+    context as a diagram that draws nothing.
+    """
     if start.diagram is not None:
         try:
             body = Path(start.diagram.path).read_text(encoding="utf-8")
-        except OSError:
-            body = ""
+        except OSError as unreadable:
+            raise NotStored(f"{start.diagram.artifact_id} is stored but cannot be read: {unreadable}") from unreadable
         return start.diagram, body
     rendered = render_composition(start.generated, repo=repo, repo_root=root)
     record = DiagramRecord(

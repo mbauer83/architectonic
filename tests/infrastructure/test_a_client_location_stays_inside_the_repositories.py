@@ -18,6 +18,7 @@ import pytest
 from mcp.server.context import ServerRequestContext
 from mcp.types import CallToolRequestParams, TextContent
 
+from src.application.artifacts.mounted_readers import mount_for_path
 from src.application.repository_confinement import (
     LocationRefused,
     confine_root,
@@ -25,6 +26,7 @@ from src.application.repository_confinement import (
     path_inside,
     require_segment,
 )
+from src.domain.ontology_representation.artifact_types import RepoMount
 from src.infrastructure.mcp.location_parameters import confined_arguments
 
 
@@ -207,3 +209,18 @@ class TestRest:
         response = client.get(path)
 
         assert "[project]" not in response.text
+
+
+class TestClassifyingALocationAsksTheOwner:
+    """Regression: the mount reader resolved the path and not the mount root it compared against."""
+
+    def test_a_repository_mounted_through_a_link_holds_its_own_files(self, tmp_path: Path) -> None:
+        real = tmp_path / "real"
+        (real / "model").mkdir(parents=True)
+        linked = tmp_path / "linked"
+        linked.symlink_to(real, target_is_directory=True)
+        mount = RepoMount(root=linked, scope="engagement", engagement_label="ENG")
+
+        assert mount_for_path(linked / "model" / "x.md", [mount]) is mount
+        assert mount_for_path(real / "model" / "x.md", [mount]) is mount
+        assert mount_for_path(tmp_path / "elsewhere.md", [mount]) is None

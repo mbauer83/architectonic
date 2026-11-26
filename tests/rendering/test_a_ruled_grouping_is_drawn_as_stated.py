@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 
 from src.domain.diagrams.layout.box_aliases import BoxKind, box_kind
-from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
+from src.infrastructure.rendering.diagram_builder import generate_puml_body
 from tests.support.archimate_scenes import DIAGRAM_TYPE, SCENES, E
 
 _ORDER_HANDLING = SCENES[0]
@@ -20,7 +20,7 @@ _ELEMENT = re.compile(r'^(?P<indent> *)(?:rectangle|circle) "[^"]*"(?: <<[^>]*>>
 
 
 def _body(groupings: list[dict[str, object]]) -> str:
-    return generate_archimate_puml_body(
+    return generate_puml_body(
         _ORDER_HANDLING.name, list(_ORDER_HANDLING.entities), list(_ORDER_HANDLING.connections),
         diagram_type=DIAGRAM_TYPE, authored_groupings=groupings,
     )

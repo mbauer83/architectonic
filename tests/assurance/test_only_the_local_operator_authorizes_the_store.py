@@ -34,7 +34,7 @@ def authorizations(monkeypatch: pytest.MonkeyPatch) -> Iterator[list[str]]:
 def _cli_request(monkeypatch: pytest.MonkeyPatch, *, authorize: bool) -> urllib.request.Request:
     """The request `arch-assurance unlock` / `lock` sends, captured instead of sent."""
     from src.infrastructure.assurance.activation import notify_backend_reload
-    from src.infrastructure.cli import _workspace_backend
+    from src.infrastructure.cli import _workspace_backend, backend_write
 
     captured: list[urllib.request.Request] = []
     monkeypatch.setattr(_workspace_backend, "workspace_backend_url", lambda cwd=None: "http://127.0.0.1:8188")
@@ -43,7 +43,7 @@ def _cli_request(monkeypatch: pytest.MonkeyPatch, *, authorize: bool) -> urllib.
         captured.append(request)
         raise OSError("captured, not sent")
 
-    monkeypatch.setattr(urllib.request, "urlopen", _capture)
+    monkeypatch.setattr(backend_write, "urlopen", _capture)
     notify_backend_reload(authorize=authorize)
     assert len(captured) == 1
     return captured[0]

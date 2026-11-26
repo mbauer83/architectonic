@@ -1,9 +1,9 @@
 """Candidate architecture records, scoped comparisons and stress-analysis projections."""
 from pydantic import Field, JsonValue, model_serializer
 
+from src.infrastructure.artifact_home_wire import PathComponent
 from src.infrastructure.candidate_wire import CandidateHeader, CandidatePatch, IntegrationResolution, RecordedEdit
 from src.infrastructure.rest.contracts.diagram_layout_editing import DiagramLayoutGeometryResponse
-from src.infrastructure.rest.contracts.path_components import PathComponent
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 from src.infrastructure.rest.contracts.wire_shape import Closed
 

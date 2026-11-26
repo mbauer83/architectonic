@@ -303,14 +303,14 @@ def execute_viewpoint_diagram(
         )
 
     from src.application.artifacts.parsing import normalize_puml_alias
-    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body, render_puml_svg
+    from src.infrastructure.rendering.diagram_builder import generate_puml_body, render_puml_svg
 
     modeled_connection_ids = [cid for cid in result.connection_ids if not is_derived_connection_id(cid)]
     entities, connections, _, _ = resolve_diagram_selection(repo, list(result.entity_ids), modeled_connection_ids)
     derived_records = [
         derived_connection_record(summary) for summary in result.connections if summary.certainty is not None
     ]
-    puml = generate_archimate_puml_body(
+    puml = generate_puml_body(
         result.slug or "viewpoint-preview",
         entities,
         [*connections, *derived_records],

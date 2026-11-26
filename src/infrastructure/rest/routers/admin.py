@@ -328,7 +328,7 @@ def admin_create_diagram(body: AdminCreateDiagramBody, response: Response,
     ent_root, _, verifier = s.get_admin_write_deps(catalogs)
     from src.application.identifier_allocator import get_default_allocator
     from src.application.modeling.artifact_write import prefix_for_diagram_type
-    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
+    from src.infrastructure.rendering.diagram_builder import generate_puml_body
     from src.infrastructure.rendering.diagram_selection import resolve_diagram_selection
 
     # Import the core diagram writing helper that wraps format + write + render
@@ -343,7 +343,7 @@ def admin_create_diagram(body: AdminCreateDiagramBody, response: Response,
     entities, connections, entity_ids_used, connection_ids_used = resolve_diagram_selection(
         repo, body.entity_ids, body.connection_ids
     )
-    puml = generate_archimate_puml_body(body.name, entities, connections, diagram_type=body.diagram_type)
+    puml = generate_puml_body(body.name, entities, connections, diagram_type=body.diagram_type)
     try:
         result = s.authorized_write(
             "admin_create_diagram", 

@@ -1,0 +1,385 @@
+{
+ "elements": [
+  {
+   "alias": "A",
+   "extent": {
+    "left": 20,
+    "top": 40,
+    "right": 120,
+    "bottom": 80
+   },
+   "inside": "G"
+  },
+  {
+   "alias": "B",
+   "extent": {
+    "left": 140,
+    "top": 40,
+    "right": 240,
+    "bottom": 80
+   },
+   "inside": "G"
+  },
+  {
+   "alias": "C",
+   "extent": {
+    "left": 400,
+    "top": 40,
+    "right": 500,
+    "bottom": 80
+   },
+   "inside": null
+  },
+  {
+   "alias": "D",
+   "extent": {
+    "left": 340,
+    "top": 280,
+    "right": 440,
+    "bottom": 340
+   },
+   "inside": "I"
+  }
+ ],
+ "boxes": [
+  {
+   "alias": "G",
+   "extent": {
+    "left": 10,
+    "top": 10,
+    "right": 250,
+    "bottom": 90
+   },
+   "inside": null,
+   "words": [
+    {
+     "text": "Group",
+     "x": 110,
+     "y": 25,
+     "width": 30
+    }
+   ]
+  },
+  {
+   "alias": "O",
+   "extent": {
+    "left": 300,
+    "top": 200,
+    "right": 600,
+    "bottom": 400
+   },
+   "inside": null,
+   "words": [
+    {
+     "text": "Outer",
+     "x": 430,
+     "y": 215,
+     "width": 40
+    }
+   ]
+  },
+  {
+   "alias": "I",
+   "extent": {
+    "left": 320,
+    "top": 240,
+    "right": 520,
+    "bottom": 380
+   },
+   "inside": "O",
+   "words": [
+    {
+     "text": "Inner",
+     "x": 400,
+     "y": 255,
+     "width": 40
+    }
+   ]
+  },
+  {
+   "alias": "E",
+   "extent": {
+    "left": 20,
+    "top": 450,
+    "right": 80,
+    "bottom": 500
+   },
+   "inside": null,
+   "words": [
+    {
+     "text": "A rather long title",
+     "x": 25,
+     "y": 465,
+     "width": 120
+    }
+   ]
+  }
+ ],
+ "cases": [
+  {
+   "name": "nothing moved: every box as drawn, an empty one widened to its title",
+   "moved": {},
+   "stated": {},
+   "fitted": {
+    "G": {
+     "left": 10,
+     "top": 10,
+     "right": 250,
+     "bottom": 90
+    },
+    "I": {
+     "left": 320,
+     "top": 240,
+     "right": 520,
+     "bottom": 380
+    },
+    "O": {
+     "left": 300,
+     "top": 200,
+     "right": 600,
+     "bottom": 400
+    },
+    "E": {
+     "left": -18.0,
+     "top": 450,
+     "right": 118.0,
+     "bottom": 500
+    }
+   }
+  },
+  {
+   "name": "a member moved out grows its box by the padding it had",
+   "moved": {
+    "B": {
+     "left": 300,
+     "top": 60,
+     "right": 400,
+     "bottom": 100
+    }
+   },
+   "stated": {},
+   "fitted": {
+    "G": {
+     "left": 10,
+     "top": 10,
+     "right": 410,
+     "bottom": 110
+    },
+    "I": {
+     "left": 320,
+     "top": 240,
+     "right": 520,
+     "bottom": 380
+    },
+    "O": {
+     "left": 300,
+     "top": 200,
+     "right": 600,
+     "bottom": 400
+    },
+    "E": {
+     "left": -18.0,
+     "top": 450,
+     "right": 118.0,
+     "bottom": 500
+    }
+   }
+  },
+  {
+   "name": "members moved in shrink the box, never below its title",
+   "moved": {
+    "A": {
+     "left": 100,
+     "top": 40,
+     "right": 120,
+     "bottom": 80
+    },
+    "B": {
+     "left": 122,
+     "top": 40,
+     "right": 142,
+     "bottom": 80
+    }
+   },
+   "stated": {},
+   "fitted": {
+    "G": {
+     "left": 6.0,
+     "top": 10,
+     "right": 236.0,
+     "bottom": 90
+    },
+    "I": {
+     "left": 320,
+     "top": 240,
+     "right": 520,
+     "bottom": 380
+    },
+    "O": {
+     "left": 300,
+     "top": 200,
+     "right": 600,
+     "bottom": 400
+    },
+    "E": {
+     "left": -18.0,
+     "top": 450,
+     "right": 118.0,
+     "bottom": 500
+    }
+   }
+  },
+  {
+   "name": "a member moved deep grows its box and the box that holds it",
+   "moved": {
+    "D": {
+     "left": 500,
+     "top": 420,
+     "right": 600,
+     "bottom": 480
+    }
+   },
+   "stated": {},
+   "fitted": {
+    "G": {
+     "left": 10,
+     "top": 10,
+     "right": 250,
+     "bottom": 90
+    },
+    "I": {
+     "left": 480,
+     "top": 380,
+     "right": 680,
+     "bottom": 520
+    },
+    "O": {
+     "left": 460,
+     "top": 340,
+     "right": 760,
+     "bottom": 540
+    },
+    "E": {
+     "left": -18.0,
+     "top": 450,
+     "right": 118.0,
+     "bottom": 500
+    }
+   }
+  },
+  {
+   "name": "a stated box larger than its contents widens it",
+   "moved": {},
+   "stated": {
+    "G": {
+     "left": 0,
+     "top": 0,
+     "right": 400,
+     "bottom": 200
+    }
+   },
+   "fitted": {
+    "G": {
+     "left": 0,
+     "top": 0,
+     "right": 400,
+     "bottom": 200
+    },
+    "I": {
+     "left": 320,
+     "top": 240,
+     "right": 520,
+     "bottom": 380
+    },
+    "O": {
+     "left": 300,
+     "top": 200,
+     "right": 600,
+     "bottom": 400
+    },
+    "E": {
+     "left": -18.0,
+     "top": 450,
+     "right": 118.0,
+     "bottom": 500
+    }
+   }
+  },
+  {
+   "name": "a stated box smaller than its contents never narrows it",
+   "moved": {},
+   "stated": {
+    "G": {
+     "left": 50,
+     "top": 20,
+     "right": 100,
+     "bottom": 60
+    }
+   },
+   "fitted": {
+    "G": {
+     "left": 10,
+     "top": 10,
+     "right": 250,
+     "bottom": 90
+    },
+    "I": {
+     "left": 320,
+     "top": 240,
+     "right": 520,
+     "bottom": 380
+    },
+    "O": {
+     "left": 300,
+     "top": 200,
+     "right": 600,
+     "bottom": 400
+    },
+    "E": {
+     "left": -18.0,
+     "top": 450,
+     "right": 118.0,
+     "bottom": 500
+    }
+   }
+  },
+  {
+   "name": "a stated corner alone reaches only that point",
+   "moved": {},
+   "stated": {
+    "I": {
+     "left": 560,
+     "top": 395,
+     "right": 560,
+     "bottom": 395
+    }
+   },
+   "fitted": {
+    "G": {
+     "left": 10,
+     "top": 10,
+     "right": 250,
+     "bottom": 90
+    },
+    "I": {
+     "left": 320,
+     "top": 240,
+     "right": 560,
+     "bottom": 395
+    },
+    "O": {
+     "left": 300,
+     "top": 200,
+     "right": 640,
+     "bottom": 415
+    },
+    "E": {
+     "left": -18.0,
+     "top": 450,
+     "right": 118.0,
+     "bottom": 500
+    }
+   }
+  }
+ ]
+}

@@ -58,7 +58,7 @@ class Verdict:
 
 
 @dataclass(frozen=True)
-class Standing:
+class ArchitectureStanding:
     """How one architecture stands against the usable test stressors."""
 
     architecture: str
@@ -93,23 +93,29 @@ def struck(verdicts: Iterable[Verdict]) -> dict[str, str]:
     return {one.stressor: one.reasoning for one in verdicts if not one.usable}
 
 
-def standing_of(architecture: str, usable: Sequence[str], verdicts: Iterable[Verdict]) -> Standing:
+def architecture_standing(
+    architecture: str, usable: Sequence[str], verdicts: Iterable[Verdict],
+) -> ArchitectureStanding:
     """*architecture*'s verdicts on the *usable* stressors; a later verdict on a stressor replaces an earlier one."""
     latest = {one.stressor: one.verdict for one in verdicts
               if one.architecture == architecture and one.verdict and one.stressor in usable}
     told = list(latest.values())
-    return Standing(architecture, len(usable), told.count(SURVIVES), told.count(DEGRADES),
+    return ArchitectureStanding(architecture, len(usable), told.count(SURVIVES), told.count(DEGRADES),
                     len(told) - told.count(SURVIVES) - told.count(DEGRADES))
 
 
-def residuality(standing: Standing, naive: Standing, *, strict: bool = False) -> Fraction | None:
+def residuality(
+    standing: ArchitectureStanding, naive: ArchitectureStanding, *, strict: bool = False,
+) -> Fraction | None:
     """R = (Y − X) / n, or None until both are judged on every usable stressor."""
     if not (standing.complete and naive.complete):
         return None
     return (standing.survivals(strict=strict) - naive.survivals(strict=strict)) / standing.usable
 
 
-def standing_as_read(standing: Standing, naive: Standing, *, integrated: bool) -> dict[str, Any]:
+def standing_as_read(
+    standing: ArchitectureStanding, naive: ArchitectureStanding, *, integrated: bool,
+) -> dict[str, Any]:
     """One architecture's line: its counts, and the coefficient beside the naive's where both are complete."""
     measured = standing.architecture != NAIVE_ARCHITECTURE
     coefficient = residuality(standing, naive) if measured else None
@@ -162,7 +168,7 @@ def evaluate(
     judged = [one.architecture for one in verdicts if one.architecture != NAIVE_ARCHITECTURE]
     together = integration or (integrated[-1] if integrated else None)
     shown = dict.fromkeys([NAIVE_ARCHITECTURE, *integrated, *([together] if together else []), *judged])
-    standings = {name: standing_of(name, usable, verdicts) for name in shown}
+    standings = {name: architecture_standing(name, usable, verdicts) for name in shown}
     naive = standings[NAIVE_ARCHITECTURE]
     return {
         "stressors": [_stated({"id": row["id"], "stressor": row.get("stressor") or "", "kind": row.get("kind") or None,

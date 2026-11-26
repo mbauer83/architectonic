@@ -13,24 +13,25 @@ members on the new picture.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from pathlib import Path
 
 from src.application.modeling.diagram_identities import diagram_identities, strings_of
+from src.application.modeling.diagram_layout_statement import DeclaresElementKinds
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.artifact_id import stable_id
 from src.domain.diagrams.layout.arrange_intents import ArrangeIntent, arranged, arranges
 from src.domain.diagrams.layout.geometry import Extent
-from src.domain.diagrams.layout.layout_block import Layout, layout_as_written
+from src.domain.diagrams.layout.layout_block import Layout, MalformedLayout, layout_as_written
 from src.domain.diagrams.layout.layout_checks import DiagramIdentities
 from src.domain.diagrams.layout.layout_intents import patch_between
+from src.infrastructure.rendering.layout.diagram_geometry import read_and_measured
+from src.infrastructure.rendering.layout.diagram_picture import NotDrawn, placed_on_its_picture
 
 from .diagram_edit import edit_diagram
 from .diagram_layout_patch import FirstLayout, LayoutPatchResult, arranged_by, matched_to, stored_diagram
 from .diagram_membership import RenderedMembership, rendered_membership
-
-#: *layout* matched to the picture of a body the frontmatter states; answers the body as drawn too.
-type PlaceMembers = Callable[[str, Mapping[str, object], Layout], tuple[str, Layout]]
+from .parse_existing import ParsedDiagram
 
 
 def arrange_diagram(
@@ -41,17 +42,18 @@ def arrange_diagram(
     assert_write_root: Callable[[Path], None],
     store: object,
     artifact_id: str,
-    intents: Sequence[ArrangeIntent],
-    drawn: Mapping[str, Extent],
+    stated: object,
+    ontology: DeclaresElementKinds,
     first_layout: FirstLayout,
-    place_members: PlaceMembers,
     dry_run: bool,
 ) -> LayoutPatchResult:
-    """Apply *intents* to *artifact_id* and write the result. Raises ValueError for one that cannot apply.
+    """Apply the intents *stated* to *artifact_id* and write the result, for REST and MCP alike.
 
-    *drawn* is each element's extent as drawn now, for the sizes a layout entry omits.
+    Raises MalformedLayout for intents that are not well formed, NotDrawn where the diagram's picture
+    cannot be drawn to measure them, and ValueError for one that cannot apply.
     """
     parsed = stored_diagram(repo_root, verifier, artifact_id)
+    intents, drawn = _read_against_its_picture(stated, parsed, artifact_id, repo_root, ontology)
     frontmatter = parsed.frontmatter
     stored, base = arranged_by(parsed, first_layout, taking_over=arranges(intents))
     groupings = frontmatter.get("authored-groupings")
@@ -71,7 +73,9 @@ def arrange_diagram(
 
         def place(stated: Layout) -> Layout:
             nonlocal source
-            source, placed = place_members(membership.puml, statements, stated)
+            source, placed = placed_on_its_picture(
+                membership.puml, statements, stated, new=frozenset(), repo_root=repo_root, ontology=ontology,
+            )
             return placed
 
         layout = matched_to(layout, _identities(frontmatter, membership), place)
@@ -87,6 +91,18 @@ def arrange_diagram(
         write, block, patch_between(base, layout, stored=stored),
         membership.authored_groupings if membership else None,
     )
+
+
+def _read_against_its_picture(
+    stated: object, parsed: ParsedDiagram, artifact_id: str, repo_root: Path, ontology: DeclaresElementKinds,
+) -> tuple[tuple[ArrangeIntent, ...], dict[str, Extent]]:
+    """The intents *stated*, and each element's extent as drawn now, for the sizes a layout entry omits."""
+    try:
+        return read_and_measured(stated, parsed, artifact_id, repo_root, ontology)
+    except MalformedLayout:
+        raise
+    except ValueError as refusal:  # the picture could not be drawn to measure the intents against
+        raise NotDrawn(str(refusal)) from refusal
 
 
 def _regenerated(

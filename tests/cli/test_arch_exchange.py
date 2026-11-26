@@ -13,7 +13,6 @@ import pytest
 
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
 from src.infrastructure.artifact_index import shared_artifact_index
-from src.infrastructure.backend.backend_probe import backend_url
 from src.infrastructure.cli import arch_exchange as cli
 from src.infrastructure.cli import backend_write
 from src.infrastructure.mcp import mcp_artifact_server as mcp
@@ -51,7 +50,7 @@ def test_export_then_import_round_trip_via_main(tmp_path: Path, served_repo: Pat
 
     report = capsys.readouterr().out
     assert "created" in report and "Alice Actor" in report
-    url = backend_url(backend_write.serving_port(dest_root))
+    url = backend_write.serving_url(dest_root)
     response = httpx.get(f"{url}/api/entities", params={"artifact_type": "business-actor"})
     response.raise_for_status()
     assert any(row["name"] == "Alice Actor" for row in response.json()["items"])

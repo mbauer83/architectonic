@@ -65,10 +65,10 @@ def _print_export_report(report: ExportReport, out_path: str) -> None:
 def run_import(*, repo_root: Path, source: Path, schema: Path | None, commit: bool) -> ImportReport:
     source_bytes = source.read_bytes()
     if commit:
-        port = backend_write.serving_port(repo_root)
+        base_url = backend_write.serving_url(repo_root)
         if schema:
             ArchimateModelExchangeReader(schema_path=str(schema)).read(source_bytes)
-        answer = backend_write.post(port, "/api/exchange-imports", source_bytes, "application/xml")
+        answer = backend_write.post(base_url, "/api/exchange-imports", source_bytes, "application/xml")
         return TypeAdapter(ImportReport).validate_python(answer)
     document = ArchimateModelExchangeReader(schema_path=str(schema) if schema else None).read(source_bytes)
     return ArtifactWriteExchangeAdapter(repo_root).import_document(document, commit=False)

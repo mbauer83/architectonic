@@ -144,8 +144,8 @@ uv sync --extra cloud-archive     # both S3 and Azure
 
 The web server, the assurance store's Python bindings and every other runtime dependency are core
 dependencies, so a plain `uv sync` is enough to run everything below. The store itself also needs
-`libsqlcipher-dev` on the host. The `gui` group still exists so that `uv sync --group gui` keeps
-working where it is written; it adds nothing the core does not already install.
+`libsqlcipher-dev` on the host. The `gui` dependency group is empty and kept only so that
+`uv sync --group gui`, written for older installations, still works.
 
 &nbsp;
 

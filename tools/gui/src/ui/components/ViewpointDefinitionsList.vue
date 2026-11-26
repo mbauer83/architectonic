@@ -14,7 +14,7 @@ import { modelServiceKey } from '../keys'
 import { tierFromViewpointFilter, viewpointFilterFromTier } from '../composables/listRequestParams'
 import { tierDisplayLowercase } from './TierBadge.helpers'
 import { useTierFacet } from '../composables/useTierFacet'
-import { useWriteBlock } from '../composables/useWriteBlock'
+import { useCan } from '../composables/usePermissions'
 import { VIEWPOINT_TIERS } from '../lib/tierUrlState'
 import { readApiErrorBody, readErrorMessage } from '../lib/errors'
 import { viewpointReferencedDetails } from '../../domain/schemas/errors'
@@ -33,7 +33,7 @@ const emit = defineEmits<{
 }>()
 
 const svc = inject(modelServiceKey)!
-const writeBlocked = useWriteBlock()
+const mayCreate = useCan('viewpoints_create_viewpoint')
 const router = useRouter()
 
 const executeViewpoint = (envelope: ViewpointDefinitionEnvelope) => void router.push(executionRouteFor(envelope))
@@ -109,10 +109,10 @@ const deleteDefinition = (envelope: ViewpointDefinitionEnvelope) => {
         <button
           type="button"
           class="primary-btn"
-          :disabled="writeBlocked"
-          :title="writeBlocked
-            ? 'Creating a viewpoint needs engagement write access — this session is read-only'
-            : 'Starts a NEW blank definition (no lineage). To adapt an existing one, open it and use Save as…'"
+          :disabled="!mayCreate.allowed"
+          :title="mayCreate.allowed
+            ? 'Starts a NEW blank definition (no lineage). To adapt an existing one, open it and use Save as…'
+            : mayCreate.reason"
           @click="emit('create')"
         >
           + Create viewpoint
@@ -202,7 +202,8 @@ const deleteDefinition = (envelope: ViewpointDefinitionEnvelope) => {
       No viewpoint fits? <button
         type="button"
         class="empty-create-link"
-        :disabled="writeBlocked"
+        :disabled="!mayCreate.allowed"
+        :title="mayCreate.allowed ? undefined : mayCreate.reason"
         @click="emit('create')"
       >
         Create one
@@ -254,7 +255,6 @@ const deleteDefinition = (envelope: ViewpointDefinitionEnvelope) => {
           :def="def"
           :pinned="isPinned(def.slug)"
           :scope-expanded="expandedScopes.has(def.slug)"
-          :write-blocked="writeBlocked"
           @execute="executeViewpoint(def)"
           @edit="emit('edit', def)"
           @delete="deleteDefinition(def)"

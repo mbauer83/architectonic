@@ -29,7 +29,7 @@ import { useEditingPreferences } from './useEditingPreferences'
 import { useSurroundPlacement } from './useSurroundPlacement'
 import type { ShowToast } from '../keys'
 import { isTypingIn } from '../lib/keyboardScheme'
-import { type CanvasCommandName, DIAGRAM_OPERATIONS } from '../components/canvasCommands'
+import { type CanvasCommandName, DIAGRAM_OPERATIONS } from '../../domain/canvasCommands'
 import { useCommandPermission } from './usePermissions'
 import { diagramPicture } from './pictureSource'
 

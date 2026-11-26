@@ -12,6 +12,7 @@ from pathlib import Path
 
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds, joined_to_its_picture
 from src.application.puml_relation_parsing import without_layout_links
+from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.layout.layout_block import Layout
 from src.domain.diagrams.layout.rendered_picture import NotReadable
 from src.infrastructure.rendering.layout.first_layout import first_layout
@@ -76,7 +77,7 @@ def first_layout_of(
     puml_body: str, frontmatter: Mapping[str, object], repo_root: Path, ontology: DeclaresElementKinds
 ) -> Layout:
     """The layout a diagram starts from when it is first arranged: PlantUML's picture, as drawn."""
-    diagram_type = str(frontmatter.get("diagram-type", "archimate"))
+    diagram_type = diagram_type_of(frontmatter)
     drawing = plantuml_drawing(puml_body, repo_root, diagram_type)
     return first_layout(drawing.picture, joined_to_its_picture(frontmatter, Layout(), ontology))
 
@@ -90,7 +91,7 @@ def placed_on_its_picture(
 
     Answers the source as drawn too, which is the one to store: drawing may have relaxed its ranking.
     """
-    source, svg = measure_composition(source, repo_root, str(frontmatter.get("diagram-type", "archimate")))
+    source, svg = measure_composition(source, repo_root, diagram_type_of(frontmatter))
     drawing = read_rendered_drawing(svg)
     if isinstance(drawing, NotReadable):
         raise NotDrawn(f"The diagram's picture cannot be read: {drawing.met}")

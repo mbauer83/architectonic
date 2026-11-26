@@ -23,7 +23,7 @@ import pytest
 
 from src.application.puml_alias_declarations import declared_aliases
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
-from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
+from src.infrastructure.rendering.diagram_builder import generate_puml_body
 
 
 def _entity(artifact_id: str, artifact_type: str, name: str, alias: str) -> EntityRecord:
@@ -100,7 +100,7 @@ class TestCompositionNests:
     def test_a_composed_child_is_declared_inside_its_parents_block(self) -> None:
         entities, connections = _records()
 
-        body = generate_archimate_puml_body(
+        body = generate_puml_body(
             "Containment", entities, connections, diagram_type="archimate-application"
         )
 
@@ -119,7 +119,7 @@ class TestCompositionNests:
         same fact twice, and is what a reader sees as 'peer box joined by a line'."""
         entities, connections = _records()
 
-        body = generate_archimate_puml_body(
+        body = generate_puml_body(
             "Containment", entities, connections, diagram_type="archimate-application"
         )
 
@@ -135,7 +135,7 @@ class TestCompositionNests:
         """Only containment nests. An association must not drag its partner inside."""
         entities, connections = _records()
 
-        body = generate_archimate_puml_body(
+        body = generate_puml_body(
             "Containment", entities, connections, diagram_type="archimate-application"
         )
 
@@ -153,7 +153,7 @@ class TestNestingHoldsAcrossArchimateDiagramTypes:
     def test_composition_nests(self, diagram_type: str) -> None:
         entities, connections = _records()
 
-        body = generate_archimate_puml_body(
+        body = generate_puml_body(
             "Containment", entities, connections, diagram_type=diagram_type
         )
 
@@ -207,7 +207,7 @@ class TestVisualNestingIsAForest:
     def test_an_element_with_two_parents_is_declared_once(self) -> None:
         entities, connections = self._two_parents()
 
-        body = generate_archimate_puml_body(
+        body = generate_puml_body(
             "Two parents", entities, connections, diagram_type="archimate-technology"
         )
 
@@ -221,7 +221,7 @@ class TestVisualNestingIsAForest:
         """Losing the box must not mean losing the relation — the picture still asserts it."""
         entities, connections = self._two_parents()
 
-        body = generate_archimate_puml_body(
+        body = generate_puml_body(
             "Two parents", entities, connections, diagram_type="archimate-technology"
         )
 
@@ -239,7 +239,7 @@ class TestVisualNestingIsAForest:
         entities.append(_entity("NOD@1.host", "node", "Build Host", "NOD_host"))
         connections.append(_conn("GRP@1.env", "NOD@1.host", "archimate-aggregation"))
 
-        body = generate_archimate_puml_body(
+        body = generate_puml_body(
             "Subtree", entities, connections, diagram_type="archimate-technology"
         )
 
@@ -250,7 +250,7 @@ class TestVisualNestingIsAForest:
         entities.append(_entity("GRP@1.tenant", "grouping", "Tenant", "GRP_tenant"))
         connections.append(_conn("GRP@1.tenant", "GRP@1.env", "archimate-aggregation"))
 
-        body = generate_archimate_puml_body(
+        body = generate_puml_body(
             "Three parents", entities, connections, diagram_type="archimate-technology"
         )
 
@@ -270,7 +270,7 @@ class TestVisualNestingIsAForest:
             _conn("GRP@1.b", "GRP@1.a", "archimate-aggregation"),
         ]
 
-        body = generate_archimate_puml_body(
+        body = generate_puml_body(
             "Cycle", entities, connections, diagram_type="archimate-technology"
         )
 
@@ -283,7 +283,7 @@ class TestVisualNestingIsAForest:
         entities = [_entity("GRP@1.a", "grouping", "A", "GRP_a")]
         connections = [_conn("GRP@1.a", "GRP@1.a", "archimate-aggregation")]
 
-        body = generate_archimate_puml_body(
+        body = generate_puml_body(
             "Self", entities, connections, diagram_type="archimate-technology"
         )
 
@@ -300,7 +300,7 @@ class TestFunctionDecomposition:
         ]
         connections = [_conn("FNC@1.outer", "FNC@1.inner", "archimate-composition")]
 
-        body = generate_archimate_puml_body(
+        body = generate_puml_body(
             "Decomposition", entities, connections, diagram_type="archimate-application"
         )
 

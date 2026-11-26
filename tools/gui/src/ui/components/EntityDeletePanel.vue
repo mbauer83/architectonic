@@ -13,12 +13,12 @@ import { readErrorMessage } from '../lib/errors'
 const props = defineProps<{
   entityId: string
   isGlobalEntity: boolean
-  adminMode: boolean
 }>()
 const emit = defineEmits<{ deleted: [] }>()
 
 const svc = inject(modelServiceKey)!
-const admin = computed(() => props.isGlobalEntity && props.adminMode)
+// An enterprise entity is deleted in place, by the admin write; its Delete is offered only where that is allowed.
+const admin = computed(() => props.isGlobalEntity)
 const previewFn = computed(() => admin.value ? svc.previewAdminDeleteEntity : svc.previewDeleteEntity)
 const deleteFn = computed(() => admin.value ? svc.adminDeleteEntity : svc.deleteEntity)
 

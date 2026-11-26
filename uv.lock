@@ -115,10 +115,6 @@ dev = [
     { name = "ruff" },
     { name = "zuban" },
 ]
-gui = [
-    { name = "fastapi" },
-    { name = "uvicorn", extra = ["standard"] },
-]
 
 [package.metadata]
 requires-dist = [
@@ -169,10 +165,7 @@ dev = [
     { name = "ruff", specifier = ">=0.15.11" },
     { name = "zuban", specifier = ">=0.7.0" },
 ]
-gui = [
-    { name = "fastapi", specifier = ">=0.115.0" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.32.0" },
-]
+gui = []
 
 [[package]]
 name = "arrow"

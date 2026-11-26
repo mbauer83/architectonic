@@ -18,7 +18,7 @@ import warnings
 import pytest
 
 from src.domain.diagrams.layout.box_aliases import BoxKind, box_kind
-from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
+from src.infrastructure.rendering.diagram_builder import generate_puml_body
 from tests.support.archimate_scenes import DIAGRAM_TYPE, SCENES, Scene, connection, entity
 
 _DECLARED = re.compile(r'^ *(?:rectangle|circle) "(?P<label>[^"]*)"(?: <<[^>]*>>)? as (?P<alias>\w+)\b(?P<opens>.*\{)?')
@@ -31,7 +31,7 @@ def _body(scene: Scene, groupings: list[dict[str, object]] | None = None) -> str
     statements = {**scene.statements, **({"authored_groupings": groupings} if groupings else {})}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
-        return generate_archimate_puml_body(
+        return generate_puml_body(
             scene.name, list(scene.entities), list(scene.connections), diagram_type=DIAGRAM_TYPE,
             **statements,  # type: ignore[arg-type]
         )

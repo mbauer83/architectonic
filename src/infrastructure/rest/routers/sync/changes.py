@@ -19,6 +19,7 @@ import subprocess
 from pathlib import Path
 
 from src.config.repo_paths import DIAGRAM_CATALOG
+from src.domain.diagrams.diagram_type_field import stated_diagram_type
 from src.domain.repository.artifact_location import artifact_kind_at
 from src.domain.repository.frontmatter import Frontmatter, read_frontmatter
 from src.domain.repository.repo_layout import SCRATCHPAD_SUFFIX
@@ -166,7 +167,7 @@ def _handle_artifact(
 
     artifact_id = str(fm.get("artifact-id") or Path(rel).stem)
     name = str(fm.get("name") or fm.get("title") or artifact_id)
-    artifact_type = fm.get("artifact-type") or fm.get("diagram-type") or fm.get("doc-type")
+    artifact_type = fm.get("artifact-type") or stated_diagram_type(fm) or fm.get("doc-type")
 
     if file_status in ("added", "deleted"):
         changes: list[str] = []

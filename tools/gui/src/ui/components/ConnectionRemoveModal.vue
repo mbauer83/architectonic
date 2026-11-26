@@ -13,7 +13,8 @@ import type { RepoError } from '../../ports/ModelRepository'
 import { useQuery } from '../composables/useQuery'
 import { useMutation } from '../composables/useMutation'
 
-const props = defineProps<{ adminMode?: boolean }>()
+/** The relation is the enterprise repository's: it is removed in place, by the admin write. */
+const props = defineProps<{ enterprise?: boolean }>()
 const emit = defineEmits<{ removed: [] }>()
 
 const svc = inject(modelServiceKey)!
@@ -41,7 +42,7 @@ const cancel = () => {
 const confirmRemove = () => {
   if (!removingConn.value) return
   const c = removingConn.value
-  const removeFn = props.adminMode ? svc.adminRemoveConnection : svc.removeConnection
+  const removeFn = props.enterprise ? svc.adminRemoveConnection : svc.removeConnection
   // A committed removal answers 204: success is the absence of an error, not a `wrote` flag the
   // response no longer carries.
   void removeMutation.run(removeFn(c.artifact_id)).then((exit) => Exit.match(exit, {

@@ -48,10 +48,10 @@ import {
 } from '../../domain/readingLens'
 import { AD_HOC_RAMP_TOKENS } from '../../domain/types.generated'
 import { tokenColor } from '../lib/viewpointStyleTokens'
-import DiagramReadingAttributeRow from './DiagramReadingAttributeRow.vue'
+import DiagramDisplayOptionsAttributeRow from './DiagramDisplayOptionsAttributeRow.vue'
 import {
   colourKey, foldSummary, lensSummary, panelHint, typeOfferLabel, type ColourStep,
-} from './DiagramReadingPanel.helpers'
+} from './DiagramDisplayOptionsPanel.helpers'
 
 const props = defineProps<{ panel: DiagramAttributePanel | null; lens: ReadingLens; busy?: boolean }>()
 /** What each treatment of the element-kind colouring is called, and what it does on hover.
@@ -232,7 +232,7 @@ const pick = (step: ColourStep, colour: string) => emit(
             v-if="panel.shared.length"
             class="attrs attrs--across"
           >
-            <DiagramReadingAttributeRow
+            <DiagramDisplayOptionsAttributeRow
               v-for="offer in panel.shared"
               :key="offer.attribute.name"
               :attribute="offer.attribute"
@@ -278,7 +278,7 @@ const pick = (step: ColourStep, colour: string) => emit(
             v-if="isUnfolded(offer) && offer.attributes.length"
             class="attrs"
           >
-            <DiagramReadingAttributeRow
+            <DiagramDisplayOptionsAttributeRow
               v-for="attribute in offer.attributes"
               :key="attribute.name"
               :attribute="attribute"

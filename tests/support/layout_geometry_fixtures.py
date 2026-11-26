@@ -33,6 +33,7 @@ from src.domain.diagrams.layout.layout_block import LabelAnchor, Port, Route, Si
 from src.domain.diagrams.layout.orthogonal import course_of, fraction_along, point_along, stated_course
 from src.domain.diagrams.layout.routing.router import as_route, rerouted, route_all
 from src.domain.diagrams.layout.routing.scene import Connector, RoutingScene
+from tests.support.box_fixtures import build_boxes
 from tests.support.layout_intent_fixtures import build_intents
 from tests.support.line_drawing_fixtures import build_line_drawing
 from tests.support.readability_fixtures import build_readability
@@ -314,6 +315,7 @@ BUILDERS = {
     "routing.json": build_routing,
     "line_drawing.json": build_line_drawing,
     "intents.json": build_intents,
+    "boxes.json": build_boxes,
 }
 
 

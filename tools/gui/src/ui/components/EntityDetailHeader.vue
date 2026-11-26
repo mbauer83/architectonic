@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import { entityGraphRoute } from '../router/artifactRoutes'
 
 import ProposedBadge from './ProposedBadge.vue'
+import PermittedButton from './PermittedButton.vue'
+import { useArtifactWrites } from '../composables/useArtifactWrites'
 /**
  * Entity detail's top bar (back link, tier badge, graph/promote links, edit/delete/
  * cancel/preview/save actions) and header block (name/status — editable in place — plus
@@ -23,13 +25,13 @@ const props = defineProps<{
   detail: EntityDetail
   entityId: string
   backTo: RouteLocationRaw
-  adminMode: boolean
   isGlobalEntity: boolean
 }>()
 const emit = defineEmits<{ delete: [] }>()
 const edit = inject(entityEditFormKey)!
 // What pressing Edit will do here — the same question the form card answers in words.
-const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode))
+const writes = useArtifactWrites(() => props.isGlobalEntity)
+const outcome = computed(() => editOutcome(props.isGlobalEntity, writes.value.upstream))
 </script>
 
 <template>
@@ -62,23 +64,25 @@ const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode
         >
           ↑ Promote to Enterprise
         </RouterLink>
-        <button
+        <PermittedButton
           v-if="!edit.editing"
+          :operation="writes.editEntity"
           class="edit-btn"
           :class="{ 'edit-btn--admin': outcome === 'writes-upstream' }"
           :title="editOutcomeTitle(outcome)"
           @click="edit.startEdit()"
         >
           Edit{{ outcome === 'writes-upstream' ? ' ⚠' : '' }}
-        </button>
-        <button
-          v-if="!edit.editing && (!isGlobalEntity || adminMode)"
+        </PermittedButton>
+        <PermittedButton
+          v-if="!edit.editing"
+          :operation="writes.deleteEntity"
           class="delete-btn"
-          :title="isGlobalEntity && adminMode ? 'Delete global entity (admin mode)' : undefined"
+          :title="writes.upstream ? 'Delete global entity (admin mode)' : undefined"
           @click="emit('delete')"
         >
-          Delete{{ isGlobalEntity && adminMode ? ' ⚠' : '' }}
-        </button>
+          Delete{{ writes.upstream ? ' ⚠' : '' }}
+        </PermittedButton>
         <button
           v-if="edit.editing"
           class="cancel-btn"

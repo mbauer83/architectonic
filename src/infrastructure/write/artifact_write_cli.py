@@ -8,7 +8,6 @@ from pathlib import Path
 from urllib.parse import quote
 from urllib.request import Request
 
-from src.infrastructure.backend.backend_probe import backend_url
 from src.infrastructure.cli import backend_write
 from src.infrastructure.workspace.workspace_init import load_init_state
 
@@ -39,7 +38,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _delete_request(port: int, args: argparse.Namespace) -> Request:
+def _delete_request(base_url: str, args: argparse.Namespace) -> Request:
     """The proxied request for one delete command.
 
     Both surfaces carry identity in the path and the dry-run flag in the query, because a ``DELETE``
@@ -49,12 +48,12 @@ def _delete_request(port: int, args: argparse.Namespace) -> Request:
     dry_run = "true" if args.dry_run else "false"
     if args.command == "delete-entity":
         return Request(
-            f"{backend_url(port)}/api/entities/{identity}?dry_run={dry_run}",
+            f"{base_url}/api/entities/{identity}?dry_run={dry_run}",
             headers={"Accept": "application/json"},
             method="DELETE",
         )
     return Request(
-        f"{backend_url(port)}/api/diagrams/{identity}?dry_run={dry_run}",
+        f"{base_url}/api/diagrams/{identity}?dry_run={dry_run}",
         headers={"Accept": "application/json"},
         method="DELETE",
     )
@@ -69,8 +68,8 @@ def main(argv: list[str] | None = None) -> int:
     repo_root = Path(args.repo_root)
 
     try:
-        port = backend_write.serving_port(repo_root)
-        result = backend_write.send(_delete_request(port, args), timeout=10)
+        base_url = backend_write.serving_url(repo_root)
+        result = backend_write.send(_delete_request(base_url, args), timeout=10)
     except backend_write.BackendWriteError as exc:
         print(str(exc), file=sys.stderr)
         return 1

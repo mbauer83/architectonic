@@ -27,6 +27,7 @@ from typing import NamedTuple
 
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.diagrams.bindings import SCOPE_KEYS, scope_entity_ids
+from src.domain.diagrams.diagram_type_field import diagram_type_of, stated_diagram_type
 from src.domain.diagrams.relation_key import labels_by_relation
 from src.infrastructure.rendering.diagram_selection import connections_among, resolve_diagram_selection
 
@@ -63,7 +64,7 @@ def is_standalone(parsed: ParsedDiagram, verifier: ArtifactVerifier) -> bool:
     return (
         isinstance(de, dict)
         and not is_scope_bound(parsed)
-        and diagram_entities_are_authoritative(verifier, str(parsed.frontmatter.get("diagram-type") or ""))
+        and diagram_entities_are_authoritative(verifier, stated_diagram_type(parsed.frontmatter))
     )
 
 
@@ -131,7 +132,7 @@ def rendered_membership(
     diagram's body is not the generator's to rewrite.
     """
     from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path  # noqa: PLC0415
-    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
+    from src.infrastructure.rendering.diagram_builder import generate_puml_body  # noqa: PLC0415
 
     from .parse_existing import parse_diagram_file  # noqa: PLC0415
 
@@ -158,11 +159,11 @@ def rendered_membership(
     # boxes it wants is stating them all, and merging would make a group impossible to delete.
     groupings = stored if authored_groupings is None else authored_groupings
     return RenderedMembership(
-        puml=generate_archimate_puml_body(
+        puml=generate_puml_body(
             str(fm.get("name", "")),
             entities,
             connections,
-            diagram_type=str(fm.get("diagram-type", "archimate")),
+            diagram_type=diagram_type_of(fm),
             edge_labels=labels_by_relation(fm.get("edge-labels")) or None,
             authored_groupings=groupings or None,
         ),

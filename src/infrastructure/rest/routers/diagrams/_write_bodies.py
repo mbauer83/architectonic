@@ -6,8 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from src.infrastructure.artifact_home_wire import FiledOnCreate
 from src.infrastructure.diagram_composition import DiagramComposition, _Body
-from src.infrastructure.rest.contracts.artifact_home import FiledOnCreate
 
 
 class DiagramPreviewBody(DiagramComposition):

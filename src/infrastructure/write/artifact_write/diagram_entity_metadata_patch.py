@@ -22,6 +22,7 @@ from typing import Any
 from src.application.candidate_repository import CandidateRepository
 from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path
 from src.application.verification.artifact_verifier import ArtifactVerifier
+from src.domain.diagrams.diagram_type_field import stated_diagram_type
 
 from .boundary import assert_engagement_write_root
 from .diagram_edit import edit_diagram
@@ -120,7 +121,7 @@ def patch_diagram_entity_metadata(
         raise ValueError(f"Diagram '{artifact_id}' not found under {diagram_source_root(repo_root)}")
 
     parsed = parse_diagram_file(diagram_path)
-    diagram_type = str(parsed.frontmatter.get("diagram-type", ""))
+    diagram_type = stated_diagram_type(parsed.frontmatter)
     raw = parsed.frontmatter.get("diagram-entities")
     if not isinstance(raw, dict):
         raise ValueError(f"Diagram '{artifact_id}' has no editable diagram-entities")

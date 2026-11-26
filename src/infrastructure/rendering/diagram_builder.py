@@ -143,7 +143,7 @@ def _build_visual_nesting(
     return children_map, nested_aliases
 
 
-def generate_archimate_puml_body(
+def generate_puml_body(
     name: str,
     entity_records: list[EntityRecord],
     connection_records: list[ConnectionRecord],
@@ -157,7 +157,7 @@ def generate_archimate_puml_body(
     authored_groupings: list[dict[str, object]] | None = None,
     icon_source: IconSource | None = None,
 ) -> str:
-    """The body an ArchiMate-family diagram draws for these elements.
+    """The body a diagram of *diagram_type* draws for these elements, by that type's renderer.
 
     *icon_source* is how an icon reference becomes a picture; a caller that holds the repository's
     index passes one, and a renderer that presents icons draws and embeds them. Without it, every

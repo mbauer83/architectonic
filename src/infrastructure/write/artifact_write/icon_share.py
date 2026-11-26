@@ -18,6 +18,7 @@ from pathlib import Path
 
 from src.application.artifacts.icon_parsing import parse_icon
 from src.application.icons.effective_icons import LOCAL_ICONS_KEY, with_icon_repointed
+from src.application.repository_confinement import is_within
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.verifier_ports import IconLibrary
 from src.domain.artifact_id import stable_id
@@ -49,7 +50,7 @@ def share_icon(
         # Without one a kept body is not restated, and would go on showing the diagram's own copy.
         raise TypeError("share_icon edits a diagram, so it needs a verifier with a registry")
     diagram = get_repository(repo_root).get_diagram(diagram_id)
-    if diagram is None or not diagram.path.is_relative_to(repo_root):
+    if diagram is None or not is_within(diagram.path, repo_root):
         raise FileNotFoundError(f"Diagram '{diagram_id}' is not in this repository")
     raw = diagram.extra.get("diagram-entities")
     entities: Mapping[str, object] = raw if isinstance(raw, Mapping) else {}

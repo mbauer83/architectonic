@@ -190,6 +190,9 @@ _RELATION_ENDS_SEPARATOR = re.compile(r"\A>\Z")
 #: layout key addresses a box by its rule.
 _RULE_KEY_PREFIX = re.compile(r"\Arule:")
 
+#: The frontmatter key a diagram states its type under, asked of a parsed frontmatter.
+_DIAGRAM_TYPE_FIELD = re.compile(r"\Adiagram-type\Z")
+
 #: The dot an artifact id's slug follows, handed to a call that cuts or counts at it: deciding which
 #: part of an id is its stable identity. Only those calls (`only_located_by`): a `split(".")` over a
 #: dotted version or a file name is not a reading of an id, and was the noise a broader probe met.
@@ -699,6 +702,22 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             "folds kept a third and fourth table and dropped such a value from the maximum"
         ),
         enumeration_probe=_TLP_LEVEL,
+    ),
+    SyntaxReader(
+        syntax="which diagram type a diagram's frontmatter states, and what one stating none is read as",
+        owners=(Path("src/domain/diagrams/diagram_type_field.py"),),
+        instead=(
+            "`src.domain.diagrams.diagram_type_field`: `diagram_type_of` for the type a diagram is "
+            "drawn and edited as, `stated_diagram_type` where a missing type must be told apart, "
+            "`DIAGRAM_TYPE_KEY` for the key"
+        ),
+        incident=(
+            "the field was read at twenty-four sites with two defaults: fourteen read a missing type "
+            "as ArchiMate and the verifier's rules read it as none, so whether an untyped diagram was "
+            "checked, rendered or edited as ArchiMate depended on which path asked"
+        ),
+        literal_probe=_DIAGRAM_TYPE_FIELD,
+        also_located_by=_ATTRIBUTE_LOOKUPS,
     ),
 )
 

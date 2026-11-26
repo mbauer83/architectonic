@@ -131,7 +131,6 @@ onMounted(async () => {
           </div>
           <EntityEditFormCard
             v-if="edit.editing"
-            :admin-mode="false"
             :is-global-entity="false"
             save-label="Keep changes"
           />

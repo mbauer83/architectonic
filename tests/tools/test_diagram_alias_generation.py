@@ -5,7 +5,7 @@ from pathlib import Path
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.mcp.artifact_mcp.query_scaffold_tools import artifact_diagram_scaffold
 from src.infrastructure.rendering.archimate_relation_rendering import format_multiplicity_label
-from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body, inject_archimate_includes
+from src.infrastructure.rendering.diagram_builder import generate_puml_body, inject_archimate_includes
 from src.infrastructure.rendering.generate_static_includes import generate_static_includes
 from src.infrastructure.write.artifact_write.diagram import _prepare_diagram_puml_body
 
@@ -60,7 +60,7 @@ def _conn(
     )
 
 
-def test_generate_archimate_puml_body_normalizes_aliases_in_entities_and_connections() -> None:
+def test_generate_puml_body_normalizes_aliases_in_entities_and_connections() -> None:
     goal = _entity(
         "GOL@1.B6G_-P.support-technology-design-for-ai",
         "goal",
@@ -75,7 +75,7 @@ def test_generate_archimate_puml_body_normalizes_aliases_in_entities_and_connect
         subdomain="outcomes",
     )
 
-    puml = generate_archimate_puml_body(
+    puml = generate_puml_body(
         "Alias Test",
         [goal, outcome],
         [_conn(outcome.artifact_id, goal.artifact_id)],
@@ -89,7 +89,7 @@ def test_generate_archimate_puml_body_normalizes_aliases_in_entities_and_connect
     assert "OUT_i-3Bi-" not in puml
 
 
-def test_generate_archimate_puml_body_groups_single_domain_by_component() -> None:
+def test_generate_puml_body_groups_single_domain_by_component() -> None:
     driver_a = _entity("DRV@1.a.driver-a", "driver", "Driver A", "DRV_A", subdomain="drivers")
     driver_b = _entity("DRV@1.b.driver-b", "driver", "Driver B", "DRV_B", subdomain="drivers")
     assessment = _entity(
@@ -100,7 +100,7 @@ def test_generate_archimate_puml_body_groups_single_domain_by_component() -> Non
         subdomain="assessments",
     )
 
-    puml = generate_archimate_puml_body(
+    puml = generate_puml_body(
         "Drivers and Assessments",
         [driver_a, driver_b, assessment],
         [
@@ -466,10 +466,10 @@ def test_format_multiplicity_label_neither() -> None:
     assert format_multiplicity_label("", "") == ""
 
 
-# ── generate_archimate_puml_body multiplicity rendering ───────────────────────
+# ── generate_puml_body multiplicity rendering ───────────────────────
 
 
-def test_generate_archimate_puml_body_renders_multiplicity_both_ends() -> None:
+def test_generate_puml_body_renders_multiplicity_both_ends() -> None:
     goal = _entity("GOL@1.a.goal-a", "goal", "Goal A", "GOL_A")
     outcome = _entity("OUT@1.a.outcome-a", "outcome", "Outcome A", "OUT_A", subdomain="outcomes")
     conn = _conn(
@@ -480,13 +480,13 @@ def test_generate_archimate_puml_body_renders_multiplicity_both_ends() -> None:
         tgt_multiplicity="0..*",
     )
 
-    puml = generate_archimate_puml_body("Test", [goal, outcome], [conn])
+    puml = generate_puml_body("Test", [goal, outcome], [conn])
 
     assert "1 -> 0..*" in puml
     assert "OUT_A .up.|> GOL_A : 1 -> 0..*" in puml
 
 
-def test_generate_archimate_puml_body_renders_multiplicity_src_only() -> None:
+def test_generate_puml_body_renders_multiplicity_src_only() -> None:
     goal = _entity("GOL@1.a.goal-a", "goal", "Goal A", "GOL_A")
     outcome = _entity("OUT@1.a.outcome-a", "outcome", "Outcome A", "OUT_A", subdomain="outcomes")
     conn = _conn(
@@ -496,22 +496,22 @@ def test_generate_archimate_puml_body_renders_multiplicity_src_only() -> None:
         src_multiplicity="1",
     )
 
-    puml = generate_archimate_puml_body("Test", [goal, outcome], [conn])
+    puml = generate_puml_body("Test", [goal, outcome], [conn])
 
     assert "OUT_A .up.|> GOL_A : 1 ->" in puml
 
 
-def test_generate_archimate_puml_body_no_multiplicity_keeps_empty_label() -> None:
+def test_generate_puml_body_no_multiplicity_keeps_empty_label() -> None:
     goal = _entity("GOL@1.a.goal-a", "goal", "Goal A", "GOL_A")
     outcome = _entity("OUT@1.a.outcome-a", "outcome", "Outcome A", "OUT_A", subdomain="outcomes")
     conn = _conn(outcome.artifact_id, goal.artifact_id, "archimate-realization")
 
-    puml = generate_archimate_puml_body("Test", [goal, outcome], [conn])
+    puml = generate_puml_body("Test", [goal, outcome], [conn])
 
     assert "OUT_A .up.|> GOL_A" in puml
 
 
-def test_generate_archimate_puml_body_nests_junction_with_nested_siblings() -> None:
+def test_generate_puml_body_nests_junction_with_nested_siblings() -> None:
     process = _entity("PRC@1.a.process-a", "process", "Process A", "PRC_A", domain="business", subdomain="processes")
     function_a = _entity(
         "FNC@1.a.function-a", "function", "Function A", "FNC_A", domain="business", subdomain="functions"
@@ -521,7 +521,7 @@ def test_generate_archimate_puml_body_nests_junction_with_nested_siblings() -> N
     )
     junction = _entity("JCN@1.a.and-a", "and-junction", "AND A", "JCN_A", domain="business", subdomain="junctions")
 
-    puml = generate_archimate_puml_body(
+    puml = generate_puml_body(
         "Nested Junction",
         [process, function_a, function_b, junction],
         [
@@ -552,7 +552,7 @@ def test_generate_archimate_puml_body_nests_junction_with_nested_siblings() -> N
     assert "JCN_A ..> FNC_B" in puml
 
 
-def test_generate_archimate_puml_body_layouts_branch_step_perpendicular_to_main_flow() -> None:
+def test_generate_puml_body_layouts_branch_step_perpendicular_to_main_flow() -> None:
     process = _entity("PRC@1.a.process-a", "process", "Process A", "PRC_A", domain="business", subdomain="processes")
     start = _entity("FNC@1.a.start", "function", "Start", "FNC_START", domain="business", subdomain="functions")
     branch_a = _entity("FNC@1.b.branch-a", "function", "Branch A", "FNC_A", domain="business", subdomain="functions")
@@ -561,7 +561,7 @@ def test_generate_archimate_puml_body_layouts_branch_step_perpendicular_to_main_
     fork = _entity("JNA@1.a.fork", "and-junction", "Fork", "JNA_FORK", domain="business", subdomain="junctions")
     join = _entity("JNA@1.b.join", "and-junction", "Join", "JNA_JOIN", domain="business", subdomain="junctions")
 
-    puml = generate_archimate_puml_body(
+    puml = generate_puml_body(
         "Branch Step",
         [process, start, branch_a, branch_b, end, fork, join],
         [

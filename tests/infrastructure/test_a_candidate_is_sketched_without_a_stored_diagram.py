@@ -131,3 +131,18 @@ def test_resized_shapes_are_drawn_for_a_stored_candidate_and_refused_for_none(cl
     assert drawn.status_code == 200, drawn.text
     assert len(drawn.json()["drawings"]) == 1
     assert missing.status_code == 404
+
+
+def test_a_stored_diagram_that_cannot_be_read_is_refused_with_why(client: TestClient) -> None:
+    """Regression: an unreadable diagram file was read as an empty body, and its context served as empty."""
+    root = client.root  # type: ignore[attr-defined]
+    ref = _candidate(client, diagram=_DIAGRAM)
+    stored = next(root.rglob(f"{_DIAGRAM}.puml"))
+    stored.chmod(0)
+    try:
+        context = client.get(f"/api/change-sets/{ref}/picture/context")
+    finally:
+        stored.chmod(0o644)
+
+    assert context.status_code == 404, context.text
+    assert "cannot be read" in context.json()["detail"]["message"]

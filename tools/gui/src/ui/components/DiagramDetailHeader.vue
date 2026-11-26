@@ -15,14 +15,14 @@ import DiagramDownloadMenu from './DiagramDownloadMenu.vue'
 import DiagramAutoLayoutDialog from './DiagramAutoLayoutDialog.vue'
 import { toastKey } from '../keys'
 import { useCan, useCommandPermission } from '../composables/usePermissions'
-import { DIAGRAM_OPERATIONS } from './canvasCommands'
+import { useArtifactWrites } from '../composables/useArtifactWrites'
+import { DIAGRAM_OPERATIONS } from '../../domain/canvasCommands'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   detail: DiagramDetail
   diagramId: string
   editPath: string
   isGlobalDiagram: boolean
-  adminMode: boolean
   /** The reader's ad-hoc reading, so the download exports the picture on screen rather than the
    * authored one. Defaulted, because the listing view mounts this header with no reading at all. */
   lens?: ReadingLens
@@ -40,6 +40,7 @@ const router = useRouter()
 const canEdit = useCan('diagrams_replace_diagram')
 const permit = useCommandPermission(DIAGRAM_OPERATIONS)
 const canLayOut = computed(() => permit.value('page.lay-out-automatically'))
+const writes = useArtifactWrites(() => props.isGlobalDiagram)
 
 /** *Lay out automatically…* (A-02.42): asked in its dialog; once done, Edit on the canvas is offered. */
 const layingOut = ref(false)
@@ -125,13 +126,12 @@ const laidOut = () => {
         Sync to model
       </PermittedButton>
       <PermittedButton
-        v-if="!isGlobalDiagram || adminMode"
-        operation="diagrams_delete_diagram"
+        :operation="writes.deleteDiagram"
         class="delete-btn"
         data-testid="diagram-delete"
         @click="emit('delete')"
       >
-        Delete{{ isGlobalDiagram && adminMode ? ' ⚠' : '' }}
+        Delete{{ writes.upstream ? ' ⚠' : '' }}
       </PermittedButton>
     </template>
     <DiagramAutoLayoutDialog

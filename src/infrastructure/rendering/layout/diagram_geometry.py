@@ -17,6 +17,7 @@ from typing import Any
 
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds, joined_to_its_picture
 from src.domain.diagrams.authored_groupings import GroupingRule
+from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.layout.arrange_intents import ArrangeIntent, arranges, read_intents
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
@@ -191,7 +192,7 @@ def geometry_response(
     With an *arrangement*, members not in *previous* are placed and the returned layout replaces the stored one.
     *restyle_prepared* restyles the prepared body, as a reading that turns the element kinds down does.
     """
-    diagram_type = str(frontmatter.get("diagram-type", "archimate"))
+    diagram_type = diagram_type_of(frontmatter)
     try:
         svg = (
             measure_composition(puml, root, diagram_type, restyle_prepared)[1] if generated

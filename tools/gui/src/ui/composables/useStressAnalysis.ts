@@ -19,7 +19,7 @@ import type {
 import type { AnalysisEvaluation } from '../../domain/schemas/stressEvaluation'
 import type { TableName, TableRowEdit } from '../../domain/stressAnalysis/analysisRows'
 import { rowsOf, ticksOf } from '../../domain/stressAnalysis/analysisRows'
-import { inTestSet } from '../../domain/stressAnalysis/testSet'
+import { heldApartIds } from '../../domain/stressAnalysis/testSet'
 import { formatEffectError } from '../lib/errors'
 
 const isConflict = (failure: unknown): boolean => failure instanceof NetworkError && failure.status === 409
@@ -109,8 +109,8 @@ export function useStressAnalysis(svc: ModelService, documentId: () => string) {
   }
 
   const allStressors = computed(() => rowsOf(tables.value, 'stressors'))
-  const testStressors = computed(() => allStressors.value.filter(inTestSet))
-  const heldApart = computed(() => new Set(testStressors.value.map((row) => row.row_id)))
+  const heldApart = computed(() => heldApartIds(evaluation.value))
+  const testStressors = computed(() => allStressors.value.filter((row) => heldApart.value.has(row.row_id)))
 
   return {
     document, tables, incidence, progress, evaluation, naive, loading, saving, error,

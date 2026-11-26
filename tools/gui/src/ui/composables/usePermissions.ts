@@ -1,7 +1,7 @@
 /**
  * The permission answer, read where a control is offered (`useCan`), or a whole table of commands at once
- * (`useCommandPermission`). It generalises `useWriteBlock`: one answer per named operation rather than
- * one switch for every write, and with the reason a control says when it is refused.
+ * (`useCommandPermission`): one answer per named operation, with the reason a control says when it is
+ * refused. It is the GUI's only reader of whether something may be done now.
  *
  * With nothing provided — a component mounted outside the app shell — every operation is refused, as it
  * is before the backend has answered: a control is never offered on a permission no one gave.
@@ -9,7 +9,7 @@
 import { computed, inject, provide, toValue, type ComputedRef, type InjectionKey, type MaybeRefOrGetter } from 'vue'
 import { ALLOWED, NO_ANSWER_YET, type Permission } from '../../domain/permissions'
 import { type Can, permissionsKey } from '../keys'
-import { type CanvasCommandName, type CommandOperations, DIAGRAM_OPERATIONS } from '../components/canvasCommands'
+import { type CanvasCommandName, type CommandOperations, DIAGRAM_OPERATIONS } from '../../domain/canvasCommands'
 
 const UNANSWERED: ComputedRef<Can> = computed(() => () => ({ allowed: false, reason: NO_ANSWER_YET }))
 

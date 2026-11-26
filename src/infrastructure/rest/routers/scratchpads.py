@@ -35,13 +35,7 @@ from src.application.scratchpad.service import ScratchpadService
 from src.domain.repository.artifact_location import own_id_prefix
 from src.domain.repository.groups import UNCATEGORIZED
 from src.domain.scratchpad import ScratchpadError
-from src.infrastructure.rest.contracts.path_components import PathComponent
-from src.infrastructure.rest.contracts.scratchpad_requests import (
-    LayoutPatchWire,
-    RemovePatchWire,
-    ScratchpadDocumentWire,
-    UpsertPatchWire,
-)
+from src.infrastructure.artifact_home_wire import PathComponent
 from src.infrastructure.rest.contracts.scratchpads import (
     ScratchpadLiftResponse,
     ScratchpadListResponse,
@@ -54,6 +48,12 @@ from src.infrastructure.rest.routers._openapi import (
     WRITE_RESPONSES,
 )
 from src.infrastructure.scratchpad.composition import scratchpad_service, served
+from src.infrastructure.scratchpad_wire import (
+    LayoutPatchWire,
+    RemovePatchWire,
+    ScratchpadDocumentWire,
+    UpsertPatchWire,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path

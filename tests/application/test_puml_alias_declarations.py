@@ -225,9 +225,9 @@ class TestWhatTheRendererFramesABodyWithDeclaresNothing:
     """The renderer writes a diagram's name as its title, unquoted; the name is the author's prose."""
 
     def test_a_diagram_named_with_as_declares_no_alias_in_its_title(self, tmp_path: Path) -> None:
-        from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
+        from src.infrastructure.rendering.diagram_builder import generate_puml_body  # noqa: PLC0415
 
-        body = generate_archimate_puml_body(
+        body = generate_puml_body(
             "Promotion as searched", [], [], diagram_type="archimate-layered", repo_root=tmp_path,
         )
 

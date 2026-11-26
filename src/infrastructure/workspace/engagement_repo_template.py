@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-import json
 import subprocess
 from pathlib import Path
 
 from src.application.artifacts.document_schema import get_document_subdirectory
 from src.config.repo_paths import ARCH_DOC_SCHEMATA, ARCH_REPO, DIAGRAM_CATALOG, DIAGRAMS, DOCS, MODEL, RENDERED
-from src.domain.repository.repo_default_schemata import (
-    BASE_DOCUMENT_SCHEMAS,
-    DEFAULT_SCHEMATA,
-)
+from src.domain.repository.repo_default_schemata import BASE_DOCUMENT_SCHEMAS, DEFAULT_SCHEMATA
+from src.domain.repository.repo_layout import ARCH_SCHEMATA
+from src.domain.repository.shipped_defaults import ensure_shipped, shipped_document_types, shipped_schemata
 from src.infrastructure.runtime_state_ignore import ensure_runtime_state_ignored
 from src.infrastructure.workspace._assurance_doc_types import ASSURANCE_DOCUMENT_SCHEMAS
 
@@ -22,12 +20,6 @@ INITIAL_COMMIT_MESSAGE = "Initialize engagement architecture repository"
 # so an existing non-assurance repo is not retrofitted with assurance doc-types.
 DEFAULT_DOCUMENT_SCHEMAS: dict[str, dict] = {**BASE_DOCUMENT_SCHEMAS, **ASSURANCE_DOCUMENT_SCHEMAS}
 
-
-
-def _write_json_if_missing(path: Path, payload: dict) -> None:
-    if path.exists():
-        return
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
 _ARCH_REPO_CONFIG_TEMPLATE = """\
@@ -80,25 +72,20 @@ def ensure_arch_repo_defaults(
     preserved. Returns a summary of what was added/migrated for reporting.
     """
     arch_repo_dir = path / ARCH_REPO
-    documents_dir = arch_repo_dir / ARCH_DOC_SCHEMATA
-    schemata_dir = arch_repo_dir / "schemata"
-    documents_dir.mkdir(parents=True, exist_ok=True)
+    schemata_dir = arch_repo_dir / ARCH_SCHEMATA
+    (arch_repo_dir / ARCH_DOC_SCHEMATA).mkdir(parents=True, exist_ok=True)
     schemata_dir.mkdir(parents=True, exist_ok=True)
 
-    added_docs: list[str] = []
-    for doc_type, schema in document_schemas.items():
-        target = documents_dir / f"{doc_type}.json"
-        if not target.exists():
-            _write_json_if_missing(target, schema)
-            added_docs.append(f"{doc_type}.json")
-        (path / DOCS / get_document_subdirectory(schema, doc_type)).mkdir(parents=True, exist_ok=True)
+    def present(location: str) -> bool:
+        return (path / location).exists()
 
-    added_schemata: list[str] = []
-    for filename, schema in DEFAULT_SCHEMATA.items():
-        target = schemata_dir / filename
-        if not target.exists():
-            _write_json_if_missing(target, schema)
-            added_schemata.append(filename)
+    def write(location: str, text: str) -> None:
+        (path / location).write_text(text, encoding="utf-8")
+
+    added_docs = ensure_shipped(shipped_document_types(document_schemas), present=present, write=write)
+    for doc_type, schema in document_schemas.items():
+        (path / DOCS / get_document_subdirectory(schema, doc_type)).mkdir(parents=True, exist_ok=True)
+    added_schemata = ensure_shipped(shipped_schemata(), present=present, write=write)
 
     # Tracked from the first commit, so that no later operation is the first to write it: a pull
     # into a repository without one left it behind as an untracked file the next save committed.
@@ -109,8 +96,8 @@ def ensure_arch_repo_defaults(
     _write_arch_repo_config_if_missing(arch_repo_dir)
 
     return {
-        "documents": added_docs,
-        "schemata": added_schemata,
+        "documents": [one.name for one in added_docs],
+        "schemata": [one.name for one in added_schemata],
         "migrated_flat": migrated,
         "config": ["config.yaml"] if config_added else [],
     }

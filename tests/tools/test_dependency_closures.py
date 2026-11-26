@@ -8,8 +8,9 @@ confident green over the wrong packages.
 
 That is not hypothetical here. During the survey for this work, an audit taken with `--all-extras`
 reported no vulnerabilities over a set that did not contain `fastapi`: it and the `/api/events`
-websocket stack are declared in the `gui` dependency *group*, so an extras-only selection excludes
-the only network-facing code in the product. `fastapi` is named below for that reason.
+websocket stack were then declared in the `gui` dependency *group*, so an extras-only selection
+excluded the only network-facing code in the product. `fastapi` is named below for that reason; it is
+a core dependency now, and the shipped closure must go on holding it.
 
 No test here asserts a package count. The lock changes whenever a dependency does, and a test that
 fails because the project took an update is reporting a false regression. The invariants are the
@@ -81,7 +82,7 @@ def test_the_licence_inventory_covers_the_shipped_closure_exactly() -> None:
 
 
 def test_the_shipped_closure_contains_the_rest_framework() -> None:
-    """The regression that started this: `fastapi` is in a group, and an extras-only closure lost it."""
+    """The regression that started this: `fastapi` was in a group, and an extras-only closure lost it."""
     assert "fastapi" in shipped_closure().pins
 
 

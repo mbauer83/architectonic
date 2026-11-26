@@ -20,6 +20,7 @@ from src.application.artifacts.document_table_rows import DocumentTables, tables
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.domain.baseline_standing import BASELINE_STANDING
+from src.infrastructure.artifact_home_wire import FiledOnCreate, Rehomeable
 from src.infrastructure.document_part_wire import (
     SectionEditBody,
     TextReplacementBody,
@@ -27,7 +28,6 @@ from src.infrastructure.document_part_wire import (
     table_row_edits,
     tables_as_served,
 )
-from src.infrastructure.rest.contracts.artifact_home import FiledOnCreate, Rehomeable
 from src.infrastructure.rest.contracts.authoring_catalogs import DocumentTypeListResponse
 from src.infrastructure.rest.contracts.document_tables import DocumentTablesResponse
 from src.infrastructure.rest.contracts.documents import (

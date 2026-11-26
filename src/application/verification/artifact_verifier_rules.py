@@ -14,6 +14,7 @@ from src.application.verification.artifact_verifier_types import (
     Severity,
     VerificationResult,
 )
+from src.domain.diagrams.diagram_type_field import DIAGRAM_TYPE_KEY, stated_diagram_type
 from src.domain.markdown_table import tables_in
 from src.domain.repository.repo_layout import ARTIFACT_SOURCE_SUFFIXES, MODEL
 
@@ -123,7 +124,7 @@ def check_puml_structure(content: str, fm: dict, result: VerificationResult, loc
             )
         )
 
-    diagram_type = str(fm.get("diagram-type", ""))
+    diagram_type = stated_diagram_type(fm)
     if "archimate" in diagram_type or "usecase" in diagram_type:
         has_stereotypes = "_archimate-stereotypes.puml" in content
         has_inlined_archimate = (
@@ -244,7 +245,7 @@ def unresolvable_id_link_issues(artifact_ids: list[str], loc: str) -> list[Issue
 
 def check_matrix_markdown_shape(fm: dict, content: str, result: VerificationResult, loc: str) -> None:
     """W321 (should declare diagram-type: matrix) and W322 (no table markup found)."""
-    if "diagram-type" in fm and str(fm.get("diagram-type")) != "matrix":
+    if DIAGRAM_TYPE_KEY in fm and stated_diagram_type(fm) != "matrix":
         result.issues.append(Issue(
             Severity.WARNING, "W321",
             "Markdown diagram file under diagram-catalog/diagrams should use diagram-type: matrix", loc,

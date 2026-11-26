@@ -23,7 +23,8 @@ const props = defineProps<{
   entityType: string
   typeKey: string
   direction: 'outgoing' | 'incoming' | 'symmetric'
-  adminMode?: boolean
+  /** The entity is the enterprise repository's: the relation is added in place, by the admin write. */
+  enterprise?: boolean
   symmetricConnTypes: ReadonlySet<string>
   guidance: AuthoringGuidance | null
   /** Pre-seed the target/type pickers — e.g. materializing a derived relationship into
@@ -122,7 +123,7 @@ const confirmAdd = () => {
   const isIncoming = props.direction === 'incoming'
   const source = isIncoming ? selectedTarget.value.id : props.entityId
   const target = isIncoming ? props.entityId : selectedTarget.value.id
-  const addFn = props.adminMode ? svc.adminAddConnection : svc.addConnection
+  const addFn = props.enterprise ? svc.adminAddConnection : svc.addConnection
   void addMutation.run(addFn({
     source_entity: source,
     connection_type: connTypeSelected.value,

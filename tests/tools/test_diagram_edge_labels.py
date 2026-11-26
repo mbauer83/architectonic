@@ -624,10 +624,10 @@ def test_archimate_renderer_accepts_edge_labels_param() -> None:
 
 
 def test_archimate_renderer_applies_edge_label_via_generate(repo: Path) -> None:
-    """generate_archimate_puml_body passes edge_labels to the renderer (via MCP entity+connection)."""
+    """generate_puml_body passes edge_labels to the renderer (via MCP entity+connection)."""
     from src.application.artifacts.repository import ArtifactRepository
     from src.infrastructure.artifact_index import shared_artifact_index
-    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body
+    from src.infrastructure.rendering.diagram_builder import generate_puml_body
 
     e_id = _make_app(repo, "Label Entity")
     repo_obj = ArtifactRepository(shared_artifact_index(repo))
@@ -635,7 +635,7 @@ def test_archimate_renderer_applies_edge_label_via_generate(repo: Path) -> None:
     assert entity_recs[0] is not None
 
     alias = entity_recs[0].display_alias or ""
-    body_with_override = generate_archimate_puml_body(
+    body_with_override = generate_puml_body(
         "Test", entity_recs, [],
         diagram_type="archimate-motivation",
         edge_labels={f"{alias}:OTHER": "should not appear (no connection)"},

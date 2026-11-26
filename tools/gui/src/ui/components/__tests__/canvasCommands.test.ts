@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { CANDIDATE_OPERATIONS, CANVAS_COMMANDS, DIAGRAM_OPERATIONS } from '../canvasCommands'
+import { CANDIDATE_OPERATIONS, CANVAS_COMMANDS, DIAGRAM_OPERATIONS } from '../../../domain/canvasCommands'
 import { elementMenuItems, STACKING_ITEMS } from '../canvasElementMenu'
 import { permitted } from '../canvasMenu'
 import { CANDIDATE_WORDS, DIAGRAM_WORDS } from '../canvasWords'

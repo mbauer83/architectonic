@@ -18,6 +18,7 @@ from src.application.repo_path_helpers import (
     group_fn_entity,
     group_fn_scratchpad,
 )
+from src.application.repository_confinement import is_within
 from src.application.scratchpad.indexing import parse_scratchpad
 from src.domain.ontology_representation.artifact_types import (
     ConnectionRecord,
@@ -35,8 +36,7 @@ from src.domain.repository.repo_layout import MODEL
 
 
 def mount_for_path(path: Path, mounts: list[RepoMount]) -> RepoMount | None:
-    resolved = path.resolve()
-    return next((m for m in mounts if resolved.is_relative_to(m.root)), None)
+    return next((m for m in mounts if is_within(path, m.root)), None)
 
 
 def model_root_for_path(path: Path, mounts: list[RepoMount]) -> Path | None:

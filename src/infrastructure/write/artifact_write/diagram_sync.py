@@ -34,6 +34,7 @@ from src.application.repo_path_helpers import diagram_source_root, resolve_diagr
 from src.application.verification._verifier_rules_puml_completeness import diagram_body_is_reconcile_owned
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.artifact_id import stable_conn_id
+from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.relation_key import labels_by_relation
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.rendering.diagram_selection import connections_among
@@ -294,12 +295,12 @@ def sync_diagram_to_model(
     exist. Renamed entities are detected by matching the stable prefix
     (``TYPE@timestamp.random``) so a name change updates the reference rather
     than removing the entity. Surviving records are passed to
-    ``generate_archimate_puml_body`` so names are always current.
+    ``generate_puml_body`` so names are always current.
 
     Raises ValueError for scope-bound (model-backed) diagrams — use
     ``refresh_diagram`` for those.
     """
-    from src.infrastructure.rendering.diagram_builder import generate_archimate_puml_body  # noqa: PLC0415
+    from src.infrastructure.rendering.diagram_builder import generate_puml_body  # noqa: PLC0415
 
     assert_engagement_write_root(repo_root)
 
@@ -322,7 +323,7 @@ def sync_diagram_to_model(
 
     existing_entity_ids: list[str] = as_optional_str_list(fm.get("entity-ids-used")) or []
     existing_conn_ids: list[str] = as_optional_str_list(fm.get("connection-ids-used")) or []
-    diagram_type = str(fm.get("diagram-type", "archimate"))
+    diagram_type = diagram_type_of(fm)
     name = str(fm.get("name", ""))
 
     fm_entity_records, removed_entity_ids = resolve_entities(existing_entity_ids, store)
@@ -387,7 +388,7 @@ def sync_diagram_to_model(
             deleted_diagram=False,
         )
 
-    puml = generate_archimate_puml_body(
+    puml = generate_puml_body(
         name,
         entity_records,
         conn_records,

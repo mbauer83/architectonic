@@ -71,7 +71,8 @@ def changes_read_candidate_picture_context(artifact_id: str, catalogs: Catalogs)
     the candidate reads over."""
     start = _start(artifact_id)
     repo = s.get_repo()
-    record, body = start_record(start, repo, _repo_root())
+    with refusals():
+        record, body = start_record(start, repo, _repo_root())
     if start.diagram is not None:
         read = _read_diagram_impl(start.diagram.artifact_id, catalogs)
         diagram = {key: read[key] for key in _START_FIELDS if read.get(key) is not None}

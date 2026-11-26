@@ -15,6 +15,8 @@ import ConnectionAssociationsPanel from './ConnectionAssociationsPanel.vue'
 import ConnectionAddForm from './ConnectionAddForm.vue'
 import ConnectionEditForm from './ConnectionEditForm.vue'
 import ConnectionRemoveModal from './ConnectionRemoveModal.vue'
+import PermittedButton from './PermittedButton.vue'
+import { useArtifactWrites } from '../composables/useArtifactWrites'
 
 const props = defineProps<{
   entityId: string
@@ -23,8 +25,8 @@ const props = defineProps<{
   direction: 'outgoing' | 'incoming' | 'symmetric'
   loading: boolean
   error: string | null
-  readonly?: boolean
-  adminMode?: boolean
+  /** The entity is the enterprise repository's: its relations are written by the admin writes. */
+  enterprise?: boolean
 }>()
 
 const friendlyName = (id: string) => {
@@ -37,6 +39,7 @@ const emit = defineEmits<{
 }>()
 
 const svc = inject(modelServiceKey)!
+const writes = useArtifactWrites(() => props.enterprise ?? false)
 
 // ── Ontology ──────────────────────────────────────────────────────────────────
 
@@ -202,14 +205,14 @@ const removeModal = ref<InstanceType<typeof ConnectionRemoveModal> | null>(null)
           <div class="group-header">
             <span class="group-type-badge">{{ typeKey }}</span>
             <span class="group-count">{{ (grouped[typeKey] ?? []).length }}</span>
-            <button
-              v-if="!readonly"
+            <PermittedButton
+              :operation="writes.addConnection"
               class="icon-btn add-btn"
               title="Add connection"
               @click="startAdd(typeKey)"
             >
               +
-            </button>
+            </PermittedButton>
           </div>
 
           <ul
@@ -248,41 +251,43 @@ const removeModal = ref<InstanceType<typeof ConnectionRemoveModal> | null>(null)
                   >ⓘ</span>
                   <span class="conn-info-tip">{{ c.content_text.trim() }}</span>
                 </span>
-                <button
-                  v-if="!readonly && !adminMode"
+                <PermittedButton
+                  v-if="writes.editConnection"
+                  :operation="writes.editConnection"
                   class="icon-btn edit-btn"
                   :class="{ 'edit-btn--active': editingConnection === c.artifact_id }"
                   :title="editingConnection === c.artifact_id ? 'Close relationship editor' : 'Edit relationship'"
                   @click="toggleEdit(c.artifact_id)"
                 >
                   ✎
-                </button>
-                <button
-                  v-if="!readonly"
+                </PermittedButton>
+                <PermittedButton
+                  v-if="writes.editAssociations"
+                  :operation="writes.editAssociations"
                   class="icon-btn assoc-btn"
                   :class="{ 'assoc-btn--active': expandedAssoc.has(c.artifact_id) }"
                   :title="expandedAssoc.has(c.artifact_id) ? 'Hide associations' : 'Associations'"
                   @click="toggleAssoc(c.artifact_id)"
                 >
                   {{ (c.associated_entities?.length ?? 0) > 0 ? `⊕${c.associated_entities!.length}` : '⊕' }}
-                </button>
-                <button
-                  v-if="!readonly"
+                </PermittedButton>
+                <PermittedButton
+                  :operation="writes.removeConnection"
                   class="icon-btn remove-btn"
                   title="Remove connection"
                   @click="removeModal?.requestRemove(c)"
                 >
                   ×
-                </button>
+                </PermittedButton>
               </div>
 
               <ConnectionAssociationsPanel
-                v-if="!readonly && expandedAssoc.has(c.artifact_id)"
+                v-if="writes.editAssociations && expandedAssoc.has(c.artifact_id)"
                 :connection="c"
                 @refresh="emit('refresh')"
               />
               <ConnectionEditForm
-                v-if="!readonly && !adminMode && editingConnection === c.artifact_id"
+                v-if="writes.editConnection && editingConnection === c.artifact_id"
                 :connection="c"
                 :guidance="guidanceQuery.data.value"
                 @saved="onEdited"
@@ -297,7 +302,7 @@ const removeModal = ref<InstanceType<typeof ConnectionRemoveModal> | null>(null)
             :entity-type="entityType"
             :type-key="typeKey"
             :direction="direction"
-            :admin-mode="adminMode"
+            :enterprise="enterprise"
             :symmetric-conn-types="symmetricConnTypes"
             :guidance="guidanceQuery.data.value"
             @added="onAdded"
@@ -317,7 +322,7 @@ const removeModal = ref<InstanceType<typeof ConnectionRemoveModal> | null>(null)
 
     <ConnectionRemoveModal
       ref="removeModal"
-      :admin-mode="adminMode"
+      :enterprise="enterprise"
       @removed="emit('refresh')"
     />
   </div>

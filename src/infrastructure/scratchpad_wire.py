@@ -1,4 +1,4 @@
-"""Request contracts for the scratchpad write surface.
+"""Request contracts for the scratchpad write surface, for REST and MCP alike.
 
 Separate from the response contracts next door because request and response genuinely differ, and
 pretending otherwise is what a shared model would do: a served note carries `area`, which is derived
@@ -18,13 +18,22 @@ cannot afford to lose, since absent means "leave alone" and null means "clear".
 
 from __future__ import annotations
 
-from pydantic import ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.domain.scratchpad import Destination, ModelRefKind
-from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
-class ModelRefPatchWire(Closed):
+class _Closed(BaseModel):
+    """A request model that refuses any field it does not declare.
+
+    Declared here rather than taken from the HTTP response contracts' base: these models sit below
+    both transports, as `diagram_layout_wire`'s do, and MCP may not depend on REST's contracts.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class ModelRefPatchWire(_Closed):
     """A reference into the model, as a caller sends one.
 
     Deliberately not the response `ModelRefWire`, which derives from `NullsOmitted`: that base
@@ -39,7 +48,7 @@ class ModelRefPatchWire(Closed):
     kind: ModelRefKind
 
 
-class _Row(Closed):
+class _Row(_Closed):
     """A row a caller sends, identified by its `id`."""
 
     model_config = ConfigDict(populate_by_name=True)
@@ -47,7 +56,7 @@ class _Row(Closed):
     id: str
 
 
-class _Patch(Closed):
+class _Patch(_Closed):
     """A merge patch over one row.
 
     Closed by inheritance rather than by restating `extra="forbid"`, so a misspelled key is refused
@@ -101,7 +110,7 @@ class LinkPatchWire(_Patch):
     verdict: dict[str, object] | None = None
 
 
-class UpsertPatchWire(Closed):
+class UpsertPatchWire(_Closed):
     """The patches to apply, per collection.
 
     A model rather than `dict[str, list[dict[str, Any]]]`: the four collections are a closed set, so
@@ -137,7 +146,7 @@ class UpsertPatchWire(Closed):
         }
 
 
-class RemovePatchWire(Closed):
+class RemovePatchWire(_Closed):
     """The ids to remove, per collection — the same closed set, for the same reason."""
 
     model_config = ConfigDict(populate_by_name=True)
@@ -158,7 +167,7 @@ class RemovePatchWire(Closed):
         }
 
 
-class LayoutPatchWire(Closed):
+class LayoutPatchWire(_Closed):
     """Where things sit: `[x, y]` for a note, `[x, y, w, h]` for a frame, `null` to unplace.
 
     Links are absent because a link has no geometry of its own — it is drawn between two notes.
@@ -225,7 +234,7 @@ class LinkRequestWire(_Row):
     verdict: dict[str, object] | None = None
 
 
-class ScratchpadDocumentWire(Closed):
+class ScratchpadDocumentWire(_Closed):
     """A whole scratchpad as a caller sends it, for `PUT` and for `scratchpad_replace`.
 
     Not `ScratchpadResponse`. The two describe the same document from opposite directions and differ

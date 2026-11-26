@@ -29,8 +29,9 @@ def test_the_web_stack_is_a_core_dependency() -> None:
     assert not missing, f"arch-backend imports {missing}, which a plain `uv sync` would not install"
 
 
-def test_the_gui_group_still_exists_for_commands_that_name_it() -> None:
-    # The Dockerfile, the supply-chain closure and installations updated by `arch-update` pass
-    # `--group gui`; uv refuses an unknown group, so the group stays.
+def test_the_gui_group_still_exists_for_commands_that_name_it_and_declares_nothing() -> None:
+    # Installations from before the web stack was core, and commands written for them, pass
+    # `--group gui`; uv refuses an unknown group, so the group stays. It is empty: a second
+    # declaration of the web stack's version floor would drift from the core one.
     project = tomllib.loads(_PYPROJECT.read_text(encoding="utf-8"))
-    assert "gui" in project["dependency-groups"]
+    assert project["dependency-groups"]["gui"] == []

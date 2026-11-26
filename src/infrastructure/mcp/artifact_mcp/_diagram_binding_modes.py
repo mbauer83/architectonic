@@ -12,6 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path
+from src.domain.diagrams.diagram_type_field import stated_diagram_type
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.write._common import _out
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
@@ -201,7 +202,7 @@ def _propose_bindings(
 
     base_revision = compute_revision(path)
     parsed = parse_diagram_file(path)
-    diagram_type_name = str(parsed.frontmatter.get("diagram-type", ""))
+    diagram_type_name = stated_diagram_type(parsed.frontmatter)
 
     allowed_bindings: AllowedBindingsSpec | None = None
     if diagram_type_name:

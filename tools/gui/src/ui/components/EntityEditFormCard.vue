@@ -13,9 +13,9 @@ import { entityEditFormKey } from '../composables/useEntityEditForm'
 import TypedPropertyInput from './TypedPropertyInput.vue'
 import SchemaQuarantineBanner from './SchemaQuarantineBanner.vue'
 import { editBlockedReason, editOutcome } from '../lib/entityEditBlocking'
+import { useArtifactWrites } from '../composables/useArtifactWrites'
 
 const props = defineProps<{
-  adminMode: boolean
   isGlobalEntity: boolean
   /** What Save is called where it keeps the edit rather than writing it (a canvas session). */
   saveLabel?: string
@@ -24,7 +24,8 @@ const emit = defineEmits<{ 'open-reference-picker': [field: 'summary' | 'notes']
 const edit = inject(entityEditFormKey)!
 // The same question the header's Edit control answers in a title, said here in full: a form
 // that looks like every other edit form must say when saving it does something else.
-const outcome = computed(() => editOutcome(props.isGlobalEntity, props.adminMode))
+const writes = useArtifactWrites(() => props.isGlobalEntity)
+const outcome = computed(() => editOutcome(props.isGlobalEntity, writes.value.upstream))
 </script>
 
 <template>
