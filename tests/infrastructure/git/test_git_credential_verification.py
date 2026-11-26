@@ -20,6 +20,8 @@ from src.infrastructure.git.git_auth import (
     verify_credentials,
 )
 
+_URL = "git@host.example.invalid:acme/repo.git"
+
 
 class _Result:
     def __init__(self, returncode: int, stdout: bytes = b"", stderr: bytes = b"") -> None:
@@ -39,36 +41,36 @@ class _FakeStdin:
 class TestAuthRejection:
     def test_clean_auth_returns_none(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         monkeypatch.setattr(subprocess, "run", lambda *a, **k: _Result(0))
-        assert _auth_rejection(tmp_path, {}) is None
+        assert _auth_rejection(tmp_path, _URL, {}) is None
 
     def test_rejected_credentials_return_the_reason(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         monkeypatch.setattr(subprocess, "run", lambda *a, **k: _Result(128, stderr=b"Permission denied (publickey)."))
-        reason = _auth_rejection(tmp_path, {})
+        reason = _auth_rejection(tmp_path, _URL, {})
         assert reason is not None
         assert "permission denied" in reason.lower()
 
     def test_non_auth_error_is_not_a_rejection(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         network_err = _Result(128, stderr=b"Could not resolve host example.com")
         monkeypatch.setattr(subprocess, "run", lambda *a, **k: network_err)
-        assert _auth_rejection(tmp_path, {}) is None
+        assert _auth_rejection(tmp_path, _URL, {}) is None
 
     def test_timeout_is_not_a_rejection(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         def _timeout(*a: object, **k: object) -> None:
             raise subprocess.TimeoutExpired(cmd="git", timeout=15)
 
         monkeypatch.setattr(subprocess, "run", _timeout)
-        assert _auth_rejection(tmp_path, {}) is None
+        assert _auth_rejection(tmp_path, _URL, {}) is None
 
 
 class TestVerifyCredentials:
     def test_repos_without_remote_are_skipped(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-        monkeypatch.setattr(git_auth, "detect_remote_protocol", lambda p: None)
+        monkeypatch.setattr(git_auth, "remote_urls", lambda p: ())
         monkeypatch.setattr(git_auth, "_auth_rejection", lambda *a: pytest.fail("must not probe a remoteless repo"))
         assert verify_credentials([tmp_path], {}) == []
 
     def test_collects_rejections(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-        monkeypatch.setattr(git_auth, "detect_remote_protocol", lambda p: "ssh")
-        monkeypatch.setattr(git_auth, "_auth_rejection", lambda p, e: "permission denied")
+        monkeypatch.setattr(git_auth, "remote_urls", lambda p: (_URL,))
+        monkeypatch.setattr(git_auth, "_auth_rejection", lambda p, u, e: "permission denied")
         assert verify_credentials([tmp_path], {}) == [(tmp_path, "permission denied")]
 
 

@@ -52,23 +52,37 @@ class GitCredentials:
 # ---------------------------------------------------------------------------
 
 
-def detect_remote_protocol(repo_path: Path) -> str | None:
-    """Return 'ssh', 'https', or None (local / no remote / repo not present yet)."""
-    # A configured repo may not be cloned yet (arch-init runs before the backend in
-    # real deployments, but not in every harness). Probing a missing path would make
+def remote_urls(repo_path: Path) -> tuple[str, ...]:
+    """Every URL git reaches `origin` by: the fetch URL, then each push URL, without repeats.
+
+    Asked of git rather than read from `.git/config`, because git is what decides: `pushurl`,
+    `pushInsteadOf` and `insteadOf` all change where a push goes without changing the fetch URL. A
+    remote that fetches over https and pushes over ssh needs both protocols' credentials, and reading
+    only the fetch URL is how a push came to run with no askpass at all.
+    """
+    # A configured repo may not be cloned yet (arch-init runs before the backend in real
+    # deployments, but not in every harness). Probing a missing path would make
     # subprocess.run raise FileNotFoundError on the cwd; treat it as "no remote".
     if not repo_path.is_dir():
-        return None
-    result = subprocess.run(
-        ["git", "remote", "get-url", "origin"],
-        cwd=repo_path,
-        capture_output=True,
-        text=True,
-        timeout=5,
-    )
-    if result.returncode != 0:
-        return None
-    return _protocol_from_url(result.stdout.strip())
+        return ()
+    urls: list[str] = []
+    for query in (("get-url", "origin"), ("get-url", "--push", "--all", "origin")):
+        result = subprocess.run(
+            ["git", "remote", *query],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode != 0:
+            continue
+        urls.extend(line.strip() for line in result.stdout.splitlines() if line.strip())
+    return tuple(dict.fromkeys(urls))
+
+
+def detect_remote_protocols(repo_path: Path) -> frozenset[str]:
+    """The protocols ('ssh', 'https') `origin` is fetched or pushed over; empty for none or local."""
+    return frozenset(p for p in (_protocol_from_url(url) for url in remote_urls(repo_path)) if p)
 
 
 def _protocol_from_url(url: str) -> str | None:
@@ -76,7 +90,25 @@ def _protocol_from_url(url: str) -> str | None:
         return "ssh"
     if url.startswith(("https://", "http://")):
         return "https"
+    if "://" in url:
+        return None  # file://, git:// and the rest need no credential this module supplies
+    # scp-like syntax (`user@host:path`, `host-alias:path`) is ssh; a local path has no colon
+    # before its first slash.
+    head, colon, _ = url.partition(":")
+    if colon and "/" not in head and len(head) > 1:
+        return "ssh"
     return None
+
+
+def _target_urls(target: Path | str) -> tuple[str, ...]:
+    return (target,) if isinstance(target, str) else remote_urls(target)
+
+
+def _urls_over(targets: list[Path | str], protocol: str) -> list[tuple[Path | str, str]]:
+    """Each (target, url) pair whose url uses `protocol`."""
+    return [
+        (target, url) for target in targets for url in _target_urls(target) if _protocol_from_url(url) == protocol
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -99,19 +131,18 @@ _AUTH_PHRASES = (
 def probe_needs_credential(target: Path | str) -> bool:
     """Return True when git ls-remote fails specifically due to missing authentication.
 
-    Accepts either a local repo path or a bare remote URL (for arch-init pre-clone probing).
-    Returns False on network timeout or non-auth errors so we don't over-prompt.
+    Accepts either a local repo path — every URL its `origin` is fetched or pushed over is probed —
+    or a bare remote URL (for arch-init pre-clone probing). Returns False on network timeout or
+    non-auth errors so we don't over-prompt.
     """
-    if isinstance(target, Path):
-        cmd = ["git", "ls-remote", "--quiet", "--exit-code", "origin", "HEAD"]
-        cwd = target
-    else:
-        cmd = ["git", "ls-remote", "--quiet", "--exit-code", str(target), "HEAD"]
-        cwd = Path.cwd()
+    cwd = target if isinstance(target, Path) else Path.cwd()
+    return any(_probe_url_needs_credential(url, cwd) for url in _target_urls(target))
 
+
+def _probe_url_needs_credential(url: str, cwd: Path) -> bool:
     try:
         result = subprocess.run(
-            cmd,
+            ["git", "ls-remote", "--quiet", "--exit-code", url, "HEAD"],
             cwd=cwd,
             capture_output=True,
             env={
@@ -128,8 +159,13 @@ def probe_needs_credential(target: Path | str) -> bool:
 
     if result.returncode == 0:
         return False
-    combined = (result.stdout + result.stderr).decode(errors="replace").lower()
-    return any(p in combined for p in _AUTH_PHRASES)
+    return is_authentication_failure((result.stdout + result.stderr).decode(errors="replace"))
+
+
+def is_authentication_failure(git_output: str) -> bool:
+    """Whether git's output says a remote refused for want of a credential, not for another reason."""
+    lowered = git_output.lower()
+    return any(p in lowered for p in _AUTH_PHRASES)
 
 
 # ---------------------------------------------------------------------------
@@ -191,38 +227,36 @@ def collect_credentials(targets: list[Path | str]) -> GitCredentials | None:
     Checks env-var overrides first; only prompts when on a TTY and probing confirms auth is needed.
     Returns None when no git remotes are found or no credentials are required.
     """
-    ssh_targets = [t for t in targets if _target_protocol(t) == "ssh"]
-    https_targets = [t for t in targets if _target_protocol(t) == "https"]
+    ssh_urls = _urls_over(targets, "ssh")
+    https_urls = _urls_over(targets, "https")
 
-    if not ssh_targets and not https_targets:
+    if not ssh_urls and not https_urls:
         return None
 
     creds = GitCredentials()
     is_tty = sys.stdin.isatty()
 
-    if ssh_targets:
+    if ssh_urls:
         env_val = os.environ.get("ARCH_GIT_SSH_PASSWORD")
         if env_val:
             creds.ssh_passphrase = env_val
-        elif is_tty and any(probe_needs_credential(t) for t in ssh_targets):
+        elif is_tty and any(_probe_url_needs_credential(url, _cwd_of(t)) for t, url in ssh_urls):
             creds.ssh_passphrase = getpass.getpass("SSH key passphrase: ")
 
-    if https_targets:
+    if https_urls:
         env_user, env_pass = resolve_https_from_env()
         if env_user or env_pass:
             creds.https_username = env_user
             creds.https_password = env_pass
-        elif is_tty and any(probe_needs_credential(t) for t in https_targets):
+        elif is_tty and any(_probe_url_needs_credential(url, _cwd_of(t)) for t, url in https_urls):
             creds.https_username = input("Git username: ")
             creds.https_password = getpass.getpass("Git password/token: ")
 
     return creds if (creds.has_ssh or creds.has_https) else None
 
 
-def _target_protocol(target: Path | str) -> str | None:
-    if isinstance(target, str):
-        return _protocol_from_url(target)
-    return detect_remote_protocol(target)
+def _cwd_of(target: Path | str) -> Path:
+    return target if isinstance(target, Path) else Path.cwd()
 
 
 # ---------------------------------------------------------------------------
@@ -230,14 +264,14 @@ def _target_protocol(target: Path | str) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def _auth_rejection(target: Path, env: dict[str, str]) -> str | None:
-    """Probe ``target``'s remote with the credential-wired ``env``. Returns the remote's message
+def _auth_rejection(target: Path, url: str, env: dict[str, str]) -> str | None:
+    """Probe `url` from ``target`` with the credential-wired ``env``. Returns the remote's message
     when it REJECTS the credentials (auth failure), else None — for a clean auth, a non-auth error
     (network), or a timeout. Only a genuine authentication rejection is reported, so a flaky
     network is never mistaken for a wrong passphrase."""
     try:
         result = subprocess.run(
-            ["git", "ls-remote", "--quiet", "--exit-code", "origin", "HEAD"],
+            ["git", "ls-remote", "--quiet", "--exit-code", url, "HEAD"],
             cwd=target,
             capture_output=True,
             env=env,
@@ -248,21 +282,26 @@ def _auth_rejection(target: Path, env: dict[str, str]) -> str | None:
     if result.returncode == 0:
         return None
     combined = (result.stdout + result.stderr).decode(errors="replace").strip()
-    return combined if any(p in combined.lower() for p in _AUTH_PHRASES) else None
+    return combined if is_authentication_failure(combined) else None
 
 
-def verify_credentials(targets: list[Path], env: dict[str, str]) -> list[tuple[Path, str]]:
+def verify_credentials(
+    targets: list[Path], env: dict[str, str], *, protocols: frozenset[str] = frozenset({"ssh", "https"})
+) -> list[tuple[Path, str]]:
     """Verify that the supplied (credential-wired) ``env`` is actually accepted by each target's
-    remote. Returns ``(path, reason)`` for every remote that rejects it — empty when all authenticate
-    (or have no remote to check). Callers surface a non-empty result loudly rather than starting up
-    as if sync were healthy."""
+    remote, over every URL it is fetched or pushed by whose protocol is in ``protocols``. Returns
+    ``(path, reason)`` for every remote that rejects it — empty when all authenticate (or have no
+    remote to check). Callers surface a non-empty result loudly rather than starting up as if sync
+    were healthy."""
     failures: list[tuple[Path, str]] = []
     for target in targets:
-        if detect_remote_protocol(target) is None:
-            continue  # local / no remote — nothing to authenticate against
-        reason = _auth_rejection(target, env)
-        if reason is not None:
-            failures.append((target, reason))
+        for url in remote_urls(target):
+            if _protocol_from_url(url) not in protocols:
+                continue  # local / no remote, or a protocol this check is not about
+            reason = _auth_rejection(target, url, env)
+            if reason is not None:
+                failures.append((target, reason))
+                break
     return failures
 
 
