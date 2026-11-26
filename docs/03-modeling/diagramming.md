@@ -528,6 +528,12 @@ the relation it labels. Where two relations fit one alias pair, or none does, it
 it is and names the candidates; set it again with `edge_labels`. See
 [CLI & backend](../reference/cli-and-backend.md) for running an upgrade.
 
+An ArchiMate body also stores a copy of the styling the renderer generates: the palette, the glyphs,
+each relationship's line style and the label width. Every edit restates that copy,
+so a diagram nobody has edited since an upgrade that changed any of them keeps drawing the old styling.
+`artifact_verify` names such a diagram as **W387**. Any edit through `artifact_edit_diagram`, including
+`puml="auto-sync"`, restates it without changing what the diagram draws.
+
 See [Interfaces & MCP](interfaces-and-mcp.md) for the full tool surface.
 
 ---
