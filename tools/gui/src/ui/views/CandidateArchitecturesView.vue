@@ -3,8 +3,9 @@ import { diagramsHostingCandidates } from '../composables/useDiagramTypeCapabili
 /**
  * Candidate architectures: every proposed architecture, independent of any analysis. Each stack is
  * listed under the scope its root was started over, each candidate below what it stacks on, with its
- * state and how many operations it records. A new candidate starts from what a diagram draws, on top
- * of an existing candidate, or empty. Deleting one asks first; the server refuses while another
+ * state and how many operations it records. A new candidate is defined on its own canvas, so it starts
+ * empty and needs only a name; what a diagram draws, or another candidate to stack on, is an optional
+ * seed (owner, 2026-11-26). Deleting one asks first; the server refuses while another
  * stacks on it or an analysis starts from it, and says so. Two or more ticked are compared.
  */
 import { computed, inject, onMounted, ref, shallowRef } from 'vue'
@@ -25,7 +26,7 @@ const catalog = useCandidateCatalog(svc)
 const diagrams = shallowRef<readonly DiagramSummary[]>([])
 const creating = ref(false)
 const name = ref('')
-const origin = ref<Origin>('diagram')
+const origin = ref<Origin>('empty')
 const diagram = ref('')
 const parent = ref('')
 const busy = ref(false)
@@ -105,12 +106,19 @@ onMounted(async () => {
         data-testid="candidate-name"
       ></label>
       <fieldset class="origins">
-        <legend>Start from</legend>
+        <legend>Start</legend>
+        <label><input
+          v-model="origin"
+          type="radio"
+          value="empty"
+          data-testid="candidate-origin-empty"
+        > empty, and define it on its canvas</label>
         <label><input
           v-model="origin"
           type="radio"
           value="diagram"
-        > what a diagram draws</label>
+          data-testid="candidate-origin-diagram"
+        > seeded with what a diagram draws</label>
         <select
           v-if="origin === 'diagram'"
           v-model="diagram"
@@ -132,6 +140,7 @@ onMounted(async () => {
           v-model="origin"
           type="radio"
           value="parent"
+          data-testid="candidate-origin-parent"
         > on top of a candidate</label>
         <select
           v-if="origin === 'parent'"
@@ -150,17 +159,13 @@ onMounted(async () => {
             {{ one.name }}
           </option>
         </select>
-        <label><input
-          v-model="origin"
-          type="radio"
-          value="empty"
-        > empty</label>
       </fieldset>
       <div class="acts">
         <button
           type="submit"
           class="btn btn-primary"
           :disabled="!canCreate"
+          data-testid="candidate-create"
         >
           Create
         </button>
