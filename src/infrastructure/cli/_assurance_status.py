@@ -40,8 +40,6 @@ def backend_holds_store_open() -> bool | None:
         payload = send(request, timeout=_BACKEND_PROBE_TIMEOUT_S)
     except Exception:  # noqa: BLE001
         return None
-    if not isinstance(payload, dict):
-        return None
     return bool(payload.get("unlocked"))
 
 
