@@ -23,9 +23,10 @@ import type { Connector, RoutedConnector, RoutingResult, RoutingScene } from './
 import { byText } from './routing/scene'
 import type { Arrangement } from './canvasArrangement'
 import { drawnArrangement, fittedBoxes } from './canvasArrangement'
-import { portNear, statedWhole } from './canvasRouteEdits'
-import { elementsCrossed, reattached } from './attachment'
-import { BAND_MARGIN, bendsAtEnds, runIndex, runsAlongIn, textsCrossed } from './routeQuality'
+import { portNear } from './canvasRouteEdits'
+import type { Pictured } from './canvasFollowing'
+import { followedCleanly } from './canvasFollowing'
+import { BAND_MARGIN } from './routeQuality'
 import type { GeometryBox, GeometryRelation, LayoutGeometry } from '../schemas/diagramLayoutGeometry'
 import { pointsOf } from '../schemas/diagramLayoutGeometry'
 
@@ -267,99 +268,11 @@ export const quickPass = (
   const lines = unstatedLines(geometry, routes, (relation) =>
     (rerouted.has(String(relation.index)) ? undefined : previous.get(String(relation.index))?.course))
   const kept = keptLines(sceneOf(geometry, before), sceneOf(geometry, placement), lines)
-  const followed = followedCleanly(geometry, before, placement, routes, previous, lines.filter((line) => !kept.has(line.key)))
+  const pictured = (where: Placement): Pictured =>
+    ({ placement: where, stated: statedCourses(geometry, where, routes), text: textRegions(geometry, where) })
+  const touched = lines.filter((line) => !kept.has(line.key))
+  const followed = followedCleanly(geometry, pictured(before), pictured(placement), previous, touched)
   const still = new Map([...coursesOf(lines, kept), ...followed])
   const others = new Map([...previous].filter(([key]) => !rerouted.has(key) && !kept.has(key)))
   return routedKeeping(geometry, placement, routes, still, { previous: others, changed })
-}
-
-/** What one line's course breaks of the hard rules, each counted: what following it may not add to. */
-interface HardRules {
-  readonly elements: number
-  readonly text: number
-  readonly bends: number
-  readonly along: number
-}
-
-/** The hard rules each line breaks where *placement* puts the shapes and *courses* run the lines. */
-const hardRulesOf = (
-  geometry: LayoutGeometry, placement: Placement, courses: ReadonlyMap<number, readonly Point[]>,
-  asked: Iterable<number>,
-): ReadonlyMap<number, HardRules> => {
-  const runs = runIndex(courses, [...placement.elements.values(), ...placement.boxes.values()])
-  const text = textRegions(geometry, placement)
-  const relations = new Map(geometry.relations.map((relation) => [relation.index, relation]))
-  return new Map([...asked].flatMap((index): [number, HardRules][] => {
-    const [relation, course] = [relations.get(index), courses.get(index)]
-    return relation && course ? [[index, {
-      elements: elementsCrossed(course, placement.elements, [relation.source, relation.target]).length,
-      text: textsCrossed(course, text).length,
-      bends: bendsAtEnds(course, relation.decorated).length,
-      along: runsAlongIn(course, runs, index).length,
-    }]] : []
-  }))
-}
-
-/** All courses where *placement* puts the shapes: *shown*, with stated bends run as stated, then *these*. */
-const coursesNow = (
-  geometry: LayoutGeometry, placement: Placement, routes: StatedRoutes,
-  shown: ReadonlyMap<string, RoutedConnector>, these: ReadonlyMap<number, readonly Point[]> = new Map(),
-): ReadonlyMap<number, readonly Point[]> => new Map<number, readonly Point[]>([
-  ...[...shown].map(([key, one]): [number, readonly Point[]] => [Number(key), one.course]),
-  ...statedCourses(geometry, placement, routes), ...these,
-])
-
-/**
- * Of *touched* — lines something moved touches — each that follows its ends (`reattached`: I3, then I4)
- * from the course *previous* showed over *before*, and breaks no hard rule more than it did there:
- * through no further element or text, no new bend at a decorated end, along no further line or border.
- * By its place on the picture, with the course it follows. Only the rest need the router (I5): a move
- * of one element in a picture of hundreds of lines routes the few lines it put something in the way of,
- * not every line it touches — and a line PlantUML drew along another may still run so, as it was shown.
- */
-const followedCleanly = (
-  geometry: LayoutGeometry, before: Placement, placement: Placement, routes: StatedRoutes,
-  previous: ReadonlyMap<string, RoutedConnector>, touched: readonly ShownLine[],
-): ReadonlyMap<number, readonly Point[]> => {
-  if (touched.length === 0) return new Map()
-  const extentOf = (alias: string): Extent | undefined => placement.elements.get(alias) ?? placement.boxes.get(alias)
-  const following = new Map(touched.flatMap((line): [number, Point[]][] => {
-    const [source, target, shown] = [extentOf(line.source), extentOf(line.target), previous.get(line.key)]
-    if (!source || !target || !shown) return []
-    const course = courseOf(reattached(statedWhole(shown), source, target), source, target)
-    return course && course.length >= 2 ? [[Number(line.key), course]] : []
-  }))
-  const asked = [...following.keys()]
-  const was = hardRulesOf(geometry, before, coursesNow(geometry, before, routes, previous), asked)
-  const now = hardRulesOf(geometry, placement, coursesNow(geometry, placement, routes, previous, following), asked)
-  return new Map([...following].filter(([index]) => {
-    const [then, after] = [was.get(index), now.get(index)]
-    return then !== undefined && after !== undefined && after.elements <= then.elements
-      && after.text <= then.text && after.bends <= then.bends && after.along <= then.along
-  }))
-}
-
-/**
- * A drag frame's lines, routing nothing: each line of a shape in *changed* follows it from the course
- * *previous* showed (`reattached` — I3, then I4), a line with stated bends runs them where its ends are
- * now, and every other line stays as *previous* showed it. What a frame can afford on a picture of
- * hundreds of lines; the drop routes properly (`quickPass`), from the lines shown before the drag.
- */
-export const followPass = (
-  geometry: LayoutGeometry, placement: Placement, routes: StatedRoutes, previous: RoutingResult,
-  changed: ReadonlySet<string>,
-): RoutingResult => {
-  const extentOf = (alias: string): Extent | undefined => placement.elements.get(alias) ?? placement.boxes.get(alias)
-  const lines = new Map(previous.routes)
-  for (const relation of geometry.relations) {
-    if (!changed.has(relation.source) && !changed.has(relation.target)) continue
-    const key = String(relation.index)
-    const [source, target, shown] = [extentOf(relation.source), extentOf(relation.target), previous.routes.get(key)]
-    if (!source || !target || !shown) continue
-    const stated = relation.key === undefined ? undefined : routes.get(relation.key)
-    const route = stated?.via?.length && stated.from && stated.to ? stated : reattached(statedWhole(shown), source, target)
-    const course = courseOf(route, source, target)
-    if (course && route.from && route.to) lines.set(key, { key, sourcePort: route.from, targetPort: route.to, course })
-  }
-  return { ...previous, routes: lines }
 }

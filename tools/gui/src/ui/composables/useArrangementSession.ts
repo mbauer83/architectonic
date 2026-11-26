@@ -18,7 +18,8 @@ import type { Point } from '../../domain/layout/geometry'
 import type { Arrangement } from '../../domain/layout/canvasArrangement'
 import { drawnArrangement } from '../../domain/layout/canvasArrangement'
 import { breachesOf } from '../../domain/layout/canvasBreaches'
-import { changedShapes, followPass, fullPass, placementOf, quickPass, textRegions } from '../../domain/layout/canvasRouting'
+import { changedShapes, fullPass, placementOf, quickPass, textRegions } from '../../domain/layout/canvasRouting'
+import { followPass } from '../../domain/layout/canvasFollowing'
 import type { Placement } from '../../domain/layout/canvasRouting'
 import type { Reshaped } from '../../domain/layout/canvasShapeDrawing'
 import { stillToReshape } from '../../domain/layout/canvasShapeDrawing'
@@ -270,7 +271,9 @@ export function useArrangementSession(drawShapes: DrawShapes) {
       dragged ??= { from: pending.from, shown }
       const [drawn, where, now, changed] = [geometry.value, placement.value, state.value, pending.changed]
       const start = dragged.shown
-      if (drawn && where && now) routes.value = timed('follow', () => followPass(drawn, where, now.arrangement.routes, start, changed))
+      if (drawn && where && now) {
+        routes.value = timed('follow', () => followPass(drawn, where, now.arrangement.routes, start, changed))
+      }
     } else if (pending && shown) {
       routedFrom(pending.from, shown, pending.changed)
     }
@@ -295,7 +298,8 @@ export function useArrangementSession(drawShapes: DrawShapes) {
   const commit = () => {
     if (frame !== null) cancelAnimationFrame(frame)
     frame = null
-    if (pending && pending.changed.size > 0) dragged ??= routes.value ? { from: pending.from, shown: routes.value } : null
+    const shown = routes.value
+    if (pending && pending.changed.size > 0) dragged ??= shown ? { from: pending.from, shown } : null
     else if (pending) drawFrame()
     pending = null
     if (dragged) routedFrom(dragged.from, dragged.shown)

@@ -10,14 +10,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Extent } from '../geometry'
 import { drawnArrangement, moved } from '../canvasArrangement'
-import { changedShapes, followPass, fullPass, placementOf, quickPass } from '../canvasRouting'
+import { changedShapes, fullPass, placementOf, quickPass } from '../canvasRouting'
+import { followPass } from '../canvasFollowing'
 import type { LayoutGeometry } from '../../schemas/diagramLayoutGeometry'
 import { LINE_DRAWING, SHAPE_DRAWING } from './canvasDrawingFixtures'
 
+/** The router's search, each call counted in `counted` and then made as ever. */
 vi.mock('../routing/search', async (original) => {
   const real = await original<typeof import('../routing/search')>()
   const counted = vi.fn()
-  return { ...real, search: (...asked: Parameters<typeof real.search>) => { counted(); return real.search(...asked) }, counted }
+  const search = (...asked: Parameters<typeof real.search>) => {
+    counted()
+    return real.search(...asked)
+  }
+  return { ...real, search, counted }
 })
 
 const searches = (await import('../routing/search') as unknown as { counted: ReturnType<typeof vi.fn> }).counted
