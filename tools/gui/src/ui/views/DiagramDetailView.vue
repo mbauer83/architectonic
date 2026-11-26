@@ -94,11 +94,8 @@ const selection = useDiagramSvgSelection({
 const { svgContainer } = selection
 
 const containerRef = ref<HTMLElement | null>(null)
-const panZoom = useFittedPanZoom(containerRef, svgContainer)
 const fullscreen = useFullscreen(containerRef)
-// Entering or leaving fullscreen is a framing request: re-fit even when the view has been
-// transformed, since the whole point of the gesture is to see the diagram against the new space.
-watch(fullscreen.isFullscreen, () => { void panZoom.fitDiagramToViewport() })
+const panZoom = useFittedPanZoom(containerRef, svgContainer, fullscreen.isFullscreen)
 
 const syncPanel = ref<InstanceType<typeof DiagramSyncPanel> | null>(null)
 const deletePanel = ref<InstanceType<typeof DiagramDeletePanel> | null>(null)
