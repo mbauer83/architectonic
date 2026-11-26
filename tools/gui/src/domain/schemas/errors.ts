@@ -55,6 +55,9 @@ export const ERROR_CODES = [
   'viewpoint_referenced',
   // A request body larger than its operation accepts; it carries the limit so the caller can send less.
   'request_too_large',
+  // A git operation reaching the remote was refused for want of a credential. Names the protocol and
+  // the remote so the GUI can ask for the right secret; never carries one.
+  'git_credentials_required',
 ] as const
 
 export const ErrorCodeSchema = Schema.Literal(...ERROR_CODES)
@@ -177,6 +180,14 @@ export const RequestTooLargeDetailsSchema = Schema.Struct({
   max_body_bytes: Schema.Number,
 })
 
+/** `git_credentials_required`: which credential the remote asked for, and whether a held one was
+ *  refused — what a prompt has to say when it asks again. `remote` has any userinfo removed. */
+export const GitCredentialsRequiredDetailsSchema = Schema.Struct({
+  protocol: Schema.Literal('ssh', 'https'),
+  remote: Schema.String,
+  rejected: Schema.Boolean,
+})
+
 export const ErrorDetailsSchema = Schema.Union(
   ValidationErrorDetailsSchema,
   DiagramRenderLimitDetailsSchema,
@@ -197,6 +208,7 @@ export const ErrorDetailsSchema = Schema.Union(
   NotConfiguredDetailsSchema,
   ViewpointReferencedDetailsSchema,
   RequestTooLargeDetailsSchema,
+  GitCredentialsRequiredDetailsSchema,
 )
 
 export const ErrorBodySchema = Schema.Struct({
@@ -229,5 +241,15 @@ export type ViewpointReferencedDetails = typeof ViewpointReferencedDetailsSchema
  */
 export const viewpointReferencedDetails = (body: ErrorBody): ViewpointReferencedDetails | null =>
   body.code === 'viewpoint_referenced' && body.details != null && 'referencers' in body.details
+    ? body.details
+    : null
+
+export type GitCredentialsRequiredDetails = typeof GitCredentialsRequiredDetailsSchema.Type
+
+/** The credential a `git_credentials_required` refusal asks for, or null for any other failure.
+ *  Narrowed by code and shape together, for the reason `viewpointReferencedDetails` gives. */
+export const gitCredentialsRequiredDetails = (body: ErrorBody): GitCredentialsRequiredDetails | null =>
+  body.code === 'git_credentials_required' && body.details != null && 'protocol' in body.details
+    && 'rejected' in body.details
     ? body.details
     : null

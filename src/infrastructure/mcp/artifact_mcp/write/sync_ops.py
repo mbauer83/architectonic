@@ -47,14 +47,13 @@ def artifact_save_changes(
             eng_root = maybe_engagement_root()
             if eng_root is None:
                 return {"ok": False, "error": "Engagement repository is not initialised"}
-            commit = git_work_commits.commit_engagement_work(
+            commit = git_work_commits.save_engagement_work(
                 eng_root,
                 message,
+                push=push,
                 author_name=author_name,
                 author_email=author_email,
             )
-            if push:
-                git_work_commits.push_engagement(eng_root)
             return {
                 "ok": True,
                 "target": "engagement",

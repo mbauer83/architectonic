@@ -45,7 +45,7 @@ from src.domain.submission_phase import (
     SubmissionPhase,
 )
 from src.infrastructure.git import enterprise_sync_state
-from src.infrastructure.git._git_command import PUSH_TIMEOUT, run_repo_git
+from src.infrastructure.git._git_command import PUSH_TIMEOUT, refuse_for_missing_credentials, run_repo_git
 from src.infrastructure.git.enterprise_branch_lifecycle import submission_preflight
 from src.infrastructure.git.git_repository_state import (
     current_commit,
@@ -112,6 +112,7 @@ def publish_submission(enterprise_root: Path, prepared: PreparedSubmission) -> S
             enterprise_root, "push", "-u", "origin", intent.branch, timeout=PUSH_TIMEOUT
         )
         if rc != 0:
+            refuse_for_missing_credentials(enterprise_root, ("push",), stderr)
             raise RuntimeError(f"Failed to push enterprise branch '{intent.branch}': {stderr}")
 
     confirmed = remote_ref_commit(enterprise_root, intent.branch)

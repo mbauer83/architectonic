@@ -66,7 +66,6 @@ class GitSyncManager:
         # cached status measurements, and only AFTER successful persistence.
         self._on_health_changed = on_health_changed
         self._task: asyncio.Task[None] | None = None
-        self._askpass_script: Path | None = None
         self._last_dirty_state: dict[Path, bool] = {}
         self._last_block_reason: dict[Path, str | None] = {}
         # One record for every repository this manager polls: the deferral a refusing remote earns
@@ -77,26 +76,19 @@ class GitSyncManager:
         # Credentials are verified up front at collection (collect_verified_credentials), which
         # re-prompts interactively or fails loudly on a rejection — so by the time sync starts they
         # are known-good and this only wires the askpass env and launches the poll loop.
-        if self._credentials is not None:
-            from src.infrastructure.git import git_env
-            from src.infrastructure.git.git_auth import build_git_env, create_askpass_script
+        # The process's held credentials own the askpass helper: a credential supplied later through
+        # the GUI replaces these in the same place, and every git call reads the result.
+        from src.infrastructure.git import held_credentials
 
-            self._askpass_script = create_askpass_script()
-            git_env.set_ssh_env(build_git_env(self._credentials, self._askpass_script))
+        held_credentials.hold(self._credentials)
         self._task = asyncio.create_task(self._poll_loop(), name="git-sync")
         logger.info("git-sync started for %d repo(s) (poll %.1fs)", len(self._repos), self._poll_interval_s)
 
     def _release_askpass(self) -> None:
-        """Unlink the askpass helper and clear the wired git env (idempotent)."""
-        if self._askpass_script is not None:
-            try:
-                self._askpass_script.unlink()
-            except OSError:
-                pass
-            self._askpass_script = None
-        from src.infrastructure.git import git_env
+        """Forget the held credentials, unlink the askpass helper and clear the git env (idempotent)."""
+        from src.infrastructure.git import held_credentials
 
-        git_env.set_ssh_env(None)
+        held_credentials.release()
 
     async def stop(self) -> None:
         if self._task:

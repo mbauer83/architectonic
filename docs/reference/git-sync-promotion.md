@@ -122,7 +122,8 @@ SSH and HTTPS remotes are both supported. Credentials are never written to disk 
 held in process memory and injected into git subprocesses via a temporary askpass helper.
 
 `arch-backend` and `arch-init` probe configured remotes and prompt on the terminal only when
-credentials are required. For `--daemon`, prompting happens in the foreground parent before
+credentials are required. Both the fetch URL and every push URL of `origin` are probed, so a
+remote that fetches over https and pushes over ssh is asked for both credentials. For `--daemon`, prompting happens in the foreground parent before
 the daemon forks. For CI / non-interactive use, set environment variables to skip prompting:
 
 ```bash
@@ -149,3 +150,29 @@ A daemon started this way inherits only the file *path*, then re-reads the file 
 
 > A PAT only authenticates `https://` remotes. SSH remotes use a key pair; the SSH-side
 > secret is the key passphrase (`ARCH_GIT_SSH_PASSWORD`), not a token.
+
+### Credentials asked for in the GUI
+
+A backend started without a terminal, or with no credential for a protocol it later needs, may
+have a save, submit or discard refused by the remote. The refusal is answered with the error code
+`git_credentials_required`, which names the protocol (`ssh` or `https`) and the remote URL (with
+any userinfo removed). The GUI then asks for the SSH key passphrase or the HTTPS token and an
+optional username, and repeats the operation.
+
+The GUI sends the credential once, to `PUT /api/sync/credentials`. The backend:
+
+- accepts it only from the loopback with the `X-Arch-Operator-Request` header, the condition
+  `arch-assurance unlock` is held to. A page from another origin cannot send that header, and a
+  backend reached through a reverse proxy refuses the request;
+- checks it against each configured remote that uses the protocol, over both the fetch and the
+  push URL. A refused credential is answered with `git_credentials_required` and
+  `rejected: true` and is not kept, and the GUI asks again;
+- keeps an accepted credential in memory until it stops. It is never written to disk or to the
+  log, and no response contains it.
+
+There is no MCP tool for supplying a credential, by design: an agent session would have to hold the
+secret in its context to pass it on. An MCP save or submit that the remote refuses returns the same
+message, which tells the person to enter the credential in the GUI or to set
+`ARCH_GIT_SSH_PASSWORD` / `ARCH_GIT_HTTPS_TOKEN` and restart the backend.
+
+An SSH key held by a running `ssh-agent` needs no passphrase here.

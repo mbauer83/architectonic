@@ -107,4 +107,41 @@ def test_verification_checks_the_push_url_of_the_protocol_asked_about(
     ],
 )
 def test_url_forms(url: str, protocol: str | None) -> None:
-    assert git_auth._protocol_from_url(url) == protocol
+    assert git_auth.protocol_of_url(url) == protocol
+
+
+def test_a_refused_push_names_the_push_url_and_its_protocol(split_remote: Path) -> None:
+    refusal = git_auth.credentials_required_for(
+        split_remote, pushing=True, git_output="git@host: Permission denied (publickey).", held=None
+    )
+    assert refusal is not None
+    assert (refusal.protocol, refusal.remote_url, refusal.rejected) == ("ssh", _PUSH, False)
+
+
+def test_a_refused_fetch_names_the_fetch_url(split_remote: Path) -> None:
+    refusal = git_auth.credentials_required_for(
+        split_remote, pushing=False,
+        git_output="fatal: Authentication failed for 'https://git.example.invalid/acme/repo.git/'",
+        held=git_auth.GitCredentials(https_username="u", https_password="p"),
+    )
+    assert refusal is not None
+    assert (refusal.protocol, refusal.remote_url, refusal.rejected) == ("https", _FETCH, True)
+
+
+def test_a_failure_for_another_reason_is_not_a_credential_refusal(split_remote: Path) -> None:
+    assert git_auth.credentials_required_for(
+        split_remote, pushing=True, git_output="fatal: Could not resolve host: git.example.invalid", held=None
+    ) is None
+
+
+def test_a_token_in_a_remote_url_never_reaches_the_refusal() -> None:
+    url = "https://user:ghp_secret@git.example.invalid:8443/acme/repo.git"
+    refusal = git_auth.GitCredentialsRequired(protocol="https", remote_url=url, rejected=False)
+    assert "ghp_secret" not in str(refusal)
+    assert refusal.remote_url == "https://git.example.invalid:8443/acme/repo.git"
+
+
+def test_held_secrets_are_not_in_the_credentials_repr() -> None:
+    creds = git_auth.GitCredentials(ssh_passphrase="open sesame", https_username="u", https_password="ghp_secret")
+    assert "open sesame" not in repr(creds)
+    assert "ghp_secret" not in repr(creds)

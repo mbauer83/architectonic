@@ -16,9 +16,14 @@ from src.infrastructure.git._git_command import (
     PUSH_TIMEOUT,
     STAGE_ALL_BUT_RUNTIME_STATE,
     commit_with_identity,
+    refuse_for_missing_credentials,
     run_repo_git,
 )
-from src.infrastructure.git.git_repository_state import current_commit, has_uncommitted_changes
+from src.infrastructure.git.git_repository_state import (
+    commits_ahead_of_upstream,
+    current_commit,
+    has_uncommitted_changes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -116,5 +121,33 @@ def push_engagement(engagement_root: Path) -> None:
     """Push the engagement repo's current branch to origin."""
     rc, _, stderr = run_repo_git(engagement_root, "push", timeout=PUSH_TIMEOUT)
     if rc != 0:
+        refuse_for_missing_credentials(engagement_root, ("push",), stderr)
         raise RuntimeError(f"Failed to push engagement changes: {stderr}")
     logger.info("Engagement changes pushed to remote")
+
+
+def save_engagement_work(
+    engagement_root: Path,
+    message: str,
+    *,
+    push: bool,
+    author_name: str | None = None,
+    author_email: str | None = None,
+) -> str:
+    """Commit the engagement repository's changes and, when asked, push them. Returns the commit.
+
+    Repeating a save whose push failed converges: with nothing left to commit and commits the
+    upstream does not have, it pushes them. That is the retry after a refused credential has been
+    supplied, and refusing it as "no changes to save" would leave the committed work unpublished
+    with no way to publish it from where it was saved. The REST route and the MCP tool both save
+    through here, so the two cannot disagree about it.
+    """
+    if push and not has_uncommitted_changes(engagement_root) and commits_ahead_of_upstream(engagement_root):
+        push_engagement(engagement_root)
+        return current_commit(engagement_root) or ""
+    commit = commit_engagement_work(
+        engagement_root, message, author_name=author_name, author_email=author_email
+    )
+    if push:
+        push_engagement(engagement_root)
+    return commit

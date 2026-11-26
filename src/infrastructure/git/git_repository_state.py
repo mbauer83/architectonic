@@ -19,6 +19,7 @@ from src.infrastructure.git._git_command import (
     CONTENT_PATHSPEC,
     PUSH_TIMEOUT,
     UNCOMMITTED_CONTENT_QUERY,
+    refuse_for_missing_credentials,
     run_repo_git,
 )
 
@@ -63,6 +64,15 @@ def has_uncommitted_changes(repo: Path) -> bool:
 
 def commits_ahead_of_main(repo: Path) -> int:
     rc, out, _ = run_repo_git(repo, "rev-list", "--count", f"{UPSTREAM_REF}..HEAD")
+    try:
+        return int(out) if rc == 0 else 0
+    except ValueError:
+        return 0
+
+
+def commits_ahead_of_upstream(repo: Path) -> int:
+    """Commits on the current branch its upstream does not have; 0 when it has no upstream."""
+    rc, out, _ = run_repo_git(repo, "rev-list", "--count", "@{upstream}..HEAD")
     try:
         return int(out) if rc == 0 else 0
     except ValueError:
@@ -125,8 +135,9 @@ def remote_ref_commit(enterprise_root: Path, branch: str) -> str | None:
     else's work to report rather than overwrite. `remote_ref_exists` is this question with the answer
     thrown away, and is kept as the narrower form for callers that only need presence.
     """
-    rc, out, _ = run_repo_git(enterprise_root, "ls-remote", "--heads", "origin", branch, timeout=PUSH_TIMEOUT)
+    rc, out, stderr = run_repo_git(enterprise_root, "ls-remote", "--heads", "origin", branch, timeout=PUSH_TIMEOUT)
     if rc != 0:
+        refuse_for_missing_credentials(enterprise_root, ("ls-remote",), stderr)
         raise RuntimeError(f"Could not inspect origin for branch '{branch}'")
     first = out.split("\n", 1)[0].strip()
     return first.split()[0] if first else None

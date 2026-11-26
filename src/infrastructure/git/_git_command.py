@@ -81,6 +81,24 @@ def run_repo_git(
     return result.returncode, result.stdout.strip(), result.stderr.strip()
 
 
+def refuse_for_missing_credentials(repo: Path, args: tuple[str, ...], stderr: str) -> None:
+    """Raise `GitCredentialsRequired` when a failed command that reached `origin` was refused for
+    want of a credential; return otherwise.
+
+    Called by every operation that pushes, fetches or lists the remote, before it reports its own
+    failure, so a refused credential is reported one way wherever it happens and a caller can ask
+    for the credential rather than report a failed push.
+    """
+    from src.infrastructure.git import held_credentials  # noqa: PLC0415
+    from src.infrastructure.git.git_auth import credentials_required_for  # noqa: PLC0415
+
+    refusal = credentials_required_for(
+        repo, pushing=args[:1] == ("push",), git_output=stderr, held=held_credentials.held()
+    )
+    if refusal is not None:
+        raise refusal
+
+
 def run_repo_git_untrimmed(repo: Path, *args: str, timeout: float = GIT_TIMEOUT) -> tuple[int, str, str]:
     """`run_repo_git` with stdout as git wrote it — for file contents, whose final newline is content."""
     from src.infrastructure.git.git_env import get_ssh_env  # noqa: PLC0415

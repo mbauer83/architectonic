@@ -10,7 +10,10 @@ operation is accepted only when two things say an operator on this machine sent 
   request without a preflight this backend does not grant, so a web page in the operator's browser
   cannot send it either.
 
-The command line sets the header; nothing in the GUI does.
+The command line sets the header. The GUI this backend serves sets it for one operation, supplying
+a git credential a remote asked for (`PUT /api/sync/credentials`): the page is same-origin, so it
+may attach a custom header, and the loopback condition still excludes a GUI reached through a proxy.
+The assurance store's authorization stays with the command line.
 """
 
 from __future__ import annotations
