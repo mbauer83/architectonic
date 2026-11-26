@@ -17,6 +17,7 @@ from src.infrastructure.diagram_composition import (
     replace_diagram,
 )
 from src.infrastructure.diagram_creation import DiagramFiling, create_composed_diagram
+from src.infrastructure.picture_reading.derived_entities import derived_entity_rows
 from src.infrastructure.rest.contracts.diagrams import DiagramPreviewResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
@@ -26,7 +27,6 @@ from src.infrastructure.rest.routers._openapi import (
     WRITE_RESPONSES,
     WriteResultResponse,
 )
-from src.infrastructure.rest.routers.diagrams._derived_entities import derived_entity_rows
 from src.infrastructure.rest.routers.diagrams._write_bodies import (
     CreateDiagramGuiBody,
     DiagramPreviewBody,

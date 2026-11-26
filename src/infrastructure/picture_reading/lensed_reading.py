@@ -1,10 +1,10 @@
 """The body a reader's lens asks PlantUML to draw: the diagram restyled, explained, and held to its layout.
 
-Both image routes (`_serving`) render through `reading_body`, so "show me this" and "export what I
-am looking at" are one body. On a laid-out diagram whose reader prints attributes the body is drawn
-once more to measure it: a printed line that would draw its element wider than the stored picture is
-broken (`printed_lines_held`), so the element grows downward in its column rather than over its
-neighbour. Nothing here moves a neighbour.
+Both image routes render through `reading_body`, so "show me this" and "export what I am looking at" are
+one body. On a laid-out diagram whose reader prints attributes the body is drawn once more to measure it:
+a printed line that would draw its element wider than the stored picture is broken (`printed_lines_held`),
+so the element grows downward in its column rather than over its neighbour. Nothing here moves a
+neighbour.
 """
 
 from __future__ import annotations
@@ -13,9 +13,19 @@ from collections.abc import Callable
 from pathlib import Path
 
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.application.viewpoints.diagram_reading_lens import ReadingLens
+from src.application.viewpoints.diagram_attribute_panel import offers_for_diagram, palette_members, palette_unset
+from src.application.viewpoints.diagram_reading_lens import ElementKindColouring, ReadingLens, apply_reading_lens
+from src.application.viewpoints.placed_occurrences import placed_connection_triples, resolve_placed_entities
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
-from src.infrastructure.rest.routers import state as s
+from src.infrastructure.picture_reading.sources import PictureSources
+from src.infrastructure.rendering._archimate_includes import ArchimateDeclarations
+from src.infrastructure.rendering.diagram_builder import render_puml_svg
+from src.infrastructure.rendering.diagram_kind_muting import body_with_muted_element_kinds
+from src.infrastructure.rendering.diagram_legend_for_reading import body_with_reading_legend
+from src.infrastructure.rendering.diagram_notation_in_use import notation_in_use
+from src.infrastructure.rendering.printed_lines_held import printed_lines_held
+from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot
+from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
 
 
 def declared_type_labels(catalogs: RuntimeCatalogs) -> dict[str, str]:
@@ -42,12 +52,6 @@ def kind_muting(lens: ReadingLens, repo_root: Path) -> Callable[[str], str] | No
 
     `None` when nothing is to be muted, so the render path takes its ordinary route.
     """
-    from src.application.viewpoints.diagram_reading_lens import ElementKindColouring  # noqa: PLC0415
-    from src.infrastructure.rendering._archimate_includes import ArchimateDeclarations  # noqa: PLC0415
-    from src.infrastructure.rendering.diagram_kind_muting import (  # noqa: PLC0415
-        body_with_muted_element_kinds,
-    )
-
     if lens.element_kind_colouring is not ElementKindColouring.MUTED or not lens.colour_by:
         return None
     declarations = ArchimateDeclarations.from_repo(repo_root)
@@ -60,7 +64,7 @@ def lensed_body(
     artifact_id: str,
     diagram_path: Path,
     lens: ReadingLens,
-    catalogs: RuntimeCatalogs,
+    sources: PictureSources,
     repo_root: Path,
     wrapped: Callable[[str, tuple[str, ...]], tuple[str, ...]] | None = None,
     *,
@@ -73,38 +77,20 @@ def lensed_body(
     the other way round. The snapshot comes from `configured_registry_snapshot`, so the lens reads
     attributes under exactly the reach the rest of the surface uses.
 
-    The catalogues are *given*, not read from process state: they arrive through the same freshness
-    dependency the attribute panel takes, which is what lets a test override them and what
-    `test_runtime_catalogs_have_one_accessor` requires of a router. It caught this module reading them
-    directly.
+    The catalogues are *given* (`sources.catalogs`), not read from process state: a transport hands in
+    the ones its request resolved, which is what lets a test override them and what
+    `test_runtime_catalogs_have_one_accessor` requires of a router.
 
     *authored* is a body to read instead of the stored one: an editor's unsaved composition of the diagram.
     """
-    from src.application.viewpoints.diagram_attribute_panel import (  # noqa: PLC0415
-        offers_for_diagram,
-        palette_members,
-        palette_unset,
-    )
-    from src.application.viewpoints.diagram_reading_lens import apply_reading_lens  # noqa: PLC0415
-    from src.application.viewpoints.placed_occurrences import (  # noqa: PLC0415
-        placed_connection_triples,
-        resolve_placed_entities,
-    )
-    from src.infrastructure.rendering.diagram_legend_for_reading import (  # noqa: PLC0415
-        body_with_reading_legend,
-    )
-    from src.infrastructure.rendering.diagram_notation_in_use import notation_in_use  # noqa: PLC0415
-    from src.infrastructure.viewpoints_snapshot import configured_registry_snapshot  # noqa: PLC0415
-    from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file  # noqa: PLC0415
-
     body = parse_diagram_file(diagram_path).puml_body if authored is None else authored
     if lens.is_empty:
         return body
-    repo = s.get_repo()
+    repo, catalogs = sources.repo, sources.catalogs
     diag_rec = repo.get_diagram(artifact_id)
     if diag_rec is None:
         return body
-    _, registry, _ = s.get_write_deps(catalogs)
+    registry = sources.registry()
     registries = configured_registry_snapshot(catalogs, repo.repo_roots)
     entities = resolve_placed_entities(dict(diag_rec.extra), registry)
     # The same offers the panel showed the reader, so "palette or ramp" is decided once and the
@@ -150,7 +136,7 @@ def reading_body(
     artifact_id: str,
     diagram_path: Path,
     lens: ReadingLens,
-    catalogs: RuntimeCatalogs,
+    sources: PictureSources,
     repo_root: Path,
     *,
     diagram_type: str | None,
@@ -163,14 +149,11 @@ def reading_body(
     whatever the lens adds), the reader prints something, and the stored picture is there to say how
     wide each element is meant to be.
     """
-    from src.infrastructure.rendering.diagram_builder import render_puml_svg  # noqa: PLC0415
-    from src.infrastructure.rendering.printed_lines_held import printed_lines_held  # noqa: PLC0415
-
-    body = lensed_body(artifact_id, diagram_path, lens, catalogs, repo_root)
+    body = lensed_body(artifact_id, diagram_path, lens, sources, repo_root)
     if laid_out is None or not lens.printed or stored_svg is None:
         return body
     measured, _warnings = render_puml_svg(
         body, repo_root, diagram_type, restyle_prepared=kind_muting(lens, repo_root)
     )
     wrapped = printed_lines_held(measured, stored_svg.read_text(encoding="utf-8")) if measured else None
-    return body if wrapped is None else lensed_body(artifact_id, diagram_path, lens, catalogs, repo_root, wrapped)
+    return body if wrapped is None else lensed_body(artifact_id, diagram_path, lens, sources, repo_root, wrapped)

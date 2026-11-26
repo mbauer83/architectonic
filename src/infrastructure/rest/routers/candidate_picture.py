@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from src.application.modeling.diagram_identities import strings_of
 from src.application.runtime_catalogs import RuntimeCatalogs
@@ -23,8 +23,10 @@ from src.infrastructure.candidates.picture import (
     start_of,
     start_record,
 )
-from src.infrastructure.rendering.layout._svg_drawing import Unreadable
-from src.infrastructure.rendering.layout.drawing_wire import reshaped
+from src.infrastructure.picture_reading.composition_preview import previewed_geometry
+from src.infrastructure.picture_reading.picture_context import picture_context_payload
+from src.infrastructure.picture_reading.proposals import GeometryPreviewBody
+from src.infrastructure.picture_reading.shape_drawing import DrawShapesBody
 from src.infrastructure.rest.contracts.candidate_picture import CandidatePictureContext
 from src.infrastructure.rest.contracts.diagram_layout_editing import (
     DiagramLayoutGeometryResponse,
@@ -34,11 +36,13 @@ from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._candidate_access import refusals, service
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_CHANGES, WRITE_RESPONSES
-from src.infrastructure.rest.routers.diagrams._geometry_proposals import GeometryPreviewBody
-from src.infrastructure.rest.routers.diagrams._layout import DrawShapesBody, _geometry, _repo_root
-from src.infrastructure.rest.routers.diagrams._picture_context import picture_context_payload
-from src.infrastructure.rest.routers.diagrams._picture_preview import previewed_geometry
-from src.infrastructure.rest.routers.diagrams.router import _read_diagram_impl
+from src.infrastructure.rest.routers.picture_reads import (
+    diagram_read,
+    drawn_shapes,
+    geometry_read,
+    picture_sources,
+    repo_root,
+)
 
 router = APIRouter()
 
@@ -72,9 +76,9 @@ def changes_read_candidate_picture_context(artifact_id: str, catalogs: Catalogs)
     start = _start(artifact_id)
     repo = s.get_repo()
     with refusals():
-        record, body = start_record(start, repo, _repo_root())
+        record, body = start_record(start, repo, repo_root())
     if start.diagram is not None:
-        read = _read_diagram_impl(start.diagram.artifact_id, catalogs)
+        read = diagram_read(start.diagram.artifact_id, catalogs)
         diagram = {key: read[key] for key in _START_FIELDS if read.get(key) is not None}
     else:
         diagram = {
@@ -83,7 +87,8 @@ def changes_read_candidate_picture_context(artifact_id: str, catalogs: Catalogs)
             "connection_ids_used": strings_of(record.extra.get("connection-ids-used")),
         }
     return {"diagram": diagram, **picture_context_payload(
-        repo, record, body, catalogs, read_entities=diagram.get("diagram_entities") or {}, reach=start.scope,
+        picture_sources(catalogs), record, body, read_entities=diagram.get("diagram_entities") or {},
+        reach=start.scope,
     )}
 
 
@@ -100,7 +105,7 @@ def changes_read_candidate_picture(artifact_id: str, catalogs: Catalogs) -> dict
     """The stored diagram's picture, the view generated from what the candidate reads over, or the empty
     picture of a candidate that reads over nothing yet."""
     start = _start(artifact_id)
-    return _geometry(lambda: start_geometry(start, s.get_repo(), _repo_root(), catalogs.ontology))
+    return geometry_read(lambda: start_geometry(start, s.get_repo(), repo_root(), catalogs.ontology))
 
 
 @router.post(
@@ -119,9 +124,9 @@ def changes_preview_candidate_picture(
     """The session's composition, with the elements and relations it proposes, drawn over where the picture
     starts; a composition that draws nothing is the empty picture. Writes nothing."""
     start = _start(artifact_id)
-    repo, root = s.get_repo(), _repo_root()
+    repo, root = s.get_repo(), repo_root()
     base = start_frontmatter(start, repo, root)
-    return _geometry(lambda: previewed_geometry(
+    return geometry_read(lambda: previewed_geometry(
         body, base, artifact_id=start.artifact_id, repo=repo, root=root, catalogs=catalogs,
         previous=placed_instances(base),
     ))
@@ -139,7 +144,4 @@ def changes_preview_candidate_picture(
 def changes_preview_candidate_picture_shapes(artifact_id: str, body: DrawShapesBody) -> dict[str, object]:
     """Each shape drawn by the composer at its new size; the candidate must be stored (404)."""
     _start(artifact_id)
-    try:
-        return {"drawings": [reshaped(shape.model_dump()) for shape in body.shapes]}
-    except Unreadable as unreadable:
-        raise HTTPException(422, f"This shape cannot be drawn: {unreadable.met}") from unreadable
+    return drawn_shapes(body)

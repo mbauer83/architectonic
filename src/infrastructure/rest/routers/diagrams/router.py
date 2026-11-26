@@ -9,11 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from src.application.artifacts.entity_references import diagram_reference_dicts
 from src.application.artifacts.parsing import parse_diagram_source
 from src.application.assurance.diagrams import assurance_surface_diagram_types
-from src.application.modeling.binding_normalize import restore_diagram_shorthand
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
-from src.domain.baseline_standing import BASELINE_STANDING
-from src.domain.diagrams.layout.layout_block import LAYOUT_KEY
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
 from src.infrastructure.rest.contracts.diagrams import (
     DiagramConnectionListResponse,
@@ -36,10 +33,10 @@ from src.infrastructure.rest.routers.diagrams._edge_label import router as _edge
 from src.infrastructure.rest.routers.diagrams._layout import router as _layout_router
 from src.infrastructure.rest.routers.diagrams._matrix_write import router as _matrix_write_router
 from src.infrastructure.rest.routers.diagrams._palette import router as _palette_router
-from src.infrastructure.rest.routers.diagrams._serving import _rendered_path
 from src.infrastructure.rest.routers.diagrams._serving import router as _serving_router
 from src.infrastructure.rest.routers.diagrams._sub_entity import router as _sub_entity_router
 from src.infrastructure.rest.routers.diagrams._write import router as _write_router
+from src.infrastructure.rest.routers.picture_reads import diagram_read
 
 router = APIRouter()
 router.include_router(_write_router)
@@ -49,56 +46,6 @@ router.include_router(_edge_label_router)
 router.include_router(_layout_router)
 router.include_router(_serving_router)
 router.include_router(_sub_entity_router)
-
-
-def _read_diagram_impl(id: str, catalogs: RuntimeCatalogs) -> dict[str, Any]:
-    result = s.get_repo().read_artifact(id, mode="full")
-    if result is None or result.get("record_type") != "diagram":
-        raise HTTPException(404, f"Diagram not found: {id!r}")
-    diag_rec = s.get_repo().get_diagram(id)
-    if diag_rec:
-        raw_diagram_entities = diag_rec.extra.get("diagram-entities")
-        diagram_entities = raw_diagram_entities if isinstance(raw_diagram_entities, dict) else {}
-        # The persist path strips the binding shorthand because the top-level `bindings:` block is
-        # canonical, and the editor reads the shorthand: `occurrencesOf` matches on
-        # `backing_entity_id`, so a stored occurrence was not recognised as a drawing of anything.
-        # Restored on the way out, and normalised away again on the way back in.
-        diagram_entities = (
-            restore_diagram_shorthand(diagram_entities, diag_rec.extra.get("bindings"))
-            or diagram_entities
-        )
-        local_connections = diag_rec.extra.get("connections")
-        if local_connections:
-            diagram_entities = {**diagram_entities, "_connections": local_connections}
-        result["diagram_entities"] = diagram_entities or None
-        _png = _rendered_path(diag_rec, ".png")
-        result["rendered_filename"] = _png.name if _png is not None else None
-        result["is_global"] = s.is_global(diag_rec.path)
-        result[BASELINE_STANDING] = s.baseline_standing_reader()(standing_subject(diag_rec)).to_mapping()
-        parsed = parse_diagram_source(str(result.get("puml_source", "")))
-        frontmatter = parsed["frontmatter"]
-        entity_ids_used = frontmatter.get("entity-ids-used")
-        connection_ids_used = frontmatter.get("connection-ids-used")
-        if isinstance(entity_ids_used, list):
-            result["entity_ids_used"] = [str(x) for x in entity_ids_used]
-        if isinstance(connection_ids_used, list):
-            result["connection_ids_used"] = [str(x) for x in connection_ids_used]
-        authored_groupings = frontmatter.get("authored-groupings")
-        if isinstance(authored_groupings, list):
-            result["authored_groupings"] = [g for g in authored_groupings if isinstance(g, dict)]
-        if isinstance(layout := frontmatter.get(LAYOUT_KEY), dict):
-            result["layout"] = layout
-        result["viewpoint"] = frontmatter.get("viewpoint")
-        dt = catalogs.diagram_types.find_diagram_type(diag_rec.diagram_type)
-        if dt:
-            # Two hooks, because the module is doing two things. A replacement for a field the
-            # envelope declares goes into that field; the module's own keys go under `type_extras`,
-            # which is the one level of this response whose properties are the module's to decide.
-            resolved = dt.resolve_diagram_entities(parsed, diagram_entities)
-            if resolved is not None:
-                result["diagram_entities"] = resolved
-            result["type_extras"] = dt.read_diagram_extras(parsed) or None
-    return result
 
 
 @router.get("/api/diagrams", tags=[TAG_DIAGRAMS], summary="List diagrams",
@@ -140,7 +87,7 @@ def read_diagram(
     artifact_id: str,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
-    return _read_diagram_impl(artifact_id, catalogs)
+    return diagram_read(artifact_id, catalogs)
 
 
 @router.get(
@@ -235,7 +182,7 @@ def get_diagram_entities(
     diag_rec = repo.get_diagram(artifact_id)
     if diag_rec is None:
         raise HTTPException(404, f"Diagram not found: {artifact_id!r}")
-    entities, _puml = diagram_entities_and_puml(repo, diag_rec, catalogs)
+    entities, _puml = diagram_entities_and_puml(diag_rec, catalogs)
     return {"items": entities}
 
 
@@ -255,7 +202,7 @@ def get_diagram_connections(
     diag_rec = repo.get_diagram(artifact_id)
     if diag_rec is None:
         raise HTTPException(404, f"Diagram not found: {artifact_id!r}")
-    return {"items": diagram_context_payload(repo, diag_rec, catalogs)["connections"]}
+    return {"items": diagram_context_payload(diag_rec, catalogs)["connections"]}
 
 
 @router.get(
@@ -274,4 +221,4 @@ def get_diagram_context(
     diag_rec = repo.get_diagram(artifact_id)
     if diag_rec is None:
         raise HTTPException(404, f"Diagram not found: {artifact_id!r}")
-    return diagram_context_payload(repo, diag_rec, catalogs)
+    return diagram_context_payload(diag_rec, catalogs)

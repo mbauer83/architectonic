@@ -23,15 +23,14 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse, Response
 
-from src.application.repo_path_helpers import rendered_dir_for_diagram
 from src.application.repository_confinement import is_within
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS, RENDERED
 from src.domain.ontology_representation.artifact_types import DiagramRecord
+from src.infrastructure.picture_reading.lensed_reading import kind_muting, reading_body
 from src.infrastructure.rest.contracts.path_components import PathComponentParameter
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers._openapi import READ_RESPONSES, TAG_DIAGRAMS, media_response
-from src.infrastructure.rest.routers.diagrams._lensed_reading import kind_muting, reading_body
 from src.infrastructure.rest.routers.diagrams._reading_lens_request import (
     ColourBy,
     ElementKindColouringParameter,
@@ -42,6 +41,7 @@ from src.infrastructure.rest.routers.diagrams._reading_lens_request import (
     Ramp,
     lens_from_query,
 )
+from src.infrastructure.rest.routers.picture_reads import picture_sources, rendered_image
 from src.infrastructure.rest.routers.viewpoints._freshness import (
     fresh_viewpoints_runtime_catalogs_dependency,
 )
@@ -67,33 +67,6 @@ def _refuse_a_matrix(d: DiagramRecord | None) -> None:
     if d is not None and d.diagram_type == "matrix":
         raise HTTPException(404, f"'{d.artifact_id}' is a matrix, which has no drawing; "
                                  f"read its cells at /api/matrices/{d.artifact_id}/config")
-
-
-def _rendered_path(d: DiagramRecord, suffix: str) -> Path | None:
-    """Resolve a diagram's rendered image, honouring its group-collection subdirectory.
-
-    The rendered tree mirrors the source tree (diagrams/<coll>/x.puml → rendered/<coll>/x.svg),
-    so the lookup is anchored on the diagram's own source path rather than the flat rendered
-    root — otherwise a grouped diagram's image is never found and the endpoint needlessly
-    re-renders on demand (the failure mode that surfaced the stale-body 500).
-    """
-    repo_root = s.maybe_engagement_root()
-    if repo_root is None:
-        return None
-    rendered_dir = rendered_dir_for_diagram(d.path, repo_root)
-    candidate = rendered_dir / f"{d.artifact_id}{suffix}"
-    if candidate.exists():
-        return candidate
-    if rendered_dir.is_dir():
-        parts = d.artifact_id.split(".")
-        if len(parts) >= 3:
-            legacy = rendered_dir / f"{'.'.join(parts[2:])}{suffix}"
-            if legacy.exists():
-                return legacy
-        for f in rendered_dir.iterdir():
-            if f.suffix == suffix and f.stem in d.artifact_id:
-                return f
-    return None
 
 
 @router.get("/api/diagram-images/{filename}", tags=[TAG_DIAGRAMS], summary="Serve a rendered diagram image",
@@ -170,7 +143,7 @@ def get_diagram_svg(
 
     # The on-disk image is the *authored* diagram, so it answers a lensless request and only that one.
     if diag_rec and lens.is_empty:
-        svg_path = _rendered_path(diag_rec, ".svg")
+        svg_path = rendered_image(diag_rec, ".svg")
         if svg_path is not None:
             return Response(content=svg_path.read_bytes(), media_type="image/svg+xml")
     from src.infrastructure.rendering.diagram_builder import render_puml_svg  # noqa: PLC0415
@@ -179,8 +152,9 @@ def get_diagram_svg(
     laid_out = stored_layout(diagram_path, catalogs.ontology)
     svg, warnings = render_puml_svg(
         reading_body(
-            id, diagram_path, lens, catalogs, repo_root, diagram_type=diagram_type, laid_out=laid_out,
-            stored_svg=_rendered_path(diag_rec, ".svg") if diag_rec else None,
+            id, diagram_path, lens, picture_sources(catalogs), repo_root, diagram_type=diagram_type,
+            laid_out=laid_out,
+            stored_svg=rendered_image(diag_rec, ".svg") if diag_rec else None,
         ),
         repo_root,
         diagram_type,
@@ -233,7 +207,7 @@ def download_diagram(
     suffix = ".svg" if format == "svg" else ".png"
     media = "image/svg+xml" if format == "svg" else "image/png"
     if lens.is_empty:
-        path = _rendered_path(diag_rec, suffix)
+        path = rendered_image(diag_rec, suffix)
         if path is not None:
             return FileResponse(
                 path,
@@ -253,8 +227,8 @@ def download_diagram(
     laid_out = stored_layout(diagram_path, catalogs.ontology)
     image, produced, warnings = render_puml_bytes(
         reading_body(
-            id, diagram_path, lens, catalogs, repo_root, diagram_type=diag_rec.diagram_type,
-            laid_out=laid_out, stored_svg=_rendered_path(diag_rec, ".svg"),
+            id, diagram_path, lens, picture_sources(catalogs), repo_root, diagram_type=diag_rec.diagram_type,
+            laid_out=laid_out, stored_svg=rendered_image(diag_rec, ".svg"),
         ),
         repo_root,
         format,

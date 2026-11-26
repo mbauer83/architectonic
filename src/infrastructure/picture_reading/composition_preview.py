@@ -17,8 +17,8 @@ from typing import Any
 
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.infrastructure.diagram_composition import render_composition
+from src.infrastructure.picture_reading.proposals import GeometryPreviewBody
 from src.infrastructure.rendering.layout.diagram_geometry import empty_geometry, geometry_response
-from src.infrastructure.rest.routers.diagrams._geometry_proposals import GeometryPreviewBody
 
 
 def draws_nothing(body: GeometryPreviewBody) -> bool:

@@ -147,7 +147,7 @@ def rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[s
     monkeypatch.setattr(s, "get_repo", lambda: _Repo(record))
     monkeypatch.setattr(s, "get_write_deps", lambda catalogs: (tmp_path, object(), object()))
     monkeypatch.setattr(
-        "src.application.viewpoints.placed_occurrences.resolve_placed_entities",
+        "src.infrastructure.picture_reading.lensed_reading.resolve_placed_entities",
         lambda extra, registry: [_entity()],
     )
     monkeypatch.setattr(
@@ -155,7 +155,7 @@ def rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[s
         lambda extra, registry: [],
     )
     monkeypatch.setattr(
-        "src.infrastructure.viewpoints_snapshot.configured_registry_snapshot",
+        "src.infrastructure.picture_reading.lensed_reading.configured_registry_snapshot",
         lambda catalogs, roots: RegistrySnapshot(
             known_entity_types=frozenset({"capability"}),
             known_connection_types=frozenset(),
@@ -196,6 +196,7 @@ def rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[s
         return b"rendered", "image/png", []
 
     monkeypatch.setattr("src.infrastructure.rendering.diagram_builder.render_puml_svg", _svg)
+    monkeypatch.setattr("src.infrastructure.picture_reading.lensed_reading.render_puml_svg", _svg)
     monkeypatch.setattr("src.infrastructure.rendering.puml_runtime.render_puml_bytes", _bytes)
 
     router = APIRouter()

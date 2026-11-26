@@ -12,6 +12,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.infrastructure.picture_reading.picture_context import entity_display_item, hop_suggestions
 from src.infrastructure.rest.contracts.diagrams import (
     DiagramEntityDiscoveryResponse,
     DiagramTypeConnectionTypeListResponse,
@@ -26,8 +27,6 @@ from src.infrastructure.rest.routers.diagrams._context import (
     candidate_connections_for_entities,
     diagram_kind_connection_type_items,
     diagram_kind_entity_type_items,
-    entity_display_item,
-    hop_suggestions,
 )
 from src.infrastructure.rest.routers.entities._display_search import entity_display_search_impl
 

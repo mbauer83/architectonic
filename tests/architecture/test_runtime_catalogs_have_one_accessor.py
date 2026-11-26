@@ -43,8 +43,9 @@ _READS_PROCESS_STATE: dict[str, str] = {
     "state.py": (
         "One reader left: `resolve_gar` needs the ontology to tell an internal "
         "global-artifact-reference type from an authorable one, and it is reached through "
-        "`connection_to_dict` from `diagrams/_context.py`, which the write path calls with no "
-        "request in hand. `get_write_deps`/`get_admin_write_deps` were the handler-reachable ones "
+        "`connection_to_dict`, the relation row a picture's context and the write path both list "
+        "relations with — the write path with no request in hand. "
+        "`get_write_deps`/`get_admin_write_deps` were the handler-reachable ones "
         "and they take their catalogs now — all twenty-nine call sites are request handlers, so a "
         "test overriding the dependency used to reach every read and no write at all."
     ),
