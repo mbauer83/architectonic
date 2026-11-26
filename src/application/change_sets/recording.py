@@ -241,23 +241,31 @@ def _drop(held: _Set, intent: Intent, _: ModelReading) -> tuple[Operation, ...]:
     """Take back what the set records about one entity or connection — or about one field of it.
 
     Dropping what the set creates drops the create and everything that names it, as removing it does.
-    Nothing recorded about it is a refusal: a drop that takes back nothing is a mistaken address.
+    Nothing recorded about it is a refusal: a drop that takes back nothing is a mistaken address. An
+    operation is found under the reference the stack names its subject with, and under the id as named:
+    one recorded before a lower candidate's create was read by its id still names that id, and stays
+    the caller's to take back.
     """
     field, key = intent.get("field"), _key(intent)
     if intent.get("artifact_id"):
-        create = held.creating(str(intent["artifact_id"]))
+        named = str(intent["artifact_id"])
+        create = held.creating(named)
         if create is not None and field is None:
             return held.without(lambda op: op is create or create.reference in entities_used(op))
-        subject: str | ConnectionAddress = canonical_entity_key(held.reference(str(intent["artifact_id"])))
+        subjects: set[str | ConnectionAddress] = {
+            canonical_entity_key(held.reference(named)), canonical_entity_key(named),
+        }
     else:
-        subject = held.address(intent)
+        stated = (str(intent["source_entity"]), str(intent["connection_type"]), str(intent["target_entity"]))
+        subjects = {held.address(intent), ConnectionAddress(*stated)}
 
     def taken(op: Operation) -> bool:
         claim = op.claim
-        return claim.subject == subject and (field is None or (claim.field == field and claim.key == (key or "")))
+        return claim.subject in subjects and (field is None or (claim.field == field and claim.key == (key or "")))
 
     kept = held.without(taken)
     if len(kept) == len(held.operations):
+        subject = min(subjects, key=str)
         what = f"{field} of {subject}" if field else str(subject)
         raise MalformedChangeSet(f"This candidate records nothing about {what}, so there is nothing to drop.")
     return kept

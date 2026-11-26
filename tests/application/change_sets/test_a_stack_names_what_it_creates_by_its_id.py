@@ -5,6 +5,7 @@ one mapping. Regression: an adaptation could edit an element its parent created 
 drop by the handle was refused, and the composed view and every read over it spoke the handle.
 """
 
+from src.application.change_sets.base import BaseValue
 from src.application.change_sets.candidate_architecture import CandidateArchitecture
 from src.application.change_sets.candidate_view import view_of
 from src.application.change_sets.change_set import ChangeSet
@@ -92,6 +93,19 @@ def test_an_adaptation_connects_removes_and_drops_a_parent_created_element_by_it
     edited = _record(_adaptation(), op="edit_entity", artifact_id=TEXT, field="name", value="Recognised Text")
     for spelled in (TEXT, _TEXT.reference):
         assert _record(edited, op="drop", artifact_id=spelled).changes.operations == (), spelled
+
+
+def test_a_connection_recorded_to_a_parent_created_id_before_it_was_read_so_is_still_taken_back() -> None:
+    """An adaptation recorded while ids were not resolved through the stack still names the id itself."""
+    stale = _adaptation(AddConnection(ConnectionAddress(READER, "archimate-serving", EXTRACTOR), {}))
+
+    by_ends = _record(stale, op="drop", source_entity=READER, connection_type="archimate-serving",
+                      target_entity=EXTRACTOR)
+    removed = _record(_adaptation(EditEntity(TEXT, "name", "Recognised", BaseValue("Extracted Text"))),
+                      op="drop", artifact_id=TEXT)
+
+    assert by_ends.changes.operations == ()
+    assert removed.changes.operations == ()
 
 
 def test_a_candidate_drops_what_it_creates_by_its_handle_as_by_its_id() -> None:
