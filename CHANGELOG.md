@@ -3,6 +3,92 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.12.0] — 2026-11-27
+
+**[Full detail → `changelog-assets/0.12.0-detail.md`](changelog-assets/0.12.0-detail.md)**
+
+### Added
+
+- **Diagrams are edited on their canvas.** ArchiMate diagrams open in an edit mode that arranges them by hand
+  with grid snap and alignment guides, and changes what they draw and the model behind them: create elements
+  and relations, nest, add another occurrence, change stacking order, and edit boxes. **Save** lists the model
+  changes and whether the layout changed before anything is written; Undo names each step. Taking an automatic
+  picture over keeps PlantUML's lines and routes only those a move touches. A hand-written diagram can be given
+  up for a generated one with **Lay out automatically…**. See
+  [Editing diagrams](docs/03-modeling/editing-diagrams.md) and the [canvas reference](docs/reference/diagram-canvas.md).
+- **Candidate architectures.** Alternatives held as operations over the live model, sketched on their own canvas
+  without a stored diagram: stack, compare, check overlaps, integrate with per-conflict actions, apply to the
+  model in one write, or apply as a target state beside the baseline and move it in, withdraw it, reject or
+  delete it later. Changed text is shown word by word, and a candidate can carry a short description of its
+  core idea. Served at `/api/candidates` and as MCP `candidate_*` tools. See
+  [Candidate architectures](docs/03-modeling/candidate-architectures.md).
+- **Stress analysis.** A document type that evaluates a naive architecture against stressors written as free
+  text, with optional perspectives (PESTLE, five forces, business model canvas, organisation and people), end
+  states, adaptations held as candidates, and a separate test set judged at the end. Residuality is
+  (Y−X)/n with a degrade counted as a half; the strict figure is shown beside it. See
+  [Stress analysis](docs/03-modeling/stress-analysis.md).
+- **Reading a diagram**: focus and reach, the reading lens kept in edit mode, an overview and a readable opening
+  view for large diagrams, and full-size canvases with the panel you work with docked beside them.
+- **Submitting enterprise changes** asks for an SSH passphrase or HTTPS token when a push needs one, keeps it in
+  memory only, and links to the platform's new-pull-request page (GitHub, GitLab, Azure DevOps).
+- **W387** reports a diagram whose generated header (palette, glyphs, styles) is stale.
+
+### Changed
+
+- The verifier reports what releases before 0.11.2 wrote into diagram frontmatter and now refuses (E301, E316);
+  `arch-repair upgrade` repairs it (see Upgrading).
+- Search keeps the keyword branch's first hit in each kind first when the vector branch is fused in.
+- Activity diagrams open a loop in its own lane, and a decision arm that leads back names where it goes.
+- The viewpoint diagram renders up to 400 elements (was 250). Saving an arrangement of a large diagram takes
+  seconds rather than minutes: the server no longer routes lines on a save, and a picture already drawn is not
+  drawn again.
+- **A canvas save no longer replaces a picture drawn by hand.** A diagram whose PlantUML body draws boxes,
+  elements or relations its generated picture would not can still be arranged; adding or removing what it draws
+  is refused with the reason until **Lay out automatically…** gives the hand-drawn picture up.
+- Replacing a whole diagram (`PUT /api/diagrams/{id}`, `artifact_replace_diagram`) accepts the `revision` it read;
+  a stale replacement is refused with `409`, and the canvas offers to reload.
+- Entity writes no longer add empty attribute rows; existing empty rows are dropped on the entity's next edit.
+- A connected MCP bridge exits with a clear message when the backend it serves restarts.
+
+### Fixed
+
+- Install and update: a plain `uv sync` runs the backend; `arch-update` keeps local edits to
+  `arch-workspace.yaml` and `config/settings.yaml`; restore reaches every target its checkpoint recorded and
+  refuses to discard later work; a GUI built after the backend started is served without a restart; new
+  repositories start clean; `arch-assurance init`/`unlock` report what the backend actually did.
+- The engagement and enterprise tiers gain shipped document types they lack on upgrade, never overwriting.
+- A push that fetches over HTTPS and pushes over SSH asks for the SSH credential it needs.
+- A backend started from a git worktree serves that worktree, not the main checkout.
+- Editing a connection over REST no longer stores a short-form `source-entity` (W041).
+
+### Security
+
+- `arch-backend` listens only on the loopback unless the deployment opts in with `--allow-remote-without-auth`
+  (the Docker image does).
+- Requests must name a loopback host or one listed in `ARCH_ALLOWED_HOSTS` (`421` otherwise), on the GUI, REST
+  and MCP; this replaces `ARCH_MCP_ALLOWED_HOSTS`, still honoured when the new variable is unset.
+- Unlocking or locking the assurance store, and supplying a git credential, are accepted only from the backend's
+  own machine.
+- No location a client names is read or written outside the configured repositories.
+- Every response carries a content security policy and `nosniff`, `X-Frame-Options: DENY` and
+  `Referrer-Policy: same-origin`.
+- Assurance content with an unknown TLP level is treated as `TLP:RED`.
+
+### Upgrading
+
+- **From 0.11.x**, follow [Updating from 0.11.x](docs/reference/upgrade-guide.md#updating-from-011x): mark an
+  edited `arch-workspace.yaml` or `config/settings.yaml` `--skip-worktree`, update, then clear the flag.
+- **Run `arch-repair upgrade --commit`** on every repository. Format 7 repairs diagram frontmatter written before
+  0.11.2 (E301, E316) and short-form connection sources (W041); where several relations fit a drawing, the dry
+  run names them and leaves the choice to you.
+- **Docker behind a VPN address or a proxy**: set `ARCH_ALLOWED_HOSTS`, or every request is refused with `421`.
+  A `settings.yaml` mounted over the image's must keep `backend.allow_remote_without_auth: true`.
+- **Restart or reconnect MCP clients** after the update to pick up the new tools.
+- **From 0.11.2 or earlier**: the risk register no longer returns `risk_score` (removed in 0.11.4).
+- `arch-repair upgrade --restore` refuses to discard work done after the upgrade; add `--discard-later-work`.
+- The default guidance cache (`~/.config/arch-repo/guidance-cache`) is no longer checkpointed or restored; set
+  `deployment.guidance_cache_root` to give an installation its own.
+
 ## [0.11.5] — 2026-11-20
 
 **[Full detail → `changelog-assets/0.11.5-detail.md`](changelog-assets/0.11.5-detail.md)**
@@ -1419,6 +1505,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.12.0]: https://github.com/mbauer83/architectonic/compare/v0.11.5...v0.12.0
 [0.11.5]: https://github.com/mbauer83/architectonic/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/mbauer83/architectonic/compare/v0.11.3...v0.11.4
 [0.11.3]: https://github.com/mbauer83/architectonic/compare/v0.11.2...v0.11.3
