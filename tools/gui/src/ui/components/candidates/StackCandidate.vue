@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * *New candidate on top…* on a candidate's page: the button, and in its place while open, the form that
- * names the new candidate and states its core idea. The candidate is created stacked on this one through *candidates*; the page is
- * told its id, to open it.
+ * *New candidate on top…* on a candidate's page: the button, and in its place while open, the form that names the
+ * new candidate and states its core idea. The candidate is created stacked on this one through *candidates*; the
+ * page is told its id, to open it.
  */
 import { ref } from 'vue'
 import { DESCRIPTION_LIMIT } from '../../../domain/schemas/candidates'

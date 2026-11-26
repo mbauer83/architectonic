@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * Integrating adaptations (06·7, plan §3): the analysis's adaptations that stack on the naive architecture
- * chosen (those offered for integration first), each ticked by its name and its core idea, integrated into a new
- * candidate through the server's one operation for it. The conflict cards are the candidates' own (`IntegrationCards`); here each party also says
- * what it answers in the analysis — its adaptation row, end states and stressors, each a link to its row.
+ * Integrating adaptations (06·7, plan §3): the analysis's adaptations that stack on the naive architecture chosen
+ * (those offered for integration first), each ticked by its name and its core idea, integrated into a new candidate
+ * through the server's one operation for it. The conflict cards are the candidates' own (`IntegrationCards`); here
+ * each party also says what it answers in the analysis — its adaptation row, end states and stressors, each a link
+ * to its row.
  */
 import { computed, inject, watch } from 'vue'
 import type { WorkspaceTab } from '../../../domain/stressAnalysis/analysisProgress'

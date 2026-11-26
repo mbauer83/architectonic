@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * Integrating chosen candidates into a new one (06·7, S4), wherever candidates are chosen: the stress
- * workspace's Integration tab and the comparison page. Each conflict between them is a card naming its parties
- * and what each proposes — an edit read against the value beneath it (`FieldChangeView`) — with the actions it permits — take this side, drop this change, merge a value, or
- * raise a decision as a draft ADR — over the server's one operation for it (`useIntegration`). What a party
- * answers in an analysis is the caller's to show, in the `party` slot, and to name for a decision (*answersOf*).
- * No merge proves behaviour, and the cards say so.
+ * Integrating chosen candidates into a new one (06·7, S4), wherever candidates are chosen: the stress workspace's
+ * Integration tab and the comparison page. Each conflict between them is a card naming its parties and what each
+ * proposes, an edit read against the value beneath it (`FieldChangeView`), with the actions it permits — take this
+ * side, drop this change, merge a value, or raise a decision as a draft ADR — over the server's one operation for
+ * it (`useIntegration`). What a party answers in an analysis is the caller's to show, in the `party` slot, and to
+ * name for a decision (*answersOf*). No merge proves behaviour, and the cards say so.
  */
 import { computed, reactive } from 'vue'
 import type { IntegrationConflict } from '../../../domain/schemas/candidates'

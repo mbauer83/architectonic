@@ -90,11 +90,9 @@ const framed = ref<string | null>(null)
 const canvas = useWorkspaceCanvas(svc, analysis, candidates, edits, {
   tab, selected, endStateFocus, framed, judging: testSet.judging, judgedCandidate,
 })
-/**
- * The canvas as it may take the screen: what is worked beside it docks over it — the judge walk while an
- * architecture is judged, else the stressor in focus with its incidence. One at a time, so the two never cover
- * each other; the other stays in its tab, which the browser does not paint while the canvas has the screen.
- */
+// The canvas as it may take the screen: what is worked beside it docks over it — the judge walk while an
+// architecture is judged, else the stressor in focus with its incidence. One at a time, so the two never cover
+// each other; the other stays in its tab, which the browser does not paint while the canvas has the screen.
 const markedCanvas = ref<InstanceType<typeof MarkedCanvas> | null>(null)
 const canvasHost = computed(() => markedCanvas.value?.frameEl ?? null)
 const canvasFullscreen = computed(() => markedCanvas.value?.isFullscreen ?? false)

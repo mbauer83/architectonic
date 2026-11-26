@@ -19,6 +19,9 @@ const runs = computed(() => (change.value.kind === 'text' ? shownRuns(change.val
 const opened = ref(new Set<number>())
 watch(change, () => { opened.value = new Set() })
 const open = (index: number) => { opened.value = new Set([...opened.value, index]) }
+/** The space between a value replaced whole and its replacement, where there are both. */
+const separator = computed(() =>
+  (change.value.kind === 'replaced' && change.value.before !== null && change.value.after !== null ? ' ' : ''))
 const plural = (count: number): string => `${count} word${count === 1 ? '' : 's'}`
 </script>
 
@@ -65,11 +68,12 @@ const plural = (count: number): string => `${count} word${count === 1 ? '' : 's'
   ><del
     v-if="change.before !== null"
     class="fc-del"
-  ><span class="sr">removed: </span>{{ change.before }}</del>{{ change.before !== null && change.after !== null ? ' ' : ''
-  }}<ins
+  ><span class="sr">removed: </span>{{ change.before }}</del>{{ separator }}<ins
     v-if="change.after !== null"
     class="fc-ins"
-  ><span class="sr">added: </span>{{ change.after }}</ins><span v-if="change.before === null && change.after === null">—</span></span>
+  ><span class="sr">added: </span>{{ change.after }}</ins><span
+    v-if="change.before === null && change.after === null"
+  >—</span></span>
 </template>
 
 <style scoped>
@@ -78,8 +82,8 @@ const plural = (count: number): string => `${count} word${count === 1 ? '' : 's'
 .fc-ins { text-decoration: none; font-weight: 600; color: var(--ok-text); background: var(--ok-soft);
   box-shadow: inset 0 -1px 0 currentcolor; }
 .fc-fold {
-  font: inherit; font-size: 0.92em; color: var(--muted); background: var(--soft); border: 1px dashed var(--border-strong);
-  border-radius: 3px; padding: 0 4px; cursor: pointer;
+  font: inherit; font-size: 0.92em; color: var(--muted); background: var(--soft);
+  border: 1px dashed var(--border-strong); border-radius: 3px; padding: 0 4px; cursor: pointer;
 }
 .fc-fold:hover, .fc-fold:focus-visible { color: var(--text); border-style: solid; }
 .fc--keyed { display: flex; flex-direction: column; gap: 2px; }
