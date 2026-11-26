@@ -12876,7 +12876,7 @@ export interface components {
         };
         /** OperationStanding */
         OperationStanding: {
-            /** @description For an edit, what the model holds where it writes: what applying it replaces. */
+            /** @description For an edit whose place the model was read at, what it holds there: what applying it replaces. Present and null where the model holds nothing there; absent where the place was not read. */
             holds?: components["schemas"]["JsonValue"];
             operation: components["schemas"]["Fields"];
             /** Reason */

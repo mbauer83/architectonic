@@ -73,6 +73,12 @@ describe('appliedValues', () => {
       .toEqual({ before: 'text now', after: 'new text' })
   })
 
+  it('reads a held null as "the model holds nothing there", not as "not read"', () => {
+    const named = { ...edit, base: { value: 'old text' } }
+    expect(appliedValues({ operation: named, standing: 'applies', reason: '', holds: null }))
+      .toEqual({ before: null, after: 'new text' })
+  })
+
   it('falls back to the value the edit was written over where the model was not read', () => {
     const named = { ...edit, base: { value: 'old text' } }
     expect(appliedValues({ operation: named, standing: 'drifted', reason: '' })).toEqual({ before: 'old text', after: 'new text' })

@@ -136,8 +136,17 @@ class OperationStanding(NullsOmitted):
     standing: str
     reason: str
     holds: JsonValue = Field(
-        None, description="For an edit, what the model holds where it writes: what applying it replaces.",
+        None, description=(
+            "For an edit whose place the model was read at, what it holds there: what applying it replaces. "
+            "Present and null where the model holds nothing there; absent where the place was not read."
+        ),
     )
+
+    @model_serializer(mode="wrap")
+    def _keep_a_held_null(self, serialize):
+        # A held null ("the model holds nothing here") differs from no reading; omitting nulls must not merge them.
+        held = {"holds": self.holds} if "holds" in self.model_fields_set else {}
+        return {**serialize(self), **held}
 
 
 class CandidateStanding(NullsOmitted):

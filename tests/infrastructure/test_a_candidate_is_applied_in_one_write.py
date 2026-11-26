@@ -186,6 +186,29 @@ def test_the_dry_run_says_what_each_edit_replaces_and_nothing_for_a_create(root:
     assert [item.get("holds") for item in over_mcp] == [item.get("holds") for item in standing]
 
 
+def test_where_the_model_holds_nothing_both_transports_say_so(root: Path, client: TestClient) -> None:
+    """A property the entity does not hold is read, and found empty: `holds` is present and null over REST as
+    over MCP, distinct from an operation whose place was not read at all (no `holds`)."""
+    made = model.artifact_create_entity(
+        artifact_type="application-component", name="Ledger", properties={"owner": "Finance"},
+        dry_run=False, repo_root=str(root),
+    )
+    assert made["wrote"], made
+    ref = _candidate(
+        client,
+        {"op": "edit_entity", "artifact_id": str(made["artifact_id"]), "field": "properties", "key": "tier",
+         "value": "gold"},
+    )
+
+    over_rest = client.post(f"/api/change-sets/{ref}/apply", json={"dry_run": True}).json()["standing"]
+    over_mcp = mcp.change_set_apply(ref, dry_run=True, repo_root=str(root))["standing"]
+
+    for standing in (over_rest, over_mcp):
+        assert [("holds" in item, item.get("holds")) for item in standing] == [(True, None)]
+    read = client.get(f"/api/change-sets/{ref}/standing").json()["standing"]
+    assert [("holds" in item, item.get("holds")) for item in read] == [(True, None)]
+
+
 def test_both_transports_answer_an_apply_alike(root: Path, client: TestClient) -> None:
     ledger = _entity(root, "application-component", "Ledger")
     ref = _candidate(client, {"op": "edit_entity", "artifact_id": ledger, "field": "name", "value": "Ledger service"})
