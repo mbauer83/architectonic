@@ -300,7 +300,7 @@ const toggleIconPicker = (row: EntityRow): void => {
 .toggle-btn.expanded { transform: rotate(90deg); }
 .dd-glyph { display: flex; align-items: center; color: var(--text-2); flex-shrink: 0; }
 .entity-name,
-.related-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.related-name { min-width: 0; overflow-wrap: anywhere; }
 .entity-group {
   font-size: 10px; font-weight: 600; color: var(--info-text); background: var(--info-soft);
   border-radius: 999px; padding: 1px 7px; white-space: nowrap;
@@ -309,7 +309,7 @@ const toggleIconPicker = (row: EntityRow): void => {
 .entity-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .entity-label {
   font-size: 11px; font-weight: 500; color: var(--violet-text);
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0; overflow-wrap: anywhere;
 }
 .label-btn {
   width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; border: none; cursor: pointer;

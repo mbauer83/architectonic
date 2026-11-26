@@ -108,7 +108,7 @@ const walk = (event: KeyboardEvent) => {
 .connect { padding: 0 4px 2px; }
 .connect__heading {
   margin: 2px 2px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 .connect__list { max-height: 260px; overflow-y: auto; overscroll-behavior: contain; margin-top: 4px; }
 .connect__row {

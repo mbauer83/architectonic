@@ -259,13 +259,15 @@ onMounted(async () => {
 
 <style scoped>
 .page { padding: 16px 24px; }
-.page-hdr { display: flex; gap: 10px; align-items: center; }
-.page-hdr h1 { flex: 1; font-size: 20px; margin: 0; }
+.page-hdr { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.page-hdr h1 { flex: 1 0 auto; max-width: 100%; font-size: 20px; margin: 0; overflow-wrap: anywhere; }
 .back { color: var(--muted); text-decoration: none; font-size: 13px; }
 .meta {
   display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 8px 0; font-size: 12px; color: var(--muted);
 }
-.meta select { font: inherit; margin-left: 4px; max-width: 280px; }
+/* As wide as the longest name, so the one chosen is whole; never wider than the row. */
+.meta label { min-width: 0; max-width: 100%; }
+.meta select { font: inherit; margin-left: 4px; max-width: 100%; }
 .err { color: var(--danger-strong); font-size: 12.5px; }
 .hint { color: var(--muted); font-size: 12.5px; }
 .overlaps, .integrate { padding: 8px 10px; margin-bottom: 12px; font-size: 12.5px; }

@@ -69,7 +69,7 @@ const emit = defineEmits<{ include: [entity: EntityDisplayInfo] }>()
 .related-row { display: flex; align-items: center; gap: 6px; min-height: 22px; }
 .dd-glyph { display: inline-flex; align-items: center; flex-shrink: 0; }
 .related-name {
-  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1; min-width: 0; overflow-wrap: anywhere;
   font-size: 12px; color: var(--text-2);
 }
 .related-domain { font-size: 10px; color: var(--faint); }

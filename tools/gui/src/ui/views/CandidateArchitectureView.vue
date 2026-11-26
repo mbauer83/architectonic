@@ -153,50 +153,52 @@ onMounted(async () => {
         ← Candidate architectures
       </RouterLink>
       <h1>{{ summary?.name ?? candidateId }}</h1>
-      <StackCandidate
-        v-if="summary"
-        :candidates="candidates"
-        :candidate-id="candidateId"
-        :name="summary.name"
-        @stacked="stacked"
-      />
-      <RouterLink
-        v-if="summary"
-        class="btn btn-sm"
-        data-testid="compare-with"
-        :to="candidateCompareRoute([candidateId], diagramId)"
-      >
-        Compare with…
-      </RouterLink>
-      <PermittedButton
-        v-if="summary && applicable"
-        operation="changes_apply_candidate"
-        class="btn btn-sm"
-        data-testid="apply-to-model"
-        :disabled="apply.busy.value"
-        @click="apply.open(candidateId)"
-      >
-        Apply to the model…
-      </PermittedButton>
-      <PermittedButton
-        v-if="summary && applicable"
-        operation="changes_apply_candidate_as_target_state"
-        class="btn btn-sm"
-        data-testid="apply-as-target-state"
-        :disabled="target.busy.value"
-        @click="target.open('apply', candidateId)"
-      >
-        Apply as a target state…
-      </PermittedButton>
-      <button
-        v-if="summary"
-        type="button"
-        class="btn btn-sm"
-        data-testid="abandon-candidate"
-        @click="abandoning = true"
-      >
-        Abandon…
-      </button>
+      <div class="hdr-acts">
+        <StackCandidate
+          v-if="summary"
+          :candidates="candidates"
+          :candidate-id="candidateId"
+          :name="summary.name"
+          @stacked="stacked"
+        />
+        <RouterLink
+          v-if="summary"
+          class="btn btn-sm"
+          data-testid="compare-with"
+          :to="candidateCompareRoute([candidateId], diagramId)"
+        >
+          Compare with…
+        </RouterLink>
+        <PermittedButton
+          v-if="summary && applicable"
+          operation="changes_apply_candidate"
+          class="btn btn-sm"
+          data-testid="apply-to-model"
+          :disabled="apply.busy.value"
+          @click="apply.open(candidateId)"
+        >
+          Apply to the model…
+        </PermittedButton>
+        <PermittedButton
+          v-if="summary && applicable"
+          operation="changes_apply_candidate_as_target_state"
+          class="btn btn-sm"
+          data-testid="apply-as-target-state"
+          :disabled="target.busy.value"
+          @click="target.open('apply', candidateId)"
+        >
+          Apply as a target state…
+        </PermittedButton>
+        <button
+          v-if="summary"
+          type="button"
+          class="btn btn-sm"
+          data-testid="abandon-candidate"
+          @click="abandoning = true"
+        >
+          Abandon…
+        </button>
+      </div>
     </div>
     <AbandonCandidate
       v-if="summary && abandoning"
@@ -333,12 +335,19 @@ onMounted(async () => {
 
 <style scoped>
 .page { padding: 16px 24px; }
-.page-hdr { display: flex; gap: 10px; align-items: center; }
-.page-hdr h1 { flex: 1; font-size: 20px; margin: 0; }
+/* The title keeps its own width and the actions, together, wrap beneath it rather than squeeze it onto two lines. */
+.page-hdr { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.page-hdr h1 { flex: 1 0 auto; max-width: 100%; font-size: 20px; margin: 0; overflow-wrap: anywhere; }
+.hdr-acts { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; max-width: 100%; }
 .back { color: var(--muted); text-decoration: none; font-size: 13px; }
 .page-hdr a.btn { text-decoration: none; }
-.meta { display: flex; gap: 10px; align-items: center; margin: 8px 0 8px; font-size: 12px; color: var(--muted); }
-.meta select { font: inherit; margin-left: 4px; max-width: 320px; }
+.meta {
+  display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 8px 0 8px; font-size: 12px;
+  color: var(--muted);
+}
+/* As wide as the longest diagram name, so the one chosen is whole; never wider than the row. */
+.meta label { min-width: 0; max-width: 100%; }
+.meta select { font: inherit; margin-left: 4px; max-width: 100%; }
 .badge { background: var(--accent-soft); color: var(--accent-strong); border-radius: 3px; padding: 2px 8px; }
 .err { color: var(--danger-strong); font-size: 12.5px; }
 .hint { color: var(--muted); font-size: 12px; padding: 6px 10px; margin: 0; }

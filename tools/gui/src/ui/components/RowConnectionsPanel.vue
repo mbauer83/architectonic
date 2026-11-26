@@ -108,5 +108,5 @@ const emit = defineEmits<{
 .conn-entry--excluded:hover { background: var(--hover); color: var(--text); }
 .dir-arrow { color: var(--muted); flex-shrink: 0; }
 .col-empty { font-size: 11px; color: var(--faint); padding: 6px 8px; }
-.other-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.other-name { min-width: 0; overflow-wrap: anywhere; }
 </style>

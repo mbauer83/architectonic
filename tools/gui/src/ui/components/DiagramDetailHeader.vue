@@ -146,7 +146,7 @@ const laidOut = () => {
 <style scoped>
 .page-hdr { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .back { font-size: 13px; color: var(--muted); } .back:hover { color: var(--text-2); text-decoration: none; }
-.pg-title { font-size: 20px; font-weight: 700; flex: 1; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-title { font-size: 20px; font-weight: 700; flex: 1; margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .promote-btn {
   padding: 5px 16px; background: var(--warn-soft); border: 1px solid var(--warn-border); border-radius: 6px;
   font-size: 13px; font-weight: 500; color: var(--warn-text); text-decoration: none; flex-shrink: 0;

@@ -63,7 +63,7 @@ const emit = defineEmits<{ back: []; preview: []; save: [] }>()
 .back-link { font-size: 13px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0; }
 .back-link:hover { color: var(--text-2); }
 .hdr-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-.pg-title { font-size: 20px; font-weight: 700; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-title { font-size: 20px; font-weight: 700; margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .faded { color: var(--faint); font-weight: 400; }
 .type-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; background: var(--type-soft); color: var(--type-text); font-weight: 500; flex-shrink: 0; }
 .btn-preview { padding: 7px 12px; background: var(--soft); color: var(--accent-strong); border: 1px solid var(--accent-border); border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; }

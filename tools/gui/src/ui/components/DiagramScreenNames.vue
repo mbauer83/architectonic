@@ -57,8 +57,8 @@ const names = computed(() => {
 .screen-names { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
 /* Drawn on the paper, so in the paper's fixed colours in either theme. */
 .screen-name {
-  position: absolute; max-width: 220px; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis; padding: 1px 6px; border-radius: 4px; font-size: 11.5px;
+  position: absolute; width: max-content; max-width: 220px; text-align: center; overflow-wrap: anywhere;
+  padding: 1px 6px; border-radius: 4px; font-size: 11.5px;
   font-weight: 600; background: var(--paper-handle); color: var(--paper-ink); border: 1px solid var(--paper-rule);
 }
 .screen-name.above { transform: translate(-50%, calc(-100% - 4px)); }

@@ -237,13 +237,15 @@ const cardRows = (row: ChangeDifference) => {
 .role, .stack-of { display: block; font-size: 11.5px; color: var(--muted); }
 .reads {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   padding: 6px 10px;
   border-bottom: 1px solid var(--border);
   font-size: 12px;
 }
-.reads select { font-size: 12px; max-width: 260px; margin-left: 4px; }
+.reads label { min-width: 0; max-width: 100%; }
+.reads select { font-size: 12px; max-width: 100%; margin-left: 4px; }
 .empty { padding: 10px; font-size: 12.5px; color: var(--muted); }
 .tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .tbl th { text-align: left; font-size: 11px; text-transform: uppercase; color: var(--muted); padding: 4px 8px; }

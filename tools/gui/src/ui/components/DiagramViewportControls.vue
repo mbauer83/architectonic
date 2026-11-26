@@ -21,6 +21,7 @@
  */
 import { computed, ref } from 'vue'
 import { useCanvasHostKeys } from '../composables/useCanvasHostKeys'
+import { useElementSize } from '../composables/useElementSize'
 import { useEditingPreferences } from '../composables/useEditingPreferences'
 import { zoomInKeyName } from '../lib/keyboardScheme'
 import type { ViewportZoom } from './viewportZoom'
@@ -50,6 +51,12 @@ const controls = ref<HTMLElement | null>(null)
 const host = computed(() => controls.value?.parentElement ?? null)
 useCanvasHostKeys(host, () => props.zoom, () => props.edit ?? null)
 const hintText = computed(() => (props.isFullscreen ? `${props.hint} · Esc to exit` : props.hint))
+// The hint wraps rather than cut a word, so it can take more than one line; what sits above it in the bottom
+// corners (the zoom cluster here, the overview beside) rises with it, through the window's own property.
+const hintEl = ref<HTMLElement | null>(null)
+useElementSize(() => hintEl.value, () => {
+  host.value?.style.setProperty('--viewport-hint-height', `${hintEl.value?.offsetHeight ?? 0}px`)
+})
 const percent = computed(() => (props.zoom ? `${Math.round(props.zoom.scale.value * 100)}%` : ''))
 </script>
 
@@ -117,11 +124,11 @@ const percent = computed(() => (props.zoom ? `${Math.round(props.zoom.scale.valu
       ⊙
     </button>
   </div>
-  <!-- Ends in … where the window is narrower than the hint; the whole of it is on hover. -->
+  <!-- Wraps where the window is narrower than the hint: every word of it stays in view. -->
   <div
+    ref="hintEl"
     class="zoom-hint"
     data-testid="viewport-hint"
-    :title="hintText"
   >
     {{ hintText }}
   </div>
@@ -141,7 +148,7 @@ const percent = computed(() => (props.zoom ? `${Math.round(props.zoom.scale.valu
 .viewport-btn:hover { background: var(--surface); }
 /* The zoom cluster, bottom left: the overview has the bottom right. */
 .zoom-cluster {
-  position: absolute; left: 8px; bottom: 28px; z-index: 3; display: flex; align-items: center;
+  position: absolute; left: 8px; bottom: calc(var(--viewport-hint-height, 18px) + 10px); z-index: 3; display: flex; align-items: center;
   background: var(--overlay); border: 1px solid var(--border-strong); border-radius: 5px; color: var(--text-2);
 }
 .zoom-cluster button {
@@ -149,11 +156,11 @@ const percent = computed(() => (props.zoom ? `${Math.round(props.zoom.scale.valu
 }
 .zoom-cluster button:hover { background: var(--surface); }
 .zoom-cluster__percent { min-width: 40px; text-align: center; font-size: 11px; color: var(--muted); }
-/* Centred and never wider than the window, so a long hint keeps its start in view and ends in … */
+/* Centred and never wider than the window: a hint longer than the window wraps, so no word is cut. */
 .zoom-hint {
-  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
-  box-sizing: border-box; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis;
+  position: absolute; bottom: 6px; left: 8px; right: 8px; margin: 0 auto; width: fit-content;
+  box-sizing: border-box; text-align: center; overflow-wrap: anywhere;
   font-size: 11px; color: var(--muted); background: var(--overlay);
-  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+  padding: 2px 8px; border-radius: 4px;
 }
 </style>
