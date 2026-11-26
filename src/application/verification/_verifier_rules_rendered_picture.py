@@ -20,9 +20,9 @@ the picture away. This reads that picture before it goes, so the checks cost a p
   end, and like it are reported only of a picture drawn from a stated layout: GraphViz draws curves,
   which neither describes. Its soft rules — a jog, two decorations together — are advisory counts;
 * **W384** — a gap between two boxes too narrow for the lines the router lays along it, naming the
-  two boxes and how much wider the gap needs to be. A first layout is written down with its gaps
-  widened to fit; this reports a gap a later arrangement narrowed, or one the widening could not
-  settle. Only of a picture drawn from a stated layout, like W380–W382;
+  two boxes and how much wider the gap needs to be. A first layout is written down as PlantUML drew
+  it, keeping its lines; this reports a gap too narrow for the lines routed along it once something
+  moved. Only of a picture drawn from a stated layout, like W380–W382;
 * **W385** — a relation drawn outside the smallest box holding both its ends. The router keeps two
   members of a box inside it and leaves only where no route inside exists; this reports that, and a
   stated route that leaves;

@@ -9,8 +9,9 @@ a title band, into and out of nested boxes, many routes through one channel for 
 its part, a loop, two elements too close for a stub, an element walled in so no route reaches it, and
 a drag's quick pass over a moved element.
 
-`widening` pins the room a first layout makes: one scene's channels, how many lines run along each
-and how much wider each needs to be, and the scene widened.
+`kept` pins which lines a picture keeps as drawn once some of its shapes moved: one scene before and
+after a move, its lines, the keys of those nothing that moved touches, and each line carried onto the
+borders of its ends.
 
 `graph` pins the visibility graph itself for one scene: its segments, each stopping at the first
 obstacle, and every join once a search's terminals are joined to it. The routes rest on it, so the two
@@ -23,14 +24,13 @@ import math
 import random
 from collections.abc import Mapping, Sequence
 
-from src.domain.diagrams.layout.channels import channels
 from src.domain.diagrams.layout.geometry import Extent, Point
 from src.domain.diagrams.layout.layout_block import Port, Side
 from src.domain.diagrams.layout.routing.graph import EAST, SOUTH
+from src.domain.diagrams.layout.routing.kept import ShownLine, attached, kept_lines
 from src.domain.diagrams.layout.routing.router import route_all
 from src.domain.diagrams.layout.routing.scene import Connector, RoutedConnector, RoutingResult, RoutingScene
 from src.domain.diagrams.layout.routing.visibility import Visibility
-from src.domain.diagrams.layout.routing.widening import widened
 
 
 def _extent(extent: Extent) -> dict[str, float]:
@@ -192,38 +192,49 @@ def build_graph() -> dict[str, object]:
     }
 
 
-def widening_scene() -> tuple[RoutingScene, list[Connector]]:
-    """A box over two boxes side by side, all three in a fourth, 20 px apart, and lines between the
-    upper box's elements and the lower ones' that must run along those gaps."""
+def kept_scene() -> tuple[RoutingScene, RoutingScene, list[ShownLine]]:
+    """A picture before and after two moves, and its lines as drawn: one untouched; one whose end moved;
+    one the moved element now stands on; one across the label the element carried with it; one through
+    a box that grew holding neither of its ends; one into a member of that box that stayed put; and two
+    onto the box, by the side that stayed and by the side that moved."""
     elements = {
-        "a1": _box(40, 60, 100, 40), "a2": _box(240, 60, 100, 40), "a3": _box(500, 60, 100, 40),
-        "a4": _box(720, 60, 100, 40), "b1": _box(40, 260, 100, 40), "b2": _box(260, 260, 100, 40),
-        "c1": _box(480, 260, 100, 40), "c2": _box(720, 260, 100, 40),
+        "a": _box(0, 0, 100, 40), "b": _box(400, 0, 100, 40), "c": _box(0, 200, 100, 40),
+        "d": _box(400, 200, 100, 40), "mover": _box(200, 400, 100, 40), "member": _box(640, 40, 100, 40),
+        "stayer": _box(640, 140, 100, 40), "e": _box(560, 400, 100, 40), "f": _box(900, 400, 100, 40),
     }
-    boxes = {
-        "whole": _box(0, 0, 900, 360), "upper": _box(20, 20, 860, 120),
-        "left": _box(20, 160, 400, 180), "right": _box(440, 160, 440, 180),
-    }
-    text = {"band:whole": Extent(0, 0, 900, 16), "band:upper": Extent(20, 20, 880, 36)}
-    pairs = (
-        ("a1", "c2"), ("a2", "c1"), ("a4", "b1"), ("a3", "b2"), ("a1", "c1"), ("a4", "b2"), ("b1", "c2"), ("b2", "c1"),
+    band = Extent(650, 20, 730, 36)
+    before = RoutingScene(
+        elements=elements, boxes={"box": _box(620, 20, 140, 180)},
+        text={"band:box": band, "label:mover": Extent(200, 460, 300, 476)},
     )
-    connectors = [Connector(f"r{number}", source, target) for number, (source, target) in enumerate(pairs, 1)]
-    return RoutingScene(elements=elements, boxes=boxes, text=text), connectors
+    now = RoutingScene(
+        elements={**elements, "mover": _box(200, 190, 100, 40), "member": _box(640, 380, 100, 40)},
+        boxes={"box": _box(620, 20, 140, 420)}, text={"band:box": band, "label:mover": Extent(200, 250, 300, 266)},
+    )
+    lines = [
+        ShownLine("untouched", "a", "b", (Point(100, 20), Point(392, 20))),
+        ShownLine("end-moved", "a", "mover", (Point(50, 40), Point(50, 420), Point(200, 420))),
+        ShownLine("stood-on", "c", "d", (Point(100, 220), Point(400, 220))),
+        ShownLine("under-label", "c", "d", (Point(50, 240), Point(50, 258), Point(450, 258), Point(450, 240))),
+        ShownLine("through-box", "e", "f", (Point(660, 420), Point(900, 420))),
+        ShownLine("into-stayer", "b", "stayer", (Point(500, 20), Point(600, 20), Point(600, 160), Point(640, 160))),
+        ShownLine("onto-box-top", "a", "box", (Point(50, 0), Point(50, -10), Point(700, -10), Point(700, 20))),
+        ShownLine("onto-box-bottom", "d", "box", (Point(500, 220), Point(700, 220), Point(700, 200))),
+    ]
+    return before, now, lines
 
 
-def build_widening() -> dict[str, object]:
-    scene, connectors = widening_scene()
-    courses = [routed.course for routed in route_all(scene, connectors).routes.values()]
+def build_kept() -> dict[str, object]:
+    before, now, lines = kept_scene()
     return {
-        "scene": scene_as_json(scene), "connectors": [connector_as_json(connector) for connector in connectors],
-        "channels": [
-            {"low": channel.low, "high": channel.high, "across": channel.across, "start": channel.start,
-             "end": channel.end, "first": channel.first, "last": channel.last, "lines": channel.lines,
-             "run": channel.run, "wider_by": channel.wider_by}
-            for channel in channels(scene.boxes, [*scene.elements.values(), *scene.text.values()], courses)
-        ],
-        "widened": scene_as_json(widened(scene, connectors)),
+        "before": scene_as_json(before), "now": scene_as_json(now),
+        "lines": [{"key": line.key, "source": line.source, "target": line.target, "course": _points(line.course)}
+                  for line in lines],
+        "kept": sorted(kept_lines(before, now, lines)),
+        "attached": {
+            line.key: _points(attached(line.course, now.extent_of(line.source), now.extent_of(line.target)))
+            for line in lines
+        },
     }
 
 
@@ -310,7 +321,7 @@ def build_routing() -> dict[str, object]:
     quick = route_all(moved_scene, connectors, previous=previous.routes, changed=frozenset({"l2"}))
     return {
         "graph": build_graph(),
-        "widening": build_widening(),
+        "kept": build_kept(),
         "cases": cases,
         "quick": {
             "scene": scene_as_json(moved_scene), "connectors": [connector_as_json(one) for one in connectors],

@@ -81,18 +81,29 @@ beforeEach(() => {
 })
 
 describe('the changes a session would save', () => {
-  it('starts with none, and a first move counts the element moved, not the takeover as a change of its own',
+  it('starts with none, and a first move is one layout change, not the takeover as a change of its own',
     async () => {
       const editing = await opened()
       expect(editing.changes.value).toEqual([])
       move(editing, 'C', 30)
-      expect(editing.changes.value.map((change) => change.key)).toEqual(['C'])
+      expect(editing.changes.value).toEqual([{ key: 'layout', text: 'Layout changed' }])
     })
 
-  it('counts a line shaped by hand as a change of its own, even as the first step', async () => {
+  it('lists any amount of arranging as the one fact that the layout changed', async () => {
+    const editing = await opened()
+    move(editing, 'C', 30)
+    move(editing, 'A', 10)
+    editing.session.change((_drawn, now) => ({ ...now, routes: new Map(now.routes).set('r', { via: [[260, 120]] }) }))
+    expect(editing.changes.value).toEqual([{ key: 'layout', text: 'Layout changed' }])
+    expect(editing.undoStep.value).toBe('Arranged: the line A → C')
+    editing.session.undo()
+    expect(editing.undoStep.value).toBe('Arranged: A')
+  })
+
+  it('counts a line shaped by hand as a layout change, even as the first step', async () => {
     const editing = await opened()
     editing.session.change((_drawn, now) => ({ ...now, routes: new Map(now.routes).set('r', { via: [[260, 120]] }) }))
-    expect(editing.changes.value).toEqual([{ key: 'line:0', text: 'Arranged: the line A → C' }])
+    expect(editing.changes.value).toEqual([{ key: 'layout', text: 'Layout changed' }])
     expect(editing.undoStep.value).toBe('Arranged: the line A → C')
   })
 
@@ -243,7 +254,7 @@ describe('the names a session lists', () => {
     )
     await named.open()
     move(named, 'C', 30)
-    expect(named.changes.value.map((change) => change.text)).toEqual(['Arranged: Ledger'])
+    expect(named.changes.value.map((change) => change.text)).toEqual(['Layout changed'])
     expect(named.undoStep.value).toBe('Arranged: Ledger')
     named.remove(['A'])
     expect(named.undoStep.value).toBe('Removed from the diagram: Portal — it stays in the model')

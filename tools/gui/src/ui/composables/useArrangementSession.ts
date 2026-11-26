@@ -2,11 +2,12 @@
  * One diagram being arranged: its picture as PlantUML drew it, where everything is now, the routes the
  * router answered, and undo and redo. The diagram canvas arranges through it.
  *
- * Lines are PlantUML's own while the picture is arranged automatically; once it is arranged by hand
- * every line is the router's. Opening a picture runs the router's full pass, as the server does. From
- * then on a line keeps the course it was shown with until something moves it: each drag frame, and
- * each change, runs the quick pass over the lines of what moved and the lines whose stated route
- * changed, keeping the rest wherever they still go through nothing. A drop keeps the picture the drag
+ * Lines are PlantUML's own while the picture is arranged automatically. Arranged by hand, a line stays
+ * PlantUML's until something that moved touches it, and only those lines are the router's (`fullPass`,
+ * the rule the composer draws a stored layout by): taking a picture over routes nothing. From then on
+ * a line keeps the course it was shown with until something moves it: each drag frame, and each
+ * change, runs the quick pass over the lines touching what moved and the lines whose stated route
+ * changed, keeping the rest as they were shown (`routing/kept`). A drop keeps the picture the drag
  * showed — the last frame, routed at once if it was still pending — and undo and redo return to the
  * picture each state was shown with. A resized shape is drawn again by the composer (`drawShapes`),
  * one request at a time.
@@ -65,10 +66,7 @@ export interface PassTiming {
 /** Draws shapes again at a new size, in the order asked. */
 export type DrawShapes = (shapes: readonly ShapeToDraw[]) => Effect.Effect<readonly DrawingNode[], unknown>
 
-/** What arranging by hand starts from, given PlantUML's arrangement of the picture. */
-export type TakeOver = (geometry: LayoutGeometry, automatic: Arrangement) => Arrangement
-
-export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver) {
+export function useArrangementSession(drawShapes: DrawShapes) {
   /** The picture as PlantUML drew it; what is shown is that, less what the session removed. */
   const drawnPicture = shallowRef<LayoutGeometry | null>(null)
   const state = shallowRef<ArrangementState | null>(null)
@@ -191,7 +189,7 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
     if (!drawn || !where || !now || !was) return
     const moved = changed ?? changedShapes(was, where)
     const rerouted = restated(before.arrangement, now)
-    routes.value = timed('quick', () => quickPass(drawn, where, now.routes, shown.routes, moved, rerouted))
+    routes.value = timed('quick', () => quickPass(drawn, was, where, now.routes, shown.routes, moved, rerouted))
   }
 
   /**
@@ -227,18 +225,16 @@ export function useArrangementSession(drawShapes: DrawShapes, takeOver: TakeOver
 
   /**
    * A step is about to change the arrangement: the state before it is what undo returns to. On a
-   * picture still arranged automatically, the step takes it over first (`takeOver`), in the same step,
-   * so one undo returns to the automatic picture.
+   * picture still arranged automatically, the step takes it over first, in the same step, so one undo
+   * returns to the automatic picture. Taking over moves nothing and keeps every line PlantUML drew.
    */
   const begin = () => {
-    const drawn = geometry.value
     const now = state.value
-    if (!drawn || !now) return
+    if (!geometry.value || !now) return
     history.value = [...history.value, now]
     future.value = []
     if (now.byHand) return
-    const taken = takeOver(drawn, now.arrangement)
-    show({ ...now, arrangement: taken, byHand: true, takenOver: taken })
+    show({ ...now, byHand: true, takenOver: now.arrangement })
   }
 
   /** Make *next* the state, as one undoable step. */

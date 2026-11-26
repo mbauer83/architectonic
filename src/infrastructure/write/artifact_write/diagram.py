@@ -11,7 +11,7 @@ from src.application.modeling.artifact_write import (
 from src.application.modeling.artifact_write_layout import ensure_puml_layout
 from src.application.puml_directive_policy import assert_user_puml_safe
 from src.application.repo_path_helpers import diagram_source_confidential_root, diagram_source_root
-from src.application.repository_confinement import path_inside
+from src.application.repository_confinement import group_segments, path_inside
 from src.application.verification._issue_serialization import as_issue_dict
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_types import ENTITY_ID_RE, Issue, Severity
@@ -284,11 +284,7 @@ def create_diagram(
             ensure_confidential_gitignore(diag_src_root)
     else:
         diag_src_root = diagram_source_root(repo_root)
-    path = (
-        path_inside(repo_root, diag_src_root, f"{effective_id}.puml")
-        if group == UNCATEGORIZED
-        else path_inside(repo_root, diag_src_root, group, f"{effective_id}.puml")
-    )
+    path = path_inside(repo_root, diag_src_root, *group_segments(group), f"{effective_id}.puml")
 
     friendly_slug = extract_friendly_slug(effective_id)
     repo = get_repository(repo_root)

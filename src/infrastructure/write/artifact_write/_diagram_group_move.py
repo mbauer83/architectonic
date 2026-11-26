@@ -17,10 +17,9 @@ from src.application.repo_path_helpers import (
     diagram_source_root,
     rendered_path_for,
 )
-from src.application.repository_confinement import path_inside
+from src.application.repository_confinement import group_segments, path_inside
 from src.application.verification.artifact_verifier import ArtifactVerifier, VerificationResult
 from src.application.verification.artifact_verifier_types import Issue, Severity
-from src.domain.repository.groups import UNCATEGORIZED
 
 from .diagram_confidentiality import is_confidential_diagram_source
 from .diagram_render import render_diagram_outputs
@@ -63,9 +62,7 @@ def _resolve_diagram_group_path(
         else diagram_source_root(repo_root)
     )
     filename = f"{artifact_id}{current_path.suffix}"
-    if group == UNCATEGORIZED:
-        return path_inside(repo_root, diag_src_root, filename)
-    return path_inside(repo_root, diag_src_root, group, filename)
+    return path_inside(repo_root, diag_src_root, *group_segments(group), filename)
 
 
 def _relocate_rendered_outputs(old_diagram_path: Path, repo_root: Path) -> None:

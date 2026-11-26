@@ -8,7 +8,8 @@ shapes, and each has its check here:
 * **a location inside the repositories** (a file to verify, a file a write publishes): once resolved,
   it must lie inside one of them — `confine_within`;
 * **a name that becomes one component of a path** (a group's slug, a file name): it must be exactly
-  one component, so joining it to a directory cannot climb out of it — `require_segment`.
+  one component, so joining it to a directory cannot climb out of it — `require_segment`, and for the
+  group an artifact is filed under, `group_segments`.
 
 "Resolved" means `Path.resolve`: relative spellings, `..` and symlinks are followed before the
 comparison, so neither `repo/../elsewhere` nor a link inside a repository pointing out of it passes.
@@ -25,6 +26,8 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from pathlib import Path
+
+from src.domain.repository.groups import UNCATEGORIZED
 
 #: Exactly one path component: not empty, not `.` or `..`, and no separator, drive colon or NUL.
 #: A regular expression so that a request contract can declare it as the pattern of a field — it
@@ -88,6 +91,16 @@ def require_segment(value: str, *, what: str) -> str:
             f"{what} must be a single name, without '/', '\\', '..' or a drive or root: got {value!r}."
         )
     return value
+
+
+def group_segments(group: str) -> tuple[str, ...]:
+    """The directory an artifact of *group* is filed under, as path components: none for the
+    uncategorized, else the group's slug, refused unless it is exactly one name.
+
+    An empty group joined as a component vanishes from the path, filing the artifact where no group's
+    files are read; it is refused here rather than spelled away at each writer.
+    """
+    return () if group == UNCATEGORIZED else (require_segment(group, what="A group"),)
 
 
 def path_inside(root: Path, *parts: str | Path) -> Path:

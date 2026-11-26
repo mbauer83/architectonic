@@ -40,7 +40,7 @@ const geometry: LayoutGeometry = {
 let app: App | null = null
 
 const mounted = async (drafts?: ReadonlySet<string>, refused: readonly string[] = []) => {
-  const lab = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
+  const lab = useArrangementSession(() => Effect.succeed([]))
   lab.open(geometry)
   const shown = reactive({ breaches: true })
   const host = document.createElement('div')
@@ -146,7 +146,7 @@ describe('the diagram canvas', () => {
   })
 
   it('read only, picks what is pressed, moves nothing, and draws what it holds over the picture', async () => {
-    const lab = useArrangementSession(() => Effect.succeed([]), (_drawn, automatic) => automatic)
+    const lab = useArrangementSession(() => Effect.succeed([]))
     lab.open(geometry)
     const picked: string[] = []
     const host = document.createElement('div')
