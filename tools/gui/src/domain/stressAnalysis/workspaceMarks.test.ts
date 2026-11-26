@@ -15,6 +15,12 @@ describe('the workspace marks', () => {
     expect(marks.get('PRC@1712870400.0Rz5Ex')?.tag).toBe('hit by 2 of 2')
     expect(marks.get('SRV@1712870400.Uv9Wx9')?.tag).toBe('hit by 1 of 2')
   })
+
+  it('marks an element the naive creates by the id the picture draws it with', () => {
+    const chosen = new Map([['$ref:queue', 'APP@1795700000.PrmQueu.promotion-queue']])
+    const marks = hitMarks(new Map([['S1', ['$ref:queue', SERVICE]]]), chosen)
+    expect([...marks.keys()]).toEqual(['APP@1795700000.PrmQueu', 'SRV@1712870400.Uv9Wx9'])
+  })
 })
 
 describe('an element selected on the canvas', () => {

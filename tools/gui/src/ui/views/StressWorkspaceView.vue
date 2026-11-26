@@ -306,7 +306,7 @@ onMounted(async () => {
             :role="sketched.id === analysis.naiveId.value ? 'Naive architecture' : 'Adaptation'"
             :stack="stackLine(sketched.id, candidates.all.value)"
             :done-label="sketched.id === analysis.naiveId.value ? 'Done sketching · on to Stressors' : 'Done sketching'"
-            :changed="diffMarks(candidates.comparison.value?.diff ?? [])"
+            :changed="diffMarks(candidates.comparison.value)"
             @recorded="recorded"
             @done="doneSketching"
           />

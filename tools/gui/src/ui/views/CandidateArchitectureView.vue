@@ -61,7 +61,7 @@ const drawOn = (id: string) => {
 /** The element a row of the operations table is about, framed on the picture. */
 const framed = ref<string | null>(null)
 const marks = computed((): Marks => new Map([
-  ...diffMarks(candidates.comparison.value?.diff ?? []),
+  ...diffMarks(candidates.comparison.value),
   ...(framed.value ? framedMarks([framed.value], 'The row selected on the left') : new Map()),
 ]))
 /** A name the comparison does not give: the id as it is. */
@@ -309,7 +309,7 @@ onMounted(async () => {
           :candidate-id="summary.id"
           :name="summary.name"
           role="Candidate architecture"
-          :changed="diffMarks(candidates.comparison.value?.diff ?? [])"
+          :changed="diffMarks(candidates.comparison.value)"
           @recorded="recorded"
           @done="doneSketching"
         />

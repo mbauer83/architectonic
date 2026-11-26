@@ -57,7 +57,9 @@ describe('comparing candidate architectures', () => {
   })
 
   it('says on a mark which other candidates change the same element, and leaves the rest alone', () => {
-    const marks = diffMarks([changed('ENT@1.x.db'), changed('ENT@2.y.api', 'added')])
+    const marks = diffMarks({
+      diff: [changed('ENT@1.x.db'), changed('ENT@2.y.api', 'added')], view: { entities: [], connections: [] },
+    })
     const told = withOthers(marks, new Map([['ENT@1.x', ['b']]]), (id) => `${id} name`)
     expect(told.get('ENT@1.x')?.title).toContain('also changed in b name')
     expect(told.get('ENT@1.x')?.tag).toBe('~')

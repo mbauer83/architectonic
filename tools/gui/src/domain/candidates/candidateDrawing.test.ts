@@ -47,6 +47,17 @@ describe('a candidate drawn over its picture', () => {
     ])
   })
 
+  it('links a created element to one its operations name by the short id, as the picture draws that one', () => {
+    const view: ComposedView = {
+      entities: [{ ...entity('$ref:create:1', 'Promotion queue', { artifact_type: 'data-object' }), artifact_id: QUEUE }],
+      connections: [relation('$ref:create:1', 'archimate-serving', 'SRV@1712870400.Uv9Wx9')],
+    }
+    expect(drawnCommands(view, drawn).filter((one) => one.op === 'model.relation.create')).toEqual([{
+      op: 'model.relation.create', artifact_id: `${QUEUE}---${SERVICE}@@archimate-serving`, description: '',
+      src_multiplicity: '', tgt_multiplicity: '',
+    }])
+  })
+
   it('leaves a relation the model holds undrawn as it is, and one to an element not drawn', () => {
     const view: ComposedView = {
       entities: [entity(SERVICE, 'Repository Promotion Service'), entity(ACTOR, 'Architect')],

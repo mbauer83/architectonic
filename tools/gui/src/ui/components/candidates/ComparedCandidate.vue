@@ -34,7 +34,7 @@ const framed = ref<string | null>(null)
 /** The picture with this candidate drawn as it composes. */
 const drawing = useComposedDrawing(inject(modelServiceKey)!, () => props.reading.comparison.value)
 const marks = computed((): Marks => new Map([
-  ...withOthers(diffMarks(props.reading.comparison.value?.diff ?? []), props.others, props.nameOfSet),
+  ...withOthers(diffMarks(props.reading.comparison.value), props.others, props.nameOfSet),
   ...(framed.value ? framedMarks([framed.value], 'The row selected above') : new Map()),
 ]))
 /** A name the comparison does not give: the id as it is. */
