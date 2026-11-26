@@ -26,6 +26,11 @@ import ElementMarksLayer from './ElementMarksLayer.vue'
 const props = defineProps<{
   diagramId: string
   drawing: LayoutGeometry | null
+  /**
+   * The picture shown is the one served, standing in while the candidate is drawn as it composes
+   * (`useComposedDrawing`): it is said to be loading, and stepped back, until the composed one arrives.
+   */
+  composing?: boolean
   marks: Marks
   /** Elements outside what is being looked at, by stable id: drawn stepped back. */
   dimmed?: ReadonlySet<string>
@@ -83,6 +88,7 @@ defineExpose({
         v-if="drawing"
         ref="svgContainer"
         class="svg-wrap"
+        :class="{ composing }"
       >
         <DiagramCanvas
           :session="session"
@@ -105,6 +111,14 @@ defineExpose({
         {{ emptyText ?? 'No diagram to draw.' }}
       </p>
     </div>
+    <p
+      v-if="drawing && composing"
+      class="composing-note"
+      role="status"
+      data-testid="canvas-composing"
+    >
+      Loading the candidate's changes onto the picture…
+    </p>
     <DiagramViewportOverlays
       :window="panZoom"
       :picture="svgContainer"
@@ -125,5 +139,11 @@ defineExpose({
 /* Fullscreen overrides the clamped height, and the browser paints black behind what the element does not cover. */
 .workspace-canvas:fullscreen { width: 100vw; height: 100vh; max-height: none; border: none; border-radius: 0; }
 .svg-wrap :deep(svg) { display: block; max-width: none; }
+.svg-wrap.composing { opacity: 0.35; }
+.composing-note {
+  position: absolute; top: 12px; left: 12px; right: 12px; margin: 0; padding: 6px 10px; width: fit-content;
+  max-width: calc(100% - 24px); background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-2); font-size: 12.5px;
+}
 .no-img { padding: 60px 40px; text-align: center; color: var(--on-paper); font-size: 13px; }
 </style>

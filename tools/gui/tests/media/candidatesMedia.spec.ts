@@ -35,6 +35,13 @@ test('a candidate architecture and its operations', async ({ page }) => {
   await page.goto(`/candidates/${encodeURIComponent(candidate)}`, { waitUntil: 'load' })
   await expect(page.getByTestId('candidate-operations').locator('tr.oprow')).toHaveCount(3, { timeout: 20_000 })
   await expect(page.locator('.svg-wrap svg, [data-testid="candidate-canvas"]').first()).toBeVisible({ timeout: 20_000 })
+  // The figure's subject is the candidate drawn as it composes, which arrives after the picture it is drawn
+  // over: what it creates, the rename and the relation, with nothing still loading.
+  const canvas = page.getByTestId('workspace-canvas')
+  await expect(canvas.locator('g.lab-element[data-alias]', { hasText: 'Index Read Cache' })).toBeAttached({ timeout: 20_000 })
+  await expect(canvas.locator('g.lab-element[data-alias]', { hasText: 'Artifact Index Backing Store' })).toBeAttached()
+  await expect(canvas.locator('g.lab-line[data-relation]')).toHaveCount(1)
+  await expect(canvas.getByTestId('canvas-composing')).toHaveCount(0)
   await capture(page, 'candidate-page.png', provenance('a candidate architecture and its operations', [INDEX_STORE]))
   expect(problems, 'runtime problems while capturing candidate-page.png').toEqual([])
 })

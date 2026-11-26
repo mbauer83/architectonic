@@ -74,7 +74,7 @@ describe('useComposedDrawing', () => {
   it('draws what a candidate creates over the view generated from its scope', async () => {
     const server = fakeServer()
     const read = comparison(GENERATED)
-    const drawing = useComposedDrawing(server.svc, () => read)
+    const { drawing } = useComposedDrawing(server.svc, () => read)
     await settled()
     expect(server.previews.map((one) => one.id)).toEqual([CANDIDATE])
     expect(JSON.stringify(server.previews[0]?.composition)).toContain(CACHE)
@@ -84,7 +84,7 @@ describe('useComposedDrawing', () => {
   it('draws what a candidate creates where it reads over nothing the model holds yet', async () => {
     const server = fakeServer()
     const read = comparison(undefined)
-    const drawing = useComposedDrawing(server.svc, () => read)
+    const { drawing } = useComposedDrawing(server.svc, () => read)
     await settled()
     expect(server.previews.map((one) => one.id)).toEqual([CANDIDATE])
     expect(drawing.value?.elements.map((one) => one.key)).toContain(CACHE)
@@ -151,7 +151,7 @@ describe('useComposedDrawing', () => {
     } as unknown as ComposedDrawingAccess
     const stored = { ...GENERATED, artifact_id: DIAGRAM }
     const read = shallowRef(comparison(stored))
-    const drawing = useComposedDrawing(svc, () => read.value)
+    const { drawing } = useComposedDrawing(svc, () => read.value)
     await settled()
     read.value = comparison(stored)
     await settled()
@@ -161,13 +161,49 @@ describe('useComposedDrawing', () => {
     expect(drawing.value?.elements.map((one) => one.key)).toEqual([STORE, CACHE])
   })
 
+  it('says it is composing while the served picture stands in for one that renames, creates and relates', async () => {
+    // The served picture draws the store under its old name and nothing the candidate creates: until the
+    // composed picture arrives it is not the candidate, and a reader (or a capture) must be told so.
+    const server = fakeServer()
+    let arrive: (drawn: LayoutGeometry) => void = () => undefined
+    const slow = {
+      ...server.svc,
+      previewCandidatePicture: () => Effect.promise(() => new Promise<LayoutGeometry>((resolve) => { arrive = resolve })),
+    } as unknown as ComposedDrawingAccess
+    const read: CandidateComparison = {
+      ...comparison(GENERATED),
+      view: {
+        ...comparison(GENERATED).view,
+        connections: [{ source_entity: CACHE, connection_type: 'archimate-serving', target_entity: STORE, fields: {} }],
+      },
+    }
+    const { drawing, composing } = useComposedDrawing(slow, () => read)
+    await settled()
+    expect(drawing.value).toBe(GENERATED)
+    expect(composing.value).toBe(true)
+
+    arrive(picture(element('S', STORE), element('C', CACHE)))
+    await settled()
+    expect(composing.value).toBe(false)
+    expect(drawing.value?.elements.map((one) => one.key)).toEqual([STORE, CACHE])
+  })
+
+  it('is not composing once a candidate that changes nothing drawn is read', async () => {
+    const server = fakeServer()
+    const read: CandidateComparison = { ...comparison(GENERATED), view: { entities: [], connections: [] } }
+    const { drawing, composing } = useComposedDrawing(server.svc, () => read)
+    await settled()
+    expect(composing.value).toBe(false)
+    expect(drawing.value).toBe(GENERATED)
+  })
+
   it('leaves the served picture standing where the preview is refused', async () => {
     const server = fakeServer()
     const refusing = {
       ...server.svc, previewCandidatePicture: () => Effect.fail({ _tag: 'RepoError', message: 'no' }),
     } as unknown as ComposedDrawingAccess
     const read = comparison(GENERATED)
-    const drawing = useComposedDrawing(refusing, () => read)
+    const { drawing } = useComposedDrawing(refusing, () => read)
     await settled()
     expect(drawing.value).toBe(GENERATED)
   })

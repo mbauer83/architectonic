@@ -43,7 +43,7 @@ const candidateId = computed(() => String(route.params.artifactId))
 const chosenDiagram = computed(() => (typeof route.query.diagram === 'string' ? route.query.diagram : ''))
 const candidates = useCandidates(svc, { scopeDiagram: () => chosenDiagram.value })
 /** The picture with the candidate drawn as it composes, as its sketch draws it. */
-const drawing = useComposedDrawing(svc, () => candidates.comparison.value)
+const { drawing, composing } = useComposedDrawing(svc, () => candidates.comparison.value)
 /** The stored diagram the candidate is drawn on; empty where it is drawn as a generated view, or not at all. */
 const diagramId = computed(() => chosenDiagram.value || candidates.comparison.value?.drawing?.artifact_id || '')
 
@@ -317,6 +317,7 @@ onMounted(async () => {
           v-else
           :diagram-id="diagramId"
           :drawing="drawing"
+          :composing="composing"
           :marks="marks"
           hint="Select a row to frame its element, or an element to find its rows · Scroll to zoom · Drag to pan"
           empty-text="No diagram to draw: choose one above."

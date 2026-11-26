@@ -328,6 +328,7 @@ onMounted(async () => {
             ref="markedCanvas"
             :diagram-id="analysis.drawnOn.value"
             :drawing="canvas.drawing.value"
+            :composing="canvas.composing.value"
             :marks="canvas.marks.value"
             :hint="canvas.hint.value"
             :empty-text="canvas.emptyText.value"
