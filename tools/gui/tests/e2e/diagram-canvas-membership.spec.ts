@@ -48,6 +48,8 @@ test('creating and connecting a model element requires confirmation and can be d
   await expect(page.getByTestId('change-list')).toContainText(name)
   await expect(page.getByRole('button', {name:'Confirm and save'})).toBeVisible()
   await page.getByTestId('edit-discard').click()
+  // Discarding pending changes asks first.
+  await page.getByTestId('discard-confirm').click()
   await expect(added).toHaveCount(0)
   await expect(page.getByTestId('change-count')).toHaveText('No changes')
 })

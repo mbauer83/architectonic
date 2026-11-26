@@ -56,6 +56,13 @@ test('a population past the renderer ceiling says so, and says what to do instea
   // was passed to the display, so a viewpoint that had simply outgrown the renderer showed the bare
   // fallback title. Asserted on the prose rather than on any count, because which viewpoints are
   // over the ceiling is a fact about the model and changes as it grows.
+  //
+  // Which viewpoint is over the ceiling is also a fact about the model: none of the self-model's is,
+  // since the ceiling became 400. So the diagram call goes to the backend as an inline query over the
+  // whole model, which is over it; the refusal on screen is still the backend's own, in its envelope.
+  await page.route('**/api/viewpoints/execute-diagram', (route) => route.continue({
+    postData: JSON.stringify({ query: {} }),
+  }))
   await page.goto('/viewpoints/layered/diagram')
   await expect(page.locator('.exec-error-title')).toHaveText(/too large for diagram rendering/i, { timeout: 30_000 })
   await expect(page.locator('.exec-error-detail')).toHaveText(/table representation|narrow the scope/i)
