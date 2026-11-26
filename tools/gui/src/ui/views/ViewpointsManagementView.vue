@@ -55,7 +55,6 @@ const saveError = ref<string | null>(null)
 const draft = ref<ViewpointDefinitionDraft | null>(null)
 const originalDraft = ref<ViewpointDefinitionDraft | null>(null)
 const isCreating = ref(false)
-/** Saving creates a definition while one is being created, and replaces the one open otherwise. */
 const mayCreate = useCan('viewpoints_create_viewpoint')
 const maySave = useCan(() => (isCreating.value ? 'viewpoints_create_viewpoint' : 'viewpoints_replace_viewpoint'))
 const viewingTier = ref<ViewpointDefinitionEnvelope['tier'] | null>(null)
