@@ -176,7 +176,6 @@ def create_entity(
         notes=notes,
         display_section_id=display_section_id,
         display_content=display_content,
-        repo_root=repo_root,
     )
 
     if dry_run:

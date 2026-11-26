@@ -10,12 +10,12 @@ import { Effect } from 'effect'
 import DiagramAutoLayoutDialog from '../DiagramAutoLayoutDialog.vue'
 import { modelServiceKey } from '../../keys'
 import type { ModelService } from '../../../application/ModelService'
-import type { DiagramDetail } from '../../../domain'
+import { type DiagramDetail, NetworkError } from '../../../domain'
 
 const DETAIL = {
   artifact_id: 'ARC@1.a.goals', name: 'Goals', diagram_type: 'archimate-motivation', is_global: false,
   entity_ids_used: ['GOL@1.g'], connection_ids_used: ['GOL@1.g---OUT@2.o@@archimate-realization'],
-  extra: { 'manual-layout': true },
+  extra: { 'manual-layout': true }, revision: 'r-read', written_by_hand: 'it is manual-layout',
 } as unknown as DiagramDetail
 const WRITE = { artifact_id: 'ARC@1.a.goals', path: 'x', content: null, verification: null, warnings: [] }
 const PREVIEW = { puml: '', image: 'data:image/png;base64,AA==', warnings: [], derived_entities: null }
@@ -66,20 +66,25 @@ describe('laying a hand-written diagram out automatically', () => {
     expect(editDiagram).toHaveBeenCalledWith('ARC@1.a.goals', expect.objectContaining({
       diagram_type: 'archimate-motivation', name: 'Goals', entity_ids: ['GOL@1.g'],
       connection_ids: ['GOL@1.g---OUT@2.o@@archimate-realization'], manual_layout: false, dry_run: false,
+      base_revision: 'r-read',
     }))
     expect(laidOut).toHaveBeenCalledOnce()
   })
 
-  it('refuses to replace a body saved since the page read it, and writes nothing', async () => {
-    const editDiagram = vi.fn(() => Effect.succeed({ ...WRITE, wrote: true }))
-    const changed = { ...DETAIL, puml_source: '@startuml\n\' edited elsewhere\n@enduml' } as DiagramDetail
-    const { laidOut } = mounted({ editDiagram, getDiagram: () => Effect.succeed(changed) })
+  it('says a body saved since the page read it was not replaced, when the server refuses the revision', async () => {
+    const editDiagram = vi.fn(() => Effect.fail(new NetworkError({ status: 409, message: 'changed since it was read' })))
+    const { laidOut } = mounted({ editDiagram })
     await settle()
     confirm().click()
     await settle()
     expect(host.querySelector('[role="alert"]')?.textContent).toContain('changed since this page read it')
-    expect(editDiagram).not.toHaveBeenCalled()
     expect(laidOut).not.toHaveBeenCalled()
+  })
+
+  it('says why the body is written by hand', async () => {
+    mounted({})
+    await settle()
+    expect(host.querySelector('[data-testid="auto-layout-why"]')?.textContent).toContain('it is manual-layout')
   })
 
   it('says why when the write refuses, and reports nothing laid out', async () => {

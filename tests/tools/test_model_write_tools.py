@@ -83,7 +83,8 @@ def test_dry_run_entity_template_empty_attrs_without_schema(repo_root: Path) -> 
     assert "| (none) | (none) |" in content
 
 
-def test_dry_run_entity_template_scaffold_from_schema(repo_root: Path) -> None:
+def test_dry_run_entity_template_writes_no_empty_row_for_a_schema_attribute(repo_root: Path) -> None:
+    """An empty cell states nothing, so a schema attribute the entity does not state gets no row."""
     import json
 
     schema_dir = repo_root / ".arch-repo" / "schemata"
@@ -108,8 +109,9 @@ def test_dry_run_entity_template_scaffold_from_schema(repo_root: Path) -> None:
 
     content = str(result["content"])
 
-    assert "| Maturity | |" in content
-    assert "| Realizes | |" in content
+    assert "| Maturity |" not in content
+    assert "| Realizes |" not in content
+    assert "| (none) | (none) |" in content
 
 
 @when("I attempt to add a connection referencing unknown entities", target_fixture="conn_error")

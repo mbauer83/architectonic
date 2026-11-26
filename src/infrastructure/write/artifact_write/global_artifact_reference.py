@@ -97,7 +97,6 @@ def ensure_global_artifact_reference(
         notes=None,
         display_section_id="archimate",
         display_content=f"label: {global_artifact_name}\nalias: {alias}",
-        repo_root=engagement_root,
         extra_frontmatter={
             GLOBAL_ARTIFACT_ID: global_artifact_id,
             GLOBAL_ARTIFACT_KIND: global_artifact_type,

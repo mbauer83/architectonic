@@ -143,6 +143,9 @@ class DiagramLayoutGeometryResponse(NullsOmitted):
     relations: list[GeometryRelationContract]
     #: The stored layout, or null where PlantUML arranges the picture.
     layout: DiagramLayoutContract | None = None
+    #: The revision of the stored diagram this picture is drawn from, which a replacement made from it sends
+    #: back as `base_revision`. Absent for a picture no stored diagram is read for: a preview, a candidate's.
+    revision: str | None = None
 
 
 class DiagramLayoutPatchResponse(NullsOmitted):

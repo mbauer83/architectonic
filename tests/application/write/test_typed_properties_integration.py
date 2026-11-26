@@ -48,7 +48,6 @@ def _write_entity(
             "### archimate\n\n```yaml\ndomain: Motivation\n"
             "element-type: Requirement\nlabel: Test Entity\nalias: REQ_test\n```"
         ),
-        repo_root=path.parent,
     )
     path.write_text(content, encoding="utf-8")
     return content

@@ -84,6 +84,8 @@ export interface ElementDetailsEdit {
 }
 
 export type DiagramReplaceBody = DiagramWriteBody & {
+  /** The diagram's `revision` as read: a diagram changed since is refused (409) rather than written over. */
+  base_revision?: string
   /** false gives a hand-written body up: generated from the composition from then on, and arrangeable. */
   manual_layout?: boolean
   layout_patch?: LayoutPatch

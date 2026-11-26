@@ -56,7 +56,7 @@ def admin_create_entity(
         artifact_id=eid, artifact_type=artifact_type, name=name, version=version, status=status,
         last_updated=last_updated or modification_stamp(), keywords=keywords, summary=summary,
         properties=properties, notes=notes, display_section_id=display_section_id,
-        display_content=display_content, repo_root=repo_root,
+        display_content=display_content,
     )
 
     if dry_run:

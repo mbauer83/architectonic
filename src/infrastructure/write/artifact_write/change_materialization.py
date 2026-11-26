@@ -154,7 +154,6 @@ def _write_change(
         # file another way would be a second spelling of the artifact format.
         display_section_id="",
         display_content="",
-        repo_root=engagement_root,
         extra_frontmatter={
             # The *reference*, not what it stands for. A non-admin deployment holds no enterprise
             # content, so a change naming the enterprise artifact names something its own verifier

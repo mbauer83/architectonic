@@ -15,9 +15,7 @@ import type { ModelService } from '../../application/ModelService'
 import type { PictureContext } from '../../domain'
 import type { AuthoredGrouping } from '../../domain/authoredGrouping'
 import type { ArrangedLayout, StoredLayout } from '../../domain/layout/arrangementLayout'
-import {
-  arrangedBy, layoutOf, layoutPatchBetween, patchIsEmpty, shownRoutesOfMoved,
-} from '../../domain/layout/arrangementLayout'
+import { arrangedBy, layoutOf, shownRoutesOfMoved } from '../../domain/layout/arrangementLayout'
 import { type Arrangement, drawnArrangement, placedAt } from '../../domain/layout/canvasArrangement'
 import { linesRoutedAgain } from '../../domain/layout/canvasRouting'
 import type { Point } from '../../domain/layout/geometry'
@@ -26,10 +24,8 @@ import type { PendingChange } from '../../domain/layout/sessionChanges'
 import { addOccurrenceFor } from '../lib/diagramOccurrences'
 import { referenceOf, useSessionChanges } from './useSessionChanges'
 import type { DrawnMembership } from '../../domain/layout/diagramMembership'
-import { membershipOf } from '../../domain/layout/diagramMembership'
 import { canvasMembers, composeCanvas, withCommand, withoutDraft } from '../../domain/layout/canvasComposition'
 import type { CanvasCommand, GroupingIntent } from '../../ports/diagramWriteBodies'
-import type { LayoutPatch } from '../../ports/DiagramLayoutRepository'
 import { stableEntityId } from '../../domain/artifactId'
 import { type Restack, restacked } from '../../domain/layout/stacking'
 import type { LayoutGeometry } from '../../domain/schemas/diagramLayoutGeometry'
@@ -37,6 +33,7 @@ import type { ReadingLens } from '../../domain/readingLens'
 import type { ArrangementState } from './useArrangementSession'
 import { useArrangementSession } from './useArrangementSession'
 import { type PictureSource, savedInto } from './pictureSource'
+import { useDiagramSave } from './useDiagramSave'
 
 export type { PendingChange }
 
@@ -64,8 +61,9 @@ export function useDiagramEditing(
   const saved = shallowRef<ArrangementState | null>(null)
   const savedMembers = shallowRef<DrawnMembership | null>(null)
   const loading = ref(false)
-  const saving = ref(false)
   const error = ref<string | null>(null)
+  /** The revision of the diagram as read (`revision`), which a save sends back; arranging does not move it. */
+  let revision: string | undefined
 
   const savedState = (geometry: LayoutGeometry, layout: StoredLayout | null): ArrangementState =>
     layout ? { arrangement: arrangedBy(geometry, layout), byHand: true }
@@ -74,6 +72,7 @@ export function useDiagramEditing(
   /** Read the picture as stored and start from it; *carried* is an arrangement to keep, as a save does. */
   const reopen = async (carried: ArrangedLayout | null = null): Promise<void> => {
     const geometry = await Effect.runPromise(source.read(lens()))
+    revision = geometry.revision
     const layout = geometry.layout && (geometry.layout.elements || geometry.layout.boxes || geometry.layout.z)
       ? geometry.layout : null
     stored.value = layout
@@ -134,71 +133,10 @@ export function useDiagramEditing(
       .flatMap((one) => (one.key === undefined ? [] : [one.key])) ?? [])
   }
 
-  const diagramId = (): string => savedInto(source)
-
-  /**
-   * Write what the diagram holds less what was removed, through the diagram write, and read the picture
-   * it draws now, keeping the arrangement of everything still on it.
-   */
-  const writeMembership = async (removed: ReadonlySet<string>, layoutPatch: LayoutPatch): Promise<void> => {
-    const drawn = savedMembers.value
-    if (!drawn) throw new Error('The diagram has not been read; reload the page.')
-    const state = session.state.value
-    if (!state) return
-    const { write } = composeCanvas(drawn, state, removed)
-    const written = await Effect.runPromise(svc.editDiagram(diagramId(), {
-      ...write, ...(state.commands?.length ? { commands: state.commands } : {}),
-      layout_patch: layoutPatch,
-      dry_run: false,
-    }))
-    if (!written.wrote) {
-      throw new Error(`The diagram was not written: ${written.warnings.join(' ') || 'it was refused'}`)
-    }
-    // Regrouped or with boxes edited, the groupings are the server's to identify: read back what it wrote.
-    savedMembers.value = state.regroupings?.length || state.groupings
-      ? membershipOf(await Effect.runPromise(svc.getDiagram(diagramId()))) : write
-    await reopen()
-    onMembershipSaved()
-  }
-
-  /** Write what the session changed. Stays in edit mode; what was saved is the new starting point. */
-  const save = async (): Promise<boolean> => {
-    const geometry = session.geometry.value
-    const now = session.state.value
-    if (!geometry || !now) return false
-    const removed = removedIds()
-    if (patchIsEmpty(layoutPatchBetween(stored.value ?? {}, wanted())) && changes.value.length === 0) return true
-    saving.value = true
-    error.value = null
-    try {
-      const patch = layoutPatchBetween(stored.value ?? {}, wanted())
-      // One write when what the diagram holds changes: membership and layout together, so the stored
-      // layout always matches the body that write generates (D12).
-      if (removed.size > 0 || now.additions?.size || now.commands?.length || now.overlays?.length
-        || now.regroupings?.length || now.occurrences?.length || now.drawnRelations?.length || now.groupings) {
-        await writeMembership(removed, patch)
-        return true
-      }
-      if (patchIsEmpty(patch)) {
-        saved.value = session.state.value
-        return true
-      }
-      const result = await Effect.runPromise(svc.patchLayout(diagramId(), patch, false))
-      if (result.errors.length > 0) {
-        error.value = result.errors.join(' ')
-        return false
-      }
-      const layout = result.layout.elements || result.layout.boxes || result.layout.z ? result.layout : null
-      stored.value = layout
-      saved.value = session.state.value
-      return true
-    } catch (failure) {
-      error.value = failure instanceof Error ? failure.message : String(failure)
-      return false
-    } finally {
-      saving.value = false
-    }
-  }
+  const { saving, stale, save } = useDiagramSave({
+    svc, session, diagramId: () => savedInto(source), saved, stored, savedMembers, changes, wanted, removedIds,
+    revisionRead: () => revision, reopen: () => reopen(), onMembershipSaved, error,
+  })
 
   /** Back to the last save, with nothing to undo. */
   const discard = () => {
@@ -372,7 +310,9 @@ export function useDiagramEditing(
   }
 
   return {
-    add, propose, session, changes, undoStep, redoStep, nameOf, loading, saving, error, open, save, discard,
+    add, propose, session, changes, undoStep, redoStep, nameOf, loading, saving, error, stale, open, save, discard,
+    /** Read the diagram as it is now, leaving what this session had not saved. */
+    reload: (): Promise<boolean> => { stale.value = false; return open() },
     returnToAutomatic, remove, restack, nest, addOccurrence, discardDraft, drawRelation, restate,
     /** The boxes the diagram states, as last read or saved. */
     statedGroupings: (): readonly AuthoredGrouping[] => savedMembers.value?.authored_groupings ?? [],

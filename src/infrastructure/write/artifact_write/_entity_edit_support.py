@@ -214,5 +214,4 @@ def render_entity(
         notes=merged.notes,
         display_section_id=parsed.display_section_id,
         display_content=display_content,
-        repo_root=repo_root,
     )

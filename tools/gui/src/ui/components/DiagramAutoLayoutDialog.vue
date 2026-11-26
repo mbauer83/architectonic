@@ -9,8 +9,8 @@
  * membership the diagram states.
  */
 import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Effect, Exit } from 'effect'
-import type { DiagramDetail } from '../../domain'
+import { Cause, Effect, Exit, Option } from 'effect'
+import { type DiagramDetail, NetworkError } from '../../domain'
 import { membershipOf } from '../../domain/layout/diagramMembership'
 import type { DiagramComposition } from '../../ports/diagramWriteBodies'
 import { modelServiceKey } from '../keys'
@@ -56,26 +56,18 @@ onMounted(async () => {
 onBeforeUnmount(() => { if (currentUrl.value) URL.revokeObjectURL(currentUrl.value) })
 
 /**
- * Whether the diagram is still the one this page read: a body saved since — from its editor, or by another
- * session — would be replaced unseen, so the write is refused and the reader told to look first.
+ * The write carries the revision this page read: a body saved since — from its editor, or by another
+ * session — would be replaced unseen, so the server refuses it (409) and the reader is told to look first.
  */
-const unchanged = async (): Promise<boolean> => {
-  const exit = await Effect.runPromiseExit(svc.getDiagram(props.detail.artifact_id))
-  return Exit.isSuccess(exit) && exit.value.puml_source === props.detail.puml_source
-}
+const STALE = 'The diagram changed since this page read it, so laying it out now would replace a body you '
+  + 'have not seen. Reload the page to see it, then lay it out.'
 
 const confirm = async () => {
   if (!composition.value) return
   writing.value = true
   failed.value = ''
-  if (!await unchanged()) {
-    writing.value = false
-    failed.value = 'The diagram changed since this page read it, so laying it out now would replace a body you '
-      + 'have not seen. Reload the page to see it, then lay it out.'
-    return
-  }
   const exit = await Effect.runPromiseExit(svc.editDiagram(props.detail.artifact_id, {
-    ...composition.value, manual_layout: false, dry_run: false,
+    ...composition.value, base_revision: props.detail.revision, manual_layout: false, dry_run: false,
   }))
   writing.value = false
   Exit.match(exit, {
@@ -83,7 +75,11 @@ const confirm = async () => {
       if (result.wrote) emit('laid-out')
       else failed.value = result.warnings.join(' ') || 'The diagram was not written.'
     },
-    onFailure: (cause) => { failed.value = String(cause) },
+    onFailure: (cause) => {
+      const failure = Cause.failureOption(cause)
+      const conflict = Option.isSome(failure) && failure.value instanceof NetworkError && failure.value.status === 409
+      failed.value = conflict ? STALE : String(cause)
+    },
   })
 }
 </script>
@@ -110,6 +106,13 @@ const confirm = async () => {
         This diagram's picture is written by hand, so it cannot be arranged on the canvas. Laid out
         automatically, the picture is generated from what the diagram draws, and you arrange it by hand
         from there.
+      </p>
+      <p
+        v-if="detail.written_by_hand"
+        class="auto__lead"
+        data-testid="auto-layout-why"
+      >
+        Written by hand because {{ detail.written_by_hand }}. Laying it out automatically does not keep that.
       </p>
       <div class="auto__pair">
         <figure>

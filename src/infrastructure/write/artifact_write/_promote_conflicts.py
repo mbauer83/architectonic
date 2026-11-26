@@ -153,7 +153,6 @@ def apply_merge(
         notes=merged_fields.get("notes", parsed.notes),
         display_section_id=parsed.display_section_id,
         display_content=parsed.display_content,
-        repo_root=ent_root,
     )
     backups.append((ent_path, ent_path.read_bytes()))
     ent_path.write_text(content, encoding="utf-8")

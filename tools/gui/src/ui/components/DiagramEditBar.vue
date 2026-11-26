@@ -27,6 +27,8 @@ const saving = computed(() => editing.value.saving.value)
 const leaving = computed(() => props.edit.leaving.value)
 const discarding = computed(() => props.edit.discarding.value)
 const error = computed(() => editing.value.error.value)
+/** The save was refused because the diagram changed since it was read: offer to read it again. */
+const stale = computed(() => editing.value.stale.value)
 const boxes = useCanvasBoxes(props.edit.editing)
 const permit = useCommandPermission(DIAGRAM_OPERATIONS)
 const toAutomatic = computed(() => permit.value('bar.return-to-automatic'))
@@ -182,6 +184,16 @@ const count = usePulse(
       class="err"
       role="alert"
     >{{ error }}</span>
+    <button
+      v-if="stale"
+      type="button"
+      class="btn btn-sm"
+      data-testid="edit-reload"
+      title="Read the diagram as it is now; what this session has not saved is left"
+      @click="editing.reload()"
+    >
+      Reload
+    </button>
     <EditBarQuestion
       v-if="leaving"
       label="Leaving edit mode"
