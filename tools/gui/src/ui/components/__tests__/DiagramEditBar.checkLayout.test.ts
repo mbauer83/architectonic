@@ -4,7 +4,7 @@
  * breaches and asks for none; on, it shows how many there are beside it and names each in its tooltip.
  * And what the bar says of the session (01·6): Undo names its step, and the count names the model's share.
  */
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed, createApp, h, nextTick, ref, type App } from 'vue'
 import type { Breach } from '../../../domain/layout/canvasBreaches'
 import type { DiagramEditMode } from '../../composables/useDiagramEditMode'
@@ -26,8 +26,9 @@ interface Change { readonly key: string; readonly text: string; readonly model?:
 
 const mounted = (
   breaches: readonly Breach[], changes: readonly Change[] = [], undoStep: string | null = null,
-  stated: readonly AuthoredGrouping[] = [], groupings?: readonly AuthoredGrouping[],
+  stated: readonly AuthoredGrouping[] = [], groupings?: readonly AuthoredGrouping[], stale = false,
 ) => {
+  const reload = vi.fn(() => Promise.resolve(true))
   let asked = 0
   const checking = ref(false)
   const session = {
@@ -41,7 +42,8 @@ const mounted = (
     session,
     editing: {
       session, statedGroupings: () => stated, restate: () => Promise.resolve(true), reference: () => null,
-      changes: ref(changes), saving: ref(false), error: ref(null),
+      changes: ref(changes), saving: ref(false), error: ref(stale ? 'The diagram changed since it was read.' : null),
+      stale: ref(stale), reload,
       undoStep: ref(undoStep), redoStep: ref(null),
       returnToAutomatic: () => undefined, discard: () => undefined, save: () => Promise.resolve(true),
     },
@@ -57,7 +59,7 @@ const mounted = (
   const host = document.createElement('div')
   app = createApp({ render: () => h(DiagramEditBar, { edit }) })
   app.mount(host)
-  return { host, edit, asked: () => asked }
+  return { host, edit, asked: () => asked, reload }
 }
 
 describe('check layout', () => {
@@ -136,5 +138,15 @@ describe('the boxes the bar offers back', () => {
     expect(offered([front], [{ ...front, label: 'Back office' }])).toBe(true)
     expect(offered([front], [front, { label: 'Review', 'entity-ids': ['APP@2.b'] }])).toBe(true)
     expect(offered([front], [])).toBe(true)
+  })
+})
+
+describe('a save refused because the diagram changed since it was read', () => {
+  it('offers Reload beside the reason, and only then', () => {
+    expect(mounted([]).host.querySelector('[data-testid="edit-reload"]')).toBeNull()
+    const { host, reload } = mounted([], [], null, [], undefined, true)
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain('changed since it was read')
+    ;(host.querySelector('[data-testid="edit-reload"]') as HTMLButtonElement).click()
+    expect(reload).toHaveBeenCalledOnce()
   })
 })
