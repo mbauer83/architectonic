@@ -368,6 +368,16 @@ class DiagramTypeModule(Protocol):
         ...
 
     @property
+    def arranges_on_canvas(self) -> bool:
+        """Whether a diagram of this type is arranged on the canvas: its layout written by the layout and
+        arrange operations, and edited on its own page in the GUI.
+
+        The first piece of a per-type canvas profile. The layout writes refuse a diagram whose type says
+        False, naming the types that say True, and the GUI offers the canvas only where it says True.
+        """
+        ...
+
+    @property
     def draws_occurrences(self) -> bool:
         """Whether a diagram of this type may draw one element more than once and label each drawing on its own.
 

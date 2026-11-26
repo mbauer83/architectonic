@@ -21,6 +21,7 @@ from pathlib import Path
 from src.application.modeling.diagram_layout_statement import DeclaresElementKinds
 from src.application.repo_path_helpers import resolve_diagram_source_path
 from src.application.verification.artifact_verifier import ArtifactVerifier
+from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, Layout, layout_as_written, read_layout
 from src.domain.diagrams.layout.layout_checks import DiagramIdentities, pruned_to
 from src.domain.diagrams.layout.layout_patch import patched, read_layout_patch
@@ -83,12 +84,23 @@ def matched_to(
 
 
 def stored_diagram(repo_root: Path, verifier: ArtifactVerifier, artifact_id: str) -> ParsedDiagram:
-    """The diagram *artifact_id* as its file holds it. Raises ValueError where there is none."""
+    """The diagram *artifact_id* as its file holds it, to be arranged. Raises ValueError where there is none,
+    and where its type is not arranged on the canvas (`arranges_on_canvas`), naming the types that are."""
     find = verifier.registry.find_file_by_id if verifier.registry is not None else None
     diagram_path = resolve_diagram_source_path(repo_root, artifact_id, find)
     if diagram_path is None:
         raise ValueError(f"Diagram '{artifact_id}' not found")
-    return parse_diagram_file(diagram_path)
+    parsed = parse_diagram_file(diagram_path)
+    catalog = verifier.runtime_catalogs.diagram_types
+    stated = diagram_type_of(parsed.frontmatter)
+    kind = catalog.find_diagram_type(stated)
+    if kind is None or not kind.arranges_on_canvas:
+        arranging = sorted(key for key, module in catalog.all_diagram_types().items() if module.arranges_on_canvas)
+        raise ValueError(
+            f"Diagram '{artifact_id}' is a {stated} diagram, which is not arranged on the canvas; "
+            f"the types that are: {', '.join(arranging)}."
+        )
+    return parsed
 
 
 def arranged_by(

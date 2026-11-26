@@ -11,7 +11,7 @@ import { typeCan } from '../../../domain/diagramTypeCapabilities'
 import { diagramsHostingCandidates, useDiagramTypeCapabilities } from '../useDiagramTypeCapabilities'
 
 const kind = (key: string, hosts: boolean, again = hosts): DiagramTypeSummary => ({
-  key, label: key, description: '', hosts_candidates: hosts, draws_occurrences: again,
+  key, label: key, description: '', hosts_candidates: hosts, draws_occurrences: again, arranges_on_canvas: again,
 })
 const TYPES = [kind('archimate-layered', true), kind('c4-container', false), kind('own-sketch', true, false)]
 

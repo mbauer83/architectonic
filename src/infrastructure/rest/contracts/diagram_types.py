@@ -39,6 +39,10 @@ class DiagramTypeSummary(Closed):
         description="Whether a diagram of this type may draw an element more than once and label each "
         "drawing on its own.",
     )
+    arranges_on_canvas: bool = Field(
+        description="Whether a diagram of this type is arranged on the canvas; the layout writes refuse "
+        "a diagram whose type says false.",
+    )
 
 
 class MappingSourceSpecResponse(Closed):

@@ -19,6 +19,11 @@ class _ConfiguredArchimateDiagramType(_ConfiguredOntologyDiagramType):
         return True
 
     @property
+    def arranges_on_canvas(self) -> bool:
+        """An ArchiMate view is arranged on the canvas: its layout is read from PlantUML's picture and kept."""
+        return True
+
+    @property
     def draws_occurrences(self) -> bool:
         """An ArchiMate view may draw an element again, and label any drawing on its own."""
         return True

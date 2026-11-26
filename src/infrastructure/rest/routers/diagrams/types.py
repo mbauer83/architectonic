@@ -37,6 +37,7 @@ def list_diagram_types(catalogs: RuntimeCatalogs = Depends(runtime_catalogs_depe
             "description": kind.ui_config.description,
             "hosts_candidates": kind.hosts_candidates,
             "draws_occurrences": kind.draws_occurrences,
+            "arranges_on_canvas": kind.arranges_on_canvas,
         }
         for key, kind in sorted(catalogs.diagram_types.all_diagram_types().items())
         if key not in store_projected

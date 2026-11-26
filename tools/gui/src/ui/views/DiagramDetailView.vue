@@ -20,6 +20,7 @@ import DiagramDisplayOptionsPanel from '../components/DiagramDisplayOptionsPanel
 import { useDiagramReadingLens } from '../composables/useDiagramReadingLens'
 import { useFittedPanZoom } from '../composables/useFittedPanZoom'
 import { useFullscreen } from '../composables/useFullscreen'
+import { useDiagramTypeCapabilities } from '../composables/useDiagramTypeCapabilities'
 import DiagramViewportOverlays from '../components/DiagramViewportOverlays.vue'
 import { useDiagramSvgSelection } from '../composables/useDiagramSvgSelection'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
@@ -57,6 +58,9 @@ const reading = useDiagramReadingLens({
 const { lens, svgHtml } = reading
 
 const detail = computed(() => contextQuery.data.value?.diagram ?? null)
+const typeCan = useDiagramTypeCapabilities(svc)
+/** Whether this diagram's type is arranged on the canvas, as the diagram-type catalogue says. */
+const arranges = computed(() => typeCan(detail.value?.diagram_type, 'arranges_on_canvas'))
 const c4Nav = computed<C4Navigation | null>(() => c4NavigationOf(contextQuery.data.value?.type_extras))
 const drilldownByEntityId = computed(() => buildDrilldownByEntityId(c4Nav.value))
 const diagramEntities = computed(() =>
@@ -177,8 +181,8 @@ const executeDelete = () => {
       :edit-path="editPath"
       :is-global-diagram="isGlobalDiagram"
       :lens="lens"
-      :edits-on-canvas="editsOnCanvas(detail)"
-      :lays-out-automatically="offersAutomaticLayout(detail)"
+      :edits-on-canvas="editsOnCanvas(detail, arranges)"
+      :lays-out-automatically="offersAutomaticLayout(detail, arranges)"
       :editing="editing"
       @sync="syncPanel?.requestSync()"
       @delete="deletePanel?.requestDelete()"
@@ -309,7 +313,7 @@ const executeDelete = () => {
               :marks="editing ? edit.marks.value : reader.marks.value"
               :reading="reader.marks.value"
               :boxes="reader.boxes.value"
-              :edit="!editing && editsOnCanvas(detail) ? edit.enter : null"
+              :edit="!editing && editsOnCanvas(detail, arranges) ? edit.enter : null"
               :is-fullscreen="fullscreen.isFullscreen.value"
               :can-fullscreen="fullscreen.isSupported"
               :hint="viewportHint(editing)"

@@ -9024,6 +9024,11 @@ export interface components {
          *     authored, so offering it here would offer a "create" that has no meaning.
          */
         DiagramTypeSummary: {
+            /**
+             * Arranges On Canvas
+             * @description Whether a diagram of this type is arranged on the canvas; the layout writes refuse a diagram whose type says false.
+             */
+            arranges_on_canvas: boolean;
             /** Description */
             description: string;
             /**
