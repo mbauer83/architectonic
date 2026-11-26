@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test'
 import type { APIRequestContext, Page } from '@playwright/test'
 
 /**
+ * @verifies REQ@1795548363.8FZbiLJ  stress an architecture against its environment
+ *
  * The stress-analysis workspace, driven as an analyst drives it: starting an analysis and defining its naive
  * architecture straight away on its own canvas,
  * a stressor written, grouped and ticked on the canvas, an end state in focus, and a test set held out

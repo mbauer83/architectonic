@@ -124,6 +124,7 @@ def test_a_different_draw_over_a_held_test_set_is_refused(client: TestClient) ->
     assert "already holds a test set" in refused.json()["detail"]["message"]
 
 
+@pytest.mark.verifies("REQ@1795548363.8FZbiLJ")
 def test_verdicts_written_as_rows_read_back_as_residuality_on_every_surface(client: TestClient) -> None:
     document, naive = _start(client, 0)
     candidate = client.post("/api/change-sets", json={"record": {"name": "Adapted", "parent": naive}}).json()

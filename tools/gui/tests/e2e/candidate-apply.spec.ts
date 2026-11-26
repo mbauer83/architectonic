@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 
 /**
+ * @verifies REQ@1795548363.kNlXgAA  compare and apply alternative architectures
+ *
  * *Apply to the model…* on a candidate's page: the dry run first, read as what would be written, then
  * the confirmation, which asks the server to apply for real and closes once the candidate is integrated.
  *

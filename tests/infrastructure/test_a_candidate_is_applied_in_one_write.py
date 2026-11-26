@@ -96,6 +96,7 @@ def _state(client: TestClient, ref: str) -> str:
     return client.get(f"/api/change-sets/{ref}").json()["record"]["state"]
 
 
+@pytest.mark.verifies("REQ@1795548363.kNlXgAA")
 def test_a_create_an_edit_a_connection_and_a_removal_land_in_one_write(
     root: Path, client: TestClient, commits: list[Path],
 ) -> None:

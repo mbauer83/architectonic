@@ -1,4 +1,6 @@
 /**
+ * @verifies REQ@1795678685.0iGUiHR  edit a diagram on its canvas
+ *
  * The diagram page's window and edit canvas by pointer aids and by keyboard (sketch 01·1–01·3, 02·1, 02·9;
  * Q7, Q8): the zoom cluster and its keys, no double-click reset, E to edit, alignment guides while a shape
  * is dragged and gone after the drop, Tab through the shapes with a focus ring, the leave choice walked

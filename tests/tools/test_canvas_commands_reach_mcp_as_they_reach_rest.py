@@ -215,6 +215,7 @@ _CARRIERS = {"replace": ("diagrams_replace_diagram", "artifact_replace_diagram")
              "patch": ("diagrams_patch_diagram_layout", "artifact_arrange_diagram")}
 
 
+@pytest.mark.verifies("REQ@1795678685.0iGUiHR")
 @pytest.mark.parametrize("command", _writing("diagram"))
 def test_a_diagram_command_writes_the_same_over_mcp_as_over_rest(
     command: dict[str, Any], sides: tuple[RenderedModel, RenderedModel, TestClient],
