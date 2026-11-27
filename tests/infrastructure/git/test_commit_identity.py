@@ -4,8 +4,6 @@ import os
 import subprocess
 from pathlib import Path
 
-import pytest
-
 from src.infrastructure.git.git_work_commits import commit_engagement_work
 
 
@@ -49,33 +47,22 @@ def test_commit_succeeds_without_git_config_using_service_fallback(
     )
 
 
-def test_request_author_is_distinct_from_service_committer(
+def test_the_process_environment_does_not_author_the_commit(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
+    """A `GIT_AUTHOR_*` in the server's environment does not displace the configured identity."""
     repo = _repo_without_git_config(tmp_path, monkeypatch)
     monkeypatch.setenv("ARCH_GIT_AUTHOR_NAME", "Arch Service")
     monkeypatch.setenv("ARCH_GIT_AUTHOR_EMAIL", "service@example.invalid")
+    monkeypatch.setenv("GIT_AUTHOR_NAME", "Someone Else")
+    monkeypatch.setenv("GIT_AUTHOR_EMAIL", "someone@example.invalid")
 
-    commit_engagement_work(
-        repo,
-        "save",
-        author_name="Ada Architect",
-        author_email="ada@example.invalid",
-    )
+    commit_engagement_work(repo, "save")
 
     assert _git(repo, "show", "-s", "--format=%an|%ae|%cn|%ce") == (
-        "Ada Architect|ada@example.invalid|Arch Service|service@example.invalid"
+        "Arch Service|service@example.invalid|Arch Service|service@example.invalid"
     )
-
-
-def test_incomplete_request_author_is_rejected(tmp_path: Path, monkeypatch) -> None:
-    repo = _repo_without_git_config(tmp_path, monkeypatch)
-
-    with pytest.raises(ValueError, match="supplied together"):
-        commit_engagement_work(repo, "save", author_name="Ada Architect")
-
-    assert not (repo / ".git" / "refs" / "heads" / "master").exists()
 
 
 def test_commit_does_not_mutate_process_identity_environment(

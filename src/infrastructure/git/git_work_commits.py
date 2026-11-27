@@ -1,4 +1,4 @@
-"""Recording a repository's own work: staging it, committing it under the right identity, pushing it.
+"""Recording a repository's own work: staging it, committing it under the server's identity, pushing it.
 
 Both tiers are here on purpose. The engagement and enterprise commits differ only in which paths they
 stage and which message they carry, and splitting them by tier would put one copy of the
@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from src.config.git_identity import optional_git_author
 from src.infrastructure.git._git_command import (
     STAGE_ALL_BUT_RUNTIME_STATE,
     commit_with_identity,
@@ -32,9 +31,6 @@ logger = logging.getLogger(__name__)
 def commit_enterprise_work(
     enterprise_root: Path,
     message: str,
-    *,
-    author_name: str | None = None,
-    author_email: str | None = None,
 ) -> str:
     """Stage and commit all changes in the enterprise repo. Returns the new commit hash.
 
@@ -43,18 +39,13 @@ def commit_enterprise_work(
     """
     from src.infrastructure.write.save_commit_verification import assert_repository_verifies  # noqa: PLC0415
 
-    author = optional_git_author(author_name, author_email)
     if not has_uncommitted_changes(enterprise_root):
         raise ValueError("No changes to save in the enterprise repository")
     assert_repository_verifies(enterprise_root)
     rc, _, stderr = run_repo_git(enterprise_root, *STAGE_ALL_BUT_RUNTIME_STATE)
     if rc != 0:
         raise RuntimeError(f"Failed to stage enterprise changes: {stderr}")
-    rc, _, stderr = commit_with_identity(
-        enterprise_root,
-        message,
-        author=author,
-    )
+    rc, _, stderr = commit_with_identity(enterprise_root, message)
     if rc != 0:
         raise RuntimeError(f"Failed to commit enterprise changes: {stderr}")
     commit = current_commit(enterprise_root) or ""
@@ -67,9 +58,6 @@ def commit_enterprise_work(
 def commit_engagement_work(
     engagement_root: Path,
     message: str,
-    *,
-    author_name: str | None = None,
-    author_email: str | None = None,
 ) -> str:
     """Stage and commit all changes in the engagement repo. Returns the commit hash.
 
@@ -78,18 +66,13 @@ def commit_engagement_work(
     """
     from src.infrastructure.write.save_commit_verification import assert_repository_verifies  # noqa: PLC0415
 
-    author = optional_git_author(author_name, author_email)
     if not has_uncommitted_changes(engagement_root):
         raise ValueError("No changes to save in the engagement repository")
     assert_repository_verifies(engagement_root)
     rc, _, stderr = run_repo_git(engagement_root, *STAGE_ALL_BUT_RUNTIME_STATE)
     if rc != 0:
         raise RuntimeError(f"Failed to stage engagement changes: {stderr}")
-    rc, _, stderr = commit_with_identity(
-        engagement_root,
-        message,
-        author=author,
-    )
+    rc, _, stderr = commit_with_identity(engagement_root, message)
     if rc != 0:
         raise RuntimeError(f"Failed to commit engagement changes: {stderr}")
     commit = current_commit(engagement_root) or ""
@@ -108,7 +91,7 @@ def commit_format_upgrade(repo_root: Path, message: str) -> str:
     rc, _, stderr = run_repo_git(repo_root, *STAGE_ALL_BUT_RUNTIME_STATE)
     if rc != 0:
         raise RuntimeError(f"Failed to stage the format upgrade: {stderr}")
-    rc, _, stderr = commit_with_identity(repo_root, message, author=None)
+    rc, _, stderr = commit_with_identity(repo_root, message)
     if rc != 0:
         raise RuntimeError(f"Failed to commit the format upgrade: {stderr}")
     commit = current_commit(repo_root) or ""
@@ -129,8 +112,6 @@ def save_engagement_work(
     message: str,
     *,
     push: bool,
-    author_name: str | None = None,
-    author_email: str | None = None,
 ) -> str:
     """Commit the engagement repository's changes and, when asked, push them. Returns the commit.
 
@@ -143,9 +124,7 @@ def save_engagement_work(
     if push and not has_uncommitted_changes(engagement_root) and commits_ahead_of_upstream(engagement_root):
         push_engagement(engagement_root)
         return current_commit(engagement_root) or ""
-    commit = commit_engagement_work(
-        engagement_root, message, author_name=author_name, author_email=author_email
-    )
+    commit = commit_engagement_work(engagement_root, message)
     if push:
         push_engagement(engagement_root)
     return commit

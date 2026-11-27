@@ -36,8 +36,6 @@ def artifact_save_changes(
     message: str,
     target: str = "engagement",
     push: bool = True,
-    author_name: str | None = None,
-    author_email: str | None = None,
 ) -> dict[str, object]:
     """Commit all accumulated architecture changes to the repository.
 
@@ -46,6 +44,7 @@ def artifact_save_changes(
     artifact_submit_for_review to push it for team review).
     push=True (default) pushes the engagement repo after committing; has no
     effect for the enterprise target.
+    The commit is authored by the identity the server is configured with.
     """
     from src.infrastructure.git import enterprise_branch_lifecycle, git_work_commits
     from src.infrastructure.rest.routers.state import maybe_engagement_root, maybe_enterprise_root
@@ -58,13 +57,7 @@ def artifact_save_changes(
             eng_root = maybe_engagement_root()
             if eng_root is None:
                 return {"ok": False, "error": "Engagement repository is not initialised"}
-            commit = git_work_commits.save_engagement_work(
-                eng_root,
-                message,
-                push=push,
-                author_name=author_name,
-                author_email=author_email,
-            )
+            commit = git_work_commits.save_engagement_work(eng_root, message, push=push)
             return {
                 "ok": True,
                 "target": "engagement",
@@ -77,12 +70,7 @@ def artifact_save_changes(
             if ent_root is None:
                 return {"ok": False, "error": "Enterprise repository is not configured"}
             enterprise_branch_lifecycle.ensure_working_branch(ent_root)
-            commit = git_work_commits.commit_enterprise_work(
-                ent_root,
-                message,
-                author_name=author_name,
-                author_email=author_email,
-            )
+            commit = git_work_commits.commit_enterprise_work(ent_root, message)
             return {
                 "ok": True,
                 "target": "enterprise",
@@ -212,8 +200,7 @@ def register(mcp: MCPServer) -> None:
             "pass push=false to commit locally only). "
             "target='enterprise' commits changes to the enterprise working branch "
             "(use artifact_submit_for_review to push it for team review). "
-            "Optional author_name and author_email set the commit author; the configured "
-            "service identity remains the committer."
+            "The commit is authored and committed by the identity the server is configured with."
         ),
         annotations=OPEN_WORLD_WRITE,
         structured_output=True,

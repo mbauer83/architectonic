@@ -27,7 +27,7 @@ import os
 from collections.abc import Mapping
 from pathlib import Path
 
-from src.config.git_identity import GitIdentity, load_service_git_identity
+from src.config.git_identity import load_service_git_identity
 from src.domain.repository.repo_layout import RUNTIME_STATE
 from src.infrastructure.mutation_adapters import run_git
 
@@ -138,25 +138,24 @@ def run_repo_git_untrimmed(repo: Path, *args: str, timeout: float = GIT_TIMEOUT)
     return result.returncode, result.stdout, result.stderr.strip()
 
 
-def commit_with_identity(repo: Path, message: str, *, author: GitIdentity | None) -> tuple[int, str, str]:
-    """Commit staged changes, committed by the service identity and authored by `author` where given.
+def commit_with_identity(repo: Path, message: str) -> tuple[int, str, str]:
+    """Commit staged changes, authored and committed by the service identity the server is configured with.
 
-    The service identity is set both as `-c user.*` and in the environment: the config flags decide
-    what git records, the environment variables decide what it reports back, and a caller reading a
-    commit's author needs the two to agree.
+    Authorship is the server's to establish, never a caller's to assert: a request that could name an
+    author could record its commit under anyone's name. When a principal exists it becomes the author
+    and the service identity stays the committer; until then both are the service identity.
+
+    The identity is set both as `-c user.*` and in the environment: the config flags decide what git
+    records, the environment variables decide what it reports back, and the process environment must
+    not override either with a `GIT_AUTHOR_*` of its own.
     """
     service = load_service_git_identity()
     env = {
+        "GIT_AUTHOR_NAME": service.name,
+        "GIT_AUTHOR_EMAIL": service.email,
         "GIT_COMMITTER_NAME": service.name,
         "GIT_COMMITTER_EMAIL": service.email,
     }
-    if author is not None:
-        env.update(
-            {
-                "GIT_AUTHOR_NAME": author.name,
-                "GIT_AUTHOR_EMAIL": author.email,
-            }
-        )
     return run_repo_git(
         repo,
         "-c",

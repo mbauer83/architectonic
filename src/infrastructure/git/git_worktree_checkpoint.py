@@ -82,7 +82,7 @@ def checkpoint_worktree(repo: Path) -> WorktreeCheckpoint:
     rc, _, stderr = run_repo_git(repo, *STAGE_ALL_BUT_RUNTIME_STATE)
     if rc != 0:
         raise RuntimeError(f"Failed to stage enterprise worktree for checkpoint: {stderr}")
-    rc, _, stderr = commit_with_identity(repo, "promotion checkpoint (transient)", author=None)
+    rc, _, stderr = commit_with_identity(repo, "promotion checkpoint (transient)")
     if rc != 0:
         raise RuntimeError(f"Failed to create promotion checkpoint commit: {stderr}")
     checkpoint = current_commit(repo)

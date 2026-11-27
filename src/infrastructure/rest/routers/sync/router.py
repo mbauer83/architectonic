@@ -21,7 +21,7 @@ import logging
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 from src.infrastructure.git.credential_refusal import GitCredentialsRequired
 from src.infrastructure.git.review_link import review_url_for
@@ -46,10 +46,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=[TAG_SYNC])
 
 class SaveBody(BaseModel):
+    """What a save asks for. Who authored the commit is not the client's to say: the server commits
+    under its configured identity, so a body naming an author is refused rather than ignored."""
+
+    model_config = ConfigDict(extra="forbid")
+
     message: str
     push: bool = True
-    author_name: str | None = None
-    author_email: str | None = None
 
 
 class WithdrawBody(BaseModel):
@@ -118,13 +121,7 @@ async def save_engagement(body: SaveBody) -> dict:
         raise HTTPException(400, "Engagement repository is not configured")
 
     def _save_and_push() -> str:
-        return git_work_commits.save_engagement_work(
-            eng_root,
-            body.message,
-            push=body.push,
-            author_name=body.author_name,
-            author_email=body.author_email,
-        )
+        return git_work_commits.save_engagement_work(eng_root, body.message, push=body.push)
 
     try:
         commit = await s.authorized_write_async(
@@ -165,12 +162,7 @@ async def save_enterprise(body: SaveBody) -> dict:
     def _branch_and_commit() -> str:
         # One write lease for the whole transaction: working branch + commit + state.
         enterprise_branch_lifecycle.ensure_working_branch(ent_root)
-        return git_work_commits.commit_enterprise_work(
-            ent_root,
-            body.message,
-            author_name=body.author_name,
-            author_email=body.author_email,
-        )
+        return git_work_commits.commit_enterprise_work(ent_root, body.message)
 
     try:
         commit = await s.authorized_write_async(

@@ -14223,12 +14223,12 @@ export interface components {
             based_on?: components["schemas"]["LayoutRouteContract"];
             value?: components["schemas"]["LayoutRouteContract"];
         };
-        /** SaveBody */
+        /**
+         * SaveBody
+         * @description What a save asks for. Who authored the commit is not the client's to say: the server commits
+         *     under its configured identity, so a body naming an author is refused rather than ignored.
+         */
         SaveBody: {
-            /** Author Email */
-            author_email?: string | null;
-            /** Author Name */
-            author_name?: string | null;
             /** Message */
             message: string;
             /**
