@@ -31,10 +31,8 @@ const admittedTypeSet = computed(() => new Set(admittedTypes.value))
 const picked = ref<Record<string, string>>({})
 const prose = ref('')
 
-const chipText = (entry: PurposeEntry): string => {
-  const id = referencedId(entry)
-  return id === undefined ? String(entry) : (picked.value[id] ?? props.names[id] ?? id)
-}
+const chipText = (entry: PurposeEntry): string =>
+  typeof entry === 'string' ? entry : (picked.value[entry.ref] ?? props.names[entry.ref] ?? entry.ref)
 const addProse = () => {
   emit('update:modelValue', withEntry(props.modelValue, prose.value))
   prose.value = ''
