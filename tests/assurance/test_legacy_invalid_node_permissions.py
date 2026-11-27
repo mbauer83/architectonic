@@ -193,7 +193,6 @@ class TestFactorAssessment:
             "factor": "occurrence",
             "value": "possible",
             "justification": "judged against the facts",
-            "author": "analyst",
             "basis_digest": "basis-1",
         }
 

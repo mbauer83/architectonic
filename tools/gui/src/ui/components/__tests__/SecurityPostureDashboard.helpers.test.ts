@@ -43,7 +43,6 @@ describe('vex form validation', () => {
     canonical_vulnerability_id: 'VID@abc',
     vex_status: 'not_affected',
     justification: 'code path unused',
-    author: 'analyst',
   }
 
   it('accepts a complete suppressing assessment', () => {
@@ -57,11 +56,11 @@ describe('vex form validation', () => {
     expect(vexFormErrors({ ...valid, vex_status: 'under_investigation', justification: '' })).toEqual([])
   })
 
-  it('requires the key fields and author', () => {
+  it('requires the key fields', () => {
     const errors = vexFormErrors({
       canonical_component_id: '', canonical_vulnerability_id: '',
-      vex_status: 'affected', justification: '', author: '',
+      vex_status: 'affected', justification: '',
     })
-    expect(errors).toHaveLength(3)
+    expect(errors).toHaveLength(2)
   })
 })

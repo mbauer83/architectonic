@@ -10,20 +10,20 @@ import { OCCURRENCE_SCALE_SAMPLE, cellAwaitingOccurrence } from './fmeaCellFixtu
 
 describe('initialDraft', () => {
   it('seeds the rationale from the cited facts and leaves the value empty', () => {
-    const draft = initialDraft(cellAwaitingOccurrence(), 'analyst')
+    const draft = initialDraft(cellAwaitingOccurrence())
 
     expect(draft.justification).toContain('nothing can stand in for it')
     expect(draft.value).toBe('')
   })
 
   it('offers no member of the scale as a starting value', () => {
-    const draft = initialDraft(cellAwaitingOccurrence(), 'analyst')
+    const draft = initialDraft(cellAwaitingOccurrence())
 
     expect(OCCURRENCE_SCALE_SAMPLE).not.toContain(draft.value)
   })
 
-  it('carries the remembered author through so it is typed once', () => {
-    expect(initialDraft(cellAwaitingOccurrence(), 'analyst').author).toBe('analyst')
+  it('asks nobody who they are: the server records who made the judgement', () => {
+    expect(Object.keys(initialDraft(cellAwaitingOccurrence()))).toEqual(['value', 'justification'])
   })
 })
 
@@ -38,18 +38,14 @@ describe('citedFacts', () => {
 })
 
 describe('isSubmittable', () => {
-  const complete = { value: 'occasional', justification: 'because of the above', author: 'analyst' }
+  const complete = { value: 'occasional', justification: 'because of the above' }
 
-  it('accepts a judgement with a value, a rationale and someone accountable', () => {
+  it('accepts a judgement with a value and a rationale', () => {
     expect(isSubmittable(complete)).toBe(true)
   })
 
   it('refuses a value with no stated reason', () => {
     expect(isSubmittable({ ...complete, justification: '   ' })).toBe(false)
-  })
-
-  it('refuses an unattributed judgement', () => {
-    expect(isSubmittable({ ...complete, author: '' })).toBe(false)
   })
 
   it('refuses a rationale with no value chosen', () => {
@@ -60,7 +56,7 @@ describe('isSubmittable', () => {
 describe('factorRequestBody', () => {
   it('files the judgement against the basis digest of the cell it was opened from', () => {
     const body = factorRequestBody(cellAwaitingOccurrence(), {
-      value: 'occasional', justification: 'stated', author: ' analyst ',
+      value: 'occasional', justification: 'stated',
     })
 
     // No `node_id`: the failure mode is the address the judgement is posted to.
@@ -68,14 +64,13 @@ describe('factorRequestBody', () => {
       factor: 'occurrence',
       value: 'occasional',
       justification: 'stated',
-      author: 'analyst',
       basis_digest: 'occ-1',
     })
   })
 
   it('never sends an empty digest for a cell that has one', () => {
     expect(factorRequestBody(cellAwaitingOccurrence(), {
-      value: 'rare', justification: 'stated', author: 'analyst',
+      value: 'rare', justification: 'stated',
     }).basis_digest).not.toBe('')
   })
 })

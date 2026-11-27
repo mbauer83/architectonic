@@ -125,9 +125,12 @@ response order stays stable between calls.
 
 The `POST` **appends rather than replaces**. What is being set is *the current judgement*, and the
 revision series behind it is how a reader sees that it changed; nothing is overwritten. The node is
-the path, and the body requires `factor`, `value`, `justification`, `author` and `basis_digest` — the
-last naming the picture of the model the judgement was made against, so that when the model moves the
-judgement can be recognised as stale and the derived value can take over again.
+the path, and the body requires `factor`, `value`, `justification` and `basis_digest` — the last
+naming the picture of the model the judgement was made against, so that when the model moves the
+judgement can be recognised as stale and the derived value can take over again. The server records
+who made the judgement: the identity it is configured with (`ARCH_GIT_AUTHOR_NAME`,
+`ARCH_GIT_AUTHOR_EMAIL`), the same one that authors its commits. A body naming an `author` is refused
+with `422`, as is one for a VEX assessment.
 
 Ordinal values do not sort lexically. `major` precedes `minor` alphabetically and follows it by rank,
 so any ordering over severity, occurrence, detectability or TLP is by declared rank — see

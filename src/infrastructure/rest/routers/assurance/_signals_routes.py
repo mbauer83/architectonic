@@ -26,6 +26,7 @@ from src.application.security_signals.vex import (
     VexInvalid,
     record_vex_assessment,
 )
+from src.config.git_identity import recording_identity
 from src.infrastructure.assurance.signal_gate import current_signal_mutation_capability
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp.context import AssuranceContext, get_assurance_context
@@ -289,7 +290,6 @@ class RecordVexBody(_ClosedBody):
     canonical_vulnerability_id: str
     vex_status: str
     justification: str = ""
-    author: str
     source: str = ""
 
 
@@ -307,7 +307,7 @@ def record_vex(arch_artifact_id: str, body: RecordVexBody) -> dict[str, Any]:
             canonical_vulnerability_id=body.canonical_vulnerability_id,
             vex_status=body.vex_status,
             justification=body.justification,
-            author=body.author,
+            author=recording_identity(),
             source=body.source,
         ),
         store=vex_store,

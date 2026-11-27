@@ -13921,8 +13921,6 @@ export interface components {
         };
         /** RecordVexBody */
         RecordVexBody: {
-            /** Author */
-            author: string;
             /** Canonical Component Id */
             canonical_component_id: string;
             /** Canonical Vulnerability Id */
@@ -14741,8 +14739,6 @@ export interface components {
         };
         /** SetFactorBody */
         SetFactorBody: {
-            /** Author */
-            author: string;
             /** Basis Digest */
             basis_digest: string;
             /** Factor */

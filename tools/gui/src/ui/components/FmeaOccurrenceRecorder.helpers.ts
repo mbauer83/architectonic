@@ -13,14 +13,12 @@ import { occurrenceBasisDigest } from '../views/AssuranceFmeaView.helpers'
 export interface RecorderDraft {
   value: string
   justification: string
-  author: string
 }
 
 export interface FactorRequestBody {
   factor: 'occurrence'
   value: string
   justification: string
-  author: string
   basis_digest: string
 }
 
@@ -28,8 +26,8 @@ export interface FactorRequestBody {
  *
  * The empty value is the point. A selected member would read as the tool's opinion, and the
  * rationale beneath it as agreement with the tool rather than a judgement of its own. */
-export function initialDraft(cell: CellView, rememberedAuthor: string): RecorderDraft {
-  return { value: '', justification: cell.occurrence_rationale_draft, author: rememberedAuthor }
+export function initialDraft(cell: CellView): RecorderDraft {
+  return { value: '', justification: cell.occurrence_rationale_draft }
 }
 
 /** The cited facts as separate lines, for showing what the rationale was seeded from. */
@@ -40,17 +38,13 @@ export function citedFacts(draft: string): string[] {
     .filter((line) => line.length > 0)
 }
 
-/** Whether the judgement can be sent: a value, a rationale, and someone accountable for it.
+/** Whether the judgement can be sent: a value and a rationale.
  *
- * All three are required by the backend for the same reason — a priority band with no attributable,
- * stated reason is the one that gets argued about in a review and cannot be defended. Checked here
- * too so the button is disabled rather than the submission rejected. */
+ * Both are required by the backend — a priority band with no stated reason is the one that gets
+ * argued about in a review and cannot be defended. Who made the judgement is not asked: the server
+ * records it. Checked here too so the button is disabled rather than the submission rejected. */
 export function isSubmittable(draft: RecorderDraft): boolean {
-  return (
-    draft.value !== ''
-    && draft.justification.trim().length > 0
-    && draft.author.trim().length > 0
-  )
+  return draft.value !== '' && draft.justification.trim().length > 0
 }
 
 /** The judgement itself. No `node_id`: the failure mode is the address it is posted to. */
@@ -59,7 +53,6 @@ export function factorRequestBody(cell: CellView, draft: RecorderDraft): FactorR
     factor: 'occurrence',
     value: draft.value,
     justification: draft.justification,
-    author: draft.author.trim(),
     basis_digest: occurrenceBasisDigest(cell),
   }
 }

@@ -32,13 +32,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{ recorded: []; cancelled: [] }>()
 
-// Asked for rather than assumed: this deployment authenticates nobody, and the backend requires an
-// author because a band with no attributable reason is the one that cannot be defended in a review.
-// Filling it in with a placeholder would satisfy the validation and defeat its purpose. Remembered
-// locally so a returning analyst types it once.
-const AUTHOR_KEY = 'arch_assurance_factor_author'
-
-const draft = ref(initialDraft(props.cell, localStorage.getItem(AUTHOR_KEY) ?? ''))
+// Who made the judgement is not asked for: the server records it, so no client can attribute a
+// judgement to someone else.
+const draft = ref(initialDraft(props.cell))
 const error = ref('')
 const saving = ref(false)
 
@@ -57,7 +53,6 @@ async function save() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(factorRequestBody(props.cell, draft.value)),
     })
-    localStorage.setItem(AUTHOR_KEY, draft.value.author.trim())
     if (!resp.ok) {
       const body = await resp.json().catch(() => null) as { errors?: { message: string }[] } | null
       error.value = recorderErrorMessage(resp.status, body)
@@ -116,16 +111,6 @@ async function save() {
           {{ member }}
         </option>
       </select>
-    </label>
-
-    <label class="occ__row">
-      <span>Recorded by</span>
-      <input
-        v-model="draft.author"
-        class="occ__value"
-        type="text"
-        required
-      >
     </label>
 
     <label class="occ__row occ__row--wide">

@@ -21,7 +21,7 @@ const error = ref<string | null>(null)
 
 const form = ref<VexFormValues>({
   canonical_component_id: '', canonical_vulnerability_id: '',
-  vex_status: 'under_investigation', justification: '', author: '',
+  vex_status: 'under_investigation', justification: '',
 })
 const formErrors = ref<string[]>([])
 const formResult = ref<string | null>(null)
@@ -188,11 +188,6 @@ async function submitVex() {
                 {{ status }}
               </option>
             </select>
-            <input
-              v-model="form.author"
-              class="vex-input"
-              placeholder="author"
-            >
           </div>
           <textarea
             v-model="form.justification"

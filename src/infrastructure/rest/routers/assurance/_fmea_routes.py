@@ -29,6 +29,7 @@ from src.application.assurance.fmea_matrix import (
     matrix_of_analysis,
 )
 from src.application.assurance.legacy_invalid import LegacyInvalidNode
+from src.config.git_identity import recording_identity
 from src.domain.assurance.fmea_factors import OCCURRENCE_SCALE
 from src.infrastructure.assurance.architecture_basis import current_architecture_basis
 from src.infrastructure.assurance.write_serialization import run_write
@@ -116,7 +117,6 @@ class SetFactorBody(BaseModel):
     factor: str
     value: str
     justification: str
-    author: str
     basis_digest: str
 
 
@@ -137,7 +137,7 @@ def set_fmea_factor(node_id: str, body: SetFactorBody) -> JSONResponse:
             factor=body.factor,
             value=body.value,
             justification=body.justification,
-            author=body.author,
+            author=recording_identity(),
             basis_digest=body.basis_digest,
         ),
         store=ctx.store,

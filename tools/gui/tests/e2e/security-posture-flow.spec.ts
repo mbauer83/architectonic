@@ -116,7 +116,6 @@ test('the supply-chain dashboard validates and records a contextual VEX assessme
   await form.getByPlaceholder(/component \(purl/).fill('pkg:pypi/architectonic@1.0.0')
   await form.getByPlaceholder('canonical vulnerability id (VID@…)').fill('VID@synthetic-001')
   await form.locator('select').selectOption('not_affected')
-  await form.getByPlaceholder('author').fill('documentation acceptance')
   await form.getByRole('button', { name: 'Record assessment' }).click()
   await expect(form).toContainText('requires a justification')
 
@@ -126,10 +125,12 @@ test('the supply-chain dashboard validates and records a contextual VEX assessme
   // No `anchor_entity_id`: the anchor is the address the assessment is posted to, so a body that
   // named one would give the caller two places to say which artifact it assessed.
   expect(submitted).not.toHaveProperty('anchor_entity_id')
+  // No `author` either: the server records who made the assessment.
+  expect(submitted).not.toHaveProperty('author')
   expect(submitted).toMatchObject({
     canonical_component_id: 'pkg:pypi/architectonic@1.0.0',
     canonical_vulnerability_id: 'VID@synthetic-001',
-    vex_status: 'not_affected', author: 'documentation acceptance',
+    vex_status: 'not_affected',
   })
 })
 

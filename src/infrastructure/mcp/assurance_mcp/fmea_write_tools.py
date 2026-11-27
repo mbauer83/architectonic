@@ -23,6 +23,7 @@ from src.application.assurance.fmea_factors import (
     RecordFactorRequest,
     record_factor_assessment,
 )
+from src.config.git_identity import recording_identity
 from src.domain.assurance.fmea_factors import FACTOR_SCALES, FMEA_FACTORS
 from src.infrastructure.assurance.write_serialization import run_write
 from src.infrastructure.mcp.assurance_mcp import _refusals
@@ -45,8 +46,8 @@ def register_fmea_write_tools(server: MCPServer) -> None:
             "Severity and detectability are normally DERIVED from the model — assert them only to "
             "correct a derivation, with a rationale saying why. Occurrence is asserted-only: "
             "nothing in the model measures a failure rate, so there is no derived value to correct. "
-            "Every assertion needs a rationale and an author; a factor sets a priority band, so an "
-            "unexplained value cannot be defended in review. "
+            "Every assertion needs a rationale; a factor sets a priority band, so an unexplained "
+            "value cannot be defended in review. The server records who made the judgement. "
             f"Scales, weakest to strongest — {_scale_help()}. "
             "`basis_digest` names the picture of the model the judgement was made against (obtain it "
             "from the failure mode's current factor report); when the model moves, the judgement "
@@ -60,7 +61,6 @@ def register_fmea_write_tools(server: MCPServer) -> None:
         factor: str,
         value: str,
         justification: str,
-        author: str,
         basis_digest: str,
     ) -> dict[str, object]:
         result = run_write(lambda: record_factor_assessment(
@@ -69,7 +69,7 @@ def register_fmea_write_tools(server: MCPServer) -> None:
                 factor=factor,
                 value=value,
                 justification=justification,
-                author=author,
+                author=recording_identity(),
                 basis_digest=basis_digest,
             ),
             store=ctx.store,

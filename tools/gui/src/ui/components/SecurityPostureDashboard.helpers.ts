@@ -53,14 +53,12 @@ export interface VexFormValues {
   canonical_vulnerability_id: string
   vex_status: string
   justification: string
-  author: string
 }
 
 export const vexFormErrors = (values: VexFormValues): string[] => {
   const errors: string[] = []
   if (!values.canonical_component_id.trim()) errors.push('component (purl with version) is required')
   if (!values.canonical_vulnerability_id.trim()) errors.push('canonical vulnerability id is required')
-  if (!values.author.trim()) errors.push('author is required')
   if (SUPPRESSING.has(values.vex_status) && !values.justification.trim()) {
     errors.push(`vex_status '${values.vex_status}' suppresses a finding and requires a justification`)
   }

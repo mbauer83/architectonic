@@ -113,7 +113,6 @@ def _vex_body(purl: str = "pkg:pypi/a@1", vuln_canonical: str = "",
         "canonical_vulnerability_id": vuln_canonical,
         "vex_status": vex_status,
         "justification": "code path unused",
-        "author": "analyst",
     }
 
 
@@ -179,7 +178,6 @@ class TestEndToEnd:
             "canonical_vulnerability_id": "VID@x",
             "vex_status": "not_affected",
             "justification": "",
-            "author": "analyst",
         })
         assert resp.status_code == 422
         detail = resp.json()["detail"]
