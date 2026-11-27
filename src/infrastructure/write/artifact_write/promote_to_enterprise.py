@@ -43,8 +43,11 @@ from src.infrastructure.write.artifact_write._promote_viewpoints import (
     ViewpointResolution,
     collect_viewpoint_dependencies,
     viewpoint_dependency_errors,
+    viewpoints_promoted_alongside,
 )
 from src.infrastructure.write.artifact_write.boundary import refuse_diagram_hosted
+from src.infrastructure.write.artifact_write.promote_closure_scope import closure_scope
+from src.infrastructure.write.artifact_write.promote_purpose_closure import purpose_line_closure
 from src.infrastructure.write.artifact_write.promote_reference_closure import (
     MissingDependency,
     compute_reference_closure,
@@ -304,31 +307,6 @@ def plan_promotion(
     )
     schema_errors.extend(structural_closure_errors(structural_closure))
 
-    missing_dependencies: list[MissingDependency] = []
-    if engagement_root is not None:
-        from src.infrastructure.app_bootstrap import process_runtime_catalogs  # noqa: PLC0415
-
-        missing_dependencies = compute_reference_closure(
-            document_ids=docs_to_add + [c.engagement_id for c in doc_conflicts],
-            diagram_ids=diags_to_add + [c.engagement_id for c in diagram_conflicts],
-            promoted_entity_ids=set(to_add) | {c.engagement_id for c in conflicts},
-            repo=repo,
-            registry=registry,
-            engagement_root=engagement_root,
-            catalogs=catalogs or process_runtime_catalogs(),
-        )
-        schema_errors.extend(missing_dependency_errors(missing_dependencies))
-
-    group_mapping: list[GroupMappingEntry] = []
-    available_enterprise_groups: list[dict[str, str]] = []
-    if engagement_root is not None and enterprise_root is not None:
-        from src.infrastructure.write.artifact_write._promote_groups import compute_group_mapping  # noqa: PLC0415
-
-        all_entity_ids = to_add + [c.engagement_id for c in conflicts]
-        group_mapping, available_enterprise_groups = compute_group_mapping(
-            all_entity_ids, registry, engagement_root, enterprise_root
-        )
-
     # A conflict may be resolved to the engagement's version, so its dependencies are planned for too.
     promoted_diagram_ids = diags_to_add + [c.engagement_id for c in diagram_conflicts]
     promoted_icons = icons_a_promotion_carries(promoted_diagram_ids, repo, registry)
@@ -345,6 +323,48 @@ def plan_promotion(
                 catalogs=catalogs,
                 resolutions=viewpoint_resolutions,
             )
+        )
+
+    missing_dependencies: list[MissingDependency] = []
+    if engagement_root is not None:
+        from src.infrastructure.app_bootstrap import process_runtime_catalogs  # noqa: PLC0415
+
+        resolved_catalogs = catalogs or process_runtime_catalogs()
+        promoted_document_ids = docs_to_add + [c.engagement_id for c in doc_conflicts]
+        scope = closure_scope(
+            document_ids=promoted_document_ids,
+            diagram_ids=promoted_diagram_ids,
+            promoted_entity_ids=set(to_add) | {c.engagement_id for c in conflicts},
+            registry=registry,
+        )
+        missing_dependencies = compute_reference_closure(
+            document_ids=promoted_document_ids,
+            diagram_ids=promoted_diagram_ids,
+            scope=scope,
+            repo=repo,
+            registry=registry,
+            engagement_root=engagement_root,
+            catalogs=resolved_catalogs,
+        ) + purpose_line_closure(
+            diagram_ids=promoted_diagram_ids,
+            viewpoints=viewpoints_promoted_alongside(
+                viewpoint_dependencies, viewpoint_resolutions, engagement_root=engagement_root
+            ),
+            scope=scope,
+            repo=repo,
+            registry=registry,
+            admitted=resolved_catalogs.ontology.purpose_line_entity_types(),
+        )
+        schema_errors.extend(missing_dependency_errors(missing_dependencies))
+
+    group_mapping: list[GroupMappingEntry] = []
+    available_enterprise_groups: list[dict[str, str]] = []
+    if engagement_root is not None and enterprise_root is not None:
+        from src.infrastructure.write.artifact_write._promote_groups import compute_group_mapping  # noqa: PLC0415
+
+        all_entity_ids = to_add + [c.engagement_id for c in conflicts]
+        group_mapping, available_enterprise_groups = compute_group_mapping(
+            all_entity_ids, registry, engagement_root, enterprise_root
         )
 
     from src.infrastructure.app_bootstrap import process_runtime_catalogs  # noqa: PLC0415

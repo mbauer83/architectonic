@@ -38,6 +38,7 @@ from src.domain.artifact_id import (
     stable_id,
 )
 from src.domain.repository.frontmatter import parse_frontmatter
+from src.infrastructure.write.artifact_write.promote_closure_scope import ClosureScope, entity_survives
 
 if TYPE_CHECKING:
     from src.application.artifacts.repository import ArtifactRepository
@@ -50,6 +51,7 @@ DependencyKind = Literal[
     "diagram_connection_endpoint",
     "diagram_connection",
     "diagram_binding_target",
+    "purpose_line_reference",
 ]
 
 @dataclass(frozen=True)
@@ -63,63 +65,17 @@ class MissingDependency:
     kind: DependencyKind
 
 
-@dataclass(frozen=True)
-class _ClosureScope:
-    """Membership predicates shared by every per-artifact closure check."""
-
-    set_entity_short: frozenset[str]
-    enterprise_entity_short: frozenset[str]
-    set_document_ids: frozenset[str]
-    enterprise_document_ids: frozenset[str]
-    set_diagram_ids: frozenset[str]
-    enterprise_diagram_ids: frozenset[str]
-    enterprise_connection_short: frozenset[str]
-
-    def entity_satisfied(self, entity_id: str) -> bool:
-        short = stable_id(entity_id)
-        return (
-            short in self.set_entity_short
-            or short in self.enterprise_entity_short
-            or entity_id.startswith("GAR@")
-        )
-
-    def document_satisfied(self, document_id: str) -> bool:
-        return document_id in self.set_document_ids or document_id in self.enterprise_document_ids
-
-    def diagram_satisfied(self, diagram_id: str) -> bool:
-        return diagram_id in self.set_diagram_ids or diagram_id in self.enterprise_diagram_ids
-
-    def link_satisfied(self, link: ResolvedArtifactLink) -> bool:
-        """Whether the artifact a required link names survives promotion, whatever kind it is."""
-        if link.kind == "document":
-            return self.document_satisfied(link.artifact_id)
-        if link.kind == "diagram":
-            return self.diagram_satisfied(link.artifact_id)
-        return self.entity_satisfied(link.artifact_id)
-
-
 def compute_reference_closure(
     *,
     document_ids: list[str],
     diagram_ids: list[str],
-    promoted_entity_ids: set[str],
+    scope: ClosureScope,
     repo: "ArtifactRepository",
     registry: "ArtifactRegistry",
     engagement_root: Path,
     catalogs: "RuntimeCatalogs",
 ) -> list[MissingDependency]:
-    """Missing required references for every selected document and diagram."""
-    scope = _ClosureScope(
-        set_entity_short=frozenset(stable_id(e) for e in promoted_entity_ids),
-        enterprise_entity_short=frozenset(stable_id(e) for e in registry.enterprise_entity_ids()),
-        set_document_ids=frozenset(document_ids),
-        enterprise_document_ids=frozenset(registry.enterprise_document_ids()),
-        set_diagram_ids=frozenset(diagram_ids),
-        enterprise_diagram_ids=frozenset(registry.enterprise_diagram_ids()),
-        enterprise_connection_short=frozenset(
-            stable_conn_id(c) for c in registry.enterprise_connection_ids()
-        ),
-    )
+    """Missing required references for every selected document and diagram, against *scope*."""
     missing: list[MissingDependency] = []
     for doc_id in document_ids:
         missing.extend(
@@ -141,6 +97,7 @@ def missing_dependency_errors(missing: list[MissingDependency]) -> list[str]:
         "diagram_connection_endpoint": "binds a connection whose endpoint it is",
         "diagram_connection": "binds it in connection-ids-used",
         "diagram_binding_target": "targets it in a diagram binding",
+        "purpose_line_reference": "names it among its stakeholders or concerns",
     }
     return [
         f"Missing promotion dependency: {dep.required_by} requires {dep.artifact_id} "
@@ -173,7 +130,7 @@ def _document_missing(
     registry: "ArtifactRegistry",
     engagement_root: Path,
     catalogs: "RuntimeCatalogs",
-    scope: _ClosureScope,
+    scope: ClosureScope,
     repo: "ArtifactRepository",
 ) -> list[MissingDependency]:
     path = registry.find_file_by_id(doc_id)
@@ -210,7 +167,7 @@ def _missing_for_required_terms(
     links: list[ResolvedArtifactLink],
     doc_id: str,
     vocabulary: ReferenceTermVocabulary,
-    scope: _ClosureScope,
+    scope: ClosureScope,
 ) -> list[MissingDependency]:
     """For each required term: if no satisfying linked artifact survives promotion,
     every linked artifact that *would* satisfy it is a missing dependency.
@@ -283,19 +240,12 @@ def _missing_entity(
     kind: DependencyKind,
     *,
     repo: "ArtifactRepository",
-    scope: _ClosureScope,
+    scope: ClosureScope,
 ) -> MissingDependency | None:
-    """A missing-dependency record for *entity_id*, or None when it is satisfied.
-
-    A diagram-only entity is satisfied through its HOST diagram: its file content
-    travels with the host, so the host being in the set or enterprise closes it.
-    """
-    if scope.entity_satisfied(entity_id):
+    """A missing-dependency record for *entity_id*, or None when it survives promotion."""
+    if entity_survives(entity_id, repo=repo, scope=scope):
         return None
     record = repo.get_entity(entity_id) or repo.find_entity_by_workspace_id(entity_id)
-    host = getattr(record, "host_diagram_id", None) if record is not None else None
-    if host and scope.diagram_satisfied(str(host)):
-        return None
     return MissingDependency(
         artifact_id=entity_id,
         name=record.name if record is not None else entity_id,
@@ -310,7 +260,7 @@ def _missing_for_connection(
     diagram_id: str,
     *,
     repo: "ArtifactRepository",
-    scope: _ClosureScope,
+    scope: ClosureScope,
 ) -> list[MissingDependency]:
     """A bound connection must exist enterprise-side after the copy: either it already
     does, or its source entity is promoted (its outgoing file travels along) with the
@@ -364,7 +314,7 @@ def _diagram_missing(
     *,
     registry: "ArtifactRegistry",
     repo: "ArtifactRepository",
-    scope: _ClosureScope,
+    scope: ClosureScope,
 ) -> list[MissingDependency]:
     path = registry.find_file_by_id(diagram_id)
     if path is None:

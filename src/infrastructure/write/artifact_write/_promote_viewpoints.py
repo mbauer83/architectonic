@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Literal
 
 from src.domain.viewpoints.viewpoint_application_parsing import parse_viewpoint_application
 from src.domain.viewpoints.viewpoint_validation import validate_viewpoint_definition
-from src.domain.viewpoints.viewpoints import TargetKind, ViewpointCatalog
+from src.domain.viewpoints.viewpoints import TargetKind, ViewpointCatalog, ViewpointDefinition
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.viewpoint_declarations import (
     load_effective_viewpoint_catalog,
@@ -195,6 +195,21 @@ def viewpoint_dependency_errors(
     return errors
 
 
+def viewpoints_promoted_alongside(
+    deps: list[ViewpointDependency],
+    resolutions: Mapping[str, ViewpointResolution] | None,
+    *,
+    engagement_root: Path,
+) -> list[ViewpointDefinition]:
+    """The engagement definitions this promotion carries into the enterprise catalog, once each."""
+    resolved = resolutions or {}
+    slugs = dict.fromkeys(
+        dep.slug for dep in deps if dep.status == "engagement_only" and resolved.get(dep.slug) == "promote_alongside"
+    )
+    catalog = load_effective_viewpoint_catalog([engagement_root]) if slugs else ViewpointCatalog.empty()
+    return [definition for slug in slugs if (definition := catalog.get(slug)) is not None]
+
+
 def apply_viewpoint_resolutions(
     deps: list[ViewpointDependency],
     resolutions: Mapping[str, ViewpointResolution] | None,
@@ -208,13 +223,8 @@ def apply_viewpoint_resolutions(
     promoted-alongside definitions into the enterprise catalog, and re-pins each affected
     promoted diagram/matrix's application to the enterprise's current version."""
     resolved = resolutions or {}
-    promote_slugs = {
-        dep.slug for dep in deps if dep.status == "engagement_only" and resolved.get(dep.slug) == "promote_alongside"
-    }
-    for slug in promote_slugs:
-        eng_def = load_effective_viewpoint_catalog([engagement_root]).get(slug)
-        if eng_def is None:
-            continue
+    for eng_def in viewpoints_promoted_alongside(deps, resolved, engagement_root=engagement_root):
+        slug = eng_def.slug
         catalog_path = viewpoint_declarations_path(enterprise_root)
         backups.append((catalog_path, catalog_path.read_bytes() if catalog_path.exists() else None))
         ent_own = load_viewpoint_catalog_file(enterprise_root)
