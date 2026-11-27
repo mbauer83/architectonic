@@ -69,6 +69,10 @@ _FRONTEND_GENERATED_SUFFIX = ".generated.ts"
 # `DocumentDetailView.vue` went 432 → 387 when its styles moved to `DocumentDetailView.css`, as the
 # diagram page's already had, to take the stress-analysis document's entry to its workspace.
 #
+# `CreateDiagramView.vue` went 484 → 460 when the related-entities map it built inline — which the edit
+# view's selection composable built a second time — became `relatedEntitiesOf` in `ui/lib/relatedEntities.ts`,
+# used by both. That made room for the purpose fields the create page now edits.
+#
 # One entry is **gone**. `artifact_verifier.py` (403) was a facade that had kept two rule bodies for
 # itself while five others had modules of their own; entities and diagrams moved to `_verifier_entity.py`
 # and `_verifier_diagram.py` and it landed at 329, under the hard limit. The number followed the
@@ -86,7 +90,7 @@ SOURCE_FILE_BASELINE_LIMITS: dict[str, int] = {
     "tools/gui/src/ui/views/AssuranceNodeForm.vue": 354,
     "tools/gui/src/ui/views/AssuranceStpaWizardView.vue": 447,
     "tools/gui/src/ui/views/AssuranceSupplyChainWizardView.vue": 431,
-    "tools/gui/src/ui/views/CreateDiagramView.vue": 484,
+    "tools/gui/src/ui/views/CreateDiagramView.vue": 460,
     "tools/gui/src/ui/views/DocumentCreateView.vue": 594,
     "tools/gui/src/ui/views/DocumentDetailView.vue": 387,
     "tools/gui/src/ui/views/EntitiesView.vue": 445,

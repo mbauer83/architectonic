@@ -6,6 +6,7 @@ import type {
 } from '../../domain'
 import { stableConnectionId } from '../../domain/artifactId'
 import { useDiagramDrawings } from './useDiagramDrawings'
+import { relatedEntitiesOf } from '../lib/relatedEntities'
 
 /**
  * Owns the diagram-edit view's whole entity/connection selection & neighbor-discovery
@@ -142,35 +143,12 @@ export function useDiagramEditSelection(options: {
     ...[...selectedNewConnIds.value],
   ])
 
-  const relatedEntitiesById = computed<Record<string, EntityDisplayInfo[]>>(() => {
-    const related: Record<string, EntityDisplayInfo[]> = {}
-    const seenByEntity = new Map<string, Set<string>>()
-    for (const entity of effectiveEntitiesList.value) related[entity.artifact_id] = []
-    for (const conn of allModelConns.value.values()) {
-      const endpoints: Array<[string, string]> = [[conn.source, conn.target], [conn.target, conn.source]]
-      for (const [ownerId, otherId] of endpoints) {
-        if (!effectiveEntityIds.value.has(ownerId) || effectiveEntityIds.value.has(otherId)) continue
-        if (toRemoveEntityIds.value.has(ownerId)) continue
-        const name = ownerId === conn.source ? (conn.target_name ?? otherId) : (conn.source_name ?? otherId)
-        const artifactType = ownerId === conn.source ? conn.target_artifact_type : conn.source_artifact_type
-        const domain = ownerId === conn.source ? conn.target_domain : conn.source_domain
-        const scope = ownerId === conn.source ? conn.target_scope : conn.source_scope
-        const seen = seenByEntity.get(ownerId) ?? new Set<string>()
-        if (seen.has(otherId)) continue
-        seen.add(otherId)
-        seenByEntity.set(ownerId, seen)
-        related[ownerId].push({
-          artifact_id: otherId, name,
-          artifact_type: artifactType,
-          domain,
-          subdomain: '', status: scope, display_alias: '',
-          element_type: artifactType, element_label: name, diagram_internal: false,
-        })
-      }
-    }
-    for (const entityId of Object.keys(related)) related[entityId].sort((a, b) => a.name.localeCompare(b.name))
-    return related
-  })
+  /** A neighbour of an entity being removed is not offered: the entity it would be drawn beside is leaving. */
+  const relatedEntitiesById = computed(() => relatedEntitiesOf(
+    effectiveEntitiesList.value.map((e) => e.artifact_id).filter((id) => !toRemoveEntityIds.value.has(id)),
+    effectiveEntityIds.value,
+    allModelConns.value.values(),
+  ))
 
   const toggleConn = (connId: string, entityId?: string, occurrenceId?: string | null): void => {
     const included = isConnIncluded(connId)

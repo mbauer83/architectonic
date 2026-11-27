@@ -41,7 +41,8 @@ const mounted = async (list: PurposeList, admitted: { stakeholders: string[], co
     })),
     searchEntityDisplay,
   } as unknown as ModelService
-  app = createApp({ render: () => h(PurposeEntryListEditor, { modelValue: [], list, label: 'For', proseHint: 'in words' }) })
+  const props = { modelValue: [], list, label: 'For', proseHint: 'in words' }
+  app = createApp({ render: () => h(PurposeEntryListEditor, props) })
   app.provide(modelServiceKey, svc)
   app.mount(host)
   await settle()

@@ -24,6 +24,9 @@ import { useDiagramTypeCapabilities } from '../composables/useDiagramTypeCapabil
 import { useDiagramDrawings } from '../composables/useDiagramDrawings'
 import { useDiagramGroupings } from '../composables/useDiagramGroupings'
 import { loadViewpointSummaries } from '../lib/viewpointSummary'
+import { relatedEntitiesOf } from '../lib/relatedEntities'
+import DiagramPurposeFields from '../components/DiagramPurposeFields.vue'
+import { useDiagramPurposeDraft } from '../composables/useDiagramPurposeDraft'
 
 const svc = inject(modelServiceKey)!
 const route = useRoute()
@@ -37,6 +40,7 @@ const typeCan = useDiagramTypeCapabilities(svc)
 const diagramEntities = ref<Record<string, unknown>>({})
 const viewpoints = ref<ViewpointSummary[]>([])
 const viewpointSlug = ref<string | null>(null)
+const purpose = useDiagramPurposeDraft()
 let _lastSuggestedName = ''
 
 const loadViewpoints = async () => {
@@ -98,43 +102,9 @@ const selectionRows = drawings.rowsFor(baseRows)
 const iconStyles = computed(() => uiConfig.value?.icon_styles ?? [])
 useDiagramIcons({ svc, diagramType, diagramEntities, write: setDiagramEntities, styles: iconStyles })
 
-const relatedEntitiesById = computed<Record<string, EntityDisplayInfo[]>>(() => {
-  const related: Record<string, EntityDisplayInfo[]> = {}
-  const seenByEntity = new Map<string, Set<string>>()
-  for (const entity of includedEntities.value) related[entity.artifact_id] = []
-  for (const conn of allModelConns.value.values()) {
-    const endpoints: Array<[string, string]> = [
-      [conn.source, conn.target],
-      [conn.target, conn.source],
-    ]
-    for (const [ownerId, otherId] of endpoints) {
-      if (!includedEntityIds.value.has(ownerId) || includedEntityIds.value.has(otherId)) continue
-      const name = ownerId === conn.source ? (conn.target_name ?? otherId) : (conn.source_name ?? otherId)
-      const artifactType = ownerId === conn.source ? conn.target_artifact_type : conn.source_artifact_type
-      const domain = ownerId === conn.source ? conn.target_domain : conn.source_domain
-      const scope = ownerId === conn.source ? conn.target_scope : conn.source_scope
-      const seen = seenByEntity.get(ownerId) ?? new Set<string>()
-      if (seen.has(otherId)) continue
-      seen.add(otherId)
-      seenByEntity.set(ownerId, seen)
-      related[ownerId].push({
-        artifact_id: otherId,
-        name,
-        artifact_type: artifactType,
-        domain,
-        subdomain: '',
-        status: scope,
-        display_alias: '',
-        element_type: artifactType,
-        element_label: name, diagram_internal: false,
-      })
-    }
-  }
-  for (const entityId of Object.keys(related)) {
-    related[entityId].sort((a, b) => a.name.localeCompare(b.name))
-  }
-  return related
-})
+const relatedEntitiesById = computed(() => relatedEntitiesOf(
+  includedEntities.value.map((e) => e.artifact_id), includedEntityIds.value, allModelConns.value.values(),
+))
 
 const refreshDiscovery = async () => {
   const discovery = await Effect.runPromise(
@@ -336,6 +306,7 @@ const doCreate = () => {
       diagram_entities: diagramEntities.value,
       authored_groupings: groupingsForWrite(),
       viewpoint: selectedViewpoint ? { slug: selectedViewpoint.slug, version: selectedViewpoint.version } : null,
+      ...purpose.forWrite(),
       dry_run: false,
     }),
   )
@@ -400,6 +371,12 @@ watch(diagramType, () => {
             :diagram-type="diagramType"
           />
         </div>
+
+        <DiagramPurposeFields
+          v-model:stakeholders="purpose.state.stakeholders"
+          v-model:concerns="purpose.state.concerns"
+          :names="purpose.state.names"
+        />
 
         <DiagramTypeConfigPanel
           :ui-config="uiConfig"
