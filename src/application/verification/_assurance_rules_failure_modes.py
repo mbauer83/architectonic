@@ -36,7 +36,7 @@ from src.application.verification.assurance_findings import (
     SECURITY_JUDGEMENT_RESTS_ON_A_CURRENT_SNAPSHOT,
 )
 from src.application.verification.assurance_issues import AssuranceIssue, AssuranceVerificationResult
-from src.domain.assurance.classification import TLP_ORDER, normalize_tlp
+from src.domain.assurance.classification import TLP_ORDER, content_rank, record_tlp
 from src.domain.assurance.constraint_dispositions import ACCEPTED
 from src.domain.assurance.failure_modes import NOT_CREDIBLE
 from src.domain.assurance.fmea_action_priority import HIGH
@@ -240,24 +240,25 @@ def check_evidence_is_not_less_restricted(
 
     The exposure policy filters per node, so nothing else prevents a `TLP:WHITE` evidence node
     attached to a `TLP:GREEN` constraint — and its description would disclose the constraint to a
-    reader who was never cleared to see it.
+    reader who was never cleared to see it. A record carrying no level ranks as TLP:RED, as the
+    exposure policy reads it.
     """
     node_id = str(evidence["node_id"])
-    evidence_tlp = normalize_tlp(str(evidence.get("tlp") or ""))
+    evidence_rank = content_rank(record_tlp(evidence))
     evidenced = [
         nodes_by_id[str(edge["source_id"])]
         for edge in edges_into(edges, node_id, "evidenced-by")
         if str(edge["source_id"]) in nodes_by_id
     ]
     for subject in evidenced:
-        subject_tlp = normalize_tlp(str(subject.get("tlp") or ""))
-        if TLP_ORDER.index(evidence_tlp) >= TLP_ORDER.index(subject_tlp):
+        subject_rank = content_rank(record_tlp(subject))
+        if evidence_rank >= subject_rank:
             continue
         result.issues.append(AssuranceIssue.of(
             EVIDENCE_IS_NOT_LESS_RESTRICTED,
             message=(
-                f"Evidence is classified {evidence_tlp} while {subject['node_id']}, which it "
-                f"evidences, is {subject_tlp}. A reader cleared only for the evidence would learn "
+                f"Evidence is classified {TLP_ORDER[evidence_rank]} while {subject['node_id']}, which it "
+                f"evidences, is {TLP_ORDER[subject_rank]}. A reader cleared only for the evidence would learn "
                 "what the constraint says from it."
             ),
             node_id=node_id,
