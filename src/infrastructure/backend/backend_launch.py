@@ -36,10 +36,10 @@ from src.infrastructure.backend.backend_probe import (
 )
 from src.infrastructure.backend.backend_start_lock import backend_start_lock
 from src.infrastructure.backend.backend_state import backend_log_path, read_backend_state
+from src.infrastructure.git.git_askpass import credentials_to_env_overrides
 from src.infrastructure.git.git_auth import (
     GitCredentials,
     collect_verified_credentials,
-    credentials_to_env_overrides,
 )
 from src.infrastructure.workspace.git_repos import configured_git_repos
 

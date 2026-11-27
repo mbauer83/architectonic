@@ -12,7 +12,7 @@ import subprocess
 
 import pytest
 
-from src.infrastructure.git import git_auth
+from src.infrastructure.git import git_askpass, git_auth
 
 _HTTPS_ENV_VARS = (
     "ARCH_GIT_HTTPS_USERNAME",
@@ -31,7 +31,7 @@ def _clear_https_env(monkeypatch):  # type: ignore[no-untyped-def]
 def test_token_alone_supplies_password_and_default_username(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     monkeypatch.setenv("ARCH_GIT_HTTPS_TOKEN", "ghp_secret")
     username, password = git_auth.resolve_https_from_env()
-    assert username == git_auth._DEFAULT_TOKEN_USERNAME
+    assert username == git_auth.DEFAULT_TOKEN_USERNAME
     assert password == "ghp_secret"
 
 
@@ -47,7 +47,7 @@ def test_token_file_supplies_credentials(monkeypatch, tmp_path) -> None:  # type
     token_file.write_text("ghp_from_file\n")  # trailing newline must be stripped
     monkeypatch.setenv("ARCH_GIT_HTTPS_TOKEN_FILE", str(token_file))
     username, password = git_auth.resolve_https_from_env()
-    assert username == git_auth._DEFAULT_TOKEN_USERNAME
+    assert username == git_auth.DEFAULT_TOKEN_USERNAME
     assert password == "ghp_from_file"
 
 
@@ -76,7 +76,7 @@ def test_daemon_handoff_omits_token_value_when_file_used(monkeypatch, tmp_path) 
     creds = git_auth.collect_credentials(["https://github.com/acme/repo.git"])
     assert creds is not None and creds.https_password == "ghp_from_file"
     # The daemon inherits only the path (already in env), never the expanded token value.
-    overrides = git_auth.credentials_to_env_overrides(creds)
+    overrides = git_askpass.credentials_to_env_overrides(creds)
     assert "ARCH_GIT_HTTPS_PASSWORD" not in overrides
     assert "ARCH_GIT_HTTPS_USERNAME" not in overrides
 
@@ -101,12 +101,12 @@ def test_collect_credentials_uses_token_for_https_remote(monkeypatch) -> None:  
     creds = git_auth.collect_credentials(["https://github.com/acme/repo.git"])
     assert creds is not None
     assert creds.has_https
-    assert creds.https_username == git_auth._DEFAULT_TOKEN_USERNAME
+    assert creds.https_username == git_auth.DEFAULT_TOKEN_USERNAME
     assert creds.https_password == "ghp_secret"
 
     # And the token propagates into the daemon hand-off env (credentials_to_env_overrides).
-    overrides = git_auth.credentials_to_env_overrides(creds)
-    assert overrides["ARCH_GIT_HTTPS_USERNAME"] == git_auth._DEFAULT_TOKEN_USERNAME
+    overrides = git_askpass.credentials_to_env_overrides(creds)
+    assert overrides["ARCH_GIT_HTTPS_USERNAME"] == git_auth.DEFAULT_TOKEN_USERNAME
     assert overrides["ARCH_GIT_HTTPS_PASSWORD"] == "ghp_secret"
 
 
@@ -120,7 +120,7 @@ def test_askpass_script_honours_token_only(tmp_path, monkeypatch) -> None:  # ty
     monkeypatch.setenv("ARCH_GIT_HTTPS_TOKEN", "ghp_secret")
     script = git_auth.create_askpass_script()
     try:
-        env = {"ARCH_GIT_HTTPS_TOKEN": "ghp_secret"}
+        env = {"ARCH_GIT_HTTPS_TOKEN": "ghp_secret", "ARCH_GIT_CREDENTIAL_ORIGINS": "https://github.com"}
         assert _run_askpass(script, "Username for 'https://github.com': ", env) == "x-access-token"
         assert _run_askpass(script, "Password for 'https://github.com': ", env) == "ghp_secret"
     finally:
@@ -130,7 +130,10 @@ def test_askpass_script_honours_token_only(tmp_path, monkeypatch) -> None:  # ty
 def test_askpass_script_prefers_explicit_username(tmp_path) -> None:  # type: ignore[no-untyped-def]
     script = git_auth.create_askpass_script()
     try:
-        env = {"ARCH_GIT_HTTPS_TOKEN": "ghp_secret", "ARCH_GIT_HTTPS_USERNAME": "ci-bot"}
+        env = {
+            "ARCH_GIT_HTTPS_TOKEN": "ghp_secret", "ARCH_GIT_HTTPS_USERNAME": "ci-bot",
+            "ARCH_GIT_CREDENTIAL_ORIGINS": "https://x",
+        }
         assert _run_askpass(script, "Username for 'https://x': ", env) == "ci-bot"
         assert _run_askpass(script, "Password for 'https://x': ", env) == "ghp_secret"
     finally:

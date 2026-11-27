@@ -8,11 +8,10 @@ from pathlib import Path
 from src.application.git_repair import execute_git_repair
 from src.domain.repository.git_repair import RepairState
 from src.infrastructure.git.credential_refusal import GitCredentialsRequired
+from src.infrastructure.git.git_askpass import build_git_env, create_askpass_script
 from src.infrastructure.git.git_auth import (
     GitCredentials,
-    build_git_env,
     collect_credentials,
-    create_askpass_script,
     register_token_file,
 )
 from src.infrastructure.git.repair_adapter import GitRepairAdapter

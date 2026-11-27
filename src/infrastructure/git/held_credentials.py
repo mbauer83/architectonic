@@ -19,11 +19,10 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from src.infrastructure.git.credential_refusal import GitCredentialsRequired
+from src.infrastructure.git.git_askpass import build_git_env, create_askpass_script
 from src.infrastructure.git.git_auth import (
     GitCredentials,
     RemoteProtocol,
-    build_git_env,
-    create_askpass_script,
     protocol_of_url,
     remote_urls,
     verify_credentials,
@@ -106,8 +105,9 @@ def supply(
     before the verified credential is merged in, so a credential for the other protocol supplied
     meanwhile is kept rather than overwritten.
     """
-    candidate = _with(held(), protocol, secret, username)
     repos = [repo for repo in verify_against if repo.is_dir()]
+    reached = [url for repo in repos for url in remote_urls(repo).all]
+    candidate = _with(held(), protocol, secret, username).for_origins(reached)
     probe_askpass = create_askpass_script()
     try:
         failures = verify_credentials(
@@ -122,4 +122,4 @@ def supply(
         )
         raise GitCredentialsRequired(protocol=protocol, remote_url=refused_url, rejected=True)
     with _lock:
-        _hold(_with(_credentials, protocol, secret, username))
+        _hold(_with(_credentials, protocol, secret, username).for_origins(reached))

@@ -46,6 +46,9 @@ All notable changes to this project are documented here. The format follows
 - FMEA factor judgements and VEX assessments are recorded as made by the same configured identity. The two
   routes refuse a body that names an `author` (`422`), the MCP tool `assurance_set_fmea_factor` no longer takes
   one, and the GUI no longer asks for it. Existing records keep their author.
+- The git credential is given only to the origins it was configured for. A username or password prompt from
+  another host, from the same host over plain `http`, or after a redirect is answered with nothing, and the SSH
+  key passphrase is given only to ssh's passphrase prompt.
 - Assurance content that carries no TLP level is treated as `TLP:RED`: it is withheld from readers below that
   ceiling, a GSN draft containing it is not publishable, the promotion preflight warns about it, and evidence
   classified below it is reported (E511).

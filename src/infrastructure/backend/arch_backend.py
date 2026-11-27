@@ -237,7 +237,7 @@ def _get_git_credentials():  # type: ignore[no-untyped-def]
 def _run_daemon(args: argparse.Namespace, resolved_port: int, argv: list[str] | None) -> None:
     creds = _get_git_credentials()
     if creds is not None:
-        from src.infrastructure.git.git_auth import credentials_to_env_overrides
+        from src.infrastructure.git.git_askpass import credentials_to_env_overrides
         os.environ.update(credentials_to_env_overrides(creds))
     log_path = backend_log_path(Path.cwd())
     pid = _start_daemon(argv=argv, log_path=log_path, port=resolved_port)

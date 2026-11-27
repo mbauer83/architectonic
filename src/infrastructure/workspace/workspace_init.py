@@ -288,7 +288,8 @@ def _write_state(
 
 def _collect_init_credentials(cfg: dict) -> dict[str, str] | None:
     """Probe remote URLs from the workspace config; prompt interactively for any needed credentials."""
-    from src.infrastructure.git.git_auth import build_git_env, collect_credentials, create_askpass_script
+    from src.infrastructure.git.git_askpass import build_git_env, create_askpass_script
+    from src.infrastructure.git.git_auth import collect_credentials
 
     urls = [url for key in ("engagement", "enterprise") if (url := cfg.get(key, {}).get("git", {}).get("url"))]
     if not urls:
