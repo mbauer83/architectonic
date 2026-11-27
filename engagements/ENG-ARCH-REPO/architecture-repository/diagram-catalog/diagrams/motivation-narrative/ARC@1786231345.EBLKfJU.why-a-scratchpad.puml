@@ -9,6 +9,12 @@ keywords:
 - motivation
 - barrier to entry
 diagram-type: archimate-motivation
+stakeholders:
+- Architecture modellers
+- ref: STK@1712870400.aB3dE1
+concerns:
+- Why does the product offer a scratchpad beside the model, and what may be thought
+  there before it is committed?
 entity-ids-used:
 - ASS@1786223444.T9CeYFw.fully-formal-modelling-excludes-preliminary-contributions
 - ASS@1786223458.ll5ivjY.alternatives-and-reasoning-are-discarded-before-they-reach-the-repository
@@ -44,7 +50,7 @@ connection-ids-used:
 - REQ@1786230066.vVjYCpP---OUT@1786223967.Bz8wwkG@@archimate-realization
 - PRI@1786223967.IQqhM8k---REQ@1786223986.VV89psV@@archimate-influence
 - PRI@1786223967.IQqhM8k---REQ@1786223986.cMuroZ9@@archimate-influence
-last-updated: '2026-08-24T08:34:22Z'
+last-updated: '2026-11-27T10:53:42Z'
 ---
 @startuml why-a-scratchpad
 hide stereotype
