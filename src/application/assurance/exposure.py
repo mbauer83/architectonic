@@ -17,7 +17,13 @@ from dataclasses import dataclass
 from typing import Any
 
 from src.application.verification.assurance_issues import AssuranceVerificationResult
-from src.domain.assurance.classification import TLP_RED, ceiling_rank, content_rank, exceeds_ceiling
+from src.domain.assurance.classification import (
+    TLP_RED,
+    ceiling_rank,
+    content_rank,
+    exceeds_ceiling,
+    record_tlp,
+)
 
 
 def is_above_ceiling(tlp: str | None, ceiling: str | None) -> bool:
@@ -92,12 +98,12 @@ class AssuranceExposurePolicy:
         """Return (visible_nodes, withheld_count).
 
         Withheld count is safe to report (reveals no classified content).
-        Nodes without a tlp key default to TLP:WHITE.
+        A node without a level ranks as TLP:RED.
         """
         visible: list[dict[str, Any]] = []
         withheld = 0
         for node in nodes:
-            if is_above_ceiling(node.get("tlp", "TLP:WHITE"), self._ceiling):
+            if self._withheld(node):
                 withheld += 1
             else:
                 visible.append(node)
@@ -125,12 +131,12 @@ class AssuranceExposurePolicy:
     ) -> tuple[list[dict[str, Any]], int]:
         """Filter BOM components and vulnerabilities by TLP ceiling.
 
-        Security records default to TLP:AMBER when tlp is absent.
+        A record without a level ranks as TLP:RED.
         """
         visible: list[dict[str, Any]] = []
         withheld = 0
         for rec in records:
-            if is_above_ceiling(rec.get("tlp", "TLP:AMBER"), self._ceiling):
+            if self._withheld(rec):
                 withheld += 1
             else:
                 visible.append(rec)
@@ -140,11 +146,11 @@ class AssuranceExposurePolicy:
         self,
         analyses: list[dict[str, Any]],
     ) -> tuple[list[dict[str, Any]], int]:
-        """Return (visible_analyses, withheld_count). Analyses default to TLP:WHITE."""
+        """Return (visible_analyses, withheld_count). An analysis without a level ranks as TLP:RED."""
         visible: list[dict[str, Any]] = []
         withheld = 0
         for analysis in analyses:
-            if is_above_ceiling(analysis.get("tlp", "TLP:WHITE"), self._ceiling):
+            if self._withheld(analysis):
                 withheld += 1
             else:
                 visible.append(analysis)
@@ -163,9 +169,12 @@ class AssuranceExposurePolicy:
     def _apply_record(self, record: dict[str, Any] | None) -> Visible | NotFound:
         if record is None:
             return NotFound()
-        if is_above_ceiling(record.get("tlp", "TLP:WHITE"), self._ceiling):
+        if self._withheld(record):
             return NotFound()
         return Visible(value=record, scope=self.scope())
+
+    def _withheld(self, record: dict[str, Any]) -> bool:
+        return exceeds_ceiling(record_tlp(record), self._ceiling)
 
     # ── Aggregate redaction ───────────────────────────────────────────────────
 

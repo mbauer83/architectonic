@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from src.application.verification.case_draft import draft_gsn_from_records, draft_gsn_from_store
-from src.domain.assurance.classification import TLP_ORDER, is_publishable, normalize_tlp, tlp_rank
+from src.domain.assurance.classification import TLP_ORDER, TLP_RED, is_publishable, most_sensitive, record_tlp
 
 if TYPE_CHECKING:
     from src.application.assurance.ports import AssuranceArchive, ConfidentialAssuranceStore
@@ -107,9 +107,9 @@ def _effective_tlp(
     analysis: dict[str, object],
     nodes: list[dict[str, object]],
 ) -> str:
-    levels = [normalize_tlp(str(analysis.get("tlp") or "TLP:AMBER"))]
-    levels.extend(normalize_tlp(str(node.get("tlp") or "TLP:WHITE")) for node in nodes)
-    return max(levels, key=tlp_rank)
+    """The level of a draft drawn from `analysis` and `nodes`: the most sensitive of them, a missing or
+    unrecognised level counting as TLP:RED."""
+    return most_sensitive([record_tlp(analysis), *(record_tlp(node) for node in nodes)]) or TLP_RED
 
 
 def build_gsn_draft(

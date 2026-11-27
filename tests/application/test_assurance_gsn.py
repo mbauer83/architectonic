@@ -16,9 +16,9 @@ class _Store:
         self.nodes = [
             {"node_id": "L@1", "node_type": "loss", "name": "Loss", "tlp": "TLP:WHITE"},
             {"node_id": "H@1", "node_type": "hazard", "name": "Hazard", "tlp": "TLP:GREEN"},
-            {"node_id": "U@1", "node_type": "unsafe-control-action", "name": "UCA"},
-            {"node_id": "C@1", "node_type": "assurance-constraint", "name": "Constraint"},
-            {"node_id": "E@1", "node_type": "evidence", "name": "Report"},
+            {"node_id": "U@1", "node_type": "unsafe-control-action", "name": "UCA", "tlp": "TLP:WHITE"},
+            {"node_id": "C@1", "node_type": "assurance-constraint", "name": "Constraint", "tlp": "TLP:WHITE"},
+            {"node_id": "E@1", "node_type": "evidence", "name": "Report", "tlp": "TLP:WHITE"},
         ]
         self.edges = [
             {"source_id": "H@1", "target_id": "L@1", "conn_type": "leads-to"},

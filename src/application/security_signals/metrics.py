@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from typing import Any, Literal, Mapping, Protocol, Sequence
 
 from src.application.assurance.exposure import AssuranceExposurePolicy
-from src.domain.assurance.classification import most_sensitive
+from src.domain.assurance.classification import most_sensitive, record_tlp
 from src.domain.assurance.vex_assessment import SUPPRESSING_VEX_STATUSES
 
 ContentState = Literal["complete", "visibility_limited", "no_active_snapshot", "no_findings"]
@@ -61,7 +61,7 @@ class SecurityMetrics:
 
 
 def _max_tlp(rows: Sequence[Mapping[str, Any]]) -> str | None:
-    return most_sensitive(row.get("tlp", "TLP:AMBER") for row in rows)
+    return most_sensitive(record_tlp(row) for row in rows)
 
 
 def _current_visible_vex(visible_revisions: Sequence[Mapping[str, Any]]) -> dict[tuple[str, str], Mapping[str, Any]]:

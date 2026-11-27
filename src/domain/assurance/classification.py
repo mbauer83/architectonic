@@ -14,7 +14,7 @@ means one definition governs every confidentiality decision.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 
 TLP_WHITE = "TLP:WHITE"
 TLP_GREEN = "TLP:GREEN"
@@ -59,6 +59,17 @@ def content_rank(value: str | None) -> int:
     copies of this order once did, showed `tlp: "red "` and `tlp: null` content to every reader.
     """
     return TLP_ORDER.index(normalize_tlp(value, default=TLP_RED))
+
+
+def record_tlp(record: Mapping[str, object]) -> str | None:
+    """The level a stored record carries, or None when it carries none.
+
+    None ranks as TLP:RED wherever content is disclosed (`content_rank`, `most_sensitive`). No kind of
+    record is given a default level here: a default below RED is a level nobody assigned, and reading
+    a record that lost its level as TLP:WHITE disclosed it to every reader.
+    """
+    value = record.get("tlp")
+    return value if isinstance(value, str) else None
 
 
 def ceiling_rank(value: str | None) -> int:

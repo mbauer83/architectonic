@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from src.domain.assurance.classification import is_publishable
+from src.domain.assurance.classification import TLP_RED, is_publishable, most_sensitive, record_tlp
 
 if TYPE_CHECKING:
     from src.application.assurance.ports import ConfidentialAssuranceStore
@@ -38,7 +38,7 @@ def promotion_preflight(
             continue
         nid = str(node["node_id"])
         concern_class = str(node.get("concern_class") or "")
-        tlp = str(node.get("tlp") or "TLP:WHITE")
+        tlp = most_sensitive([record_tlp(node)]) or TLP_RED
 
         if concern_class in _SAFETY_CLASSES:
             has_owner = any(

@@ -111,14 +111,14 @@ class TestFilterByCeiling:
         assert kept == []
         assert withheld == 3
 
-    def test_missing_tlp_treated_as_amber_passes_amber_ceiling(self) -> None:
+    def test_missing_tlp_is_withheld_below_red(self) -> None:
         from src.application.assurance.exposure import AssuranceExposurePolicy
 
         pol = AssuranceExposurePolicy("TLP:AMBER", True)
-        records = [{"id": 1}]  # no tlp field → defaults TLP:AMBER → passes ceiling
+        records = [{"id": 1}]  # no tlp field → ranks as TLP:RED → above the ceiling
         kept, withheld = pol.filter_security_records(records)
-        assert len(kept) == 1
-        assert withheld == 0
+        assert kept == []
+        assert withheld == 1
 
     def test_empty_input(self) -> None:
         from src.application.assurance.exposure import AssuranceExposurePolicy

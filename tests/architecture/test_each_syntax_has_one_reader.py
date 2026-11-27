@@ -723,13 +723,17 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
         instead=(
             "`src.domain.assurance.classification`: `exceeds_ceiling` to decide whether a reader may "
             "see content, `most_sensitive` to classify something derived from several records, "
-            "`content_rank` and `ceiling_rank` for a rank, `TLP_ORDER` to enumerate the levels"
+            "`content_rank` and `ceiling_rank` for a rank, `record_tlp` for the level a stored record "
+            "carries (None when it has none, which ranks as TLP:RED), `TLP_ORDER` to enumerate the levels"
         ),
         incident=(
             "the exposure policy and the MCP context each kept a table of the four levels and ranked "
             "a value they did not recognise as TLP:WHITE, so assurance content whose level was "
             "misspelt or null was shown to a reader whose ceiling should have withheld it; two metric "
-            "folds kept a third and fourth table and dropped such a value from the maximum"
+            "folds kept a third and fourth table and dropped such a value from the maximum. After that, "
+            "a record with no level at all was still given one by each reader — TLP:WHITE for nodes and "
+            "analyses, TLP:AMBER for security records — so it passed every ceiling below RED and made a "
+            "GSN draft publishable"
         ),
         enumeration_probe=_TLP_LEVEL,
     ),
