@@ -8,6 +8,7 @@ from typing import Any
 from src.application._diagram_entity_extraction import HeldRecordScope, held_record_scopes
 from src.application.verification._duplicate_identity_rules import DuplicateStableIdContribution
 from src.application.verification._exclusive_containment_rule import ExclusiveContainmentContribution
+from src.application.verification._ordered_sequence_rule import OrderedSequenceContribution
 from src.application.verification._orphan_attachment_schema_rule import OrphanAttachmentSchemaContribution
 from src.application.verification._undeclared_group_rule import UndeclaredGroupContribution
 from src.application.verification._workspace_identity_rules import WorkspaceIdUniquenessContribution
@@ -17,6 +18,7 @@ from src.domain.diagrams.diagram_verification import RepositoryVerificationConte
 GENERIC_REPOSITORY_CONTRIBUTIONS: tuple[RepositoryVerificationContribution, ...] = (
     DuplicateStableIdContribution(),
     ExclusiveContainmentContribution(),
+    OrderedSequenceContribution(),
     OrphanAttachmentSchemaContribution(),
     UndeclaredGroupContribution(),
     WorkspaceIdUniquenessContribution(),

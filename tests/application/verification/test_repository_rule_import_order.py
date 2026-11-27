@@ -14,6 +14,7 @@ from types import SimpleNamespace
 rules = (
     ("_duplicate_identity_rules", "DuplicateStableIdContribution"),
     ("_exclusive_containment_rule", "ExclusiveContainmentContribution"),
+    ("_ordered_sequence_rule", "OrderedSequenceContribution"),
     ("_orphan_attachment_schema_rule", "OrphanAttachmentSchemaContribution"),
     ("_undeclared_group_rule", "UndeclaredGroupContribution"),
     ("_workspace_identity_rules", "WorkspaceIdUniquenessContribution"),
@@ -29,5 +30,5 @@ run_repository_contributions(candidate=object(), runtime_catalogs=catalogs, repo
         return subprocess.check_output([sys.executable, "-c", probe, order], text=True).splitlines()
 
     forward = dispatched("forward")
-    assert len(set(forward)) == 5
+    assert len(set(forward)) == 6
     assert dispatched("reverse") == forward
