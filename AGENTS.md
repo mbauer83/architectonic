@@ -163,6 +163,12 @@ that gets skipped without saying so. Run one at a time, never concurrently.
 CI enforces the backend coverage ratchet over the *combined* shards (`coverage report`), which a
 single local run already satisfies because it covers everything at once.
 
+CI also refuses to shard over a stale `.test_durations`: `uv run pytest -n 0 --collect-only -qq --splits 3
+--group 1` fails when more than a tenth of the collected tests have no recorded duration
+(`tests/support/shard_durations.py`). The remedy it names is a full re-measure,
+`uv run pytest -n 6 --store-durations -q`, committed on its own. Re-measure as well after a change that
+moves a lot of test time between files, even when the gate is quiet — it counts tests, not seconds.
+
 From `tools/gui/`, for a stage that touched the GUI, its API payloads, or model content the GUI
 renders:
 

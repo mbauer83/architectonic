@@ -83,6 +83,14 @@ jobs:
       - name: Documentation links, anchors, and media references
         run: uv run python tools/docs/check_doc_links.py
 
+      - name: The shard durations still name the suite
+        # pytest-split balances the test shards from .test_durations and gives an unrecorded test the
+        # mean, so a stale file unbalances them silently — on the v0.12.0 tag one shard ran past the
+        # 20-minute cap. The root conftest refuses a split when more than a tenth of the collected
+        # tests have no recorded duration; it can say why only without xdist workers, hence its own
+        # collect-only step (~15 s) here rather than inside the shards.
+        run: uv run pytest -n 0 --collect-only -qq --splits 3 --group 1
+
       - name: Ruff
         run: uv run ruff check src
 

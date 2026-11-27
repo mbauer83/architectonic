@@ -11,12 +11,15 @@ from __future__ import annotations
 
 import faulthandler
 import fcntl
+import json
 import os
 import pathlib
 import sys
 import tempfile
 
 import pytest
+
+from tests.support.shard_durations import duration_coverage
 
 #: How long a whole run may take before it is treated as stuck, in seconds.
 #:
@@ -82,12 +85,34 @@ _RUN_LAST_SUBSTRINGS = (
 )
 
 
-def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    _refuse_a_split_on_stale_durations(config, items)
     run_last = [item for item in items if any(needle in item.nodeid for needle in _RUN_LAST_SUBSTRINGS)]
     if not run_last:
         return
     remaining = [item for item in items if item not in run_last]
     items[:] = remaining + run_last
+
+
+def _refuse_a_split_on_stale_durations(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Fail a sharded run whose `.test_durations` no longer names most of the suite (B142).
+
+    Runs before pytest-split deselects, so it sees every collected test. Only in a run without xdist
+    workers: a worker that stops at collection surfaces as an internal error of the controller's
+    scheduler and the reason is lost. CI therefore asks in a collect-only step of its own
+    (`pytest -n 0 --collect-only --splits 3 --group 1`, ~15 s), before any shard starts.
+    """
+    if not config.getoption("splits", default=None) or hasattr(config, "workerinput"):
+        return
+    durations_path = config.getoption("durations_path")
+    try:
+        recorded = json.loads(pathlib.Path(durations_path).read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        recorded = {}
+    coverage = duration_coverage((item.nodeid for item in items), recorded)
+    if coverage.is_stale:
+        raise pytest.UsageError(coverage.refusal(durations_path))
 
 
 @pytest.fixture(autouse=True)
