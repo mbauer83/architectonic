@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -56,10 +56,10 @@ def list_diagrams(
     status: str | None = None,
     group: str | None = None,
     scope: str | None = None,
-    stakeholder: str | None = Query(default=None, description=(
+    stakeholder: Annotated[str | None, Query(description=(
         "Only the diagrams for this stakeholder: an element's artifact id, or the words of a prose entry "
         "(compared without case). A diagram applying a viewpoint is for the viewpoint's stakeholders "
-        "where it names none of its own.")),
+        "where it names none of its own."))] = None,
     catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     store_projected = assurance_surface_diagram_types(complete_diagram_type_catalog())
