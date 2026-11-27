@@ -133,7 +133,13 @@ jobs:
       - name: Install dependencies (all groups)
         run: uv sync --locked --all-groups
 
-      - name: Fetch the PlantUML runtime
+      - name: Cache the PlantUML runtime (keyed on the pinned version in get_plantuml.py)
+        uses: actions/cache@v4
+        with:
+          path: plantuml.jar
+          key: plantuml-${{ hashFiles('src/infrastructure/bootstrap/get_plantuml.py') }}
+
+      - name: Fetch the PlantUML runtime (a cached jar is kept as it is)
         run: uv run get-plantuml
 
       - name: Pytest (shard; coverage collected, threshold deferred to the combine job)
@@ -281,9 +287,49 @@ jobs:
       - name: Build
         run: npm run build
 
-  e2e:
-    name: E2E · route-walk smoke
+  gui-build:
+    name: E2E · build the GUI once (instrumented)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/gui
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node (package.json engines)
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: tools/gui/package.json
+          cache: npm
+          cache-dependency-path: tools/gui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the GUI (instrumented for E2E coverage; served by the backend at /)
+        env:
+          VITE_COVERAGE: "true"
+        run: npm run build
+
+      - name: Hand the build to the browser-suite shards
+        uses: actions/upload-artifact@v7
+        with:
+          name: gui-dist-e2e
+          path: tools/gui/dist
+          if-no-files-found: error
+          retention-days: 1
+
+  e2e:
+    # Three runners, each with its own backend, workspace and assurance store: the specs write
+    # candidates, analyses and diagrams, and the suite runs one worker per stack. Playwright's
+    # --shard splits by spec file, so a spec must not depend on another spec's writes.
+    name: E2E · route-walk smoke (shard ${{ matrix.shard }}/3)
+    runs-on: ubuntu-latest
+    needs: gui-build
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     env:
       # Belt-and-suspenders: even though the CI workspace below is local-only (so the
       # backend's find_git_repos() returns nothing and the git-watcher never starts),
@@ -332,20 +378,41 @@ jobs:
       - name: Install Python dependencies
         run: uv sync --locked --all-groups
 
-      - name: Fetch the PlantUML runtime
+      - name: Cache the PlantUML runtime (keyed on the pinned version in get_plantuml.py)
+        uses: actions/cache@v4
+        with:
+          path: plantuml.jar
+          key: plantuml-${{ hashFiles('src/infrastructure/bootstrap/get_plantuml.py') }}
+
+      - name: Fetch the PlantUML runtime (a cached jar is kept as it is)
         run: uv run get-plantuml
 
-      - name: Build the GUI (instrumented for E2E coverage; served by the backend at /)
+      - name: Install frontend dependencies (Playwright and nyc; the GUI itself is built once, above)
         working-directory: tools/gui
-        env:
-          VITE_COVERAGE: "true"
-        run: |
-          npm ci
-          npm run build
+        run: npm ci
 
-      - name: Install Playwright browser
+      - name: Take the GUI build
+        uses: actions/download-artifact@v8
+        with:
+          name: gui-dist-e2e
+          path: tools/gui/dist
+
+      - name: Cache the Playwright browsers (keyed on the lock, which pins Playwright)
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('tools/gui/package-lock.json') }}
+
+      - name: Install the Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: tools/gui
         run: npx playwright install --with-deps chromium
+
+      - name: Install the Playwright browser's system libraries (browser restored from cache)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: tools/gui
+        run: npx playwright install-deps chromium
 
       - name: Write a local-only workspace (no git remotes → no watcher/auth in CI)
         run: |
@@ -416,7 +483,7 @@ jobs:
         working-directory: tools/gui
         env:
           E2E_BASE_URL: http://localhost:8000
-        run: npm run test:e2e
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/3
 
       - name: Generate E2E coverage (lcov from .nyc_output; reachability, report-only)
         if: always()
@@ -437,6 +504,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-shard-${{ matrix.shard }}
           path: tools/gui/playwright-report/
           retention-days: 7
