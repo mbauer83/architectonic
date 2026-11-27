@@ -11,6 +11,7 @@ replaced — the failure mode that makes a scan like this get switched off.
 
 from __future__ import annotations
 
+import os
 import re
 from collections.abc import Iterator
 from pathlib import Path
@@ -80,20 +81,32 @@ def _literal_pattern(literal: str) -> re.Pattern[str]:
 
 
 def scan_files(root: Path) -> Iterator[Path]:
-    """Every text file under *root* that could reference a route."""
-    for path in root.rglob("*"):
-        if not path.is_file() or path.suffix not in _TEXT_SUFFIXES:
-            continue
-        if (
-            path.name in _SKIP_FILES
-            or path.name in _GENERATED_NAMES
-            or path.name.endswith(_GENERATED_SUFFIX)
-        ):
-            continue
-        parts = set(path.relative_to(root).parts)
-        if (_SKIP_DIRECTORIES | _RECORD_DIRECTORIES) & parts:
-            continue
-        yield path
+    """Every text file under *root* that could reference a route.
+
+    A skipped directory is pruned from the walk, not filtered from its output: ``.claude`` holds
+    every agent worktree, each a whole checkout with its own ``node_modules``, and descending into
+    them only to discard what was found made this scan cost minutes in the main checkout.
+    """
+    excluded = _SKIP_DIRECTORIES | _RECORD_DIRECTORIES
+    for directory, subdirectories, names in os.walk(root):
+        subdirectories[:] = sorted(d for d in subdirectories if d not in excluded)
+        for name in sorted(names):
+            path = Path(directory, name)
+            if path.suffix not in _TEXT_SUFFIXES or not path.is_file():
+                continue
+            if (
+                name in _SKIP_FILES
+                or name in _GENERATED_NAMES
+                or name.endswith(_GENERATED_SUFFIX)
+                or name in excluded
+            ):
+                continue
+            yield path
+
+
+def _fixed_prefix(literal: str) -> str:
+    """The part of *literal* before its first placeholder: text every match must contain."""
+    return literal.split("{", 1)[0]
 
 
 def find_retired_literals(
@@ -107,15 +120,24 @@ def find_retired_literals(
     patterns = {literal: _literal_pattern(literal) for literal in literals}
     findings: dict[str, list[str]] = {}
     exempt_resolved = {path.resolve() for path in exempt}
+    prefixes = {literal: _fixed_prefix(literal) for literal in literals}
     for path in scan_files(root):
         if path.resolve() in exempt_resolved:
             continue
         try:
-            lines = path.read_text(encoding="utf-8").splitlines()
+            text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
+        # A literal whose fixed prefix is absent from the file cannot match any line of it, so the
+        # per-line regex — the whole cost of this scan — runs only for the literals that might.
+        present = {
+            literal: pattern for literal, pattern in patterns.items() if prefixes[literal] in text
+        }
+        if not present:
+            continue
+        lines = text.splitlines()
         for number, line in enumerate(lines, start=1):
-            for literal, pattern in patterns.items():
+            for literal, pattern in present.items():
                 if pattern.search(line):
                     findings.setdefault(literal, []).append(
                         f"{path.relative_to(root)}:{number}"
@@ -167,10 +189,14 @@ def find_retired_method_calls(
         if path.resolve() in exempt_resolved:
             continue
         try:
-            lines = path.read_text(encoding="utf-8").splitlines()
+            text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
+        lines = text.splitlines()
         for method, template in candidates:
+            # Every call form quotes the template verbatim, so a file without it has no match.
+            if template not in text:
+                continue
             quoted = re.escape(template)
             for form in _CLIENT_CALL_FORMS:
                 pattern = re.compile(form.format(path=quoted, lower=method.lower()))
