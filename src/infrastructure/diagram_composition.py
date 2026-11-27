@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Self, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
@@ -25,6 +25,7 @@ from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, Layout, read_lay
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.artifact_home_wire import Rehomeable
 from src.infrastructure.diagram_layout_wire import LayoutPatch, RegroupIntent, stated_intents
+from src.infrastructure.diagram_transport_rows import extract_conn_bindings, split_diagram_entities
 from src.infrastructure.purpose_lines_wire import StatesPurposeLines, entries_as_stated
 from src.infrastructure.rendering.diagram_selection import resolve_diagram_selection
 from src.infrastructure.rendering.layout.diagram_picture import placed_on_its_picture
@@ -144,43 +145,13 @@ class DiagramReplacement(DiagramComposition, _Body, Rehomeable, StatesPurposeLin
     viewpoint: dict[str, Any] | None = None
     dry_run: bool = True
 
-
-def _split_diagram_entities(
-    diagram_entities: dict[str, Any] | None,
-) -> tuple[dict[str, Any] | None, list[dict[str, Any]] | None]:
-    """Separate the transport-only `_connections` key from entity data."""
-    if diagram_entities is None:
-        return None, None
-    conns = diagram_entities.get("_connections")
-    if conns is None:
-        return diagram_entities, None
-    clean = {k: v for k, v in diagram_entities.items() if k != "_connections"}
-    return clean or None, conns if isinstance(conns, list) else None
+    def stated_viewpoint(self) -> StatedViewpoint:
+        """The viewpoint as an edit argument: omitted keeps the diagram's own, a stated null clears it."""
+        return {"viewpoint": self.viewpoint} if "viewpoint" in self.model_fields_set else {}
 
 
-def _extract_conn_bindings(
-    connections: list[dict[str, Any]] | None,
-) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]]]:
-    """Strip `backing_conn_id` from connections; return (clean, binding_dicts)."""
-    if not connections:
-        return connections, []
-    bindings: list[dict[str, Any]] = []
-    clean: list[dict[str, Any]] = []
-    for conn in connections:
-        if not isinstance(conn, dict):
-            clean.append(conn)
-            continue
-        backing_id = conn.get("backing_conn_id")
-        conn_id = conn.get("id")
-        if backing_id and conn_id:
-            bindings.append({
-                "id": f"bind-conn-{conn_id}",
-                "subject": {"kind": "connection", "id": conn_id},
-                "correspondence_kind": "represents",
-                "target": {"connection_id": backing_id},
-            })
-        clean.append({k: v for k, v in conn.items() if k != "backing_conn_id"})
-    return clean or None, bindings
+class StatedViewpoint(TypedDict, total=False):
+    viewpoint: dict[str, Any] | None
 
 
 @dataclass(frozen=True)
@@ -233,12 +204,12 @@ def render_composition(
     connections.extend(proposals.values())
     entity_ids_used.extend(entity.artifact_id for entity in proposed_entities)
     connection_ids_used.extend(connection.artifact_id for connection in proposals.values())
-    de, dc = _split_diagram_entities(body.diagram_entities)
+    de, dc = split_diagram_entities(body.diagram_entities)
     try:
         de = with_icons_prepared(de) if de is not None else None
     except ValueError as exc:  # an upload the normaliser refuses is the caller's to correct
         raise CompositionRefused(str(exc), field="diagram_entities") from exc
-    dc, conn_bindings = _extract_conn_bindings(dc)
+    dc, conn_bindings = extract_conn_bindings(dc)
     puml = generate_puml_body(
         body.name,
         entities,
@@ -334,7 +305,8 @@ def replace_diagram(
             diagram_connections=composed.diagram_connections, entity_ids_used=composed.entity_ids_used,
             connection_ids_used=composed.connection_ids_used, authored_groupings=body.authored_groupings,
             layout=layout, version=body.version, status=body.status, tlp=body.tlp,
-            bindings=composed.conn_bindings or None, viewpoint=body.viewpoint, dry_run=dry_run,
+            bindings=composed.conn_bindings or None, dry_run=dry_run,
+            **body.stated_viewpoint(),
             stakeholders=entries_as_stated(body.stakeholders), concerns=entries_as_stated(body.concerns),
             committed_repo=committed_repository(repo), manual_layout=body.manual_layout,
         )
