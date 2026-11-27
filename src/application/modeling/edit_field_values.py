@@ -24,6 +24,7 @@ from typing import Any
 
 from src.application.artifacts.parsing import parse_entity_content_sections
 from src.domain.ontology_representation.artifact_types import DocumentRecord, EntityRecord
+from src.domain.verification_advice import ACCEPTED_ADVICE_KEY
 
 
 def current_entity_values(record: EntityRecord) -> Mapping[str, Any]:
@@ -45,6 +46,7 @@ def current_entity_values(record: EntityRecord) -> Mapping[str, Any]:
         "properties": sections.get("properties"),
         "notes": sections.get("notes"),
         "attribute_types": record.extra.get("attribute-types"),
+        "accepted_advice": record.extra.get(ACCEPTED_ADVICE_KEY),
     }
 
 

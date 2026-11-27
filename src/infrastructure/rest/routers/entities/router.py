@@ -19,6 +19,7 @@ from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification._verifier_contribution_runner import held_record_scopes_from_catalogs
 from src.application.viewpoints.diagram_purpose import diagrams_addressing
 from src.domain.baseline_standing import BASELINE_STANDING
+from src.infrastructure.advice_wire import acknowledgements
 from src.infrastructure.rest.contracts.catalog import (
     BackendIdentityResponse,
     RepositoryStatsResponse,
@@ -331,6 +332,7 @@ def create_entity(
             notes=body.notes,
             keywords=body.keywords,
             specializations=body.specializations,
+            accepted_advice=acknowledgements(body.accepted_advice),
             artifact_id=None,
             version=body.version,
             status=body.status,
@@ -380,6 +382,7 @@ def edit_entity(artifact_id: str, body: EditEntityBody,
             notes=body.notes if "notes" in provided else _UNSET,
             keywords=body.keywords if "keywords" in provided else _UNSET,
             specializations=body.specializations if "specializations" in provided else _UNSET,
+            accepted_advice=acknowledgements(body.accepted_advice) if "accepted_advice" in provided else _UNSET,
             version=body.version,
             status=body.status,
             dry_run=body.dry_run,

@@ -13,8 +13,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
+from src.infrastructure.advice_wire import ACCEPTED_ADVICE_DESCRIPTION, AcceptedAdviceEntry
 from src.infrastructure.artifact_home_wire import FiledOnCreate, Rehomeable
 
 
@@ -31,6 +32,7 @@ class CreateEntityBody(_Body, FiledOnCreate):
     notes: str | None = None
     keywords: list[str] | None = None
     specializations: list[str] | None = None
+    accepted_advice: list[AcceptedAdviceEntry] | None = Field(default=None, description=ACCEPTED_ADVICE_DESCRIPTION)
     version: str = "0.1.0"
     status: str = "draft"
     dry_run: bool = True
@@ -46,6 +48,7 @@ class EditEntityBody(_Body, Rehomeable):
     notes: str | None = None
     keywords: list[str] | None = None
     specializations: list[str] | None = None
+    accepted_advice: list[AcceptedAdviceEntry] | None = Field(default=None, description=ACCEPTED_ADVICE_DESCRIPTION)
     version: str | None = None
     status: str | None = None
     dry_run: bool = True

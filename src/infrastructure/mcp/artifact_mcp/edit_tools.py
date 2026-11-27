@@ -8,6 +8,7 @@ from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 from src.application.artifacts.query import ArtifactRepository
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_registry import ArtifactRegistry
+from src.infrastructure.advice_wire import AcceptedAdviceEntry, acknowledgements
 from src.infrastructure.mcp.artifact_mcp import edit_tool_descriptions as descriptions
 from src.infrastructure.mcp.artifact_mcp.context import (
     authoritative_callbacks_for,
@@ -84,6 +85,7 @@ def artifact_edit_entity(
     notes: str | None = None,
     keywords: list[str] | None = None,
     specializations: list[str] | None = None,
+    accepted_advice: list[AcceptedAdviceEntry] | None = None,
     version: str | None = None,
     status: str | None = None,
     group: str | None = None,
@@ -101,6 +103,7 @@ def artifact_edit_entity(
             ("attribute_types", attribute_types),
             ("notes", notes), ("keywords", keywords),
             ("specializations", specializations),
+            ("accepted_advice", acknowledgements(accepted_advice)),
             ("version", version), ("status", status), ("group", group),
         ) if v is not None
     }

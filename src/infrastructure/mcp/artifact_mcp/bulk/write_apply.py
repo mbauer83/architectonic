@@ -75,6 +75,7 @@ def apply_create_entities(
                 notes=item.get("notes"),
                 keywords=item.get("keywords"),
                 specializations=item.get("specializations"),
+                accepted_advice=item.get("accepted_advice"),
                 artifact_id=item.get("artifact_id"),
                 version=item.get("version", "0.1.0"),
                 status=item.get("status", "draft"),

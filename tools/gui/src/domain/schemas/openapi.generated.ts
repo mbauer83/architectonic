@@ -3973,6 +3973,22 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AcceptedAdviceEntry
+         * @description One acknowledged advice: the code, and why the element is right as it stands.
+         */
+        AcceptedAdviceEntry: {
+            /**
+             * Code
+             * @description The advice code acknowledged (A341). Warning (W…) and error (E…) codes are refused.
+             */
+            code: string;
+            /**
+             * Reason
+             * @description Why the element is right as it stands; at most 280 characters.
+             */
+            reason: string;
+        };
         /** AddConnectionBody */
         AddConnectionBody: {
             /** Connection Type */
@@ -4132,6 +4148,11 @@ export interface components {
         };
         /** AdminEditEntityBody */
         AdminEditEntityBody: {
+            /**
+             * Accepted Advice
+             * @description Acknowledged advice, as [{code, reason}]. Replaces the stored set; [] clears it. An acknowledged advice is quiet at every status. Only advice codes are accepted: acknowledging a warning or an error is refused.
+             */
+            accepted_advice?: components["schemas"]["AcceptedAdviceEntry"][] | null;
             /** Attribute Types */
             attribute_types?: {
                 [key: string]: string | null;
@@ -7704,6 +7725,11 @@ export interface components {
         };
         /** CreateEntityBody */
         CreateEntityBody: {
+            /**
+             * Accepted Advice
+             * @description Acknowledged advice, as [{code, reason}]. Replaces the stored set; [] clears it. An acknowledged advice is quiet at every status. Only advice codes are accepted: acknowledging a warning or an error is refused.
+             */
+            accepted_advice?: components["schemas"]["AcceptedAdviceEntry"][] | null;
             /** Artifact Type */
             artifact_type: string;
             /** Attribute Types */
@@ -7751,7 +7777,7 @@ export interface components {
             artifact_id?: string | null;
             /**
              * Fields
-             * @description What the entity states. Required: artifact_type, name, group (a model project's id or slug). Accepted: artifact_type, attribute_types, group, keywords, name, notes, properties, specializations, status, summary, version.
+             * @description What the entity states. Required: artifact_type, name, group (a model project's id or slug). Accepted: accepted_advice, artifact_type, attribute_types, group, keywords, name, notes, properties, specializations, status, summary, version.
              */
             fields: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -9870,6 +9896,11 @@ export interface components {
         };
         /** EditEntityBody */
         EditEntityBody: {
+            /**
+             * Accepted Advice
+             * @description Acknowledged advice, as [{code, reason}]. Replaces the stored set; [] clears it. An acknowledged advice is quiet at every status. Only advice codes are accepted: acknowledging a warning or an error is refused.
+             */
+            accepted_advice?: components["schemas"]["AcceptedAdviceEntry"][] | null;
             /** Attribute Types */
             attribute_types?: {
                 [key: string]: string | null;
@@ -9909,7 +9940,7 @@ export interface components {
             artifact_id: string;
             /**
              * Field
-             * @description The field changed: one of attribute_types, group, keywords, name, notes, properties, specializations, status, summary, version.
+             * @description The field changed: one of accepted_advice, attribute_types, group, keywords, name, notes, properties, specializations, status, summary, version.
              */
             field: string;
             /**

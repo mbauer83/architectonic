@@ -39,6 +39,9 @@ EDIT_ENTITY_DESCRIPTION = (
     "group (str|None — re-home to a different model-project slug). "
     "properties and attribute_types are PATCHED key by key: send only the attributes you are "
     "changing and the rest are kept. Map a key to null to remove that attribute. "
+    "accepted_advice acknowledges advice findings (artifact_verify's 'advice'), as [{code, reason}] "
+    "with a short reason; it replaces the stored set and [] clears it. An acknowledged advice is quiet "
+    "at every status. Only advice codes (A…) are accepted — a warning or error code is refused. "
     "Bumps last-updated automatically. Regenerates macros if name changes. "
     "artifact_id: full (PREFIX@epoch.random.slug) or short (PREFIX@epoch.random) form."
 )

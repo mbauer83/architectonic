@@ -2,6 +2,7 @@
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
+from src.infrastructure.advice_wire import AcceptedAdviceEntry, acknowledgements
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.mcp.artifact_mcp.write._common import (
     _out,
@@ -46,6 +47,7 @@ def artifact_create_entity(
     notes: str | None = None,
     keywords: list[str] | None = None,
     specializations: list[str] | None = None,
+    accepted_advice: list[AcceptedAdviceEntry] | None = None,
     artifact_id: str | None = None,
     version: str = "0.1.0",
     status: str = "draft",
@@ -112,6 +114,7 @@ def artifact_create_entity(
         notes=notes,
         keywords=keywords,
         specializations=specializations,
+        accepted_advice=acknowledgements(accepted_advice),
         artifact_id=artifact_id,
         version=version,
         status=status,

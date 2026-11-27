@@ -89,6 +89,7 @@ def admin_edit_entity(
     notes: object = _UNSET,
     keywords: object = _UNSET,
     specializations: object = _UNSET,
+    accepted_advice: object = _UNSET,
     version: str | None = None,
     status: str | None = None,
     dry_run: bool,
@@ -115,7 +116,7 @@ def admin_edit_entity(
     merged = merge_fields(
         parsed, name=name, version=version, status=status,
         keywords=keywords, specializations=specializations, summary=summary, properties=properties,
-        attribute_types=attribute_types, notes=notes,
+        attribute_types=attribute_types, notes=notes, accepted_advice=accepted_advice,
     )
     content = render_entity(
         parsed=parsed, merged=merged, artifact_type=artifact_type,

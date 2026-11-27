@@ -18,6 +18,12 @@ from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.specialization_values import (
     applied_specialization_slugs,
 )
+from src.domain.verification_advice import (
+    ACCEPTED_ADVICE_KEY,
+    AcceptedAdvice,
+    accepted_advice_from_frontmatter,
+    checked_acknowledgements,
+)
 
 from .boundary import normalize_specializations
 from .coerce import as_optional_str, as_optional_str_dict, as_optional_str_list, as_optional_typed_dict
@@ -46,6 +52,14 @@ def _merge_specializations(current: object, specializations: object) -> tuple[st
     return _fm_specializations(current)
 
 
+def merge_accepted_advice(current: object, accepted_advice: object) -> tuple[AcceptedAdvice, ...]:
+    """The post-edit acknowledgements. Given, they REPLACE the stored set — checked, so a warning or
+    an error code is refused rather than kept; ``_UNSET`` keeps what is stored, and ``[]`` clears it."""
+    if accepted_advice is _UNSET or accepted_advice is None:
+        return accepted_advice_from_frontmatter(current)
+    return checked_acknowledgements(accepted_advice)
+
+
 @dataclass(frozen=True)
 class MergedFields:
     """An entity's editable fields after merging partial updates with current values."""
@@ -59,6 +73,7 @@ class MergedFields:
     properties: dict[str, Any] | None
     attribute_types: dict[str, str] | None
     notes: str | None
+    accepted_advice: tuple[AcceptedAdvice, ...] = ()
 
 
 def patch_map(
@@ -98,6 +113,7 @@ def merge_fields(
     properties: object,
     attribute_types: object,
     notes: object,
+    accepted_advice: object = _UNSET,
 ) -> MergedFields:
     """Merge provided fields over the parsed entity; ``_UNSET``/``None`` keep current values.
 
@@ -126,6 +142,7 @@ def merge_fields(
             else as_optional_str_dict(fm.get("attribute-types"))
         ),
         notes=as_optional_str(notes) if notes is not _UNSET else parsed.notes,
+        accepted_advice=merge_accepted_advice(fm.get(ACCEPTED_ADVICE_KEY), accepted_advice),
     )
 
 
@@ -211,6 +228,7 @@ def render_entity(
         summary=merged.summary,
         properties=merged.properties,
         attribute_types=merged.attribute_types,
+        accepted_advice=merged.accepted_advice,
         notes=merged.notes,
         display_section_id=parsed.display_section_id,
         display_content=display_content,

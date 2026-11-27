@@ -12,9 +12,10 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.infrastructure.advice_wire import ACCEPTED_ADVICE_DESCRIPTION, AcceptedAdviceEntry, acknowledgements
 from src.infrastructure.rest.contracts.platform import ServerInfoResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
@@ -115,6 +116,7 @@ class AdminEditEntityBody(BaseModel):
     keywords: list[str] | None = None
     #: Replaces the applied set; `[]` clears it. Absent here for the same reason as above.
     specializations: list[str] | None = None
+    accepted_advice: list[AcceptedAdviceEntry] | None = Field(default=None, description=ACCEPTED_ADVICE_DESCRIPTION)
     version: str | None = None
     status: str | None = None
     dry_run: bool = True
@@ -183,6 +185,7 @@ def admin_edit_entity(artifact_id: str, body: AdminEditEntityBody,
             notes=body.notes if "notes" in provided else _UNSET,
             keywords=body.keywords if "keywords" in provided else _UNSET,
             specializations=body.specializations if "specializations" in provided else _UNSET,
+            accepted_advice=acknowledgements(body.accepted_advice) if "accepted_advice" in provided else _UNSET,
             version=body.version,
             status=body.status,
             dry_run=body.dry_run,

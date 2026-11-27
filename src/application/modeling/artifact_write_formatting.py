@@ -6,6 +6,7 @@ import yaml  # type: ignore[import-untyped]
 from src.domain.ontology_representation.property_value import encode as _encode_cell
 from src.domain.repository.connection_declaration import ConnectionDeclaration, format_connection_declaration
 from src.domain.repository.properties_section import format_properties_section
+from src.domain.verification_advice import ACCEPTED_ADVICE_KEY, AcceptedAdvice, accepted_advice_to_frontmatter
 
 
 def _specialization_frontmatter_value(specializations: Sequence[str] | None) -> str | list[str] | None:
@@ -55,6 +56,7 @@ def format_entity_markdown(
     summary: str | None,
     properties: dict[str, Any] | None,
     attribute_types: dict[str, str] | None = None,
+    accepted_advice: Sequence[AcceptedAdvice] = (),
     notes: str | None,
     display_section_id: str,
     display_content: str,
@@ -80,6 +82,8 @@ def format_entity_markdown(
         frontmatter["specialization"] = applied
     if attribute_types:
         frontmatter["attribute-types"] = attribute_types
+    if accepted_advice:
+        frontmatter[ACCEPTED_ADVICE_KEY] = accepted_advice_to_frontmatter(accepted_advice)
     frontmatter["last-updated"] = last_updated
 
     ordered_keys = [
@@ -91,6 +95,7 @@ def format_entity_markdown(
         "keywords",
         "specialization",
         "attribute-types",
+        ACCEPTED_ADVICE_KEY,
         "last-updated",
     ]
     fm_out = {key: frontmatter[key] for key in ordered_keys if key in frontmatter}

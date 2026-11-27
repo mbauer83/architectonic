@@ -1,5 +1,5 @@
 import functools
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +13,7 @@ from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.modules.module_types import EntityTypeName
 from src.domain.ontology_representation.ontology_types import EntityTypeInfo
 from src.domain.repository.groups import UNCATEGORIZED
+from src.domain.verification_advice import checked_acknowledgements
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 from src.infrastructure.atomic_file import write_atomic
 
@@ -77,6 +78,7 @@ def create_entity(
     notes: str | None,
     keywords: list[str] | None = None,
     specializations: Sequence[str] | None = None,
+    accepted_advice: Sequence[Mapping[str, object]] | None = None,
     artifact_id: str | None,
     version: str,
     status: str,
@@ -85,6 +87,7 @@ def create_entity(
     group: str = UNCATEGORIZED,
 ) -> WriteResult:
     assert_engagement_write_root(repo_root)
+    acknowledged = checked_acknowledgements(list(accepted_advice or []))
 
     from src.infrastructure.app_bootstrap import (  # noqa: PLC0415, process_runtime_catalogs
         get_module_registry,
@@ -173,6 +176,7 @@ def create_entity(
         summary=summary,
         properties=properties,
         attribute_types=attribute_types,
+        accepted_advice=acknowledged,
         notes=notes,
         display_section_id=display_section_id,
         display_content=display_content,

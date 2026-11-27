@@ -108,6 +108,7 @@ def edit_entity(
     notes: object = _UNSET,
     keywords: object = _UNSET,
     specializations: object = _UNSET,
+    accepted_advice: object = _UNSET,
     version: str | None = None,
     status: str | None = None,
     group: str | None = None,
@@ -134,8 +135,8 @@ def edit_entity(
             repo_root=repo_root, artifact_id=artifact_id, dry_run=dry_run,
         ),
         name=name, summary=summary, properties=properties, attribute_types=attribute_types,
-        notes=notes, keywords=keywords, specializations=specializations, version=version,
-        status=status, group=group,
+        notes=notes, keywords=keywords, specializations=specializations, accepted_advice=accepted_advice,
+        version=version, status=status, group=group,
     )
     if recorded is not None:
         return recorded
@@ -160,6 +161,7 @@ def edit_entity(
         properties=properties,
         attribute_types=attribute_types,
         notes=notes,
+        accepted_advice=accepted_advice,
     )
     # Gate on the EFFECTIVE (post-merge) specialization set: an edit that moves an entity
     # onto a quarantined profile pair must be refused just like a create (WU-Q3).

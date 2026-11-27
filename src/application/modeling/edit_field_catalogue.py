@@ -58,7 +58,7 @@ ADDRESSING: Mapping[ArtifactKind, frozenset[str]] = {
 CONTENT: Mapping[ArtifactKind, frozenset[str]] = {
     "entity": frozenset({
         "name", "summary", "properties", "attribute_types", "notes", "keywords",
-        "specializations", "version", "status", "group",
+        "specializations", "accepted_advice", "version", "status", "group",
     }),
     "connection": frozenset({
         "description", "src_multiplicity", "tgt_multiplicity", "specializations", "metadata",
