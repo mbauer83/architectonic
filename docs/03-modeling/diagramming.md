@@ -93,6 +93,38 @@ Any diagram or matrix can be pinned to a [viewpoint](viewpoints.md) definition v
 outside the definition's scope or query — ghosted, warned, or ignored depending on the
 effective enforcement setting. See [Viewpoints](viewpoints.md) for the full model.
 
+A viewpoint lists the diagram types it is intended for (`representation_types`). Applying it to a
+diagram of another type is allowed and reported as a warning (`W183`) naming the viewpoint, the
+diagram's type and the types it declares. The viewpoint picker lists the viewpoints intended for the
+diagram's type first and marks the rest. A viewpoint that declares no types suits any diagram.
+
+&nbsp;
+
+## Who a diagram is for, and what it answers
+
+A diagram can state its audience and the questions it answers in two frontmatter lists, the same
+shape a viewpoint uses for its own:
+
+```yaml
+stakeholders:
+- Warehouse staff                     # in words
+- ref: STK@1712870400.aB3dEf          # a Stakeholder element
+concerns:
+- How does an order reach the warehouse?
+- ref: GOL@1712870400.x9YzQw          # the motivation element that states the concern
+```
+
+Each entry is prose, or a reference to an element: a stakeholder for `stakeholders`, and for
+`concerns` any motivation element (a driver, goal, assessment, requirement and so on). A reference to
+an element the repository does not hold is refused (`E186`), as is one to an element of an unsuitable
+type (`E187`); a list that cannot be read is `E185`. Both lists are optional.
+
+A diagram that applies a viewpoint shows the viewpoint's lists wherever it states none of its own,
+list by list. The diagram page shows the result under the title as "For … · Answers …", with each
+referenced element linked; the diagrams list filters by stakeholder; and an element's page lists the
+views that address it. Over MCP, `artifact_create_diagram` and `artifact_edit_diagram` take
+`stakeholders` and `concerns`; on edit, an omitted list is kept and `[]` clears it.
+
 &nbsp;
 
 ## Matrix

@@ -111,6 +111,7 @@ application on every run, using the exact same evaluation the GUI's ghost/hide o
 | W180 | warning | Pinned version is older than the definition's current version. |
 | W181 | warning | A placed entity/connection is out of the definition's scope. |
 | W182 | warning | A placed entity/connection is in scope but fails the definition's query. |
+| W183 | warning | The diagram's type is not one the viewpoint lists in `representation_types`. |
 
 &nbsp;
 
