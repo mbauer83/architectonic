@@ -26,7 +26,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Final, Literal, NoReturn, assert_never
 
-from src.domain.verification_findings import Issue, Severity
+from src.domain.verification_findings import Issue, Severity, severity_of_code
 
 #: The frontmatter key an element's acknowledgements are stored under.
 ACCEPTED_ADVICE_KEY: Final = "accepted-advice"
@@ -106,7 +106,7 @@ def _checked_entry(item: object) -> AcceptedAdvice:
 
 
 def _not_advice(code: str) -> str:
-    kind = {"E": "an error", "W": "a warning"}.get(code[:1], "not a known advice code")
+    kind = {"error": "an error", "warning": "a warning"}.get(str(severity_of_code(code)), "not a known advice code")
     return (
         f"{code} is {kind}: only advice can be acknowledged. A warning or an error says the content is "
         f"wrong, and is fixed rather than accepted. Advice codes: {', '.join(sorted(ADVICE_CODES))}."
@@ -146,7 +146,7 @@ def advice_issue(
     code: str, message: str, *, location: str, artifact_id: str, status: str, parts: Sequence[str] = ()
 ) -> Issue:
     """An advice finding about one element, carrying what presentation needs to decide how loud it is."""
-    if code not in ADVICE_CODES:
+    if code not in ADVICE_CODES or severity_of_code(code) != Severity.ADVICE:
         raise ValueError(f"{code} is not a declared advice code")
     return Issue(
         Severity.ADVICE,

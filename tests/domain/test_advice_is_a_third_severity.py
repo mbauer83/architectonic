@@ -125,3 +125,13 @@ def test_the_reader_skips_a_malformed_entry_and_keeps_the_rest() -> None:
     stored = [{"code": "A341", "reason": "kept"}, "junk", {"reason": "no code"}, {"code": 7}]
     assert accepted_advice_from_frontmatter(stored) == (AcceptedAdvice("A341", "kept"),)
     assert accepted_advice_from_frontmatter(None) == ()
+
+
+def test_every_severity_has_a_code_letter_and_the_shape_reads_it_back() -> None:
+    """One statement of the code shape, covering every severity — the register reads it too."""
+    from src.domain.verification_findings import CODE_PREFIX, RULE_CODE, severity_of_code
+
+    assert set(CODE_PREFIX) == set(get_args(SeverityLiteral))
+    assert [severity_of_code(code) for code in ("E340", "W307", "A341")] == ["error", "warning", "advice"]
+    assert all(RULE_CODE.match(code) for code in ADVICE_CODES)
+    assert severity_of_code("XTEST") is None and severity_of_code("A34") is None

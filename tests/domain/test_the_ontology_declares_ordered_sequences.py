@@ -15,9 +15,8 @@ from src.domain.relationships.ordered_sequences import Relation, SequenceGraph, 
 
 @pytest.fixture(scope="module")
 def vocabulary() -> SequenceVocabulary:
-    from src.infrastructure.app_bootstrap import build_module_registry, build_runtime_catalogs
-
     from src.application.verification._ordered_sequence_rule import sequence_vocabulary
+    from src.infrastructure.app_bootstrap import build_module_registry, build_runtime_catalogs
 
     return sequence_vocabulary(build_runtime_catalogs(build_module_registry()))
 

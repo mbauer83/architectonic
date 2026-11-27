@@ -19,6 +19,7 @@ that import them from there are unaffected.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from functools import reduce
@@ -31,6 +32,21 @@ class Severity:
     ERROR: Final[Literal["error"]] = "error"
     WARNING: Final[Literal["warning"]] = "warning"
     ADVICE: Final[Literal["advice"]] = "advice"
+
+
+#: The letter every rule code of each severity begins with: `E340`, `W307`, `A341`. One statement of
+#: the code shape, which the verifier's code register and the acknowledgement check both read.
+CODE_PREFIX: Final[Mapping[SeverityLiteral, str]] = {"error": "E", "warning": "W", "advice": "A"}
+
+#: A rule code of any severity: its severity's letter and three digits.
+RULE_CODE: Final = re.compile(rf"\A[{''.join(CODE_PREFIX.values())}]\d{{3}}\Z")
+
+
+def severity_of_code(code: str) -> SeverityLiteral | None:
+    """The severity a rule code's letter declares, or None for a string that is not a rule code."""
+    if not RULE_CODE.match(code):
+        return None
+    return next((severity for severity, prefix in CODE_PREFIX.items() if code.startswith(prefix)), None)
 
 
 @dataclass(frozen=True)

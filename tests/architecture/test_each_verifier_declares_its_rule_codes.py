@@ -10,7 +10,6 @@ call — a declaration is what a verifier *can* emit, and an honest over-count i
 from __future__ import annotations
 
 import ast
-import re
 from pathlib import Path
 
 import pytest
@@ -23,9 +22,11 @@ from src.application.verification import (
     _verifier_outgoing,
     artifact_verifier_syntax,
 )
+from src.domain.verification_findings import RULE_CODE
 from tests.support.source_paths import REPO_ROOT
 
-_CODE = re.compile(r"\A[EW]\d{3}\Z")
+#: Every severity's codes — advice included — matched by the one statement of the code shape.
+_CODE = RULE_CODE
 #: The facade imports every verifier, so following it would make each declare all of them.
 _NOT_FOLLOWED = frozenset({
     "src.application.verification.artifact_verifier",
