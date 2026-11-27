@@ -90,12 +90,12 @@ jobs:
         run: uv run zuban check
 
   python-tests:
-    name: Python · tests (shard ${{ matrix.group }}/2)
+    name: Python · tests (shard ${{ matrix.group }}/3)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        group: [1, 2]
+        group: [1, 2, 3]
     steps:
       - uses: actions/checkout@v5
 
@@ -131,11 +131,12 @@ jobs:
       - name: Pytest (shard; coverage collected, threshold deferred to the combine job)
         # One shard's percentage is meaningless — it exercises only its slice of src/ —
         # so fail_under is disabled here and enforced once over the combined data in
-        # python-coverage. Split balance is by test count until a .test_durations file
-        # is committed (pytest-split --store-durations).
+        # python-coverage. Split balance comes from the committed .test_durations
+        # (pytest-split --store-durations); re-measure it when the suite grows. Three
+        # shards keep each one well inside the suite's 20-minute stuck cap.
         run: >
           uv run pytest --tb=short -q
-          --splits 2 --group ${{ matrix.group }}
+          --splits 3 --group ${{ matrix.group }}
           --cov --cov-report= --cov-fail-under=0
 
       - name: Upload shard coverage data
