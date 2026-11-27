@@ -1,0 +1,75 @@
+"""The ontology declares which types are ordered sequences, and which relations compose and order them.
+
+B58 needed two facts the ontology did not state: "this element type denotes an ordered sequence", and
+"these relations express order". The first is a new flag on the entity type; the second was nearly
+there — `derivation_role: dynamic` — and was to be checked before relying on it. It is checked here:
+the dynamic set is exactly triggering and flow, the two relations ArchiMate defines as dynamic.
+"""
+
+from __future__ import annotations
+
+import pytest
+
+from src.domain.relationships.ordered_sequences import Relation, SequenceVocabulary, unordered_parts
+
+
+@pytest.fixture(scope="module")
+def vocabulary() -> SequenceVocabulary:
+    from src.infrastructure.app_bootstrap import build_module_registry, build_runtime_catalogs
+
+    catalogs = build_runtime_catalogs(build_module_registry())
+    return SequenceVocabulary.from_ontology(
+        catalogs.ontology.all_entity_types(), catalogs.ontology.all_connection_types()
+    )
+
+
+def test_a_process_denotes_an_ordered_sequence_and_a_function_does_not(vocabulary: SequenceVocabulary) -> None:
+    assert "process" in vocabulary.sequence_types
+    assert "function" not in vocabulary.sequence_types
+    assert "event" not in vocabulary.sequence_types
+
+
+def test_the_relations_that_express_order_are_exactly_triggering_and_flow(vocabulary: SequenceVocabulary) -> None:
+    """The check B58 asked for before relying on `derivation_role: dynamic`."""
+    assert vocabulary.ordering == {"archimate-triggering", "archimate-flow"}
+
+
+def test_composition_composes_and_aggregation_does_not(vocabulary: SequenceVocabulary) -> None:
+    assert "archimate-composition" in vocabulary.composing
+    assert "archimate-aggregation" not in vocabulary.composing
+
+
+# ── the core, over relations the test owns ───────────────────────────────────
+
+_VOCAB = SequenceVocabulary(
+    sequence_types=frozenset({"seq"}), composing=frozenset({"part-of"}), ordering=frozenset({"then"})
+)
+
+
+def _graph(*relations: tuple[str, str, str]):
+    table = [Relation(t, s, d) for s, t, d in relations]
+    return lambda source: [r for r in table if r.source == source]
+
+
+def test_two_parts_and_no_order_names_both() -> None:
+    outgoing = _graph(("w", "part-of", "a"), ("w", "part-of", "b"))
+    assert unordered_parts("w", outgoing, _VOCAB) == ("a", "b")
+
+
+def test_one_order_between_the_parts_is_enough() -> None:
+    outgoing = _graph(("w", "part-of", "a"), ("w", "part-of", "b"), ("w", "part-of", "c"), ("b", "then", "c"))
+    assert unordered_parts("w", outgoing, _VOCAB) == ()
+
+
+def test_one_part_is_never_a_finding() -> None:
+    assert unordered_parts("w", _graph(("w", "part-of", "a")), _VOCAB) == ()
+
+
+def test_order_to_something_outside_the_parts_does_not_order_them() -> None:
+    outgoing = _graph(("w", "part-of", "a"), ("w", "part-of", "b"), ("a", "then", "elsewhere"), ("a", "then", "a"))
+    assert unordered_parts("w", outgoing, _VOCAB) == ("a", "b")
+
+
+def test_a_relation_that_does_not_compose_is_not_a_part() -> None:
+    outgoing = _graph(("w", "groups", "a"), ("w", "groups", "b"))
+    assert unordered_parts("w", outgoing, _VOCAB) == ()

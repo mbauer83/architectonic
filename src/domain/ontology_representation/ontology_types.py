@@ -138,6 +138,12 @@ class EntityTypeInfo:
     #: declared by the ontology rather than spelled by whichever surface is doing the naming.
     #: Absent for the types whose name reads correctly on its own, which is nearly all of them.
     label: str | None = None
+    #: True for a type whose elements are an ordered sequence of behaviour — causally or temporally
+    #: ordered steps, as against a grouping of behaviour by what it does. Declared by the ontology so
+    #: a generic rule can ask "are this element's composed parts ordered?" without naming a type: an
+    #: element of such a type whose parts have no order between them is likely the other kind
+    #: (advice A341). Which relations express order is the connection type's `derivation_role`.
+    denotes_ordered_sequence: bool = False
     required_connections: tuple[RequiredConnection, ...] = ()
     min: int = 0
     max: int | None = None

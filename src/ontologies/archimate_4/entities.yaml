@@ -295,6 +295,9 @@ entity_types:
     prefix: PRC
     hierarchy: [common]
     classes: [behavior-element, internal-behavior-element]
+    # The specification defines a process as a sequence of behaviours achieving a result; what
+    # separates it from a function, which groups behaviour by what it needs, is that order.
+    denotes_ordered_sequence: true
     create_when: ""
     never_create_when: ""
 

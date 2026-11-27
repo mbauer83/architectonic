@@ -97,6 +97,7 @@ def load_entity_types(
             internal=bool(info.get("internal", False)),
             takes_no_relationships=bool(info.get("takes_no_relationships", False)),
             label=str(info["label"]) if info.get("label") else None,
+            denotes_ordered_sequence=bool(info.get("denotes_ordered_sequence", False)),
         )
     return out
 
