@@ -19,6 +19,7 @@ from src.domain.ontology_representation.classification_levels import (
 from src.domain.ontology_representation.element_appearance import ElementAppearance
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, ElementClassInfo, EntityTypeInfo
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
+from src.domain.ontology_representation.purpose_line_elements import PurposeLineElements
 from src.domain.ontology_representation.specializations import (
     SpecializationCatalog,
     merge_specialization_catalogs,
@@ -76,6 +77,7 @@ class _ArchiMate4Module:
         element_classes: dict[str, ElementClassInfo] | None = None,
         behavioral_elements: BehavioralElementDeclaration | None = None,
         element_appearance: ElementAppearance | None = None,
+        purpose_line_elements: PurposeLineElements | None = None,
         specialization_catalog: SpecializationCatalog | None = None,
         profile_registry: ProfileRegistry | None = None,
         derivation_rules: tuple[CompositionRule, ...] = (),
@@ -95,6 +97,7 @@ class _ArchiMate4Module:
         self._element_classes: dict[str, ElementClassInfo] = element_classes or {}
         self._behavioral_elements = behavioral_elements or BehavioralElementDeclaration()
         self._element_appearance = element_appearance or ElementAppearance()
+        self._purpose_line_elements = purpose_line_elements or PurposeLineElements()
         self._specialization_catalog = specialization_catalog or SpecializationCatalog.empty()
         self._profile_registry = profile_registry or ProfileRegistry.empty()
         self._svg_converter = svg_converter
@@ -154,6 +157,10 @@ class _ArchiMate4Module:
     @property
     def element_appearance(self) -> ElementAppearance:
         return self._element_appearance
+
+    @property
+    def purpose_line_elements(self) -> PurposeLineElements:
+        return self._purpose_line_elements
 
     @property
     def target_state_relations(self) -> TargetStateRelations | None:
@@ -297,6 +304,7 @@ def load_archimate_4_module(
         element_classes=element_classes,
         behavioral_elements=behavioral_elements,
         element_appearance=element_appearance,
+        purpose_line_elements=PurposeLineElements.from_mapping(entity_data),
         specialization_catalog=specialization_catalog,
         profile_registry=load_module_profiles(package_dir),
         derivation_rules=derivation_rules,

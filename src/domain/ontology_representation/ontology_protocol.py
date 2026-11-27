@@ -33,6 +33,7 @@ from src.domain.ontology_representation.ontology_types import (
     EntityTypeInfo,
 )
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
+from src.domain.ontology_representation.purpose_line_elements import PurposeLineElements
 from src.domain.ontology_representation.specializations import SpecializationCatalog
 from src.domain.ontology_representation.target_state_relations import TargetStateRelations
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet
@@ -105,6 +106,14 @@ class OntologyModule(Protocol):
         answer and means the ontology has not said — see `behavioral_elements`.
         """
         ...
+
+    @property
+    def purpose_line_elements(self) -> PurposeLineElements:
+        """Which of this ontology's entity types a purpose line may refer to: as a stakeholder, or as
+        the element stating a concern. Empty is a valid answer and admits no reference — see
+        `purpose_line_elements`.
+        """
+        return PurposeLineElements()
 
     @property
     def element_appearance(self) -> ElementAppearance:

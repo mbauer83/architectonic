@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import Any
 
 from src.domain.concept_scope import ConceptScope
+from src.domain.purpose_lines import purpose_lines_as_written
 from src.domain.viewpoints.viewpoint_presentation_serialization import presentation_to_mapping
 from src.domain.viewpoints.viewpoint_query_serialization import query_to_mapping
 from src.domain.viewpoints.viewpoints import ViewpointCatalog, ViewpointDefinition
@@ -54,10 +55,7 @@ def viewpoint_definition_to_mapping(definition: ViewpointDefinition) -> dict[str
         result["description"] = definition.description
     if definition.rationale:
         result["rationale"] = definition.rationale
-    if definition.stakeholders:
-        result["stakeholders"] = list(definition.stakeholders)
-    if definition.concerns:
-        result["concerns"] = list(definition.concerns)
+    result.update(purpose_lines_as_written(definition.purpose_lines))
     scope = _scope_to_mapping(definition.scope)
     if scope:
         result["scope"] = scope

@@ -5,6 +5,7 @@ in the spec table) are asserted separately, without an element-list comparison."
 
 from __future__ import annotations
 
+from src.domain.purpose_lines import Prose
 from src.domain.viewpoints.viewpoint_criteria import AttributeCondition
 from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry
 from src.infrastructure.viewpoint_declarations import load_module_viewpoint_catalog
@@ -59,13 +60,13 @@ def test_purpose_matches_the_spec_table_verbatim() -> None:
 def test_stakeholders_match_the_spec_table_verbatim() -> None:
     for table in STANDARD_VIEWPOINT_TABLES:
         definition = _DEFINITIONS_BY_SLUG[table.slug]
-        assert tuple(definition.stakeholders) == table.stakeholders, table.slug
+        assert definition.stakeholders == tuple(map(Prose, table.stakeholders)), table.slug
 
 
 def test_concerns_match_the_spec_table_verbatim() -> None:
     for table in STANDARD_VIEWPOINT_TABLES:
         definition = _DEFINITIONS_BY_SLUG[table.slug]
-        assert tuple(definition.concerns) == table.concerns, table.slug
+        assert definition.concerns == tuple(map(Prose, table.concerns)), table.slug
 
 
 def test_scope_element_list_matches_the_spec_table() -> None:

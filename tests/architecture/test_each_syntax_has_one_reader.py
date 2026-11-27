@@ -204,6 +204,10 @@ _CUTS_AT_THE_SLUG = frozenset({"rsplit", "rpartition", "count"})
 #: configuration and a scratchpad's document each have a `layout` of their own that is not this one.
 _LAYOUT_BLOCK_WORD = re.compile(r"\A(via|boxes)\Z")
 
+#: The two keys a purpose line is stated under, asked of a parsed frontmatter or definition. Whole
+#: literals: the words are common in prose, and only a lookup of exactly the key is a reading.
+_PURPOSE_LINE_KEY = re.compile(r"\A(stakeholders|concerns)\Z")
+
 #: A Traffic Light Protocol level, spelled whole.
 _TLP_LEVEL = re.compile(r"\ATLP:[A-Z]+\Z")
 
@@ -692,6 +696,28 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
         }),
     ),
     SyntaxReader(
+        syntax="a purpose line — the `stakeholders` and `concerns` lists, each entry prose or `{ref: <id>}`",
+        owners=(Path("src/domain/purpose_lines.py"),),
+        instead=(
+            "`src.domain.purpose_lines`: `read_purpose_lines` for what a diagram's frontmatter or a viewpoint "
+            "definition states, `purpose_lines_as_written` and `entry_as_written` to write, `PurposeLines.over` "
+            "for a diagram inheriting its viewpoint's, `PurposeLines.restated` for an edit"
+        ),
+        incident=(
+            "none, and on purpose: the lists arrived on diagrams with one reader, one writer and a round trip "
+            "stated over what they permit. Viewpoints had held them as plain strings read by `str()`, so a "
+            "reference entry read by that reading would have come back as the text of a dictionary, and a "
+            "diagram's inherited audience would have disagreed with its own"
+        ),
+        literal_probe=_PURPOSE_LINE_KEY,
+        also_located_by=_ATTRIBUTE_LOOKUPS,
+        exempt=frozenset({
+            # A stdlib-only snapshot of the served catalogue: it copies each list through unread, so an
+            # entry of either kind reaches its output as the server sent it. It cannot import the owner.
+            Path("tools/usability_test/viewpoint_inventory.py"),
+        }),
+    ),
+    SyntaxReader(
         syntax="a TLP classification level, and how two of them order",
         owners=(Path("src/domain/assurance/classification.py"),),
         instead=(
@@ -750,6 +776,7 @@ _EXEMPTION_BUDGET: dict[str, int] = {
     "what it means for a PUML line to declare an alias": 1,
     "the arrow form of a connection — a `###` section, or a standalone reference": 3,
     "which spelling of an artifact id is its identity — the short form, or the id with its slug": 2,
+    "a purpose line — the `stakeholders` and `concerns` lists, each entry prose or `{ref: <id>}`": 1,
 }
 
 

@@ -12,6 +12,7 @@ from src.domain.ontology_representation.behavioral_elements import BehavioralEle
 from src.domain.ontology_representation.element_appearance import ElementAppearance
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, ElementClassInfo, EntityTypeInfo
 from src.domain.ontology_representation.profile_registry import ProfileRegistry
+from src.domain.ontology_representation.purpose_line_elements import PurposeLineElements
 from src.domain.ontology_representation.relation_notation import parse_relation_notation
 from src.domain.ontology_representation.specializations import SpecializationCatalog
 from src.domain.ontology_representation.target_state_relations import TargetStateRelations
@@ -109,6 +110,12 @@ class _SysmlV2MinModule:
     def target_state_relations(self) -> TargetStateRelations | None:
         """None: this ontology has no vocabulary for a candidate applied as a target state."""
         return None
+
+    @property
+    def purpose_line_elements(self) -> PurposeLineElements:
+        """Empty: this ontology has no element standing for a stakeholder or stating a concern, so a
+        purpose line refers to none of its types. Stated rather than inherited, so the answer is deliberate."""
+        return PurposeLineElements()
 
     @property
     def element_appearance(self) -> ElementAppearance:

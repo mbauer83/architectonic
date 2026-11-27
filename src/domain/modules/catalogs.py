@@ -20,6 +20,7 @@ from src.domain.ontology_representation.classification_levels import (
 )
 from src.domain.ontology_representation.ontology_protocol import DiagramTypeModule, StoreGraphProjectingDiagramType
 from src.domain.ontology_representation.ontology_types import ConnectionTypeInfo, EntityTypeInfo
+from src.domain.ontology_representation.purpose_line_elements import PurposeLineTypes
 from src.domain.ontology_representation.relation_notation import DEFAULT_NOTATION
 from src.domain.relationships.permitted_relationships import PermittedRelationshipSet
 
@@ -36,6 +37,7 @@ class OntologyCatalog(Protocol):
     def known_domain_names(self) -> frozenset[str]: ...
 
     def behavioral_entity_types(self) -> frozenset[str]: ...
+    def purpose_line_entity_types(self) -> PurposeLineTypes: ...
     def domain_appearance(self) -> Mapping[str, Mapping[str, str]]: ...
     def corner_by_entity_type(self) -> Mapping[str, str]: ...
     def de_emphasis_rule(self) -> Mapping[str, str]: ...
@@ -115,6 +117,23 @@ class OntologyCatalogImpl:
 
     def behavioral_entity_types(self) -> frozenset[str]:
         return self._behavioral_types
+
+    @functools.cached_property
+    def _purpose_line_types(self) -> PurposeLineTypes:
+        """Which types a purpose line may refer to, each ontology resolving its declaration against its own types."""
+        resolved = [
+            module.purpose_line_elements.resolve(
+                {str(name): [str(c) for c in info.classes] for name, info in module.entity_types.items()}
+            )
+            for module in self._catalog.all_ontologies().values()
+        ]
+        return PurposeLineTypes(
+            stakeholders=frozenset().union(*(types.stakeholders for types in resolved)),
+            concerns=frozenset().union(*(types.concerns for types in resolved)),
+        )
+
+    def purpose_line_entity_types(self) -> PurposeLineTypes:
+        return self._purpose_line_types
 
     def domain_appearance(self) -> Mapping[str, Mapping[str, str]]:
         """Every domain's fill, border and container tint, from the ontology that owns the domain.

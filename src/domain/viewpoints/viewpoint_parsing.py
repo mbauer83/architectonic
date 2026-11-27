@@ -16,6 +16,7 @@ from typing import Any, Literal, cast
 
 from src.domain.concept_scope import ConceptScope, HierarchyPredicate
 from src.domain.modules.module_types import ConnectionTypeName, EntityTypeName
+from src.domain.purpose_lines import CONCERNS_KEY, STAKEHOLDERS_KEY, read_purpose_lines
 from src.domain.viewpoints.viewpoint_presentation_parsing import presentation_from_mapping
 from src.domain.viewpoints.viewpoint_query_parsing import query_from_mapping
 from src.domain.viewpoints.viewpoints import (
@@ -37,8 +38,8 @@ _DEFINITION_KEYS = frozenset(
         "rationale",
         "purpose",
         "content",
-        "stakeholders",
-        "concerns",
+        STAKEHOLDERS_KEY,
+        CONCERNS_KEY,
         "scope",
         "representation_types",
         "derivation_defaults",
@@ -163,6 +164,7 @@ def viewpoint_definition_from_mapping(raw: Mapping[str, Any]) -> ViewpointDefini
     label = f"viewpoint '{slug}'"
     _check_keys(raw, _DEFINITION_KEYS, label=label)
     derivation_defaults = raw.get("derivation_defaults")
+    purpose_lines = read_purpose_lines(raw)
     return ViewpointDefinition(
         slug=slug,
         version=int(raw.get("version", 1)),
@@ -171,8 +173,8 @@ def viewpoint_definition_from_mapping(raw: Mapping[str, Any]) -> ViewpointDefini
         rationale=str(raw.get("rationale") or ""),
         purpose=_purpose_tuple(raw.get("purpose"), label=label),
         content=_content_tuple(raw.get("content"), label=label),
-        stakeholders=_string_tuple(raw.get("stakeholders")),
-        concerns=_string_tuple(raw.get("concerns")),
+        stakeholders=purpose_lines.stakeholders,
+        concerns=purpose_lines.concerns,
         scope=_scope_from_mapping(raw.get("scope")),
         representation_types=_string_tuple(raw.get("representation_types")),
         derivation_defaults=dict(derivation_defaults) if isinstance(derivation_defaults, Mapping) else {},

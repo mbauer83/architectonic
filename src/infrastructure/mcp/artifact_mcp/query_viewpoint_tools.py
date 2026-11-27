@@ -22,6 +22,7 @@ from src.config.viewpoints_settings import (
     viewpoints_execution_timeout_seconds,
     viewpoints_legibility_budget,
 )
+from src.domain.purpose_lines import entry_as_written
 from src.domain.relationships.relationship_reachability import DerivationLimitError
 from src.domain.viewpoints.viewpoint_binding_evaluation import BindingCardinalityError
 from src.domain.viewpoints.viewpoint_lineage import fork_status
@@ -60,8 +61,9 @@ def _list_entry(
         "description": definition.description,
         "purpose": list(definition.purpose),
         "content": list(definition.content),
-        "stakeholders": list(definition.stakeholders),
-        "concerns": list(definition.concerns),
+        "stakeholders": [entry_as_written(entry) for entry in definition.stakeholders],
+        "concerns": [entry_as_written(entry) for entry in definition.concerns],
+        "representation_types": list(definition.representation_types),
         "scope_summary": summarize_scope(definition.scope),
         "query_summary": (
             render_query_summary(active_query, default_derivation_max_hops=viewpoints_derivation_max_hops())

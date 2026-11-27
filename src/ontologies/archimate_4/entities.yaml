@@ -178,6 +178,12 @@ behavioral_element_types: []
 # Empty for the same reason. An explicit exclusion here outranks an explicit inclusion above.
 non_behavioral_element_types: []
 
+# Which elements a view's purpose line may refer to (`purpose_line_elements`): a stakeholder is an
+# element of its own, and a concern is stated by a motivation element — a driver, a goal, an
+# assessment, a requirement. Prose stays available for everything the model does not hold.
+stakeholder_element_types: [stakeholder]
+concern_element_classes: [motivation-element]
+
 
 entity_types:
 

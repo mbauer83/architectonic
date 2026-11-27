@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from src.domain.concept_scope import ConceptScope
+from src.domain.purpose_lines import PurposeEntry, PurposeLines
 from src.domain.viewpoints.viewpoint_bindings import DerivedAttribute, QueryBinding, QueryParameter
 from src.domain.viewpoints.viewpoint_criteria import (
     ConnectionCriteriaGroup,
@@ -169,10 +170,12 @@ class ViewpointDefinition:
     rationale: str = ""
     purpose: tuple[Purpose, ...] = ("informing",)
     content: tuple[Content, ...] = ("overview",)
-    stakeholders: tuple[str, ...] = ()
-    concerns: tuple[str, ...] = ()
+    stakeholders: tuple[PurposeEntry, ...] = ()
+    concerns: tuple[PurposeEntry, ...] = ()
     scope: ConceptScope = field(default_factory=ConceptScope.unrestricted)
     representation_types: tuple[str, ...] = ()
+    """The diagram types this viewpoint is intended for. Applying it to a diagram of another type is
+    allowed and reported (W183); an empty declaration leaves the viewpoint unrestricted."""
     derivation_defaults: Mapping[str, object] = field(default_factory=dict)
     query: ExecutableViewpointQuery | None = None
     presentation: PresentationSpec | None = None
@@ -187,6 +190,15 @@ class ViewpointDefinition:
     """Provenance stamped ONCE by the save path when a definition is created as a fork —
     never client-supplied, never altered by later edits. Descriptive only (no version
     bump on schema introduction)."""
+
+    @property
+    def purpose_lines(self) -> PurposeLines:
+        """Who views built with this viewpoint are for and what they answer: a diagram's defaults."""
+        return PurposeLines(stakeholders=self.stakeholders, concerns=self.concerns)
+
+    def is_intended_for(self, diagram_type: str) -> bool:
+        """Whether this viewpoint suits a diagram of *diagram_type*. Undeclared means it suits any."""
+        return not self.representation_types or diagram_type in self.representation_types
 
 
 @dataclass(frozen=True)
