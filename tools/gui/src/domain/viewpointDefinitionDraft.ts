@@ -10,6 +10,7 @@
 
 import { type ExecutableQueryNode, literalValue, mkCondition, mkGroup, mkQuery } from './viewpointCriteria'
 import { type PresentationNode } from './viewpointPresentation'
+import type { PurposeEntry } from './purposeLines'
 
 export type Purpose = 'designing' | 'deciding' | 'informing'
 export type Content = 'details' | 'coherence' | 'overview'
@@ -43,8 +44,8 @@ export interface ViewpointDefinitionDraft {
   rationale: string
   purpose: Purpose[]
   content: Content[]
-  stakeholders: string[]
-  concerns: string[]
+  stakeholders: PurposeEntry[]
+  concerns: PurposeEntry[]
   scope: ScopeDraft
   representationTypes: string[]
   derivationDefaults: Record<string, unknown>

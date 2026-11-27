@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
 import type { ViewpointSummary } from '../../domain'
-import { viewpointOptionLabel, findViewpointBySlug } from './ViewpointSelect.helpers'
+import { NOT_INTENDED_NOTE, viewpointOptionLabel, viewpointOptions, findViewpointBySlug } from './ViewpointSelect.helpers'
 
 const props = defineProps<{
   modelValue: string | null
   viewpoints: readonly ViewpointSummary[]
+  /** The diagram type being authored: viewpoints intended for it are listed first, the rest marked. */
+  diagramType?: string
 }>()
+const options = computed(() => viewpointOptions(props.viewpoints, props.diagramType))
 const emit = defineEmits<{
   'update:modelValue': [slug: string | null]
   select: [viewpoint: ViewpointSummary | null]
@@ -36,11 +39,12 @@ watch(() => props.viewpoints, (viewpoints) => {
       None (unrestricted)
     </option>
     <option
-      v-for="viewpoint in viewpoints"
+      v-for="{ viewpoint, suited } in options"
       :key="viewpoint.slug"
       :value="viewpoint.slug"
+      :class="{ 'not-intended': !suited }"
     >
-      {{ viewpointOptionLabel(viewpoint) }}
+      {{ viewpointOptionLabel(viewpoint) }}{{ suited ? '' : ` — ${NOT_INTENDED_NOTE}` }}
     </option>
   </select>
 </template>
@@ -60,4 +64,5 @@ watch(() => props.viewpoints, (viewpoints) => {
   cursor: pointer;
 }
 .viewpoint-select:focus { border-color: var(--accent); }
+.not-intended { color: var(--faint); }
 </style>

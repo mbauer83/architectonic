@@ -126,7 +126,7 @@ export interface ModelRepository
     query: string, limit?: number,
   ) => Effect.Effect<SearchResult, RepoError>
   readonly listDiagrams: (params?: {
-    diagram_type?: string; status?: string; group?: string; scope?: string;
+    diagram_type?: string; status?: string; group?: string; scope?: string; stakeholder?: string;
   }) => Effect.Effect<DiagramList, RepoError>
   readonly listDiagramTypes: () => Effect.Effect<DiagramTypeSummary[], RepoError>
   readonly getDiagramTypeUiConfig: (type: string) => Effect.Effect<DiagramTypeUiConfig, RepoError | NotFoundError>

@@ -16,6 +16,7 @@ export const viewpointSummaryFromEnvelope = (env: ViewpointDefinitionEnvelope): 
   purpose: asArray(env.purpose),
   content: asArray(env.content),
   scope: env.scope ?? env.scope_summary,
+  intended_for: [...(env.representation_types ?? [])],
 })
 
 /** Fetch the viewpoint picker summaries from the dedicated /api/viewpoints listing (shared by the

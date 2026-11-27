@@ -7,6 +7,7 @@
 import { queryFromMapping, queryToMapping } from './viewpointCriteriaSerialization'
 import { presentationFromMapping, presentationToMapping } from './viewpointPresentationSerialization'
 import type { AttributeTypeTables } from './viewpointBindings'
+import { purposeEntries } from './purposeLines'
 import {
   type Content,
   type Purpose,
@@ -108,8 +109,8 @@ export const definitionFromMapping = (raw: Record<string, unknown>): ViewpointDe
   draft.rationale = stringOr(raw.rationale, '')
   draft.purpose = stringList(raw.purpose, ['informing']) as Purpose[]
   draft.content = stringList(raw.content, ['overview']) as Content[]
-  draft.stakeholders = stringList(raw.stakeholders, [])
-  draft.concerns = stringList(raw.concerns, [])
+  draft.stakeholders = purposeEntries(raw.stakeholders)
+  draft.concerns = purposeEntries(raw.concerns)
   draft.scope = scopeFromMapping(raw.scope)
   draft.representationTypes = stringList(raw.representation_types, [])
   draft.derivationDefaults = typeof raw.derivation_defaults === 'object' && raw.derivation_defaults != null

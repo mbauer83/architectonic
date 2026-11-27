@@ -397,6 +397,7 @@ watch(diagramType, () => {
           <ViewpointSelect
             v-model="viewpointSlug"
             :viewpoints="viewpoints"
+            :diagram-type="diagramType"
           />
         </div>
 

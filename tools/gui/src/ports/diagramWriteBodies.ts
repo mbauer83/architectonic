@@ -1,4 +1,5 @@
 import type { AuthoredGrouping } from '../domain/authoredGrouping'
+import type { PurposeEntry } from '../domain/purposeLines'
 import type { LayoutPatch } from './DiagramLayoutRepository'
 
 /**
@@ -38,6 +39,9 @@ export type DiagramWriteBody = DiagramComposition & {
    */
   group?: string
   viewpoint?: { slug: string; version: number; enforcement_override?: 'off' | 'warn' | 'ghost' } | null
+  /** Who the diagram is for and what it answers. Omitted keeps the stored list; empty clears it. */
+  stakeholders?: readonly PurposeEntry[]
+  concerns?: readonly PurposeEntry[]
   dry_run?: boolean
 }
 

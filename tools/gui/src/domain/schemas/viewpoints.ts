@@ -30,6 +30,8 @@ export const ViewpointSummarySchema = Schema.Struct({
   purpose: Schema.Array(Schema.String),
   content: Schema.Array(Schema.String),
   scope: Schema.Unknown,
+  /** The diagram types the viewpoint is intended for; empty when it declares none and suits any. */
+  intended_for: Schema.Array(Schema.String),
 })
 export type ViewpointSummary = typeof ViewpointSummarySchema.Type
 

@@ -180,9 +180,12 @@ export const makeHttpModelRepository = (): ModelRepository => ({
       entity_types: params.entity_types?.join(','), doc_types: params.doc_types?.join(','), limit: params.limit,
     }), ReferenceSearchResultSchema),
 
-  listDiagrams: (params: { diagram_type?: string; status?: string; group?: string; scope?: string } = {}) =>
+  listDiagrams: (
+    params: { diagram_type?: string; status?: string; group?: string; scope?: string; stakeholder?: string } = {},
+  ) =>
     fetchJson(buildUrl('/diagrams', {
       diagram_type: params.diagram_type, status: params.status, group: params.group, scope: params.scope,
+      stakeholder: params.stakeholder,
     }), DiagramListSchema),
 
   listDiagramTypes: () =>

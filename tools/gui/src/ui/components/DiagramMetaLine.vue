@@ -1,6 +1,9 @@
 <script setup lang="ts">
-/** The line under a diagram's title: its kind, status, version and id, and while editing, that nothing is saved yet. */
+/** The lines under a diagram's title: its kind, status, version and id, and while editing, that nothing is saved
+ * yet; then who the diagram is for and what it answers, where that is stated. */
 import type { DiagramDetail } from '../../domain'
+import { statesPurpose } from '../../domain/purposeLines'
+import DiagramPurposeLine from './DiagramPurposeLine.vue'
 
 defineProps<{ detail: DiagramDetail; editing: boolean }>()
 </script>
@@ -19,6 +22,10 @@ defineProps<{ detail: DiagramDetail; editing: boolean }>()
       data-testid="editing-note"
     >Editing — nothing is saved until you press Save · <em>Done</em> or <kbd>Esc</kbd> leaves</span>
   </div>
+  <DiagramPurposeLine
+    v-if="statesPurpose(detail.purpose)"
+    :purpose="detail.purpose"
+  />
 </template>
 
 <style scoped>

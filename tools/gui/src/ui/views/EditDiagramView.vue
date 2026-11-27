@@ -14,6 +14,7 @@ import type { NotFoundError } from '../../domain'
 import DiagramEditHeader from '../components/DiagramEditHeader.vue'
 import DiagramEditViewpointBar from '../components/DiagramEditViewpointBar.vue'
 import DiagramEditSidebar from '../components/DiagramEditSidebar.vue'
+import DiagramPurposeFields from '../components/DiagramPurposeFields.vue'
 import DiagramGroupingsEditor from '../components/DiagramGroupingsEditor.vue'
 import DiagramPreviewPanel from '../components/DiagramPreviewPanel.vue'
 import DiagramSplitLayout from '../components/DiagramSplitLayout.vue'
@@ -22,6 +23,7 @@ import { useMutation } from '../composables/useMutation'
 import { usePanZoom } from '../composables/usePanZoom'
 import { useDiagramEditSelection } from '../composables/useDiagramEditSelection'
 import { useDiagramEditViewpoint } from '../composables/useDiagramEditViewpoint'
+import { useDiagramPurposeDraft } from '../composables/useDiagramPurposeDraft'
 import { useDiagramTypeEntityData } from '../composables/useDiagramTypeEntityData'
 import { useDiagramEditSvgOverlay } from '../composables/useDiagramEditSvgOverlay'
 import { sanitizeDiagramSvg } from '../lib/svgSanitize'
@@ -52,6 +54,7 @@ const {
   loadViewpoints, loadProjection, onSelectViewpoint, stalePin, doRePin, dismissViewpoint,
   forWrite: viewpointForWrite,
 } = useDiagramEditViewpoint({ svc, diagramId, refreshDiscovery: () => { void selection.refreshDiscovery() } })
+const purpose = useDiagramPurposeDraft()
 const {
   typeEntityData, mergeTypeEntityData, seedFromContext, setInstanceLabel,
 } = useDiagramTypeEntityData(() => previewMutation.reset())
@@ -117,6 +120,7 @@ const load = async () => {
       seedFromContext(context)
       viewpointSlug.value = context.diagram.viewpoint?.slug ?? null
       viewpointPinnedVersion.value = context.diagram.viewpoint?.version ?? null
+      purpose.seed(context.diagram)
       void selection.refreshDiscovery()
       void loadProjection()
     },
@@ -174,6 +178,7 @@ const doSave = async () => {
     diagram_entities: typeEntityData.value,
     authored_groupings: groupingsForWrite(),
     viewpoint: viewpointForWrite(),
+    ...purpose.forWrite(),
     dry_run: false,
   }))
   if (!Exit.isSuccess(exit) || !exit.value.wrote) return
@@ -283,6 +288,11 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
       </template>
 
       <template #sidebar>
+        <DiagramPurposeFields
+          v-model:stakeholders="purpose.state.stakeholders"
+          v-model:concerns="purpose.state.concerns"
+          :names="purpose.state.names"
+        />
         <DiagramEditSidebar
           :viewpoints="viewpoints"
           :viewpoint-slug="viewpointSlug"

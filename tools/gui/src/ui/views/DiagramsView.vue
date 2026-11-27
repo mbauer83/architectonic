@@ -18,7 +18,7 @@ const {
   tier, selectTier, collectionsAvailable,
   diagramsState, diagramKinds, showArchivedGroups,
   selectedType, activeGroup, setGroup, goToGroups,
-  groupOptions, filteredItems, selectType, load, loadGroups,
+  groupOptions, filteredItems, selectType, load, loadGroups, stakeholder, setStakeholder,
 } = useDiagramsListState(svc)
 
 const diagramFilters = computed(() => {
@@ -135,6 +135,15 @@ const diagramTypeLabel = (diagramType: string): string => {
         >
           {{ dt.label }}
         </button>
+        <input
+          class="stakeholder-filter"
+          data-testid="diagrams-stakeholder-filter"
+          :value="stakeholder"
+          placeholder="For stakeholder…"
+          aria-label="Only the diagrams for this stakeholder"
+          title="A stakeholder's name or id; a diagram applying a viewpoint is for the viewpoint's stakeholders"
+          @change="setStakeholder(($event.target as HTMLInputElement).value)"
+        >
       </div>
 
       <div
@@ -234,6 +243,10 @@ const diagramTypeLabel = (diagramType: string): string => {
 .mono { font-family: monospace; }
 
 .filter-bar { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.stakeholder-filter {
+  margin-left: auto; padding: 4px 8px; font-size: 12px; border: 1px solid var(--border-strong);
+  border-radius: 6px; background: var(--surface); color: var(--text);
+}
 .filter-btn {
   padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border-strong);
   background: var(--surface); font-size: 13px; cursor: pointer; color: var(--text-2);

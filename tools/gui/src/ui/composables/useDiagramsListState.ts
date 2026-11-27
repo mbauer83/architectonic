@@ -28,8 +28,8 @@ const matchesFilter = (d: DiagramSummary, filterKey: string): boolean => {
 
 /**
  * Diagrams list state: tier facet (URL-backed), type filter, and the engagement
- * collection. Query writes MERGE `route.query` (owned keys: `type`, `group`,
- * `tier`) so adjacent filters and the hash survive. No first-visit redirect; a
+ * collection, and the stakeholder a diagram is for. Query writes MERGE `route.query` (owned keys:
+ * `type`, `group`, `tier`, `stakeholder`) so adjacent filters and the hash survive. No first-visit redirect; a
  * saved collection preference merges into the URL only when the tier allows
  * engagement collections, and selecting Enterprise clears the group.
  */
@@ -44,6 +44,10 @@ export function useDiagramsListState(svc: ModelService) {
 
   const selectedType = ref(typeof route.query.type === 'string' ? route.query.type : '')
   const activeGroup = computed(() => (typeof route.query.group === 'string' ? route.query.group : ''))
+  const stakeholder = computed(() => (typeof route.query.stakeholder === 'string' ? route.query.stakeholder : ''))
+  const setStakeholder = (value: string) => {
+    void router.replace({ query: { ...route.query, stakeholder: value.trim() || undefined }, hash: route.hash })
+  }
   const collectionsAvailable = computed(() => tierAllowsEngagementCollections(tier.value))
 
   const setGroup = (group: string) => {
@@ -65,7 +69,8 @@ export function useDiagramsListState(svc: ModelService) {
   }
 
   const load = () => {
-    diagramsState.run(svc.listDiagrams(diagramListParams(tier.value)))
+    const forStakeholder = stakeholder.value ? { stakeholder: stakeholder.value } : {}
+    diagramsState.run(svc.listDiagrams({ ...diagramListParams(tier.value), ...forStakeholder }))
   }
   const loadGroups = () => groupsState.run(svc.listGroups('diagram-collection'))
   const loadDiagramTypes = () => {
@@ -140,6 +145,7 @@ export function useDiagramsListState(svc: ModelService) {
       load()
     },
   )
+  watch(stakeholder, () => { load() })
   // The facet writes the URL; the derived tier updates reactively, then we refetch.
   watch(tier, () => { load() })
 
@@ -147,6 +153,6 @@ export function useDiagramsListState(svc: ModelService) {
     tier, selectTier, collectionsAvailable,
     diagramsState, groupsState, diagramKinds, showArchivedGroups,
     selectedType, activeGroup, setGroup, goToGroups,
-    groupOptions, filteredItems, selectType, load, loadGroups,
+    groupOptions, filteredItems, selectType, load, loadGroups, stakeholder, setStakeholder,
   }
 }

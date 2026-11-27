@@ -80,6 +80,7 @@ const emit = defineEmits<{
       <ViewpointSelect
         :model-value="viewpointSlug"
         :viewpoints="viewpoints"
+        :diagram-type="diagramType"
         @update:model-value="emit('update:viewpointSlug', $event)"
         @select="emit('select-viewpoint', $event)"
       />

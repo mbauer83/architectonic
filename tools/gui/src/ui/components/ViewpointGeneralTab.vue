@@ -6,7 +6,7 @@
  */
 import { VALID_CONTENTS, VALID_PURPOSES } from '../../domain/viewpointDefinitionDraft'
 import type { ViewpointDefinitionDraft } from '../../domain/viewpointDefinitionDraft'
-import { csvToList, listToCsv } from '../lib/commaList'
+import PurposeEntryListEditor from './PurposeEntryListEditor.vue'
 
 const props = defineProps<{
   draft: ViewpointDefinitionDraft
@@ -106,22 +106,18 @@ const toggleContent = (value: (typeof VALID_CONTENTS)[number]) => {
         </label>
       </div>
     </fieldset>
-    <label class="field">
-      stakeholders (comma-separated)
-      <input
-        class="inp"
-        :value="listToCsv(draft.stakeholders)"
-        @change="emit('update', { stakeholders: csvToList(($event.target as HTMLInputElement).value) })"
-      >
-    </label>
-    <label class="field">
-      concerns (comma-separated)
-      <input
-        class="inp"
-        :value="listToCsv(draft.concerns)"
-        @change="emit('update', { concerns: csvToList(($event.target as HTMLInputElement).value) })"
-      >
-    </label>
+    <PurposeEntryListEditor
+      :model-value="draft.stakeholders"
+      label="Stakeholders"
+      prose-hint="a stakeholder, in words"
+      @update:model-value="emit('update', { stakeholders: $event })"
+    />
+    <PurposeEntryListEditor
+      :model-value="draft.concerns"
+      label="Concerns"
+      prose-hint="a concern, in words"
+      @update:model-value="emit('update', { concerns: $event })"
+    />
   </div>
 </template>
 

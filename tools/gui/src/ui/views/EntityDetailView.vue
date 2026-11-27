@@ -55,6 +55,7 @@ const incoming = computed(() => context.data.value?.connections.inbound ?? [])
 const symmetric = computed(() => context.data.value?.connections.symmetric ?? [])
 const documentReferences = computed(() => documentReferenceRows(detail.value?.referenced_in_documents ?? []))
 const diagramReferences = computed(() => diagramReferenceRows(detail.value?.referenced_in_diagrams ?? []))
+const addressingViews = computed(() => diagramReferenceRows(detail.value?.addressed_by_diagrams ?? []))
 const scratchpadReferences = computed(
   () => scratchpadReferenceRows(detail.value?.referenced_in_scratchpads ?? []),
 )
@@ -157,6 +158,12 @@ const executeDelete = () => { void router.push(backTo.value) }
         v-if="diagramReferences.length"
         title="Drawn in diagrams"
         :rows="diagramReferences"
+      />
+
+      <EntityReferenceList
+        v-if="addressingViews.length"
+        title="Views that address this"
+        :rows="addressingViews"
       />
 
       <EntityReferenceList

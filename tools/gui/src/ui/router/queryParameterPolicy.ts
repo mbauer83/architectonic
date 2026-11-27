@@ -39,6 +39,7 @@ export const QUERY_PARAMETER_ROLES: Readonly<Record<string, QueryParameterRole>>
   'ui/views/AssuranceBrowseView.vue#*': 'filter',
   'ui/composables/useDiagramsListState.ts#type': 'filter',
   'ui/composables/useDiagramsListState.ts#group': 'filter',
+  'ui/composables/useDiagramsListState.ts#stakeholder': 'filter',
   'ui/composables/useDiagramsListState.ts#*': 'filter',
   'ui/composables/useDocumentsListState.ts#doc_type': 'filter',
   // Whether a stress-analysis list is open, so the Plan menu reads as the current section.
