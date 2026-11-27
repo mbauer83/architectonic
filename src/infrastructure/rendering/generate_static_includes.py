@@ -228,6 +228,19 @@ def _generate_relations_include() -> str:
     return "\n".join(lines) + "\n"
 
 
+#: The generated include files, under `DIAGRAM_CATALOG` of every repository.
+STATIC_INCLUDE_NAMES: tuple[str, ...] = (
+    "_archimate-glyphs.puml",
+    "_archimate-stereotypes.puml",
+    "_archimate-relations.puml",
+)
+
+
+def static_include_paths() -> tuple[str, ...]:
+    """The generated include files, relative to a repository root, as git names them."""
+    return tuple(f"{DIAGRAM_CATALOG}/{name}" for name in STATIC_INCLUDE_NAMES)
+
+
 def static_include_contents(repo_root: Path) -> dict[str, str]:
     """What the generated include files should contain, given the ontology as loaded now.
 
@@ -235,10 +248,11 @@ def static_include_contents(repo_root: Path) -> dict[str, str]:
     touching it — a check that repairs what it is checking cannot fail twice, and would
     silently launder drift in CI.
     """
+    glyphs, stereotypes, relations = STATIC_INCLUDE_NAMES
     return {
-        "_archimate-glyphs.puml": _generate_glyph_include(repo_root),
-        "_archimate-stereotypes.puml": _generate_stereotype_include(repo_root),
-        "_archimate-relations.puml": _generate_relations_include(),
+        glyphs: _generate_glyph_include(repo_root),
+        stereotypes: _generate_stereotype_include(repo_root),
+        relations: _generate_relations_include(),
     }
 
 

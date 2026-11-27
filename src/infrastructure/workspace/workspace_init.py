@@ -85,7 +85,19 @@ def _current_branch(repo: Path) -> str | None:
 
 
 def _is_dirty(repo: Path) -> bool:
-    r = _run_git(["status", "--porcelain"], cwd=repo)
+    """Whether *repo* has changes arch-init did not make itself.
+
+    arch-init rewrites the generated include files of both repositories on every run
+    (`generate_static_includes`). In a clone of a tier whose includes lag the ontology — an
+    enterprise repository maintained upstream — that leaves those files modified, and a check
+    that counted them refused the next arch-init: every container restart after the first
+    stopped here. The files are arch-init's own output, regenerated before anything reads them,
+    so they are left out of the question; any other change still counts.
+    """
+    from src.infrastructure.rendering.generate_static_includes import static_include_paths  # noqa: PLC0415
+
+    excluded = [f":(exclude){path}" for path in static_include_paths()]
+    r = _run_git(["status", "--porcelain", "--", ".", *excluded], cwd=repo)
     return bool(r.stdout.strip())
 
 
