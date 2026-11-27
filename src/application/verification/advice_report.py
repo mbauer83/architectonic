@@ -105,11 +105,7 @@ def element_advice(record: EntityRecord, graph: OutboundConnections, catalogs: A
             Relation(c.conn_type, c.source, c.target) for c in graph.find_connections_for(source, direction="outbound")
         )
 
-    def type_of(artifact_id: str) -> str | None:
-        found = graph.get_entity(artifact_id)
-        return None if found is None else found.artifact_type
-
-    finding = element_sequence_advice(record, SequenceGraph(outgoing, type_of), sequence_vocabulary(catalogs))
+    finding = element_sequence_advice(record, SequenceGraph(outgoing), sequence_vocabulary(catalogs))
     return ElementAdvice(
         open=() if finding is None else (finding,),
         accepted=accepted_advice_from_frontmatter(record.extra.get(ACCEPTED_ADVICE_KEY)),

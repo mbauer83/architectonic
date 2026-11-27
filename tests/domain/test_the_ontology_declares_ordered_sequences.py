@@ -37,13 +37,6 @@ def test_the_relations_that_express_order_are_exactly_triggering_and_flow(vocabu
     assert vocabulary.ordering == {"archimate-triggering", "archimate-flow"}
 
 
-def test_the_junctions_carry_order_on_and_nothing_else_does(vocabulary: SequenceVocabulary) -> None:
-    """Read from the RJ3 pass-through rule whose legs are both dynamic, by the junction class."""
-    assert {"and-junction", "or-junction"} <= vocabulary.order_carriers
-    assert "process" not in vocabulary.order_carriers
-    assert "grouping" not in vocabulary.order_carriers, "PDR12 is potential and structural, not a carrier"
-
-
 def test_composition_composes_and_aggregation_does_not(vocabulary: SequenceVocabulary) -> None:
     assert "archimate-composition" in vocabulary.composing
     assert "archimate-aggregation" not in vocabulary.composing
@@ -53,16 +46,12 @@ def test_composition_composes_and_aggregation_does_not(vocabulary: SequenceVocab
 
 _VOCAB = SequenceVocabulary(
     sequence_types=frozenset({"seq"}), composing=frozenset({"part-of"}), ordering=frozenset({"then"}),
-    order_carriers=frozenset({"hub"}),
 )
 
 
 def _graph(*relations: tuple[str, str, str]) -> SequenceGraph:
     table = [Relation(t, s, d) for s, t, d in relations]
-    return SequenceGraph(
-        outgoing=lambda source: [r for r in table if r.source == source],
-        type_of=lambda node: "hub" if node.startswith("j") else "step",
-    )
+    return SequenceGraph(outgoing=lambda source: [r for r in table if r.source == source])
 
 
 def test_two_parts_and_no_order_names_both() -> None:
@@ -89,12 +78,12 @@ def test_a_relation_that_does_not_compose_is_not_a_part() -> None:
     assert unordered_parts("w", outgoing, _VOCAB) == ()
 
 
-def test_order_through_a_carrier_orders_the_parts() -> None:
+def test_order_through_another_element_orders_the_parts() -> None:
     outgoing = _graph(("w", "part-of", "a"), ("w", "part-of", "b"), ("a", "then", "j1"), ("j1", "then", "b"))
     assert unordered_parts("w", outgoing, _VOCAB) == ()
 
 
-def test_order_through_chained_carriers_orders_the_parts() -> None:
+def test_order_through_a_chain_of_elements_orders_the_parts() -> None:
     outgoing = _graph(
         ("w", "part-of", "a"), ("w", "part-of", "b"),
         ("a", "then", "j1"), ("j1", "then", "j2"), ("j2", "then", "b"),
@@ -102,12 +91,12 @@ def test_order_through_chained_carriers_orders_the_parts() -> None:
     assert unordered_parts("w", outgoing, _VOCAB) == ()
 
 
-def test_order_through_something_that_is_not_a_carrier_does_not_order_them() -> None:
-    outgoing = _graph(("w", "part-of", "a"), ("w", "part-of", "b"), ("a", "then", "x"), ("x", "then", "b"))
+def test_order_through_a_relation_that_does_not_express_order_does_not_order_them() -> None:
+    outgoing = _graph(("w", "part-of", "a"), ("w", "part-of", "b"), ("a", "then", "x"), ("x", "serves", "b"))
     assert unordered_parts("w", outgoing, _VOCAB) == ("a", "b")
 
 
-def test_a_cycle_of_carriers_terminates() -> None:
+def test_a_cycle_terminates() -> None:
     outgoing = _graph(("w", "part-of", "a"), ("w", "part-of", "b"), ("a", "then", "j1"), ("j1", "then", "j2"),
                       ("j2", "then", "j1"))
     assert unordered_parts("w", outgoing, _VOCAB) == ("a", "b")

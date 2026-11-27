@@ -157,12 +157,21 @@ def test_a_junction_whose_legs_do_not_express_order_does_not_quiet_it(repo: Path
     assert len(_advice(repo)) == 1
 
 
-def test_order_through_an_element_that_is_not_a_junction_does_not_quiet_it(repo: Path) -> None:
-    """A third step between the parts orders it, not them: only a carrier passes order on."""
+def test_order_through_another_step_quiets_it(repo: Path) -> None:
+    """A chain of triggering derives triggering between its ends, so a step between the parts orders them."""
     _entity(repo, _PROCESS)
     _compose(repo, _A, _C)
     _outgoing(repo, _A, [("archimate-triggering", _B)])
     _outgoing(repo, _B, [("archimate-triggering", _C)])
+
+    assert _advice(repo) == []
+
+
+def test_a_chain_broken_by_a_relation_that_does_not_express_order_does_not_quiet_it(repo: Path) -> None:
+    _entity(repo, _PROCESS)
+    _compose(repo, _A, _C)
+    _outgoing(repo, _A, [("archimate-triggering", _B)])
+    _outgoing(repo, _B, [("archimate-serving", _C)])
 
     assert len(_advice(repo)) == 1
 

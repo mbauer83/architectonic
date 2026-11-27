@@ -19,7 +19,7 @@ use — one element record, for its type, status and acknowledgements — is wha
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -50,7 +50,6 @@ def sequence_vocabulary(catalogs: Any) -> SequenceVocabulary:
     return SequenceVocabulary.from_ontology(
         catalogs.ontology.all_entity_types(),
         catalogs.ontology.all_connection_types(),
-        (rule for module in catalogs.module_catalog.all_ontologies().values() for rule in module.derivation_rules),
     )
 
 
@@ -93,14 +92,6 @@ def element_sequence_advice(
     return sequence_advice(record, unordered_parts(record.artifact_id, graph, vocabulary))
 
 
-def _type_of(candidate: Any) -> Callable[[str], str | None]:
-    def type_of(artifact_id: str) -> str | None:
-        record = candidate.get_entity(artifact_id)
-        return None if record is None else record.artifact_type
-
-    return type_of
-
-
 class OrderedSequenceContribution:
     """A341: one advice per sequence element whose two or more composed parts nothing orders."""
 
@@ -117,7 +108,7 @@ class OrderedSequenceContribution:
             source for source, rels in relations.items()
             if sum(1 for r in rels if r.conn_type in vocabulary.composing) >= 2
         )
-        graph = SequenceGraph(outgoing=lambda s: relations.get(s, ()), type_of=_type_of(ctx.candidate))
+        graph = SequenceGraph(outgoing=lambda s: relations.get(s, ()))
         findings = (
             element_sequence_advice(ctx.candidate.get_entity(source), graph, vocabulary) for source in candidates
         )
