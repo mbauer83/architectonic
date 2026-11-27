@@ -11,9 +11,11 @@ from pathlib import Path
 import pytest
 
 from src.application.artifacts.repository import ArtifactRepository
+from src.domain.purpose_lines import Prose
 from src.infrastructure.artifact_index import shared_artifact_index
 from src.infrastructure.rest.routers import state as gui_state
 from src.infrastructure.rest.routers.viewpoints.authoring import router as viewpoint_authoring_router
+from src.infrastructure.viewpoint_declarations import load_viewpoint_catalog_file
 from tests.support.api_app import build_api_app
 
 httpx = pytest.importorskip("httpx")
@@ -190,6 +192,31 @@ class TestCreate:
         assert listed.status_code == 200, listed.text
         entry = next(e for e in listed.json()["viewpoints"] if e["slug"] == "test-viewpoint")
         assert entry["query"]["bindings"][0]["select"] == "entities"
+
+
+class TestPurposeReferences:
+    """The persist path resolves a definition's purpose-line references against the repository it serves."""
+
+    def test_a_reference_the_repository_does_not_hold_is_refused(self, client, engagement_root: Path) -> None:
+        definition = {**_MINIMAL_DEFINITION, "stakeholders": ["Operations", {"ref": "STK@1000000001.Nope00.gone"}]}
+
+        body = client.post("/api/viewpoints", json={"definition": definition, "dry_run": False}).json()
+
+        assert body["ok"] is False
+        assert [(issue["code"], issue["path"]) for issue in body["issues"]] == [
+            ("unknown-purpose-reference", "/stakeholders/1")
+        ]
+        assert load_viewpoint_catalog_file(engagement_root).get("test-viewpoint") is None
+
+    def test_prose_entries_are_written_as_stated(self, client, engagement_root: Path) -> None:
+        definition = {**_MINIMAL_DEFINITION, "stakeholders": ["Operations"], "concerns": ["Why?"]}
+
+        body = client.post("/api/viewpoints", json={"definition": definition, "dry_run": False}).json()
+
+        assert body["ok"] is True, body
+        stored = load_viewpoint_catalog_file(engagement_root).get("test-viewpoint")
+        assert stored is not None
+        assert (stored.stakeholders, stored.concerns) == ((Prose("Operations"),), (Prose("Why?"),))
 
 
 class TestEdit:

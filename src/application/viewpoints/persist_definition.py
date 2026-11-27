@@ -3,7 +3,8 @@ GUI save flow and the ``artifact_viewpoint`` MCP tool both go through for author
 engagement-repo viewpoint definitions — ``persist_edit``-mode validation plus the
 lifecycle rules against prior state: version bump on semantic edit, slug uniqueness
 against the effective merged catalog, enterprise/module definitions read-only, delete
-blocked while referenced.
+blocked while referenced, and every reference in its purpose lines resolved against the repository
+by the same check a diagram's lines go through (``purpose_line_references``).
 
 Pure orchestration, no file I/O (hexagonal boundary: application never imports infrastructure
 adapters directly) — callers load ``local_catalog`` via
@@ -19,6 +20,12 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, replace
 from typing import Literal, Protocol
 
+from src.application.verification.purpose_line_references import (
+    Missing,
+    PurposeLineResolution,
+    UnresolvedReference,
+    Unsuitable,
+)
 from src.domain.ontology_representation.artifact_types import DiagramRecord
 from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot, issue
 from src.domain.viewpoints.viewpoint_lineage import fork_lineage
@@ -97,6 +104,26 @@ def _validate(
     )
 
 
+def _purpose_reference_issue(unresolved: UnresolvedReference) -> ViewpointValidationIssue:
+    """A reference in the definition's purpose lines that does not resolve, as a definition issue.
+
+    An error, as E186/E187 are for a diagram: a viewpoint naming an element that is not there, or one
+    that cannot stand in that list, would show every view built with it a purpose the model contradicts.
+    """
+    path = f"/{unresolved.placed.list_key}/{unresolved.placed.position}"
+    match unresolved.fault:
+        case Missing():
+            return issue(
+                "error", "unknown-purpose-reference", path, unresolved.describe(),
+                found=unresolved.placed.reference.artifact_id,
+            )
+        case Unsuitable(found_type, admitted):
+            return issue(
+                "error", "purpose-reference-type-mismatch", path, unresolved.describe(),
+                expected=", ".join(sorted(admitted)) or None, found=found_type,
+            )
+
+
 def _read_only_or_unknown_issue(slug: str, *, exists_in_merged_catalog: bool) -> ViewpointValidationIssue:
     if exists_in_merged_catalog:
         return issue(
@@ -131,6 +158,7 @@ def persist_viewpoint_definition(
     local_catalog: ViewpointCatalog,
     merged_catalog: ViewpointCatalog,
     registries: RegistrySnapshot,
+    purpose_references: PurposeLineResolution,
     fork_of: str | None = None,
     index_generation: int | None = None,
 ) -> ViewpointPersistResult:
@@ -180,7 +208,9 @@ def persist_viewpoint_definition(
         definition = replace(definition, forked_from=local_definition.forked_from)
         prior_definition = local_definition
 
-    issues = _validate(definition, registries=registries, prior_definition=prior_definition, catalog=merged_catalog)
+    issues = _validate(
+        definition, registries=registries, prior_definition=prior_definition, catalog=merged_catalog
+    ) + tuple(map(_purpose_reference_issue, purpose_references.unresolved(definition.purpose_lines)))
     if any(item.severity == "error" for item in issues):
         return ViewpointPersistResult(
             ok=False, action=action, slug=definition.slug, version=definition.version, issues=issues

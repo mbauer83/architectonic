@@ -11,6 +11,7 @@ from typing import Literal
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
+from src.application.verification.purpose_line_references import PurposeLineResolution
 from src.application.viewpoints.persist_definition import (
     delete_viewpoint_definition,
     persist_viewpoint_definition,
@@ -51,7 +52,8 @@ def artifact_viewpoint(
     both_roots = resolve_repo_roots(repo_scope="both", repo_root=repo_root, repo_preset=None, enterprise_root=None)
     merged_catalog = load_effective_viewpoint_catalog(both_roots)
     local_catalog = load_viewpoint_catalog_file(engagement_root)
-    registries = configured_registry_snapshot(process_runtime_catalogs(), both_roots)
+    catalogs = process_runtime_catalogs()
+    registries = configured_registry_snapshot(catalogs, both_roots)
 
     if action == "delete":
         if slug is None:
@@ -78,6 +80,9 @@ def artifact_viewpoint(
             local_catalog=local_catalog,
             merged_catalog=merged_catalog,
             registries=registries,
+            purpose_references=PurposeLineResolution(
+                repo_cached(roots_key(both_roots)), catalogs.ontology.purpose_line_entity_types()
+            ),
             fork_of=fork_of,
             index_generation=index_generation,
         )

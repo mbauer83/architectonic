@@ -54,6 +54,17 @@ class TestCreate:
         assert result["ok"] is False
         assert result["issues"][0]["code"] == "slug-collision"
 
+    def test_a_purpose_reference_the_repository_does_not_hold_is_refused(self, repo: Path) -> None:
+        definition = {**_MINIMAL_DEFINITION, "concerns": ["Why?", {"ref": "GOL@1000000001.Nope00.gone"}]}
+
+        result = mcp.artifact_viewpoint(action="create", definition=definition, dry_run=False, repo_root=str(repo))
+
+        assert result["ok"] is False
+        assert [(issue["code"], issue["path"]) for issue in result["issues"]] == [
+            ("unknown-purpose-reference", "/concerns/1")
+        ]
+        assert load_viewpoint_catalog_file(repo).get("test-viewpoint") is None
+
     def test_create_then_list_round_trip(self, repo: Path) -> None:
         mcp.artifact_viewpoint(action="create", definition=_MINIMAL_DEFINITION, dry_run=False, repo_root=str(repo))
         fn = mcp.mcp_read._tool_manager._tools["artifact_query_viewpoint"].fn

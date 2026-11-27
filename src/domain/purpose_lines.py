@@ -64,6 +64,15 @@ type PurposeEntry = Prose | Reference
 
 
 @dataclass(frozen=True)
+class PlacedReference:
+    """A reference where it stands: the list holding it, and its position in that list's entries."""
+
+    list_key: str
+    position: int
+    reference: Reference
+
+
+@dataclass(frozen=True)
 class PurposeLines:
     """A view's audience and its questions: the two lists, each in the order its author wrote it."""
 
@@ -94,19 +103,19 @@ class PurposeLines:
             concerns=self.concerns if concerns is None else read_entries(concerns, CONCERNS_KEY),
         )
 
-    def references(self) -> tuple[tuple[str, Reference], ...]:
-        """Every reference, beside the key of the list holding it."""
+    def references(self) -> tuple[PlacedReference, ...]:
+        """Every reference, with the list holding it and its position there."""
         return tuple(
-            (key, entry)
+            PlacedReference(key, position, entry)
             for key, entries in ((STAKEHOLDERS_KEY, self.stakeholders), (CONCERNS_KEY, self.concerns))
-            for entry in entries
+            for position, entry in enumerate(entries)
             if isinstance(entry, Reference)
         )
 
     def names(self, artifact_id: str) -> bool:
         """Whether either list refers to *artifact_id*, in whichever spelling either side uses."""
         wanted = canonical_entity_key(artifact_id)
-        return any(reference.key == wanted for _, reference in self.references())
+        return any(placed.reference.key == wanted for placed in self.references())
 
 
 def _read_entry(raw: object, *, where: str) -> PurposeEntry:

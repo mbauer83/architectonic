@@ -22,7 +22,7 @@ from src.domain.viewpoints.viewpoints import (
     ViewpointCatalog,
     ViewpointDefinition,
 )
-from tests.application.viewpoints._fixtures import REGISTRIES
+from tests.application.viewpoints._fixtures import NO_ELEMENTS, REGISTRIES
 
 
 @dataclass
@@ -61,6 +61,7 @@ class TestForkLineageStamping:
             local_catalog=ViewpointCatalog.empty(),
             merged_catalog=ViewpointCatalog((origin,)),
             registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
             fork_of="origin",
             index_generation=42,
         )
@@ -80,6 +81,7 @@ class TestForkLineageStamping:
             local_catalog=ViewpointCatalog.empty(),
             merged_catalog=ViewpointCatalog.empty(),
             registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
             fork_of="ghost",
         )
         assert result.ok is False
@@ -96,6 +98,7 @@ class TestForkLineageStamping:
             local_catalog=ViewpointCatalog.empty(),
             merged_catalog=ViewpointCatalog.empty(),
             registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
         )
         assert result.ok is True
         assert result.catalog_to_write is not None
@@ -113,6 +116,7 @@ class TestForkLineageStamping:
             local_catalog=ViewpointCatalog((existing,)),
             merged_catalog=ViewpointCatalog((existing, origin)),
             registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
         )
         assert result.ok is True
         assert result.catalog_to_write is not None
@@ -128,6 +132,7 @@ class TestCreate:
         result = persist_viewpoint_definition(
             "create", definition, local_catalog=ViewpointCatalog.empty(), merged_catalog=ViewpointCatalog.empty(),
             registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
         )
         assert result.ok is True
         assert result.issues == ()
@@ -140,6 +145,7 @@ class TestCreate:
         result = persist_viewpoint_definition(
             "create", _definition(slug="dup"), local_catalog=ViewpointCatalog.empty(), merged_catalog=merged,
             registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
         )
         assert result.ok is False
         assert result.issues[0].code == "slug-collision"
@@ -152,6 +158,7 @@ class TestCreate:
         result = persist_viewpoint_definition(
             "create", bad_scope, local_catalog=ViewpointCatalog.empty(), merged_catalog=ViewpointCatalog.empty(),
             registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
         )
         assert result.ok is False
         assert any(i.code == "unknown-type" for i in result.issues)
@@ -172,6 +179,7 @@ class TestCreate:
             local_catalog=ViewpointCatalog.empty(),
             merged_catalog=ViewpointCatalog.empty(),
             registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
         )
 
         assert result.ok is True
@@ -187,7 +195,8 @@ class TestEdit:
         local = self._local_catalog_with(_definition())
         edited = _definition(description="now with a description")
         result = persist_viewpoint_definition(
-            "edit", edited, local_catalog=local, merged_catalog=ViewpointCatalog.empty(), registries=REGISTRIES
+            "edit", edited, local_catalog=local, merged_catalog=ViewpointCatalog.empty(), registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
         )
         assert result.ok is True
         assert result.catalog_to_write.get("test-viewpoint").description == "now with a description"
@@ -196,7 +205,8 @@ class TestEdit:
         local = self._local_catalog_with(_definition())
         edited = _definition(scope=ConceptScope(entity_types=frozenset({EntityTypeName("application-component")})))
         result = persist_viewpoint_definition(
-            "edit", edited, local_catalog=local, merged_catalog=ViewpointCatalog.empty(), registries=REGISTRIES
+            "edit", edited, local_catalog=local, merged_catalog=ViewpointCatalog.empty(), registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
         )
         assert result.ok is False
         assert any(i.code == "version-not-bumped" for i in result.issues)
@@ -208,7 +218,8 @@ class TestEdit:
             version=2, scope=ConceptScope(entity_types=frozenset({EntityTypeName("application-component")}))
         )
         result = persist_viewpoint_definition(
-            "edit", edited, local_catalog=local, merged_catalog=ViewpointCatalog.empty(), registries=REGISTRIES
+            "edit", edited, local_catalog=local, merged_catalog=ViewpointCatalog.empty(), registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
         )
         assert result.ok is True
         assert result.catalog_to_write.get("test-viewpoint").version == 2
@@ -217,6 +228,7 @@ class TestEdit:
         result = persist_viewpoint_definition(
             "edit", _definition(slug="never-created"), local_catalog=ViewpointCatalog.empty(),
             merged_catalog=ViewpointCatalog.empty(), registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
         )
         assert result.ok is False
         assert result.issues[0].code == "unknown-slug"
@@ -227,6 +239,7 @@ class TestEdit:
         result = persist_viewpoint_definition(
             "edit", _definition(slug="enterprise-vp", description="hijack"), local_catalog=ViewpointCatalog.empty(),
             merged_catalog=merged, registries=REGISTRIES,
+            purpose_references=NO_ELEMENTS,
         )
         assert result.ok is False
         assert result.issues[0].code == "read-only-definition"

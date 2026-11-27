@@ -49,6 +49,7 @@ from src.application.verification.artifact_verifier_types import (
     Severity,
     VerificationResult,
 )
+from src.application.verification.purpose_line_references import PurposeLineResolution
 from src.application.verification.verifier_ports import IconLibrary, PumlSyntaxPort
 from src.application.viewpoints.registry_snapshot import RegistrySnapshot
 from src.domain.diagrams.diagram_type_field import stated_diagram_type
@@ -164,7 +165,9 @@ def verify_diagram(
             result=result,
             loc=loc,
         )
-        check_purpose_lines(fm, ctx.registry, ctx.catalogs.ontology.purpose_line_entity_types(), result, loc)
+        check_purpose_lines(
+            fm, PurposeLineResolution(ctx.registry, ctx.catalogs.ontology.purpose_line_entity_types()), result, loc
+        )
         check_icon_assignments(fm, ctx.registry, ctx.icon_library or ctx.registry, ctx.catalogs, result, loc)
         _check_layout(ctx, ctx.registry, fm, result, loc)
         if repo_root is not None:

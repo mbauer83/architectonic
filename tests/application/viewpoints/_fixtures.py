@@ -6,7 +6,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
+from src.application.verification.purpose_line_references import PurposeLineResolution
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
+from src.domain.ontology_representation.purpose_line_elements import PurposeLineTypes
 from src.domain.viewpoints.viewpoint_condition_validation import RegistrySnapshot
 
 
@@ -93,3 +95,22 @@ REGISTRIES = RegistrySnapshot(
     entity_attribute_types={},
     connection_attribute_types={},
 )
+
+
+@dataclass(frozen=True)
+class EntityTable:
+    """An entity lookup over a fixed set of records — the one question a purpose-line check asks."""
+
+    records: tuple[EntityRecord, ...] = ()
+
+    def get_entity(self, artifact_id: str) -> EntityRecord | None:
+        return next((record for record in self.records if record.artifact_id == artifact_id), None)
+
+
+#: Stakeholder references may name a `stakeholder`; concern references a `goal` or a `stakeholder`.
+PURPOSE_LINE_TYPES = PurposeLineTypes(
+    stakeholders=frozenset({"stakeholder"}), concerns=frozenset({"goal", "stakeholder"})
+)
+
+#: A repository holding no element: every reference is missing, and prose is untouched.
+NO_ELEMENTS = PurposeLineResolution(EntityTable(), PURPOSE_LINE_TYPES)

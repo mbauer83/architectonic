@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, ConfigDict
 
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.application.verification.purpose_line_references import PurposeLineResolution
 from src.application.viewpoints.persist_definition import (
     PersistAction,
     ViewpointPersistResult,
@@ -119,6 +120,7 @@ def _persist(
         local_catalog=local_catalog,
         merged_catalog=merged_catalog,
         registries=registries,
+        purpose_references=PurposeLineResolution(s.get_repo(), catalogs.ontology.purpose_line_entity_types()),
         fork_of=body.fork_of,
         index_generation=index_generation,
     )
