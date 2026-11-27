@@ -3,6 +3,21 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.12.2] — 2026-11-27
+
+**[Full detail → `changelog-assets/0.12.2-detail.md`](changelog-assets/0.12.2-detail.md)**
+
+### Fixed
+
+- A container started a second time no longer stops in a restart loop. `arch-init` regenerates the diagram include
+  files on every start and then refused its own regenerated files as uncommitted changes; it now leaves the files it
+  generates out of that check, and any other change still stops it.
+
+### Changed
+
+- A release publishes on the verdict of the CI run its commit already had on `main`, waiting for that run while it
+  is in progress, and runs CI on the tag only when there is no passing run.
+
 ## [0.12.1] — 2026-11-27
 
 **[Full detail → `changelog-assets/0.12.1-detail.md`](changelog-assets/0.12.1-detail.md)**
@@ -1574,6 +1589,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.12.2]: https://github.com/mbauer83/architectonic/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/mbauer83/architectonic/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/mbauer83/architectonic/compare/v0.11.5...v0.12.0
 [0.11.5]: https://github.com/mbauer83/architectonic/compare/v0.11.4...v0.11.5
