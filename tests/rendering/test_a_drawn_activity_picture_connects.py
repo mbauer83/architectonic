@@ -21,11 +21,12 @@ Skipped without plantuml.jar, like every other rendered-SVG assertion here.
 from __future__ import annotations
 
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 
-from src.infrastructure.rendering.drawn_connections import drawn_picture
+from src.infrastructure.rendering.drawn_connections import DrawnPicture, drawn_picture
 from tests.diagram_types._activity_shapes import CATALOGUE, ActivityShape, bundled_shapes
 
 
@@ -62,10 +63,30 @@ def _shapes() -> list[ActivityShape]:
     return [*CATALOGUE, *bundled_shapes()]
 
 
+@pytest.fixture(scope="module")
+def drawn() -> Callable[[ActivityShape], DrawnPicture]:
+    """Each shape's picture, drawn once for the module: both tests below read the same render.
+
+    Keyed by the body the shape emits, so two shapes never share a picture unless they draw the same.
+    `DrawnPicture` is frozen, so neither test can change what the other reads.
+    """
+    pictures: dict[str, DrawnPicture] = {}
+
+    def picture_of(shape: ActivityShape) -> DrawnPicture:
+        body = shape.render()
+        if body not in pictures:
+            pictures[body] = drawn_picture(_render_svg(shape))
+        return pictures[body]
+
+    return picture_of
+
+
 @pytest.mark.parametrize("shape", _shapes(), ids=lambda s: s.name.replace(" ", "-"))
-def test_a_drawn_activity_shape_connects(shape: ActivityShape) -> None:
+def test_a_drawn_activity_shape_connects(
+    shape: ActivityShape, drawn: Callable[[ActivityShape], DrawnPicture],
+) -> None:
     """No arrow reaching nothing, no arrow reaching another arrow, no line over a shape."""
-    picture = drawn_picture(_render_svg(shape))
+    picture = drawn(shape)
     assert not picture.defects, "\n".join(
         [f"{shape.name} ({shape.exercises}) draws {len(picture.defects)} disconnected place(s):"]
         + [f"  {d.disconnection.value} at ({d.at[0]:.0f},{d.at[1]:.0f}): {d.detail}"
@@ -74,10 +95,12 @@ def test_a_drawn_activity_shape_connects(shape: ActivityShape) -> None:
 
 
 @pytest.mark.parametrize("shape", _shapes(), ids=lambda s: s.name.replace(" ", "-"))
-def test_a_drawn_activity_shape_was_actually_examined(shape: ActivityShape) -> None:
+def test_a_drawn_activity_shape_was_actually_examined(
+    shape: ActivityShape, drawn: Callable[[ActivityShape], DrawnPicture],
+) -> None:
     """A picture the reader cannot see into passes the check above vacuously. Nothing has silently
     stopped being examined: every shape draws arrowheads, and they were counted."""
-    picture = drawn_picture(_render_svg(shape))
+    picture = drawn(shape)
     assert picture.arrowheads_examined >= _ENOUGH_ARROWHEADS, (
         f"{shape.name}: only {picture.arrowheads_examined} arrowhead(s) examined, so a clean result "
         f"says nothing about whether its flow connects"
