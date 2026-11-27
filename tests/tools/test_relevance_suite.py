@@ -80,9 +80,9 @@ def _store_of(count: int) -> _Store:
 # ── drawing ──────────────────────────────────────────────────────────────────
 
 
-def test_all_three_strata_are_drawn() -> None:
+def test_every_stratum_is_drawn() -> None:
     strata = draw_strata(_store_of(10))
-    assert set(strata) == {"name", "summary", "paraphrase", "described"}
+    assert set(strata) == {"name", "summary", "paraphrase", "described", "typed"}
 
 
 def test_a_small_corpus_yields_every_candidate() -> None:
@@ -125,6 +125,36 @@ def test_the_summary_stratum_drops_the_heading() -> None:
 def test_an_entity_with_no_prose_contributes_no_summary_query() -> None:
     store = _Store([_entity("REQ@1.a.x", "Nameless Prose", "## Nameless Prose")])
     assert draw_strata(store)["summary"] == []
+
+
+# ── typing ───────────────────────────────────────────────────────────────────
+
+
+def _typed(*names: str) -> dict[str, str]:
+    store = _Store([_entity(f"REQ@1.n{index}.x", name) for index, name in enumerate(names)])
+    return {q.gold_artifact_id: q.query for q in draw_strata(store)["typed"]}
+
+
+def test_the_typed_stratum_asks_the_shortest_beginning_no_other_name_shares() -> None:
+    typed = _typed("Artifact Index", "Artifact Store", "Backend")
+    assert typed == {"REQ@1.n0.x": "artifact i", "REQ@1.n1.x": "artifact s", "REQ@1.n2.x": "ba"}
+
+
+def test_a_cut_on_a_space_is_carried_into_the_next_word() -> None:
+    """`artifact ` reads as `artifact`, which `Artifacts` also begins with."""
+    assert _typed("Artifact Index", "Artifacts")["REQ@1.n0.x"] == "artifact i"
+
+
+def test_a_name_that_begins_another_is_asked_for_in_full() -> None:
+    assert _typed("Scratchpad", "Scratchpad Note")["REQ@1.n0.x"] == "scratchpad"
+
+
+def test_names_are_compared_as_the_ranking_reads_titles() -> None:
+    assert _typed("Sketch, Before Naming!", "Sketch before tests")["REQ@1.n0.x"] == "sketch before n"
+
+
+def test_a_name_two_entities_bear_cannot_be_typed_apart_and_is_not_asked() -> None:
+    assert _typed("Twin", "twin", "Other") == {"REQ@1.n2.x": "ot"}
 
 
 # ── the paraphrases ──────────────────────────────────────────────────────────

@@ -5,7 +5,7 @@ cannot distinguish a change that helps from one that does nothing, and it certai
 that helps a hard query while quietly costing an easy one. This scores recall against queries whose
 answers are known.
 
-**Four strata, each with one intended answer per query.**
+**Five strata, each with one intended answer per query.**
 
 - `name` — an element's own name as the query, itself as the answer. The easiest question there is,
   and the one a reader asks most. Its purpose is the floor: nothing may regress here.
@@ -18,9 +18,12 @@ answers are known.
   with that link taken out, the element as the answer. A person wrote it about the element in words
   of their own; it sometimes cites the element rather than describing it, so it is reported beside
   the paraphrases rather than instead of them.
+- `typed` — the shortest beginning of an element's name that no other element's name begins with,
+  the element as the answer. What a reader has typed into a search box at the moment their answer
+  could first be told apart from every other: the question the box is asked most, half-finished.
 
-**Derived at read time where the repository states the answer.** `name`, `summary` and `described`
-come from whatever the repository holds, so a rename changes the query with the artifact. The
+**Derived at read time where the repository states the answer.** `name`, `summary`, `described` and
+`typed` come from whatever the repository holds, so a rename changes the query with the artifact. The
 paraphrases are written, and so committed, but keyed by rename-stable ids.
 
 **It reports rates; it does not decide what rate is acceptable.** A caller compares two
@@ -31,11 +34,13 @@ today's corpus against yesterday's, which is not a fact about search.
 from __future__ import annotations
 
 import re
+from collections import Counter
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from src.application.artifacts.title_match import normalised_terms
 from src.application.document_links import is_external_or_anchor_href, iter_markdown_links, strip_anchor
 from src.domain.artifact_id import stable_id
 from src.domain.ontology_representation.artifact_types import DocumentRecord, EntityRecord
@@ -61,6 +66,9 @@ _SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z*`\[])|\n\s*\n|\n(?=\s*[-|#])")
 
 #: Markdown emphasis, code, table and heading marks, which say nothing a query would.
 _MARKUP = re.compile(r"[*`#|>]")
+
+#: The fewest characters the search box asks about: a single keystroke is not sent as a query.
+_MIN_TYPED_CHARACTERS = 2
 
 
 class LabelledCorpus(Protocol):
@@ -118,6 +126,7 @@ def draw_strata(
         ),
         "paraphrase": _paraphrase_queries(entities, paraphrases),
         "described": _stride(_described_queries(store, entities)),
+        "typed": _stride(_typed_queries(entities)),
     }
 
 
@@ -157,6 +166,42 @@ def _opening_prose(content: str) -> str:
     body = " ".join(line for line in content.splitlines() if not line.strip().startswith("#"))
     collapsed = " ".join(body.split())
     return collapsed[:_SUMMARY_CHARACTERS].strip()
+
+
+def _typed_queries(entities: Sequence[EntityRecord]) -> list[LabelledQuery]:
+    """Each uniquely named entity, asked for by the shortest beginning of its name no other name shares.
+
+    Names are compared as `title_match` normalises them — the form the ranking reads a title in — so
+    "begins with" here is the statement the search's own title tiers make. An entity whose name another
+    entity also bears cannot be told apart by typing at all, and is left out rather than counted as a
+    miss. One whose whole name begins another's is asked for in full.
+    """
+    forms = {entity.artifact_id: " ".join(normalised_terms(entity.name)) for entity in entities}
+    bearers = Counter(forms.values())
+    ordered = sorted(bearers)
+    return [
+        LabelledQuery(form[: _distinguishing_length(form, ordered)], entity.artifact_id)
+        for entity in entities
+        if (form := forms[entity.artifact_id]) and bearers[form] == 1
+    ]
+
+
+def _distinguishing_length(form: str, ordered: Sequence[str]) -> int:
+    """How many characters of `form` no other form in `ordered` (sorted, distinct) begins with.
+
+    Only a sorted neighbour can share a longer beginning than any other form does. A cut that lands on
+    a space is carried into the next word: the query reads the same with or without the space, and
+    without it the beginning is shared again.
+    """
+    at = ordered.index(form)
+    neighbours = [*ordered[max(at - 1, 0) : at], *ordered[at + 1 : at + 2]]
+    shared = max((_common_prefix_length(form, other) for other in neighbours), default=0)
+    length = min(max(shared + 1, _MIN_TYPED_CHARACTERS), len(form))
+    return length + 1 if form[length - 1 : length] == " " else length
+
+
+def _common_prefix_length(left: str, right: str) -> int:
+    return next((index for index, (a, b) in enumerate(zip(left, right)) if a != b), min(len(left), len(right)))
 
 
 def _paraphrase_queries(
