@@ -108,12 +108,14 @@ const toggleContent = (value: (typeof VALID_CONTENTS)[number]) => {
     </fieldset>
     <PurposeEntryListEditor
       :model-value="draft.stakeholders"
+      list="stakeholders"
       label="Stakeholders"
       prose-hint="a stakeholder, in words"
       @update:model-value="emit('update', { stakeholders: $event })"
     />
     <PurposeEntryListEditor
       :model-value="draft.concerns"
+      list="concerns"
       label="Concerns"
       prose-hint="a concern, in words"
       @update:model-value="emit('update', { concerns: $event })"

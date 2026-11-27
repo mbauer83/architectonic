@@ -61,6 +61,17 @@ class DiagramTypeHelpEntry(Closed):
     accepted_domains: list[str]
 
 
+class PurposeLineEntityTypes(Closed):
+    """Which entity types a purpose-line reference may name, per list, as the ontologies declare it.
+
+    A list that is empty admits no reference: its entries are stated in words. The verifier refuses a
+    reference outside these (E187); a picker narrows to them so it never offers one it would refuse.
+    """
+
+    stakeholders: list[str]
+    concerns: list[str]
+
+
 class WriteHelpConventions(Closed):
     """The house rules an author has to follow, stated rather than left to be inferred.
 
@@ -100,6 +111,7 @@ class WriteHelpResponse(Closed):
     connection_type_catalog: dict[str, ConnectionTypeCatalogEntry]
     diagram_types: list[DiagramTypeHelpEntry]
     archimate_stereotypes: list[str]
+    purpose_line_entity_types: PurposeLineEntityTypes
     viewpoints: dict[str, Any]
     conventions: WriteHelpConventions
     next_steps: str

@@ -11,6 +11,7 @@ Progressive discovery pattern:
 
 from functools import lru_cache
 
+from src.domain.modules.catalogs import OntologyCatalog
 from src.domain.modules.module_types import ElementClassName
 from src.infrastructure.write.artifact_write.viewpoint_help_topic import viewpoints_help_topic
 
@@ -23,10 +24,23 @@ def _registry():
 
 
 @lru_cache(maxsize=1)
-def _archimate_stereotype_keys() -> tuple[str, ...]:
+def _ontology() -> OntologyCatalog:
     from src.infrastructure.app_bootstrap import build_runtime_catalogs  # noqa: PLC0415
 
-    return tuple(build_runtime_catalogs(_registry()).ontology.archimate_stereotype_to_connection_type())
+    return build_runtime_catalogs(_registry()).ontology
+
+
+def _archimate_stereotype_keys() -> tuple[str, ...]:
+    return tuple(_ontology().archimate_stereotype_to_connection_type())
+
+
+def _purpose_line_entity_types() -> dict[str, list[str]]:
+    """Which entity types a `stakeholders` / `concerns` reference may name — the ontology's declaration.
+
+    Served so a picker offers only those; the verifier (E187) stays the authority on a write.
+    """
+    types = _ontology().purpose_line_entity_types()
+    return {"stakeholders": sorted(types.stakeholders), "concerns": sorted(types.concerns)}
 
 
 def write_help() -> dict[str, object]:
@@ -45,6 +59,7 @@ def write_help() -> dict[str, object]:
         "connection_type_catalog": _connection_type_catalog(),
         "diagram_types": _diagram_types_catalog(),
         "archimate_stereotypes": sorted(_archimate_stereotype_keys()),
+        "purpose_line_entity_types": _purpose_line_entity_types(),
         "viewpoints": viewpoints_help_topic(),
         "conventions": {
             "entity_id_format": "TYPE@epoch.random.friendly-name (auto-generated)",

@@ -339,6 +339,19 @@ class TestGetWriteHelp:
         assert r.status_code == 200
         assert isinstance(r.json(), dict)
 
+    def test_serves_the_types_a_purpose_line_reference_may_name(self, sync_client) -> None:
+        """The picker narrows by what the ontology declares — the same resolution the verifier's E187 asks."""
+        from src.infrastructure.app_bootstrap import build_runtime_catalogs, get_module_registry  # noqa: PLC0415
+
+        declared = build_runtime_catalogs(get_module_registry()).ontology.purpose_line_entity_types()
+
+        served = sync_client.get("/api/write-help").json()["purpose_line_entity_types"]
+
+        assert served == {"stakeholders": sorted(declared.stakeholders), "concerns": sorted(declared.concerns)}
+        assert "stakeholder" in served["stakeholders"]
+        assert "goal" in served["concerns"] and "goal" not in served["stakeholders"]
+        assert "application-component" not in served["stakeholders"] + served["concerns"]
+
 
 # ── POST endpoints (dry_run) ──────────────────────────────────────────────────
 

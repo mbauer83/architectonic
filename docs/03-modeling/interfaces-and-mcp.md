@@ -119,7 +119,7 @@ looking entirely normal. See
 | Local changes | `artifact_submit_changes` | Write | Submit local changes for review upstream, naming them by their own artifact_ids (from artifact_list_changes) in the order they are to be replayed. |
 | Local changes | `artifact_discard_change` | Destructive | Take back a local change, naming it by its own artifact_id (from artifact_list_changes) — an artifact may carry more than one. |
 | Guidance & ops | `artifact_authoring_guidance` | Read-only | Return authoring guidance before creating entities or diagrams. |
-| Guidance & ops | `artifact_help` | Read-only | Return the full catalog of artifact types, entity types (by domain), connection types (by language), and diagram types (with accepted domains). |
+| Guidance & ops | `artifact_help` | Read-only | Return the full catalog of artifact types, entity types (by domain), connection types (by language), diagram types (with accepted domains), and the entity types a diagram's or viewpoint's stakeholders / concerns may reference. |
 | Guidance & ops | `artifact_get_operation` | Read-only | Return the latest recorded status, phase, timestamps, error, and final result for a prior bulk operation by operation_id. |
 | Guidance & ops | `artifact_admin_reindex` | Destructive | Rebuild the artifact index from disk. |
 <!-- mcp-tools:end arch-write -->

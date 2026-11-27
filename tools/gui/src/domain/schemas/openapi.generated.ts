@@ -13790,6 +13790,19 @@ export interface components {
         };
         PurposeEntrySpec: string | components["schemas"]["PurposeReferenceSpec"];
         /**
+         * PurposeLineEntityTypes
+         * @description Which entity types a purpose-line reference may name, per list, as the ontologies declare it.
+         *
+         *     A list that is empty admits no reference: its entries are stated in words. The verifier refuses a
+         *     reference outside these (E187); a picker narrows to them so it never offers one it would refuse.
+         */
+        PurposeLineEntityTypes: {
+            /** Concerns */
+            concerns: string[];
+            /** Stakeholders */
+            stakeholders: string[];
+        };
+        /**
          * PurposeReferenceSpec
          * @description An entry naming an element: a Stakeholder for `stakeholders`, the element stating it for `concerns`.
          */
@@ -16421,6 +16434,7 @@ export interface components {
             };
             /** Next Steps */
             next_steps: string;
+            purpose_line_entity_types: components["schemas"]["PurposeLineEntityTypes"];
             /** Viewpoints */
             viewpoints: {
                 [key: string]: unknown;

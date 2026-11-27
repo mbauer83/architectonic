@@ -4,19 +4,29 @@
  * model. Used for a diagram's own lines and for a viewpoint's, which share the shape. A referenced element
  * shows its name once picked here; one loaded from a stored list shows its name where the caller knows it
  * (`names`), else its id.
+ *
+ * The element picker offers only the types the ontology admits for this list (`list`), so it never
+ * proposes a reference the server would refuse; where it admits none, only prose is offered.
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { EntityDisplayInfo } from '../../domain'
-import { type PurposeEntry, referencedId, withEntry, withoutEntry } from '../../domain/purposeLines'
+import {
+  type PurposeEntry, type PurposeList, referencedId, withEntry, withoutEntry,
+} from '../../domain/purposeLines'
+import { usePurposeLineEntityTypes } from '../composables/usePurposeLineEntityTypes'
 import EntityPickerInput from './EntityPickerInput.vue'
 
 const props = withDefaults(defineProps<{
   modelValue: readonly PurposeEntry[]
+  list: PurposeList
   label: string
   proseHint: string
   names?: Readonly<Record<string, string>>
 }>(), { names: () => ({}) })
 const emit = defineEmits<{ 'update:modelValue': [value: PurposeEntry[]] }>()
+
+const admittedTypes = usePurposeLineEntityTypes(() => props.list)
+const admittedTypeSet = computed(() => new Set(admittedTypes.value))
 
 const picked = ref<Record<string, string>>({})
 const prose = ref('')
@@ -63,7 +73,10 @@ const addReference = (entity: EntityDisplayInfo) => {
       @keydown.enter.prevent="addProse"
     >
     <EntityPickerInput
+      v-if="admittedTypes.length > 0"
       placeholder="…or pick an element"
+      :fixed-entity-types="[...admittedTypes]"
+      :accepted-types="admittedTypeSet"
       close-on-select
       @select="addReference"
     />

@@ -357,7 +357,7 @@ describe('entity taxonomy', () => {
 
 describe('write help', () => {
   /**
-   * The client reads two of this response's ten fields, and one of those only for its `prefix`, so
+   * The client reads three of this response's eleven fields, and one of those only for its `prefix`, so
    * the oracle is a *named projection* of the document rather than the whole component.
    *
    * Plain equality would fail for a narrowing that is not drift; an entry in `UNASSERTED_SCHEMAS`
@@ -369,6 +369,7 @@ describe('write help', () => {
   type WriteHelpRead = {
     entity_types_by_domain: components['schemas']['WriteHelpResponse']['entity_types_by_domain']
     entity_type_catalog: { [key: string]: CatalogEntry }
+    purpose_line_entity_types: components['schemas']['PurposeLineEntityTypes']
   }
 
   it('decodes the slice of the catalogue it reads', () => {

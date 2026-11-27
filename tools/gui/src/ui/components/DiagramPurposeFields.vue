@@ -22,6 +22,7 @@ const emit = defineEmits<{
     <h4>Purpose</h4>
     <PurposeEntryListEditor
       :model-value="stakeholders"
+      list="stakeholders"
       label="For"
       prose-hint="a stakeholder, in words"
       :names="names"
@@ -29,6 +30,7 @@ const emit = defineEmits<{
     />
     <PurposeEntryListEditor
       :model-value="concerns"
+      list="concerns"
       label="Answers"
       prose-hint="a question this view answers"
       :names="names"

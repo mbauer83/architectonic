@@ -135,7 +135,8 @@ def register(mcp: MCPServer) -> None:
         title="Artifact: Type Catalog",
         description=(
             "Return the full catalog of artifact types, entity types (by domain), connection types "
-            "(by language), and diagram types (with accepted domains). "
+            "(by language), diagram types (with accepted domains), and the entity types a diagram's or "
+            "viewpoint's stakeholders / concerns may reference. "
             "Call this first to discover valid type names — guessing them causes validation errors. "
             "For detailed authoring guidance call artifact_authoring_guidance."
         ),

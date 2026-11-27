@@ -8,6 +8,9 @@ import type { DiagramPurpose, PurposeEntry, PurposeEntryShown } from './schemas/
 
 export type { DiagramPurpose, PurposeEntry, PurposeEntryShown }
 
+/** The two lists a purpose line holds, named by their stored keys. */
+export type PurposeList = 'stakeholders' | 'concerns'
+
 /** The id a reference names, or undefined for prose. */
 export const referencedId = (entry: PurposeEntry): string | undefined =>
   typeof entry === 'string' ? undefined : entry.ref

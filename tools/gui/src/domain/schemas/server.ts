@@ -30,9 +30,19 @@ export type WriteHelpEntityTypeCatalogEntry =
   typeof WriteHelpEntityTypeCatalogEntrySchema.Type
 
 /**
+ * Which entity types a `stakeholders` / `concerns` reference may name, per list — the ontology's
+ * declaration. An empty list admits no reference; its entries are stated in words.
+ */
+export const PurposeLineEntityTypesSchema = Schema.Struct({
+  stakeholders: Schema.Array(Schema.String),
+  concerns: Schema.Array(Schema.String),
+})
+export type PurposeLineEntityTypes = typeof PurposeLineEntityTypesSchema.Type
+
+/**
  * The slice of `/api/write-help` this client reads.
  *
- * The response declares ten fields; two are used here, and one of those only for its `prefix`. A
+ * The response declares eleven fields; three are used here, and one of those only for its `prefix`. A
  * decoder narrower than its document is not drift — `Schema.Struct` ignores excess keys — but it
  * cannot be asserted with plain equality either, which is how it sat in `UNASSERTED_SCHEMAS` as
  * "not yet compared" and hid the one real divergence: `entity_type_catalog` is required in the
@@ -49,5 +59,6 @@ export const WriteHelpSchema = Schema.Struct({
     key: Schema.String,
     value: WriteHelpEntityTypeCatalogEntrySchema,
   }),
+  purpose_line_entity_types: PurposeLineEntityTypesSchema,
 })
 export type WriteHelp = typeof WriteHelpSchema.Type
