@@ -6,7 +6,7 @@ arranging changes only the layout block, which PlantUML never reads. What has to
 same source is handed the same picture: another body, another setting, a refusal, or a body that names a
 file is drawn (or refused) afresh.
 
-Runs PlantUML for real; skipped without plantuml.jar.
+Runs PlantUML for real, counting what it is asked to draw; skipped without plantuml.jar.
 """
 
 from __future__ import annotations
@@ -15,28 +15,30 @@ from pathlib import Path
 
 import pytest
 
+from src.application.plantuml_drawing import Drawing, PictureFormat
 from src.application.plantuml_pictures import DrawnPictures, picture_key
 from src.application.verification import artifact_verifier_syntax
 from src.application.verification.artifact_verifier_types import Issue
-from src.infrastructure.rendering import puml_runtime
+from src.infrastructure.rendering import plantuml_runner, puml_runtime
+from src.infrastructure.rendering.plantuml_runner import PLANTUML
 from tests.support.rendered_pictures import plantuml_available
 
 _needs_plantuml = pytest.mark.skipif(not plantuml_available(), reason="plantuml.jar not found")
 
 
 class _Counting:
-    """`subprocess` as a module uses it, counting the PlantUML runs it starts."""
+    """The process's PlantUML, counting the drawings it is asked for."""
 
-    def __init__(self, real: object) -> None:
-        self._real = real
+    def __init__(self) -> None:
         self.runs = 0
 
-    def run(self, *args: object, **kwargs: object) -> object:
+    def draw(self, source: str, fmt: PictureFormat, *, timeout: float = 60.0) -> Drawing:
         self.runs += 1
-        return self._real.run(*args, **kwargs)  # type: ignore[attr-defined]
+        return PLANTUML.draw(source, fmt, timeout=timeout)
 
-    def __getattr__(self, name: str) -> object:
-        return getattr(self._real, name)
+    def draw_for_check(self, source: str, *, timeout: float) -> Drawing:
+        self.runs += 1
+        return PLANTUML.draw_for_check(source, timeout=timeout)
 
 
 class _Recording:
@@ -74,8 +76,8 @@ class TestTheStore:
 @_needs_plantuml
 class TestARender:
     def test_draws_a_body_once_and_another_body_again(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        counting = _Counting(puml_runtime.subprocess)
-        monkeypatch.setattr(puml_runtime, "subprocess", counting)
+        counting = _Counting()
+        monkeypatch.setattr(plantuml_runner, "PLANTUML", counting)
         repo = _repo(tmp_path)
         body = '@startuml\nrectangle "One" as A\n@enduml\n'
 
@@ -88,8 +90,8 @@ class TestARender:
         assert counting.runs == 2
 
     def test_draws_a_refused_body_again(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        counting = _Counting(puml_runtime.subprocess)
-        monkeypatch.setattr(puml_runtime, "subprocess", counting)
+        counting = _Counting()
+        monkeypatch.setattr(plantuml_runner, "PLANTUML", counting)
         repo = _repo(tmp_path)
         broken = "@startuml\nthis is not plantuml ][\n@enduml\n"
 
@@ -102,26 +104,23 @@ class TestARender:
 @_needs_plantuml
 @pytest.mark.usefixtures("plantuml_syntax_check")
 class TestTheSyntaxCheck:
-    def test_draws_one_diagram_once_whatever_its_frontmatter_says(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+    def test_draws_one_diagram_once_whatever_its_frontmatter_says(self, tmp_path: Path) -> None:
         """A layout written into the frontmatter is not read by PlantUML, nor is where the verifier copied the
         file to: the picture is the one drawn."""
-        counting = _Counting(artifact_verifier_syntax.subprocess)
-        monkeypatch.setattr(artifact_verifier_syntax, "subprocess", counting)
+        counting = _Counting()
         path = tmp_path / "diagram.puml"
         body = '@startuml one\nrectangle "One" as A\n@enduml\n'
         checks = _Recording()
 
         path.write_text(f"---\nname: before\n---\n{body}", encoding="utf-8")
-        artifact_verifier_syntax.check_puml_syntax(path, str(path), picture_checks=checks)
+        artifact_verifier_syntax.check_puml_syntax(path, str(path), drawing=counting, picture_checks=checks)
         # As the verifier checks a write: a copy in a directory of its own each time.
         copy = tmp_path / "elsewhere" / "diagram.puml"
         copy.parent.mkdir()
         copy.write_text(f"---\nname: after\nlayout: {{}}\n---\n{body}", encoding="utf-8")
-        artifact_verifier_syntax.check_puml_syntax(copy, str(copy), picture_checks=checks)
+        artifact_verifier_syntax.check_puml_syntax(copy, str(copy), drawing=counting, picture_checks=checks)
         path.write_text(f"---\nname: after\n---\n{body.replace('One', 'Two')}", encoding="utf-8")
-        artifact_verifier_syntax.check_puml_syntax(path, str(path), picture_checks=checks)
+        artifact_verifier_syntax.check_puml_syntax(path, str(path), drawing=counting, picture_checks=checks)
 
         assert counting.runs == 2
         assert len(checks.seen) == 3

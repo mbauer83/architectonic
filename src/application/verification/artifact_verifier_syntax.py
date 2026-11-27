@@ -1,20 +1,14 @@
 import os
 import re
 import shutil
-import subprocess
-import tempfile
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+from src.application.plantuml_drawing import Drawn, NotDrawn, SyntaxDrawing, WhyNotDrawn
 from src.application.plantuml_pictures import DRAWN, picture_key
 from src.application.puml_directive_policy import find_unsafe_puml_directives
-from src.application.verification._verifier_rules_rendered_picture import (
-    PICTURE_BESIDE_ITS_SOURCE,
-    RenderedPictureChecks,
-    add_picture_issues,
-    issues_for_picture_in,
-    require_a_directory_each,
-)
+from src.application.verification._verifier_rules_rendered_picture import RenderedPictureChecks
 from src.application.verification.artifact_verifier_types import Issue, Severity
 
 #: Where the PlantUML jar may sit relative to the directory holding pyproject.toml, in
@@ -69,33 +63,6 @@ def find_graphviz_dot() -> Path | None:
 
     which_dot = shutil.which("dot")
     return Path(which_dot) if which_dot else None
-
-
-#: PlantUML's own security profile for every run. SANDBOX refuses local file reads and URL fetches
-#: by the preprocessor and by creole images, whatever spelling reaches it; the bundled standard
-#: library (`!include <C4/…>`) still works, because it is read from the jar. The product expands its
-#: own managed include fragments into a body before PlantUML sees it, so nothing it renders needs
-#: more than this. The body policy (`puml_directive_policy`) refuses early and says why; this is what
-#: holds when a spelling gets past it.
-PLANTUML_SECURITY_PROFILE = "SANDBOX"
-
-
-def plantuml_command(jar: Path, *arguments: str, system_properties: tuple[str, ...] = ()) -> list[str]:
-    """The command line for one PlantUML run — the only way this codebase starts PlantUML.
-
-    Every launch goes through here so that none can run without the sandbox profile; a fitness
-    function refuses a `-jar` command assembled anywhere else. `system_properties` are further
-    `-Dname=value` settings (the size limit), placed before `-jar` as the JVM requires.
-    """
-    return [
-        resolve_java_executable(),
-        "-Djava.awt.headless=true",
-        f"-DPLANTUML_SECURITY_PROFILE={PLANTUML_SECURITY_PROFILE}",
-        *system_properties,
-        "-jar",
-        str(jar),
-        *arguments,
-    ]
 
 
 def resolve_java_executable() -> str:
@@ -193,12 +160,21 @@ def body_reaches_outside(path: Path, loc: str) -> Issue | None:
     )
 
 
-def _drawn_key(path: Path, jar: Path, dot: Path | None) -> str | None:
-    """What decides the picture the syntax check draws of *path* (`plantuml_pictures`): the diagram as
-    PlantUML reads it, from its first `@start` line on — the frontmatter above it is read by nobody. Not
-    where it is: a body that names a file is never kept, and one that reaches outside is refused before
-    it is drawn (`body_reaches_outside`), so nothing in a kept body is read relative to the file. None
-    where it cannot be read or has no diagram in it."""
+#: How long PlantUML may take over one file's syntax check.
+_CHECK_SECONDS = 30.0
+
+
+@dataclass(frozen=True)
+class _Diagram:
+    """A diagram file as PlantUML reads it: from its first `@start` line on, and which line that is."""
+
+    source: str
+    first_line: int
+
+
+def _diagram_in(path: Path) -> _Diagram | None:
+    """The diagram in *path* — the frontmatter above it is read by nobody. None where it cannot be read
+    or has no diagram in it."""
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
@@ -206,211 +182,71 @@ def _drawn_key(path: Path, jar: Path, dot: Path | None) -> str | None:
     start = re.search(r"^[ \t]*@start", text, re.MULTILINE)
     if start is None:
         return None
-    return picture_key(text[start.start():], "verify", "-tsvg", jar=jar, dot=dot, java=resolve_java_executable())
+    return _Diagram(text[start.start():], text.count("\n", 0, start.start()))
 
 
-def _keep_the_one_picture(directory: Path, key: str | None) -> None:
-    """Keep the picture a run drew into *directory* where it drew exactly one, as the checks read it."""
-    pictures = sorted(directory.glob("*.svg"))
-    if len(pictures) == 1:
-        DRAWN.keep(key, pictures[0].read_bytes())
+def _drawn_key(diagram: _Diagram, jar: Path) -> str | None:
+    """What decides the picture the syntax check draws of a diagram (`plantuml_pictures`): the diagram as
+    PlantUML reads it. Not where it is: a body that names a file is never kept, and one that reaches
+    outside is refused before it is drawn (`body_reaches_outside`), so nothing in a kept body is read
+    relative to the file."""
+    return picture_key(
+        diagram.source, "verify", "-tsvg", jar=jar, dot=find_graphviz_dot(), java=resolve_java_executable(),
+    )
 
 
 def check_puml_syntax(
-    path: Path, loc: str, *, picture_checks: RenderedPictureChecks | None = None
+    path: Path, loc: str, *, drawing: SyntaxDrawing, picture_checks: RenderedPictureChecks | None = None
 ) -> list[Issue]:
     """E350 where PlantUML refuses the body; where it draws it, what *picture_checks* say of the picture."""
     if (refused := body_reaches_outside(path, loc)) is not None:
         return [refused]
     if os.environ.get("ARCH_SKIP_PUML_SYNTAX"):
         return []
-    result: list[Issue] = []
     jar = find_plantuml_jar()
     if jar is None:
-        return [
-            Issue(
-                Severity.WARNING,
-                "W350",
-                "plantuml.jar not found; PUML syntax check skipped",
-                loc,
-            )
-        ]
+        return [Issue(Severity.WARNING, "W350", "plantuml.jar not found; PUML syntax check skipped", loc)]
+    diagram = _diagram_in(path)
+    key = None if diagram is None else _drawn_key(diagram, jar)
+    if (kept := DRAWN.recall(key)) is not None:
+        return [] if picture_checks is None else picture_checks.check(kept.decode("utf-8"), loc)
+    source = diagram.source if diagram is not None else _readable(path)
+    match drawing.draw_for_check(source, timeout=_CHECK_SECONDS):
+        case NotDrawn(why=WhyNotDrawn.NO_JAVA):
+            return [Issue(Severity.WARNING, "W351", "java not found on PATH; PUML syntax check skipped", loc)]
+        case NotDrawn(why=WhyNotDrawn.TIMED_OUT):
+            return [Issue(Severity.WARNING, "W352", f"plantuml render timed out after {_CHECK_SECONDS:g} s", loc)]
+        case NotDrawn() as failed:
+            return [Issue(Severity.ERROR, "E350", f"PlantUML error: {failed.reason[:200]}", loc)]
+        case Drawn(refusals=()) as drawn:
+            if drawn.picture is None:
+                return []
+            DRAWN.keep(key, drawn.picture)
+            return [] if picture_checks is None else picture_checks.check(drawn.picture.decode("utf-8"), loc)
+        case Drawn(refusals=refusals):
+            # Counted as PlantUML counts lines of a file, which is how the finding has always read.
+            first_line = 0 if diagram is None else diagram.first_line
+            return [
+                Issue(Severity.ERROR, "E350", f"PlantUML: Error line {first_line + line + 1} in file: {path}", loc)
+                for line in (refusal.line_from_start for refusal in refusals)
+            ]
 
-    env = os.environ.copy()
-    dot = find_graphviz_dot()
-    if dot is not None:
-        env["GRAPHVIZ_DOT"] = str(dot)
 
-    key = _drawn_key(path, jar, dot)
-    if (drawn := DRAWN.recall(key)) is not None:
-        return [] if picture_checks is None else picture_checks.check(drawn.decode("utf-8"), loc)
+def _readable(path: Path) -> str:
     try:
-        with tempfile.TemporaryDirectory() as tmp_out:
-            proc = subprocess.run(
-                plantuml_command(jar, "-tsvg", "-verbose", "-o", tmp_out, str(path)),
-                capture_output=True,
-                text=True,
-                timeout=30,
-                env=env,
-            )
-            if proc.returncode == 0:
-                _keep_the_one_picture(Path(tmp_out), key)
-            if proc.returncode == 0 and picture_checks is not None:
-                return issues_for_picture_in(Path(tmp_out), picture_checks, loc)
-    except FileNotFoundError:
-        return [Issue(Severity.WARNING, "W351", "java not found on PATH; PUML syntax check skipped", loc)]
-    except subprocess.TimeoutExpired:
-        return [Issue(Severity.WARNING, "W352", "plantuml render timed out after 30 s", loc)]
-
-    if proc.returncode == 0:
-        return result
-
-    combined = proc.stdout + proc.stderr
-    error_lines = re.findall(r"^Error line \d+ in file:.*$", combined, re.MULTILINE)
-    syntax_lines = re.findall(r"Syntax Error\?.*", combined)
-    reported = error_lines or syntax_lines
-
-    if reported:
-        for line in reported:
-            result.append(Issue(Severity.ERROR, "E350", f"PlantUML: {line.strip()}", loc))
-        return result
-
-    signal_lines = [
-        ln.strip()
-        for ln in combined.splitlines()
-        if ln.strip()
-        and "IOException" not in ln
-        and "Cannot run program" not in ln
-        and "Caused by" not in ln
-        and "at java." not in ln
-        and "at net." not in ln
-        and ln.strip() not in ("Some diagram description contains errors",)
-    ]
-    msg = signal_lines[0] if signal_lines else f"exit {proc.returncode}"
-    return [Issue(Severity.ERROR, "E350", f"PlantUML error (exit {proc.returncode}): {msg[:200]}", loc)]
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return ""
 
 
 def check_puml_syntax_batch(
-    paths: list[Path], *, chunk_size: int = 120, picture_checks: RenderedPictureChecks | None = None
+    paths: list[Path], *, drawing: SyntaxDrawing, picture_checks: RenderedPictureChecks | None = None
 ) -> dict[Path, list[Issue]]:
-    """The syntax findings of every path, one JVM per chunk.
+    """The syntax findings of every path, each file drawn on its own by the one PlantUML that draws them all.
 
-    With *picture_checks*, each picture is rendered beside its source rather than into one shared
-    directory, and read there: PlantUML names a picture after the body's `@startuml`, not after the
-    file, so two files of one chunk can render to one name and a shared directory would hand a file
-    another file's picture. That needs every path in a directory of its own, which is required.
+    Each on its own, now that a drawing costs no JVM start: a run over many files used to share one JVM
+    and then had to work out from its output which file a refusal belonged to.
     """
-    if picture_checks is not None:
-        require_a_directory_each(paths)
-    issues_by_path: dict[Path, list[Issue]] = {p: [] for p in paths}
-    refused = {p: issue for p in paths if (issue := body_reaches_outside(p, str(p))) is not None}
-    for path, issue in refused.items():
-        issues_by_path[path].append(issue)
-    paths = [p for p in paths if p not in refused]
-    if not paths or os.environ.get("ARCH_SKIP_PUML_SYNTAX"):
-        return issues_by_path
-
-    jar = find_plantuml_jar()
-    if jar is None:
-        for path in paths:
-            issues_by_path[path].append(
-                Issue(
-                    Severity.WARNING,
-                    "W350",
-                    "plantuml.jar not found; PUML syntax check skipped",
-                    str(path),
-                )
-            )
-        return issues_by_path
-
-    env = os.environ.copy()
-    dot = find_graphviz_dot()
-    if dot is not None:
-        env["GRAPHVIZ_DOT"] = str(dot)
-
-    for i in range(0, len(paths), chunk_size):
-        path_chunk = paths[i : i + chunk_size]
-        try:
-            with tempfile.TemporaryDirectory() as tmp_out:
-                rendered_into = tmp_out if picture_checks is None else PICTURE_BESIDE_ITS_SOURCE
-                proc = subprocess.run(
-                    plantuml_command(jar, "-tsvg", "-verbose", "-o", rendered_into, *[str(p) for p in path_chunk]),
-                    capture_output=True,
-                    text=True,
-                    timeout=120,
-                    env=env,
-                )
-        except FileNotFoundError:
-            for path in path_chunk:
-                issues_by_path[path].append(
-                    Issue(
-                        Severity.WARNING,
-                        "W351",
-                        "java not found on PATH; PUML syntax check skipped",
-                        str(path),
-                    )
-                )
-            continue
-        except subprocess.TimeoutExpired:
-            for path in path_chunk:
-                issues_by_path[path].append(
-                    Issue(
-                        Severity.WARNING,
-                        "W352",
-                        "plantuml render timed out after 120 s",
-                        str(path),
-                    )
-                )
-            continue
-
-        if proc.returncode == 0:
-            continue
-
-        combined = proc.stdout + proc.stderr
-        file_error_matches = re.findall(r"^Error line \d+ in file: (.*)$", combined, re.MULTILINE)
-        attributed = False
-        if file_error_matches:
-            for matched_path in file_error_matches:
-                candidate = Path(matched_path.strip())
-                issue = Issue(
-                    Severity.ERROR,
-                    "E350",
-                    f"PlantUML: Error line in file: {candidate}",
-                    str(candidate),
-                )
-                if candidate in issues_by_path:
-                    issues_by_path[candidate].append(issue)
-                    attributed = True
-                else:
-                    resolved = candidate.resolve()
-                    if resolved in issues_by_path:
-                        issues_by_path[resolved].append(issue)
-                        attributed = True
-
-        syntax_lines = re.findall(r"Syntax Error\?.*", combined)
-        if syntax_lines:
-            fallback = syntax_lines[0].strip()
-            for path in path_chunk:
-                if not issues_by_path[path]:
-                    issues_by_path[path].append(
-                        Issue(
-                            Severity.ERROR,
-                            "E350",
-                            f"PlantUML: {fallback}",
-                            str(path),
-                        )
-                    )
-            attributed = True
-
-        if attributed:
-            continue
-
-        # Batch output was non-zero but could not be attributed to specific files.
-        # Fall back to per-file checks to avoid false positives across the chunk.
-        for path in path_chunk:
-            single_issues = check_puml_syntax(path, str(path))
-            issues_by_path[path].extend(single_issues)
-
-    if picture_checks is not None:
-        add_picture_issues(issues_by_path, picture_checks)
-    return issues_by_path
+    return {
+        path: check_puml_syntax(path, str(path), drawing=drawing, picture_checks=picture_checks) for path in paths
+    }

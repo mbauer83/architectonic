@@ -1,8 +1,8 @@
 """Tests for the _render_puml preview pipeline.
 
-These tests do NOT require a PlantUML jar or a real engagement repository; they mock
-subprocess.run so they run fast and deterministically.  Their job is to verify that the
-PUML body written to the temp file before PlantUML is invoked is correct for each diagram
+These tests do NOT require a PlantUML jar or a real engagement repository; they stand a
+recording PlantUML in for the process's own, so they run fast and deterministically. Their job is
+to verify that the PUML body PlantUML is given is correct for each diagram
 type — particularly that renderer-owned include preparation happens only for diagram types
 whose renderer requests it.
 """
@@ -10,11 +10,24 @@ whose renderer requests it.
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
+from src.application.plantuml_drawing import Drawn, PictureFormat
 from src.infrastructure.rendering.diagram_builder import render_puml_preview
 
-# ── Integration-style pipeline tests (subprocess mocked) ─────────────────────
+# ── Integration-style pipeline tests (PlantUML stood in for) ─────────────────
+
+
+class _Recording:
+    """A PlantUML that remembers every source it is given and draws a token PNG of each."""
+
+    def __init__(self) -> None:
+        self.written: list[str] = []
+
+    def draw(self, source: str, fmt: PictureFormat, *, timeout: float = 60.0) -> Drawn:
+        del fmt, timeout
+        self.written.append(source)
+        return Drawn((b"\x89PNG",))
 
 _ACTIVITY_PUML = """\
 @startuml activity-test
@@ -39,26 +52,19 @@ rectangle "Actor" <<business_actor>> as a1
 
 _VERIFIER_MOD = "src.application.verification.artifact_verifier_syntax"
 _SETTINGS_MOD = "src.config.settings"
+_PLANTUML = "src.infrastructure.rendering.plantuml_runner.PLANTUML"
 
 
 def _captured_puml(tmp_path: Path, puml: str, diagram_type: str | None) -> str:
-    """Run render_puml_preview with mocked subprocess; return the PUML written to the temp file."""
+    """Run render_puml_preview with PlantUML stood in for; return the PUML it was given."""
     diag_dir = tmp_path / "diagram-catalog" / "diagrams"
     diag_dir.mkdir(parents=True)
 
-    written: list[str] = []
-
-    def _fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
-        puml_arg = cmd[-1]
-        written.append((Path(str(kwargs["cwd"])) / puml_arg).read_text(encoding="utf-8"))
-        out_dir = Path(cmd[cmd.index("-o") + 1])
-        (out_dir / "out.png").write_bytes(b"\x89PNG")
-        result = MagicMock()
-        result.returncode = 0
-        return result
+    plantuml = _Recording()
+    written = plantuml.written
 
     with (
-        patch("subprocess.run", side_effect=_fake_run),
+        patch(_PLANTUML, plantuml),
         patch(f"{_VERIFIER_MOD}.find_plantuml_jar", return_value=Path("plantuml.jar")),
         patch(f"{_VERIFIER_MOD}.find_graphviz_dot", return_value=None),
         patch(f"{_SETTINGS_MOD}.plantuml_limit_size", return_value=8192),
@@ -66,7 +72,7 @@ def _captured_puml(tmp_path: Path, puml: str, diagram_type: str | None) -> str:
     ):
         render_puml_preview(puml, tmp_path, diagram_type)
 
-    assert written, "subprocess.run was not called — temp file was not created"
+    assert written, "PlantUML was not asked to draw"
     return written[0]
 
 
@@ -84,7 +90,8 @@ def test_activity_puml_preserves_v2_constructs(tmp_path: Path) -> None:
 
 
 def test_archimate_puml_gets_stereotypes_include_injected(tmp_path: Path) -> None:
-    written: list[str] = []
+    plantuml = _Recording()
+    written = plantuml.written
     catalog = tmp_path / "diagram-catalog"
     diag_dir = tmp_path / "diagram-catalog" / "diagrams"
     diag_dir.mkdir(parents=True)
@@ -99,17 +106,8 @@ skinparam rectangle<<business_actor>> {
         encoding="utf-8",
     )
 
-    def _fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
-        puml_arg = cmd[-1]
-        written.append((Path(str(kwargs["cwd"])) / puml_arg).read_text(encoding="utf-8"))
-        out_dir = Path(cmd[cmd.index("-o") + 1])
-        (out_dir / "out.png").write_bytes(b"\x89PNG")
-        r = MagicMock()
-        r.returncode = 0
-        return r
-
     with (
-        patch("subprocess.run", side_effect=_fake_run),
+        patch(_PLANTUML, plantuml),
         patch(f"{_VERIFIER_MOD}.find_plantuml_jar", return_value=Path("plantuml.jar")),
         patch(f"{_VERIFIER_MOD}.find_graphviz_dot", return_value=None),
         patch(f"{_SETTINGS_MOD}.plantuml_limit_size", return_value=8192),

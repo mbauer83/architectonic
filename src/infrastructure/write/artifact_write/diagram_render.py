@@ -1,22 +1,16 @@
 """Diagram PlantUML rendering helpers (PNG, SVG, and entity-body rendering)."""
 
-import os
-import subprocess
 from pathlib import Path
 
+from src.application.plantuml_drawing import Drawing, Drawn, NotDrawn, PictureFormat, WhyNotDrawn
 from src.application.plantuml_pictures import DRAWN
 from src.application.puml_directive_policy import find_unsafe_puml_directives
 from src.application.repo_path_helpers import rendered_dir_for_diagram, repo_root_for_diagram_path
-from src.application.verification.artifact_verifier_syntax import (
-    find_graphviz_dot,
-    find_plantuml_jar,
-    plantuml_command,
-)
-from src.config.settings import plantuml_limit_size, render_dpi
 from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.ontology_representation.ontology_protocol import IconPresentingRenderer
+from src.infrastructure.rendering import plantuml_runner
 from src.infrastructure.rendering.laid_out_rendering import (
     NoCanvasSizeError,
     drawn_from_layout,
@@ -24,7 +18,6 @@ from src.infrastructure.rendering.laid_out_rendering import (
     stored_layout,
 )
 from src.infrastructure.rendering.native_svg import render_native_svg
-from src.infrastructure.rendering.plantuml_scratch import plantuml_input
 from src.infrastructure.rendering.puml_runtime import plantuml_picture_key
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter, strip_startuml_name
 from src.infrastructure.rendering.svg_to_png import RasteriseFailedError
@@ -121,19 +114,6 @@ def _render_diagram_entities_puml(
     )
 
 
-def discard_render_byproducts(rendered_dir: Path, temp_stem: str) -> None:
-    """Remove everything a render left in *rendered_dir* under the temp file's stem.
-
-    PlantUML names its output after the input file, so each render first lands as
-    ``<temp_stem>.<fmt>`` and is then renamed onto the diagram's own name. Anything
-    else it wrote under that stem — the ``.cmapx`` image map it emits unasked for any
-    diagram carrying a link — has no name to be renamed to and is nothing any reader
-    consumes, so it would otherwise accumulate in the catalog as untracked litter.
-    """
-    for stray in rendered_dir.glob(f"{temp_stem}.*"):
-        stray.unlink(missing_ok=True)
-
-
 #: A render that failed hard, as distinct from one that was skipped or never attempted. Callers that
 #: assemble a write result turn these into `E350` issues, because a caller cannot otherwise tell
 #: "rendered" from "wrote a stack trace to disk" — the whole failure was reported as a warning while
@@ -161,27 +141,18 @@ def _is_error_render(stderr: str) -> bool:
     was a repository's own diagram written and reported valid with a Java stack trace where the
     picture should be. An `EmptySvgException` out of dot's orthogonal router exits 0, prints
     *nothing* to stderr, and draws the trace into the image; `-failfast2` does not change that.
-    See `_svg_is_error_image` for the reading that catches it.
+    See `_is_error_picture` for the reading that catches it.
     """
     return "Exception" in stderr
 
 
-def _svg_is_error_image(svg_path: Path) -> bool:
+def _is_error_picture(svg: str) -> bool:
     """True when a rendered SVG is PlantUML's error picture rather than the diagram.
 
     The picture is the only place the failure is stated, so the picture is what is read. SVG is
     text and carries the message verbatim, which is why the check lives on this format — a PNG of
     the same body would need pixels read back to say the same thing.
     """
-    try:
-        head = svg_path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return False
-    return _is_error_picture(head)
-
-
-def _is_error_picture(svg: str) -> bool:
-    """True when the text of a rendered SVG is PlantUML's error picture (`_svg_is_error_image`)."""
     return any(marker in svg for marker in _ERROR_IMAGE_MARKERS)
 
 
@@ -193,7 +164,7 @@ def _render_diagram_png(
     rendered_dir = rendered_dir_for_diagram(puml_path, repo_root)
     rendered_dir.mkdir(parents=True, exist_ok=True)
 
-    # Extract @startuml..@enduml into a temp file (skip YAML frontmatter)
+    # The @startuml..@enduml block, without the frontmatter above it.
     content = strip_leading_puml_frontmatter(puml_path.read_text(encoding="utf-8"))
     start = content.find("@startuml")
     end = content.find("@enduml")
@@ -210,9 +181,8 @@ def _render_diagram_png(
 
     puml_body = _prepare_diagram_puml_body(puml_body, repo_root, diagram_type)
 
-    # Strip the diagram name so PlantUML uses the temp-file stem as the output filename.
-    # When @startuml carries a name PlantUML uses that name instead, which breaks the
-    # temp→final rename below.
+    # Without the diagram's name, as every render prepares a body: the picture is then the preview's,
+    # and so is the key it is kept by.
     puml_body_for_render = strip_startuml_name(puml_body)
     if (native_svg := render_native_svg(puml_body_for_render, diagram_type)) is not None:
         return _rasterise_svg(native_svg, rendered_dir / f"{puml_path.stem}.png", warnings, failures)
@@ -223,56 +193,34 @@ def _render_diagram_png(
             return None
         return _rasterise_svg(composed.read_text(encoding="utf-8"), composed.with_suffix(".png"), warnings, failures)
 
-    jar = find_plantuml_jar()
-    if jar is None:
-        warnings.append("plantuml.jar not found; render skipped")
-        return None
-
-    with plantuml_input(puml_body_for_render) as tmp_path:
-        try:
-            env = None
-            dot = find_graphviz_dot()
-            if dot is not None:
-                env = {**os.environ, "GRAPHVIZ_DOT": str(dot)}
-            # Run java from the input file's own directory. PlantUML relativises the -o path
-            # against the Java process's initial CWD and then re-applies that relative form against
-            # the input file's directory. When both are the same directory the path arithmetic is
-            # correct; running from anywhere else produces a doubled/wrong path.
-            dpi = render_dpi()
-            result = subprocess.run(
-                plantuml_command(
-                    jar.resolve(), "-tpng", f"-Sdpi={dpi}", "-o", str(rendered_dir.resolve()), tmp_path.name,
-                    system_properties=(f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
-                ),
-                cwd=str(tmp_path.parent),
-                capture_output=True,
-                text=True,
-                timeout=60,
-                env=env,
+    final = rendered_dir / f"{puml_path.stem}.png"
+    match _drawn(puml_body_for_render, "png"):
+        case NotDrawn(why=WhyNotDrawn.NO_PLANTUML):
+            warnings.append("plantuml.jar not found; render skipped")
+            return None
+        case NotDrawn() as failed:
+            warnings.append(f"PlantUML render error: {failed.reason}")
+            return None
+        case Drawn(refusals=(first, *_)) as drawn:
+            _fail(warnings, failures, f"PlantUML render failed: {first.message} {drawn.diagnostics[:200]}".rstrip())
+            return None
+        case Drawn(diagnostics=said) if _is_error_render(said):
+            _fail(
+                warnings,
+                failures,
+                f"PlantUML produced an error image (layout failure), previous render kept: {said[:200]}",
             )
-            if result.returncode != 0:
-                _fail(warnings, failures, f"PlantUML render failed: {result.stderr[:200]}")
-                return None
+            return None
+        case Drawn(picture=bytes() as picture):
+            final.write_bytes(picture)
+            return final
+        case Drawn():
+            return None
 
-            rendered = rendered_dir / f"{tmp_path.stem}.png"
-            if _is_error_render(result.stderr):
-                rendered.unlink(missing_ok=True)
-                _fail(
-                    warnings,
-                    failures,
-                    f"PlantUML produced an error image (layout failure), previous render kept: {result.stderr[:200]}",
-                )
-                return None
-            if rendered.exists():
-                final = rendered_dir / f"{puml_path.stem}.png"
-                rendered.rename(final)
-                return final
-            return None
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            warnings.append(f"PlantUML render error: {exc}")
-            return None
-        finally:
-            discard_render_byproducts(rendered_dir, tmp_path.stem)
+
+def _drawn(source: str, fmt: PictureFormat) -> Drawing:
+    """What PlantUML draws of a prepared body: the picture is handed back, not left in a directory."""
+    return plantuml_runner.PLANTUML.draw(source, fmt)
 
 
 def _rasterise_svg(svg: str, final: Path, warnings: list[str], failures: list[str] | None) -> Path | None:
@@ -324,64 +272,44 @@ def _render_diagram_svg(
         final.write_text(native_svg, encoding="utf-8")
         return final
 
-    jar = find_plantuml_jar()
-    if jar is None:
-        warnings.append("plantuml.jar not found; SVG render skipped")
-        return None
-
     # The picture of this very body drawn before — when the editor read it, or by the render before this
     # one — is the picture PlantUML would draw now (`plantuml_pictures`).
     key = plantuml_picture_key(puml_body_for_render, "svg")
-    if (drawn := DRAWN.recall(key)) is not None and not _is_error_picture(text := drawn.decode("utf-8")):
-        final = rendered_dir / f"{puml_path.stem}.svg"
-        svg, composing = drawn_from_layout(text, _laid_out(puml_path))
-        warnings.extend(composing)
-        final.write_text(svg, encoding="utf-8")
-        return final
+    if (kept := DRAWN.recall(key)) is not None and not _is_error_picture(kept.decode("utf-8")):
+        return _write_composed(kept, puml_path, rendered_dir, warnings)
 
-    with plantuml_input(puml_body_for_render) as tmp_path:
-        try:
-            env = None
-            dot = find_graphviz_dot()
-            if dot is not None:
-                env = {**os.environ, "GRAPHVIZ_DOT": str(dot)}
-            result = subprocess.run(
-                plantuml_command(
-                    jar.resolve(), "-tsvg", "-o", str(rendered_dir.resolve()), tmp_path.name,
-                    system_properties=(f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
-                ),
-                cwd=str(tmp_path.parent),
-                capture_output=True,
-                text=True,
-                timeout=60,
-                env=env,
+    match _drawn(puml_body_for_render, "svg"):
+        case NotDrawn(why=WhyNotDrawn.NO_PLANTUML):
+            warnings.append("plantuml.jar not found; SVG render skipped")
+            return None
+        case NotDrawn() as failed:
+            warnings.append(f"SVG render error: {failed.reason}")
+            return None
+        case Drawn(refusals=(first, *_)) as drawn:
+            _fail(warnings, failures, f"SVG render failed: {first.message} {drawn.diagnostics[:200]}".rstrip())
+            return None
+        case Drawn(picture=bytes() as picture, diagnostics=said) if _is_error_render(said) or _is_error_picture(
+            picture.decode("utf-8", errors="replace")
+        ):
+            _fail(
+                warnings,
+                failures,
+                "PlantUML produced an error image (layout failure), previous render kept: "
+                f"{said[:200] or 'no stderr; the failure is drawn into the picture'}",
             )
-            if result.returncode != 0:
-                _fail(warnings, failures, f"SVG render failed: {result.stderr[:200]}")
-                return None
+            return None
+        case Drawn(picture=bytes() as picture):
+            DRAWN.keep(key, picture)
+            return _write_composed(picture, puml_path, rendered_dir, warnings)
+        case Drawn():
+            warnings.append("SVG render produced no output")
+            return None
 
-            rendered = rendered_dir / f"{tmp_path.stem}.svg"
-            if _is_error_render(result.stderr) or _svg_is_error_image(rendered):
-                rendered.unlink(missing_ok=True)
-                _fail(
-                    warnings,
-                    failures,
-                    "PlantUML produced an error image (layout failure), previous render kept: "
-                    f"{result.stderr[:200] or 'no stderr; the failure is drawn into the picture'}",
-                )
-                return None
-            if rendered.exists():
-                final = rendered_dir / f"{puml_path.stem}.svg"
-                DRAWN.keep(key, rendered.read_bytes())
-                svg, composing = drawn_from_layout(rendered.read_text(encoding="utf-8"), _laid_out(puml_path))
-                warnings.extend(composing)
-                final.write_text(svg, encoding="utf-8")
-                rendered.unlink()
-                return final
-            warnings.append("SVG render produced no output file")
-            return None
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            warnings.append(f"SVG render error: {exc}")
-            return None
-        finally:
-            discard_render_byproducts(rendered_dir, tmp_path.stem)
+
+def _write_composed(picture: bytes, puml_path: Path, rendered_dir: Path, warnings: list[str]) -> Path:
+    """Write PlantUML's SVG of *puml_path*, composed from the layout the diagram states, as its rendering."""
+    final = rendered_dir / f"{puml_path.stem}.svg"
+    svg, composing = drawn_from_layout(picture.decode("utf-8"), _laid_out(puml_path))
+    warnings.extend(composing)
+    final.write_text(svg, encoding="utf-8")
+    return final

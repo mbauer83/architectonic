@@ -8,10 +8,28 @@ replacing a good render — the error picture then propagates into docs exports.
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 
+import pytest
+
+from src.application.plantuml_drawing import Drawn, PictureFormat
+from src.infrastructure.rendering import plantuml_runner
 from src.infrastructure.write.artifact_write import diagram_render
+
+
+class _Answering:
+    """A PlantUML that draws every source as *picture*, saying *diagnostics* meanwhile."""
+
+    def __init__(self, picture: bytes, diagnostics: str = "") -> None:
+        self._drawn = Drawn((picture,), diagnostics)
+
+    def draw(self, source: str, fmt: PictureFormat, *, timeout: float = 60.0) -> Drawn:
+        del source, fmt, timeout
+        return self._drawn
+
+
+def _plantuml_answers(monkeypatch: pytest.MonkeyPatch, picture: bytes, diagnostics: str = "") -> None:
+    monkeypatch.setattr(plantuml_runner, "PLANTUML", _Answering(picture, diagnostics))
 
 
 def _write(path: Path, content: str) -> None:
@@ -48,17 +66,8 @@ def test_error_image_discarded_and_previous_render_kept(tmp_path: Path, monkeypa
     previous = rendered_dir / f"{puml_path.stem}.png"
     previous.write_bytes(b"GOOD-RENDER")
 
-    def _fake_run(cmd, **kwargs):  # noqa: ANN001, ANN003
-        # Simulate PlantUML writing an error image for the temp input and exiting 0
-        # with the Java stack trace on stderr.
-        tmp_stem = Path(cmd[-1]).stem
-        (rendered_dir / f"{tmp_stem}.png").write_bytes(b"ERROR-IMAGE")
-        return subprocess.CompletedProcess(
-            cmd, 0, stdout="", stderr="Exception java.lang.IllegalStateException"
-        )
-
-    monkeypatch.setattr(diagram_render, "find_plantuml_jar", lambda: tmp_path / "plantuml.jar")
-    monkeypatch.setattr(diagram_render.subprocess, "run", _fake_run)
+    # PlantUML drawing an error image, with the Java stack trace on stderr.
+    _plantuml_answers(monkeypatch, b"ERROR-IMAGE", "Exception java.lang.IllegalStateException")
 
     warnings: list[str] = []
     result = diagram_render._render_diagram_png(puml_path, warnings)
@@ -87,17 +96,10 @@ def test_a_crash_that_says_nothing_on_stderr_is_still_an_error_image(
     previous = rendered_dir / f"{puml_path.stem}.svg"
     previous.write_text("GOOD-RENDER", encoding="utf-8")
 
-    def _fake_run(cmd, **kwargs):  # noqa: ANN001, ANN003
-        tmp_stem = Path(cmd[-1]).stem
-        (rendered_dir / f"{tmp_stem}.svg").write_text(
-            '<svg><text>An error has occurred!</text>'
-            "<text>net.sourceforge.plantuml.svek.EmptySvgException</text></svg>",
-            encoding="utf-8",
-        )
-        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
-
-    monkeypatch.setattr(diagram_render, "find_plantuml_jar", lambda: tmp_path / "plantuml.jar")
-    monkeypatch.setattr(diagram_render.subprocess, "run", _fake_run)
+    _plantuml_answers(
+        monkeypatch,
+        b"<svg><text>An error has occurred!</text><text>net.sourceforge.plantuml.svek.EmptySvgException</text></svg>",
+    )
 
     warnings: list[str] = []
     failures: list[str] = []
@@ -116,13 +118,7 @@ def test_a_healthy_svg_is_not_mistaken_for_an_error_image(tmp_path: Path, monkey
     rendered_dir = repo_root / "diagram-catalog" / "rendered"
     rendered_dir.mkdir(parents=True, exist_ok=True)
 
-    def _fake_run(cmd, **kwargs):  # noqa: ANN001, ANN003
-        tmp_stem = Path(cmd[-1]).stem
-        (rendered_dir / f"{tmp_stem}.svg").write_text("<svg><rect/></svg>", encoding="utf-8")
-        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
-
-    monkeypatch.setattr(diagram_render, "find_plantuml_jar", lambda: tmp_path / "plantuml.jar")
-    monkeypatch.setattr(diagram_render.subprocess, "run", _fake_run)
+    _plantuml_answers(monkeypatch, b"<svg><rect/></svg>")
 
     failures: list[str] = []
     result = diagram_render._render_diagram_svg(puml_path, [], failures)
@@ -131,32 +127,17 @@ def test_a_healthy_svg_is_not_mistaken_for_an_error_image(tmp_path: Path, monkey
     assert not failures
 
 
-def test_the_image_map_plantuml_writes_beside_a_linked_png_does_not_survive_the_render(
-    tmp_path: Path, monkeypatch
-) -> None:
-    """Regression: a diagram carrying links renders a ``.cmapx`` nobody renamed.
-
-    PlantUML names its outputs after the input file, so the render renames
-    ``<temp>.png`` onto the diagram's name — but for any diagram with a ``[[link]]``
-    it ALSO writes ``<temp>.cmapx``, which no reader consumes and no rename claimed.
-    Two of them were found untracked in the catalog after a routine re-render.
-    """
+def test_a_png_render_writes_the_diagrams_own_file_and_nothing_else(tmp_path: Path, monkeypatch) -> None:
+    """The picture comes back over PlantUML's pipe and is written under the diagram's name — no
+    temporary name to rename, and none of the by-products (a ``.cmapx`` image map for a linked diagram)
+    a render into the catalog directory used to leave there."""
     repo_root = tmp_path / "architecture-repository"
     puml_path = _make_diagram(repo_root)
     rendered_dir = repo_root / "diagram-catalog" / "rendered"
-    rendered_dir.mkdir(parents=True, exist_ok=True)
-
-    def _fake_run(cmd, **kwargs):  # noqa: ANN001, ANN003
-        tmp_stem = Path(cmd[-1]).stem
-        (rendered_dir / f"{tmp_stem}.png").write_bytes(b"PNG")
-        (rendered_dir / f"{tmp_stem}.cmapx").write_text("<map/>", encoding="utf-8")
-        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
-
-    monkeypatch.setattr(diagram_render, "find_plantuml_jar", lambda: tmp_path / "plantuml.jar")
-    monkeypatch.setattr(diagram_render.subprocess, "run", _fake_run)
+    _plantuml_answers(monkeypatch, b"PNG")
 
     result = diagram_render._render_diagram_png(puml_path, [])
 
     assert result == rendered_dir / f"{puml_path.stem}.png"
     assert result.read_bytes() == b"PNG"
-    assert list(rendered_dir.glob("*.cmapx")) == []
+    assert sorted(path.name for path in rendered_dir.iterdir()) == [f"{puml_path.stem}.png"]

@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import subprocess
 from io import BytesIO
-from pathlib import Path
 
 import pytest
 from PIL import Image
 
+from src.application.plantuml_drawing import Drawn, PictureFormat
 from src.application.puml_directive_policy import find_unsafe_puml_directives
 from src.application.puml_icon_header import (
     BLOCK_BEGIN,
@@ -19,8 +18,9 @@ from src.application.puml_icon_header import (
     referenced_icon_keys,
     with_icon_block,
 )
-from src.application.verification.artifact_verifier_syntax import find_plantuml_jar, plantuml_command
+from src.application.verification.artifact_verifier_syntax import find_plantuml_jar
 from src.domain.icons.render_form import render_digest
+from src.infrastructure.rendering.plantuml_runner import PLANTUML
 from tests.support.icon_files import png_of
 
 BLUE = png_of((0, 120, 212, 255))
@@ -99,16 +99,11 @@ def test_a_reference_the_body_does_not_embed_is_refused() -> None:
 
 @pytest.mark.skipif(find_plantuml_jar() is None, reason="PlantUML jar not provisioned")
 @pytest.mark.parametrize("fmt", ["svg", "png"])
-def test_the_sandboxed_renderer_draws_the_embedded_icon(tmp_path: Path, fmt: str) -> None:
-    source = tmp_path / "view.puml"
-    source.write_text(with_icon_block(_body(_showing(K_BLUE)), {K_BLUE: BLUE}), encoding="utf-8")
-    jar = find_plantuml_jar()
-    assert jar is not None
+def test_the_sandboxed_renderer_draws_the_embedded_icon(fmt: PictureFormat) -> None:
+    drawn = PLANTUML.draw(with_icon_block(_body(_showing(K_BLUE)), {K_BLUE: BLUE}), fmt)
 
-    subprocess.run(plantuml_command(jar, f"-t{fmt}", "-o", str(tmp_path), str(source)),
-                   capture_output=True, timeout=120, check=True)
-
-    output = (tmp_path / f"view.{fmt}").read_bytes()
+    assert isinstance(drawn, Drawn) and drawn.picture is not None and drawn.refusals == ()
+    output = drawn.picture
     if fmt == "svg":
         assert b"data:image/png;base64," in output
     else:

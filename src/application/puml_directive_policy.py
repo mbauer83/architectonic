@@ -17,7 +17,7 @@ Refused: every other `!include*` and `!import*`, `!theme … from`, the builtins
 environment or the filesystem, and any `img:` or `<img src` that names a file or a URL.
 
 This is the first of two barriers. The renderer also runs under PlantUML's sandbox security profile
-(`artifact_verifier_syntax.plantuml_command`), so a spelling this policy has not anticipated still
+(`plantuml_runner.plantuml_command`), so a spelling this policy has not anticipated still
 cannot reach the filesystem. The policy exists to refuse early, with a reason, on every write and
 render path: create, edit, preview, the on-disk render after a write, and the verifier's syntax check,
 which is the path a body takes when it arrives through git.

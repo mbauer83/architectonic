@@ -2,8 +2,7 @@
 
 Covers: resolve_worker_count, find_graphviz_dot env-var path,
 check_puml_syntax when PUML jar is absent, check_puml_syntax_batch jar-missing path.
-Note: subprocess (PlantUML/Graphviz execution) paths are skipped via the
-ARCH_SKIP_PUML_SYNTAX env variable in conftest.py — only pure logic is tested here.
+Nothing here draws: the drawing handed in refuses to be asked.
 """
 
 from __future__ import annotations
@@ -11,6 +10,18 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
+from src.application.plantuml_drawing import Drawing
+
+
+class _NeverDrawn:
+    """A PlantUML these tests must not reach: each is about what is decided before drawing."""
+
+    def draw_for_check(self, source: str, *, timeout: float) -> Drawing:
+        raise AssertionError(f"drew {source!r} within {timeout} s")
+
+
+_NEVER = _NeverDrawn()
 
 
 class TestResolveWorkerCount:
@@ -67,17 +78,18 @@ class TestCheckPumlSyntaxJarMissing:
         monkeypatch.setattr(syn, "find_plantuml_jar", lambda: None)
         f = tmp_path / "test.puml"
         f.write_text("@startuml\n@enduml\n")
-        issues = syn.check_puml_syntax(f, str(f))
+        issues = syn.check_puml_syntax(f, str(f), drawing=_NEVER)
         assert len(issues) == 1
         assert issues[0].code == "W350"
 
-    def test_returns_empty_when_skip_env_set(self, tmp_path: Path) -> None:
+    def test_returns_empty_when_skip_env_set(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         from src.application.verification import artifact_verifier_syntax as syn
 
-        # The conftest sets ARCH_SKIP_PUML_SYNTAX, so this should always return []
+        # Set here rather than assumed: only `tests/tools` sets it, so it depends on what a worker loaded.
+        monkeypatch.setenv("ARCH_SKIP_PUML_SYNTAX", "1")
         f = tmp_path / "test.puml"
         f.write_text("@startuml\n@enduml\n")
-        issues = syn.check_puml_syntax(f, str(f))
+        issues = syn.check_puml_syntax(f, str(f), drawing=_NEVER)
         assert issues == []
 
 
@@ -94,7 +106,7 @@ class TestCheckPumlSyntaxBatchJarMissing:
         paths = [tmp_path / "a.puml", tmp_path / "b.puml"]
         for p in paths:
             p.write_text("@startuml\n@enduml\n")
-        result = syn.check_puml_syntax_batch(paths)
+        result = syn.check_puml_syntax_batch(paths, drawing=_NEVER)
         for p in paths:
             assert p in result
             assert any(i.code == "W350" for i in result[p])
@@ -103,5 +115,5 @@ class TestCheckPumlSyntaxBatchJarMissing:
         from src.application.verification import artifact_verifier_syntax as syn
 
         monkeypatch.delenv("ARCH_SKIP_PUML_SYNTAX", raising=False)
-        result = syn.check_puml_syntax_batch([])
+        result = syn.check_puml_syntax_batch([], drawing=_NEVER)
         assert result == {}

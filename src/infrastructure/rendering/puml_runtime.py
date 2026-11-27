@@ -3,26 +3,26 @@
 from __future__ import annotations
 
 import base64
-import os
-import subprocess
 import tempfile
 import time
 from collections.abc import Callable
 from fnmatch import fnmatch
 from pathlib import Path
 
+from src.application.plantuml_drawing import Drawn, NotDrawn, PictureFormat, WhyNotDrawn
 from src.application.plantuml_pictures import DRAWN, picture_key
 from src.config.repo_paths import DIAGRAM_CATALOG, DIAGRAMS
 from src.domain.diagrams.layout.laid_out_diagram import LaidOutDiagram
 from src.infrastructure.diagram_type_registry import get_diagram_type
+from src.infrastructure.rendering import plantuml_runner
 from src.infrastructure.rendering.laid_out_rendering import NoCanvasSizeError, drawn_from_layout, png_like_plantuml
 from src.infrastructure.rendering.native_svg import render_native_svg
-from src.infrastructure.rendering.plantuml_scratch import plantuml_input
+from src.infrastructure.rendering.plantuml_runner import render_settings
 from src.infrastructure.rendering.puml_safety import strip_leading_puml_frontmatter, strip_startuml_name
 from src.infrastructure.rendering.svg_to_png import RasteriseFailedError
 
 #: How the scratch files earlier versions wrote *into* the diagram catalog were named. A render now
-#: writes its input outside every repository (`plantuml_scratch`), so nothing creates one any more; a
+#: hands PlantUML its input over a pipe (`plantuml_runner`), so nothing creates one any more; a
 #: catalog can still hold one a killed render of an earlier version left, and the sweep below and the
 #: walks that skip such a file recognise it by this name.
 _TEMP_PREFIX = tempfile.gettempprefix()
@@ -40,9 +40,8 @@ def is_render_scratch(path: Path) -> bool:
     return fnmatch(path.name, RENDER_TEMP_GLOB)
 
 
-#: How long a scratch file may live before it is assumed abandoned. Comfortably above the 60 s
-#: subprocess timeout below, so a render still running is never swept out from under itself — renders
-#: do overlap, the pool is bounded but not serial.
+#: How long a scratch file may live before it is assumed abandoned. Comfortably above the 60 s render
+#: budget, so a render of an earlier version still running is never swept out from under itself.
 _ABANDONED_AFTER_S = 300.0
 
 #: What each requested format's bytes actually are. Stated so a caller setting a `Content-Type` asks
@@ -85,7 +84,7 @@ def _prepare_body(puml_body: str, repo_root: Path, diagram_type: str | None) -> 
 def render_puml_bytes(
     puml_body: str,
     repo_root: Path,
-    fmt: str,
+    fmt: PictureFormat,
     diagram_type: str | None,
     *,
     restyle_prepared: Callable[[str], str] | None = None,
@@ -148,17 +147,7 @@ def render_puml_bytes(
         return None, _MEDIA_TYPES["png"], [f"PNG render failed: {exc}"]
 
 
-def _render_settings(fmt: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """The PlantUML arguments and JVM settings a render in *fmt* is drawn with."""
-    from src.config.settings import plantuml_limit_size, render_dpi  # noqa: PLC0415
-
-    return (
-        (f"-t{fmt}", *([f"-Sdpi={render_dpi()}"] if fmt == "png" else [])),
-        (f"-DPLANTUML_LIMIT_SIZE={plantuml_limit_size()}",),
-    )
-
-
-def plantuml_picture_key(render_body: str, fmt: str) -> str | None:
+def plantuml_picture_key(render_body: str, fmt: PictureFormat) -> str | None:
     """What decides the picture PlantUML draws of a prepared body in *fmt* (`plantuml_pictures`): every
     render of a prepared body keeps and finds its picture by this, so one drawing serves them all."""
     from src.application.verification.artifact_verifier_syntax import (  # noqa: PLC0415
@@ -167,48 +156,29 @@ def plantuml_picture_key(render_body: str, fmt: str) -> str | None:
         resolve_java_executable,
     )
 
-    settings, system_properties = _render_settings(fmt)
+    settings, system_properties = render_settings(fmt)
     return picture_key(
         render_body, *settings, *system_properties, jar=find_plantuml_jar(), dot=find_graphviz_dot(),
         java=resolve_java_executable(),
     )
 
 
-def _drawn_by_plantuml(render_body: str, fmt: str) -> tuple[bytes | None, str, list[str]]:
+def _drawn_by_plantuml(render_body: str, fmt: PictureFormat) -> tuple[bytes | None, str, list[str]]:
     """What PlantUML draws for a prepared body, in *fmt*, with its media type and any warnings."""
-    from src.application.verification.artifact_verifier_syntax import (  # noqa: PLC0415
-        find_graphviz_dot,
-        find_plantuml_jar,
-        plantuml_command,
-    )
-
-    jar = find_plantuml_jar()
-    if jar is None:
-        return None, _MEDIA_TYPES[fmt], ["plantuml.jar not found; render skipped"]
-    dot = find_graphviz_dot()
-    settings, system_properties = _render_settings(fmt)
     key = plantuml_picture_key(render_body, fmt)
     if (drawn := DRAWN.recall(key)) is not None:
         return drawn, _MEDIA_TYPES[fmt], []
-    try:
-        with plantuml_input(render_body) as scratch, tempfile.TemporaryDirectory() as out_dir:
-            env = {**os.environ, "GRAPHVIZ_DOT": str(dot)} if dot else None
-            cmd = plantuml_command(
-                jar.resolve(), *settings, "-o", out_dir, scratch.name, system_properties=system_properties,
-            )
-            proc = subprocess.run(
-                cmd, cwd=str(scratch.parent), capture_output=True, text=True, timeout=60, env=env
-            )
-            if proc.returncode != 0:
-                return None, _MEDIA_TYPES[fmt], [f"PlantUML render failed: {proc.stderr[:300]}"]
-            outputs = list(Path(out_dir).glob(f"*.{fmt}"))
-            if not outputs:
-                return None, _MEDIA_TYPES[fmt], [f"PlantUML produced no {fmt.upper()} output"]
-            drawn = outputs[0].read_bytes()
-            DRAWN.keep(key, drawn)
-            return drawn, _MEDIA_TYPES[fmt], []
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return None, _MEDIA_TYPES[fmt], [f"Render error: {exc}"]
+    match plantuml_runner.PLANTUML.draw(render_body, fmt):
+        case NotDrawn(why=WhyNotDrawn.NO_PLANTUML):
+            return None, _MEDIA_TYPES[fmt], ["plantuml.jar not found; render skipped"]
+        case NotDrawn() as failed:
+            return None, _MEDIA_TYPES[fmt], [f"Render error: {failed.reason}"]
+        case Drawn(refusals=(first, *_), diagnostics=said):
+            return None, _MEDIA_TYPES[fmt], [f"PlantUML render failed: {first.message} {said[:300]}".rstrip()]
+        case Drawn(picture=bytes() as picture):
+            DRAWN.keep(key, picture)
+            return picture, _MEDIA_TYPES[fmt], []
+    return None, _MEDIA_TYPES[fmt], [f"PlantUML produced no {fmt.upper()} output"]
 
 
 def render_puml_preview(

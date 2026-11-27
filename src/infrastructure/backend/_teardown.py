@@ -37,10 +37,13 @@ def teardown_steps(sync_mgr: object) -> list[TeardownStep]:
     3. **Abandon verification passes** — before the index closes, because a pass in flight is reading
        through it. Abandoned rather than drained: a pass owes nothing durable, and waiting minutes for
        a result nobody will receive is exactly what the stop budget is not for.
-    4. **Close the artifact index** — after the drain for that reason, and before the assurance store
+    4. **Stop PlantUML** — after the drain and the passes, which are what render: a render still in
+       flight fails rather than holding the stop. Each JVM is asked to exit by closing its input and
+       killed after a second, so this fits the teardown reserve, and no JVM outlives the backend.
+    5. **Close the artifact index** — after the drain for that reason, and before the assurance store
        only because the two are independent and *some* order had to be written down.
-    5. **Release the assurance store** — locks it, which checkpoints its write-ahead log.
-    6. **Stop git-sync** — last: it is the only step whose work is external, and nothing above needs
+    6. **Release the assurance store** — locks it, which checkpoints its write-ahead log.
+    7. **Stop git-sync** — last: it is the only step whose work is external, and nothing above needs
        it to have stopped.
 
     `run_teardown` isolates each step, so a failure in one cannot skip the durability of another.
@@ -54,6 +57,7 @@ def teardown_steps(sync_mgr: object) -> list[TeardownStep]:
         ("announce shutdown (already announced on a signal)", shutdown_signal.begin),
         ("drain in-flight writes", _drain_in_flight_writes),
         ("abandon in-flight verification", abandon_verification_passes),
+        ("stop PlantUML", _stop_plantuml),
         ("close the artifact index", _close_artifact_index),
         ("release the assurance store", _release_assurance_store),
         ("stop git-sync", stop_git_sync),
@@ -93,6 +97,13 @@ def _drain_in_flight_writes() -> None:
             WRITE_NO_PROGRESS_SECONDS, WRITE_DRAIN_CEILING_SECONDS,
             get_write_queue_state_snapshot(),
         )
+
+
+def _stop_plantuml() -> None:
+    """Stop the PlantUML JVMs this process started, so none outlives it (`plantuml_runner`)."""
+    from src.infrastructure.rendering.plantuml_runner import PLANTUML  # noqa: PLC0415
+
+    PLANTUML.stop()
 
 
 def _close_artifact_index() -> None:

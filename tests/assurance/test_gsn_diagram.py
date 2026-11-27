@@ -292,6 +292,7 @@ def test_native_svg_uses_standard_shapes_and_accessibility() -> None:
 
 def test_generated_puml_fallback_is_valid(tmp_path: Path) -> None:
     from src.application.verification.artifact_verifier_syntax import check_puml_syntax
+    from src.infrastructure.rendering.plantuml_runner import PLANTUML
 
     body = gsn_module.renderer.render_body(
         "fallback",
@@ -318,7 +319,7 @@ def test_generated_puml_fallback_is_valid(tmp_path: Path) -> None:
     )
     path = tmp_path / "fallback.puml"
     path.write_text(body, encoding="utf-8")
-    assert check_puml_syntax(path, str(path)) == []
+    assert check_puml_syntax(path, str(path), drawing=PLANTUML) == []
 
 
 def test_native_renderer_migrates_stored_legacy_gsn_source() -> None:

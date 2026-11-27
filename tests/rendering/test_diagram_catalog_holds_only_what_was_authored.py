@@ -4,7 +4,7 @@ Two ways something else gets in, both of which happened here.
 
 The renderer used to write a `tmp*.puml` beside the diagram it was rendering and remove it in a
 `finally`. A hard kill — SIGKILL, an OOM kill — skipped that cleanup and orphaned the file. Renders now
-write their input outside every repository (`plantuml_scratch`), but a catalog an earlier version
+hand PlantUML their input over a pipe and write no input file at all, but a catalog an earlier version
 rendered in can still hold one. `test_all_committed_diagrams_render` already tolerates one, by
 collecting through `git ls-files` so an *untracked* stray is not mistaken for a diagram.
 

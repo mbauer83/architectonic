@@ -8,11 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from src.application.verification.artifact_verifier_syntax import (
-    find_graphviz_dot,
-    find_plantuml_jar,
-    plantuml_command,
-)
+from src.application.verification.artifact_verifier_syntax import find_graphviz_dot, find_plantuml_jar
+from src.infrastructure.rendering import plantuml_runner
 
 
 def _parse_version(text: str) -> tuple[int, ...] | None:
@@ -68,7 +65,9 @@ def main(argv: list[str] | None = None) -> int:
     if dot_version < min_graphviz:
         raise SystemExit(f"Graphviz {args.min_graphviz}+ required, found {'.'.join(str(p) for p in dot_version)}")
 
-    plantuml_output = _run(plantuml_command(jar_path, "-version"))
+    status, plantuml_output = plantuml_runner.plantuml_version(jar_path)
+    if status != 0:
+        raise SystemExit(plantuml_output or f"PlantUML -version failed with exit {status}")
     plantuml_version = _parse_version(plantuml_output)
     if plantuml_version is None:
         raise SystemExit(f"Could not parse PlantUML version from: {plantuml_output}")

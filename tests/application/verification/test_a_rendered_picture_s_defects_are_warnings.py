@@ -12,15 +12,12 @@ from pathlib import Path
 
 import pytest
 
+from src.application.plantuml_drawing import Drawn
 from src.application.verification._verifier_rules_rendered_picture import (
-    PICTURE_BESIDE_ITS_SOURCE,
     UNREAD_PICTURE_CODE,
     DrawnForSource,
     RenderedPictureRule,
-    add_picture_issues,
-    issues_for_picture_in,
     picture_issues,
-    require_a_directory_each,
 )
 from src.application.verification.artifact_verifier_types import Issue, Severity
 from src.domain.diagrams.layout.geometry import Extent, Point
@@ -195,56 +192,55 @@ class _Recording:
         return [Issue(Severity.WARNING, "W371", "found", loc)]
 
 
-class TestWhichPictureIsRead:
-    def test_the_one_picture_in_a_directory_is_handed_over(self, tmp_path: Path) -> None:
-        (tmp_path / "whatever-plantuml-called-it.svg").write_text("<svg>one</svg>", encoding="utf-8")
-        checks = _Recording()
+class _Drawing:
+    """A PlantUML that answers every check with *answer*."""
 
-        assert [issue.code for issue in issues_for_picture_in(tmp_path, checks, _LOC)] == ["W371"]
+    def __init__(self, answer: Drawn) -> None:
+        self._answer = answer
+
+    def draw_for_check(self, source: str, *, timeout: float) -> Drawn:
+        del source, timeout
+        return self._answer
+
+
+@pytest.fixture
+def _syntax_checked(monkeypatch: pytest.MonkeyPatch) -> None:
+    from src.application.verification import artifact_verifier_syntax
+
+    monkeypatch.delenv("ARCH_SKIP_PUML_SYNTAX", raising=False)
+    monkeypatch.setattr(artifact_verifier_syntax, "find_plantuml_jar", lambda: Path("plantuml.jar"))
+
+
+@pytest.mark.usefixtures("_syntax_checked")
+class TestWhichPictureIsRead:
+    @staticmethod
+    def _checked(tmp_path: Path, answer: Drawn) -> tuple[list[Issue], _Recording]:
+        from src.application.verification.artifact_verifier_syntax import check_puml_syntax
+
+        source = tmp_path / "x.puml"
+        source.write_text("@startuml\nA -> B\n@enduml\n", encoding="utf-8")
+        checks = _Recording()
+        return check_puml_syntax(source, _LOC, drawing=_Drawing(answer), picture_checks=checks), checks
+
+    def test_the_one_picture_drawn_is_handed_over(self, tmp_path: Path) -> None:
+        issues, checks = self._checked(tmp_path, Drawn((b"<svg>one</svg>",)))
+
+        assert [issue.code for issue in issues] == ["W371"]
         assert checks.seen == [("<svg>one</svg>", _LOC)]
 
     @pytest.mark.parametrize("pictures", [0, 2])
     def test_no_picture_or_several_is_nothing_to_speak_of(self, tmp_path: Path, pictures: int) -> None:
-        for number in range(pictures):
-            (tmp_path / f"{number}.svg").write_text("<svg/>", encoding="utf-8")
-        checks = _Recording()
+        issues, checks = self._checked(tmp_path, Drawn(tuple(b"<svg/>" for _ in range(pictures))))
 
-        assert issues_for_picture_in(tmp_path, checks, _LOC) == []
+        assert issues == []
         assert checks.seen == []
-
-    def test_a_batch_reads_each_picture_beside_its_own_source(self, tmp_path: Path) -> None:
-        sources = []
-        for name in ("first", "second"):
-            source = tmp_path / name / "same-name.puml"
-            (source.parent / PICTURE_BESIDE_ITS_SOURCE).mkdir(parents=True)
-            (source.parent / PICTURE_BESIDE_ITS_SOURCE / "same.svg").write_text(f"<svg>{name}</svg>", encoding="utf-8")
-            sources.append(source)
-        checks = _Recording()
-        issues_by_path: dict[Path, list[Issue]] = {source: [] for source in sources}
-
-        add_picture_issues(issues_by_path, checks)
-
-        assert checks.seen == [("<svg>first</svg>", str(sources[0])), ("<svg>second</svg>", str(sources[1]))]
-        assert all(len(issues) == 1 for issues in issues_by_path.values())
 
     def test_a_source_plantuml_refused_has_its_error_picture_left_unread(self, tmp_path: Path) -> None:
         """PlantUML draws a refused body too, as a picture of its error message."""
-        source = tmp_path / "broken" / "x.puml"
-        (source.parent / PICTURE_BESIDE_ITS_SOURCE).mkdir(parents=True)
-        (source.parent / PICTURE_BESIDE_ITS_SOURCE / "x.svg").write_text("<svg/>", encoding="utf-8")
-        refused = Issue(Severity.ERROR, "E350", "PlantUML: Syntax Error?", str(source))
-        checks = _Recording()
-        issues_by_path = {source: [refused]}
+        issues, checks = self._checked(tmp_path, Drawn((b"<svg/>",), "ERROR\n1\nSyntax Error?\n"))
 
-        add_picture_issues(issues_by_path, checks)
-
-        assert issues_by_path == {source: [refused]}
+        assert [issue.code for issue in issues] == ["E350"]
         assert checks.seen == []
-
-    def test_two_sources_in_one_directory_are_refused_before_anything_is_rendered(self, tmp_path: Path) -> None:
-        with pytest.raises(ValueError, match="directory of its own"):
-            require_a_directory_each([tmp_path / "a.puml", tmp_path / "b.puml"])
-        require_a_directory_each([tmp_path / "1" / "a.puml", tmp_path / "2" / "a.puml"])
 
 
 class TestWhatARouterAnswersFor:

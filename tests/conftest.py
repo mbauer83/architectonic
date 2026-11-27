@@ -10,7 +10,6 @@ serializing everything.
 from __future__ import annotations
 
 import faulthandler
-import fcntl
 import json
 import os
 import pathlib
@@ -221,80 +220,33 @@ from tests.support.store_key_derivation import cheapen_test_store_key_derivation
 cheapen_test_store_key_derivation()
 
 
-# ── The PlantUML toolchain is a bounded resource, and the bound is here ───────
+# ── PlantUML: one long-lived process per launch, per worker — the product's own bound ─────────────
 #
-# Each render shells out to a cold JVM (which in turn runs GraphViz) under a fixed 60-second budget.
-# `addopts` says `-n auto`: twenty workers on this box, so up to twenty simultaneous JVM starts, and
-# the budget does not survive that. Measured: the render-touching selection was 31 failures at twenty
-# workers and 1,863 passed at six. The gate command has always prefixed
-# `PYTEST_XDIST_AUTO_NUM_WORKERS=6` for this reason, which made the *documented* invocation safe and
-# the default one report three dozen defects that are not there.
+# Every render used to start a cold JVM, and twenty workers starting twenty of them at once overran the
+# 60-second production budget (31 failures at twenty workers, none at six), so every PlantUML subprocess
+# in the session was serialised behind a file lock and given a widened budget.
 #
-# The bound belongs at the resource, not at the worker pool and not at a list of tests:
+# The product now keeps one PlantUML per launch alive while it is in use (`plantuml_runner`), and
+# charges the JVM start to the process, under a budget of its own, not to the first render. Each xdist
+# worker is a process, so each holds its own — at most one per launch (SVG, PNG, the syntax check's) —
+# and a warm render is tens of milliseconds. Render-bound tests no longer queue on each other across
+# workers, and nothing here needs to know which tests render.
 #
-# * capping workers would slow the pure-Python majority of 8,600 tests to protect a few hundred;
-# * `--dist loadgroup` would change the scheduler for the whole session, and the run-last guarantee
-#   above is written against `--dist load`'s dispatch order;
-# * classifying tests — by marker or by scanning their source for a render call — puts the knowledge
-#   in a second place, and the failure mode of forgetting is a flake that reads as a product defect.
-#
-# `puml_runtime` starts the JVM in exactly one place. Wrapping that one call needs no classification,
-# cannot be forgotten by a new test, and holds the lock for the render rather than for the whole test,
-# so everything else in that test still runs in parallel.
-#
-# The lock is taken *before* `subprocess.run`, so the budget starts after the wait: queueing costs
-# wall-clock, never a timeout. The lock file lives in the parent of this worker's base temp directory,
-# which is the directory xdist shares between workers — a per-worker path would serialise each worker
-# against itself and nothing else.
-#
-# The budget is also widened, and the two go together. Serialising the JVMs removed 30 of the 31
-# failures; the last was a cold JVM that still exceeded 60 seconds while nineteen other workers ran
-# Python flat out. 60 is a *production* budget — a server answering one preview request — and applying
-# it to a deliberately saturated box measures the box, not the renderer. Widened here rather than in
-# `puml_runtime` because production's budget is a product decision with latency consequences, and
-# nothing has asked for it to change; a config knob added for a test-only need is its own smell.
-_RENDER_BUDGET_SECONDS = 300
-
-
-def _plantuml_lock_path(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
-    return tmp_path_factory.getbasetemp().parent / "plantuml-render.lock"
-
-
-def _one_render_at_a_time(real_subprocess: object, lock_path: pathlib.Path) -> object:
-    """*real_subprocess* with `run` serialised across the session under the widened budget."""
-
-    class _OneRenderAtATime:
-        """`subprocess` as this module uses it, with `run` serialised.
-
-        Delegates everything else — the module also reads `subprocess.TimeoutExpired` — so this stays
-        correct if the adapter grows a second use rather than silently losing one.
-        """
-
-        def run(self, *args: object, **kwargs: object) -> object:
-            with lock_path.open("a+") as handle:
-                fcntl.flock(handle, fcntl.LOCK_EX)
-                try:
-                    return real_subprocess.run(*args, **{**kwargs, "timeout": _RENDER_BUDGET_SECONDS})
-                finally:
-                    fcntl.flock(handle, fcntl.LOCK_UN)
-
-        def __getattr__(self, name: str) -> object:
-            return getattr(real_subprocess, name)
-
-    return _OneRenderAtATime()
+# What the lock did bound, besides time, was memory: one JVM in the whole session. A warm JVM holds a few
+# hundred MB, and six workers' worth peaked at 3.2 GB over the render-heavy files. So a worker gives an
+# idle JVM back after ten seconds rather than the product's five minutes: the render-heavy files keep
+# theirs warm, and a worker that has moved on to pure-Python tests does not sit on one. The worker's
+# JVMs are stopped when its session ends.
+os.environ.setdefault("ARCH_PLANTUML_IDLE_SECONDS", "10")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _bound_concurrent_plantuml_renders(tmp_path_factory: pytest.TempPathFactory):
-    """One PlantUML subprocess at a time, across every xdist worker in the session."""
-    from src.infrastructure.rendering import puml_runtime
-
-    real_subprocess = puml_runtime.subprocess
-    puml_runtime.subprocess = _one_render_at_a_time(real_subprocess, _plantuml_lock_path(tmp_path_factory))
-    try:
-        yield
-    finally:
-        puml_runtime.subprocess = real_subprocess
+def _this_workers_plantuml():
+    """Stop this worker's PlantUML processes when its session ends, so no JVM outlives the run."""
+    yield
+    runner = sys.modules.get("src.infrastructure.rendering.plantuml_runner")
+    if runner is not None:
+        runner.PLANTUML.stop()
 
 
 @pytest.fixture(autouse=True)
@@ -309,22 +261,13 @@ def _each_test_draws_its_own_pictures():
 
 
 @pytest.fixture
-def plantuml_syntax_check(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> None:
-    """Let this test run the real PlantUML syntax check, under the same bound as every render.
+def plantuml_syntax_check(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Let this test run the real PlantUML syntax check.
 
-    The syntax check starts the JVM in a second place. `tests/tools` switches it off for its whole
-    process (`ARCH_SKIP_PUML_SYNTAX`), so whether it runs depends on which conftest a worker has
-    loaded. A test that is *about* the check asks for it here: switched on whatever was loaded, and
-    queued behind the same lock instead of joining twenty other JVMs under a production timeout.
+    `tests/tools` switches it off for its whole process (`ARCH_SKIP_PUML_SYNTAX`), so whether it runs
+    depends on which conftest a worker has loaded. A test that is *about* the check asks for it here.
     """
-    from src.application.verification import artifact_verifier_syntax
-
     monkeypatch.delenv("ARCH_SKIP_PUML_SYNTAX", raising=False)
-    monkeypatch.setattr(
-        artifact_verifier_syntax,
-        "subprocess",
-        _one_render_at_a_time(artifact_verifier_syntax.subprocess, _plantuml_lock_path(tmp_path_factory)),
-    )
 
 
 @pytest.fixture(autouse=True)

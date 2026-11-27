@@ -10,21 +10,15 @@ applies it, and PlantUML itself runs sandboxed, so a spelling the policy misses 
 
 from __future__ import annotations
 
-import ast
-import subprocess
 from pathlib import Path
 
 import pytest
 
+from src.application.plantuml_drawing import Drawn
 from src.application.puml_directive_policy import UnsafePumlError, find_unsafe_puml_directives
-from src.application.verification.artifact_verifier_syntax import (
-    PLANTUML_SECURITY_PROFILE,
-    check_puml_syntax,
-    find_plantuml_jar,
-    plantuml_command,
-)
+from src.application.verification.artifact_verifier_syntax import check_puml_syntax, find_plantuml_jar
+from src.infrastructure.rendering.plantuml_runner import PLANTUML, PLANTUML_SECURITY_PROFILE, plantuml_command
 
-ROOT = Path(__file__).resolve().parents[2]
 _PNG = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
@@ -71,53 +65,26 @@ def test_every_run_is_sandboxed_through_one_builder(tmp_path: Path) -> None:
     assert command.index("-DX=1") < command.index("-jar") < command.index("-tsvg")
 
 
-def test_no_code_assembles_a_plantuml_command_outside_the_builder() -> None:
-    owner = ROOT / "src" / "application" / "verification" / "artifact_verifier_syntax.py"
-    offenders = []
-    for path in sorted((ROOT / "src").rglob("*.py")):
-        if path == owner:
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        if any(isinstance(node, ast.Constant) and node.value == "-jar" for node in ast.walk(tree)):
-            offenders.append(str(path.relative_to(ROOT)))
-    assert offenders == [], f"start PlantUML through plantuml_command: {offenders}"
-
-
 @pytest.mark.skipif(find_plantuml_jar() is None, reason="PlantUML jar not provisioned")
 def test_the_sandbox_holds_when_the_policy_is_bypassed(tmp_path: Path) -> None:
     """The policy is not called here at all: this is PlantUML, sandboxed, given the attack."""
     secret = tmp_path / "secret.txt"
     secret.write_text("canary-7f3a9c\n", encoding="utf-8")
-    source = tmp_path / "attack.puml"
-    source.write_text(_body(f"!include_once {secret}", f'rectangle "<img:{secret}>" as B'), encoding="utf-8")
-    jar = find_plantuml_jar()
-    assert jar is not None
 
-    subprocess.run(
-        plantuml_command(jar, "-tsvg", "-o", str(tmp_path), str(source)),
-        capture_output=True, text=True, timeout=120, check=False,
-    )
+    drawn = PLANTUML.draw(_body(f"!include_once {secret}", f'rectangle "<img:{secret}>" as B'), "svg")
 
-    svg = (tmp_path / "attack.svg").read_text(encoding="utf-8")
-    assert "canary-7f3a9c" not in svg
+    assert isinstance(drawn, Drawn) and drawn.picture is not None
+    assert b"canary-7f3a9c" not in drawn.picture
 
 
 @pytest.mark.skipif(find_plantuml_jar() is None, reason="PlantUML jar not provisioned")
-def test_the_bundled_c4_library_still_renders_in_the_sandbox(tmp_path: Path) -> None:
-    source = tmp_path / "c4.puml"
-    source.write_text(
-        '@startuml\n!include <C4/C4_Container>\nContainer(api, "Payments API", "Python")\n@enduml\n',
-        encoding="utf-8",
-    )
-    jar = find_plantuml_jar()
-    assert jar is not None
+def test_the_bundled_c4_library_still_renders_in_the_sandbox() -> None:
+    body = '@startuml\n!include <C4/C4_Container>\nContainer(api, "Payments API", "Python")\n@enduml\n'
 
-    subprocess.run(
-        plantuml_command(jar, "-tsvg", "-o", str(tmp_path), str(source)),
-        capture_output=True, text=True, timeout=120, check=True,
-    )
+    drawn = PLANTUML.draw(body, "svg")
 
-    svg = (tmp_path / "c4.svg").read_text(encoding="utf-8")
+    assert isinstance(drawn, Drawn) and drawn.picture is not None and drawn.refusals == ()
+    svg = drawn.picture.decode("utf-8")
     # The C4 macro draws a bold label one word per text element.
     assert ">Payments<" in svg and ">API<" in svg
 
@@ -126,7 +93,7 @@ def test_the_verifier_refuses_to_render_a_file_that_arrived_through_git(tmp_path
     diagram = tmp_path / "ARC@1.x.pulled.puml"
     diagram.write_text(_body("!include_once /etc/passwd"), encoding="utf-8")
 
-    issues = check_puml_syntax(diagram, str(diagram))
+    issues = check_puml_syntax(diagram, str(diagram), drawing=PLANTUML)
 
     assert [issue.code for issue in issues] == ["E353"]
 

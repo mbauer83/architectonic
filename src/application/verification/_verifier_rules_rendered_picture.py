@@ -54,7 +54,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Protocol
 
 from src.application.verification.artifact_verifier_types import Issue, Severity
@@ -230,43 +229,3 @@ class RenderedPictureRule:
                 loc,
             )
         ]
-
-
-#: Where a batch renders each picture: a directory of this name beside the source it was drawn from.
-PICTURE_BESIDE_ITS_SOURCE = "rendered-picture"
-
-
-def require_a_directory_each(paths: Sequence[Path]) -> None:
-    """Refuse a batch in which two sources share a directory, where their pictures would too."""
-    if len({path.parent for path in paths}) != len(paths):
-        raise ValueError(
-            "pictures are rendered beside their sources, so each source needs a directory of its own"
-        )
-
-
-def add_picture_issues(issues_by_path: dict[Path, list[Issue]], checks: RenderedPictureChecks) -> None:
-    """Add what *checks* say of each picture a batch rendered beside its source.
-
-    Only for a source with no finding yet. PlantUML draws a refused body too — as a picture of its
-    error message — and reading that would report on a picture nobody asked for.
-    """
-    for path, issues in issues_by_path.items():
-        if not issues:
-            issues.extend(issues_for_picture_in(path.parent / PICTURE_BESIDE_ITS_SOURCE, checks, str(path)))
-
-
-def issues_for_picture_in(directory: Path, checks: RenderedPictureChecks, loc: str) -> list[Issue]:
-    """What *checks* say of the one picture rendered into *directory*.
-
-    Nothing where the directory holds no picture — the render failed, and the syntax finding says so
-    — and nothing where it holds several: a file that draws more than one diagram has no one picture
-    to speak of.
-    """
-    try:
-        pictures = sorted(directory.glob("*.svg"))
-        if len(pictures) != 1:
-            return []
-        svg = pictures[0].read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return []
-    return checks.check(svg, loc)

@@ -1,13 +1,14 @@
 """A render, finished or killed while PlantUML runs, leaves nothing in the repository it renders.
 
-The scratch input used to be written into the diagram catalog and removed in a `finally`, which a
-killed process never reaches. The killed case is driven for real here: the render runs in a child
-process whose `java` is a stand-in that announces itself and waits, and the child's whole process
-group is killed while it waits — the moment a SIGKILL or an OOM kill would arrive.
+A scratch input used to be written into the diagram catalog and removed in a `finally`, which a
+killed process never reaches. A body now reaches PlantUML over its pipe and the picture comes back
+the same way, so a render writes nothing at all. The killed case is driven for real here: the render
+runs in a child process whose `java` is a stand-in that announces itself and waits, and the child's
+whole process group is killed while it waits — the moment a SIGKILL or an OOM kill would arrive.
 
-The finished case renders real PlantUML through both renderers, with the standard-library include
-a C4 body carries and the managed-fragment markers a stored ArchiMate body carries, so moving the
-scratch file out of the catalog is shown not to cost an include.
+The finished case renders real PlantUML, with the standard-library include a C4 body carries and the
+managed-fragment markers a stored ArchiMate body carries, so drawing without a file is shown not to
+cost an include.
 """
 
 from __future__ import annotations
@@ -22,7 +23,6 @@ from pathlib import Path
 import pytest
 
 from src.application.verification.artifact_verifier_syntax import find_plantuml_jar
-from src.infrastructure.rendering.plantuml_scratch import SCRATCH_PREFIX, plantuml_input
 from src.infrastructure.rendering.puml_runtime import render_puml_bytes
 
 _PROJECT = Path(__file__).resolve().parents[2]
@@ -39,27 +39,6 @@ def _repository(tmp_path: Path) -> Path:
     root = tmp_path / "repo"
     (root / "diagram-catalog" / "diagrams").mkdir(parents=True)
     return root
-
-
-class TestTheScratchInput:
-    def test_is_alone_in_a_directory_of_its_own_outside_the_repository(self, tmp_path: Path) -> None:
-        with plantuml_input("@startuml\n@enduml\n") as scratch:
-            assert scratch.read_text(encoding="utf-8") == "@startuml\n@enduml\n"
-            assert scratch.parent.name.startswith(SCRATCH_PREFIX) and scratch.stem == scratch.parent.name
-            assert list(scratch.parent.iterdir()) == [scratch]
-            assert not scratch.is_relative_to(tmp_path)
-
-        assert not scratch.parent.exists()
-
-    def test_is_removed_when_the_render_raises(self) -> None:
-        with pytest.raises(RuntimeError), plantuml_input("@startuml\n@enduml\n") as scratch:
-            raise RuntimeError
-
-        assert not scratch.parent.exists()
-
-    def test_overlapping_renders_are_given_different_names(self) -> None:
-        with plantuml_input("a") as one, plantuml_input("b") as other:
-            assert one.stem != other.stem
 
 
 _RENDER_IN_A_CHILD = """
@@ -117,7 +96,7 @@ def test_a_finished_render_leaves_nothing_and_a_standard_library_include_still_r
 @_needs_plantuml
 @pytest.mark.skipif(not _SELF_MODEL.exists(), reason="the self-model is unavailable")
 def test_a_body_with_a_managed_include_marker_renders_and_leaves_the_catalog_as_it_was() -> None:
-    """The marker is expanded from the catalog's fragments, wherever the scratch input is written."""
+    """The marker is expanded from the catalog's fragments before PlantUML is given the body."""
     catalog = _SELF_MODEL / "diagram-catalog"
     before = _everything_under(catalog)
     body = (
