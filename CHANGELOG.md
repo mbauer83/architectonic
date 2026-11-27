@@ -3,6 +3,63 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.12.1] — unreleased
+
+**[Full detail → `changelog-assets/0.12.1-detail.md`](changelog-assets/0.12.1-detail.md)**
+
+### Added
+
+- **Advice**, a third kind of verifier finding beside errors and warnings, for modelling heuristics that may be
+  deliberate. It never blocks a write, a save or a promotion; a draft element shows a marker and a count, an
+  active element lists it with its reason, and the promotion dry run lists it. An advice is accepted with a
+  short reason on the element's page or through the entity edit (`accepted_advice`), which quiets it at every
+  status. The first advice, **A341**, names a process or value stream whose composed parts nothing orders. See
+  [Always-on verification](docs/03-modeling/index.md#always-on-verification).
+- **Who a diagram is for, and what it answers.** Diagrams and viewpoints carry `stakeholders` and `concerns`:
+  prose, or references to a stakeholder or motivation element. A diagram takes its viewpoint's lists unless it
+  states its own. The diagram page shows a "For … · Answers …" line, the diagram list filters by stakeholder,
+  and an element's page lists the views that address it. References that do not resolve are refused (E185–E187)
+  in diagrams, in viewpoint definitions and in a promotion that would leave one dangling. See
+  [Who a diagram is for](docs/03-modeling/diagramming.md#who-a-diagram-is-for-and-what-it-answers).
+- **W183**: a viewpoint applied to a diagram type it does not declare in `representation_types` is reported; the
+  viewpoint picker lists suited viewpoints first.
+
+### Changed
+
+- PlantUML runs as one long-lived process per output kind instead of one per render. A warm SVG render takes
+  tens of milliseconds and a PNG a few hundred; pictures are unchanged. The processes stop after 300 seconds
+  without a render (`ARCH_PLANTUML_IDLE_SECONDS`) and when the backend stops. See
+  [Configuration](docs/reference/configuration.md).
+
+### Fixed
+
+- A canvas save no longer removes the diagram's viewpoint.
+- The copy-link buttons work on an installation served over plain HTTP.
+
+### Security
+
+- Saved commits are authored by the identity the backend is configured with (`ARCH_GIT_AUTHOR_NAME`,
+  `ARCH_GIT_AUTHOR_EMAIL`). The save routes refuse a body that names an author (`422`), and the MCP tool
+  `artifact_save_changes` no longer takes `author_name` or `author_email`.
+- FMEA factor judgements and VEX assessments are recorded as made by the same configured identity. The two
+  routes refuse a body that names an `author` (`422`), the MCP tool `assurance_set_fmea_factor` no longer takes
+  one, and the GUI no longer asks for it. Existing records keep their author.
+- Assurance content that carries no TLP level is treated as `TLP:RED`: it is withheld from readers below that
+  ceiling, a GSN draft containing it is not publishable, the promotion preflight warns about it, and evidence
+  classified below it is reported (E511).
+
+### Upgrading
+
+- Clients that sent `author_name` or `author_email` to `POST /api/sync/engagement/save`,
+  `POST /api/sync/enterprise/save` or `artifact_save_changes`, or `author` to
+  `POST /api/assurance/nodes/{node_id}/factor-assessments`,
+  `POST /api/assurance/arch-artifacts/{arch_artifact_id}/vex-assessments` or `assurance_set_fmea_factor`, must
+  stop sending them.
+- Set `ARCH_GIT_AUTHOR_NAME` and `ARCH_GIT_AUTHOR_EMAIL` to the person or team the installation acts for;
+  otherwise commits and judgements are recorded as `Architecture Repository Service`.
+- A memory-limited host or container may want a lower `ARCH_PLANTUML_IDLE_SECONDS`: each warm PlantUML process
+  holds a few hundred MB.
+
 ## [0.12.0] — 2026-11-27
 
 **[Full detail → `changelog-assets/0.12.0-detail.md`](changelog-assets/0.12.0-detail.md)**
@@ -1505,6 +1562,7 @@ never-requested operations is empty — the reason to trust a release which rena
 - Confidential assurance tier (STPA/CAST/GRC/FMEA/GSN) on an encrypted store with tamper-evident history
 - Viewpoint query engine with diagram/matrix/table representations
 
+[0.12.1]: https://github.com/mbauer83/architectonic/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/mbauer83/architectonic/compare/v0.11.5...v0.12.0
 [0.11.5]: https://github.com/mbauer83/architectonic/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/mbauer83/architectonic/compare/v0.11.3...v0.11.4

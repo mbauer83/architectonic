@@ -118,6 +118,15 @@ diagrams:
   sprite_scale: 1.5
   render_dpi: 150
   plantuml_limit_size: 16384
+```
+
+PlantUML runs as one long-lived Java process per output kind (SVG, PNG, and the syntax check), started on the
+first render and reused, so a render costs tens to a few hundred milliseconds instead of a Java start. Each
+process holds a few hundred MB while it lives and stops after 300 seconds without a render;
+`ARCH_PLANTUML_IDLE_SECONDS` sets another idle time, which a memory-limited container may want lower. The
+backend stops them when it shuts down.
+
+```yaml
 
 repo_init:
   default_branch: main

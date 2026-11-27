@@ -71,6 +71,31 @@ demand. Checks cover schema conformance, referential integrity, cross-repo refer
 PlantUML diagram syntax, and document frontmatter and section structure. Agents receive
 structured error codes and locations; humans see inline feedback in the GUI.
 
+Findings come in three kinds:
+
+- an **error** (`E…`) is a definitional fault; the write that would introduce it is refused;
+- a **warning** (`W…`) is a claim that is wrong but not fatal, such as a diagram listing a relation it does
+  not draw;
+- **advice** (`A…`) is a modelling heuristic that may be a deliberate choice. It never blocks a write, a
+  save or a promotion. On a draft element it is a small marker on the element's page and a count in the
+  verify summary; on an active element it is listed with its reason; the promotion dry run lists it.
+
+An advice can be accepted on the element's page (**Accept…**, with a short reason), or by writing
+`accepted_advice` through the ordinary entity edit (REST or `artifact_edit_entity`). The element stores it as
+
+```yaml
+accepted-advice:
+- code: A341
+  reason: A checklist; the steps run in any order.
+```
+
+and the advice stays quiet at every status. Only advice can be accepted, never a warning or an error.
+
+**A341** is the first advice: a process or value stream — a type the ontology declares to be an ordered
+sequence — composes two or more parts and no triggering or flow relation orders them, directly or along a
+path through other elements. Either relate the parts by the order they run in, or, if they are grouped by
+what they do rather than when, the element may be a function.
+
 ---
 
 *Next: [Projects & grouping →](projects-and-grouping.md)*
