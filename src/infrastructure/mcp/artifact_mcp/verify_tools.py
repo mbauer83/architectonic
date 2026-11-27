@@ -5,8 +5,13 @@ from typing import Any, Literal
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
 from src.application.repository_confinement import canonical, is_within
+from src.application.verification.advice_report import verify_report
 from src.application.verification.artifact_verifier import ArtifactVerifier
-from src.application.verification.artifact_verifier_types import VerificationFileType, VerificationResult
+from src.application.verification.artifact_verifier_types import (
+    VerificationFileType,
+    VerificationResult,
+    count_severities,
+)
 from src.application.verification.evaluation import PassCancellation
 from src.domain.repository.artifact_location import ArtifactKindName, artifact_kind_at
 from src.infrastructure.mcp.artifact_mcp.context import RepoScope, resolve_repo_roots, roots_key, verifier_for
@@ -121,17 +126,19 @@ async def artifact_verify(
             ),
             "results": [],
         }
+    # Advice is reported apart: the results say what is wrong, and the advice section says what may be
+    # a deliberate choice — listed by element status in the summary, every one in full.
+    report = verify_report(results)
+    counted = count_severities(i.severity for r in results for i in r.issues)
     total = len(results)
     total_valid = sum(1 for r in results if r.valid)
     total_unverified = sum(1 for r in results if r.outcome == "unverified")
-    total_errors = sum(len(r.errors) for r in results)
-    total_warnings = sum(len(r.warnings) for r in results)
     files_by_type: dict[str, int] = {}
     for r in results:
         files_by_type[r.file_type] = files_by_type.get(r.file_type, 0) + 1
     if return_mode == "full":
         payload: Any = [
-            dict(as_verification_result_dict(r), outcome=r.outcome) for r in results if r.issues or not r.valid
+            dict(as_verification_result_dict(r), outcome=r.outcome) for r in report.results if r.issues or not r.valid
         ]
     else:
         payload = [
@@ -142,7 +149,7 @@ async def artifact_verify(
                 "outcome": r.outcome,
                 "issues": [as_issue_dict(i) for i in r.issues],
             }
-            for r in results
+            for r in report.results
             if r.issues or not r.valid
         ]
     return {
@@ -163,10 +170,15 @@ async def artifact_verify(
             # Verified and found wrong. A file nothing verified is neither valid nor invalid.
             "invalid_files": total - total_valid - total_unverified,
             "unverified_files": total_unverified,
-            "errors": total_errors,
-            "warnings": total_warnings,
+            "errors": counted.errors,
+            "warnings": counted.warnings,
+            # Advice never makes a file invalid. Counted on its own, and by the status of the element
+            # it is about: a draft's advice is a count here and nothing more.
+            "advice": counted.advice,
+            "advice_by_status": report.advice_by_status(),
         },
         "results": payload,
+        "advice": report.advice_payload("all" if return_mode == "full" else "by-status"),
     }
 
 
@@ -237,6 +249,10 @@ def register_verify_tools(mcp: MCPServer) -> None:
             "file_type is inferred if omitted). "
             "Omit path to verify the entire repository — returns issue "
             "counts and a list of files with errors/warnings. "
+            "Advice (modelling heuristics that may be deliberate, codes A…) is reported apart, under "
+            "'advice', and never makes a file invalid: counts.advice and counts.advice_by_status count "
+            "it all; the summary lists only advice on active elements, 'full' lists every one. "
+            "Acknowledge one with artifact_edit_entity(accepted_advice=[{code, reason}]). "
             "return_mode='summary' (default) gives compact issue lines; 'full' gives per-issue detail."
             "\n\nRepo selection: repo_scope defaults to both (engagement + enterprise)."
         ),

@@ -1,4 +1,5 @@
 import { Schema } from 'effect'
+import { VerificationIssueSchema } from './write-results'
 
 export const PromotionConflictSchema = Schema.Struct({
   engagement_id: Schema.String,
@@ -112,6 +113,8 @@ export const PromotionPlanSchema = Schema.Struct({
   available_enterprise_groups: Schema.Array(EnterpriseGroupOptionSchema),
   viewpoint_dependencies: Schema.Array(PromotionViewpointDependencySchema),
   missing_dependencies: Schema.Array(PromotionMissingDependencySchema),
+  // Open advice on what would be promoted — shown so the promotion is made knowingly, never blocking.
+  advice: Schema.Array(VerificationIssueSchema),
 })
 export type PromotionPlan = typeof PromotionPlanSchema.Type
 

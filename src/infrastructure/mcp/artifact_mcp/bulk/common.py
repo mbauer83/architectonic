@@ -166,7 +166,7 @@ def unexecuted_batch_verification(live_root: Path) -> dict[str, object]:
     return {
         "valid": False,
         "executed": False,
-        "counts": {"files": 0, "valid_files": 0, "invalid_files": 0, "errors": 0, "warnings": 0},
+        "counts": {"files": 0, "valid_files": 0, "invalid_files": 0, "errors": 0, "warnings": 0, "advice": 0},
         "results": [],
         "repo_root": str(live_root),
     }
@@ -201,6 +201,8 @@ def _verification_payload(
             "invalid_files": len(invalid),
             "errors": sum(len(result.errors) for result in results),
             "warnings": sum(len(result.warnings) for result in results),
+            # Never blocking: a batch is refused for an invalid file, and advice never makes one.
+            "advice": sum(len(result.advice) for result in results),
         },
         "results": [
             {
@@ -367,7 +369,7 @@ def batch_verification(
         return {
             "valid": True,
             "executed": False,
-            "counts": {"files": 0, "valid_files": 0, "invalid_files": 0, "errors": 0, "warnings": 0},
+            "counts": {"files": 0, "valid_files": 0, "invalid_files": 0, "errors": 0, "warnings": 0, "advice": 0},
             "results": [],
         }
 

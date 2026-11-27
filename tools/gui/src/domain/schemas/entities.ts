@@ -2,6 +2,7 @@ import { Schema } from 'effect'
 import { BaselineStandingSchema } from './baselineStanding'
 import { DiagramRefSchema } from './diagram-types'
 import { EntityContextConnectionSchema } from './connections'
+import { VerificationIssueSchema } from './write-results'
 
 // ── Neighbors ────────────────────────────────────────────────────────────────
 
@@ -106,6 +107,24 @@ export const DocumentReferenceSchema = Schema.Struct({
 })
 export type DocumentReference = typeof DocumentReferenceSchema.Type
 
+/** An advice the element acknowledged: its code, what that code is about, and the stated reason. */
+export const AcceptedAdviceReadingSchema = Schema.Struct({
+  code: Schema.String,
+  title: Schema.String,
+  reason: Schema.String,
+})
+export type AcceptedAdviceReading = typeof AcceptedAdviceReadingSchema.Type
+
+/**
+ * The advice about one element: what is open, and what it has acknowledged. How prominently `open` is
+ * shown follows the element's status; neither ever blocks anything.
+ */
+export const EntityAdviceSchema = Schema.Struct({
+  open: Schema.Array(VerificationIssueSchema),
+  accepted: Schema.Array(AcceptedAdviceReadingSchema),
+})
+export type EntityAdvice = typeof EntityAdviceSchema.Type
+
 /**
  * One entity, with its parsed content sections and its degree.
  *
@@ -147,6 +166,7 @@ export const EntityDetailSchema = Schema.Struct({
   referenced_in_scratchpads: Schema.Array(ScratchpadReferenceSchema),
   /** The diagrams whose purpose line refers to this entity, counting what a diagram takes from its viewpoint. */
   addressed_by_diagrams: Schema.Array(DiagramRefSchema),
+  advice: Schema.optional(EntityAdviceSchema),
 })
 export type EntityDetail = typeof EntityDetailSchema.Type
 

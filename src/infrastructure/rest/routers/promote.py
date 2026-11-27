@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.application.verification._issue_serialization import as_issue_dict
 from src.infrastructure.rest.contracts.promotion import (
     PromotionPlanResponse,
     PromotionResultResponse,
@@ -124,6 +125,8 @@ def promotion_plan(
         ],
         "warnings": plan.warnings,
         "schema_errors": plan.schema_errors,
+        # Open advice on what would be promoted: shown in the dry run, never blocking.
+        "advice": [as_issue_dict(issue) for issue in plan.advice],
         "structural_closure": [
             {
                 "entity_id": r.entity_id,

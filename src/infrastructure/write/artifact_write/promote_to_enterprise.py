@@ -25,6 +25,7 @@ from typing import Any, Literal
 from src.application.artifacts.query import ArtifactRepository
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification.artifact_verifier import ArtifactRegistry
+from src.domain.verification_findings import Issue
 from src.infrastructure.write.artifact_write._promote_groups import GroupMappingEntry
 from src.infrastructure.write.artifact_write._promote_icons import icons_a_promotion_carries
 from src.infrastructure.write.artifact_write._promote_planning import (
@@ -143,6 +144,8 @@ class PromotionPlan:
     broken_type_closure: list[str] = field(default_factory=list)
     viewpoint_dependencies: list[ViewpointDependency] = field(default_factory=list)
     missing_dependencies: list[MissingDependency] = field(default_factory=list)
+    #: Open advice on the entities this would carry. Shown, never blocking — not a schema error.
+    advice: list[Issue] = field(default_factory=list)
 
 
 @dataclass
@@ -344,6 +347,12 @@ def plan_promotion(
             )
         )
 
+    from src.infrastructure.app_bootstrap import process_runtime_catalogs  # noqa: PLC0415
+    from src.infrastructure.write.artifact_write._promote_advice import promotion_advice  # noqa: PLC0415
+
+    advice = promotion_advice(
+        to_add + [c.engagement_id for c in conflicts], repo, catalogs or process_runtime_catalogs()
+    )
     return PromotionPlan(
         root_entity=selected_ids[0] if selected_ids else (document_ids or diagram_ids or [""])[0],
         entities_to_add=to_add,
@@ -366,4 +375,5 @@ def plan_promotion(
         type_closure_additions=type_closure_additions,
         type_closure_reasons=type_closure_reasons,
         broken_type_closure=broken_type_closure,
+        advice=advice,
     )

@@ -22,6 +22,7 @@ from src.application.read_models import ConnectionDirection
 from src.infrastructure.rest.contracts.baseline_standing import BaselineStandingContract
 from src.infrastructure.rest.contracts.diagram_reference import DiagramReference
 from src.infrastructure.rest.contracts.scratchpad_reference import ScratchpadReference
+from src.infrastructure.rest.contracts.verification import VerificationIssueResponse
 from src.infrastructure.rest.contracts.wire_nulls import NullsOmitted
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
@@ -130,6 +131,25 @@ class EntityRecordFields(NullsOmitted):
     last_updated: str | None = None
 
 
+class AcceptedAdviceReading(NullsOmitted):
+    """An advice the element acknowledged: its code, what the code is about, and the stated reason."""
+
+    code: str
+    title: str
+    reason: str
+
+
+class EntityAdvice(NullsOmitted):
+    """The advice about one element: what is open, and what it has acknowledged.
+
+    How prominently ``open`` is shown follows the element's ``status`` — a marker on a draft, listed
+    with its reason on an active element. Neither blocks anything.
+    """
+
+    open: list[VerificationIssueResponse]
+    accepted: list[AcceptedAdviceReading]
+
+
 class EntityDetailResponse(EntityRecordFields):
     """One entity, with its parsed content sections and its degree.
 
@@ -164,6 +184,8 @@ class EntityDetailResponse(EntityRecordFields):
     # server had not, so reading such a construct failed its own response contract. Absent for a model
     # entity rather than null, under this DTO's null-omitting policy.
     host_diagram_id: str | None = None
+    #: Open and acknowledged advice about this element, read off the index on every read.
+    advice: EntityAdvice | None = None
 
 
 class EntityConnectionCounts(NullsOmitted):

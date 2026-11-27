@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
+from src.infrastructure.rest.contracts.verification import VerificationIssueResponse
 from src.infrastructure.rest.contracts.wire_shape import Closed
 
 
@@ -149,6 +150,10 @@ class PromotionPlanResponse(Closed):
     available_enterprise_groups: list[EnterpriseGroupOption]
     viewpoint_dependencies: list[PromotionViewpointDependency]
     missing_dependencies: list[PromotionMissingDependency]
+    #: Open advice on the entities the promotion would carry — modelling heuristics that may be a
+    #: deliberate choice. Shown so the promotion is made knowingly; never blocking, which is why it is
+    #: not among `schema_errors`.
+    advice: list[VerificationIssueResponse]
 
 
 class PromotionResultResponse(Closed):

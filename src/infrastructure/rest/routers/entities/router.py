@@ -17,6 +17,7 @@ from src.application.modeling.proposal_standing import standing_subject
 from src.application.read_models import EntityContextReadModel
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification._verifier_contribution_runner import held_record_scopes_from_catalogs
+from src.application.verification.advice_report import element_advice
 from src.application.viewpoints.diagram_purpose import diagrams_addressing
 from src.domain.baseline_standing import BASELINE_STANDING
 from src.infrastructure.advice_wire import acknowledgements
@@ -192,6 +193,7 @@ def read_entity(
         result["is_global"] = s.is_global(entity_rec.path)
         subject = standing_subject(entity_rec)
         result[BASELINE_STANDING] = s.baseline_standing_reader()(subject).to_mapping()
+        result["advice"] = element_advice(entity_rec, repo, catalogs).as_payload()
         # The author's own pending change, laid over the baseline they cannot write. Without this a
         # read returns the enterprise values while the badge names fields that differ — so the next
         # edit is written over work the author cannot see, and accepting both in order undoes the

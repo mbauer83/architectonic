@@ -3989,6 +3989,18 @@ export interface components {
              */
             reason: string;
         };
+        /**
+         * AcceptedAdviceReading
+         * @description An advice the element acknowledged: its code, what the code is about, and the stated reason.
+         */
+        AcceptedAdviceReading: {
+            /** Code */
+            code: string;
+            /** Reason */
+            reason: string;
+            /** Title */
+            title: string;
+        };
         /** AddConnectionBody */
         AddConnectionBody: {
             /** Connection Type */
@@ -10219,6 +10231,19 @@ export interface components {
             ok: boolean;
         };
         /**
+         * EntityAdvice
+         * @description The advice about one element: what is open, and what it has acknowledged.
+         *
+         *     How prominently ``open`` is shown follows the element's ``status`` — a marker on a draft, listed
+         *     with its reason on an active element. Neither blocks anything.
+         */
+        EntityAdvice: {
+            /** Accepted */
+            accepted: components["schemas"]["AcceptedAdviceReading"][];
+            /** Open */
+            open: components["schemas"]["VerificationIssueResponse"][];
+        };
+        /**
          * EntityConnectionCounts
          * @description Degree by direction, as the context read reports it.
          */
@@ -10308,6 +10333,7 @@ export interface components {
              * @default []
              */
             addressed_by_diagrams: components["schemas"]["DiagramReference"][];
+            advice?: components["schemas"]["EntityAdvice"];
             /** Artifact Id */
             artifact_id: string;
             /** Artifact Type */
@@ -13572,6 +13598,8 @@ export interface components {
          *     have to be distinguishable, and only one of them is representable when the key may be missing.
          */
         PromotionPlanResponse: {
+            /** Advice */
+            advice: components["schemas"]["VerificationIssueResponse"][];
             /** Already In Enterprise */
             already_in_enterprise: string[];
             /** Available Enterprise Groups */

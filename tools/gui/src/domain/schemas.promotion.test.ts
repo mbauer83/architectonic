@@ -24,6 +24,7 @@ const basePlan = {
   available_enterprise_groups: [],
   viewpoint_dependencies: [],
   missing_dependencies: [],
+  advice: [],
 }
 
 describe('PromotionPlanSchema structural closure', () => {

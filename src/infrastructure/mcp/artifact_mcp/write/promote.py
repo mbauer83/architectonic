@@ -7,6 +7,7 @@ from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 if TYPE_CHECKING:
     from src.infrastructure.write.artifact_write._promote_viewpoints import ViewpointResolution
 
+from src.application.verification._issue_serialization import as_issue_dict
 from src.infrastructure.mcp.artifact_mcp.write._common import (
     clear_caches_for_repo,
     registry_cached,
@@ -138,6 +139,8 @@ def artifact_promote_to_enterprise(
         ],
         "warnings": plan.warnings,
         "schema_errors": plan.schema_errors,
+        # Open advice on what would be promoted: shown in the dry run, never blocking.
+        "advice": [as_issue_dict(issue) for issue in plan.advice],
         "structural_closure": [
             {
                 "entity_id": r.entity_id,
