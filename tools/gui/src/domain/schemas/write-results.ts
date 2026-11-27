@@ -10,8 +10,15 @@ const UnknownRecord = Schema.Record({ key: Schema.String, value: Schema.Unknown 
  * the published schema permits either: an issue about the artifact as a whole has no `location`, and
  * most rules attach neither `details` nor `actions`.
  */
+/**
+ * The verifier's three severities. `advice` is a modelling heuristic that may be a deliberate choice:
+ * it never blocks a write, and how prominently it is shown follows the element's status.
+ */
+export const VerificationSeveritySchema = Schema.Literal('error', 'warning', 'advice')
+export type VerificationSeverity = typeof VerificationSeveritySchema.Type
+
 export const VerificationIssueSchema = Schema.Struct({
-  severity: Schema.Literal('error', 'warning'),
+  severity: VerificationSeveritySchema,
   code: Schema.String,
   message: Schema.String,
   location: Schema.optional(Schema.NullOr(Schema.String)),

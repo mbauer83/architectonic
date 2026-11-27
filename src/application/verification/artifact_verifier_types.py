@@ -6,11 +6,11 @@ from typing import Literal, TypeAlias
 from src.domain.artifact_id import PREFIX_PATTERN, RANDOM_KEY_PATTERN
 from src.domain.repository.artifact_location import ArtifactKindName, VerifiedArtifactKindName
 from src.domain.repository.connection_declaration import parse_connection_header
-from src.domain.verification_findings import Issue, Severity, SeverityLiteral
+from src.domain.verification_findings import Issue, Severity, SeverityCounts, SeverityLiteral, count_severities
 
 # Re-exported: the finding vocabulary is the domain's, so a diagram-type module implementing a
 # domain verification port does not have to reach up here for it.
-__all__ = ["Issue", "Severity", "SeverityLiteral"]
+__all__ = ["Issue", "Severity", "SeverityCounts", "SeverityLiteral", "count_severities"]
 
 #: The kinds the verifier takes, which is a fact each kind's row declares.
 VerificationFileType: TypeAlias = VerifiedArtifactKindName
@@ -40,6 +40,15 @@ class VerificationResult:
     @property
     def warnings(self) -> list[Issue]:
         return [i for i in self.issues if i.severity == Severity.WARNING]
+
+    @property
+    def advice(self) -> list[Issue]:
+        """Modelling heuristics: never part of `valid`, never counted as warnings."""
+        return [i for i in self.issues if i.severity == Severity.ADVICE]
+
+    @property
+    def counts(self) -> SeverityCounts:
+        return count_severities(i.severity for i in self.issues)
 
     def __repr__(self) -> str:
         status = "PASS" if self.valid else "FAIL" if self.outcome == "verified" else "UNVERIFIED"

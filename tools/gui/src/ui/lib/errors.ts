@@ -1,6 +1,6 @@
 import { Cause, Either, Runtime, Schema } from 'effect'
 import { type ErrorBody, ErrorBodySchema } from '../../domain/schemas/errors'
-import type { WriteVerification } from '../../domain/schemas/write-results'
+import type { VerificationSeverity, WriteVerification } from '../../domain/schemas/write-results'
 import { isRecord } from '../../domain/records'
 import { NetworkError } from '../../domain'
 
@@ -104,8 +104,25 @@ export const hasVerificationErrors = (
     return false
   }
   // `valid` is the verifier's own verdict; a warning-only report is invalid to a preview that must
-  // decide whether to offer the write, so a non-empty issue list counts either way.
-  return !verification.valid || verification.issues.length > 0
+  // decide whether to offer the write, so a warning counts either way. Advice never does.
+  return !verification.valid || verification.issues.some((issue) => holdsBackAPreview(issue.severity))
+}
+
+/** Whether a finding of *severity* stops a preview from offering the write. Exhaustive by type. */
+export const holdsBackAPreview = (severity: VerificationSeverity): boolean => {
+  switch (severity) {
+    case 'error':
+    case 'warning':
+      return true
+    case 'advice':
+      return false
+    default:
+      return unreachableSeverity(severity)
+  }
+}
+
+const unreachableSeverity = (severity: never): never => {
+  throw new Error(`unknown verification severity: ${String(severity)}`)
 }
 
 export const formatEffectError = (e: unknown): string => {

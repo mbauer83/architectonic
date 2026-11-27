@@ -15766,7 +15766,7 @@ export interface components {
              * Severity
              * @enum {string}
              */
-            severity: "error" | "warning";
+            severity: "error" | "warning" | "advice";
         };
         /** VexAssessmentListResponse */
         VexAssessmentListResponse: {

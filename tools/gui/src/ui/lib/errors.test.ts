@@ -148,6 +148,12 @@ describe('hasVerificationErrors', () => {
   it('is false when there is no report', () => {
     expect(hasVerificationErrors(null)).toBe(false)
   })
+
+  it('is false for a valid report whose only finding is advice — advice never holds back a write', () => {
+    expect(
+      hasVerificationErrors(report({ issues: [issue({ severity: 'advice', message: 'may be a function' })] })),
+    ).toBe(false)
+  })
 })
 
 describe('isConflict', () => {
