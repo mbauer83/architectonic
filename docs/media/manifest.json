@@ -14,7 +14,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/assurance-bowtie.png",
-    "sha256": "523ada3e38268d0c7dc5827a57100e165392adc1a8ab58148303a25f132b8073"
+    "sha256": "36af29ac58a32bbbb62f8dd1b85ead8e6d50a36ca61d8eeff10ca3a108d97ef2"
   },
   {
     "test_name": "re-shoot assurance control structure",
@@ -31,7 +31,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/assurance-control-structure.png",
-    "sha256": "9ddfd9b1f3cdcf94b41847f675aeecc03c5591d8d42592d8cf4c4f1ae4d1cfd5"
+    "sha256": "35f0c852f9951c4412998e31d442484e01630eaefefe58a81dcbfc071e6d6315"
   },
   {
     "test_name": "assurance FMEA matrix",
@@ -306,7 +306,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/diagram-edit-mode.png",
-    "sha256": "0337e0cb0e49ff15066f66a0c15177fdd88549414f5e7a1278f2db05d39ba5f1"
+    "sha256": "8ac32b942e54f79d8d91f5e6ef4df89f373a58fd416a3f5180620ee26cf569a3"
   },
   {
     "test_name": "re-shoot matrix diagram",
@@ -372,7 +372,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/entities-list.png",
-    "sha256": "b43a1e3028d9d007ac837d3e93e577984664c87bd8e6f15e8ee33aae0bc24358"
+    "sha256": "0327d6c2d99a8cb533078f087f86a3eb03a38320b8fda403daf3b54760086f85"
   },
   {
     "test_name": "re-shoot entity detail",
@@ -406,7 +406,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/graph-explore.gif",
-    "sha256": "e0cfe72cde1a8ffd17a51e5e1339e89faca943e8df20066308e94eb858f44844"
+    "sha256": "67d2852d62c3e6cc7f736be3f70875747fa95afc77c97e56af42c5a876c4ef83"
   },
   {
     "test_name": "re-shoot group management",
@@ -478,7 +478,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/motivation-coverage-gaps.png",
-    "sha256": "89df0533b6e9dc1349cdd419ddd836ea023c2fd996aac13b292b0eeea8c9b051"
+    "sha256": "58179cc06ca3ff9f575f03146ae00850ae332881902af4d96f0679addbc5bbcc"
   },
   {
     "test_name": "re-shoot overview",
@@ -493,7 +493,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/overview.png",
-    "sha256": "fe1f86af6c8b2485f1471d8152562cc77b0e23ce646ec59b9ac390407fafe105"
+    "sha256": "cc5be33e52710feee9081ad24e3308d77e707f1189e592d5926b9b00a4c54e29"
   },
   {
     "test_name": "local changes against promoted content",
@@ -540,7 +540,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/search.png",
-    "sha256": "7a887af27bcb34427b5c82279b56771243bc0efd234986eb22efdcfbd4772bca"
+    "sha256": "8e87ce5749151e65c0e26f7237718495401c70780fa132c1dbad4ed53eaa866e"
   },
   {
     "test_name": "security entity metrics panel",
@@ -668,7 +668,7 @@
   {
     "test_name": "the naive architecture sketched on its canvas",
     "artifact_ids": [
-      "STRESS@1795736425.8LhXJyS.stress-analysis-promotion-pipeline"
+      "STRESS@1795784254.Plp4Mg3.stress-analysis-promotion-pipeline"
     ],
     "synthetic_augmentation": true,
     "viewpoint_slug": null,
@@ -680,7 +680,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/stress-naive-canvas.png",
-    "sha256": "c316e5d11f3c9346dfec156eeccadf258b4ad468195b1f6581ef01f2a4521373"
+    "sha256": "f2ad7ab226ebab26f756ae50d2be78aa036aad66df3d07b188b37f646984c541"
   },
   {
     "test_name": "the start page of a stress analysis",
@@ -700,7 +700,7 @@
   {
     "test_name": "the test set judged on the naive and on an adaptation",
     "artifact_ids": [
-      "STRESS@1795736430.8Dgw7V1.stress-analysis-promotion-pipeline"
+      "STRESS@1795784257.Ec0FG0L.stress-analysis-promotion-pipeline"
     ],
     "synthetic_augmentation": true,
     "viewpoint_slug": null,
@@ -712,12 +712,12 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/stress-test-set.png",
-    "sha256": "05fecb03ecae661865dfd39fadc972c8d3eee9c595984573057e13ef4348bce8"
+    "sha256": "15aa542041282b03c518d1837fb0f4edafa69b6be3a8442d4a8ac91c8a8a9a01"
   },
   {
     "test_name": "stressors and the incidence of one of them",
     "artifact_ids": [
-      "STRESS@1795736428.B0VNvqF.stress-analysis-promotion-pipeline"
+      "STRESS@1795784256.D7dzvky.stress-analysis-promotion-pipeline"
     ],
     "synthetic_augmentation": true,
     "viewpoint_slug": null,
@@ -729,7 +729,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/stress-workspace.png",
-    "sha256": "762da5b92b90829b6de5dd6a8b66ce21bfbe038a8d067d9568928f034da5f2ce"
+    "sha256": "0da1493377f33d2f8909dcf51b503e7fbd7fdd6c693d3d4e6a48577bc58cf00d"
   },
   {
     "test_name": "re-shoot treemap",
@@ -744,7 +744,7 @@
     },
     "capture_tool_version": "Playwright 1.65.0",
     "output_path": "docs/media/treemap.png",
-    "sha256": "5c82190667483d1e79eaf7e2bd358a3c442a2d5549e5eac7beb4f86b0bfd3155"
+    "sha256": "cf5b45bd850dca86470a96cb6b79c710536e7177d03968db54b3cb846414126d"
   },
   {
     "test_name": "architecture-aligned change value stream",
