@@ -27,8 +27,9 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from enum import IntEnum
 from types import MappingProxyType
-from typing import Literal, Protocol, TypeAlias, runtime_checkable
+from typing import Literal, NamedTuple, Protocol, TypeAlias, runtime_checkable
 
 # ── The searchable-kind vocabulary, in one place ─────────────────────────────
 # Two spellings of the same list, and they have to agree: `RecordType` is the discriminator on an
@@ -113,6 +114,36 @@ class SearchCandidate:
 
     record_type: RecordType
     artifact_id: str
+
+
+class TitleAdmission(IntEnum):
+    """How strongly a keyword row's title matches what was typed, as the index can tell it.
+
+    The order rows are admitted to a kind's window in, strongest first. Coarser than the ranking's
+    tiers (`application/artifacts/title_match.py`), which are decided again over the admitted rows:
+    the index can say whether a title *begins* with the typed words, or merely has a word beginning
+    with each, and those two are what decide whether a title survives the cut at all.
+    """
+
+    NONE = 0
+    EVERY_WORD = 1
+    BEGINNING = 2
+
+
+class KeywordRow(NamedTuple):
+    """One record the keyword index matched, and how its title matched.
+
+    `title` travels with the row because the per-kind window is cut more than once — by the index
+    answering the query, and again where two repositories' answers are merged — and every cut must
+    keep a title the reader is typing ahead of records that merely mention the words. Re-cutting on
+    `score` alone dropped exactly those rows: bm25 favours a body that repeats a common word over a
+    title that contains it once.
+    """
+
+    artifact_id: str
+    record_type: str
+    score: float
+    title: TitleAdmission
 
 
 @runtime_checkable

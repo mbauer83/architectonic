@@ -3,7 +3,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, TypeVar
 
-from src.domain.search_records import RECORD_TYPE_ORDER
+from src.domain.search_records import RECORD_TYPE_ORDER, KeywordRow
 
 _T = TypeVar("_T")
 _S = TypeVar("_S")
@@ -82,14 +82,24 @@ def merge_counter_dicts(left: dict[str, object], right: dict[str, object]) -> di
 
 
 def merge_search_rows(
-    left: list[tuple[str, str, float]],
-    right: list[tuple[str, str, float]],
+    left: list[KeywordRow],
+    right: list[KeywordRow],
     *,
     limit: int,
-) -> list[tuple[str, str, float]]:
+) -> list[KeywordRow]:
+    """Both repositories' keyword rows, each kind cut to `limit` the way each index cut its own.
+
+    The strongest title match first, then by score — the order `search_fts` admits rows in. Cutting on the score
+    alone undid that admission whenever the two repositories together held more matches of a kind than
+    the window: a title being typed in one lost its slot to a body repeating the word in the other.
+    """
     per_kind_limit = max(limit, 1)
-    out: list[tuple[str, str, float]] = []
+    out: list[KeywordRow] = []
     for record_type in _RECORD_TYPE_ORDER:
-        rows = [row for row in (*left, *right) if row[1] == record_type]
-        out.extend(sorted(rows, key=lambda row: (-row[2], row[0]))[:per_kind_limit])
-    return sorted(out, key=lambda row: (-row[2], row[0]))
+        rows = [row for row in (*left, *right) if row.record_type == record_type]
+        out.extend(sorted(rows, key=_admission_order)[:per_kind_limit])
+    return sorted(out, key=lambda row: (-row.score, row.artifact_id))
+
+
+def _admission_order(row: KeywordRow) -> tuple[int, float, str]:
+    return (-row.title, -row.score, row.artifact_id)

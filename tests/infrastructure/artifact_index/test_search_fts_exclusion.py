@@ -29,14 +29,14 @@ class TestSqliteExclusionPushdown:
         index = shared_artifact_index(build_engagement_repo(tmp_path))
         index.refresh()
         rows = index.search_fts(QUERY, limit=10, excluded_entity_types=EXCLUDED_TYPES)
-        ids = [artifact_id for artifact_id, _, _ in rows]
+        ids = [row.artifact_id for row in rows]
         assert REQ_ID in ids
         assert GAR_ID not in ids
 
     def test_empty_exclusion_set_returns_all_rows(self, tmp_path: Path) -> None:
         index = shared_artifact_index(build_engagement_repo(tmp_path))
         index.refresh()
-        ids = [artifact_id for artifact_id, _, _ in index.search_fts(QUERY, limit=10)]
+        ids = [row.artifact_id for row in index.search_fts(QUERY, limit=10)]
         assert REQ_ID in ids
         assert GAR_ID in ids
 
@@ -57,7 +57,7 @@ class TestSqliteExclusionPushdown:
         index = shared_artifact_index(root)
         index.refresh()
         rows = index.search_fts(QUERY, limit=1, excluded_entity_types=EXCLUDED_TYPES)
-        assert [artifact_id for artifact_id, _, _ in rows] == [REQ_ID]
+        assert [row.artifact_id for row in rows] == [REQ_ID]
 
 
 class TestCombinedDelegation:
@@ -72,7 +72,7 @@ class TestCombinedDelegation:
         combined = combined_artifact_index(engagement, enterprise)
         combined.refresh()
         rows = combined.search_fts(QUERY, limit=20, excluded_entity_types=EXCLUDED_TYPES)
-        ids = [artifact_id for artifact_id, _, _ in rows]
+        ids = [row.artifact_id for row in rows]
         assert REQ_ID in ids
         assert ENTERPRISE_REQ_ID in ids
         assert GAR_ID not in ids
@@ -88,6 +88,6 @@ class TestCombinedDelegation:
         )
         combined = combined_artifact_index(engagement, enterprise)
         combined.refresh()
-        ids = [artifact_id for artifact_id, _, _ in combined.search_fts(QUERY, limit=20)]
+        ids = [row.artifact_id for row in combined.search_fts(QUERY, limit=20)]
         assert GAR_ID in ids
         assert enterprise_gar in ids

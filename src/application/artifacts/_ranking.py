@@ -3,36 +3,39 @@
 Its own module because finding and ordering are different questions and `_search.py` had reached the
 source-length policy's hard limit answering both. What is here is the whole of the ordering decision.
 
-**Three sections, and the first two run across artifact kinds.**
+**Two sections, and the first runs across artifact kinds.**
 
-1. **The title is exactly the query.** The reader named the thing, so it leads — whatever kind it is.
-2. **The title carries every query term.** Weaker, still evidence the reader meant *this* artifact.
-3. **Everything else, by score**, with the kinds interleaved: model content, diagrams and documents
+1. **The title matches what was typed**, in the tiers `title_match` declares: the title is the query,
+   begins with it, has a word beginning with each typed word, or contains it. Closest tier first; the
+   reader named the thing, or is part way through naming it, so it leads — whatever kind it is.
+2. **Everything else, by score**, with the kinds interleaved: model content, diagrams and documents
    together, then scratchpads, then — when they become searchable — viewpoints.
 
-**Why the first two cannot be a score.** Per-table bm25 and the token-match supplement produce
-numbers on scales that say nothing about each other, so there is no common axis on which "this title
-is exactly what you typed" could be worth *n* points. Inventing one undoes the reason the round-robin
-in section 3 exists. What crosses the scales is a **boolean**, computed identically for every kind —
-and that is what sections 1 and 2 are.
+**Why the first cannot be a score.** Per-table bm25, the token-match supplement and rank fusion
+produce numbers on scales that say nothing about each other, so there is no common axis on which
+"this title is exactly what you typed" could be worth *n* points. Inventing one undoes the reason the
+round-robin in section 2 exists. What crosses the scales is a **statement about the title**, computed
+identically for every kind — and that is what the tiers are. It is also why the vector branch cannot
+push a title the reader is typing out of the window: fusion re-scores, and a score never outranks a
+tier.
 
-**Why subordination lives in section 3 only.** A scratchpad is preliminary and an entity is a
+**Why subordination lives in section 2 only.** A scratchpad is preliminary and an entity is a
 commitment, so a pad never pushes model content down a list it reached *on similarity*. But an
 artifact whose title someone typed is not a half-formed thought, whatever kind it is: it is the thing
 they asked for by name. Holding it back would make a scratchpad unfindable by its own title, which is
-the defect the sections exist to fix. So sections 1 and 2 are kind-blind and section 3 subordinates.
+the defect the tiers exist to fix. So the tiers are kind-blind and section 2 subordinates.
 
-**A preference reorders kinds wherever kinds are interleaved.** `prefer_record_type` applies to all
-three sections, not only the last. Applying it to section 3 alone silently disabled it for any query
-some title matched — the preference decided the head of a list whose head was already spoken for.
-It still cannot lift a subordinate kind, which is what subordination means.
+**A preference reorders kinds wherever kinds are interleaved.** `prefer_record_type` applies to every
+tier as well as to the scored section. Applying it to the scored section alone silently disabled it
+for any query some title matched — the preference decided the head of a list whose head was already
+spoken for. It still cannot lift a subordinate kind, which is what subordination means.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 
-from src.application.artifacts.scoring import tokenize
+from src.application.artifacts.title_match import TitleMatch, normalised_terms, title_match
 from src.domain.ontology_representation.artifact_types import SearchHit
 from src.domain.search_records import (
     RECORD_TYPE_ORDER,
@@ -45,43 +48,10 @@ from src.domain.search_records import (
 _FLOOR_MIN_WINDOW = 10
 
 
-def normalised_terms(text: str) -> tuple[str, ...]:
-    """A title or a query as comparable terms.
-
-    Through `tokenize`, which the scored path already uses, so the two cannot disagree about what a
-    word is. Casefolding and punctuation fall out of it: `"Sketch, before naming a TYPE!"` and
-    `"sketch before naming a type"` normalise alike.
-    """
-    return tuple(tokenize(text.lower()))
-
-
-def _title_terms(hit: SearchHit) -> tuple[str, ...] | None:
-    """This hit's title as terms, or `None` where the record has no title.
-
-    `record_title` answers `None` rather than `""` for a connection, and that matters here: an empty
-    query would otherwise "equal" an empty title and promote every connection in the corpus.
-    """
+def _title_tier(hit: SearchHit, query_terms: tuple[str, ...]) -> TitleMatch | None:
+    """How closely this hit's title matches the query — see `title_match` for the tiers."""
     title = record_title(hit.record)
-    return normalised_terms(title) if title is not None else None
-
-
-def names_exactly(hit: SearchHit, query_terms: tuple[str, ...]) -> bool:
-    """Whether the reader typed this record's title."""
-    return bool(query_terms) and _title_terms(hit) == query_terms
-
-
-def carries_every_term(hit: SearchHit, query_terms: tuple[str, ...]) -> bool:
-    """Whether every query term appears in this record's title.
-
-    Deliberately **not** using `expand_tokens`. The scored path expands synonyms — `diagram` and
-    `view` stand in for each other — and this predicate's value is that it can be explained in one
-    sentence: *you typed these words and all of them are in the title*. A synonym makes that sentence
-    false. The cost is that a plural or an inflection misses; recorded rather than smoothed over,
-    because prefix matching in one direction is the smallest widening that keeps the sentence, and
-    stemming is not.
-    """
-    terms = _title_terms(hit)
-    return bool(query_terms) and terms is not None and all(term in terms for term in query_terms)
+    return title_match(normalised_terms(title) if title is not None else None, query_terms)
 
 
 def by_kind(hits: Sequence[SearchHit]) -> dict[str, list[SearchHit]]:
@@ -146,7 +116,7 @@ def subordinate_floor(limit: int, available: int) -> int:
 
 
 def rank_balanced(hits: Sequence[SearchHit], limit: int, prefer_rt: str | None) -> list[SearchHit]:
-    """Section 3: fair representation across record kinds, subordinate kinds last.
+    """Section 2: fair representation across record kinds, subordinate kinds last.
 
     Rank within each kind by its own score, then round-robin across kinds — ordering the kinds by
     their strongest hit, the preferred kind first — so every matching kind stays visible. A single
@@ -184,22 +154,17 @@ def rank_balanced(hits: Sequence[SearchHit], limit: int, prefer_rt: str | None) 
 
 
 def rank_hits(hits: Sequence[SearchHit], query: str, limit: int, prefer_rt: str | None) -> list[SearchHit]:
-    """The whole ordering: named exactly, then carrying every term, then by score."""
+    """The whole ordering: the title tiers closest first, then everything else by score."""
     query_terms = normalised_terms(query)
-    named: list[SearchHit] = []
-    carrying: list[SearchHit] = []
+    tiers: dict[TitleMatch, list[SearchHit]] = {tier: [] for tier in TitleMatch}
     rest: list[SearchHit] = []
     for hit in hits:
-        if names_exactly(hit, query_terms):
-            named.append(hit)
-        elif carries_every_term(hit, query_terms):
-            carrying.append(hit)
-        else:
-            rest.append(hit)
+        tier = _title_tier(hit, query_terms)
+        (rest if tier is None else tiers[tier]).append(hit)
     order = preferred_first(RECORD_TYPE_ORDER, prefer_rt)
     ranked: list[SearchHit] = []
-    for section in (named, carrying):
+    for tier in TitleMatch:
         if len(ranked) >= limit:
             return ranked[:limit]
-        ranked.extend(round_robin(by_kind(section), order, limit - len(ranked)))
+        ranked.extend(round_robin(by_kind(tiers[tier]), order, limit - len(ranked)))
     return (ranked + rank_balanced(rest, max(limit - len(ranked), 0), prefer_rt))[:limit]

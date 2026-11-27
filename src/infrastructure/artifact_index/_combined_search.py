@@ -13,6 +13,7 @@ from src.domain.ontology_representation.artifact_types import (
     ScratchpadNoteRecord,
     ScratchpadRecord,
 )
+from src.domain.search_records import KeywordRow
 
 from ._combined_support import dispatch_both, first_not_none, merge_search_rows, merge_sorted
 
@@ -139,8 +140,8 @@ class CombinedSearchMixin:
         kinds: frozenset[str] = ALL_SEARCHABLE_KINDS,
         excluded_entity_types: frozenset[str] = frozenset(),
         visible_diagram_entity_types: frozenset[str] | None = None,
-    ) -> list[tuple[str, str, float]]:
-        def call(store: ReadableArtifactStore) -> list[tuple[str, str, float]]:
+    ) -> list[KeywordRow]:
+        def call(store: ReadableArtifactStore) -> list[KeywordRow]:
             return store.search_fts(
                 query,
                 limit=limit,

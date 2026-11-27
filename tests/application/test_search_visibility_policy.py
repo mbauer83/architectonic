@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from src.application.artifacts.repository import ArtifactRepository
+from src.domain.search_records import KeywordRow, TitleAdmission
 from src.infrastructure.artifact_index import combined_artifact_index, shared_artifact_index
 from tests.support.search_visibility_fixtures import (
     CAP_ID,
@@ -105,7 +106,8 @@ class TestFallbackBranch:
         root = build_engagement_repo(tmp_path)
         index = shared_artifact_index(root)
         index.refresh()
-        monkeypatch.setattr(index, "search_fts", lambda *args, **kwargs: [(GAR_ID, "entity", 5.0)])
+        hidden = KeywordRow(GAR_ID, "entity", 5.0, TitleAdmission.NONE)
+        monkeypatch.setattr(index, "search_fts", lambda *args, **kwargs: [hidden])
         repo = ArtifactRepository(index, excluded_entity_types=EXCLUDED_TYPES)
         ids = _hit_ids(repo.search_artifacts(QUERY, limit=10))
         assert GAR_ID not in ids

@@ -5,10 +5,8 @@ import sqlite3
 from collections.abc import Mapping
 from typing import Any, cast
 
-from src.application.artifacts.scoring import tokenize
 from src.domain.ontology_representation.specialization_values import applied_specialization_slugs
 
-from ._fts_weights import DIAGRAM_WEIGHTS, ENTITY_WEIGHTS, NOTE_WEIGHTS, SCRATCHPAD_WEIGHTS
 from .types import (
     CONNECTION_DIRECTIONS,
     ConnectionDirection,
@@ -16,92 +14,6 @@ from .types import (
     EntityContextCounts,
     EntityContextReadModel,
 )
-
-
-def _entity_visibility_filter(
-    excluded_entity_types: frozenset[str], visible_diagram_entity_types: frozenset[str] | None
-) -> tuple[str, tuple[str, ...]]:
-    """Prepared visibility filter, applied before the per-kind LIMIT.
-
-    Both halves of the eligibility policy, rendered as SQL from the sets the application hands over:
-    an excluded *type* never matches, and a *diagram-owned* record matches only if its type opted in.
-    A record with no `host_diagram_id` is a model entity and passes regardless.
-
-    It runs here, inside the subquery, rather than over the returned rows, because a row filtered
-    afterwards has already spent a slot: the same query answered with sixteen rows of twenty because
-    four invisible records were ranked first and then removed. `host_diagram_id` is carried UNINDEXED
-    on the FTS table for exactly this.
-    """
-    clauses: list[str] = []
-    params: list[str] = []
-    if excluded_entity_types:
-        clauses.append(f" AND artifact_type NOT IN ({','.join('?' * len(excluded_entity_types))})")
-        params.extend(sorted(excluded_entity_types))
-    # `None` and an empty set are different instructions. `None` is a caller not applying the
-    # ownership policy — a direct index query — and adds no clause. An empty set is the policy applied
-    # with nothing opted in, and admits only records with no host diagram.
-    if visible_diagram_entity_types is not None:
-        opted_in = ",".join("?" * len(visible_diagram_entity_types))
-        clauses.append(
-            f" AND (host_diagram_id = '' OR artifact_type IN ({opted_in}))"
-            if opted_in
-            else " AND host_diagram_id = ''"
-        )
-        params.extend(sorted(visible_diagram_entity_types))
-    return "".join(clauses), tuple(params)
-
-
-def search_fts(
-    conn: sqlite3.Connection,
-    query: str,
-    *,
-    limit: int,
-    kinds: frozenset[str],
-    excluded_entity_types: frozenset[str] = frozenset(),
-    visible_diagram_entity_types: frozenset[str] | None = None,
-    fts_enabled: bool,
-) -> list[tuple[str, str, float]]:
-    tokens = tokenize(query.lower())
-    if not tokens or not fts_enabled:
-        return []
-    match_query = " OR ".join(f'"{token}"' for token in tokens)
-    per_kind_limit = max(limit, 1)
-    entity_filter_sql, entity_filter_params = _entity_visibility_filter(
-        excluded_entity_types, visible_diagram_entity_types
-    )
-    # Per-kind subqueries each get their own ORDER BY + LIMIT so that a dominant
-    # kind (e.g. hundreds of entity hits) cannot crowd out minority kinds.
-    kind_rows: list[tuple[str, str, str, str, str, tuple[str, ...]]] = [
-        ("entities", "entity", "entities_fts", f"-bm25(entities_fts, {ENTITY_WEIGHTS})",
-         entity_filter_sql, entity_filter_params),
-        ("connections", "connection", "connections_fts", "-bm25(connections_fts)", "", ()),
-        ("diagrams", "diagram", "diagrams_fts", f"-bm25(diagrams_fts, {DIAGRAM_WEIGHTS})", "", ()),
-        ("documents", "document", "documents_fts", "-bm25(documents_fts)", "", ()),
-        ("scratchpads", "scratchpad", "scratchpads_fts", f"-bm25(scratchpads_fts, {SCRATCHPAD_WEIGHTS})", "", ()),
-        ("scratchpad-notes", "scratchpad-note", "scratchpad_notes_fts",
-         f"-bm25(scratchpad_notes_fts, {NOTE_WEIGHTS})", "", ()),
-    ]
-    subqueries: list[str] = []
-    params: list[str] = []
-    for kind, record_type, table, score_expr, filter_sql, filter_params in kind_rows:
-        if kind not in kinds:
-            continue
-        subqueries.append(
-            f"SELECT artifact_id, '{record_type}' AS record_type, {score_expr} AS score "
-            f"FROM {table} WHERE {table} MATCH ?{filter_sql} "
-            f"ORDER BY score DESC LIMIT {per_kind_limit}"
-        )
-        params.append(match_query)
-        params.extend(filter_params)
-    if not subqueries:
-        return []
-    sql = (
-        "SELECT artifact_id, record_type, score FROM ("
-        + " UNION ALL ".join(f"SELECT * FROM ({sq})" for sq in subqueries)
-        + ") ORDER BY score DESC, artifact_id ASC"
-    )
-    rows = conn.execute(sql, params).fetchall()
-    return [(str(r["artifact_id"]), str(r["record_type"]), float(r["score"])) for r in rows]
 
 
 def all_connection_stats(conn: sqlite3.Connection) -> dict[str, tuple[int, int, int]]:

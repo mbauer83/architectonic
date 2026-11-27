@@ -18,6 +18,7 @@ from src.domain.ontology_representation.artifact_types import (
     ScratchpadRecord,
 )
 from src.domain.repository.repo_scope import MountScope
+from src.domain.search_records import KeywordRow
 
 
 @dataclass(frozen=True)
@@ -152,7 +153,7 @@ class ArtifactSearch(Protocol):
         kinds: frozenset[str] = ALL_SEARCHABLE_KINDS,
         excluded_entity_types: frozenset[str] = frozenset(),
         visible_diagram_entity_types: frozenset[str] | None = None,
-    ) -> list[tuple[str, str, float]]: ...
+    ) -> list[KeywordRow]: ...
 
     def find_entity_by_workspace_id(
         self,

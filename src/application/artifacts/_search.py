@@ -158,7 +158,7 @@ def search(
     hits: list[SearchHit] = []
     fts_kinds_with_hits: set[str] = set()
 
-    for artifact_id, record_type, score in fts_hits:
+    for artifact_id, record_type, score, _title in fts_hits:
         artifact: (
             EntityRecord
             | ConnectionRecord

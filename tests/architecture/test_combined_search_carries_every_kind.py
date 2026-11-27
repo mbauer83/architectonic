@@ -18,6 +18,7 @@ the record types is what drifted, and deriving it means a sixth kind cannot be s
 from __future__ import annotations
 
 from src.domain.ontology_representation.artifact_types import KIND_TO_RECORD_TYPE
+from src.domain.search_records import KeywordRow, TitleAdmission
 from src.infrastructure.artifact_index._combined_support import _RECORD_TYPE_ORDER, merge_search_rows
 
 
@@ -33,8 +34,8 @@ def test_it_names_each_type_once() -> None:
 
 
 class TestNoKindIsDropped:
-    def _rows(self, record_type: str) -> list[tuple[str, str, float]]:
-        return [(f"{record_type}@1", record_type, 5.0), (f"{record_type}@2", record_type, 4.0)]
+    def _rows(self, record_type: str) -> list[KeywordRow]:
+        return [_row(f"{record_type}@1", record_type, 5.0), _row(f"{record_type}@2", record_type, 4.0)]
 
     def test_a_row_of_every_kind_survives_the_merge(self) -> None:
         left = [row for rt in KIND_TO_RECORD_TYPE.values() for row in self._rows(rt)[:1]]
@@ -42,19 +43,23 @@ class TestNoKindIsDropped:
 
         merged = merge_search_rows(left, right, limit=50)
 
-        assert {row[1] for row in merged} == set(KIND_TO_RECORD_TYPE.values())
+        assert {row.record_type for row in merged} == set(KIND_TO_RECORD_TYPE.values())
 
     def test_a_scratchpad_note_from_one_root_survives(self) -> None:
         """The case that was lost, stated on its own so a regression names itself."""
-        note = ("SCR@1.pad#note/n1", "scratchpad-note", 3.0)
+        note = _row("SCR@1.pad#note/n1", "scratchpad-note", 3.0)
 
-        merged = merge_search_rows([("APP@1", "entity", 9.0)], [note], limit=10)
+        merged = merge_search_rows([_row("APP@1", "entity", 9.0)], [note], limit=10)
 
         assert note in merged
 
     def test_an_unknown_record_type_is_still_dropped(self) -> None:
         """The tuple is a filter as well as an order, and that is deliberate: a row whose type the
         vocabulary does not know has no reader downstream."""
-        merged = merge_search_rows([("X@1", "not-a-record-type", 9.0)], [], limit=10)
+        merged = merge_search_rows([_row("X@1", "not-a-record-type", 9.0)], [], limit=10)
 
         assert merged == []
+
+
+def _row(artifact_id: str, record_type: str, score: float) -> KeywordRow:
+    return KeywordRow(artifact_id, record_type, score, TitleAdmission.NONE)

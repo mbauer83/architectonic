@@ -24,7 +24,7 @@ import pytest
 
 _INDEX = Path("src/infrastructure/artifact_index")
 _SCHEMA = _INDEX / "_sqlite_schema.py"
-_QUERIES = _INDEX / "_sqlite_queries.py"
+_QUERIES = _INDEX / "_sqlite_search.py"
 _WEIGHTS = _INDEX / "_fts_weights.py"
 
 

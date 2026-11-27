@@ -37,9 +37,11 @@ from src.domain.ontology_representation.artifact_types import (
     summary_from_entity,
 )
 from src.domain.repository.artifact_location import artifact_kind
+from src.domain.search_records import KeywordRow
 from src.infrastructure.app_bootstrap import process_runtime_catalogs
 
 from . import _sqlite_queries as _q
+from . import _sqlite_search
 from ._icon_queries import _IconQueries
 from ._identity_resolver import _IdentityResolver
 from ._mem_store import _MemStore
@@ -492,10 +494,10 @@ class ArtifactIndex(_ReverseReferenceQueries, _ScratchpadNoteQueries, _IconQueri
         kinds: frozenset[str] = ALL_SEARCHABLE_KINDS,
         excluded_entity_types: frozenset[str] = frozenset(),
         visible_diagram_entity_types: frozenset[str] | None = None,
-    ) -> list[tuple[str, str, float]]:
+    ) -> list[KeywordRow]:
         self._ensure_loaded()
         with self._lock.reading(), self._db.reader() as conn:
-            return _q.search_fts(
+            return _sqlite_search.search_fts(
                 conn, query, limit=limit,
                 kinds=kinds,
                 excluded_entity_types=excluded_entity_types,
