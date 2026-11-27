@@ -146,6 +146,17 @@ export default tseslint.config(
     },
   },
   {
+    // `navigator.clipboard` exists only over HTTPS or on localhost; an intranet installation served over
+    // plain HTTP has none, and a direct call throws. Every copy goes through `ui/lib/clipboard.ts`.
+    files: ['src/**/*.ts', 'src/**/*.vue'],
+    ignores: ['src/ui/lib/clipboard.ts', 'src/**/*.test.ts'],
+    rules: {
+      'no-restricted-properties': ['error', {
+        object: 'navigator', property: 'clipboard', message: 'Copy through copyText() in ui/lib/clipboard.ts.',
+      }],
+    },
+  },
+  {
     // This config file itself runs in Node (env-gated fast tier below reads process.env).
     files: ['eslint.config.js'],
     languageOptions: {

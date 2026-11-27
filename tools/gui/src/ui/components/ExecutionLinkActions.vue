@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { copyText } from '../lib/clipboard'
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
@@ -33,7 +34,7 @@ const copy = (kind: 'live' | 'verified') => {
   const query = kind === 'live' || props.pins === null
     ? liveQuery()
     : verifiedReferenceQuery(liveQuery(), props.pins)
-  void navigator.clipboard.writeText(urlFor(query)).then(() => {
+  void copyText(urlFor(query)).then(() => {
     copied.value = kind
     setTimeout(() => { copied.value = null }, 1500)
   })

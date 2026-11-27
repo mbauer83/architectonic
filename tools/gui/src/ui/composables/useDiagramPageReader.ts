@@ -1,3 +1,4 @@
+import { copyText } from '../lib/clipboard'
 import { computed, ref, watch, type Ref } from 'vue'
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import type { ModelService } from '../../application/ModelService'
@@ -113,7 +114,7 @@ export function useDiagramPageReader(options: {
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(address.link())
+      await copyText(address.link())
       options.toast('Link to this reading copied: selection, reach and window.')
     } catch {
       options.toast('The link could not be copied; the address bar holds it.', 'error')
