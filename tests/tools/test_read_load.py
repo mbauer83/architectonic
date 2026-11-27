@@ -100,7 +100,7 @@ def test_parallel_read_endpoints_hold_up_under_moderate_concurrency(tmp_path: Pa
     gui_state.init_state(repo, repo_root, None)
 
     # Warm the shared index before starting the timed parallel section.
-    warm_context = entity_router.read_entity_context(entity_ids[0])
+    warm_context = entity_router.read_entity_context(entity_ids[0], catalogs=process_runtime_catalogs())
     warm_list = entity_router.list_entities(
         _MOCK_REQUEST, domain="motivation", limit=50, offset=0,
         catalogs=process_runtime_catalogs(),
@@ -111,7 +111,7 @@ def test_parallel_read_endpoints_hold_up_under_moderate_concurrency(tmp_path: Pa
     def _run_task(task_index: int) -> str:
         entity_id = entity_ids[task_index % len(entity_ids)]
         if task_index % 3 == 0:
-            payload = entity_router.read_entity_context(entity_id)
+            payload = entity_router.read_entity_context(entity_id, catalogs=process_runtime_catalogs())
             return str(payload["entity"]["artifact_id"])
         page = entity_router.list_entities(
             _MOCK_REQUEST,

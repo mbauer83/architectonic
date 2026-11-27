@@ -79,6 +79,7 @@ def _stored(result: WriteResult) -> dict[str, object]:
     return parse_frontmatter(result.path.read_text(encoding="utf-8"))
 
 
+@pytest.mark.verifies("REQ@1795776616.Wl0K4oN")
 def test_a_diagram_is_created_with_who_it_is_for_and_what_it_answers(repo_root: Path) -> None:
     result = _create(
         repo_root, stakeholders=["Warehouse staff", {"ref": STAKEHOLDER}], concerns=[{"ref": GOAL}, "How fast?"],
@@ -106,6 +107,7 @@ def test_a_diagram_written_without_them_stays_valid_and_states_none(repo_root: P
         ({"concerns": [{"ref": COMPONENT}]}, "E187"),
     ],
 )
+@pytest.mark.verifies("REQ@1795776616.Wl0K4oN")
 def test_a_reference_to_a_missing_or_unsuitable_element_is_refused_with_its_code(
     repo_root: Path, stated: dict[str, object], code: str
 ) -> None:

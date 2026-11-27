@@ -877,7 +877,6 @@ ASSURANCE_WRITE_CALLS: tuple[WriteCall, ...] = (
             "value": "moderate",
             "basis_digest": c.fmea_basis_digest,
             "justification": "Recorded by the MCP write walk against the digest the matrix reported.",
-            "author": "mcp-write-walk",
         },
     ),
     # ── security signals: ingested, then the snapshot removed ─────────────────────────────────────

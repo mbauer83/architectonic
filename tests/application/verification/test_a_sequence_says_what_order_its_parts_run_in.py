@@ -80,6 +80,7 @@ def _compose(repo: Path, *parts: str) -> None:
     _outgoing(repo, _PROCESS, [("archimate-composition", part) for part in parts])
 
 
+@pytest.mark.verifies("REQ@1795776616.gmLsdPo")
 def test_a_process_with_two_unordered_parts_yields_one_advice_naming_them(repo: Path) -> None:
     _entity(repo, _PROCESS)
     _compose(repo, _A, _B)

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import type { ViewpointSummary } from '../../domain'
-import { NOT_INTENDED_NOTE, viewpointOptionLabel, viewpointOptions, findViewpointBySlug } from './ViewpointSelect.helpers'
+import {
+  NOT_INTENDED_NOTE, viewpointOptionLabel, viewpointOptions, findViewpointBySlug,
+} from './ViewpointSelect.helpers'
 
 const props = defineProps<{
   modelValue: string | null

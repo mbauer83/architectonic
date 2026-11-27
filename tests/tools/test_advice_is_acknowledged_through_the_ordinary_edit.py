@@ -55,6 +55,7 @@ def _stored(path: Path) -> tuple[AcceptedAdvice, ...]:
     return accepted_advice_from_frontmatter(parse_frontmatter(path.read_text(encoding="utf-8")).get("accepted-advice"))
 
 
+@pytest.mark.verifies("REQ@1795776616.gmLsdPo")
 def test_rest_stores_an_acknowledgement_in_the_element(client, repo: Path) -> None:
     artifact_id, path = _process(repo)
 

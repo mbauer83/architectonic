@@ -22,7 +22,10 @@ export const acknowledging = (
   accepted: readonly AcceptedAdviceReading[],
   code: string,
   reason: string,
-): AcceptedAdviceEntry[] => [...stored(accepted).filter((entry) => entry.code !== code), { code, reason: reason.trim() }]
+): AcceptedAdviceEntry[] => [
+  ...stored(accepted).filter((entry) => entry.code !== code),
+  { code, reason: reason.trim() },
+]
 
 /** The stored acknowledgements without the one for *code*: the advice speaks again. */
 export const withdrawing = (accepted: readonly AcceptedAdviceReading[], code: string): AcceptedAdviceEntry[] =>

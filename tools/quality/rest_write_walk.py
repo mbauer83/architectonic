@@ -561,7 +561,6 @@ STEPS: tuple[Step, ...] = (
             "canonical_vulnerability_id": c.assurance.vulnerability,
             "vex_status": "under_investigation",
             "justification": "Recorded by the REST write walk.",
-            "author": "rest-write-walk",
         },
         expect=(200, 201), must_have_written=False,
     ),

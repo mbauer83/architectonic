@@ -54,7 +54,10 @@ const subjectOf = (issue: VerificationIssue): string | null => {
 
 <style scoped>
 .advice-box { border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; }
-.section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); margin-bottom: 8px; }
+.section-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--text-2); margin-bottom: 8px;
+}
 .advice-note { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
 .advice-items { list-style: none; display: flex; flex-direction: column; gap: 6px; padding: 0; }
 .advice-item { display: flex; gap: 8px; align-items: baseline; font-size: 12px; }
