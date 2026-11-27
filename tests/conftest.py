@@ -21,6 +21,9 @@ import pytest
 
 from tests.support.shard_durations import duration_coverage
 
+#: Fixtures shared across directories, kept out of this file so it stays a list of process guards.
+pytest_plugins = ["tests.support.rendered_model_fixtures"]
+
 #: How long a whole run may take before it is treated as stuck, in seconds.
 #:
 #: The suite is ~4:30 on twenty workers, so the controller's budget is a four-fold margin: a run past

@@ -19,7 +19,7 @@ from src.infrastructure.mcp.artifact_mcp.layout_tools import (
 )
 from src.infrastructure.rendering.layout.diagram_geometry import stored_geometry
 from src.infrastructure.write.artifact_write.parse_existing import parse_diagram_file
-from tests.support.rendered_pictures import RenderedModel, build_rendered_model, plantuml_available
+from tests.support.rendered_pictures import RenderedModel, plantuml_available
 
 INTENTS = TypeAdapter(list[ArrangeIntent])
 
@@ -27,8 +27,9 @@ pytestmark = pytest.mark.skipif(not plantuml_available(), reason="plantuml.jar n
 
 
 @pytest.fixture
-def model(tmp_path: Path) -> RenderedModel:
-    return build_rendered_model(tmp_path)
+def model(rendered_model: RenderedModel) -> RenderedModel:
+    """A copy of the model built once per worker: each test here writes to its own."""
+    return rendered_model
 
 
 def _keys(model: RenderedModel, path: Path) -> list[str]:

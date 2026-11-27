@@ -13,6 +13,7 @@ node with an icon of its own, and relations between them.
 from __future__ import annotations
 
 import base64
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -155,9 +156,28 @@ def _turned_left_to_right(body: str) -> str:
     return "\n".join(turned) + "\n"
 
 
+def _repository_under(root: Path) -> Path:
+    return root / "engagements" / "ENG-PIC" / "architecture-repository"
+
+
+def copy_rendered_model(original: RenderedModel, root: Path) -> RenderedModel:
+    """*original* copied under *root*, for a test that writes: the same files, ids and pictures.
+
+    Building the model renders every scene through PlantUML, so a test that needs a model of its own
+    copies one built once (`rendered_model` in `tests/conftest.py`) rather than drawing it again. The
+    index a backend kept beside the original (`.arch*`) is left behind, so the copy is read afresh.
+    """
+    repo = _repository_under(root)
+    shutil.copytree(original.repo, repo, ignore=shutil.ignore_patterns(".arch*"))
+    return RenderedModel(repo=repo, ids=dict(original.ids), scenes={
+        name: RenderedScene(path=repo / scene.path.relative_to(original.repo), body=scene.body, svg=scene.svg)
+        for name, scene in original.scenes.items()
+    })
+
+
 def build_rendered_model(root: Path) -> RenderedModel:
     """Write the model under *root* and draw every scene of it."""
-    repo = root / "engagements" / "ENG-PIC" / "architecture-repository"
+    repo = _repository_under(root)
     for directory in ("model", "docs", "diagram-catalog/diagrams"):
         (repo / directory).mkdir(parents=True)
     generate_static_includes(repo)

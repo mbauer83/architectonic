@@ -13,7 +13,6 @@ from __future__ import annotations
 import difflib
 import json
 import re
-import shutil
 from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import Any
@@ -37,7 +36,7 @@ from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
 from src.infrastructure.stated_operations import arrangement_operations, recorded_operations, replacement_operations
 from tests.support.api_app import build_api_app
-from tests.support.rendered_pictures import RenderedModel, build_rendered_model, plantuml_available
+from tests.support.rendered_pictures import RenderedModel, copy_rendered_model, plantuml_available
 from tests.support.rest_state import reset_state_for_test
 
 pytestmark = pytest.mark.skipif(not plantuml_available(), reason="plantuml.jar not found")
@@ -156,23 +155,13 @@ def _assert_same(over_rest: Path, over_mcp: Path) -> None:
     assert not differences, "\n".join(differences)
 
 
-@pytest.fixture(scope="module")
-def original(tmp_path_factory: pytest.TempPathFactory) -> RenderedModel:
-    return build_rendered_model(tmp_path_factory.mktemp("canvas-commands"))
-
-
-def _copied(original: RenderedModel, into: Path) -> RenderedModel:
-    shutil.copytree(original.repo, into, ignore=shutil.ignore_patterns(".arch*"))
-    return RenderedModel(repo=into, ids=original.ids, scenes={
-        name: type(scene)(path=into / scene.path.relative_to(original.repo), body=scene.body, svg=scene.svg)
-        for name, scene in original.scenes.items()
-    })
-
-
 @pytest.fixture
-def sides(original: RenderedModel, tmp_path: Path) -> Iterator[tuple[RenderedModel, RenderedModel, TestClient]]:
+def sides(
+    rendered_model_original: RenderedModel, tmp_path: Path,
+) -> Iterator[tuple[RenderedModel, RenderedModel, TestClient]]:
     """Two copies of the model: one the REST client writes, the other MCP."""
-    over_rest, over_mcp = _copied(original, tmp_path / "rest"), _copied(original, tmp_path / "mcp")
+    over_rest = copy_rendered_model(rendered_model_original, tmp_path / "rest")
+    over_mcp = copy_rendered_model(rendered_model_original, tmp_path / "mcp")
     s.init_state(ArtifactRepository(shared_artifact_index([over_rest.repo])), over_rest.repo, None)
     try:
         with TestClient(build_api_app(diagrams_router, candidates.router)) as client:

@@ -25,7 +25,7 @@ from src.infrastructure.mcp.artifact_mcp.layout_tools import artifact_replace_di
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
 from tests.support.api_app import build_api_app
-from tests.support.rendered_pictures import RenderedModel, build_rendered_model, plantuml_available
+from tests.support.rendered_pictures import RenderedModel, plantuml_available
 from tests.support.rest_state import reset_state_for_test
 
 pytestmark = pytest.mark.skipif(not plantuml_available(), reason="plantuml.jar not found")
@@ -36,8 +36,9 @@ RAW_ALIAS = re.compile(r"[A-Z]{2,4}_\w+__\d|\b[A-Z]{2,4}_[A-Za-z0-9_-]{6,}\b")
 
 
 @pytest.fixture
-def model(tmp_path: Path) -> RenderedModel:
-    return build_rendered_model(tmp_path)
+def model(rendered_model: RenderedModel) -> RenderedModel:
+    """A copy of the model built once per worker: each test here writes to its own."""
+    return rendered_model
 
 
 @pytest.fixture
