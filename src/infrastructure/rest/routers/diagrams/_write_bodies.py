@@ -8,13 +8,14 @@ from pydantic import BaseModel
 
 from src.infrastructure.artifact_home_wire import FiledOnCreate
 from src.infrastructure.diagram_composition import DiagramComposition, _Body
+from src.infrastructure.purpose_lines_wire import StatesPurposeLines
 
 
 class DiagramPreviewBody(DiagramComposition):
     """A composition, rendered but not written. It adds nothing, which is the point."""
 
 
-class CreateDiagramGuiBody(DiagramComposition, FiledOnCreate):
+class CreateDiagramGuiBody(DiagramComposition, FiledOnCreate, StatesPurposeLines):
     #: The whole layout block to store with the new diagram. Read and refused by the layout's own
     #: reader, so a malformed block is answered with its sentence rather than a schema error.
     layout: dict[str, Any] | None = None

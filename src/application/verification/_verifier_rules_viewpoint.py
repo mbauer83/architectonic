@@ -1,5 +1,6 @@
 """Diagram/matrix viewpoint-application verifier rule: unknown slug (E180, always an
-error), stale pinned version (W180), out-of-scope placed entity/connection (W181), and
+error), a viewpoint applied to a diagram type it does not declare itself for (W183),
+stale pinned version (W180), out-of-scope placed entity/connection (W181), and
 criteria-mismatch placed entity/connection (W182) — distinct from metamodel-violation codes
 elsewhere in this package. W180/W181/W182 are suppressed entirely when the effective
 enforcement setting is ``off``; both ``warn`` and ``ghost`` still emit them, since ghosting is
@@ -50,6 +51,10 @@ def check_viewpoint_for_diagram_type(
     diag_type = "matrix" if target_kind == "matrix" else stated_diagram_type(fm)
     module = runtime_catalogs.diagram_types.find_diagram_type(diag_type)
     if module is not None and registry is not None:
+        if target_kind == "diagram":
+            check_viewpoint_suits_diagram_type(
+                fm, diag_type, catalog=runtime_catalogs.viewpoints, result=result, loc=loc
+            )
         check_viewpoint_application(
             fm,
             target_kind=target_kind,
@@ -66,6 +71,31 @@ def check_viewpoint_for_diagram_type(
             loc=loc,
         )
     return module
+
+
+def check_viewpoint_suits_diagram_type(
+    fm: dict, diagram_type: str, *, catalog: ViewpointCatalog, result: VerificationResult, loc: str
+) -> None:
+    """W183: the applied viewpoint declares the diagram types it is for, and this diagram's is not one.
+
+    A warning and never a refusal: applying a viewpoint elsewhere is allowed, and the narrowing it brings
+    still works — what is reported is that its author did not intend it here. Not subject to the
+    enforcement setting, which governs authoring scope; this is about the pairing itself. An unknown
+    slug is E180's to report, and a viewpoint declaring no types is unrestricted.
+    """
+    application = parse_viewpoint_application(fm.get("viewpoint"), target_kind="diagram", target_id="")
+    definition = catalog.get(application.viewpoint_slug) if application is not None else None
+    if definition is None or definition.is_intended_for(diagram_type):
+        return
+    result.issues.append(
+        Issue(
+            Severity.WARNING,
+            "W183",
+            f"Viewpoint '{definition.slug}' is not intended for diagram type '{diagram_type}'; it declares "
+            f"{', '.join(definition.representation_types)}.",
+            loc,
+        )
+    )
 
 
 def check_viewpoint_application(

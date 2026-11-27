@@ -19,6 +19,7 @@ from src.infrastructure.diagram_composition import (
 )
 from src.infrastructure.diagram_creation import DiagramFiling, create_composed_diagram
 from src.infrastructure.picture_reading.derived_entities import derived_entity_rows
+from src.infrastructure.purpose_lines_wire import entries_as_stated
 from src.infrastructure.rest.contracts.diagrams import DiagramPreviewResponse
 from src.infrastructure.rest.dependencies import runtime_catalogs_dependency
 from src.infrastructure.rest.routers import state as s
@@ -83,6 +84,7 @@ def create_diagram_gui(body: CreateDiagramGuiBody, response: Response,
     filing = DiagramFiling(
         group=body.home(), keywords=body.keywords, layout=body.layout, version=body.version, status=body.status,
         tlp=body.tlp, viewpoint=body.viewpoint,
+        stakeholders=entries_as_stated(body.stakeholders), concerns=entries_as_stated(body.concerns),
     )
     try:
         result = s.authorized_write(

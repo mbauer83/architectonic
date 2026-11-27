@@ -11,6 +11,7 @@ from src.application.repo_path_helpers import diagram_source_root, resolve_diagr
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY
+from src.domain.purpose_lines import read_purpose_lines
 
 from ._diagram_edge_labels import merged_edge_labels
 from ._diagram_group_move import _verification_to_dict, commit_diagram_write
@@ -65,6 +66,8 @@ def edit_diagram(
     status: str | None = None,
     tlp: str | None = None,
     viewpoint: dict[str, object] | None = VIEWPOINT_UNSET,  # type: ignore[assignment]
+    stakeholders: list[object] | None = None,
+    concerns: list[object] | None = None,
     edge_labels: dict[str, str | None] | None = EDGE_LABELS_UNSET,  # type: ignore[assignment]
     group: str | None = None,
     rebuild_layout: bool = False,
@@ -92,6 +95,10 @@ def edit_diagram(
     to clear it (e.g. a GUI viewpoint selector set back to "none"). Validated and normalized
     through the same parse/serialize grammar the verifier reads back.
 
+    ``stakeholders`` / ``concerns``: who the diagram is for and what it answers, each a list of prose
+    entries and ``{ref: <id>}`` entries — omit to keep the stored list, pass ``[]`` to clear it (the
+    diagram then shows its viewpoint's, if it applies one).
+
     Matrix diagrams (``diagram-type: matrix``) are markdown tables, not PUML:
     only name/keywords/version/status/tlp/group are supported (metadata + group
     move, table content preserved); ``puml``/``diagram_entities``/``viewpoint``/etc. raise
@@ -109,6 +116,7 @@ def edit_diagram(
     if (recorded := diagram_change(
         into=Interception(verifier.registry, verifier, clear_repo_caches, repo, repo_root, artifact_id, dry_run),
         puml=puml, name=name, keywords=keywords, diagram_entities=diagram_entities, viewpoint=viewpoint,
+        stakeholders=stakeholders, concerns=concerns,
         diagram_connections=diagram_connections, entity_ids_used=entity_ids_used, bindings=bindings,
         connection_ids_used=connection_ids_used, view_derivations=view_derivations, tlp=tlp, group=group,
         version=version, status=status, edge_labels=edge_labels, authored_groupings=authored_groupings,
@@ -141,12 +149,15 @@ def edit_diagram(
     )
     eff_diagram_connections = diagram_connections if diagram_connections is not None else fm.get("connections")
     diagram_type = diagram_type_of(fm)
+    eff_purpose_lines = read_purpose_lines(fm).restated(stakeholders=stakeholders, concerns=concerns)
 
     if diagram_type == "matrix":
         from ._diagram_matrix_edit import edit_matrix_diagram  # noqa: PLC0415
 
         if layout is not None:
             raise ValueError("A matrix diagram is a table and takes no layout.")
+        if stakeholders is not None or concerns is not None:
+            raise ValueError("A matrix diagram takes no stakeholders or concerns; state them on a diagram.")
 
         return edit_matrix_diagram(
             repo_root=repo_root, verifier=verifier, clear_repo_caches=clear_repo_caches,
@@ -379,6 +390,7 @@ def edit_diagram(
         puml_body=puml_body,
         tlp=eff_tlp,
         viewpoint=eff_viewpoint,
+        purpose_lines=eff_purpose_lines,
         diagram_format_version=eff_format_version,
         authored_groupings=eff_authored_groupings or None,
         manual_layout=eff_manual_layout,

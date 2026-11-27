@@ -195,6 +195,8 @@ def artifact_edit_diagram(
     status: str | None = None,
     tlp: str | None = None,
     viewpoint: dict[str, object] | None = None,
+    stakeholders: list[str | dict[str, str]] | None = None,
+    concerns: list[str | dict[str, str]] | None = None,
     edge_labels: dict[str, str | None] | None = None,
     derivation_id: str | None = None,
     diff: dict[str, object] | None = None,
@@ -241,8 +243,8 @@ def artifact_edit_diagram(
                 ("name", name), ("keywords", keywords), ("diagram_entities", diagram_entities),
                 ("diagram_connections", diagram_connections), ("view_derivations", view_derivations),
                 ("bindings", bindings), ("version", version), ("status", status), ("tlp", tlp),
-                ("viewpoint", viewpoint), ("edge_labels", edge_labels),
-                ("authored_groupings", authored_groupings), ("group", group),
+                ("viewpoint", viewpoint), ("stakeholders", stakeholders), ("concerns", concerns),
+                ("edge_labels", edge_labels), ("authored_groupings", authored_groupings), ("group", group),
                 ("manual_layout", manual_layout), ("layout", layout),
             ) if value is not None
         )
@@ -291,7 +293,7 @@ def artifact_edit_diagram(
             ("diagram_entities", diagram_entities), ("diagram_connections", diagram_connections),
             ("view_derivations", view_derivations), ("bindings", bindings),
             ("version", version), ("status", status), ("tlp", tlp), ("group", group),
-            ("viewpoint", viewpoint),
+            ("viewpoint", viewpoint), ("stakeholders", stakeholders), ("concerns", concerns),
             ("entity_ids_used", entity_ids), ("connection_ids_used", connection_ids),
             ("authored_groupings", authored_groupings),
             ("manual_layout", manual_layout), ("layout", layout),

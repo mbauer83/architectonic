@@ -18,6 +18,13 @@ from src.domain.diagrams.authored_groupings import NOT_YET_UPGRADED, stored_befo
 from src.domain.diagrams.diagram_type_field import DIAGRAM_TYPE_KEY
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, layout_as_written, read_layout
 from src.domain.diagrams.layout.layout_checks import pruned_to
+from src.domain.purpose_lines import (
+    CONCERNS_KEY,
+    STAKEHOLDERS_KEY,
+    PurposeLines,
+    purpose_lines_as_written,
+    read_purpose_lines,
+)
 
 
 def _dump_yaml_text(data: object) -> str:
@@ -41,6 +48,7 @@ class CarriedDiagramFields(TypedDict, total=False):
     manual_layout: bool
     tlp: str
     viewpoint: dict[str, object]
+    purpose_lines: PurposeLines
     view_derivations: list[dict[str, object]]
     bindings: list[dict[str, object]]
     edge_labels: dict[str, str]
@@ -74,6 +82,8 @@ def carried_diagram_fields(frontmatter: Mapping[str, object]) -> CarriedDiagramF
         carried["tlp"] = tlp
     if isinstance(viewpoint := frontmatter.get("viewpoint"), dict):
         carried["viewpoint"] = dict(viewpoint)
+    if not (purpose_lines := read_purpose_lines(frontmatter)).is_empty:
+        carried["purpose_lines"] = purpose_lines
     if isinstance(derivations := frontmatter.get("view_derivations"), list):
         carried["view_derivations"] = [dict(d) for d in derivations if isinstance(d, dict)]
     if isinstance(bindings := frontmatter.get("bindings"), list):
@@ -107,6 +117,7 @@ def format_diagram_puml(
     tlp: str | None = None,
     diagram_format_version: int | None = None,
     viewpoint: dict[str, object] | None = None,
+    purpose_lines: PurposeLines | None = None,
     authored_groupings: list[dict[str, object]] | None = None,
     manual_layout: bool = False,
     layout: dict[str, object] | None = None,
@@ -134,6 +145,8 @@ def format_diagram_puml(
         frontmatter["tlp"] = tlp
     if viewpoint is not None:
         frontmatter["viewpoint"] = viewpoint
+    if purpose_lines is not None:
+        frontmatter.update(purpose_lines_as_written(purpose_lines))
     if entity_ids_used:
         frontmatter["entity-ids-used"] = entity_ids_used
     if connection_ids_used:
@@ -174,6 +187,7 @@ def format_diagram_puml(
     ordered_keys = [
         "artifact-id", "artifact-type", "name", "version", "status", "keywords",
         "diagram-type", "diagram-format-version", "manual-layout", "tlp", "viewpoint",
+        STAKEHOLDERS_KEY, CONCERNS_KEY,
         "entity-ids-used", "connection-ids-used", "diagram-entities", "connections",
         "view_derivations", "bindings", "edge-labels", "authored-groupings", LAYOUT_KEY,
         "last-updated",

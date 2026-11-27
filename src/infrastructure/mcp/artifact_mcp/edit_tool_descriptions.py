@@ -23,6 +23,16 @@ LAYOUT_ARGUMENT = (
     "layout; the stored picture is still PlantUML's."
 )
 
+#: Said once for the two tools that take a diagram's purpose line, so create and edit cannot describe it apart.
+PURPOSE_LINES_ARGUMENT = (
+    "stakeholders / concerns: who the diagram is for and what it answers. Each is a list whose entries "
+    "are prose ('Operations team') or a reference {ref: <artifact id>} — a stakeholder element for "
+    "stakeholders, a motivation element (driver, goal, assessment, requirement, …) stating the concern "
+    "for concerns. A reference to a missing element is refused (E186), to an unsuitable type too "
+    "(E187). A diagram applying a viewpoint shows the viewpoint's lists wherever it states none of its "
+    "own. On edit, omit a list to keep it and pass [] to clear it."
+)
+
 EDIT_ENTITY_DESCRIPTION = (
     "Edit an existing entity. Pass only fields to change; omitted fields are preserved. "
     "Supports name, summary, properties, notes, keywords, version, status, "
@@ -99,14 +109,16 @@ EDIT_DIAGRAM_DESCRIPTION = (
     "viewpoint: replace the diagram's ViewpointApplication frontmatter — "
     "{slug, version, enforcement_override?, derivation_params?}; omit to keep the existing "
     "application (if any) unchanged. Call artifact_query_viewpoint(action='list') to discover "
-    "slugs/versions. "
+    "slugs/versions; a viewpoint applied to a diagram type it does not list in representation_types "
+    "is allowed and reported as W183. " + PURPOSE_LINES_ARGUMENT + " "
     "group (str|None — re-home to a different diagram-collection slug; moves the source "
     "file and its rendered PNG/SVG; only applies to the default write path, not mode= "
     "dispatch or puml='auto-sync'). "
     "Re-verifies and re-renders PNG on every write. "
     "Matrix diagrams (diagram-type: matrix) are markdown tables, not PUML: only "
     "name/keywords/version/status/tlp/group are supported here (metadata + group move, "
-    "table content preserved); puml/diagram_entities/diagram_connections/bindings/viewpoint/etc. "
+    "table content preserved); puml/diagram_entities/diagram_connections/bindings/viewpoint/"
+    "stakeholders/concerns/etc. "
     "are rejected — call artifact_create_matrix with artifact_id set to change table content. "
     "artifact_id: full (PREFIX@epoch.random.slug) or short (PREFIX@epoch.random) form."
 )

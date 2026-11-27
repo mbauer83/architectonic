@@ -17,6 +17,7 @@ from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_types import ENTITY_ID_RE, Issue, Severity
 from src.domain.diagrams.bindings import Binding
 from src.domain.icons.resolved_icon import IconSource
+from src.domain.purpose_lines import PurposeLines
 from src.domain.repository.groups import UNCATEGORIZED
 
 from ._artifact_deduplication import extract_friendly_slug, get_repository, validate_diagram_unique
@@ -178,6 +179,8 @@ def create_diagram(
     last_updated: str | None,
     tlp: str | None = None,
     viewpoint: dict[str, object] | None = None,
+    stakeholders: list[object] | None = None,
+    concerns: list[object] | None = None,
     connection_inference: DiagramConnectionInferenceMode = "none",
     auto_include_stereotypes: bool = True,
     dry_run: bool,
@@ -192,6 +195,7 @@ def create_diagram(
 
     warnings: list[str] = []
     last = last_updated or modification_stamp()
+    purpose_lines = PurposeLines().restated(stakeholders=stakeholders, concerns=concerns)
     if diagram_entities is not None:
         from src.application.identifier_allocator import get_default_allocator  # noqa: PLC0415
         from src.infrastructure.write.artifact_write.diagram_entity_identity import (  # noqa: PLC0415
@@ -273,6 +277,7 @@ def create_diagram(
         puml_body=puml_body,
         tlp=tlp,
         viewpoint=viewpoint_fm,
+        purpose_lines=purpose_lines,
         diagram_format_version=2 if diagram_type == "datatype" else None,
     )
 

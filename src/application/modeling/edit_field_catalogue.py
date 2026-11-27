@@ -71,6 +71,7 @@ CONTENT: Mapping[ArtifactKind, frozenset[str]] = {
         "puml", "name", "keywords", "diagram_entities", "diagram_connections", "entity_ids_used",
         "connection_ids_used", "view_derivations", "bindings", "version", "status", "tlp",
         "viewpoint", "edge_labels", "group", "authored_groupings", "manual_layout", "layout",
+        "stakeholders", "concerns",
     }),
 }
 

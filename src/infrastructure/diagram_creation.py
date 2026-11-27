@@ -32,6 +32,8 @@ class DiagramFiling:
     status: str = "draft"
     tlp: str | None = None
     viewpoint: dict[str, Any] | None = field(default=None)
+    stakeholders: list[object] | None = None
+    concerns: list[object] | None = None
 
 
 def create_composed_diagram(
@@ -52,5 +54,5 @@ def create_composed_diagram(
         connection_ids_used=composed.connection_ids_used, authored_groupings=body.authored_groupings,
         layout=filing.layout, version=filing.version, status=filing.status, last_updated=None, tlp=filing.tlp,
         connection_inference="none", bindings=composed.conn_bindings or None, viewpoint=filing.viewpoint,
-        dry_run=dry_run,
+        stakeholders=filing.stakeholders, concerns=filing.concerns, dry_run=dry_run,
     )

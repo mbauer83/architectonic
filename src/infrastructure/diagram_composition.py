@@ -25,6 +25,7 @@ from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, Layout, read_lay
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
 from src.infrastructure.artifact_home_wire import Rehomeable
 from src.infrastructure.diagram_layout_wire import LayoutPatch, RegroupIntent, stated_intents
+from src.infrastructure.purpose_lines_wire import StatesPurposeLines, entries_as_stated
 from src.infrastructure.rendering.diagram_selection import resolve_diagram_selection
 from src.infrastructure.rendering.layout.diagram_picture import placed_on_its_picture
 from src.infrastructure.write.artifact_write.boundary import assert_engagement_write_root
@@ -110,7 +111,7 @@ class DiagramComposition(BaseModel):
         return self._refit
 
 
-class DiagramReplacement(DiagramComposition, _Body, Rehomeable):
+class DiagramReplacement(DiagramComposition, _Body, Rehomeable, StatesPurposeLines):
     """A diagram replaced whole: its composition, its layout, and the model commands saved with it."""
 
     commands: list[CanvasCommand] = Field(
@@ -334,6 +335,7 @@ def replace_diagram(
             connection_ids_used=composed.connection_ids_used, authored_groupings=body.authored_groupings,
             layout=layout, version=body.version, status=body.status, tlp=body.tlp,
             bindings=composed.conn_bindings or None, viewpoint=body.viewpoint, dry_run=dry_run,
+            stakeholders=entries_as_stated(body.stakeholders), concerns=entries_as_stated(body.concerns),
             committed_repo=committed_repository(repo), manual_layout=body.manual_layout,
         )
 

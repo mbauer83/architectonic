@@ -25,6 +25,7 @@ from src.application.verification._verifier_rules_icons import check_icon_assign
 from src.application.verification._verifier_rules_layout import check_groupings_are_identified, check_layout
 from src.application.verification._verifier_rules_puml_completeness import check_puml_relation_rules
 from src.application.verification._verifier_rules_puml_declarations import check_puml_alias_declarations
+from src.application.verification._verifier_rules_purpose_lines import check_purpose_lines
 from src.application.verification._verifier_rules_schema import check_frontmatter_schema
 from src.application.verification._verifier_rules_viewpoint import check_viewpoint_for_diagram_type
 from src.application.verification.artifact_verifier_parsing import (
@@ -120,12 +121,12 @@ def _no_registry_issue(loc: str) -> Issue:
 #: holds it equal to the codes its modules emit.
 RULE_CODES: frozenset[str] = frozenset({
     "E001", "E011", "E012", "E013", "E014", "E021", "E022", "E031", "E042", "E043", "E045", "E101", "E102",
-    "E104", "E180", "E301", "E302", "E303", "E304", "E305", "E306", "E307", "E308", "E309", "E310", "E311",
-    "E312", "E313", "E314", "E315", "E316", "E317", "E318", "E319", "E320", "E335", "E340", "E364", "E365",
-    "E370", "E371", "E372", "E373", "E401", "E402", "E403", "E404", "E405", "E406", "E407", "E408", "E409",
-    "E410", "E411", "E412", "E413", "E414", "W002", "W031", "W041", "W042", "W043", "W044", "W046", "W155",
-    "W156", "W160", "W180", "W181", "W182", "W303", "W304", "W305", "W306", "W307", "W321", "W322", "W361",
-    "W362", "W375", "W376", "W377", "W378", "W379", "W387",
+    "E104", "E180", "E185", "E186", "E187", "E301", "E302", "E303", "E304", "E305", "E306", "E307", "E308",
+    "E309", "E310", "E311", "E312", "E313", "E314", "E315", "E316", "E317", "E318", "E319", "E320", "E335",
+    "E340", "E364", "E365", "E370", "E371", "E372", "E373", "E401", "E402", "E403", "E404", "E405", "E406",
+    "E407", "E408", "E409", "E410", "E411", "E412", "E413", "E414", "W002", "W031", "W041", "W042", "W043",
+    "W044", "W046", "W155", "W156", "W160", "W180", "W181", "W182", "W183", "W303", "W304", "W305", "W306",
+    "W307", "W321", "W322", "W361", "W362", "W375", "W376", "W377", "W378", "W379", "W387"
 })
 
 
@@ -163,6 +164,7 @@ def verify_diagram(
             result=result,
             loc=loc,
         )
+        check_purpose_lines(fm, ctx.registry, ctx.catalogs.ontology.purpose_line_entity_types(), result, loc)
         check_icon_assignments(fm, ctx.registry, ctx.icon_library or ctx.registry, ctx.catalogs, result, loc)
         _check_layout(ctx, ctx.registry, fm, result, loc)
         if repo_root is not None:

@@ -4,7 +4,11 @@ from typing import Literal
 
 from mcp.server.mcpserver import MCPServer  # type: ignore[import-not-found]
 
-from src.infrastructure.mcp.artifact_mcp.edit_tool_descriptions import GROUPING_RULES_AND_IDS, LAYOUT_ARGUMENT
+from src.infrastructure.mcp.artifact_mcp.edit_tool_descriptions import (
+    GROUPING_RULES_AND_IDS,
+    LAYOUT_ARGUMENT,
+    PURPOSE_LINES_ARGUMENT,
+)
 from src.infrastructure.mcp.artifact_mcp.write._common import (
     DiagramConnectionInferenceMode,
     _out,
@@ -89,6 +93,8 @@ def artifact_create_diagram(
     status: str = "draft",
     tlp: str | None = None,
     viewpoint: dict[str, object] | None = None,
+    stakeholders: list[str | dict[str, str]] | None = None,
+    concerns: list[str | dict[str, str]] | None = None,
     group: str | None = None,
     connection_inference: DiagramConnectionInferenceMode = "none",
     auto_include_stereotypes: bool = True,
@@ -172,6 +178,8 @@ def artifact_create_diagram(
         last_updated=None,
         tlp=tlp,
         viewpoint=viewpoint,
+        stakeholders=list(stakeholders) if stakeholders is not None else None,
+        concerns=list(concerns) if concerns is not None else None,
         connection_inference=connection_inference,
         auto_include_stereotypes=auto_include_stereotypes,
         dry_run=dry_run,
@@ -245,7 +253,9 @@ def register(mcp: MCPServer) -> None:
             "withheld. Ignored for non-assurance diagram types.\n\n"
             "viewpoint: apply a ViewpointDefinition to narrow this diagram's authoring scope — "
             "{slug, version, enforcement_override?, derivation_params?}. Call "
-            "artifact_query_viewpoint(action='list') to discover slugs/versions.\n\n"
+            "artifact_query_viewpoint(action='list') to discover slugs/versions. A viewpoint lists the "
+            "diagram types it is intended for (representation_types); applying it to another type is "
+            "allowed and reported as W183.\n\n" + PURPOSE_LINES_ARGUMENT + "\n\n"
             "dry_run=true validates without writing."
         ),
         annotations=LOCAL_WRITE,
