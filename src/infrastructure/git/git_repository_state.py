@@ -21,6 +21,9 @@ from src.infrastructure.git._git_command import (
     ask_origin,
     run_repo_git,
 )
+from src.infrastructure.git._git_command import (
+    UNCOMMITTED_AUTHORED_CONTENT_QUERY as UNCOMMITTED_AUTHORED_CONTENT_QUERY,  # asked by arch-init
+)
 
 #: What an enterprise working branch is opened from and merged back into. Spelled here because two
 #: questions need it — how far behind a branch is, and what a rebase re-applies onto — and a second

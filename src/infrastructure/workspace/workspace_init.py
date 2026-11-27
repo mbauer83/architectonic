@@ -85,19 +85,18 @@ def _current_branch(repo: Path) -> str | None:
 
 
 def _is_dirty(repo: Path) -> bool:
-    """Whether *repo* has changes arch-init did not make itself.
+    """Whether *repo* holds uncommitted content that arch-init did not write itself.
 
     arch-init rewrites the generated include files of both repositories on every run
     (`generate_static_includes`). In a clone of a tier whose includes lag the ontology — an
     enterprise repository maintained upstream — that leaves those files modified, and a check
     that counted them refused the next arch-init: every container restart after the first
-    stopped here. The files are arch-init's own output, regenerated before anything reads them,
-    so they are left out of the question; any other change still counts.
+    stopped here. The git dialect states the question without them
+    (`UNCOMMITTED_AUTHORED_CONTENT_QUERY`), and without the declared runtime state.
     """
-    from src.infrastructure.rendering.generate_static_includes import static_include_paths  # noqa: PLC0415
+    from src.infrastructure.git.git_repository_state import UNCOMMITTED_AUTHORED_CONTENT_QUERY  # noqa: PLC0415
 
-    excluded = [f":(exclude){path}" for path in static_include_paths()]
-    r = _run_git(["status", "--porcelain", "--", ".", *excluded], cwd=repo)
+    r = _run_git(list(UNCOMMITTED_AUTHORED_CONTENT_QUERY), cwd=repo)
     return bool(r.stdout.strip())
 
 

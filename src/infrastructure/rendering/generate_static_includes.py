@@ -22,6 +22,7 @@ from typing import Any
 from src.config.repo_paths import DIAGRAM_CATALOG
 from src.config.settings import archimate_type_markers
 from src.domain.diagrams.diagram_type_field import stated_diagram_type
+from src.domain.repository.repo_layout import GENERATED_INCLUDE_BASENAMES
 from src.domain.viewpoints.viewpoint_style_values import PAGE_GROUND
 
 # ---------------------------------------------------------------------------
@@ -228,17 +229,8 @@ def _generate_relations_include() -> str:
     return "\n".join(lines) + "\n"
 
 
-#: The generated include files, under `DIAGRAM_CATALOG` of every repository.
-STATIC_INCLUDE_NAMES: tuple[str, ...] = (
-    "_archimate-glyphs.puml",
-    "_archimate-stereotypes.puml",
-    "_archimate-relations.puml",
-)
-
-
-def static_include_paths() -> tuple[str, ...]:
-    """The generated include files, relative to a repository root, as git names them."""
-    return tuple(f"{DIAGRAM_CATALOG}/{name}" for name in STATIC_INCLUDE_NAMES)
+#: The generated include files, under `DIAGRAM_CATALOG` of every repository; the layout declares them.
+STATIC_INCLUDE_NAMES: tuple[str, ...] = GENERATED_INCLUDE_BASENAMES
 
 
 def static_include_contents(repo_root: Path) -> dict[str, str]:

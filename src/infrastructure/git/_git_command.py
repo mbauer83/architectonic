@@ -28,7 +28,7 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from src.config.git_identity import load_service_git_identity
-from src.domain.repository.repo_layout import RUNTIME_STATE
+from src.domain.repository.repo_layout import GENERATED_INCLUDES, RUNTIME_STATE
 from src.infrastructure.mutation_adapters import run_git
 
 #: Local plumbing answers immediately or something is wrong.
@@ -69,6 +69,15 @@ STAGE_ALL_BUT_RUNTIME_STATE = ("add", "-A", "--", *CONTENT_PATHSPEC)
 #: manager on its event loop — and they have to be asking the same thing: the status once reported
 #: a saved repository that the pull refused to touch as unsaved.
 UNCOMMITTED_CONTENT_QUERY = ("status", "--porcelain", "-u", "--", *CONTENT_PATHSPEC)
+
+#: The same question with the generated include files left out: what `arch-init` asks of a clone
+#: before using it. It rewrites those files itself on every run, from the ontology, before anything
+#: reads them, so in a clone whose committed includes lag the ontology they are always modified, and
+#: counting them refused the clone on every start after the first. Any other change still counts.
+UNCOMMITTED_AUTHORED_CONTENT_QUERY = (
+    *UNCOMMITTED_CONTENT_QUERY,
+    *(f":(exclude,glob)**/{path}" for path in GENERATED_INCLUDES),
+)
 
 
 def run_repo_git(

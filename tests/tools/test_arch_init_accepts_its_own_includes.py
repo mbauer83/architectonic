@@ -11,11 +11,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from src.infrastructure.rendering.generate_static_includes import (
-    STATIC_INCLUDE_NAMES,
-    generate_static_includes,
-    static_include_paths,
-)
+from src.domain.repository.repo_layout import GENERATED_INCLUDES
+from src.infrastructure.rendering.generate_static_includes import STATIC_INCLUDE_NAMES, generate_static_includes
 from src.infrastructure.workspace import workspace_init
 
 
@@ -37,14 +34,14 @@ def _clone_with_stale_includes(tmp_path: Path) -> Path:
     return repo
 
 
-def test_the_paths_named_are_the_files_the_generator_writes(tmp_path: Path) -> None:
+def test_the_layout_declares_the_files_the_generator_writes(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()
 
     generate_static_includes(repo)
 
     written = {str(path.relative_to(repo)) for path in repo.rglob("*") if path.is_file()}
-    assert written == set(static_include_paths())
+    assert written == set(GENERATED_INCLUDES)
 
 
 def test_regenerated_includes_alone_do_not_make_the_clone_dirty(tmp_path: Path) -> None:

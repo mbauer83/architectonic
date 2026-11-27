@@ -12,12 +12,16 @@ DIAGRAM_CATALOG = "diagram-catalog"
 DIAGRAMS = "diagrams"  # subdirectory within DIAGRAM_CATALOG/
 RENDERED = "rendered"  # subdirectory within DIAGRAM_CATALOG/ — derived output, excluded from indexing
 RENDERED_SUFFIXES: tuple[str, ...] = (".png", ".svg")
-MANAGED_INCLUDE_BASENAMES = frozenset({
-    "_archimate-stereotypes.puml",
+#: The managed include files generated from the ontology (`generate_static_includes`), under
+#: DIAGRAM_CATALOG/. Committed with the repository, and rewritten by `arch-init` on every run.
+GENERATED_INCLUDE_BASENAMES: tuple[str, ...] = (
     "_archimate-glyphs.puml",
+    "_archimate-stereotypes.puml",
     "_archimate-relations.puml",
-    "_macros.puml",
-})
+)
+MANAGED_INCLUDE_BASENAMES = frozenset({*GENERATED_INCLUDE_BASENAMES, "_macros.puml"})
+#: The same files as paths relative to the repository root.
+GENERATED_INCLUDES: tuple[str, ...] = tuple(f"{DIAGRAM_CATALOG}/{name}" for name in GENERATED_INCLUDE_BASENAMES)
 
 ICONS = "icons"  # subdirectory within DIAGRAM_CATALOG/ — the shared icon library, ICO@….md
 ARCH_REPO = ".arch-repo"
