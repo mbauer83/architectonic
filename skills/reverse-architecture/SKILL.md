@@ -93,7 +93,10 @@ Present a structured proposal with these sections:
 - **New entities** — type, name, terraform source, one-line rationale
 - **Entities to update** — artifact ID, what changes, why
 - **New connections** — source → type → target, one-line rationale
-- **Diagram proposals** — title, audience, architectural question answered
+- **Diagram proposals** — title, audience, architectural question answered. The audience becomes the
+  diagram's `stakeholders` and the question its `concerns` (Phase 5), so name them as they will be stored:
+  an existing Stakeholder entity by its artifact ID where the model has one, else in words; the question in
+  words, or the motivation element (driver, goal, requirement) that states it
 
 Evaluate proposed diagrams against the stakeholder diagram requirements:
 - All relevant network segments (VNets, subnets where architecturally meaningful)
@@ -116,8 +119,13 @@ Ask for confirmation before Phase 5. A small change (2–3 entities) can proceed
 2. Batch with `artifact_bulk_write` for multi-entity creates.
 3. Search for duplicates before each create.
 4. Commit (`dry_run=false`). Report artifact IDs.
-5. Verify: `artifact_verify(repo_scope="engagement", return_mode="full")`. Fix errors.
-6. Save: `artifact_save_changes()`.
+5. Create each approved diagram with its purpose line: pass the audience as `stakeholders` and the question
+   as `concerns` to `artifact_create_diagram` — each entry prose (`"Platform operations team"`) or a
+   reference (`{ref: "STK@…"}`). Where the diagram applies a viewpoint whose stakeholders and concerns
+   already say the same, omit the list and let the diagram inherit it. A reference to a missing or
+   unsuitable element is refused (E186/E187): state it in words instead, or create the Stakeholder first.
+6. Verify: `artifact_verify(repo_scope="engagement", return_mode="full")`. Fix errors.
+7. Save: `artifact_save_changes()`.
 
 ---
 
