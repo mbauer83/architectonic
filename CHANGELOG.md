@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
-## [0.12.1] — unreleased
+## [0.12.1] — 2026-11-27
 
 **[Full detail → `changelog-assets/0.12.1-detail.md`](changelog-assets/0.12.1-detail.md)**
 
