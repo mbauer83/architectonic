@@ -15,6 +15,7 @@ import yaml  # type: ignore[import-untyped]
 
 from src.application.modeling.diagram_identities import diagram_identities
 from src.domain.diagrams.authored_groupings import NOT_YET_UPGRADED, stored_before_groupings_had_ids
+from src.domain.diagrams.diagram_format_version import DIAGRAM_FORMAT_VERSION_KEY, stated_format_version
 from src.domain.diagrams.diagram_type_field import DIAGRAM_TYPE_KEY
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY, layout_as_written, read_layout
 from src.domain.diagrams.layout.layout_checks import pruned_to
@@ -74,8 +75,8 @@ def carried_diagram_fields(frontmatter: Mapping[str, object]) -> CarriedDiagramF
     carried: CarriedDiagramFields = {}
     if isinstance(keywords := frontmatter.get("keywords"), list):
         carried["keywords"] = [str(k) for k in keywords]
-    if isinstance(version := frontmatter.get("diagram-format-version"), int):
-        carried["diagram_format_version"] = version
+    if DIAGRAM_FORMAT_VERSION_KEY in frontmatter:
+        carried["diagram_format_version"] = stated_format_version(frontmatter)
     if frontmatter.get("manual-layout") is True:
         carried["manual_layout"] = True
     if isinstance(tlp := frontmatter.get("tlp"), str) and tlp:
@@ -138,7 +139,7 @@ def format_diagram_puml(
         frontmatter["keywords"] = keywords
     frontmatter[DIAGRAM_TYPE_KEY] = diagram_type
     if diagram_format_version is not None:
-        frontmatter["diagram-format-version"] = diagram_format_version
+        frontmatter[DIAGRAM_FORMAT_VERSION_KEY] = diagram_format_version
     if manual_layout:
         frontmatter["manual-layout"] = True  # hand-tuned body: sync reconciles bindings only
     if tlp:

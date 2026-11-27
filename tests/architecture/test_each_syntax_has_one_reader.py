@@ -199,6 +199,9 @@ _DIAGRAM_TYPE_FIELD = re.compile(r"\Adiagram-type\Z")
 _ID_SLUG_SEPARATOR = re.compile(r"\A\.\Z")
 _CUTS_AT_THE_SLUG = frozenset({"rsplit", "rpartition", "count"})
 
+#: The key a diagram states its stored format version under, or a type declares the one it writes under.
+_FORMAT_VERSION_KEY = re.compile(r"\Adiagram[-_]format[-_]version\Z")
+
 #: Two words only a reading of the layout block asks a mapping for: where a relation bends, and the
 #: section that sizes boxes. Whole literals, and deliberately not `layout` itself — a diagram type's
 #: configuration and a scratchpad's document each have a `layout` of their own that is not this one.
@@ -736,6 +739,21 @@ SYNTAX_READERS: tuple[SyntaxReader, ...] = (
             "GSN draft publishable"
         ),
         enumeration_probe=_TLP_LEVEL,
+    ),
+    SyntaxReader(
+        syntax="which format version a diagram is written in, and which one its type writes",
+        owners=(Path("src/domain/diagrams/diagram_format_version.py"),),
+        instead=(
+            "`src.domain.diagrams.diagram_format_version`: `stated_format_version`, a module's "
+            "`diagram_format_version`, `newer_format_refusal`, `version_to_stamp`"
+        ),
+        incident=(
+            "nothing compared the two, so a product could rewrite a diagram a newer one wrote and drop what it "
+            "did not know; the data-type writer stamped a hard-coded `2` by naming the type in generic write "
+            "code, over whatever version the file stated, which also destroyed the evidence that it was newer"
+        ),
+        literal_probe=_FORMAT_VERSION_KEY,
+        also_located_by=_ATTRIBUTE_LOOKUPS,
     ),
     SyntaxReader(
         syntax="which diagram type a diagram's frontmatter states, and what one stating none is read as",

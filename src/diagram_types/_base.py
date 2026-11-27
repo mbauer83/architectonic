@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 from src.domain.concept_scope import ConceptScope
+from src.domain.diagrams.diagram_format_version import FIRST_FORMAT_VERSION, declared_format_version
 from src.domain.diagrams.diagram_type_config import (
     DiagramTypeUiConfig,
     DiagramTypeWriteGuidance,
@@ -140,6 +141,12 @@ class DiagramTypeBase:
         """Types that declare their own entity types render from them; a type that keeps its nodes in
         `diagram-entities` without declaring them as types says so by overriding this."""
         return bool(self.ui_config.diagram_only_types)
+
+    @property
+    def diagram_format_version(self) -> int:
+        """The stored format version this type writes, from its `config.yaml`; 1 where unstated."""
+        config = getattr(self, "_config", None)
+        return declared_format_version(config) if isinstance(config, Mapping) else FIRST_FORMAT_VERSION
 
     @property
     def hosts_candidates(self) -> bool:

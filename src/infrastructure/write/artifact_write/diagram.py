@@ -16,6 +16,7 @@ from src.application.verification._issue_serialization import as_issue_dict
 from src.application.verification.artifact_verifier import ArtifactVerifier
 from src.application.verification.artifact_verifier_types import ENTITY_ID_RE, Issue, Severity
 from src.domain.diagrams.bindings import Binding
+from src.domain.diagrams.diagram_format_version import version_to_stamp
 from src.domain.icons.resolved_icon import IconSource
 from src.domain.purpose_lines import PurposeLines
 from src.domain.repository.groups import UNCATEGORIZED
@@ -31,6 +32,7 @@ from .diagram_body_preparation import (
     with_icons_prepared,
 )
 from .diagram_confidentiality import ensure_confidential_gitignore, is_confidential_diagram_source
+from .diagram_edit import written_format_version
 from .diagram_references import (
     _collect_diagram_renderer_references,
     _infer_reference_ids_from_puml,
@@ -278,7 +280,7 @@ def create_diagram(
         tlp=tlp,
         viewpoint=viewpoint_fm,
         purpose_lines=purpose_lines,
-        diagram_format_version=2 if diagram_type == "datatype" else None,
+        diagram_format_version=version_to_stamp(written_format_version(verifier, diagram_type)),
     )
 
     # Confidential assurance diagrams are redirected to a gitignored source root so their

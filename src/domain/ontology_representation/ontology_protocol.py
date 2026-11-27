@@ -405,6 +405,11 @@ class DiagramTypeModule(Protocol):
         ...
 
     @property
+    def diagram_format_version(self) -> int:
+        """The stored format version this type writes; a higher one is not rewritten here."""
+        ...
+
+    @property
     def own_permitted_relationships(self) -> PermittedRelationshipSet: ...
 
     @property

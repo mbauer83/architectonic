@@ -1,4 +1,7 @@
 name: datatype
+# The stored format this type writes: 2 since attributes carry a stable `id` and a typed `type`.
+# A diagram stating a higher version was written by a newer product and is not rewritten here.
+diagram_format_version: 2
 
 guidance:
   when_to_use: >-

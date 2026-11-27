@@ -9,6 +9,11 @@ from src.application.modeling.artifact_write import format_diagram_puml
 from src.application.modeling.artifact_write_layout import ensure_puml_layout, rebuild_puml_layout
 from src.application.repo_path_helpers import diagram_source_root, resolve_diagram_source_path
 from src.application.verification.artifact_verifier import ArtifactVerifier
+from src.domain.diagrams.diagram_format_version import (
+    FIRST_FORMAT_VERSION,
+    newer_format_refusal,
+    version_to_stamp,
+)
 from src.domain.diagrams.diagram_type_field import diagram_type_of
 from src.domain.diagrams.layout.layout_block import LAYOUT_KEY
 from src.domain.purpose_lines import read_purpose_lines
@@ -149,6 +154,8 @@ def edit_diagram(
     )
     eff_diagram_connections = diagram_connections if diagram_connections is not None else fm.get("connections")
     diagram_type = diagram_type_of(fm)
+    if (newer := newer_format_refusal(fm, written_format_version(verifier, diagram_type), diagram_type)) is not None:
+        raise ValueError(newer)
     eff_purpose_lines = read_purpose_lines(fm).restated(stakeholders=stakeholders, concerns=concerns)
 
     if diagram_type == "matrix":
@@ -171,12 +178,7 @@ def edit_diagram(
             viewpoint=None if viewpoint is VIEWPOINT_UNSET else viewpoint,
         )
 
-    raw_format_version = fm.get("diagram-format-version")
-    eff_format_version = (
-        2 if diagram_type == "datatype"
-        else raw_format_version if isinstance(raw_format_version, int)
-        else None
-    )
+    eff_format_version = version_to_stamp(written_format_version(verifier, diagram_type))
     if diagram_entities is not None:
         from src.application.identifier_allocator import get_default_allocator  # noqa: PLC0415
         from src.infrastructure.write.artifact_write.diagram_entity_identity import (  # noqa: PLC0415
@@ -411,3 +413,8 @@ def edit_diagram(
         dry_run=dry_run,
     )
 
+
+def written_format_version(verifier: ArtifactVerifier, diagram_type: str) -> int:
+    """The stored format version the running product writes for `diagram_type`."""
+    module = verifier.runtime_catalogs.diagram_types.find_diagram_type(diagram_type)
+    return module.diagram_format_version if module is not None else FIRST_FORMAT_VERSION
