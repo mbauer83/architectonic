@@ -156,6 +156,9 @@ class EntityDetailResponse(EntityRecordFields):
     #: Every scratchpad whose notes point at this entity — the third answer to "where does this
     #: appear", beside the documents that link to it and the diagrams that draw it.
     referenced_in_scratchpads: list[ScratchpadReference] = []
+    #: Every diagram whose purpose line refers to this entity — as a stakeholder it is for, or as the
+    #: element stating a concern it answers — counting the lines a diagram takes from its viewpoint.
+    addressed_by_diagrams: list[DiagramReference] = []
     # Set only for a construct a diagram owns — a GSN goal, a swimlane — and the field by which a
     # display surface tells one from a model entity. The client's decoder has always declared it; the
     # server had not, so reading such a construct failed its own response contract. Absent for a model

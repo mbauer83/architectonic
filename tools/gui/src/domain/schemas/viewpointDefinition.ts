@@ -8,6 +8,7 @@
  */
 import { Schema } from 'effect'
 
+import { PurposeEntrySchema } from './purposeLines'
 import { BrokenReferenceSchema } from './viewpointReferences'
 import { PresentationSpecWireSchema, ViewpointQuerySpecSchema } from './viewpointLanguage'
 
@@ -48,8 +49,8 @@ export const ViewpointDefinitionEnvelopeSchema = Schema.Struct({
    * kept so a hand-edited catalogue file round-trips unchanged. */
   purpose: Schema.Union(Schema.String, Schema.Array(Schema.String)),
   content: Schema.Union(Schema.String, Schema.Array(Schema.String)),
-  stakeholders: Schema.optional(Schema.Array(Schema.String)),
-  concerns: Schema.optional(Schema.Array(Schema.String)),
+  stakeholders: Schema.optional(Schema.Array(PurposeEntrySchema)),
+  concerns: Schema.optional(Schema.Array(PurposeEntrySchema)),
   scope: Schema.optional(ConceptScopeSpecSchema),
   representation_types: Schema.optional(Schema.Array(Schema.String)),
   derivation_defaults: Schema.optional(Schema.Record({

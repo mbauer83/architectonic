@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response,
 
 from src.application._diagram_entity_extraction import NOTHING_HELD, extract_diagram_entities
 from src.application.artifacts._query_helpers import read_entity as serialize_entity
-from src.application.artifacts.entity_references import references_to
+from src.application.artifacts.entity_references import diagram_reference_dicts, references_to
 from src.application.artifacts.parsing import decode_entity_properties, parse_entity_content_sections
 from src.application.artifacts.schema import load_attribute_schema
 from src.application.entity_type_predicates import is_internal_entity_type
@@ -17,6 +17,7 @@ from src.application.modeling.proposal_standing import standing_subject
 from src.application.read_models import EntityContextReadModel
 from src.application.runtime_catalogs import RuntimeCatalogs
 from src.application.verification._verifier_contribution_runner import held_record_scopes_from_catalogs
+from src.application.viewpoints.diagram_purpose import diagrams_addressing
 from src.domain.baseline_standing import BASELINE_STANDING
 from src.infrastructure.rest.contracts.catalog import (
     BackendIdentityResponse,
@@ -205,7 +206,9 @@ def read_entity(
 @router.get("/api/entities/{artifact_id}/context", tags=[TAG_ENTITIES],
     summary="Read an entity with its connection context", response_model=EntityContextResponse,
     response_model_exclude_none=True, responses=READ_RESPONSES)
-def read_entity_context(artifact_id: str) -> EntityContextReadModel:
+def read_entity_context(
+    artifact_id: str, catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
+) -> EntityContextReadModel:
     id = artifact_id
     repo = s.get_repo()
     context = repo.read_entity_context(id)
@@ -232,6 +235,9 @@ def read_entity_context(artifact_id: str) -> EntityContextReadModel:
             s.baseline_standing_reader()(standing_subject(entity_rec)).to_mapping()
         )
         context["entity"].update(references_to(entity_rec, repo))
+        context["entity"]["addressed_by_diagrams"] = diagram_reference_dicts(
+            diagrams_addressing(entity_rec.artifact_id, repo.list_diagrams(), catalogs.viewpoints)
+        )
     return context
 
 

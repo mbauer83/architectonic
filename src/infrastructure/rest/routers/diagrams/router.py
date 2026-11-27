@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.application.artifacts.entity_references import diagram_reference_dicts
 from src.application.artifacts.parsing import parse_diagram_source
 from src.application.assurance.diagrams import assurance_surface_diagram_types
 from src.application.modeling.proposal_standing import standing_subject
 from src.application.runtime_catalogs import RuntimeCatalogs
+from src.application.viewpoints.diagram_purpose import addresses_stakeholder, diagram_purpose
 from src.infrastructure.app_bootstrap import complete_diagram_type_catalog
 from src.infrastructure.rest.contracts.diagrams import (
     DiagramConnectionListResponse,
@@ -55,6 +56,11 @@ def list_diagrams(
     status: str | None = None,
     group: str | None = None,
     scope: str | None = None,
+    stakeholder: str | None = Query(default=None, description=(
+        "Only the diagrams for this stakeholder: an element's artifact id, or the words of a prose entry "
+        "(compared without case). A diagram applying a viewpoint is for the viewpoint's stakeholders "
+        "where it names none of its own.")),
+    catalogs: RuntimeCatalogs = Depends(runtime_catalogs_dependency),
 ) -> dict[str, Any]:
     store_projected = assurance_surface_diagram_types(complete_diagram_type_catalog())
     if diagram_type in store_projected:
@@ -66,6 +72,10 @@ def list_diagrams(
         diagrams = [d for d in diagrams if s.is_global(d.path)]
     elif scope == "engagement":
         diagrams = [d for d in diagrams if not s.is_global(d.path)]
+    if stakeholder:
+        diagrams = [
+            d for d in diagrams if addresses_stakeholder(diagram_purpose(d.extra, catalogs.viewpoints), stakeholder)
+        ]
     standing_of = s.baseline_standing_reader()
     return {
         "total": len(diagrams),

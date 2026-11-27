@@ -7584,6 +7584,11 @@ export interface components {
             authored_groupings?: {
                 [key: string]: unknown;
             }[] | null;
+            /**
+             * Concerns
+             * @description What the diagram answers: prose, or {ref} to the motivation element stating it.
+             */
+            concerns?: components["schemas"]["PurposeEntrySpec"][] | null;
             /** Connection Ids */
             connection_ids: string[];
             /** Diagram Entities */
@@ -7611,6 +7616,11 @@ export interface components {
             } | null;
             /** Name */
             name: string;
+            /**
+             * Stakeholders
+             * @description Who the diagram is for: prose, or {ref} to a stakeholder element.
+             */
+            stakeholders?: components["schemas"]["PurposeEntrySpec"][] | null;
             /**
              * Status
              * @default draft
@@ -8499,6 +8509,8 @@ export interface components {
             authored_groupings?: components["schemas"]["AuthoredGroupingResponse"][];
             /** Baseline Standing */
             baseline_standing: components["schemas"]["EnterpriseBaselineStanding"] | components["schemas"]["ProposedStanding"];
+            /** Concerns */
+            concerns?: components["schemas"]["PurposeEntrySpec"][];
             /** Connection Ids Used */
             connection_ids_used?: string[];
             /** Content Snippet */
@@ -8529,6 +8541,7 @@ export interface components {
             path: string;
             /** Puml Source */
             puml_source: string;
+            purpose?: components["schemas"]["DiagramPurposeResponse"];
             /**
              * Record Type
              * @constant
@@ -8538,6 +8551,8 @@ export interface components {
             rendered_filename?: string;
             /** Revision */
             revision: string;
+            /** Stakeholders */
+            stakeholders?: components["schemas"]["PurposeEntrySpec"][];
             /** Status */
             status: string;
             /** Type Extras */
@@ -8814,6 +8829,18 @@ export interface components {
             warnings: string[];
         };
         /**
+         * DiagramPurposeResponse
+         * @description The lines shown on the diagram's page: its own, each list it does not state taken from its viewpoint.
+         */
+        DiagramPurposeResponse: {
+            /** Concerns */
+            concerns: components["schemas"]["PurposeEntryShown"][];
+            /** Inherited From */
+            inherited_from?: string;
+            /** Stakeholders */
+            stakeholders: components["schemas"]["PurposeEntryShown"][];
+        };
+        /**
          * DiagramReference
          * @description One diagram that draws the thing asked about.
          *
@@ -8870,6 +8897,11 @@ export interface components {
              * @description Model edits saved in the same write as the diagram: model.element.create / rename / edit / delete, model.relation.create / edit. All land or none do.
              */
             commands?: components["schemas"]["CanvasCommand"][];
+            /**
+             * Concerns
+             * @description What the diagram answers: prose, or {ref} to the motivation element stating it.
+             */
+            concerns?: components["schemas"]["PurposeEntrySpec"][] | null;
             /** Connection Ids */
             connection_ids: string[];
             /** Diagram Entities */
@@ -8901,6 +8933,11 @@ export interface components {
             manual_layout?: boolean | null;
             /** Name */
             name: string;
+            /**
+             * Stakeholders
+             * @description Who the diagram is for: prose, or {ref} to a stakeholder element.
+             */
+            stakeholders?: components["schemas"]["PurposeEntrySpec"][] | null;
             /** Status */
             status?: string | null;
             /** Tlp */
@@ -10235,6 +10272,11 @@ export interface components {
          *     connection list the user then opens.
          */
         EntityDetailResponse: {
+            /**
+             * Addressed By Diagrams
+             * @default []
+             */
+            addressed_by_diagrams: components["schemas"]["DiagramReference"][];
             /** Artifact Id */
             artifact_id: string;
             /** Artifact Type */
@@ -13673,6 +13715,28 @@ export interface components {
             node_id: string;
         };
         /**
+         * PurposeEntryShown
+         * @description One entry as a reader sees it: its words, and the element it refers to where it is a reference.
+         */
+        PurposeEntryShown: {
+            /** Ref */
+            ref?: string;
+            /** Text */
+            text: string;
+        };
+        PurposeEntrySpec: string | components["schemas"]["PurposeReferenceSpec"];
+        /**
+         * PurposeReferenceSpec
+         * @description An entry naming an element: a Stakeholder for `stakeholders`, the element stating it for `concerns`.
+         */
+        PurposeReferenceSpec: {
+            /**
+             * Ref
+             * @description The artifact id of the element this entry refers to.
+             */
+            ref: string;
+        };
+        /**
          * QueryBindingSpec
          * @description A named sub-query whose result other conditions compare against.
          *
@@ -15786,7 +15850,7 @@ export interface components {
             /** Broken References */
             broken_references: components["schemas"]["BrokenReferenceResponse"][];
             /** Concerns */
-            concerns?: string[];
+            concerns?: components["schemas"]["PurposeEntrySpec"][];
             /** Content */
             content: string | string[];
             /** Definition Digest */
@@ -15825,7 +15889,7 @@ export interface components {
             /** Slug */
             slug: string;
             /** Stakeholders */
-            stakeholders?: string[];
+            stakeholders?: components["schemas"]["PurposeEntrySpec"][];
             /**
              * Tier
              * @enum {string}
@@ -22592,6 +22656,8 @@ export interface operations {
                 diagram_type?: string | null;
                 group?: string | null;
                 scope?: string | null;
+                /** @description Only the diagrams for this stakeholder: an element's artifact id, or the words of a prose entry (compared without case). A diagram applying a viewpoint is for the viewpoint's stakeholders where it names none of its own. */
+                stakeholder?: string | null;
                 status?: string | null;
             };
             header?: never;

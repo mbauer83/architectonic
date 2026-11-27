@@ -15,6 +15,7 @@ from typing import Literal
 
 from pydantic import Field
 
+from src.infrastructure.purpose_lines_wire import PurposeEntrySpec
 from src.infrastructure.rest.contracts.viewpoint_criteria import (
     ConnectionCriteriaGroupNode,
     ConnectionSelectionSpec,
@@ -352,8 +353,8 @@ class ViewpointDefinitionEnvelope(NullsOmitted):
     #: kept so a hand-edited catalogue file round-trips unchanged.
     purpose: str | list[str]
     content: str | list[str]
-    stakeholders: list[str] | None = None
-    concerns: list[str] | None = None
+    stakeholders: list[PurposeEntrySpec] | None = None
+    concerns: list[PurposeEntrySpec] | None = None
     scope: ConceptScopeSpec | None = None
     representation_types: list[str] | None = None
     #: Derivation limits this definition overrides, keyed by limit name. An open map with a

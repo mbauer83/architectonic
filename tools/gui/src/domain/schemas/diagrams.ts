@@ -1,40 +1,14 @@
 import { Schema } from 'effect'
+import { AuthoredGroupingSchema } from './authoredGroupingWire'
 import { BaselineStandingSchema } from './baselineStanding'
 import { DiagramLayoutSchema } from './diagramLayout'
 import { HandDrawnSchema } from './handDrawn'
+import { DiagramPurposeSchema, PurposeEntrySchema } from './purposeLines'
 import { ViewpointApplicationSchema } from './viewpoints'
 import { EntityContextConnectionSchema } from './connections'
 import { EntityDisplayInfoSchema } from './entities'
 
-/**
- * One labelled box a diagram draws that the model does not hold.
- *
- * Recursive, because boxes nest. `entity-ids` keeps its frontmatter spelling on the wire, so what is
- * read is what is written back, and a member may name an entity or a single occurrence of one.
- */
-export interface AuthoredGroupingWire {
-  /** The box's own stable identity, which a layout addresses it by. Sent back as read; a box
-   * without one is new, and the backend gives it one. */
-  readonly id?: string
-  readonly label: string
-  /** Empty on a box whose members a rule selects. */
-  readonly 'entity-ids': readonly string[]
-  /** Instead of listed members: one of `domain` or `type` to the name it selects. Not edited here,
-   * and carried through every save untouched. */
-  readonly rule?: Readonly<Record<string, string>>
-  readonly groups?: readonly AuthoredGroupingWire[]
-  /** An override the backend still honours; the look is otherwise derived from the members. */
-  readonly stereotype?: string
-}
-
-export const AuthoredGroupingSchema: Schema.Schema<AuthoredGroupingWire> = Schema.Struct({
-  id: Schema.optional(Schema.String),
-  label: Schema.String,
-  'entity-ids': Schema.Array(Schema.String),
-  rule: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.String })),
-  groups: Schema.optional(Schema.Array(Schema.suspend(() => AuthoredGroupingSchema))),
-  stereotype: Schema.optional(Schema.String),
-})
+export { AuthoredGroupingSchema, type AuthoredGroupingWire } from './authoredGroupingWire'
 
 export const DiagramDetailSchema = Schema.Struct({
   artifact_id: Schema.String,
@@ -66,6 +40,11 @@ export const DiagramDetailSchema = Schema.Struct({
    * contributes. Absent for a kind that adds nothing. */
   type_extras: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.Unknown })),
   viewpoint: Schema.optional(ViewpointApplicationSchema),
+  /** Who the diagram itself says it is for and what it answers, as stored — what an editor sends back. */
+  stakeholders: Schema.optional(Schema.Array(PurposeEntrySchema)),
+  concerns: Schema.optional(Schema.Array(PurposeEntrySchema)),
+  /** The purpose line shown: the diagram's own lists, each it does not state taken from its viewpoint. */
+  purpose: Schema.optional(DiagramPurposeSchema),
   /** The revision of what a replacement replaces, as read: sent back as `base_revision`, so a diagram changed
    * since is refused (409) rather than written over. */
   revision: Schema.String,

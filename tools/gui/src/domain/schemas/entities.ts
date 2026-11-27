@@ -145,6 +145,8 @@ export const EntityDetailSchema = Schema.Struct({
   referenced_in_documents: Schema.Array(DocumentReferenceSchema),
   referenced_in_diagrams: Schema.Array(DiagramRefSchema),
   referenced_in_scratchpads: Schema.Array(ScratchpadReferenceSchema),
+  /** The diagrams whose purpose line refers to this entity, counting what a diagram takes from its viewpoint. */
+  addressed_by_diagrams: Schema.Array(DiagramRefSchema),
 })
 export type EntityDetail = typeof EntityDetailSchema.Type
 

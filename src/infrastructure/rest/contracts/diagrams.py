@@ -17,10 +17,12 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from src.infrastructure.purpose_lines_wire import PurposeEntrySpec
 from src.infrastructure.rest.contracts.baseline_standing import BaselineStandingContract
 from src.infrastructure.rest.contracts.connections import ConnectionSummary
 from src.infrastructure.rest.contracts.diagram_groupings import AuthoredGroupingResponse as AuthoredGroupingResponse
 from src.infrastructure.rest.contracts.diagram_layout import DiagramLayoutContract
+from src.infrastructure.rest.contracts.diagram_purpose import DiagramPurposeResponse
 from src.infrastructure.rest.contracts.diagram_reference import DiagramReference
 from src.infrastructure.rest.contracts.entities import (
     ContextConnection,
@@ -343,6 +345,12 @@ class DiagramDetailResponse(NullsOmitted):
     #: Frontmatter this surface does not model, returned as written.
     extra: dict[str, Any] | None = None
     viewpoint: ViewpointApplicationResponse | None = None
+    #: Who the diagram itself says it is for and what it answers, as stored: what an editor sends back.
+    stakeholders: list[PurposeEntrySpec] | None = None
+    concerns: list[PurposeEntrySpec] | None = None
+    #: The purpose line shown — the diagram's own lists, each one it does not state taken from its
+    #: viewpoint. Absent where neither states anything.
+    purpose: DiagramPurposeResponse | None = None
     #: The revision of what a replacement replaces, as read: sent back as its `base_revision`, so a diagram
     #: changed since is refused rather than written over.
     revision: str

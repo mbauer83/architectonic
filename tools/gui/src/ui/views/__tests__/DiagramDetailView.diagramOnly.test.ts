@@ -52,7 +52,7 @@ const gsnNodeDetailRaw = {
   attributes: {},
   display_blocks: {},
   referenced_in_documents: [],
-  referenced_in_diagrams: [], referenced_in_scratchpads: [],
+  referenced_in_diagrams: [], referenced_in_scratchpads: [], addressed_by_diagrams: [],
   extra: { gsn_type: 'goal' },
 }
 

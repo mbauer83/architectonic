@@ -30,6 +30,7 @@ from src.infrastructure.picture_reading.sources import PictureSources
 from src.infrastructure.rendering.layout._svg_drawing import Unreadable
 from src.infrastructure.rendering.layout.diagram_picture import RendererUnavailable
 from src.infrastructure.rest.routers import state as s
+from src.infrastructure.rest.routers._purpose_payload import purpose_read
 
 
 def repo_root() -> Path:
@@ -120,6 +121,11 @@ def _written_by_hand(frontmatter: dict[str, object], body: str, catalogs: Runtim
         return None
 
 
+def _entity_name(artifact_id: str) -> str | None:
+    entity = s.get_repo().get_entity(artifact_id)
+    return entity.name if entity is not None else None
+
+
 def diagram_read(artifact_id: str, catalogs: RuntimeCatalogs) -> dict[str, Any]:
     """A stored diagram as the diagram read answers it; 404 where *artifact_id* names no diagram."""
     result = s.get_repo().read_artifact(artifact_id, mode="full")
@@ -151,6 +157,7 @@ def diagram_read(artifact_id: str, catalogs: RuntimeCatalogs) -> dict[str, Any]:
         if isinstance(layout := frontmatter.get(LAYOUT_KEY), dict):
             result["layout"] = layout
         result["viewpoint"] = frontmatter.get("viewpoint")
+        result.update(purpose_read(frontmatter, catalogs.viewpoints, _entity_name))
         if not result["is_global"]:
             if (by_hand := _written_by_hand(frontmatter, str(parsed["puml_body"]), catalogs)) is not None:
                 result["written_by_hand"] = by_hand.reason()
