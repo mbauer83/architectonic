@@ -266,6 +266,8 @@ entity_types:
     classes: [behavior-element, strategy-behavior-element]
     # A value stream is drawn as its stages, so a box in one is a stage rather than the stream.
     label: Value Stream (Stage)
+    # The specification defines it as a sequence of activities creating a result: its stages run in order.
+    denotes_ordered_sequence: true
     create_when: ""
     never_create_when: ""
 

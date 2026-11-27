@@ -27,6 +27,11 @@ def test_a_process_denotes_an_ordered_sequence_and_a_function_does_not(vocabular
     assert "event" not in vocabulary.sequence_types
 
 
+def test_a_value_stream_denotes_an_ordered_sequence(vocabulary: SequenceVocabulary) -> None:
+    """Its stages run in order: the specification defines it as a sequence of activities (owner 2026-11-27)."""
+    assert "value-stream" in vocabulary.sequence_types
+
+
 def test_the_relations_that_express_order_are_exactly_triggering_and_flow(vocabulary: SequenceVocabulary) -> None:
     """The check B58 asked for before relying on `derivation_role: dynamic`."""
     assert vocabulary.ordering == {"archimate-triggering", "archimate-flow"}
