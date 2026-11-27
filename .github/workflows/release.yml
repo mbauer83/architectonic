@@ -4,8 +4,9 @@ name: Release
 # GUI bundle, a `SHA256SUMS` over every asset, and a build-provenance attestation for each. The tag's
 # version must equal the project's, and the release notes are the changelog detail file the
 # changelog gate already requires for every shipped version — so a release cannot reach the publish
-# step without one. It runs `ci.yml` on the tagged commit first and publishes only when that passes;
-# the gates themselves stay in `ci.yml`, which `AGENTS.md`'s list mirrors.
+# step without one. It publishes only from a commit whose CI passed: the run `main`'s push already made
+# for this exact commit when there is one (waiting for it while it runs), and otherwise `ci.yml` run
+# here on the tag. The gates themselves stay in `ci.yml`, which `AGENTS.md`'s list mirrors.
 on:
   push:
     tags: ["v*"]
@@ -15,10 +16,44 @@ permissions:
   contents: read
 
 jobs:
+  main-ci-verdict:
+    # A release is normally tagged on a commit `main` has just been pushed with, and CI has already run
+    # every gate on it. Running them all again on the tag cost a second full CI per release. This job
+    # finds that run — `ci.yml`, triggered by a push to `main`, for exactly this commit; a pull-request
+    # run of the same commit does not count — and waits for it while it is in progress. Anything else
+    # (no such run, a failure, a cancellation, the deadline) leaves `passed` false, and `ci` below runs.
+    name: CI already passed on this commit?
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      passed: ${{ steps.verdict.outputs.passed }}
+    steps:
+      - name: Find main's CI run for the tagged commit, waiting while it runs
+        id: verdict
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          deadline=$(( $(date +%s) + 45 * 60 ))
+          while :; do
+            run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${GITHUB_SHA}&event=push&branch=main&per_page=1" \
+              --jq '.workflow_runs[0] // empty | "\(.status) \(.conclusion)"')"
+            case "$run" in
+              "completed success") echo "passed=true" >> "$GITHUB_OUTPUT"; echo "main's CI passed on ${GITHUB_SHA}"; exit 0 ;;
+              ""|completed*) echo "passed=false" >> "$GITHUB_OUTPUT"; echo "no passing main CI run (${run:-none}); CI runs on the tag"; exit 0 ;;
+            esac
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "passed=false" >> "$GITHUB_OUTPUT"; echo "main's CI still ${run} at the deadline; CI runs on the tag"; exit 0
+            fi
+            sleep 60
+          done
+
   ci:
-    # The whole of ci.yml on the tagged commit. A release is published only from a commit whose CI
-    # is green: a failing job here leaves `publish` unrun.
+    # The whole of ci.yml on the tagged commit, when main's push has not already shown it green. A
+    # failing job here leaves `publish` unrun.
     name: CI on the tagged commit
+    needs: main-ci-verdict
+    if: needs.main-ci-verdict.outputs.passed != 'true'
     uses: ./.github/workflows/ci.yml
     permissions:
       contents: read
@@ -27,7 +62,10 @@ jobs:
 
   publish:
     name: Publish the release assets
-    needs: ci
+    needs: [main-ci-verdict, ci]
+    # `ci` is skipped when main's run already passed, so the condition names both ways to green and
+    # nothing else: a failed or cancelled `ci` never publishes.
+    if: ${{ !cancelled() && (needs.main-ci-verdict.outputs.passed == 'true' || needs.ci.result == 'success') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

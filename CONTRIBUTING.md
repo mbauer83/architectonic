@@ -55,9 +55,12 @@ A release is a signed tag `v<version>` on a commit whose `pyproject.toml` declar
 which carries `changelog-assets/<version>-detail.md`. Pushing the tag starts
 `.github/workflows/release.yml`, which runs in this order:
 
-1. **CI on the tagged commit.** The release workflow calls `ci.yml` as its first job, so every gate
-   CI runs on `main` runs again on exactly the commit being released.
-2. **Publish**, only when every CI job passed: the GUI is built, bundled and given a `SHA256SUMS`
+1. **CI on the tagged commit.** When `main` was pushed with the tagged commit, the CI run that push
+   started is the verdict: the release waits for it if it is still running and uses its result.
+   Only a run of `ci.yml` triggered by a push to `main` for exactly this commit counts. Without a
+   passing one, the release workflow runs `ci.yml` on the tag itself. Push `main`, then the tag, and
+   CI runs once per release.
+2. **Publish**, only when that CI passed: the GUI is built, bundled and given a `SHA256SUMS`
    line, both files receive a build-provenance attestation, and the GitHub release is created with
    the detail file as its notes.
 
