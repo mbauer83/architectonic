@@ -33,7 +33,7 @@ spoken for. It still cannot lift a subordinate kind, which is what subordination
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from src.application.artifacts.title_match import TitleMatch, normalised_terms, title_match
 from src.domain.ontology_representation.artifact_types import SearchHit
@@ -54,18 +54,34 @@ def _title_tier(hit: SearchHit, query_terms: tuple[str, ...]) -> TitleMatch | No
     return title_match(normalised_terms(title) if title is not None else None, query_terms)
 
 
-def by_kind(hits: Sequence[SearchHit]) -> dict[str, list[SearchHit]]:
-    """Hits grouped by record type, each group strongest first.
+#: A sort key within one title tier: two numbers, then the artifact id for a stable tie.
+WithinTierKey = tuple[float, float, str]
 
-    The artifact id is the final key so a tie is stable rather than incidental — two hits with the
-    same score came from the same scorer on the same evidence, and which of them a reader sees first
-    should not depend on dictionary order.
-    """
+
+def strongest_first(hit: SearchHit) -> WithinTierKey:
+    """By score; the artifact id is the final key so a tie is stable rather than incidental — two hits
+    with the same score came from the same scorer on the same evidence, and which of them a reader sees
+    first should not depend on dictionary order."""
+    return (-hit.score, 0.0, hit.record.artifact_id)
+
+
+def shortest_title_first(hit: SearchHit) -> WithinTierKey:
+    """By title length, then score: among titles that only *contain* what was typed, the shorter one
+    is more nearly what was typed — `Repository` before `Repository Write Coordination Service` — and a
+    common word no longer leaves a short title behind longer ones that score higher on their bodies."""
+    title = record_title(hit.record)
+    return (float(len(title)) if title is not None else float("inf"), -hit.score, hit.record.artifact_id)
+
+
+def by_kind(
+    hits: Sequence[SearchHit], order_key: Callable[[SearchHit], WithinTierKey] = strongest_first
+) -> dict[str, list[SearchHit]]:
+    """Hits grouped by record type, each group ordered by `order_key` (strongest first by default)."""
     grouped: dict[str, list[SearchHit]] = {}
     for hit in hits:
         grouped.setdefault(hit.record_type, []).append(hit)
     for group in grouped.values():
-        group.sort(key=lambda h: (-h.score, h.record.artifact_id))
+        group.sort(key=order_key)
     return grouped
 
 
@@ -153,6 +169,16 @@ def rank_balanced(hits: Sequence[SearchHit], limit: int, prefer_rt: str | None) 
     return (ranked[: limit - reserved] + subordinate)[:limit]
 
 
+#: How each tier orders its own hits. Where the title *is*, or *begins with*, what was typed, the
+#: scorers' evidence decides; where it only contains the typed words, the shorter title does.
+_WITHIN_TIER: dict[TitleMatch, Callable[[SearchHit], WithinTierKey]] = {
+    TitleMatch.EXACT: strongest_first,
+    TitleMatch.PREFIX: strongest_first,
+    TitleMatch.WORD_PREFIXES: shortest_title_first,
+    TitleMatch.INFIX: shortest_title_first,
+}
+
+
 def rank_hits(hits: Sequence[SearchHit], query: str, limit: int, prefer_rt: str | None) -> list[SearchHit]:
     """The whole ordering: the title tiers closest first, then everything else by score."""
     query_terms = normalised_terms(query)
@@ -166,5 +192,5 @@ def rank_hits(hits: Sequence[SearchHit], query: str, limit: int, prefer_rt: str 
     for tier in TitleMatch:
         if len(ranked) >= limit:
             return ranked[:limit]
-        ranked.extend(round_robin(by_kind(tiers[tier]), order, limit - len(ranked)))
+        ranked.extend(round_robin(by_kind(tiers[tier], _WITHIN_TIER[tier]), order, limit - len(ranked)))
     return (ranked + rank_balanced(rest, max(limit - len(ranked), 0), prefer_rt))[:limit]
