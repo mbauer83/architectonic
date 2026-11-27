@@ -19,7 +19,7 @@ from src.application.verification._issue_serialization import as_issue_dict
 from src.application.verification._ordered_sequence_rule import element_sequence_advice, sequence_vocabulary
 from src.application.verification.artifact_verifier_types import VerificationResult
 from src.domain.ontology_representation.artifact_types import ConnectionRecord, EntityRecord
-from src.domain.relationships.ordered_sequences import Relation
+from src.domain.relationships.ordered_sequences import Relation, SequenceGraph
 from src.domain.verification_advice import (
     ACCEPTED_ADVICE_KEY,
     ADVICE_CODES,
@@ -68,7 +68,9 @@ def verify_report(results: Iterable[VerificationResult]) -> VerifyReport:
 
 
 class OutboundConnections(Protocol):
-    """The one graph question an element reading asks: what does this element relate to."""
+    """The two graph questions an element reading asks: what an element relates to, and what it is."""
+
+    def get_entity(self, artifact_id: str) -> EntityRecord | None: ...
 
     def find_connections_for(
         self, entity_id: str, *, direction: Literal["any", "outbound", "inbound"] = "any", conn_type: str | None = None
@@ -103,7 +105,11 @@ def element_advice(record: EntityRecord, graph: OutboundConnections, catalogs: A
             Relation(c.conn_type, c.source, c.target) for c in graph.find_connections_for(source, direction="outbound")
         )
 
-    finding = element_sequence_advice(record, outgoing, sequence_vocabulary(catalogs))
+    def type_of(artifact_id: str) -> str | None:
+        found = graph.get_entity(artifact_id)
+        return None if found is None else found.artifact_type
+
+    finding = element_sequence_advice(record, SequenceGraph(outgoing, type_of), sequence_vocabulary(catalogs))
     return ElementAdvice(
         open=() if finding is None else (finding,),
         accepted=accepted_advice_from_frontmatter(record.extra.get(ACCEPTED_ADVICE_KEY)),

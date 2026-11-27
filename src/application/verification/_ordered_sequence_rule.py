@@ -19,14 +19,19 @@ use — one element record, for its type, status and acknowledgements — is wha
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
 from src.application.artifacts.parsing import parse_outgoing_file
 from src.application.repo_path_helpers import all_model_roots
 from src.domain.ontology_representation.artifact_types import EntityRecord
-from src.domain.relationships.ordered_sequences import Relation, SequenceVocabulary, unordered_parts
+from src.domain.relationships.ordered_sequences import (
+    Relation,
+    SequenceGraph,
+    SequenceVocabulary,
+    unordered_parts,
+)
 from src.domain.verification_advice import (
     ACCEPTED_ADVICE_KEY,
     acceptance_for,
@@ -43,7 +48,9 @@ _OUTGOING_GLOB = "**/*.outgoing.md"
 def sequence_vocabulary(catalogs: Any) -> SequenceVocabulary:
     """The ontology's sequence vocabulary, from the runtime catalogs."""
     return SequenceVocabulary.from_ontology(
-        catalogs.ontology.all_entity_types(), catalogs.ontology.all_connection_types()
+        catalogs.ontology.all_entity_types(),
+        catalogs.ontology.all_connection_types(),
+        (rule for module in catalogs.module_catalog.all_ontologies().values() for rule in module.derivation_rules),
     )
 
 
@@ -78,12 +85,20 @@ def sequence_advice(record: EntityRecord, parts: tuple[str, ...]) -> Issue | Non
 
 
 def element_sequence_advice(
-    record: EntityRecord | None, outgoing: Callable[[str], Iterable[Relation]], vocabulary: SequenceVocabulary
+    record: EntityRecord | None, graph: SequenceGraph, vocabulary: SequenceVocabulary
 ) -> Issue | None:
-    """A341 about one element record, given each element's outgoing relations."""
+    """A341 about one element record, given the model's relations and types."""
     if record is None or record.artifact_type not in vocabulary.sequence_types:
         return None
-    return sequence_advice(record, unordered_parts(record.artifact_id, outgoing, vocabulary))
+    return sequence_advice(record, unordered_parts(record.artifact_id, graph, vocabulary))
+
+
+def _type_of(candidate: Any) -> Callable[[str], str | None]:
+    def type_of(artifact_id: str) -> str | None:
+        record = candidate.get_entity(artifact_id)
+        return None if record is None else record.artifact_type
+
+    return type_of
 
 
 class OrderedSequenceContribution:
@@ -102,8 +117,8 @@ class OrderedSequenceContribution:
             source for source, rels in relations.items()
             if sum(1 for r in rels if r.conn_type in vocabulary.composing) >= 2
         )
+        graph = SequenceGraph(outgoing=lambda s: relations.get(s, ()), type_of=_type_of(ctx.candidate))
         findings = (
-            element_sequence_advice(ctx.candidate.get_entity(source), lambda s: relations.get(s, ()), vocabulary)
-            for source in candidates
+            element_sequence_advice(ctx.candidate.get_entity(source), graph, vocabulary) for source in candidates
         )
         result.issues.extend(issue for issue in findings if issue is not None)

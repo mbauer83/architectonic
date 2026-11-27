@@ -119,6 +119,54 @@ def test_one_dynamic_relation_between_the_parts_quiets_it(repo: Path, order: str
     assert _advice(repo) == []
 
 
+_J1 = "JNA@1780000011.aaaaaa.both"
+_J2 = "JNO@1780000012.aaaaaa.either"
+
+
+@pytest.mark.parametrize("order", ["archimate-triggering", "archimate-flow"])
+def test_order_through_one_junction_quiets_it(repo: Path, order: str) -> None:
+    """part → junction → part is ordinary ArchiMate: the junction carries one relation on."""
+    _entity(repo, _PROCESS)
+    _entity(repo, _J1, atype="and-junction")
+    _compose(repo, _A, _B)
+    _outgoing(repo, _A, [(order, _J1)])
+    _outgoing(repo, _J1, [(order, _B)], atype="and-junction")
+
+    assert _advice(repo) == []
+
+
+def test_order_through_chained_junctions_quiets_it(repo: Path) -> None:
+    _entity(repo, _PROCESS)
+    _entity(repo, _J1, atype="and-junction")
+    _entity(repo, _J2, atype="or-junction")
+    _compose(repo, _A, _B)
+    _outgoing(repo, _A, [("archimate-triggering", _J1)])
+    _outgoing(repo, _J1, [("archimate-triggering", _J2)], atype="and-junction")
+    _outgoing(repo, _J2, [("archimate-triggering", _B)], atype="or-junction")
+
+    assert _advice(repo) == []
+
+
+def test_a_junction_whose_legs_do_not_express_order_does_not_quiet_it(repo: Path) -> None:
+    _entity(repo, _PROCESS)
+    _entity(repo, _J1, atype="and-junction")
+    _compose(repo, _A, _B)
+    _outgoing(repo, _A, [("archimate-serving", _J1)])
+    _outgoing(repo, _J1, [("archimate-serving", _B)], atype="and-junction")
+
+    assert len(_advice(repo)) == 1
+
+
+def test_order_through_an_element_that_is_not_a_junction_does_not_quiet_it(repo: Path) -> None:
+    """A third step between the parts orders it, not them: only a carrier passes order on."""
+    _entity(repo, _PROCESS)
+    _compose(repo, _A, _C)
+    _outgoing(repo, _A, [("archimate-triggering", _B)])
+    _outgoing(repo, _B, [("archimate-triggering", _C)])
+
+    assert len(_advice(repo)) == 1
+
+
 def test_a_relation_that_does_not_express_order_does_not_quiet_it(repo: Path) -> None:
     _entity(repo, _PROCESS)
     _compose(repo, _A, _B)
@@ -183,5 +231,5 @@ def test_the_rule_names_no_ontology_type() -> None:
     for module in (_ordered_sequence_rule, ordered_sequences):
         source = Path(module.__file__).read_text(encoding="utf-8")
         code = source.split('"""', 2)[2]
-        for name in ("archimate", "'process'", '"process"', "triggering", "'flow'", '"flow"'):
+        for name in ("archimate", "'process'", '"process"', "triggering", "'flow'", '"flow"', "junction'", 'junction"'):
             assert name not in code, f"{module.__name__} names {name}"
