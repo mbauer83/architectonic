@@ -23,7 +23,7 @@ from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
 from src.infrastructure.rest.routers.diagrams.types import list_diagram_types
 from tests.support.api_app import build_api_app
-from tests.support.rendered_pictures import RenderedModel, build_rendered_model, plantuml_available
+from tests.support.rendered_pictures import RenderedModel, plantuml_available
 from tests.support.rest_state import reset_state_for_test
 
 pytestmark = pytest.mark.skipif(not plantuml_available(), reason="plantuml.jar not found")
@@ -36,9 +36,9 @@ def test_the_type_list_says_which_types_are_arranged_on_the_canvas() -> None:
 
 
 @pytest.fixture
-def retyped(tmp_path: Path) -> tuple[RenderedModel, Path]:
+def retyped(rendered_model: RenderedModel) -> tuple[RenderedModel, Path]:
     """One of the rendered ArchiMate diagrams, restated as a type the canvas does not arrange."""
-    model = build_rendered_model(tmp_path)
+    model = rendered_model
     path = Path(model.scenes["top-to-bottom"].path)
     text = path.read_text(encoding="utf-8")
     assert "diagram-type: archimate-layered" in text

@@ -20,7 +20,7 @@ from src.infrastructure.diagram_composition import DiagramComposition
 from src.infrastructure.rest.routers import state as s
 from src.infrastructure.rest.routers.diagrams.router import router as diagrams_router
 from tests.support.api_app import build_api_app
-from tests.support.rendered_pictures import RenderedModel, build_rendered_model, plantuml_available
+from tests.support.rendered_pictures import RenderedModel, plantuml_available
 from tests.support.rest_state import reset_state_for_test
 
 
@@ -56,8 +56,8 @@ def test_an_intent_that_is_not_a_regrouping_or_names_no_grouping_is_refused() ->
 
 
 @pytest.fixture
-def model(tmp_path: Path) -> RenderedModel:
-    return build_rendered_model(tmp_path)
+def model(rendered_model: RenderedModel) -> RenderedModel:
+    return rendered_model
 
 
 @pytest.fixture
