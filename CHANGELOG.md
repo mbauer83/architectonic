@@ -35,6 +35,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Search finds an artifact by its title while it is being typed: the word being typed matches as a prefix, and a
+  title that is the query, begins with it, or has every typed word beginning one of its words ranks above
+  other matches, in the search bar and the element pickers, with or without semantic search. A name now
+  reaches the visible list once enough of it is typed to tell it apart from others.
 - A canvas save no longer removes the diagram's viewpoint.
 - The copy-link buttons work on an installation served over plain HTTP.
 
