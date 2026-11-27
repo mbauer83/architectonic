@@ -35,6 +35,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- A diagram written by a newer release is not rewritten: an edit refuses a diagram whose `diagram-format-version`
+  is higher than the one its type writes, and names both, instead of dropping what it does not know. Each diagram
+  type declares the format version it writes.
 - Search finds an artifact by its title while it is being typed: the word being typed matches as a prefix, and a
   title that is the query, begins with it, or has every typed word beginning one of its words ranks above
   other matches, in the search bar and the element pickers, with or without semantic search. A name now
