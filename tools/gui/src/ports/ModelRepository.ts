@@ -4,7 +4,9 @@ import type { GitCredentialRepository } from './GitCredentialRepository'
 import type { DocumentRepository } from './DocumentRepository'
 import type { DiagramReadingRepository } from './DiagramReadingRepository'
 import type { Effect } from 'effect'
-import type { DiagramComposition, DiagramReplaceBody, DiagramWriteBody } from './diagramWriteBodies'
+import type {
+  DiagramComposition, DiagramReplaceBody, DiagramWriteBody, EntityEditBody,
+} from './diagramWriteBodies'
 import type { EnterpriseAdminRepository } from './EnterpriseAdminRepository'
 import type { IconRepository } from './IconRepository'
 import type { DiagramLayoutRepository } from './DiagramLayoutRepository'
@@ -187,16 +189,7 @@ export interface ModelRepository
     version?: string; status?: string;
     dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
-  readonly editEntity: (id: string, body: {
-    name?: string; summary?: string;
-    /** Move it to this collection. Omitted leaves it where it is. */
-    group?: string;
-    /** Patches, key by key: an omitted key keeps its value, a key mapped to null is removed. */
-    properties?: Record<string, string | null>; attribute_types?: Record<string, string | null>;
-    notes?: string; keywords?: string[]; specializations?: string[];
-    version?: string; status?: string;
-    dry_run?: boolean;
-  }) => Effect.Effect<WriteResult, RepoError>
+  readonly editEntity: (id: string, body: EntityEditBody) => Effect.Effect<WriteResult, RepoError>
   /**
    * What deleting this entity would do. Two names rather than one with a flag: the two are
    * different exchanges — a plan has a body, a committed deletion answers 204 and has none — and a

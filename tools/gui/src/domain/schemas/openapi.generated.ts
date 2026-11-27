@@ -10242,6 +10242,11 @@ export interface components {
             accepted: components["schemas"]["AcceptedAdviceReading"][];
             /** Open */
             open: components["schemas"]["VerificationIssueResponse"][];
+            /**
+             * Presentation
+             * @enum {string}
+             */
+            presentation: "marker" | "listed";
         };
         /**
          * EntityConnectionCounts

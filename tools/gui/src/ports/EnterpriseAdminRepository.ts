@@ -21,6 +21,8 @@ export interface EnterpriseAdminRepository {
     /** Patches, key by key: an omitted key keeps its value, a key mapped to null is removed. */
     properties?: Record<string, string | null>; attribute_types?: Record<string, string | null>;
     notes?: string; keywords?: string[]; specialization?: string; version?: string; status?: string;
+    /** Acknowledged advice; replaces the stored set. Only advice codes are accepted. */
+    accepted_advice?: readonly { code: string; reason: string }[];
     dry_run?: boolean;
   }) => Effect.Effect<WriteResult, RepoError>
   readonly previewAdminDeleteEntity: (id: string) => Effect.Effect<WriteResult, RepoError>

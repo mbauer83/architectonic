@@ -17,6 +17,10 @@ import PendingChangePanel from '../components/PendingChangePanel.vue'
 import { editOutcome, savedIdIsTheArtifact, savedMessage } from '../lib/entityEditBlocking'
 import EntityDeletePanel from '../components/EntityDeletePanel.vue'
 import EntityReferenceList from '../components/EntityReferenceList.vue'
+import EntityAdvicePanel from '../components/EntityAdvicePanel.vue'
+import type { AcceptedAdviceEntry } from '../components/entityAdvice'
+import { readErrorMessage } from '../lib/errors'
+import { Effect } from 'effect'
 import {
   diagramReferenceRows, documentReferenceRows, scratchpadReferenceRows,
 } from './EntityDetailView.references'
@@ -91,6 +95,17 @@ const edit = useEntityEditForm({
 })
 provide(entityEditFormKey, edit)
 
+// Accepting advice is an ordinary edit of the element's `accepted_advice`. Quiet on success — the
+// reload shows "Accepted: …" in the advice's place — and a toast only for a refusal.
+const adviceBusy = ref(false)
+const acknowledgeAdvice = (entries: AcceptedAdviceEntry[]) => {
+  adviceBusy.value = true
+  void Effect.runPromise(editFn.value(entityId.value, { accepted_advice: entries, dry_run: false }))
+    .then(() => load())
+    .catch((reason: unknown) => addToast(readErrorMessage(reason), 'error'))
+    .finally(() => { adviceBusy.value = false })
+}
+
 const deletePanel = ref<InstanceType<typeof EntityDeletePanel> | null>(null)
 const executeDelete = () => { void router.push(backTo.value) }
 </script>
@@ -123,6 +138,13 @@ const executeDelete = () => { void router.push(backTo.value) }
       <PendingChangePanel
         :standing="detail.baseline_standing"
         :artifact-id="entityId"
+      />
+
+      <EntityAdvicePanel
+        v-if="detail.advice"
+        :advice="detail.advice"
+        :busy="adviceBusy"
+        @acknowledge="acknowledgeAdvice"
       />
 
       <EntityEditFormCard

@@ -159,3 +159,12 @@ def test_the_entity_read_serves_an_acknowledgement_in_place_of_the_advice(client
     assert body["advice"]["open"] == []
     (accepted,) = body["advice"]["accepted"]
     assert accepted["code"] == "A341" and accepted["reason"] == _REASON and accepted["title"]
+
+
+def test_the_entity_context_the_page_reads_carries_the_advice_too(client, repo: Path) -> None:
+    """The entity page is built from the context read, not the plain read."""
+    whole = _sequence(repo, "Order Handling")
+
+    body = client.get(f"/api/entities/{whole}/context").json()
+
+    assert [issue["code"] for issue in body["entity"]["advice"]["open"]] == ["A341"]

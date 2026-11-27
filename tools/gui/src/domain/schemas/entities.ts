@@ -120,6 +120,8 @@ export type AcceptedAdviceReading = typeof AcceptedAdviceReadingSchema.Type
  * shown follows the element's status; neither ever blocks anything.
  */
 export const EntityAdviceSchema = Schema.Struct({
+  /** Decided by the server from the element's status: a small `marker`, or `listed` with reasons. */
+  presentation: Schema.Literal('marker', 'listed'),
   open: Schema.Array(VerificationIssueSchema),
   accepted: Schema.Array(AcceptedAdviceReadingSchema),
 })

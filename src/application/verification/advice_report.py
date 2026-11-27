@@ -24,9 +24,11 @@ from src.domain.verification_advice import (
     ACCEPTED_ADVICE_KEY,
     ADVICE_CODES,
     AcceptedAdvice,
+    AdvicePresentation,
     accepted_advice_from_frontmatter,
     issue_presentation,
     issue_status,
+    presentation_for,
 )
 from src.domain.verification_findings import Issue
 
@@ -79,9 +81,13 @@ class ElementAdvice:
 
     open: tuple[Issue, ...]
     accepted: tuple[AcceptedAdvice, ...]
+    #: How the open advice is to be shown, from the element's status — decided here, once, so a
+    #: surface reads it rather than restating the policy.
+    presentation: AdvicePresentation
 
     def as_payload(self) -> dict[str, Any]:
         return {
+            "presentation": self.presentation,
             "open": [as_issue_dict(issue) for issue in self.open],
             "accepted": [
                 {"code": a.code, "reason": a.reason, "title": ADVICE_CODES.get(a.code, "")} for a in self.accepted
@@ -101,4 +107,5 @@ def element_advice(record: EntityRecord, graph: OutboundConnections, catalogs: A
     return ElementAdvice(
         open=() if finding is None else (finding,),
         accepted=accepted_advice_from_frontmatter(record.extra.get(ACCEPTED_ADVICE_KEY)),
+        presentation=presentation_for(record.status),
     )

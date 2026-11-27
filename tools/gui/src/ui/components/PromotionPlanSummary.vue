@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { PromotionGroupMappingEntry, PromotionPlan, StructuralClosureRequirement } from '../../domain'
 import type { ConflictStrategy } from '../composables/promotionShared'
+import PromotionAdviceList from './PromotionAdviceList.vue'
 
 const props = defineProps<{
   loading: boolean
@@ -85,6 +86,8 @@ const matchStatusLabel = (entry: PromotionGroupMappingEntry): string => {
           {{ error }}
         </div>
       </div>
+
+      <PromotionAdviceList :advice="props.plan.advice" />
 
       <div
         v-if="props.plan.structural_closure.length"

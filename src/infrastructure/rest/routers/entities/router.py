@@ -241,6 +241,7 @@ def read_entity_context(
         context["entity"]["addressed_by_diagrams"] = diagram_reference_dicts(
             diagrams_addressing(entity_rec.artifact_id, repo.list_diagrams(), catalogs.viewpoints)
         )
+        context["entity"]["advice"] = element_advice(entity_rec, repo, catalogs).as_payload()
     return context
 
 

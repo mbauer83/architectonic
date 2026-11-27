@@ -87,6 +87,18 @@ export interface ElementDetailsEdit {
   attribute_types?: Record<string, string | null>
 }
 
+/**
+ * What `editEntity` takes: an element's details as above — `group` moves it to that collection, an
+ * omitted one leaves it where it is — and what only the entity edit itself carries.
+ */
+export type EntityEditBody = ElementDetailsEdit & {
+  name?: string
+  version?: string
+  /** Acknowledged advice; replaces the stored set. Only advice codes are accepted. */
+  accepted_advice?: readonly { code: string; reason: string }[]
+  dry_run?: boolean
+}
+
 export type DiagramReplaceBody = DiagramWriteBody & {
   /** The diagram's `revision` as read: a diagram changed since is refused (409) rather than written over. */
   base_revision?: string

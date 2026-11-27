@@ -146,6 +146,9 @@ class EntityAdvice(NullsOmitted):
     with its reason on an active element. Neither blocks anything.
     """
 
+    #: How ``open`` is shown, decided by the server from the element's status: ``marker`` — a small
+    #: mark and a count, no banner — or ``listed``, each with its reason.
+    presentation: Literal["marker", "listed"]
     open: list[VerificationIssueResponse]
     accepted: list[AcceptedAdviceReading]
 
