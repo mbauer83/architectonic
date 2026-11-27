@@ -275,6 +275,13 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
             class="home-slot"
           />
 
+          <DiagramPurposeFields
+            v-model:stakeholders="purpose.state.stakeholders"
+            v-model:concerns="purpose.state.concerns"
+            :names="purpose.state.names"
+            class="purpose-slot"
+          />
+
           <div class="groupings-slot">
             <DiagramGroupingsEditor
               v-model="authoredGroupings"
@@ -288,11 +295,6 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
       </template>
 
       <template #sidebar>
-        <DiagramPurposeFields
-          v-model:stakeholders="purpose.state.stakeholders"
-          v-model:concerns="purpose.state.concerns"
-          :names="purpose.state.names"
-        />
         <DiagramEditSidebar
           :viewpoints="viewpoints"
           :viewpoint-slug="viewpointSlug"
@@ -352,6 +354,7 @@ const saveTitle = computed(() => !previewMutation.result.value ? 'Run Preview fi
    container, so anything beneath it in its own column is something it would cover. */
 .canvas-col { min-width: 0; }
 .home-slot { margin-top: 12px; }
+.purpose-slot { margin-top: 10px; }
 .groupings-slot { margin-top: 10px; }
 .page { max-width: 100%; }
 
