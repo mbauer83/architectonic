@@ -30,6 +30,8 @@ All notable changes to this project are documented here. The format follows
   tens of milliseconds and a PNG a few hundred; pictures are unchanged. The processes stop after 300 seconds
   without a render (`ARCH_PLANTUML_IDLE_SECONDS`) and when the backend stops. See
   [Configuration](docs/reference/configuration.md).
+- Dropping an element on a very large hand-arranged diagram routes its lines about two and a half times faster;
+  the routes are unchanged.
 
 ### Fixed
 
